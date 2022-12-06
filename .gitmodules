@@ -1,0 +1,3 @@
+[submodule "copilot.vim"]
+	path = copilot.vim
+	url = git@github.com:github/copilot.vim.git

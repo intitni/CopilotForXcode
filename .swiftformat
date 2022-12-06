@@ -1,0 +1,56 @@
+--allman false
+--beforemarks 
+--binarygrouping 4,8
+--categorymark "MARK: %c"
+--classthreshold 0
+--closingparen balanced
+--commas always
+--conflictmarkers reject
+--decimalgrouping 3,6
+--elseposition same-line
+--enumthreshold 0
+--exponentcase lowercase
+--exponentgrouping disabled
+--fractiongrouping disabled
+--fragment false
+--funcattributes preserve
+--guardelse auto
+--header ignore
+--hexgrouping 4,8
+--hexliteralcase uppercase
+--ifdef no-indent
+--importgrouping testable-bottom
+--indent 2
+--indentcase false
+--lifecycle 
+--linebreaks lf
+--maxwidth 100
+--modifierorder 
+--nospaceoperators ...,..<
+--nowrapoperators 
+--octalgrouping 4,8
+--operatorfunc spaced
+--patternlet hoist
+--ranges spaced
+--self remove
+--selfrequired 
+--semicolons inline
+--shortoptionals always
+--smarttabs enabled
+--stripunusedargs unnamed-only
+--structthreshold 0
+--tabwidth unspecified
+--trailingclosures 
+--trimwhitespace always
+--typeattributes preserve
+--varattributes preserve
+--voidtype void
+--wraparguments before-first
+--wrapcollections disabled
+--wrapparameters before-first
+--xcodeindentation disabled
+--yodaswap always
+
+--enable isEmpty
+
+--exclude Pods,**/Generated
