@@ -164,7 +164,7 @@ enum CopilotRequest {
         
         var request: ClientRequest {
             .custom("notifyRejected", .hash([
-                "uuid": .array(completionUUIDs.map(JSONValue.string)),
+                "uuids": .array(completionUUIDs.map(JSONValue.string)),
             ]))
         }
     }
