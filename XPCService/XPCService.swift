@@ -81,7 +81,7 @@ class XPCService: NSObject, XPCServiceProtocol {
                 let workspaceURL = projectURL ?? fileURL
                 let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
                 workspaces[workspaceURL] = workspace
-                let (code, cursorPosition) = try await workspace.getSuggestedCode(
+                let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
@@ -90,7 +90,6 @@ class XPCService: NSObject, XPCServiceProtocol {
                     indentSize: editor.indentSize,
                     usesTabsForIndentation: editor.usesTabsForIndentation
                 )
-                let updatedContent = UpdatedContent(content: code, newCursor: cursorPosition)
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -110,13 +109,12 @@ class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspaceURL = projectURL ?? fileURL
                 let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                let (code, cursorPosition) = workspace.getNextSuggestedCode(
+                let updatedContent = workspace.getNextSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
                 )
-                let updatedContent = UpdatedContent(content: code, newCursor: cursorPosition)
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -136,13 +134,12 @@ class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspaceURL = projectURL ?? fileURL
                 let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                let (code, cursorPosition) = workspace.getPreviousSuggestedCode(
+                let updatedContent = workspace.getPreviousSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
                 )
-                let updatedContent = UpdatedContent(content: code, newCursor: cursorPosition)
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -162,13 +159,12 @@ class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspaceURL = projectURL ?? fileURL
                 let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                let (code, cursorPosition) = workspace.getSuggestionRejectedCode(
+                let updatedContent = workspace.getSuggestionRejectedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
                 )
-                let updatedContent = UpdatedContent(content: code, newCursor: cursorPosition)
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -188,13 +184,12 @@ class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspaceURL = projectURL ?? fileURL
                 let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                let (code, cursorPosition) = workspace.getSuggestionAcceptedCode(
+                let updatedContent = workspace.getSuggestionAcceptedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
                 )
-                let updatedContent = UpdatedContent(content: code, newCursor: cursorPosition)
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)

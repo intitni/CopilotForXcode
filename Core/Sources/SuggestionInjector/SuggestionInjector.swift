@@ -123,19 +123,19 @@ public struct SuggestionInjector {
         let commonPrefix = longestCommonPrefix(of: suggestionContent, and: existedLine ?? "")
 
         if let existedLine, existedLine.count > 1, !commonPrefix.isEmpty {
-            content.remove(at: start.line)
             extraInfo.modifications.append(.deleted(start.line...start.line))
+            content.remove(at: start.line)
         } else if content.count > start.line,
                   content[start.line].isEmpty || content[start.line] == "\n"
         {
-            content.remove(at: start.line)
             extraInfo.modifications.append(.deleted(start.line...start.line))
+            content.remove(at: start.line)
         }
 
         let toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
         if content.endIndex < start.line {
-            content.append(contentsOf: toBeInserted)
             extraInfo.modifications.append(.inserted(content.endIndex, toBeInserted))
+            content.append(contentsOf: toBeInserted)
             cursorPosition = .init(
                 line: toBeInserted.endIndex,
                 character: (toBeInserted.last?.count ?? 1) - 1

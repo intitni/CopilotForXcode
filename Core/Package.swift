@@ -36,6 +36,10 @@ let package = Package(
             name: "CopilotModel",
             dependencies: ["LanguageClient"]
         ),
+        .testTarget(
+            name: "CopilotModelTests",
+            dependencies: ["CopilotModel"]
+        ),
         .target(
             name: "SuggestionInjector",
             dependencies: ["CopilotModel"]

@@ -3,22 +3,25 @@ import Foundation
 import XcodeKit
 
 extension XCSourceEditorCommandInvocation {
-    func mutateCompleteBuffer(content: String, restoringSelections restore: Bool) {
+    func mutateCompleteBuffer(modifications: [Modification], restoringSelections restore: Bool) {
         if restore {
             let selectionsRangesToRestore = buffer.selections.compactMap { $0 as? XCSourceTextRange }
             buffer.selections.removeAllObjects()
-            buffer.completeBuffer = content
+            buffer.lines.apply(modifications)
             for range in selectionsRangesToRestore {
                 buffer.selections.add(range)
             }
         } else {
-            buffer.completeBuffer = content
+            buffer.lines.apply(modifications)
         }
     }
 
     func accept(_ updatedContent: UpdatedContent) {
         if let newCursor = updatedContent.newCursor {
-            mutateCompleteBuffer(content: updatedContent.content, restoringSelections: false)
+            mutateCompleteBuffer(
+                modifications: updatedContent.modifications,
+                restoringSelections: false
+            )
             buffer.selections.removeAllObjects()
             buffer.selections.add(XCSourceTextRange(
                 start: .init(line: newCursor.line, column: newCursor.character),
@@ -26,7 +29,7 @@ extension XCSourceEditorCommandInvocation {
             ))
         } else {
             mutateCompleteBuffer(
-                content: updatedContent.content,
+                modifications: updatedContent.modifications,
                 restoringSelections: true
             )
         }
