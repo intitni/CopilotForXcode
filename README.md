@@ -8,7 +8,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Prerequisites
 
-- [Node](https://nodejs.org/) installed to run the Copilot LSP. (Version 16)
+- [Node](https://nodejs.org/) installed to run the Copilot LSP. (Version 16 preferred)
 - Public network connection.
 - Active GitHub Copilot subscription.  
 
@@ -33,21 +33,26 @@ The first time the actions run, the extension will ask for 2 types of permission
 
 ## FAQ
 
-Q: The extension doesn't show up in the `Editor` menu.
-A: Please make sure it's turned on in `Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
+**Q: The extension doesn't show up in the `Editor` menu.**
 
-Q: The extension says it can't connect to the XPC service / helper.
-A: Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
+> A: Please make sure it's turned on in `Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
 
-Q: The extension complains that it has no access to the Accessibility API
-A: Check the list in `Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
+**Q: The extension says it can't connect to the XPC service / helper.**
 
-Q: Will it work in future Xcode updates?
-A: I don't know. This extension uses many tricks to do its job, and these tricks can break in the future. 
+> A: Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
+
+**Q: The extension complains that it has no access to the Accessibility API**
+
+> A: Check the list in `Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
+>  
+> If you have just **updated the app**, consider trying removing the Launch Agents and set it up again!
+
+**Q: Will it work in future Xcode updates?**
+
+> A: I don't know. This extension uses many tricks to do its job, and these tricks can break in the future. 
 
 ## How It Works
-
-Check my [another extension](https://github.com/intitni/XccurateFormatter), you can find a short introduction there. 
+Check my [other extension](https://github.com/intitni/XccurateFormatter), you can find a short introduction there. 
 
 ## Todo
 
