@@ -4,15 +4,30 @@ import Foundation
 import SuggestionInjector
 
 @ServiceActor
-final class FileSuggestion {
-    var fileURL: URL
-    var index: Int
-    var suggestions: [CopilotCompletion]
+final class Filespace {
+    let fileURL: URL
+    var suggestions: [CopilotCompletion] = [] {
+        didSet { lastSuggestionUpdateTime = Environment.now() }
+    }
 
-    init(fileURL: URL, suggestions: [CopilotCompletion]) {
+    var suggestionIndex: Int = 0
+    var latestContentHash: Int = 0
+    var latestCursorPosition: CursorPosition = .init(line: -1, character: -1)
+    var currentSuggestionLineRange: ClosedRange<Int>?
+
+    private(set) var lastSuggestionUpdateTime: Date = Environment.now()
+    var isExpired: Bool {
+        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
+    }
+
+    init(fileURL: URL) {
         self.fileURL = fileURL
-        self.suggestions = suggestions
-        index = 0
+    }
+
+    func reset() {
+        suggestions = []
+        suggestionIndex = 0
+        currentSuggestionLineRange = nil
     }
 }
 
@@ -21,10 +36,10 @@ final class Workspace {
     let projectRootURL: URL
     var lastTriggerDate = Environment.now()
     var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastTriggerDate) > 60 * 60 * 24
+        Environment.now().timeIntervalSince(lastTriggerDate) > 60 * 60 * 8
     }
 
-    var fileSuggestions = [URL: FileSuggestion]()
+    var filespaces = [URL: Filespace]()
 
     private lazy var service: CopilotSuggestionServiceType = Environment
         .createSuggestionService(projectRootURL)
@@ -41,12 +56,25 @@ final class Workspace {
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool
-    ) async throws -> (content: String, cursorPosition: CursorPosition) {
+    ) async throws -> UpdatedContent {
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
         var lines = lines
         var cursorPosition = cursorPosition
-        injector.rejectCurrentSuggestions(from: &lines, cursorPosition: &cursorPosition)
+
+        let filespace = filespaces[fileURL] ?? .init(fileURL: fileURL)
+        if filespaces[fileURL] == nil {
+            filespaces[fileURL] = filespace
+        }
+        filespace.latestContentHash = content.hashValue
+        filespace.latestCursorPosition = cursorPosition
+        var extraInfo = SuggestionInjector.ExtraInfo()
+
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
         let completions = try await service.getCompletions(
             fileURL: fileURL,
             content: lines.joined(separator: ""),
@@ -56,16 +84,26 @@ final class Workspace {
             usesTabsForIndentation: usesTabsForIndentation
         )
         if completions.isEmpty {
-            return (content, cursorPosition)
+            return .init(
+                content: content,
+                newCursor: cursorPosition,
+                modifications: extraInfo.modifications
+            )
         }
-        fileSuggestions[fileURL] = .init(fileURL: fileURL, suggestions: completions)
+
+        filespace.suggestions = completions
         injector.proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: completions[0],
             index: 0,
-            count: completions.count
+            count: completions.count,
+            extraInfo: &extraInfo
         )
-        return (String(lines.joined(separator: "")), cursorPosition)
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func getNextSuggestedCode(
@@ -73,27 +111,38 @@ final class Workspace {
         content: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> (content: String, cursorPosition: CursorPosition) {
+    ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = fileSuggestions[fileURL],
-              fileSuggestion.suggestions.count > 1 else { return (content, cursorPosition) }
+        guard let fileSuggestion = filespaces[fileURL],
+              fileSuggestion.suggestions.count > 1
+        else { return .init(content: content, modifications: []) }
         var cursorPosition = cursorPosition
-        fileSuggestion.index += 1
-        if fileSuggestion.index >= fileSuggestion.suggestions.endIndex {
-            fileSuggestion.index = 0
+        fileSuggestion.suggestionIndex += 1
+        if fileSuggestion.suggestionIndex >= fileSuggestion.suggestions.endIndex {
+            fileSuggestion.suggestionIndex = 0
         }
 
-        let suggestion = fileSuggestion.suggestions[fileSuggestion.index]
+        let suggestion = fileSuggestion.suggestions[fileSuggestion.suggestionIndex]
         let injector = SuggestionInjector()
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = lines
-        injector.rejectCurrentSuggestions(from: &lines, cursorPosition: &cursorPosition)
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
         injector.proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
-            index: fileSuggestion.index,
-            count: fileSuggestion.suggestions.count
+            index: fileSuggestion.suggestionIndex,
+            count: fileSuggestion.suggestions.count,
+            extraInfo: &extraInfo
         )
-        return (String(lines.joined(separator: "")), cursorPosition)
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func getPreviousSuggestedCode(
@@ -101,27 +150,37 @@ final class Workspace {
         content: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> (content: String, cursorPosition: CursorPosition) {
+    ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = fileSuggestions[fileURL],
-              fileSuggestion.suggestions.count > 1 else { return (content, cursorPosition) }
+        guard let fileSuggestion = filespaces[fileURL],
+              fileSuggestion.suggestions.count > 1
+        else { return .init(content: content, modifications: []) }
         var cursorPosition = cursorPosition
-        fileSuggestion.index -= 1
-        if fileSuggestion.index < 0 {
-            fileSuggestion.index = fileSuggestion.suggestions.endIndex - 1
+        fileSuggestion.suggestionIndex -= 1
+        if fileSuggestion.suggestionIndex < 0 {
+            fileSuggestion.suggestionIndex = fileSuggestion.suggestions.endIndex - 1
         }
-
-        let suggestion = fileSuggestion.suggestions[fileSuggestion.index]
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        let suggestion = fileSuggestion.suggestions[fileSuggestion.suggestionIndex]
         let injector = SuggestionInjector()
         var lines = lines
-        injector.rejectCurrentSuggestions(from: &lines, cursorPosition: &cursorPosition)
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
         injector.proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
-            index: fileSuggestion.index,
-            count: fileSuggestion.suggestions.count
+            index: fileSuggestion.suggestionIndex,
+            count: fileSuggestion.suggestions.count,
+            extraInfo: &extraInfo
         )
-        return (String(lines.joined(separator: "")), cursorPosition)
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func getSuggestionAcceptedCode(
@@ -129,38 +188,43 @@ final class Workspace {
         content: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> (
-        content: String,
-        corsorPosition: CursorPosition?
-    ) {
+    ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = fileSuggestions[fileURL],
+        guard let fileSuggestion = filespaces[fileURL],
               !fileSuggestion.suggestions.isEmpty,
-              fileSuggestion.index >= 0,
-              fileSuggestion.index < fileSuggestion.suggestions.endIndex
-        else { return (content, nil) }
-        
-        var cursorPosition = cursorPosition
+              fileSuggestion.suggestionIndex >= 0,
+              fileSuggestion.suggestionIndex < fileSuggestion.suggestions.endIndex
+        else { return .init(content: content, modifications: []) }
 
+        var cursorPosition = cursorPosition
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var allSuggestions = fileSuggestion.suggestions
-        let suggestion = allSuggestions.remove(at: fileSuggestion.index)
+        let suggestion = allSuggestions.remove(at: fileSuggestion.suggestionIndex)
         let injector = SuggestionInjector()
         var lines = lines
-        injector.rejectCurrentSuggestions(from: &lines, cursorPosition: &cursorPosition)
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
         injector.acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursorPosition,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
-
-        fileSuggestions[fileURL] = nil
 
         Task {
             await service.notifyAccepted(suggestion)
             await service.notifyRejected(allSuggestions)
         }
 
-        return (String(lines.joined(separator: "")), cursorPosition)
+        filespaces[fileURL]?.reset()
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func getSuggestionRejectedCode(
@@ -168,18 +232,37 @@ final class Workspace {
         content _: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> (content: String, cursorPosition: CursorPosition) {
+    ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
         var lines = lines
         var cursorPosition = cursorPosition
-        injector.rejectCurrentSuggestions(from: &lines, cursorPosition: &cursorPosition)
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
 
         Task {
-            await service.notifyRejected(fileSuggestions[fileURL]?.suggestions ?? [])
+            await service.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }
 
-        fileSuggestions[fileURL] = nil
-        return (String(lines.joined(separator: "")), cursorPosition)
+        filespaces[fileURL]?.reset()
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
+    }
+}
+
+extension Workspace {
+    func cleanUp() {
+        for (fileURL, filespace) in filespaces {
+            if filespace.isExpired {
+                filespaces[fileURL] = nil
+            }
+        }
     }
 }

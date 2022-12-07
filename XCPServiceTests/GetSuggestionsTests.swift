@@ -43,6 +43,10 @@ final class GetSuggestionsTests: XCTestCase {
             usesTabsForIndentation: false
         ))
 
+        XCTAssertEqual(
+            result.content.breakLines(appendLineBreakToLastLine: true),
+            content.breakLines(appendLineBreakToLastLine: true).applying(result.modifications)
+        )
         XCTAssertEqual(result.content, """
         struct Cat {
 
@@ -92,7 +96,10 @@ final class GetSuggestionsTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))
-
+        XCTAssertEqual(
+            result.content.breakLines(appendLineBreakToLastLine: true),
+            content.breakLines(appendLineBreakToLastLine: true).applying(result.modifications)
+        )
         XCTAssertEqual(result.content, """
         struct Cat {
 

@@ -14,4 +14,5 @@ struct EditorContent: Codable {
 struct UpdatedContent: Codable {
     var content: String
     var newCursor: CursorPosition?
+    var modifications: [Modification]
 }

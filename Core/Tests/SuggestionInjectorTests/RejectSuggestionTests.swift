@@ -14,9 +14,18 @@ final class RejectSuggestionTests: XCTestCase {
         *///======== End of Copilot Suggestion
         }
         """
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 1, character: 12)
-        SuggestionInjector().rejectCurrentSuggestions(from: &lines, cursorPosition: &cursor)
+        SuggestionInjector().rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursor,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
             var name
@@ -41,16 +50,25 @@ final class RejectSuggestionTests: XCTestCase {
             var age: String
         *///======== End of Copilot Suggestion
         """
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 6, character: 0)
-        SuggestionInjector().rejectCurrentSuggestions(from: &lines, cursorPosition: &cursor)
+        SuggestionInjector().rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursor,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
             var name
 
         /*========== Copilot Suggestion 2/10
 
-        
+
         """)
         XCTAssertEqual(cursor, .init(line: 2, character: 0), "If cursor is below deletion, move it up.")
     }
