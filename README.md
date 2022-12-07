@@ -8,7 +8,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Prerequisites
 
-- [Node](https://nodejs.org/) installed to run the Copilot LSP. (Version 16 preferred)
+- [Node](https://nodejs.org/) installed to run the Copilot LSP.
 - Public network connection.
 - Active GitHub Copilot subscription.  
 
