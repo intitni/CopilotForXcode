@@ -9,13 +9,6 @@ https://www.toptal.com/developers/gitignore?templates=xcode,macos,swift,swiftpac
 .AppleDouble
 .LSOverride
 
-# Icon must end with two \r
-Icon
-
-
-# Thumbnails
-._*
-
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
 .fseventsd
@@ -72,10 +65,6 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
-## Playgrounds
-timeline.xctimeline
-playground.xcworkspace
-
 # Swift Package Manager
 # Add this line if you want to avoid checking in source code from Swift 
 Package Manager dependencies.
@@ -99,8 +88,6 @@ However
 https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
 # Pods/
 # Add this line if you want to avoid checking in source code from the 
-Xcode workspace
-# *.xcworkspace
 
 # Carthage
 # Add this line if you want to avoid checking in source code from Carthage 
@@ -133,24 +120,6 @@ fastlane/test_output
 
 iOSInjectionProject/
 
-### SwiftPackageManager ###
-Packages
-xcuserdata
-*.xcodeproj
-
-
-### Xcode ###
-
-## Xcode 8 and earlier
-
-### Xcode Patch ###
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
-!*.xcodeproj/project.xcworkspace/
-!*.xcworkspace/contents.xcworkspacedata
-/*.gcno
-**/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of 
 https://www.toptal.com/developers/gitignore/api/xcode,macos,swift,swiftpackagemanager
