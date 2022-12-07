@@ -24,14 +24,19 @@ final class ProposeSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         SuggestionInjector().proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
             index: 0,
-            count: 10
+            count: 10,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(extraInfo.suggestionRange, 2...5)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
 
@@ -62,14 +67,19 @@ final class ProposeSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         SuggestionInjector().proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
             index: 0,
-            count: 10
+            count: 10,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(extraInfo.suggestionRange, 1...4)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
         /*========== Copilot Suggestion 1/10
@@ -100,14 +110,19 @@ final class ProposeSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         SuggestionInjector().proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
             index: 0,
-            count: 10
+            count: 10,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(extraInfo.suggestionRange, 2...5)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
             var name
@@ -143,14 +158,19 @@ final class ProposeSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         SuggestionInjector().proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
             index: 0,
-            count: 10
+            count: 10,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(extraInfo.suggestionRange, 2...8)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         func quickSort() {
             
@@ -188,14 +208,19 @@ final class ProposeSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         SuggestionInjector().proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
             index: 0,
-            count: 10
+            count: 10,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(extraInfo.suggestionRange, 1...9)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(lines.joined(separator: ""), """
         func quickSort() {}}
         /*========== Copilot Suggestion 1/10

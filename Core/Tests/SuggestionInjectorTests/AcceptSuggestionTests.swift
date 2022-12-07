@@ -24,14 +24,19 @@ final class AcceptSuggestionTests: XCTestCase {
             ),
             displayText: ""
         )
-
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
@@ -40,7 +45,7 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """)
     }
-    
+
     func test_accept_suggestion_start_from_previous_line() async throws {
         let content = """
         struct Cat {
@@ -61,13 +66,19 @@ final class AcceptSuggestionTests: XCTestCase {
             displayText: ""
         )
 
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
@@ -98,13 +109,19 @@ final class AcceptSuggestionTests: XCTestCase {
             displayText: ""
         )
 
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
@@ -113,7 +130,7 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """)
     }
-    
+
     func test_propose_suggestion_partial_overlap() async throws {
         let content = "func quickSort() {}}\n"
         let text = """
@@ -136,13 +153,19 @@ final class AcceptSuggestionTests: XCTestCase {
             displayText: ""
         )
 
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 6, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
         func quickSort() {
@@ -152,10 +175,10 @@ final class AcceptSuggestionTests: XCTestCase {
             quickSort(&array, left, right)
             print(array)
         }
-        
+
         """)
     }
-    
+
     func test_no_overlap_append_to_the_end() async throws {
         let content = "func quickSort() {\n"
         let text = """
@@ -177,13 +200,19 @@ final class AcceptSuggestionTests: XCTestCase {
             displayText: ""
         )
 
+        var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
         var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
-            completion: suggestion
+            completion: suggestion,
+            extraInfo: &extraInfo
         )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 6, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
         func quickSort() {
@@ -193,7 +222,7 @@ final class AcceptSuggestionTests: XCTestCase {
             quickSort(&array, left, right)
             print(array)
         }
-        
+
         """)
     }
 }

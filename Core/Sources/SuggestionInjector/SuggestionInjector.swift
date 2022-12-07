@@ -11,11 +11,20 @@ let suggestionEnd = "*///======== End of Copilot Suggestion"
 public struct SuggestionInjector {
     public init() {}
 
+    public struct ExtraInfo {
+        public var didChangeContent = false
+        public var didChangeCursorPosition = false
+        public var suggestionRange: ClosedRange<Int>?
+        public var modifications: [Modification] = []
+        public init() {}
+    }
+
     public func rejectCurrentSuggestions(
         from content: inout [String],
-        cursorPosition: inout CursorPosition
+        cursorPosition: inout CursorPosition,
+        extraInfo: inout ExtraInfo
     ) {
-        var ranges = [Range<Int>]()
+        var ranges = [ClosedRange<Int>]()
         var suggestionStartIndex = -1
 
         for (index, line) in content.enumerated() {
@@ -27,25 +36,34 @@ public struct SuggestionInjector {
                 suggestionStartIndex = -1
             }
         }
+        
+        let reversedRanges = ranges.reversed()
 
-        for range in ranges.lazy.reversed() {
-            for i in stride(from: range.endIndex, through: range.startIndex, by: -1) {
+        extraInfo.modifications.append(contentsOf: reversedRanges.map(Modification.deleted))
+        extraInfo.didChangeContent = !ranges.isEmpty
+
+        for range in reversedRanges {
+            for i in stride(from: range.upperBound, through: range.lowerBound, by: -1) {
                 if i <= cursorPosition.line, cursorPosition.line >= 0 {
                     cursorPosition = .init(
                         line: cursorPosition.line - 1,
                         character: i == cursorPosition.line ? 0 : cursorPosition.character
                     )
+                    extraInfo.didChangeCursorPosition = true
                 }
                 content.remove(at: i)
             }
         }
+
+        extraInfo.suggestionRange = nil
     }
 
     public func proposeSuggestion(
         intoContentWithoutSuggestion content: inout [String],
         completion: CopilotCompletion,
         index: Int,
-        count: Int
+        count: Int,
+        extraInfo: inout ExtraInfo
     ) {
         let start = completion.range.start
         let startText = "\(suggestionStart) \(index + 1)/\(count)"
@@ -77,8 +95,14 @@ public struct SuggestionInjector {
             return 0
         }()
         if content.endIndex < lineIndex {
+            extraInfo.didChangeContent = true
+            extraInfo.suggestionRange = content.endIndex ... content.endIndex + lines.count - 1
+            extraInfo.modifications.append(.inserted(content.endIndex, lines))
             content.append(contentsOf: lines)
         } else {
+            extraInfo.didChangeContent = true
+            extraInfo.suggestionRange = lineIndex ... lineIndex + lines.count - 1
+            extraInfo.modifications.append(.inserted(lineIndex, lines))
             content.insert(contentsOf: lines, at: lineIndex)
         }
     }
@@ -86,8 +110,12 @@ public struct SuggestionInjector {
     public func acceptSuggestion(
         intoContentWithoutSuggestion content: inout [String],
         cursorPosition: inout CursorPosition,
-        completion: CopilotCompletion
+        completion: CopilotCompletion,
+        extraInfo: inout ExtraInfo
     ) {
+        extraInfo.didChangeContent = true
+        extraInfo.didChangeCursorPosition = true
+        extraInfo.suggestionRange = nil
         let start = completion.range.start
         let suggestionContent = completion.text
 
@@ -96,20 +124,24 @@ public struct SuggestionInjector {
 
         if let existedLine, existedLine.count > 1, !commonPrefix.isEmpty {
             content.remove(at: start.line)
+            extraInfo.modifications.append(.deleted(start.line...start.line))
         } else if content.count > start.line,
                   content[start.line].isEmpty || content[start.line] == "\n"
         {
             content.remove(at: start.line)
+            extraInfo.modifications.append(.deleted(start.line...start.line))
         }
 
         let toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
         if content.endIndex < start.line {
             content.append(contentsOf: toBeInserted)
+            extraInfo.modifications.append(.inserted(content.endIndex, toBeInserted))
             cursorPosition = .init(
                 line: toBeInserted.endIndex,
                 character: (toBeInserted.last?.count ?? 1) - 1
             )
         } else {
+            extraInfo.modifications.append(.inserted(start.line, toBeInserted))
             content.insert(
                 contentsOf: toBeInserted,
                 at: start.line
