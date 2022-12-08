@@ -1,4 +1,5 @@
 import AppKit
+import Client
 import CopilotModel
 import SwiftUI
 

@@ -16,7 +16,7 @@ private struct FailedToFetchFileURLError: Error, LocalizedError {
 enum Environment {
     static var now = { Date() }
 
-    static func fetchCurrentProjectRootURL() async throws -> URL? {
+    static var fetchCurrentProjectRootURL: () async throws -> URL? = {
         let appleScript = """
         tell application "Xcode"
             return path of document of the first window
@@ -46,7 +46,7 @@ enum Environment {
         return nil
     }
 
-    static func fetchCurrentFileURL() async throws -> URL {
+    static var fetchCurrentFileURL: () async throws -> URL = {
         var activeXcodes = [NSRunningApplication]()
         var retryCount = 0
         // Sometimes runningApplications returns 0 items.
@@ -97,11 +97,11 @@ enum Environment {
         throw FailedToFetchFileURLError()
     }
     
-    static func createAuthService() -> CopilotAuthServiceType {
+    static var createAuthService: () -> CopilotAuthServiceType = {
         return CopilotAuthService()
     }
     
-    static func createSuggestionService(_ projectRootURL: URL) -> CopilotSuggestionServiceType {
+    static var createSuggestionService: (_ projectRootURL: URL) -> CopilotSuggestionServiceType = { projectRootURL in
         return CopilotSuggestionService(projectRootURL: projectRootURL)
     }
 }

@@ -2,12 +2,14 @@ import CopilotModel
 import CopilotService
 import XCTest
 
+@testable import Service
 @testable import SuggestionInjector
 
 final class GetSuggestionsTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
+        clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
@@ -89,7 +91,7 @@ final class GetSuggestionsTests: XCTestCase {
 
         let result = try await service.getSuggestedCode(editorContent: .init(
             content: content,
-            lines: content.breakLines(),
+            lines: content.breakLines(appendLineBreakToLastLine: true),
             uti: "",
             cursorPosition: .init(line: 6, character: 1),
             tabSize: 1,
@@ -97,13 +99,14 @@ final class GetSuggestionsTests: XCTestCase {
             usesTabsForIndentation: false
         ))
         XCTAssertEqual(
-            result.content.breakLines(appendLineBreakToLastLine: true),
+            Array(result.content.breakLines(appendLineBreakToLastLine: true).dropLast(1)),
             content.breakLines(appendLineBreakToLastLine: true).applying(result.modifications)
         )
         XCTAssertEqual(result.content, """
         struct Cat {
 
         }
+        
         /*========== Copilot Suggestion 1/1
 
         struct Dog {}

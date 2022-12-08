@@ -2,12 +2,14 @@ import CopilotModel
 import CopilotService
 import XCTest
 
+@testable import Service
 @testable import SuggestionInjector
 
 final class RejectSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
+        clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 

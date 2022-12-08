@@ -8,16 +8,12 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(
-            name: "CopilotService",
-            targets: ["CopilotService", "SuggestionInjector"]
+            name: "Service",
+            targets: ["Service", "SuggestionInjector"]
         ),
         .library(
-            name: "CopilotModel",
-            targets: ["CopilotModel"]
-        ),
-        .library(
-            name: "SuggestionInjector",
-            targets: ["SuggestionInjector"]
+            name: "Client",
+            targets: ["CopilotModel", "Client"]
         ),
     ],
     dependencies: [
@@ -47,6 +43,22 @@ let package = Package(
         .testTarget(
             name: "SuggestionInjectorTests",
             dependencies: ["SuggestionInjector"]
+        ),
+        .target(
+            name: "Client",
+            dependencies: ["CopilotModel", "XPCShared"]
+        ),
+        .target(
+            name: "Service",
+            dependencies: ["CopilotModel", "CopilotService", "XPCShared"]
+        ),
+        .target(
+            name: "XPCShared",
+            dependencies: ["CopilotModel"]
+        ),
+        .testTarget(
+            name: "ServiceTests",
+            dependencies: ["Service", "Client", "CopilotService", "SuggestionInjector", "XPCShared"]
         ),
     ]
 )

@@ -2,6 +2,7 @@ import CopilotModel
 import CopilotService
 import Foundation
 import SuggestionInjector
+import XPCShared
 
 @ServiceActor
 final class Filespace {

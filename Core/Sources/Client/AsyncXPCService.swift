@@ -1,10 +1,15 @@
 import CopilotModel
 import Foundation
+import XPCShared
 
-struct AsyncXPCService {
+public struct AsyncXPCService {
     let connection: NSXPCConnection
+    
+    public init(connection: NSXPCConnection) {
+        self.connection = connection
+    }
 
-    func checkStatus() async throws -> CopilotStatus {
+    public func checkStatus() async throws -> CopilotStatus {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.checkStatus { status, error in
@@ -20,7 +25,7 @@ struct AsyncXPCService {
         }
     }
 
-    func getVersion() async throws -> String {
+    public func getVersion() async throws -> String {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.getVersion { version, error in
@@ -33,7 +38,7 @@ struct AsyncXPCService {
         }
     }
 
-    func signInInitiate() async throws -> (verificationUri: String, userCode: String) {
+    public func signInInitiate() async throws -> (verificationUri: String, userCode: String) {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.signInInitiate { verificationUri, userCode, error in
@@ -46,7 +51,7 @@ struct AsyncXPCService {
         }
     }
 
-    func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus) {
+    public func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus) {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.signInConfirm(userCode: userCode) { username, status, error in
@@ -62,7 +67,7 @@ struct AsyncXPCService {
         }
     }
 
-    func signOut() async throws -> CopilotStatus {
+    public func signOut() async throws -> CopilotStatus {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.signOut { finishstatus, error in
@@ -75,7 +80,7 @@ struct AsyncXPCService {
         }
     }
 
-    func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -83,7 +88,7 @@ struct AsyncXPCService {
         )
     }
 
-    func getNextSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getNextSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -91,7 +96,7 @@ struct AsyncXPCService {
         )
     }
 
-    func getPreviousSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getPreviousSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -99,7 +104,7 @@ struct AsyncXPCService {
         )
     }
 
-    func getSuggestionAcceptedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestionAcceptedCode(editorContent: EditorContent) async throws -> UpdatedContent {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -107,7 +112,7 @@ struct AsyncXPCService {
         )
     }
 
-    func getSuggestionRejectedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestionRejectedCode(editorContent: EditorContent) async throws -> UpdatedContent {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -116,7 +121,7 @@ struct AsyncXPCService {
     }
 }
 
-private struct AutoFinishContinuation<T> {
+struct AutoFinishContinuation<T> {
     var continuation: AsyncThrowingStream<T, Error>.Continuation
 
     func resume(_ value: T) {
@@ -129,7 +134,7 @@ private struct AutoFinishContinuation<T> {
     }
 }
 
-private func withXPCServiceConnected<T>(
+func withXPCServiceConnected<T>(
     connection: NSXPCConnection,
     _ fn: @escaping (XPCServiceProtocol, AutoFinishContinuation<T>) -> Void
 ) async throws -> T {
@@ -142,7 +147,7 @@ private func withXPCServiceConnected<T>(
     return try await stream.first(where: { _ in true })!
 }
 
-private func suggestionRequest(
+func suggestionRequest(
     _ connection: NSXPCConnection,
     _ editorContent: EditorContent,
     _ fn: @escaping (any XPCServiceProtocol) -> (Data, @escaping (Data?, Error?) -> Void) -> Void

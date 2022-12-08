@@ -2,12 +2,14 @@ import CopilotModel
 import CopilotService
 import XCTest
 
+@testable import Service
 @testable import SuggestionInjector
 
 final class AcceptSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
+        clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
@@ -59,7 +61,7 @@ final class AcceptSuggestionTests: XCTestCase {
         struct Cat {}
 
         struct Dog {}
-        
+
 
         """, "Previous suggestions should be removed.")
 
