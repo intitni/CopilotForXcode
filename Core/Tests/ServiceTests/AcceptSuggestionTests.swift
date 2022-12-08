@@ -28,14 +28,14 @@ final class AcceptSuggestionTests: XCTestCase {
             ),
         ]
 
-        let content = """
-        struct Cat {}
-
-        """
+        let lines = [
+            "struct Cat {}\n",
+            "\n",
+        ]
 
         let result1 = try await service.getSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(appendLineBreakToLastLine: true),
+            content: lines.joined(),
+            lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 0),
             tabSize: 1,
@@ -43,9 +43,11 @@ final class AcceptSuggestionTests: XCTestCase {
             usesTabsForIndentation: false
         ))
 
+        let result1Lines = lines.applying(result1.modifications)
+
         let result2 = try await service.getSuggestionAcceptedCode(editorContent: .init(
-            content: result1.content,
-            lines: result1.content.breakLines(appendLineBreakToLastLine: true),
+            content: result1Lines.joined(),
+            lines: result1Lines,
             uti: "",
             cursorPosition: .init(line: 3, character: 5),
             tabSize: 1,
@@ -53,15 +55,13 @@ final class AcceptSuggestionTests: XCTestCase {
             usesTabsForIndentation: false
         ))
 
-        XCTAssertEqual(
-            Array(result2.content.breakLines(appendLineBreakToLastLine: true).dropLast(1)),
-            result1.content.breakLines(appendLineBreakToLastLine: true).applying(result2.modifications)
-        )
+        let result2Lines = result1Lines.applying(result2.modifications)
+
+        XCTAssertEqual(result2Lines.joined(), result2.content)
         XCTAssertEqual(result2.content, """
         struct Cat {}
 
         struct Dog {}
-
 
         """, "Previous suggestions should be removed.")
 
@@ -72,8 +72,8 @@ final class AcceptSuggestionTests: XCTestCase {
         )
 
         let result3 = try await service.getSuggestionAcceptedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(appendLineBreakToLastLine: true),
+            content: lines.joined(),
+            lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 3),
             tabSize: 1,
@@ -81,11 +81,10 @@ final class AcceptSuggestionTests: XCTestCase {
             usesTabsForIndentation: false
         ))
 
-        XCTAssertEqual(result3.content, content, "Deleting the code and accept again does nothing")
-        XCTAssertEqual(
-            result3.content.breakLines(appendLineBreakToLastLine: true),
-            content.breakLines(appendLineBreakToLastLine: true).applying(result3.modifications)
-        )
+        let result3Lines = lines.applying(result3.modifications)
+
+        XCTAssertEqual(result3Lines, lines, "Deleting the code and accept again does nothing")
+        XCTAssertEqual(result3.content, result3Lines.joined())
         XCTAssertEqual(result3.newCursor, nil)
     }
 }

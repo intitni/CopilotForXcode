@@ -28,16 +28,15 @@ final class GetSuggestionsTests: XCTestCase {
             ),
         ]
 
-        let content = """
-        struct Cat {
-
-        }
-
-        """
+        let lines = [
+            "struct Cat {\n",
+            "\n",
+            "}\n",
+        ]
 
         let result = try await service.getSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(),
+            content: lines.joined(),
+            lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 17),
             tabSize: 1,
@@ -45,10 +44,9 @@ final class GetSuggestionsTests: XCTestCase {
             usesTabsForIndentation: false
         ))
 
-        XCTAssertEqual(
-            result.content.breakLines(appendLineBreakToLastLine: true),
-            content.breakLines(appendLineBreakToLastLine: true).applying(result.modifications)
-        )
+        let resultLines = lines.applying(result.modifications)
+
+        XCTAssertEqual(resultLines.joined(), result.content)
         XCTAssertEqual(result.content, """
         struct Cat {
 
@@ -78,35 +76,35 @@ final class GetSuggestionsTests: XCTestCase {
             ),
         ]
 
-        let content = """
-        struct Cat {
-
-        /*========== Copilot Suggestion 1/1
-            var name: String
-            var age: String
-        *///======== End of Copilot Suggestion
-        }
-
-        """
+        let lines = [
+            "struct Cat {\n",
+            "\n",
+            "/*========== Copilot Suggestion 1/1\n",
+            "    var name: String\n",
+            "    var age: String\n",
+            "*///======== End of Copilot Suggestion\n",
+            "}\n",
+            "\n",
+        ]
 
         let result = try await service.getSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(appendLineBreakToLastLine: true),
+            content: lines.joined(),
+            lines: lines,
             uti: "",
             cursorPosition: .init(line: 6, character: 1),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
         ))
-        XCTAssertEqual(
-            Array(result.content.breakLines(appendLineBreakToLastLine: true).dropLast(1)),
-            content.breakLines(appendLineBreakToLastLine: true).applying(result.modifications)
-        )
+        
+        let resultLines = lines.applying(result.modifications)
+        
+        XCTAssertEqual(resultLines.joined(), result.content)
         XCTAssertEqual(result.content, """
         struct Cat {
 
         }
-        
+
         /*========== Copilot Suggestion 1/1
 
         struct Dog {}
