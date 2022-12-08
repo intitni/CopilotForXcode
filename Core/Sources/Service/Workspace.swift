@@ -41,12 +41,36 @@ final class Workspace {
     }
 
     var filespaces = [URL: Filespace]()
+    var isRealtimeSuggestionEnabled = false
 
     private lazy var service: CopilotSuggestionServiceType = Environment
         .createSuggestionService(projectRootURL)
 
     init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
+    }
+
+    /// Trigger only when
+    /// 1. There is no pending suggestion
+    /// 2. There are pending suggestions, but either content or cursor is changed, and cursor is not inside of suggestion.
+    func canAutoTriggerGetSuggestions(
+        forFileAt fileURL: URL,
+        content: String,
+        cursorPosition: CursorPosition
+    ) -> Bool {
+        guard isRealtimeSuggestionEnabled else { return false }
+        guard let filespace = filespaces[fileURL] else { return true }
+        if filespace.suggestions.isEmpty { return true }
+        if content.hashValue != filespace.latestContentHash { return true }
+        if cursorPosition != filespace.latestCursorPosition {
+            if let range = filespace.currentSuggestionLineRange,
+               range.contains(cursorPosition.line)
+            {
+                return false
+            }
+            return true
+        }
+        return false
     }
 
     func getSuggestedCode(

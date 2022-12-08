@@ -3,7 +3,9 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class PreviousSuggestionCommand: NSObject, XCSourceEditorCommand {
+class PreviousSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Previous Suggestion" }
+    
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void

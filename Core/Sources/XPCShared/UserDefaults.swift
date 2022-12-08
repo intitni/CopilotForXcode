@@ -1,8 +1,5 @@
-//
-//  File.swift
-//  
-//
-//  Created by Shangxin Guo on 2022/12/8.
-//
-
 import Foundation
+
+public extension UserDefaults {
+    static var shared = UserDefaults(suiteName: "5YKZ4Y3DAW.group.com.intii.CopilotForXcode")!
+}

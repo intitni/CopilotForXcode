@@ -15,7 +15,32 @@ public class XPCService: NSObject, XPCServiceProtocol {
     @ServiceActor
     var workspaces = [URL: Workspace]()
 
-    override public init() {}
+    override public init() {
+        super.init()
+        let identifier = ObjectIdentifier(self)
+        Task {
+            await AutoTrigger.shared.start(by: identifier)
+        }
+        Task { @ServiceActor [weak self] in
+            while let self, !Task.isCancelled {
+                try await Task.sleep(nanoseconds: 8 * 60 * 60 * 1_000_000_000)
+                for (url, workspace) in self.workspaces {
+                    if workspace.isExpired {
+                        self.workspaces[url] = nil
+                    } else {
+                        workspace.cleanUp()
+                    }
+                }
+            }
+        }
+    }
+
+    deinit {
+        let identifier = ObjectIdentifier(self)
+        Task {
+            await AutoTrigger.shared.stop(by: identifier)
+        }
+    }
 
     public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
@@ -79,11 +104,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                workspaces[workspaceURL] = workspace
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
                 let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -108,10 +131,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
                 let updatedContent = workspace.getNextSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -133,10 +155,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
                 let updatedContent = workspace.getPreviousSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -158,10 +179,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
                 let updatedContent = workspace.getSuggestionRejectedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -183,10 +203,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
                 let updatedContent = workspace.getSuggestionAcceptedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -199,6 +218,63 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 reply(nil, NSError.from(error))
             }
         }
+    }
+
+    public func getRealtimeSuggestedCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        Task { @ServiceActor in
+            do {
+                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
+                let fileURL = try await Environment.fetchCurrentFileURL()
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                
+                let canAutoTrigger = workspace.canAutoTriggerGetSuggestions(
+                    forFileAt: fileURL,
+                    content: editor.content,
+                    cursorPosition: editor.cursorPosition
+                )
+                guard canAutoTrigger else {
+                    reply(nil, nil)
+                    return
+                }
+                print("update")
+                let updatedContent = try await workspace.getSuggestedCode(
+                    forFileAt: fileURL,
+                    content: editor.content,
+                    lines: editor.lines,
+                    cursorPosition: editor.cursorPosition,
+                    tabSize: editor.tabSize,
+                    indentSize: editor.indentSize,
+                    usesTabsForIndentation: editor.usesTabsForIndentation
+                )
+                reply(try JSONEncoder().encode(updatedContent), nil)
+            } catch {
+                print(error)
+                reply(nil, NSError.from(error))
+            }
+        }
+    }
+
+    public func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void) {
+        Task { @ServiceActor in
+            let fileURL = try await Environment.fetchCurrentFileURL()
+            let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            workspace.isRealtimeSuggestionEnabled = enabled
+            reply(nil)
+        }
+    }
+}
+
+extension XPCService {
+    @ServiceActor
+    func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
+        let projectURL = try await Environment.fetchCurrentProjectRootURL()
+        let workspaceURL = projectURL ?? fileURL
+        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+        workspaces[workspaceURL] = workspace
+        return workspace
     }
 }
 

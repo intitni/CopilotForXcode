@@ -3,7 +3,9 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class RejectSuggestionCommand: NSObject, XCSourceEditorCommand {
+class RejectSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Reject Suggestion" }
+    
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void

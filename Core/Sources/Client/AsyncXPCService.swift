@@ -119,6 +119,27 @@ public struct AsyncXPCService {
             { $0.getSuggestionRejectedCode }
         )
     }
+    
+    public func getRealtimeSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+        try await suggestionRequest(
+            connection,
+            editorContent,
+            { $0.getRealtimeSuggestedCode }
+        )
+    }
+
+    public func setAutoSuggestion(enabled: Bool) async throws {
+        return try await withXPCServiceConnected(connection: connection) {
+            service, continuation in
+            service.setAutoSuggestion(enabled: enabled) { error in
+                if let error {
+                    continuation.reject(error)
+                    return
+                }
+                continuation.resume(())
+            }
+        }
+    }
 }
 
 struct AutoFinishContinuation<T> {
