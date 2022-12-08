@@ -1,6 +1,8 @@
+import Client
 import CopilotModel
 import Foundation
 import XcodeKit
+import XPCShared
 
 class AcceptSuggestionCommand: NSObject, XCSourceEditorCommand {
     func perform(

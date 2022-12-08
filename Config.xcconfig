@@ -1,1 +1,2 @@
 BUNDLE_IDENTIFIER_BASE = com.intii.CopilotForXcode
+EXTENSION_BUNDLE_NAME = Copilot

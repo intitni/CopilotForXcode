@@ -1,6 +1,7 @@
 import CopilotModel
 import Foundation
 import XcodeKit
+import XPCShared
 
 extension XCSourceEditorCommandInvocation {
     func mutateCompleteBuffer(modifications: [Modification], restoringSelections restore: Bool) {
@@ -39,14 +40,16 @@ extension XCSourceEditorCommandInvocation {
 extension EditorContent {
     init(_ invocation: XCSourceEditorCommandInvocation) {
         let buffer = invocation.buffer
-        content = buffer.completeBuffer
-        lines = buffer.lines as! [String]
-        uti = buffer.contentUTI
-        cursorPosition = ((buffer.selections.lastObject as? XCSourceTextRange)?.start).map {
-            CursorPosition(line: $0.line, character: $0.column)
-        } ?? CursorPosition(line: 0, character: 0)
-        tabSize = buffer.tabWidth
-        indentSize = buffer.indentationWidth
-        usesTabsForIndentation = buffer.usesTabsForIndentation
+        self.init(
+            content: buffer.completeBuffer,
+            lines: buffer.lines as! [String],
+            uti: buffer.contentUTI,
+            cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.start).map {
+                CursorPosition(line: $0.line, character: $0.column)
+            } ?? CursorPosition(line: 0, character: 0),
+            tabSize: buffer.tabWidth,
+            indentSize: buffer.indentationWidth,
+            usesTabsForIndentation: buffer.usesTabsForIndentation
+        )
     }
 }

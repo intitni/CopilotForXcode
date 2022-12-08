@@ -2,19 +2,22 @@ import AppKit
 import CopilotService
 import Foundation
 import LanguageServerProtocol
+import XPCShared
 
 @globalActor enum ServiceActor {
     public actor TheActor {}
     public static let shared = TheActor()
 }
 
-class XPCService: NSObject, XPCServiceProtocol {
+public class XPCService: NSObject, XPCServiceProtocol {
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
     @ServiceActor
     var workspaces = [URL: Workspace]()
 
-    func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
+    override public init() {}
+
+    public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let status = try await authService.checkStatus()
@@ -25,7 +28,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let (verificationLink, userCode) = try await authService.signInInitiate()
@@ -36,7 +39,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let (username, status) = try await authService.signInConfirm(userCode: userCode)
@@ -47,7 +50,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
+    public func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let version = try await authService.version()
@@ -58,7 +61,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
+    public func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let status = try await authService.signOut()
@@ -69,7 +72,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestedCode(
+    public func getSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
@@ -98,7 +101,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getNextSuggestedCode(
+    public func getNextSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
@@ -123,7 +126,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getPreviousSuggestedCode(
+    public func getPreviousSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
@@ -148,7 +151,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestionRejectedCode(
+    public func getSuggestionRejectedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
@@ -173,7 +176,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestionAcceptedCode(
+    public func getSuggestionAcceptedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {

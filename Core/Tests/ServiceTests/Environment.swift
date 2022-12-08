@@ -1,29 +1,32 @@
 import AppKit
+import Client
 import CopilotModel
 import CopilotService
 import Foundation
 import XCTest
+import XPCShared
 
-enum Environment {
-    static var now = { Date() }
+@testable import Service
 
-    static var fetchCurrentProjectRootURL: () async throws -> URL? = {
-        return URL(fileURLWithPath: "/path/to/project")
+func clearEnvironment() {
+    Environment.now = { Date() }
+
+    Environment.fetchCurrentProjectRootURL = {
+        URL(fileURLWithPath: "/path/to/project")
     }
 
-    static var fetchCurrentFileURL: () async throws -> URL = {
-        return URL(fileURLWithPath: "/path/to/project/file.swift")
+    Environment.fetchCurrentFileURL = {
+        URL(fileURLWithPath: "/path/to/project/file.swift")
     }
 
-    static var createAuthService: () -> CopilotAuthServiceType = {
+    Environment.createAuthService = {
         fatalError("")
     }
 
-    static var createSuggestionService: (_ projectRootURL: URL) -> CopilotSuggestionServiceType = {
+    Environment.createSuggestionService = {
         _ in fatalError("")
     }
 }
-
 
 func getService() -> AsyncXPCService {
     AsyncXPCService(connection: {

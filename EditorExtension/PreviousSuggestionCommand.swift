@@ -1,3 +1,4 @@
+import Client
 import CopilotModel
 import Foundation
 import XcodeKit
