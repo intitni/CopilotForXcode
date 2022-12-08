@@ -232,14 +232,14 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 
                 let canAutoTrigger = workspace.canAutoTriggerGetSuggestions(
                     forFileAt: fileURL,
-                    content: editor.content,
+                    lines: editor.lines,
                     cursorPosition: editor.cursorPosition
                 )
                 guard canAutoTrigger else {
                     reply(nil, nil)
                     return
                 }
-                print("update")
+
                 let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,

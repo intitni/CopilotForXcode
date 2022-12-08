@@ -110,10 +110,17 @@ enum Environment {
         guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
         let bundleName = Bundle.main.object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
         
+        /// check if menu is open, if not, click the menu item.
         let appleScript = """
         tell application "System Events"
             set proc to item 1 of (processes whose unix id is \(activeXcode.processIdentifier))
             tell proc
+                repeat with theMenu in menus of menu bar 1
+                    set theValue to value of attribute "AXVisibleChildren" of theMenu
+                    if theValue is not {} then
+                        return
+                    end if
+                end repeat
                 click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
             end tell
         end tell
