@@ -4,7 +4,7 @@ import Foundation
 import XcodeKit
 
 class TurnOffRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Turn Off Realtime Suggestions" }
+    var name: String { "Turn Off Realtime Suggestions for Workpace" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,

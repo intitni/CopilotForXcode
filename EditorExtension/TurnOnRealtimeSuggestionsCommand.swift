@@ -4,7 +4,7 @@ import Foundation
 import XcodeKit
 
 class TurnOnRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Turn On Realtime Suggestions" }
+    var name: String { "Turn On Realtime Suggestions for Workpace" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
