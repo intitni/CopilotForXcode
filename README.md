@@ -84,11 +84,11 @@ fi
 
 > A: Check the list in `Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
 >  
-> If you have just **updated the app**, consider reloading XPCService in app or trying removing the Launch Agents and set it up again!
+> If you have just **updated the app**, consider restarting XPCService in app or trying removing the Launch Agents and set it up again!
 
 **Q: I turned on realtime suggestions, but nothing happens**
 
-> A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to reload the XPC Service.
+> A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
 
 **Q: Will it work in future Xcode updates?**
 
