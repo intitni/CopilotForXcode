@@ -12,6 +12,12 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - Public network connection.
 - Active GitHub Copilot subscription.  
 
+## Permissions Required
+
+- Accessibility
+- Folder Access
+- Input Monitoring (Realtime Suggestions Only)
+
 ## Installation and Setup
 
 1. Download the Copilot for Xcode.app from the latest release, and extract it to the Applications folder.
@@ -25,6 +31,39 @@ The first time the actions run, the extension will ask for 2 types of permission
 1. Accessibility API: which the extension uses to get the editing file path.
 2. Folder Access: the extension needs, to run some Apple Scripts to get the project/workspace path. 
 
+## Actions
+
+- Get Suggestions: Get suggestions for the editing file at the current cursor position.
+- Next Suggestion: If there is more than 1 suggestion, switch to the next one.
+- Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
+- Accept Suggestion: Add the suggestion to the code.
+- Reject Suggestion: Remove the suggestion comments.
+- Turn On Realtime Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
+- Turn Off Realtime Suggestions: Turns the real-time suggestions off.
+- Realtime Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this action to bring you real-time suggestions. 
+
+**About realtime suggestions**
+
+The implementation feels fragile to me.
+
+The magic behind it is that it will keep calling the action from the menu when you are not typing, clicking or moving your mouse. So it will have to listen to those events, I am not sure if people like it.
+
+Hope that next year, Apple can spend some time on Xcode Extensions.  
+
+## Prevent Suggestions Being Committed
+
+Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening. Maybe later I will add an action for that.
+
+```sh
+#!/bin/sh
+
+# Check if the commit message contains the string
+if git diff --cached --diff-filter=A | grep -q "/*========== Copilot Suggestion"; then
+  echo "Error: Commit contains Copilot suggestions."
+  exit 1
+fi
+```
+
 ## Limitations
 
 - The first run of the extension will be slow. Be patient.
@@ -37,7 +76,7 @@ The first time the actions run, the extension will ask for 2 types of permission
 
 > A: Please make sure it's turned on in `Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
 
-**Q: The extension says it can't connect to the XPC service / helper.**
+**Q: The extension says it can't connect to the XPC service/helper.**
 
 > A: Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
 
@@ -45,7 +84,11 @@ The first time the actions run, the extension will ask for 2 types of permission
 
 > A: Check the list in `Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
 >  
-> If you have just **updated the app**, consider trying removing the Launch Agents and set it up again!
+> If you have just **updated the app**, consider reloading XPCService in app or trying removing the Launch Agents and set it up again!
+
+**Q: I turned on realtime suggestions, but nothing happens**
+
+> A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to reload the XPC Service.
 
 **Q: Will it work in future Xcode updates?**
 
@@ -54,6 +97,3 @@ The first time the actions run, the extension will ask for 2 types of permission
 ## How It Works
 Check my [other extension](https://github.com/intitni/XccurateFormatter), you can find a short introduction there. 
 
-## Todo
-
-- [ ] Auto trigger Copilot while editing (I have some ideas but not sure if they will work).
