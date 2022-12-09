@@ -8,7 +8,7 @@ public protocol XPCServiceProtocol {
     func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void)
     func signOut(withReply reply: @escaping (String?, Error?) -> Void)
     func getVersion(withReply reply: @escaping (String?, Error?) -> Void)
-    
+
     func getSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (_ updatedContent: Data?, Error?) -> Void
@@ -29,4 +29,10 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (_ updatedContent: Data?, Error?) -> Void
     )
+    func getRealtimeSuggestedCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    )
+    
+    func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void)
 }

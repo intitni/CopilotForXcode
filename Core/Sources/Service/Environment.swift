@@ -1,12 +1,13 @@
 import AppKit
-import Foundation
 import CopilotService
+import Foundation
 
 private struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     var errorDescription: String? {
         "Permission not granted to use Accessibility API. Please turn in on in Settings.app."
     }
 }
+
 private struct FailedToFetchFileURLError: Error, LocalizedError {
     var errorDescription: String? {
         "Failed to fetch editing file url."
@@ -23,17 +24,7 @@ enum Environment {
         end tell
         """
 
-        let task = Process()
-        task.launchPath = "/usr/bin/osascript"
-        task.arguments = ["-e", appleScript]
-        let outpipe = Pipe()
-        task.standardOutput = outpipe
-        try task.run()
-        await Task.yield()
-        task.waitUntilExit()
-        if let data = try outpipe.fileHandleForReading.readToEnd(),
-           let path = String(data: data, encoding: .utf8)
-        {
+        if let path = try await runAppleScript(appleScript) {
             let trimmedNewLine = path.trimmingCharacters(in: .newlines)
             var url = URL(fileURLWithPath: trimmedNewLine)
             while !FileManager.default.fileIsDirectory(atPath: url.path) ||
@@ -96,13 +87,46 @@ enum Environment {
 
         throw FailedToFetchFileURLError()
     }
-    
+
     static var createAuthService: () -> CopilotAuthServiceType = {
-        return CopilotAuthService()
+        CopilotAuthService()
     }
-    
+
     static var createSuggestionService: (_ projectRootURL: URL) -> CopilotSuggestionServiceType = { projectRootURL in
-        return CopilotSuggestionService(projectRootURL: projectRootURL)
+        CopilotSuggestionService(projectRootURL: projectRootURL)
+    }
+
+    static var triggerAction: (_ name: String) async throws -> Void = { name in
+        var xcodes = [NSRunningApplication]()
+        var retryCount = 0
+        // Sometimes runningApplications returns 0 items.
+        while xcodes.isEmpty, retryCount < 5 {
+            xcodes = NSRunningApplication
+                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
+            if retryCount > 0 { try await Task.sleep(nanoseconds: 50_000_000) }
+            retryCount += 1
+        }
+
+        guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
+        let bundleName = Bundle.main.object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
+        
+        /// check if menu is open, if not, click the menu item.
+        let appleScript = """
+        tell application "System Events"
+            set proc to item 1 of (processes whose unix id is \(activeXcode.processIdentifier))
+            tell proc
+                repeat with theMenu in menus of menu bar 1
+                    set theValue to value of attribute "AXVisibleChildren" of theMenu
+                    if theValue is not {} then
+                        return
+                    end if
+                end repeat
+                click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
+            end tell
+        end tell
+        """
+
+        try await runAppleScript(appleScript)
     }
 }
 
