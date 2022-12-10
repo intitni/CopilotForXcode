@@ -2,10 +2,9 @@ import Client
 import CopilotModel
 import Foundation
 import XcodeKit
-import XPCShared
 
-class AcceptSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Accept Suggestion" }
+class TurnOffRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Turn Off Realtime Suggestions for Workspace" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
@@ -14,11 +13,7 @@ class AcceptSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
         Task {
             do {
                 let service = try getService()
-                if let content = try await service.getSuggestionAcceptedCode(
-                    editorContent: .init(invocation)
-                ) {
-                    invocation.accept(content)
-                }
+                try await service.setAutoSuggestion(enabled: false)
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

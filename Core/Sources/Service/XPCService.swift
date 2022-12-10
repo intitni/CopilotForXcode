@@ -2,19 +2,36 @@ import AppKit
 import CopilotService
 import Foundation
 import LanguageServerProtocol
+import XPCShared
 
 @globalActor enum ServiceActor {
     public actor TheActor {}
     public static let shared = TheActor()
 }
 
-class XPCService: NSObject, XPCServiceProtocol {
+@ServiceActor
+var workspaces = [URL: Workspace]()
+
+public class XPCService: NSObject, XPCServiceProtocol {
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
-    @ServiceActor
-    var workspaces = [URL: Workspace]()
 
-    func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
+    override public init() {
+        super.init()
+        let identifier = ObjectIdentifier(self)
+        Task {
+            await AutoTrigger.shared.start(by: identifier)
+        }
+    }
+
+    deinit {
+        let identifier = ObjectIdentifier(self)
+        Task {
+            await AutoTrigger.shared.stop(by: identifier)
+        }
+    }
+
+    public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let status = try await authService.checkStatus()
@@ -25,7 +42,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let (verificationLink, userCode) = try await authService.signInInitiate()
@@ -36,7 +53,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let (username, status) = try await authService.signInConfirm(userCode: userCode)
@@ -47,7 +64,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
+    public func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let version = try await authService.version()
@@ -58,7 +75,7 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
+    public func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
                 let status = try await authService.signOut()
@@ -69,18 +86,16 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestedCode(
+    public func getSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-                workspaces[workspaceURL] = workspace
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
                 let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -98,17 +113,16 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getNextSuggestedCode(
+    public func getNextSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
                 let updatedContent = workspace.getNextSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -123,17 +137,16 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getPreviousSuggestedCode(
+    public func getPreviousSuggestedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
                 let updatedContent = workspace.getPreviousSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -148,17 +161,16 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestionRejectedCode(
+    public func getSuggestionRejectedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
                 let updatedContent = workspace.getSuggestionRejectedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -173,17 +185,16 @@ class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    func getSuggestionAcceptedCode(
+    public func getSuggestionAcceptedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let projectURL = try await Environment.fetchCurrentProjectRootURL()
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspaceURL = projectURL ?? fileURL
-                let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
                 let updatedContent = workspace.getSuggestionAcceptedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -196,6 +207,63 @@ class XPCService: NSObject, XPCServiceProtocol {
                 reply(nil, NSError.from(error))
             }
         }
+    }
+
+    public func getRealtimeSuggestedCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        Task { @ServiceActor in
+            do {
+                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
+                let fileURL = try await Environment.fetchCurrentFileURL()
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
+                let canAutoTrigger = workspace.canAutoTriggerGetSuggestions(
+                    forFileAt: fileURL,
+                    lines: editor.lines,
+                    cursorPosition: editor.cursorPosition
+                )
+                guard canAutoTrigger else {
+                    reply(nil, nil)
+                    return
+                }
+
+                let updatedContent = try await workspace.getSuggestedCode(
+                    forFileAt: fileURL,
+                    content: editor.content,
+                    lines: editor.lines,
+                    cursorPosition: editor.cursorPosition,
+                    tabSize: editor.tabSize,
+                    indentSize: editor.indentSize,
+                    usesTabsForIndentation: editor.usesTabsForIndentation
+                )
+                reply(try JSONEncoder().encode(updatedContent), nil)
+            } catch {
+                print(error)
+                reply(nil, NSError.from(error))
+            }
+        }
+    }
+
+    public func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void) {
+        Task { @ServiceActor in
+            let fileURL = try await Environment.fetchCurrentFileURL()
+            let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            workspace.isRealtimeSuggestionEnabled = enabled
+            reply(nil)
+        }
+    }
+}
+
+extension XPCService {
+    @ServiceActor
+    func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
+        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
+        let workspaceURL = projectURL ?? fileURL
+        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+        workspaces[workspaceURL] = workspace
+        return workspace
     }
 }
 

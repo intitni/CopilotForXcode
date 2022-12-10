@@ -2,18 +2,23 @@ import CopilotModel
 import CopilotService
 import Foundation
 import SuggestionInjector
+import XPCShared
 
 @ServiceActor
 final class Filespace {
+    struct Snapshot: Equatable {
+        var linesHash: Int
+        var cursorPosition: CursorPosition
+    }
+
     let fileURL: URL
     var suggestions: [CopilotCompletion] = [] {
         didSet { lastSuggestionUpdateTime = Environment.now() }
     }
 
     var suggestionIndex: Int = 0
-    var latestContentHash: Int = 0
-    var latestCursorPosition: CursorPosition = .init(line: -1, character: -1)
     var currentSuggestionLineRange: ClosedRange<Int>?
+    var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
 
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
     var isExpired: Bool {
@@ -40,12 +45,28 @@ final class Workspace {
     }
 
     var filespaces = [URL: Filespace]()
+    var isRealtimeSuggestionEnabled = false
 
     private lazy var service: CopilotSuggestionServiceType = Environment
         .createSuggestionService(projectRootURL)
 
     init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
+    }
+
+    func canAutoTriggerGetSuggestions(
+        forFileAt fileURL: URL,
+        lines: [String],
+        cursorPosition: CursorPosition
+    ) -> Bool {
+        guard isRealtimeSuggestionEnabled else { return false }
+        guard let filespace = filespaces[fileURL] else { return true }
+        if let range = filespace.currentSuggestionLineRange,
+           range.contains(cursorPosition.line)
+        { return false }
+        if lines.hashValue != filespace.suggestionSourceSnapshot.linesHash { return true }
+        if cursorPosition != filespace.suggestionSourceSnapshot.cursorPosition { return true }
+        return false
     }
 
     func getSuggestedCode(
@@ -66,8 +87,6 @@ final class Workspace {
         if filespaces[fileURL] == nil {
             filespaces[fileURL] = filespace
         }
-        filespace.latestContentHash = content.hashValue
-        filespace.latestCursorPosition = cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
         injector.rejectCurrentSuggestions(
@@ -75,6 +94,12 @@ final class Workspace {
             cursorPosition: &cursorPosition,
             extraInfo: &extraInfo
         )
+
+        filespace.suggestionSourceSnapshot = .init(
+            linesHash: lines.hashValue,
+            cursorPosition: cursorPosition
+        )
+
         let completions = try await service.getCompletions(
             fileURL: fileURL,
             content: lines.joined(separator: ""),
@@ -99,6 +124,9 @@ final class Workspace {
             count: completions.count,
             extraInfo: &extraInfo
         )
+
+        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
+
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -113,16 +141,16 @@ final class Workspace {
         cursorPosition: CursorPosition
     ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = filespaces[fileURL],
-              fileSuggestion.suggestions.count > 1
+        guard let filespace = filespaces[fileURL],
+              filespace.suggestions.count > 1
         else { return .init(content: content, modifications: []) }
         var cursorPosition = cursorPosition
-        fileSuggestion.suggestionIndex += 1
-        if fileSuggestion.suggestionIndex >= fileSuggestion.suggestions.endIndex {
-            fileSuggestion.suggestionIndex = 0
+        filespace.suggestionIndex += 1
+        if filespace.suggestionIndex >= filespace.suggestions.endIndex {
+            filespace.suggestionIndex = 0
         }
 
-        let suggestion = fileSuggestion.suggestions[fileSuggestion.suggestionIndex]
+        let suggestion = filespace.suggestions[filespace.suggestionIndex]
         let injector = SuggestionInjector()
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = lines
@@ -134,10 +162,13 @@ final class Workspace {
         injector.proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
-            index: fileSuggestion.suggestionIndex,
-            count: fileSuggestion.suggestions.count,
+            index: filespace.suggestionIndex,
+            count: filespace.suggestions.count,
             extraInfo: &extraInfo
         )
+
+        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
+
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -152,16 +183,16 @@ final class Workspace {
         cursorPosition: CursorPosition
     ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = filespaces[fileURL],
-              fileSuggestion.suggestions.count > 1
+        guard let filespace = filespaces[fileURL],
+              filespace.suggestions.count > 1
         else { return .init(content: content, modifications: []) }
         var cursorPosition = cursorPosition
-        fileSuggestion.suggestionIndex -= 1
-        if fileSuggestion.suggestionIndex < 0 {
-            fileSuggestion.suggestionIndex = fileSuggestion.suggestions.endIndex - 1
+        filespace.suggestionIndex -= 1
+        if filespace.suggestionIndex < 0 {
+            filespace.suggestionIndex = filespace.suggestions.endIndex - 1
         }
         var extraInfo = SuggestionInjector.ExtraInfo()
-        let suggestion = fileSuggestion.suggestions[fileSuggestion.suggestionIndex]
+        let suggestion = filespace.suggestions[filespace.suggestionIndex]
         let injector = SuggestionInjector()
         var lines = lines
         injector.rejectCurrentSuggestions(
@@ -172,10 +203,13 @@ final class Workspace {
         injector.proposeSuggestion(
             intoContentWithoutSuggestion: &lines,
             completion: suggestion,
-            index: fileSuggestion.suggestionIndex,
-            count: fileSuggestion.suggestions.count,
+            index: filespace.suggestionIndex,
+            count: filespace.suggestions.count,
             extraInfo: &extraInfo
         )
+
+        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
+
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -190,16 +224,16 @@ final class Workspace {
         cursorPosition: CursorPosition
     ) -> UpdatedContent {
         lastTriggerDate = Environment.now()
-        guard let fileSuggestion = filespaces[fileURL],
-              !fileSuggestion.suggestions.isEmpty,
-              fileSuggestion.suggestionIndex >= 0,
-              fileSuggestion.suggestionIndex < fileSuggestion.suggestions.endIndex
+        guard let filespace = filespaces[fileURL],
+              !filespace.suggestions.isEmpty,
+              filespace.suggestionIndex >= 0,
+              filespace.suggestionIndex < filespace.suggestions.endIndex
         else { return .init(content: content, modifications: []) }
 
         var cursorPosition = cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
-        var allSuggestions = fileSuggestion.suggestions
-        let suggestion = allSuggestions.remove(at: fileSuggestion.suggestionIndex)
+        var allSuggestions = filespace.suggestions
+        let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
         let injector = SuggestionInjector()
         var lines = lines
         injector.rejectCurrentSuggestions(

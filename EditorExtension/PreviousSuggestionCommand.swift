@@ -1,8 +1,11 @@
+import Client
 import CopilotModel
 import Foundation
 import XcodeKit
 
-class PreviousSuggestionCommand: NSObject, XCSourceEditorCommand {
+class PreviousSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Previous Suggestion" }
+
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
@@ -10,9 +13,11 @@ class PreviousSuggestionCommand: NSObject, XCSourceEditorCommand {
         Task {
             do {
                 let service = try getService()
-                invocation.accept(try await service.getPreviousSuggestedCode(
+                if let content = try await service.getPreviousSuggestedCode(
                     editorContent: .init(invocation)
-                ))
+                ) {
+                    invocation.accept(content)
+                }
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

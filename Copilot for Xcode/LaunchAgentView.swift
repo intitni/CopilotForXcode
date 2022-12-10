@@ -4,7 +4,8 @@ struct LaunchAgentView: View {
     @State var errorMessage: String?
     @State var isDidRemoveLaunchAgentAlertPresented = false
     @State var isDidSetupLaunchAgentAlertPresented = false
-
+    @State var isDidRestartLaunchAgentAlertPresented = false
+    
     var body: some View {
         Section {
             HStack {
@@ -41,6 +42,18 @@ struct LaunchAgentView: View {
                 .alert(isPresented: $isDidRemoveLaunchAgentAlertPresented) {
                     .init(
                         title: Text("Launch Agent Removed"),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
+
+                Button(action: {
+                    LaunchAgentManager().restartLaunchAgent()
+                    isDidRestartLaunchAgentAlertPresented = true
+                }) {
+                    Text("Restart XPC Service")
+                }.alert(isPresented: $isDidRestartLaunchAgentAlertPresented) {
+                    .init(
+                        title: Text("Launch Agent Restarted"),
                         dismissButton: .default(Text("OK"))
                     )
                 }

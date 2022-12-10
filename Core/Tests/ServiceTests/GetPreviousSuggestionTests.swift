@@ -2,12 +2,14 @@ import CopilotModel
 import CopilotService
 import XCTest
 
+@testable import Service
 @testable import SuggestionInjector
 
 final class GetPreviousSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
+        await clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
@@ -27,7 +29,7 @@ final class GetPreviousSuggestionTests: XCTestCase {
             completion(
                 text: """
 
-                struct Wolve {}
+                struct Wolf {}
                 """,
                 range: .init(
                     start: .init(line: 7, character: 0),
@@ -36,62 +38,69 @@ final class GetPreviousSuggestionTests: XCTestCase {
             ),
         ]
 
-        var content = """
-        struct Cat {}
+        let lines = [
+            "struct Cat {}\n",
+            "\n",
+        ]
 
-        """
-        
         let result1 = try await service.getSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(),
+            content: lines.joined(),
+            lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 0),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
-        
-        content = result1.content
+        ))!
 
-        let result2 = try await service.getNextSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(),
+        let result1Lines = lines.applying(result1.modifications)
+
+        let result2 = try await service.getPreviousSuggestedCode(editorContent: .init(
+            content: result1Lines.joined(),
+            lines: result1Lines,
             uti: "",
             cursorPosition: .init(line: 3, character: 5),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
+        let result2Lines = result1Lines.applying(result2.modifications)
+
+        XCTAssertEqual(result2Lines.joined(), result2.content)
         XCTAssertEqual(result2.content, """
         struct Cat {}
+        
         /*========== Copilot Suggestion 2/2
 
-        struct Wolve {}
+        struct Wolf {}
         *///======== End of Copilot Suggestion
 
         """, "Previous suggestions should be removed.")
 
         XCTAssertEqual(
             result2.newCursor,
-            .init(line: 0, character: 0),
+            .init(line: 1, character: 0),
             "The cursor was in the deleted suggestion, reset it to 1 line above the suggestion, set its col to 0"
         )
-        
-        content = result2.content
-        
-        let result3 = try await service.getNextSuggestedCode(editorContent: .init(
-            content: content,
-            lines: content.breakLines(),
+
+        let result3 = try await service.getPreviousSuggestedCode(editorContent: .init(
+            content: result2Lines.joined(),
+            lines: result2Lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 3),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
-        
+        ))!
+
+        let result3Lines = lines.applying(result3.modifications)
+
+        XCTAssertEqual(result3.content, result3Lines.joined())
+
         XCTAssertEqual(result3.content, """
         struct Cat {}
+        
         /*========== Copilot Suggestion 1/2
 
         struct Dog {}
@@ -99,6 +108,6 @@ final class GetPreviousSuggestionTests: XCTestCase {
 
         """, "Cycling through the suggestions.")
 
-        XCTAssertEqual( result3.newCursor, .init(line: 0, character: 3) )
+        XCTAssertEqual(result3.newCursor, .init(line: 0, character: 3))
     }
 }

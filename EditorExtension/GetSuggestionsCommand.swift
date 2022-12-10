@@ -1,8 +1,11 @@
+import Client
 import CopilotModel
 import Foundation
 import XcodeKit
 
-class GetSuggestionsCommand: NSObject, XCSourceEditorCommand {
+class GetSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Get Suggestions" }
+
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
@@ -10,9 +13,11 @@ class GetSuggestionsCommand: NSObject, XCSourceEditorCommand {
         Task {
             do {
                 let service = try getService()
-                invocation.accept(try await service.getSuggestedCode(
+                if let content = try await service.getSuggestedCode(
                     editorContent: .init(invocation)
-                ))
+                ) {
+                    invocation.accept(content)
+                }
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

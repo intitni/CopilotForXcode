@@ -1,9 +1,10 @@
 import Foundation
+import XPCShared
 
-private var asyncService: AsyncXPCService?
-private var shared = XPCService()
+var asyncService: AsyncXPCService?
+var shared = XPCService()
 
-func getService() throws -> AsyncXPCService {
+public func getService() throws -> AsyncXPCService {
     if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
         struct RunningInPreview: Error {}
         throw RunningInPreview()
@@ -18,7 +19,7 @@ func getService() throws -> AsyncXPCService {
     return service
 }
 
-private class XPCService {
+class XPCService {
     var isInvalidated = false
 
     lazy var connection: NSXPCConnection = {

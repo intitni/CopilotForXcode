@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C8009BFF2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */; };
+		C8009C012941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */; };
+		C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */; };
 		C814588F2939EFDC00135263 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C814588E2939EFDC00135263 /* Cocoa.framework */; };
 		C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81458932939EFDC00135263 /* SourceEditorExtension.swift */; };
 		C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81458952939EFDC00135263 /* GetSuggestionsCommand.swift */; };
@@ -23,47 +26,20 @@
 		C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */; };
 		C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */; };
 		C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */; };
-		C84EB9A3293B4D4300205562 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84EB9A2293B4D4300205562 /* Helpers.swift */; };
-		C84EB9AD293B52BE00205562 /* GetSuggestionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84EB9AC293B52BE00205562 /* GetSuggestionsTests.swift */; };
-		C84EB9B5293B532000205562 /* CopilotService in Frameworks */ = {isa = PBXBuildFile; productRef = C84EB9B4293B532000205562 /* CopilotService */; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
 		C8520307293CF13600460097 /* CopilotForXcodeXPCService in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C81458B5293A015C00135263 /* CopilotForXcodeXPCService */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C87B038C293A5D4300C77EAE /* XPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038B293A5D4300C77EAE /* XPCService.swift */; };
-		C87B038E293A5D9000C77EAE /* XPCServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */; };
-		C87B0390293A5D9800C77EAE /* XPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038F293A5D9800C77EAE /* XPCService.swift */; };
-		C87B0391293A61B000C77EAE /* XPCServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */; };
-		C87B0392293A61B300C77EAE /* XPCServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */; };
-		C87B0398293B215F00C77EAE /* CopilotModel in Frameworks */ = {isa = PBXBuildFile; productRef = C87B0397293B215F00C77EAE /* CopilotModel */; };
-		C87B039A293B217200C77EAE /* CopilotModel in Frameworks */ = {isa = PBXBuildFile; productRef = C87B0399293B217200C77EAE /* CopilotModel */; };
-		C87B039C293B217800C77EAE /* CopilotService in Frameworks */ = {isa = PBXBuildFile; productRef = C87B039B293B217800C77EAE /* CopilotService */; };
-		C87B039F293B244A00C77EAE /* AsyncXPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B039D293B240B00C77EAE /* AsyncXPCService.swift */; };
-		C87B03A0293B244B00C77EAE /* AsyncXPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B039D293B240B00C77EAE /* AsyncXPCService.swift */; };
-		C87B03A2293B248000C77EAE /* XPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038B293A5D4300C77EAE /* XPCService.swift */; };
 		C87B03A5293B261200C77EAE /* AcceptSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03A4293B261200C77EAE /* AcceptSuggestionCommand.swift */; };
 		C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03A6293B261900C77EAE /* RejectSuggestionCommand.swift */; };
 		C87B03A9293B262600C77EAE /* NextSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */; };
 		C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */; };
 		C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; };
 		C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		C87B03B0293B309100C77EAE /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03AF293B309100C77EAE /* Workspace.swift */; };
-		C87B03B2293B352000C77EAE /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03B1293B352000C77EAE /* Environment.swift */; };
 		C87B03B4293B393100C77EAE /* ServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03B3293B393100C77EAE /* ServiceDelegate.swift */; };
 		C87F3E60293DC600008523E8 /* Section.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E5F293DC600008523E8 /* Section.swift */; };
 		C87F3E62293DD004008523E8 /* Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E61293DD004008523E8 /* Styles.swift */; };
-		C87F3E64293DE675008523E8 /* Environment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E63293DE675008523E8 /* Environment.swift */; };
-		C87F3E65293DE74A008523E8 /* AsyncXPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B039D293B240B00C77EAE /* AsyncXPCService.swift */; };
-		C87F3E66293DE750008523E8 /* XPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038F293A5D9800C77EAE /* XPCService.swift */; };
-		C87F3E67293DE754008523E8 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03AF293B309100C77EAE /* Workspace.swift */; };
-		C87F3E68293DE758008523E8 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84EB9A2293B4D4300205562 /* Helpers.swift */; };
-		C87F3E69293DEA8B008523E8 /* XPCServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */; };
-		C87F3E6B293E26AD008523E8 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E6A293E26AD008523E8 /* Models.swift */; };
-		C87F3E6C293E26AD008523E8 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E6A293E26AD008523E8 /* Models.swift */; };
-		C87F3E6D293E26AD008523E8 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E6A293E26AD008523E8 /* Models.swift */; };
-		C8C04214293E4AE80083C454 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E6A293E26AD008523E8 /* Models.swift */; };
-		C8C04216293ECE230083C454 /* GetNextSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C04215293ECE230083C454 /* GetNextSuggestionTests.swift */; };
-		C8C04218293ED0700083C454 /* GetPreviousSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C04217293ED0700083C454 /* GetPreviousSuggestionTests.swift */; };
-		C8C0421A293ED1EB0083C454 /* AcceptSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C04219293ED1EB0083C454 /* AcceptSuggestionTests.swift */; };
-		C8C0421C293ED4B20083C454 /* RejectSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C0421B293ED4B20083C454 /* RejectSuggestionTests.swift */; };
+		C882175A294187E100A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C8821759294187E100A22FD3 /* Client */; };
+		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
+		C882175E294187F900A22FD3 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C882175D294187F900A22FD3 /* Service */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,13 +49,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = C814588B2939EFDC00135263;
 			remoteInfo = EditorExtension;
-		};
-		C84EB9AE293B52BE00205562 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C8189B0E2938972F00C9DCDA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C8189B152938972F00C9DCDA;
-			remoteInfo = "Copilot for Xcode";
 		};
 		C8520304293CF0D400460097 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -157,6 +126,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOnRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
+		C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOffRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
+		C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeSuggestionCommand.swift; sourceTree = "<group>"; };
 		C814588C2939EFDC00135263 /* Copilot.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Copilot.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C814588E2939EFDC00135263 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		C81458902939EFDC00135263 /* XcodeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XcodeKit.framework; path = Library/Frameworks/XcodeKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -183,31 +155,16 @@
 		C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionView.swift; sourceTree = "<group>"; };
 		C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentView.swift; sourceTree = "<group>"; };
 		C848181C293A017300966BB2 /* XPCService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = XPCService.entitlements; sourceTree = "<group>"; };
-		C84EB9A2293B4D4300205562 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
-		C84EB9AA293B52BE00205562 /* XCPServiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XCPServiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C84EB9AC293B52BE00205562 /* GetSuggestionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetSuggestionsTests.swift; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		C87B038B293A5D4300C77EAE /* XPCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCService.swift; sourceTree = "<group>"; };
-		C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCServiceProtocol.swift; sourceTree = "<group>"; };
-		C87B038F293A5D9800C77EAE /* XPCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCService.swift; sourceTree = "<group>"; };
-		C87B039D293B240B00C77EAE /* AsyncXPCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncXPCService.swift; sourceTree = "<group>"; };
 		C87B03A3293B24AB00C77EAE /* Copilot-for-Xcode-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Copilot-for-Xcode-Info.plist"; sourceTree = SOURCE_ROOT; };
 		C87B03A4293B261200C77EAE /* AcceptSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03A6293B261900C77EAE /* RejectSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RejectSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousSuggestionCommand.swift; sourceTree = "<group>"; };
-		C87B03AF293B309100C77EAE /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
-		C87B03B1293B352000C77EAE /* Environment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
 		C87B03B3293B393100C77EAE /* ServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDelegate.swift; sourceTree = "<group>"; };
 		C87F3E5F293DC600008523E8 /* Section.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Section.swift; sourceTree = "<group>"; };
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
-		C87F3E63293DE675008523E8 /* Environment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Environment.swift; sourceTree = "<group>"; };
-		C87F3E6A293E26AD008523E8 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		C8C04215293ECE230083C454 /* GetNextSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetNextSuggestionTests.swift; sourceTree = "<group>"; };
-		C8C04217293ED0700083C454 /* GetPreviousSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetPreviousSuggestionTests.swift; sourceTree = "<group>"; };
-		C8C04219293ED1EB0083C454 /* AcceptSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptSuggestionTests.swift; sourceTree = "<group>"; };
-		C8C0421B293ED4B20083C454 /* RejectSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RejectSuggestionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,7 +174,7 @@
 			files = (
 				C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */,
 				C814588F2939EFDC00135263 /* Cocoa.framework in Frameworks */,
-				C87B039A293B217200C77EAE /* CopilotModel in Frameworks */,
+				C882175C294187EF00A22FD3 /* Client in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,7 +182,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C87B039C293B217800C77EAE /* CopilotService in Frameworks */,
+				C882175E294187F900A22FD3 /* Service in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,15 +190,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C87B0398293B215F00C77EAE /* CopilotModel in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C84EB9A7293B52BE00205562 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C84EB9B5293B532000205562 /* CopilotService in Frameworks */,
+				C882175A294187E100A22FD3 /* Client in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,6 +216,9 @@
 				C87B03A6293B261900C77EAE /* RejectSuggestionCommand.swift */,
 				C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */,
 				C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */,
+				C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */,
+				C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */,
+				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
 			);
@@ -276,15 +228,10 @@
 		C81458B6293A015C00135263 /* XPCService */ = {
 			isa = PBXGroup;
 			children = (
-				C87B03A1293B245A00C77EAE /* Shared */,
 				C848181C293A017300966BB2 /* XPCService.entitlements */,
 				C81458BC293A016100135263 /* Info.plist */,
 				C81458B7293A015C00135263 /* main.swift */,
 				C87B03B3293B393100C77EAE /* ServiceDelegate.swift */,
-				C87B038F293A5D9800C77EAE /* XPCService.swift */,
-				C87B03AF293B309100C77EAE /* Workspace.swift */,
-				C87B03B1293B352000C77EAE /* Environment.swift */,
-				C84EB9A2293B4D4300205562 /* Helpers.swift */,
 			);
 			path = XPCService;
 			sourceTree = "<group>";
@@ -300,7 +247,6 @@
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
 				C81458922939EFDC00135263 /* EditorExtension */,
 				C81458B6293A015C00135263 /* XPCService */,
-				C84EB9AB293B52BE00205562 /* XCPServiceTests */,
 				C814588D2939EFDC00135263 /* Frameworks */,
 				C8189B172938972F00C9DCDA /* Products */,
 			);
@@ -312,7 +258,6 @@
 				C8189B162938972F00C9DCDA /* Copilot for Xcode Dev.app */,
 				C814588C2939EFDC00135263 /* Copilot.appex */,
 				C81458B5293A015C00135263 /* CopilotForXcodeXPCService */,
-				C84EB9AA293B52BE00205562 /* XCPServiceTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -345,30 +290,6 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		C84EB9AB293B52BE00205562 /* XCPServiceTests */ = {
-			isa = PBXGroup;
-			children = (
-				C87F3E63293DE675008523E8 /* Environment.swift */,
-				C84EB9AC293B52BE00205562 /* GetSuggestionsTests.swift */,
-				C8C04215293ECE230083C454 /* GetNextSuggestionTests.swift */,
-				C8C04217293ED0700083C454 /* GetPreviousSuggestionTests.swift */,
-				C8C04219293ED1EB0083C454 /* AcceptSuggestionTests.swift */,
-				C8C0421B293ED4B20083C454 /* RejectSuggestionTests.swift */,
-			);
-			path = XCPServiceTests;
-			sourceTree = "<group>";
-		};
-		C87B03A1293B245A00C77EAE /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				C87B038B293A5D4300C77EAE /* XPCService.swift */,
-				C87B038D293A5D9000C77EAE /* XPCServiceProtocol.swift */,
-				C87B039D293B240B00C77EAE /* AsyncXPCService.swift */,
-				C87F3E6A293E26AD008523E8 /* Models.swift */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -387,7 +308,7 @@
 			);
 			name = EditorExtension;
 			packageProductDependencies = (
-				C87B0399293B217200C77EAE /* CopilotModel */,
+				C882175B294187EF00A22FD3 /* Client */,
 			);
 			productName = EditorExtension;
 			productReference = C814588C2939EFDC00135263 /* Copilot.appex */;
@@ -408,7 +329,7 @@
 			);
 			name = XPCService;
 			packageProductDependencies = (
-				C87B039B293B217800C77EAE /* CopilotService */,
+				C882175D294187F900A22FD3 /* Service */,
 			);
 			productName = XPCService;
 			productReference = C81458B5293A015C00135263 /* CopilotForXcodeXPCService */;
@@ -433,32 +354,11 @@
 			);
 			name = "Copilot for Xcode";
 			packageProductDependencies = (
-				C87B0397293B215F00C77EAE /* CopilotModel */,
+				C8821759294187E100A22FD3 /* Client */,
 			);
 			productName = "Copilot for Xcode";
 			productReference = C8189B162938972F00C9DCDA /* Copilot for Xcode Dev.app */;
 			productType = "com.apple.product-type.application";
-		};
-		C84EB9A9293B52BE00205562 /* XCPServiceTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C84EB9B0293B52BE00205562 /* Build configuration list for PBXNativeTarget "XCPServiceTests" */;
-			buildPhases = (
-				C84EB9A6293B52BE00205562 /* Sources */,
-				C84EB9A7293B52BE00205562 /* Frameworks */,
-				C84EB9A8293B52BE00205562 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C84EB9AF293B52BE00205562 /* PBXTargetDependency */,
-			);
-			name = XCPServiceTests;
-			packageProductDependencies = (
-				C84EB9B4293B532000205562 /* CopilotService */,
-			);
-			productName = XCPServiceTests;
-			productReference = C84EB9AA293B52BE00205562 /* XCPServiceTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -479,9 +379,6 @@
 					C8189B152938972F00C9DCDA = {
 						CreatedOnToolsVersion = 14.1;
 					};
-					C84EB9A9293B52BE00205562 = {
-						CreatedOnToolsVersion = 14.1;
-					};
 				};
 			};
 			buildConfigurationList = C8189B112938972F00C9DCDA /* Build configuration list for PBXProject "Copilot for Xcode" */;
@@ -500,7 +397,6 @@
 				C8189B152938972F00C9DCDA /* Copilot for Xcode */,
 				C814588B2939EFDC00135263 /* EditorExtension */,
 				C81458B4293A015C00135263 /* XPCService */,
-				C84EB9A9293B52BE00205562 /* XCPServiceTests */,
 			);
 		};
 /* End PBXProject section */
@@ -522,13 +418,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C84EB9A8293B52BE00205562 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -536,17 +425,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C87F3E6C293E26AD008523E8 /* Models.swift in Sources */,
+				C8009C012941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift in Sources */,
 				C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */,
-				C87B0391293A61B000C77EAE /* XPCServiceProtocol.swift in Sources */,
-				C87B039F293B244A00C77EAE /* AsyncXPCService.swift in Sources */,
 				C8520301293C4D9000460097 /* Helpers.swift in Sources */,
+				C8009BFF2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift in Sources */,
 				C87B03A5293B261200C77EAE /* AcceptSuggestionCommand.swift in Sources */,
 				C87B03A9293B262600C77EAE /* NextSuggestionCommand.swift in Sources */,
 				C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */,
 				C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */,
+				C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */,
 				C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */,
-				C87B038C293A5D4300C77EAE /* XPCService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -555,13 +443,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C81458B8293A015C00135263 /* main.swift in Sources */,
-				C84EB9A3293B4D4300205562 /* Helpers.swift in Sources */,
-				C87B038E293A5D9000C77EAE /* XPCServiceProtocol.swift in Sources */,
-				C87F3E6D293E26AD008523E8 /* Models.swift in Sources */,
-				C87B0390293A5D9800C77EAE /* XPCService.swift in Sources */,
-				C87B03B0293B309100C77EAE /* Workspace.swift in Sources */,
 				C87B03B4293B393100C77EAE /* ServiceDelegate.swift in Sources */,
-				C87B03B2293B352000C77EAE /* Environment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -570,37 +452,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C8189B1C2938972F00C9DCDA /* ContentView.swift in Sources */,
-				C87F3E6B293E26AD008523E8 /* Models.swift in Sources */,
-				C87B0392293A61B300C77EAE /* XPCServiceProtocol.swift in Sources */,
 				C87F3E60293DC600008523E8 /* Section.swift in Sources */,
 				C87F3E62293DD004008523E8 /* Styles.swift in Sources */,
-				C87B03A0293B244B00C77EAE /* AsyncXPCService.swift in Sources */,
 				C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */,
-				C87B03A2293B248000C77EAE /* XPCService.swift in Sources */,
 				C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */,
 				C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */,
 				C83B2B7C293D9FB400C5ACCD /* CopilotView.swift in Sources */,
 				C83B2B7A293D9C8C00C5ACCD /* LaunchAgentManager.swift in Sources */,
 				C8189B1A2938972F00C9DCDA /* App.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C84EB9A6293B52BE00205562 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C84EB9AD293B52BE00205562 /* GetSuggestionsTests.swift in Sources */,
-				C87F3E68293DE758008523E8 /* Helpers.swift in Sources */,
-				C8C04218293ED0700083C454 /* GetPreviousSuggestionTests.swift in Sources */,
-				C87F3E65293DE74A008523E8 /* AsyncXPCService.swift in Sources */,
-				C8C04214293E4AE80083C454 /* Models.swift in Sources */,
-				C87F3E67293DE754008523E8 /* Workspace.swift in Sources */,
-				C87F3E64293DE675008523E8 /* Environment.swift in Sources */,
-				C87F3E66293DE750008523E8 /* XPCService.swift in Sources */,
-				C8C0421A293ED1EB0083C454 /* AcceptSuggestionTests.swift in Sources */,
-				C8C04216293ECE230083C454 /* GetNextSuggestionTests.swift in Sources */,
-				C8C0421C293ED4B20083C454 /* RejectSuggestionTests.swift in Sources */,
-				C87F3E69293DEA8B008523E8 /* XPCServiceProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -611,11 +470,6 @@
 			isa = PBXTargetDependency;
 			target = C814588B2939EFDC00135263 /* EditorExtension */;
 			targetProxy = C81458992939EFDC00135263 /* PBXContainerItemProxy */;
-		};
-		C84EB9AF293B52BE00205562 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C8189B152938972F00C9DCDA /* Copilot for Xcode */;
-			targetProxy = C84EB9AE293B52BE00205562 /* PBXContainerItemProxy */;
 		};
 		C8520305293CF0D400460097 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -634,9 +488,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Copilot Dev";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -662,9 +515,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Copilot;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -843,20 +695,21 @@
 				CODE_SIGN_ENTITLEMENTS = "Copilot for Xcode/Copilot_for_Xcode.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"Copilot for Xcode/Preview Content\"";
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Copilot-for-Xcode-Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_BASE)";
 				PRODUCT_MODULE_NAME = Copilot_for_Xcode;
 				PRODUCT_NAME = "Copilot for Xcode Dev";
@@ -874,53 +727,24 @@
 				CODE_SIGN_ENTITLEMENTS = "Copilot for Xcode/Copilot_for_Xcode.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"Copilot for Xcode/Preview Content\"";
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Copilot-for-Xcode-Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_BASE)";
 				PRODUCT_NAME = "Copilot for Xcode";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		C84EB9B1293B52BE00205562 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.intii.CoilotForXcode.XCPServiceTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		C84EB9B2293B52BE00205562 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.intii.CoilotForXcode.XCPServiceTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -964,33 +788,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C84EB9B0293B52BE00205562 /* Build configuration list for PBXNativeTarget "XCPServiceTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C84EB9B1293B52BE00205562 /* Debug */,
-				C84EB9B2293B52BE00205562 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C84EB9B4293B532000205562 /* CopilotService */ = {
+		C8821759294187E100A22FD3 /* Client */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CopilotService;
+			productName = Client;
 		};
-		C87B0397293B215F00C77EAE /* CopilotModel */ = {
+		C882175B294187EF00A22FD3 /* Client */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CopilotModel;
+			productName = Client;
 		};
-		C87B0399293B217200C77EAE /* CopilotModel */ = {
+		C882175D294187F900A22FD3 /* Service */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CopilotModel;
-		};
-		C87B039B293B217800C77EAE /* CopilotService */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CopilotService;
+			productName = Service;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
