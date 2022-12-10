@@ -9,11 +9,12 @@ import XPCShared
     public static let shared = TheActor()
 }
 
+@ServiceActor
+var workspaces = [URL: Workspace]()
+
 public class XPCService: NSObject, XPCServiceProtocol {
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
-    @ServiceActor
-    var workspaces = [URL: Workspace]()
 
     override public init() {
         super.init()
@@ -21,12 +22,12 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task {
             await AutoTrigger.shared.start(by: identifier)
         }
-        Task { @ServiceActor [weak self] in
-            while let self, !Task.isCancelled {
+        Task { @ServiceActor in
+            while !Task.isCancelled {
                 try await Task.sleep(nanoseconds: 8 * 60 * 60 * 1_000_000_000)
-                for (url, workspace) in self.workspaces {
+                for (url, workspace) in workspaces {
                     if workspace.isExpired {
-                        self.workspaces[url] = nil
+                        workspaces[url] = nil
                     } else {
                         workspace.cleanUp()
                     }
@@ -106,7 +107,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -133,7 +134,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let updatedContent = workspace.getNextSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -157,7 +158,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let updatedContent = workspace.getPreviousSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -181,7 +182,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let updatedContent = workspace.getSuggestionRejectedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -205,7 +206,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let updatedContent = workspace.getSuggestionAcceptedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -229,7 +230,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                
+
                 let canAutoTrigger = workspace.canAutoTriggerGetSuggestions(
                     forFileAt: fileURL,
                     lines: editor.lines,

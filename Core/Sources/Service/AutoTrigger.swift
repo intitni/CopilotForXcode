@@ -19,9 +19,13 @@ actor AutoTrigger {
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
-                    triggerTask = Task {
+                    triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         if Task.isCancelled { return }
+                        guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(),
+                              let workspace = workspaces[folderURL],
+                              workspace.isRealtimeSuggestionEnabled
+                        else { return }
                         try? await Environment.triggerAction("Realtime Suggestions")
                     }
                 }
