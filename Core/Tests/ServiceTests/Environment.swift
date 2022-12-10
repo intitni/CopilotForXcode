@@ -26,6 +26,8 @@ func clearEnvironment() {
     Environment.createSuggestionService = {
         _ in fatalError("")
     }
+    
+    Environment.triggerAction = { _ in }
 }
 
 func getService() -> AsyncXPCService {

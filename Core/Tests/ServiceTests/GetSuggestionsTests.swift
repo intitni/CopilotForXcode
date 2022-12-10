@@ -42,7 +42,7 @@ final class GetSuggestionsTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
         let resultLines = lines.applying(result.modifications)
 
@@ -95,7 +95,7 @@ final class GetSuggestionsTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let resultLines = lines.applying(result.modifications)
         

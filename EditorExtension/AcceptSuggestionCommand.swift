@@ -6,7 +6,7 @@ import XPCShared
 
 class AcceptSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
     var name: String { "Accept Suggestion" }
-    
+
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
@@ -14,9 +14,11 @@ class AcceptSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
         Task {
             do {
                 let service = try getService()
-                invocation.accept(try await service.getSuggestionAcceptedCode(
+                if let content = try await service.getSuggestionAcceptedCode(
                     editorContent: .init(invocation)
-                ))
+                ) {
+                    invocation.accept(content)
+                }
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

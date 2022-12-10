@@ -80,7 +80,7 @@ public struct AsyncXPCService {
         }
     }
 
-    public func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -88,7 +88,7 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getNextSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getNextSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -96,7 +96,7 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getPreviousSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getPreviousSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -104,7 +104,7 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getSuggestionAcceptedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestionAcceptedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -112,7 +112,7 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getSuggestionRejectedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getSuggestionRejectedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -120,7 +120,7 @@ public struct AsyncXPCService {
         )
     }
     
-    public func getRealtimeSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent {
+    public func getRealtimeSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -172,7 +172,7 @@ func suggestionRequest(
     _ connection: NSXPCConnection,
     _ editorContent: EditorContent,
     _ fn: @escaping (any XPCServiceProtocol) -> (Data, @escaping (Data?, Error?) -> Void) -> Void
-) async throws -> UpdatedContent {
+) async throws -> UpdatedContent? {
     let data = try JSONEncoder().encode(editorContent)
     return try await withXPCServiceConnected(connection: connection) {
         service, continuation in
@@ -182,9 +182,13 @@ func suggestionRequest(
                 return
             }
             do {
-                let updatedContent = try JSONDecoder()
-                    .decode(UpdatedContent.self, from: updatedData ?? Data())
-                continuation.resume(updatedContent)
+                if let updatedData {
+                    let updatedContent = try JSONDecoder()
+                        .decode(UpdatedContent.self, from: updatedData ?? Data())
+                    continuation.resume(updatedContent)
+                } else {
+                    continuation.resume(nil)
+                }
             } catch {
                 continuation.reject(error)
             }

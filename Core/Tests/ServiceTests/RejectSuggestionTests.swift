@@ -41,7 +41,7 @@ final class RejectSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let result1Lines = lines.applying(result1.modifications)
 
@@ -53,7 +53,7 @@ final class RejectSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let result2Lines = result1Lines.applying(result2.modifications)
         XCTAssertEqual(result2Lines.joined(), result2.content)
@@ -73,7 +73,7 @@ final class RejectSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
         let result3Lines = result1Lines.applying(result3.modifications)
         XCTAssertEqual(result3Lines.joined(), result3.content)

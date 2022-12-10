@@ -16,7 +16,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 - Accessibility
 - Folder Access
-- Input Monitoring (Realtime Suggestions Only)
+- Maybe Input Monitoring (Realtime Suggestions Only)
+
+
 
 ## Installation and Setup
 
