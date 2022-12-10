@@ -9,7 +9,7 @@ final class GetSuggestionsTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
-        clearEnvironment()
+        await clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
@@ -42,7 +42,7 @@ final class GetSuggestionsTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
         let resultLines = lines.applying(result.modifications)
 
@@ -95,7 +95,7 @@ final class GetSuggestionsTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let resultLines = lines.applying(result.modifications)
         

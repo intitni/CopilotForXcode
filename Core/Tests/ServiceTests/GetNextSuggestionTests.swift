@@ -9,7 +9,7 @@ final class GetNextSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
-        clearEnvironment()
+        await clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
@@ -51,7 +51,7 @@ final class GetNextSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
         let result1Lines = lines.applying(result1.modifications)
 
@@ -63,7 +63,7 @@ final class GetNextSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let result2Lines = result1Lines.applying(result2.modifications)
 
@@ -92,7 +92,7 @@ final class GetNextSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
         
         let result3Lines = lines.applying(result3.modifications)
 

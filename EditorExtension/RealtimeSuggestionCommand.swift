@@ -13,9 +13,11 @@ class RealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
         Task {
             do {
                 let service = try getService()
-                invocation.accept(try await service.getRealtimeSuggestedCode(
+                if let content = try await service.getRealtimeSuggestedCode(
                     editorContent: .init(invocation)
-                ))
+                ) {
+                    invocation.accept(content)
+                }
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

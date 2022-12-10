@@ -8,10 +8,12 @@ import XPCShared
 
 @testable import Service
 
-func clearEnvironment() {
+@ServiceActor func clearEnvironment() {
+    workspaces = [:]
+    
     Environment.now = { Date() }
 
-    Environment.fetchCurrentProjectRootURL = {
+    Environment.fetchCurrentProjectRootURL = { _ in
         URL(fileURLWithPath: "/path/to/project")
     }
 
@@ -26,6 +28,8 @@ func clearEnvironment() {
     Environment.createSuggestionService = {
         _ in fatalError("")
     }
+    
+    Environment.triggerAction = { _ in }
 }
 
 func getService() -> AsyncXPCService {

@@ -8,7 +8,20 @@ actor AutoTrigger {
     var eventObserver: CGEventObserverType = CGEventObserver()
     var task: Task<Void, Error>?
 
-    private init() {}
+    private init() {
+        Task { @ServiceActor in
+            while !Task.isCancelled {
+                try await Task.sleep(nanoseconds: 8 * 60 * 60 * 1_000_000_000)
+                for (url, workspace) in workspaces {
+                    if workspace.isExpired {
+                        workspaces[url] = nil
+                    } else {
+                        workspaces[url]?.cleanUp()
+                    }
+                }
+            }
+        }
+    }
 
     func start(by listener: ObjectIdentifier) {
         listeners.insert(listener)
@@ -19,9 +32,14 @@ actor AutoTrigger {
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
-                    triggerTask = Task {
+                    triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         if Task.isCancelled { return }
+                        let fileURL = try? await Environment.fetchCurrentFileURL()
+                        guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),
+                              let workspace = workspaces[folderURL],
+                              workspace.isRealtimeSuggestionEnabled
+                        else { return }
                         try? await Environment.triggerAction("Realtime Suggestions")
                     }
                 }

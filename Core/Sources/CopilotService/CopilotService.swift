@@ -75,8 +75,9 @@ public class CopilotBaseService {
 
             return InitializeParams(
                 processId: Int(ProcessInfo.processInfo.processIdentifier),
+                clientInfo: .init(name: "Copilot for Xcode"),
                 locale: nil,
-                rootPath: nil,
+                rootPath: projectRoot.path,
                 rootUri: projectRoot.path,
                 initializationOptions: nil,
                 capabilities: capabilities,
@@ -84,6 +85,11 @@ public class CopilotBaseService {
                 workspaceFolders: nil
             )
         }
+        
+        server.notificationHandler = { _, respond in
+            respond(nil)
+        }
+        
         return server
     }()
 }

@@ -5,7 +5,7 @@ import XcodeKit
 
 class NextSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
     var name: String { "Next Suggestion" }
-    
+
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
@@ -13,9 +13,11 @@ class NextSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
         Task {
             do {
                 let service = try getService()
-                invocation.accept(try await service.getNextSuggestedCode(
+                if let content = try await service.getNextSuggestedCode(
                     editorContent: .init(invocation)
-                ))
+                ) {
+                    invocation.accept(content)
+                }
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

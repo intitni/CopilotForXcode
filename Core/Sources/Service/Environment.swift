@@ -17,7 +17,7 @@ private struct FailedToFetchFileURLError: Error, LocalizedError {
 enum Environment {
     static var now = { Date() }
 
-    static var fetchCurrentProjectRootURL: () async throws -> URL? = {
+    static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws -> URL? = { fileURL in
         let appleScript = """
         tell application "Xcode"
             return path of document of the first window
@@ -34,7 +34,20 @@ enum Environment {
             }
             return url
         }
-        return nil
+        
+        guard var currentURL = fileURL else { return nil }
+        var firstDirectoryURL: URL? = nil
+        while currentURL.pathComponents.count > 1 {
+            defer { currentURL.deleteLastPathComponent() }
+            guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
+            let gitURL = currentURL.appendingPathComponent(".git")
+            if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
+                return currentURL
+            }
+        }
+        
+        return firstDirectoryURL ?? fileURL
     }
 
     static var fetchCurrentFileURL: () async throws -> URL = {
@@ -75,8 +88,9 @@ enum Environment {
                         )
                     }
                 }
-                if let path {
-                    return URL(fileURLWithPath: path)
+                if let path = path?.removingPercentEncoding {
+                    let url = URL(fileURLWithPath: path.replacingOccurrences(of: "file://", with: ""))
+                    return url
                 }
             } catch {
                 if let axError = error as? AXError, axError == .apiDisabled {
@@ -109,7 +123,7 @@ enum Environment {
 
         guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
         let bundleName = Bundle.main.object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-        
+
         /// check if menu is open, if not, click the menu item.
         let appleScript = """
         tell application "System Events"

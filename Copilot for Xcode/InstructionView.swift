@@ -21,14 +21,6 @@ Text("""
 7. Restart Xcode, the Copilot commands should be available in the menu bar.
 """)
 
-Text("Permissions Requirement")
-    .font(.title3)
-
-Text("""
-- The extension will ask for Accessibility API permission the first time it runs.
-- The extension may ask for folder access permission when it runs.
-""")
-
 Text("Disable Extension")
     .font(.title3)
 
