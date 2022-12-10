@@ -75,8 +75,9 @@ enum Environment {
                         )
                     }
                 }
-                if let path {
-                    return URL(fileURLWithPath: path)
+                if let path = path?.removingPercentEncoding {
+                    let url = URL(fileURLWithPath: path.replacingOccurrences(of: "file://", with: ""))
+                    return url
                 }
             } catch {
                 if let axError = error as? AXError, axError == .apiDisabled {
@@ -109,7 +110,7 @@ enum Environment {
 
         guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
         let bundleName = Bundle.main.object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-        
+
         /// check if menu is open, if not, click the menu item.
         let appleScript = """
         tell application "System Events"
