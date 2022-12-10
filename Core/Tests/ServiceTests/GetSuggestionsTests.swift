@@ -9,7 +9,7 @@ final class GetSuggestionsTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
-        clearEnvironment()
+        await clearEnvironment()
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
