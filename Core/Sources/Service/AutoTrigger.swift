@@ -22,7 +22,8 @@ actor AutoTrigger {
                     triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         if Task.isCancelled { return }
-                        guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(),
+                        let fileURL = try? await Environment.fetchCurrentFileURL()
+                        guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),
                               let workspace = workspaces[folderURL],
                               workspace.isRealtimeSuggestionEnabled
                         else { return }

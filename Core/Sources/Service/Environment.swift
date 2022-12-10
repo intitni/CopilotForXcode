@@ -17,7 +17,7 @@ private struct FailedToFetchFileURLError: Error, LocalizedError {
 enum Environment {
     static var now = { Date() }
 
-    static var fetchCurrentProjectRootURL: () async throws -> URL? = {
+    static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws -> URL? = { fileURL in
         let appleScript = """
         tell application "Xcode"
             return path of document of the first window
@@ -34,7 +34,20 @@ enum Environment {
             }
             return url
         }
-        return nil
+        
+        guard var currentURL = fileURL else { return nil }
+        var firstDirectoryURL: URL? = nil
+        while currentURL.pathComponents.count > 1 {
+            defer { currentURL.deleteLastPathComponent() }
+            guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
+            let gitURL = currentURL.appendingPathComponent(".git")
+            if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
+                return currentURL
+            }
+        }
+        
+        return firstDirectoryURL ?? fileURL
     }
 
     static var fetchCurrentFileURL: () async throws -> URL = {

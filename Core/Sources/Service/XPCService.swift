@@ -271,7 +271,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
 extension XPCService {
     @ServiceActor
     func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
-        let projectURL = try await Environment.fetchCurrentProjectRootURL()
+        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
         workspaces[workspaceURL] = workspace
