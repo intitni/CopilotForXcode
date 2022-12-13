@@ -13,7 +13,7 @@ let package = Package(
         ),
         .library(
             name: "Client",
-            targets: ["CopilotModel", "Client"]
+            targets: ["CopilotModel", "Client", "XPCShared"]
         ),
     ],
     dependencies: [
@@ -22,7 +22,7 @@ let package = Package(
     targets: [
         .target(
             name: "CopilotService",
-            dependencies: ["LanguageClient", "CopilotModel"]
+            dependencies: ["LanguageClient", "CopilotModel", "XPCShared"]
         ),
         .testTarget(
             name: "CopilotServiceTests",
