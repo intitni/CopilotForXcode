@@ -2,6 +2,7 @@ import CopilotModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
+import XPCShared
 
 public protocol CopilotAuthServiceType {
     func checkStatus() async throws -> CopilotStatus
@@ -40,22 +41,25 @@ public class CopilotBaseService {
             try? FileManager.default
                 .createDirectory(at: supportURL, withIntermediateDirectories: false)
         }
-        let executionParams = Process.ExecutionParameters(
-            path: "/usr/bin/env",
-            arguments: [
-                "node",
-                Bundle.main.url(
-                    forResource: "agent",
-                    withExtension: "js",
-                    subdirectory: "copilot/dist"
-                )!.path,
-                "--stdio",
-            ],
-            environment: [
-                "PATH": "/usr/bin:/usr/local/bin",
-            ],
-            currentDirectoryURL: supportURL
-        )
+        let executionParams = {
+            let nodePath = UserDefaults.shared.string(forKey: SettingsKey.nodePath) ?? ""
+            return Process.ExecutionParameters(
+                path: "/usr/bin/env",
+                arguments: [
+                    nodePath.isEmpty ? "node" : nodePath,
+                    Bundle.main.url(
+                        forResource: "agent",
+                        withExtension: "js",
+                        subdirectory: "copilot/dist"
+                    )!.path,
+                    "--stdio",
+                ],
+                environment: [
+                    "PATH": "/usr/bin:/usr/local/bin",
+                ],
+                currentDirectoryURL: supportURL
+            )
+        }()
         let localServer = LocalProcessServer(executionParameters: executionParams)
         localServer.logMessages = false
         let server = InitializingServer(server: localServer)
@@ -85,11 +89,11 @@ public class CopilotBaseService {
                 workspaceFolders: nil
             )
         }
-        
+
         server.notificationHandler = { _, respond in
             respond(nil)
         }
-        
+
         return server
     }()
 }

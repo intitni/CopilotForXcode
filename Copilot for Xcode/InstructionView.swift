@@ -15,7 +15,7 @@ Text("""
 1. Install Node.
 2. Click `Set Up Launch Agent` to set up an XPC service to run in the background.
 3. Refresh Copilot status or restart the app.
-4. Click `Sign In` to sign into your GitHub Account.
+4. Click `Sign In` to sign into your GitHub account. 
 5. After submitting your user code to the verification website, click `Confirm Sign-in` to finish the sign-in.
 6. Go to `Settings.app > Privacy & Security > Extension > Xcode Source Editor Extension` to turn **Copilot for Xcode** on.
 7. Restart Xcode, the Copilot commands should be available in the menu bar.

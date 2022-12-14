@@ -11,6 +11,7 @@ struct CopilotView: View {
     @State var userCode: String?
     @State var version: String?
     @State var isRunningAction: Bool = false
+    @State var isUserCodeCopiedAlertPresented = false
 
     var body: some View {
         Section {
@@ -25,6 +26,13 @@ struct CopilotView: View {
                         Button("Refresh") { checkStatus() }
                         if copilotStatus == .notSignedIn {
                             Button("Sign In") { signIn() }
+                                .alert(isPresented: $isUserCodeCopiedAlertPresented) {
+                                    Alert(
+                                        title: Text(userCode ?? ""),
+                                        message: Text("The user code is pasted into your clipboard, please paste it in the opened website to login.\nAfter that, click \"Confirm Sign-in\" to finish."),
+                                        dismissButton: .default(Text("OK"))
+                                    )
+                                }
                             Button("Confirm Sign-in") { confirmSignIn() }
                         }
                         if copilotStatus == .ok || copilotStatus == .alreadySignedIn || copilotStatus == .notAuthorized {
@@ -89,6 +97,7 @@ struct CopilotView: View {
                 pasteboard.setString(userCode, forType: NSPasteboard.PasteboardType.string)
                 message = "Usercode \(userCode) already copied!"
                 openURL(url)
+                isUserCodeCopiedAlertPresented = true
             } catch {
                 message = error.localizedDescription
             }
