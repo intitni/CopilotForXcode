@@ -16,7 +16,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 - Accessibility
 - Folder Access
-- Maybe Input Monitoring (Realtime Suggestions Only)
+- Maybe Input Monitoring (Real-time Suggestions Only)
 
 ## Installation and Setup
 
@@ -38,11 +38,11 @@ The first time the actions run, the extension will ask for 2 types of permission
 - Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Turn On Realtime Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
-- Turn Off Realtime Suggestions: Turns the real-time suggestions off.
-- Realtime Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this action to bring you real-time suggestions. 
+- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
+- Turn Off Real-time Suggestions: Turns the real-time suggestions off.
+- Real-time Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this action to bring you real-time suggestions. 
 
-**About realtime suggestions**
+**About real-time suggestions**
 
 The implementation won't feel as smooth as that of VSCode.
 
@@ -52,7 +52,7 @@ Hope that next year, Apple can spend some time on Xcode Extensions.
 
 Known Issues: 
 
-- If a realtime suggestions request is triggered, it will block your editor until the result is return. 
+- If a real-time suggestions request is triggered, it will block your editor until the result is return. 
 
 ## Prevent Suggestions Being Committed
 
@@ -90,7 +90,7 @@ fi
 >  
 > If you have just **updated the app**, consider restarting XPCService in app or trying removing the Launch Agents and set it up again!
 
-**Q: I turned on realtime suggestions, but nothing happens**
+**Q: I turned on real-time suggestions, but nothing happens**
 
 > A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
 

@@ -28,19 +28,29 @@ actor AutoTrigger {
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 var triggerTask: Task<Void, Error>?
-                try? await Environment.triggerAction("Realtime Suggestions")
+                try? await Environment.triggerAction("Real-time Suggestions")
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
+                    guard await Environment.isXcodeActive() else { continue }
+
+                    await withTaskGroup(of: Void.self) { group in
+                        for (_, workspace) in await workspaces {
+                            group.addTask {
+                                await workspace.cancelInFlightRealtimeSuggestionRequests()
+                            }
+                        }
+                    }
+
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        try? await Task.sleep(nanoseconds: 2_500_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
                         guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),
                               let workspace = workspaces[folderURL],
                               workspace.isRealtimeSuggestionEnabled
                         else { return }
-                        try? await Environment.triggerAction("Realtime Suggestions")
+                        try? await Environment.triggerAction("Real-time Suggestions")
                     }
                 }
             }

@@ -96,7 +96,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-                let updatedContent = try await workspace.getSuggestedCode(
+                guard let updatedContent = try await workspace.getSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
@@ -104,7 +104,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
                     tabSize: editor.tabSize,
                     indentSize: editor.indentSize,
                     usesTabsForIndentation: editor.usesTabsForIndentation
-                )
+                ) else {
+                    reply(nil, nil)
+                    return
+                }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -123,12 +126,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-                let updatedContent = workspace.getNextSuggestedCode(
+                guard let updatedContent = workspace.getNextSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
-                )
+                ) else {
+                    reply(nil, nil)
+                    return
+                }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -147,12 +153,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-                let updatedContent = workspace.getPreviousSuggestedCode(
+                guard let updatedContent = workspace.getPreviousSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
-                )
+                ) else {
+                    reply(nil, nil)
+                    return
+                }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -195,12 +204,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-                let updatedContent = workspace.getSuggestionAcceptedCode(
+                guard let updatedContent = workspace.getSuggestionAcceptedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
                     cursorPosition: editor.cursorPosition
-                )
+                ) else {
+                    reply(nil, nil)
+                    return
+                }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -218,18 +230,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                let canAutoTrigger = workspace.canAutoTriggerGetSuggestions(
-                    forFileAt: fileURL,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition
-                )
-                guard canAutoTrigger else {
-                    reply(nil, nil)
-                    return
-                }
-
-                let updatedContent = try await workspace.getSuggestedCode(
+                guard let updatedContent = workspace.getRealtimeSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
                     lines: editor.lines,
@@ -237,7 +238,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
                     tabSize: editor.tabSize,
                     indentSize: editor.indentSize,
                     usesTabsForIndentation: editor.usesTabsForIndentation
-                )
+                ) else {
+                    reply(nil, nil)
+                    return
+                }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 print(error)
@@ -253,60 +257,5 @@ public class XPCService: NSObject, XPCServiceProtocol {
             workspace.isRealtimeSuggestionEnabled = enabled
             reply(nil)
         }
-    }
-}
-
-extension XPCService {
-    @ServiceActor
-    func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
-        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
-        let workspaceURL = projectURL ?? fileURL
-        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-        workspaces[workspaceURL] = workspace
-        return workspace
-    }
-}
-
-extension NSError {
-    static func from(_ error: Error) -> NSError {
-        if let error = error as? ServerError {
-            var message = "Unknown"
-            switch error {
-            case let .handlerUnavailable(handler):
-                message = "Handler unavailable: \(handler)."
-            case let .unhandledMethod(method):
-                message = "Methond unhandled: \(method)."
-            case let .notificationDispatchFailed(error):
-                message = "Notification dispatch failed: \(error.localizedDescription)."
-            case let .requestDispatchFailed(error):
-                message = "Request dispatch failed: \(error.localizedDescription)."
-            case let .clientDataUnavailable(error):
-                message = "Client data unavalable: \(error.localizedDescription)."
-            case .serverUnavailable:
-                message = "Server unavailable, please make sure you have installed Node."
-            case .missingExpectedParameter:
-                message = "Missing expected parameter."
-            case .missingExpectedResult:
-                message = "Missing expected result."
-            case let .unableToDecodeRequest(error):
-                message = "Unable to decode request: \(error.localizedDescription)."
-            case let .unableToSendRequest(error):
-                message = "Unable to send request: \(error.localizedDescription)."
-            case let .unableToSendNotification(error):
-                message = "Unable to send notification: \(error.localizedDescription)."
-            case let .serverError(code, m, _):
-                message = "Server error: (\(code)) \(m)."
-            case let .invalidRequest(error):
-                message = "Invalid request: \(error?.localizedDescription ?? "Unknown")."
-            case .timeout:
-                message = "Timeout."
-            }
-            return NSError(domain: "com.intii.CopilotForXcode", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: message,
-            ])
-        }
-        return NSError(domain: "com.intii.CopilotForXcode", code: -1, userInfo: [
-            NSLocalizedDescriptionKey: error.localizedDescription,
-        ])
     }
 }
