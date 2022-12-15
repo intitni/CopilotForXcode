@@ -37,7 +37,7 @@ actor AutoTrigger {
                     await withTaskGroup(of: Void.self) { group in
                         for (_, workspace) in await workspaces {
                             group.addTask {
-                                await workspace.cancelAllRealtimeSuggestionFulfillmentTasks()
+                                await workspace.cancelInFlightRealtimeSuggestionRequests()
                             }
                         }
                     }

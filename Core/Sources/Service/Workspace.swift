@@ -46,7 +46,7 @@ final class Workspace {
 
     var filespaces = [URL: Filespace]()
     var isRealtimeSuggestionEnabled = false
-    var realtimeSuggestionFulfillmentTasks = Set<Task<Void, Error>>()
+    var realtimeSuggestionRequests = Set<Task<Void, Error>>()
 
     private lazy var service: CopilotSuggestionServiceType = Environment
         .createSuggestionService(projectRootURL)
@@ -76,7 +76,7 @@ final class Workspace {
         indentSize: Int,
         usesTabsForIndentation: Bool
     ) -> UpdatedContent? {
-        cancelAllRealtimeSuggestionFulfillmentTasks()
+        cancelInFlightRealtimeSuggestionRequests()
         guard isRealtimeSuggestionEnabled else { return nil }
 
         let filespace = filespaces[fileURL] ?? .init(fileURL: fileURL)
@@ -107,7 +107,7 @@ final class Workspace {
                     tabSize: tabSize,
                     indentSize: indentSize,
                     usesTabsForIndentation: usesTabsForIndentation,
-                    shouldCancelAllRealtimeSuggestionFulfillmentTasks: false
+                    shouldcancelInFlightRealtimeSuggestionRequests: false
                 )
                 try Task.checkCancellation()
                 if result != nil {
@@ -115,7 +115,7 @@ final class Workspace {
                 }
             }
 
-            realtimeSuggestionFulfillmentTasks.insert(task)
+            realtimeSuggestionRequests.insert(task)
 
             return UpdatedContent(
                 content: String(lines.joined(separator: "")),
@@ -155,10 +155,10 @@ final class Workspace {
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        shouldCancelAllRealtimeSuggestionFulfillmentTasks: Bool = true
+        shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
     ) async throws -> UpdatedContent? {
-        if shouldCancelAllRealtimeSuggestionFulfillmentTasks {
-            cancelAllRealtimeSuggestionFulfillmentTasks()
+        if shouldcancelInFlightRealtimeSuggestionRequests {
+            cancelInFlightRealtimeSuggestionRequests()
         }
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
@@ -226,7 +226,7 @@ final class Workspace {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> UpdatedContent? {
-        cancelAllRealtimeSuggestionFulfillmentTasks()
+        cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
@@ -269,7 +269,7 @@ final class Workspace {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> UpdatedContent? {
-        cancelAllRealtimeSuggestionFulfillmentTasks()
+        cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
@@ -311,7 +311,7 @@ final class Workspace {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> UpdatedContent? {
-        cancelAllRealtimeSuggestionFulfillmentTasks()
+        cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               !filespace.suggestions.isEmpty,
@@ -356,7 +356,7 @@ final class Workspace {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> UpdatedContent {
-        cancelAllRealtimeSuggestionFulfillmentTasks()
+        cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
         var lines = lines
@@ -390,10 +390,10 @@ extension Workspace {
         }
     }
 
-    func cancelAllRealtimeSuggestionFulfillmentTasks() {
-        for task in realtimeSuggestionFulfillmentTasks {
+    func cancelInFlightRealtimeSuggestionRequests() {
+        for task in realtimeSuggestionRequests {
             task.cancel()
         }
-        realtimeSuggestionFulfillmentTasks = []
+        realtimeSuggestionRequests = []
     }
 }
