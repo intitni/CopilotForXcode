@@ -79,12 +79,8 @@ final class AcceptSuggestionTests: XCTestCase {
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))!
+        ))
 
-        let result3Lines = lines.applying(result3.modifications)
-
-        XCTAssertEqual(result3Lines, lines, "Deleting the code and accept again does nothing")
-        XCTAssertEqual(result3.content, result3Lines.joined())
-        XCTAssertEqual(result3.newCursor, nil)
+        XCTAssertNil(result3, "Deleting the code and accept again does nothing")
     }
 }
