@@ -32,8 +32,18 @@ actor AutoTrigger {
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
+                    guard await Environment.isXcodeActive() else { continue }
+
+                    await withTaskGroup(of: Void.self) { group in
+                        for (_, workspace) in await workspaces {
+                            group.addTask {
+                                await workspace.cancelAllRealtimeSuggestionFulfillmentTasks()
+                            }
+                        }
+                    }
+
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        try? await Task.sleep(nanoseconds: 2_500_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
                         guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),
