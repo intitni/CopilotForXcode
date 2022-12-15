@@ -28,7 +28,7 @@ actor AutoTrigger {
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 var triggerTask: Task<Void, Error>?
-                try? await Environment.triggerAction("Realtime Suggestions")
+                try? await Environment.triggerAction("Real-time Suggestions")
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
@@ -40,7 +40,7 @@ actor AutoTrigger {
                               let workspace = workspaces[folderURL],
                               workspace.isRealtimeSuggestionEnabled
                         else { return }
-                        try? await Environment.triggerAction("Realtime Suggestions")
+                        try? await Environment.triggerAction("Real-time Suggestions")
                     }
                 }
             }

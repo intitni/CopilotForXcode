@@ -111,7 +111,7 @@ final class Workspace {
                 )
                 try Task.checkCancellation()
                 if result != nil {
-                    try? await Environment.triggerAction("Realtime Suggestions")
+                    try? await Environment.triggerAction("Real-time Suggestions")
                 }
             }
 
