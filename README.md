@@ -2,7 +2,7 @@
 
 ![ScreenRecording](/ScreenRecording.gif)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist).
+Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments.
 
 Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
 
@@ -46,13 +46,9 @@ The first time the actions run, the extension will ask for 2 types of permission
 
 The implementation won't feel as smooth as that of VSCode.
 
-The magic behind it is that it will keep calling the action from the menu when you are not typing, clicking or moving your mouse. So it will have to listen to those events, I am not sure if people like it.
+The magic behind it is that it will keep calling the action from the menu when you are not typing, or clicking mouse. So it will have to listen to those events, I am not sure if people like it.
 
 Hope that next year, Apple can spend some time on Xcode Extensions.  
-
-Known Issues: 
-
-- If a real-time suggestions request is triggered, it will block your editor until the result is return. 
 
 ## Prevent Suggestions Being Committed
 
