@@ -46,6 +46,7 @@ final class Workspace {
 
     var filespaces = [URL: Filespace]()
     var isRealtimeSuggestionEnabled = false
+    var realtimeSuggestionFulfillmentTasks = Set<Task<Void, Error>>()
 
     private lazy var service: CopilotSuggestionServiceType = Environment
         .createSuggestionService(projectRootURL)
@@ -61,12 +62,89 @@ final class Workspace {
     ) -> Bool {
         guard isRealtimeSuggestionEnabled else { return false }
         guard let filespace = filespaces[fileURL] else { return true }
-        if let range = filespace.currentSuggestionLineRange,
-           range.contains(cursorPosition.line)
-        { return false }
         if lines.hashValue != filespace.suggestionSourceSnapshot.linesHash { return true }
         if cursorPosition != filespace.suggestionSourceSnapshot.cursorPosition { return true }
         return false
+    }
+
+    func getRealtimeSuggestedCode(
+        forFileAt fileURL: URL,
+        content: String,
+        lines: [String],
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool
+    ) -> UpdatedContent? {
+        cancelAllRealtimeSuggestionFulfillmentTasks()
+        guard isRealtimeSuggestionEnabled else { return nil }
+
+        let filespace = filespaces[fileURL] ?? .init(fileURL: fileURL)
+        if filespaces[fileURL] == nil {
+            filespaces[fileURL] = filespace
+        }
+
+        let injector = SuggestionInjector()
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = lines
+        var cursorPosition = cursorPosition
+
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
+
+        let snapshot = Filespace.Snapshot(linesHash: lines.hashValue, cursorPosition: cursorPosition)
+
+        if snapshot != filespace.suggestionSourceSnapshot {
+            let task = Task {
+                let result = try await getSuggestedCode(
+                    forFileAt: fileURL,
+                    content: content,
+                    lines: lines,
+                    cursorPosition: cursorPosition,
+                    tabSize: tabSize,
+                    indentSize: indentSize,
+                    usesTabsForIndentation: usesTabsForIndentation,
+                    shouldCancelAllRealtimeSuggestionFulfillmentTasks: false
+                )
+                try Task.checkCancellation()
+                if result != nil {
+                    try? await Environment.triggerAction("Realtime Suggestions")
+                }
+            }
+
+            realtimeSuggestionFulfillmentTasks.insert(task)
+
+            return UpdatedContent(
+                content: String(lines.joined(separator: "")),
+                newCursor: cursorPosition,
+                modifications: extraInfo.modifications
+            )
+        }
+
+        if filespace.suggestions.isEmpty || snapshot != filespace.suggestionSourceSnapshot {
+            return .init(
+                content: content,
+                newCursor: cursorPosition,
+                modifications: extraInfo.modifications
+            )
+        }
+
+        injector.proposeSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            completion: filespace.suggestions[filespace.suggestionIndex],
+            index: filespace.suggestionIndex,
+            count: filespace.suggestions.count,
+            extraInfo: &extraInfo
+        )
+
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func getSuggestedCode(
@@ -76,8 +154,12 @@ final class Workspace {
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool
-    ) async throws -> UpdatedContent {
+        usesTabsForIndentation: Bool,
+        shouldCancelAllRealtimeSuggestionFulfillmentTasks: Bool = true
+    ) async throws -> UpdatedContent? {
+        if shouldCancelAllRealtimeSuggestionFulfillmentTasks {
+            cancelAllRealtimeSuggestionFulfillmentTasks()
+        }
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
         var lines = lines
@@ -88,6 +170,10 @@ final class Workspace {
             filespaces[fileURL] = filespace
         }
         var extraInfo = SuggestionInjector.ExtraInfo()
+        let snapshot = Filespace.Snapshot(
+            linesHash: lines.hashValue,
+            cursorPosition: cursorPosition
+        )
 
         injector.rejectCurrentSuggestions(
             from: &lines,
@@ -95,10 +181,7 @@ final class Workspace {
             extraInfo: &extraInfo
         )
 
-        filespace.suggestionSourceSnapshot = .init(
-            linesHash: lines.hashValue,
-            cursorPosition: cursorPosition
-        )
+        filespace.suggestionSourceSnapshot = snapshot
 
         let completions = try await service.getCompletions(
             fileURL: fileURL,
@@ -108,6 +191,9 @@ final class Workspace {
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation
         )
+
+        guard filespace.suggestionSourceSnapshot == snapshot else { return nil }
+
         if completions.isEmpty {
             return .init(
                 content: content,
@@ -136,14 +222,15 @@ final class Workspace {
 
     func getNextSuggestedCode(
         forFileAt fileURL: URL,
-        content: String,
+        content _: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> UpdatedContent {
+    ) -> UpdatedContent? {
+        cancelAllRealtimeSuggestionFulfillmentTasks()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
-        else { return .init(content: content, modifications: []) }
+        else { return nil }
         var cursorPosition = cursorPosition
         filespace.suggestionIndex += 1
         if filespace.suggestionIndex >= filespace.suggestions.endIndex {
@@ -178,14 +265,15 @@ final class Workspace {
 
     func getPreviousSuggestedCode(
         forFileAt fileURL: URL,
-        content: String,
+        content _: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> UpdatedContent {
+    ) -> UpdatedContent? {
+        cancelAllRealtimeSuggestionFulfillmentTasks()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
-        else { return .init(content: content, modifications: []) }
+        else { return nil }
         var cursorPosition = cursorPosition
         filespace.suggestionIndex -= 1
         if filespace.suggestionIndex < 0 {
@@ -219,16 +307,17 @@ final class Workspace {
 
     func getSuggestionAcceptedCode(
         forFileAt fileURL: URL,
-        content: String,
+        content _: String,
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> UpdatedContent {
+    ) -> UpdatedContent? {
+        cancelAllRealtimeSuggestionFulfillmentTasks()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
               !filespace.suggestions.isEmpty,
               filespace.suggestionIndex >= 0,
               filespace.suggestionIndex < filespace.suggestions.endIndex
-        else { return .init(content: content, modifications: []) }
+        else { return nil }
 
         var cursorPosition = cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -267,6 +356,7 @@ final class Workspace {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> UpdatedContent {
+        cancelAllRealtimeSuggestionFulfillmentTasks()
         lastTriggerDate = Environment.now()
         let injector = SuggestionInjector()
         var lines = lines
@@ -298,5 +388,12 @@ extension Workspace {
                 filespaces[fileURL] = nil
             }
         }
+    }
+
+    func cancelAllRealtimeSuggestionFulfillmentTasks() {
+        for task in realtimeSuggestionFulfillmentTasks {
+            task.cancel()
+        }
+        realtimeSuggestionFulfillmentTasks = []
     }
 }

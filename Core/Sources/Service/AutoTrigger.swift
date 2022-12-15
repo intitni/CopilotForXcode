@@ -33,7 +33,7 @@ actor AutoTrigger {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
                         guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),

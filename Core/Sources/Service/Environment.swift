@@ -24,7 +24,8 @@ enum Environment {
         end tell
         """
 
-        if let path = try await runAppleScript(appleScript) {
+        let path = try await runAppleScript(appleScript)
+        if !path.isEmpty {
             let trimmedNewLine = path.trimmingCharacters(in: .newlines)
             var url = URL(fileURLWithPath: trimmedNewLine)
             while !FileManager.default.fileIsDirectory(atPath: url.path) ||
@@ -61,7 +62,7 @@ enum Environment {
                     if lhs.isActive { return true }
                     return false
                 }
-            if retryCount > 0 { try await Task.sleep(nanoseconds: 50_000_000) }
+            if retryCount > 0 { try await Task.sleep(nanoseconds: 10_000_000) }
             retryCount += 1
         }
 
@@ -117,7 +118,7 @@ enum Environment {
         while xcodes.isEmpty, retryCount < 5 {
             xcodes = NSRunningApplication
                 .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-            if retryCount > 0 { try await Task.sleep(nanoseconds: 50_000_000) }
+            if retryCount > 0 { try await Task.sleep(nanoseconds: 10_000_000) }
             retryCount += 1
         }
 
