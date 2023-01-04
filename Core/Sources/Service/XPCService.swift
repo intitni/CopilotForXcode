@@ -26,7 +26,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
 
     deinit {
         let identifier = ObjectIdentifier(self)
-        Task {
+        Task { @ServiceActor in
+            for (_, workspace) in workspaces {
+                workspace.isRealtimeSuggestionEnabled = false
+            }
             await AutoTrigger.shared.stop(by: identifier)
         }
     }
