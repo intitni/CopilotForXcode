@@ -27,11 +27,11 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 5. After signing in, go back to the app and click "Confirm Sign-in" to finish.
 5. Enable the extension in the Settings.app, then maybe restart Xcode.
 
-The first time the actions run, the extension will ask for 2 types of permissions:
+The first time the commands run, the extension will ask for 2 types of permissions:
 1. Accessibility API: which the extension uses to get the editing file path.
 2. Folder Access: the extension needs, to run some Apple Scripts to get the project/workspace path. 
 
-## Actions
+## Commands
 
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
 - Next Suggestion: If there is more than 1 suggestion, switch to the next one.
@@ -40,19 +40,20 @@ The first time the actions run, the extension will ask for 2 types of permission
 - Reject Suggestion: Remove the suggestion comments.
 - Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
 - Turn Off Real-time Suggestions: Turns the real-time suggestions off.
-- Real-time Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this action to bring you real-time suggestions. 
+- Real-time Suggestions: It is an entry point only for Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
+- Prefetch Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
 
 **About real-time suggestions**
 
 The implementation won't feel as smooth as that of VSCode.
 
-The magic behind it is that it will keep calling the action from the menu when you are not typing, or clicking mouse. So it will have to listen to those events, I am not sure if people like it.
+The magic behind it is that it will keep calling the command from the menu when you are not typing, or clicking mouse. So it will have to listen to those events, I am not sure if people like it.
 
 Hope that next year, Apple can spend some time on Xcode Extensions.  
 
 ## Prevent Suggestions Being Committed
 
-Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening. Maybe later I will add an action for that.
+Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening. Maybe later I will add an command for that.
 
 ```sh
 #!/bin/sh
