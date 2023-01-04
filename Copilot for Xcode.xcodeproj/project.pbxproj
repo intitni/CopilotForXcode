@@ -167,6 +167,7 @@
 		C87B03B3293B393100C77EAE /* ServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDelegate.swift; sourceTree = "<group>"; };
 		C87F3E5F293DC600008523E8 /* Section.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Section.swift; sourceTree = "<group>"; };
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
+		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -244,6 +245,7 @@
 			children = (
 				C832A47B2940C71D000989F2 /* copilot */,
 				C8520308293D805800460097 /* README.md */,
+				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8189B282938979000C9DCDA /* Core */,
