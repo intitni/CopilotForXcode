@@ -45,15 +45,16 @@ The first time the commands run, the extension will ask for 2 types of permissio
 
 **About real-time suggestions**
 
-The implementation won't feel as smooth as that of VSCode.
+- The on/off state is not persisted, they will be reset every time Xcode is quit. (For technical reasons, you always need to run a random command to start the XPCService, it will be confusing if it's persisted.)
+- The implementation won't feel as smooth as that of VSCode.
+  
+    The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it.
 
-The magic behind it is that it will keep calling the command from the menu when you are not typing, or clicking mouse. So it will have to listen to those events, I am not sure if people like it.
-
-Hope that next year, Apple can spend some time on Xcode Extensions.  
+    Hope that next year, Apple can spend some time on Xcode Extensions.  
 
 ## Prevent Suggestions Being Committed
 
-Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening. Maybe later I will add an command for that.
+Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening.
 
 ```sh
 #!/bin/sh
