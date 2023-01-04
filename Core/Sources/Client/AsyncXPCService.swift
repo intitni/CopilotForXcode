@@ -140,6 +140,15 @@ public struct AsyncXPCService {
             }
         }
     }
+    
+    public func prefetchRealtimeSuggestions(editorContent: EditorContent) async {
+        guard let data = try? JSONEncoder().encode(editorContent) else { return }
+        try? await withXPCServiceConnected(connection: connection) { service, continuation in
+            service.prefetchRealtimeSuggestions(editorContent: data) {
+                continuation.resume(())
+            }
+        }
+    }
 }
 
 struct AutoFinishContinuation<T> {

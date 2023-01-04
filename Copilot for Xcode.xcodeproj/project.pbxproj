@@ -10,6 +10,7 @@
 		C8009BFF2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */; };
 		C8009C012941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */; };
 		C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */; };
+		C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */; };
 		C814588F2939EFDC00135263 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C814588E2939EFDC00135263 /* Cocoa.framework */; };
 		C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81458932939EFDC00135263 /* SourceEditorExtension.swift */; };
 		C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81458952939EFDC00135263 /* GetSuggestionsCommand.swift */; };
@@ -129,6 +130,7 @@
 		C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOnRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOffRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeSuggestionCommand.swift; sourceTree = "<group>"; };
+		C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C814588C2939EFDC00135263 /* Copilot.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Copilot.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C814588E2939EFDC00135263 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		C81458902939EFDC00135263 /* XcodeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XcodeKit.framework; path = Library/Frameworks/XcodeKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -165,6 +167,7 @@
 		C87B03B3293B393100C77EAE /* ServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDelegate.swift; sourceTree = "<group>"; };
 		C87F3E5F293DC600008523E8 /* Section.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Section.swift; sourceTree = "<group>"; };
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
+		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -219,6 +222,7 @@
 				C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */,
 				C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */,
 				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
+				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
 			);
@@ -241,6 +245,7 @@
 			children = (
 				C832A47B2940C71D000989F2 /* copilot */,
 				C8520308293D805800460097 /* README.md */,
+				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8189B282938979000C9DCDA /* Core */,
@@ -434,6 +439,7 @@
 				C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */,
 				C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */,
 				C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */,
+				C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */,
 				C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

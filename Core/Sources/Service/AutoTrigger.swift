@@ -25,10 +25,11 @@ actor AutoTrigger {
 
     func start(by listener: ObjectIdentifier) {
         listeners.insert(listener)
+
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 var triggerTask: Task<Void, Error>?
-                try? await Environment.triggerAction("Real-time Suggestions")
+                try? await Environment.triggerAction("Prefetch Suggestions")
                 for await _ in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
@@ -43,7 +44,7 @@ actor AutoTrigger {
                     }
 
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
                         guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL),
@@ -51,7 +52,7 @@ actor AutoTrigger {
                               workspace.isRealtimeSuggestionEnabled
                         else { return }
                         if Task.isCancelled { return }
-                        try? await Environment.triggerAction("Real-time Suggestions")
+                        try? await Environment.triggerAction("Prefetch Suggestions")
                     }
                 }
             }
