@@ -258,4 +258,30 @@ public class XPCService: NSObject, XPCServiceProtocol {
             reply(nil)
         }
     }
+    
+    public func prefetchRealtimeSuggestions(
+        editorContent: Data,
+        withReply reply: @escaping () -> Void
+    ) {
+        Task { @ServiceActor in
+            do {
+                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
+                let fileURL = try await Environment.fetchCurrentFileURL()
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                _ = workspace.getRealtimeSuggestedCode(
+                    forFileAt: fileURL,
+                    content: editor.content,
+                    lines: editor.lines,
+                    cursorPosition: editor.cursorPosition,
+                    tabSize: editor.tabSize,
+                    indentSize: editor.indentSize,
+                    usesTabsForIndentation: editor.usesTabsForIndentation
+                )
+                reply()
+            } catch {
+                print(error)
+                reply()
+            }
+        }
+    }
 }
