@@ -1,5 +1,6 @@
 import Cocoa
 import Foundation
+import os.log
 
 public protocol CGEventObserverType {
     @discardableResult
@@ -38,7 +39,7 @@ final class CGEventObserver: CGEventObserverType {
         retryTask?.cancel()
         retryTask = nil
         guard let port = port else { return }
-        print("Deactivate")
+        os_log(.info, "CGEventObserver deactivated.")
         CFMachPortInvalidate(port)
         self.port = nil
     }
@@ -95,6 +96,7 @@ final class CGEventObserver: CGEventObserverType {
         self.port = port
         let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
         CFRunLoopAddSource(RunLoop.main.getCFRunLoop(), runLoopSource, .commonModes)
+        os_log(.info, "CGEventObserver activated.")
         return true
     }
 }

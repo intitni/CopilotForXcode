@@ -2,6 +2,7 @@ import AppKit
 import CopilotService
 import Foundation
 import LanguageServerProtocol
+import os.log
 import XPCShared
 
 @globalActor enum ServiceActor {
@@ -15,24 +16,6 @@ var workspaces = [URL: Workspace]()
 public class XPCService: NSObject, XPCServiceProtocol {
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
-
-    override public init() {
-        super.init()
-        let identifier = ObjectIdentifier(self)
-        Task {
-            await AutoTrigger.shared.start(by: identifier)
-        }
-    }
-
-    deinit {
-        let identifier = ObjectIdentifier(self)
-        Task { @ServiceActor in
-            for (_, workspace) in workspaces {
-                workspace.isRealtimeSuggestionEnabled = false
-            }
-            await AutoTrigger.shared.stop(by: identifier)
-        }
-    }
 
     public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
@@ -113,7 +96,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -140,7 +123,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -167,7 +150,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -191,7 +174,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 )
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -218,7 +201,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -247,7 +230,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -257,11 +240,19 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             let fileURL = try await Environment.fetchCurrentFileURL()
             let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            workspace.isRealtimeSuggestionEnabled = enabled
+            if var state = UserDefaults.shared.dictionary(forKey: SettingsKey.realtimeSuggestionState) {
+                state[workspace.projectRootURL.absoluteString] = enabled
+                UserDefaults.shared.set(state, forKey: SettingsKey.realtimeSuggestionState)
+            } else {
+                UserDefaults.shared.set(
+                    [workspace.projectRootURL.absoluteString: enabled],
+                    forKey: SettingsKey.realtimeSuggestionState
+                )
+            }
             reply(nil)
         }
     }
-    
+
     public func prefetchRealtimeSuggestions(
         editorContent: Data,
         withReply reply: @escaping () -> Void
@@ -282,7 +273,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 )
                 reply()
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply()
             }
         }
