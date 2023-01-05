@@ -38,14 +38,14 @@ The first time the commands run, the extension will ask for 2 types of permissio
 - Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
+- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Turn Off Real-time Suggestions: Turns the real-time suggestions off.
 - Real-time Suggestions: It is an entry point only for Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
 
 **About real-time suggestions**
 
-- The on/off state is not persisted, they will be reset every time Xcode is quit. (For technical reasons, you always need to run a random command to start the XPCService, it will be confusing if it's persisted.)
+- The on/off state is persisted, make sure you turn it off manually if you no longer want it.
 - The implementation won't feel as smooth as that of VSCode.
   
     The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it.
