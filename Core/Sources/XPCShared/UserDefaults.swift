@@ -6,4 +6,5 @@ public extension UserDefaults {
 
 public enum SettingsKey {
     public static let nodePath = "NodePath"
+    public static let realtimeSuggestionState = "RealtimeSuggestionState"
 }

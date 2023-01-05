@@ -17,6 +17,19 @@ private struct FailedToFetchFileURLError: Error, LocalizedError {
 enum Environment {
     static var now = { Date() }
     
+    static var runningXcodes: () async -> [NSRunningApplication] = {
+        var xcodes = [NSRunningApplication]()
+        var retryCount = 0
+        // Sometimes runningApplications returns 0 items.
+        while xcodes.isEmpty, retryCount < 3 {
+            xcodes = NSRunningApplication
+                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
+            try? await Task.sleep(nanoseconds: 1_000_000)
+            retryCount += 1
+        }
+        return xcodes
+    }
+    
     static var isXcodeActive: () async ->  Bool = {
         var activeXcodes = [NSRunningApplication]()
         var retryCount = 0
@@ -24,11 +37,8 @@ enum Environment {
         while activeXcodes.isEmpty, retryCount < 3 {
             activeXcodes = NSRunningApplication
                 .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-                .sorted { lhs, _ in
-                    if lhs.isActive { return true }
-                    return false
-                }
-            if retryCount > 0 { try? await Task.sleep(nanoseconds: 1_000_000) }
+                .filter { $0.isActive }
+            try? await Task.sleep(nanoseconds: 1_000_000)
             retryCount += 1
         }
         return !activeXcodes.isEmpty
