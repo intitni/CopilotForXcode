@@ -16,7 +16,7 @@ final class CGEventObserver: CGEventObserverType {
 
     private var continuation: AsyncStream<Void>.Continuation
     private var port: CFMachPort?
-    private let eventsOfInterest: Set<CGEventType> = [.keyUp, .leftMouseUp, .rightMouseUp]
+    private let eventsOfInterest: Set<CGEventType> = [.keyUp]
     private let tapLocation: CGEventTapLocation = .cghidEventTap
     private let tapPlacement: CGEventTapPlacement = .tailAppendEventTap
     private let tapOptions: CGEventTapOptions = .listenOnly
