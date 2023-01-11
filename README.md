@@ -20,16 +20,27 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Installation and Setup
 
-1. Download the Copilot for Xcode.app from the latest release, and extract it to the Applications folder.
+### Install
+
+1. Download the Copilot for Xcode.app from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
 2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
-3. Refresh the Copilot status, if it fails, quit and restart the app. 
-4. Sign in. You will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
-5. After signing in, go back to the app and click "Confirm Sign-in" to finish.
-5. Enable the extension in the Settings.app, then maybe restart Xcode.
+3. Enable the extension in the Settings.app, then maybe restart Xcode.
+
+### Sign In Github Copilot
+ 
+1. In the app, refresh the Copilot status, if it fails, quit and restart the app. 
+2. Click "Sign In", you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
+3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
 
 The first time the commands run, the extension will ask for 2 types of permissions:
 1. Accessibility API: which the extension uses to get the editing file path.
 2. Folder Access: the extension needs, to run some Apple Scripts to get the project/workspace path. 
+
+## Update 
+
+You can manually download the latest release. After updating the app, don't forget to click `Restart XPC Service` in the app to kill the old version and run the new version.
+
+If you want to keep track of the new releases, you can watch this repo's releases to get notifications on updates.
 
 ## Commands
 
