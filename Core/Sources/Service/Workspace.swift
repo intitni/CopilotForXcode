@@ -100,7 +100,10 @@ final class Workspace {
             extraInfo: &extraInfo
         )
 
-        let snapshot = Filespace.Snapshot(linesHash: lines.hashValue, cursorPosition: cursorPosition)
+        let snapshot = Filespace.Snapshot(
+            linesHash: lines.hashValue,
+            cursorPosition: cursorPosition
+        )
 
         if snapshot != filespace.suggestionSourceSnapshot {
             let task = Task {

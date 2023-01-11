@@ -58,7 +58,7 @@ struct LaunchAgentManager {
         launchctl("unload", launchAgentPath)
         try FileManager.default.removeItem(atPath: launchAgentPath)
     }
-    
+
     func restartLaunchAgent() {
         launchctl("unload", launchAgentPath)
         launchctl("load", launchAgentPath)

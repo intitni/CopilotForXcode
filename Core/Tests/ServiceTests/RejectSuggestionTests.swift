@@ -42,7 +42,7 @@ final class RejectSuggestionTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))!
-        
+
         let result1Lines = lines.applying(result1.modifications)
 
         let result2 = try await service.getSuggestionRejectedCode(editorContent: .init(
@@ -54,7 +54,7 @@ final class RejectSuggestionTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))!
-        
+
         let result2Lines = result1Lines.applying(result2.modifications)
         XCTAssertEqual(result2Lines.joined(), result2.content)
         XCTAssertEqual(result2Lines, lines, "Previous suggestions should be removed.")

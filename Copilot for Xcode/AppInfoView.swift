@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AppInfoView: View {
     @State var appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-    
+
     var body: some View {
         Section {
             VStack(alignment: .leading) {
@@ -12,7 +12,7 @@ struct AppInfoView: View {
                     Text(appVersion ?? "")
                         .font(.footnote)
                         .foregroundColor(.white.opacity(0.5))
-                    
+
                     Spacer()
                 }
 

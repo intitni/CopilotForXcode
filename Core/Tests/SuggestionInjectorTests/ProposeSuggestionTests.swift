@@ -232,7 +232,7 @@ final class ProposeSuggestionTests: XCTestCase {
             print(array)
         }
         *///======== End of Copilot Suggestion
-        
+
         """)
     }
 }

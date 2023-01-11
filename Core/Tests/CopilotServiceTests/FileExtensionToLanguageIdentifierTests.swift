@@ -1,5 +1,5 @@
-import XCTest
 import LanguageServerProtocol
+import XCTest
 
 @testable import CopilotService
 
@@ -14,7 +14,7 @@ final class FileExtensionToLanguageIdentifierTests: XCTestCase {
                 dict[e]?.append(languageId.rawValue)
             }
         }
-        
+
         let confilicts = dict.filter { $0.value.count > 1 }
         XCTAssertEqual(confilicts, [:])
     }

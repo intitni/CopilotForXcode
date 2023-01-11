@@ -38,7 +38,7 @@ final class CGEventObserver: CGEventObserverType {
     public func deactivate() {
         retryTask?.cancel()
         retryTask = nil
-        guard let port = port else { return }
+        guard let port else { return }
         os_log(.info, "CGEventObserver deactivated.")
         CFMachPortInvalidate(port)
         self.port = nil
@@ -65,16 +65,18 @@ final class CGEventObserver: CGEventObserverType {
                 return .passRetained(event)
             }
 
-            if let continuation = continuationPointer?.assumingMemoryBound(to: AsyncStream<Void>.Continuation.self) {
+            if let continuation = continuationPointer?
+                .assumingMemoryBound(to: AsyncStream<Void>.Continuation.self)
+            {
                 continuation.pointee.yield(())
             }
 
             return .passRetained(event)
         }
 
-        let tapLocation = self.tapLocation
-        let tapPlacement = self.tapPlacement
-        let tapOptions = self.tapOptions
+        let tapLocation = tapLocation
+        let tapPlacement = tapPlacement
+        let tapOptions = tapOptions
 
         guard let port = withUnsafeMutablePointer(to: &continuation, { pointer in
             CGEvent.tapCreate(

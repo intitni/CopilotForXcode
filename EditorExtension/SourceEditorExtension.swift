@@ -3,7 +3,7 @@ import XcodeKit
 
 class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
-        return [
+        [
             GetSuggestionsCommand(),
             AcceptSuggestionCommand(),
             RejectSuggestionCommand(),
@@ -32,12 +32,14 @@ extension CommandType where Self: NSObject {
 
 extension CommandType {
     func makeCommandDefinition() -> [XCSourceEditorCommandDefinitionKey: Any] {
-        return [.classNameKey: commandClassName,
-                .identifierKey: identifierPrefix + identifier,
-                .nameKey: name]
+        [.classNameKey: commandClassName,
+         .identifierKey: identifierPrefix + identifier,
+         .nameKey: name]
     }
 }
 
-func makeCommandDefinition(_ commandType: CommandType) -> [XCSourceEditorCommandDefinitionKey: Any] {
-    return commandType.makeCommandDefinition()
+func makeCommandDefinition(_ commandType: CommandType)
+    -> [XCSourceEditorCommandDefinitionKey: Any]
+{
+    commandType.makeCommandDefinition()
 }

@@ -1,6 +1,6 @@
 import Foundation
-import XPCShared
 import os.log
+import XPCShared
 
 var asyncService: AsyncXPCService?
 var shared = XPCService()

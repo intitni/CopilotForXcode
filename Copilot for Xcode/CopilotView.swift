@@ -29,13 +29,17 @@ struct CopilotView: View {
                                 .alert(isPresented: $isUserCodeCopiedAlertPresented) {
                                     Alert(
                                         title: Text(userCode ?? ""),
-                                        message: Text("The user code is pasted into your clipboard, please paste it in the opened website to login.\nAfter that, click \"Confirm Sign-in\" to finish."),
+                                        message: Text(
+                                            "The user code is pasted into your clipboard, please paste it in the opened website to login.\nAfter that, click \"Confirm Sign-in\" to finish."
+                                        ),
                                         dismissButton: .default(Text("OK"))
                                     )
                                 }
                             Button("Confirm Sign-in") { confirmSignIn() }
                         }
-                        if copilotStatus == .ok || copilotStatus == .alreadySignedIn || copilotStatus == .notAuthorized {
+                        if copilotStatus == .ok || copilotStatus == .alreadySignedIn ||
+                            copilotStatus == .notAuthorized
+                        {
                             Button("Sign Out") { signOut() }
                         }
                         if isRunningAction {

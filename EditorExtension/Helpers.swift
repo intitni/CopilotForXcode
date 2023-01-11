@@ -6,7 +6,8 @@ import XPCShared
 extension XCSourceEditorCommandInvocation {
     func mutateCompleteBuffer(modifications: [Modification], restoringSelections restore: Bool) {
         if restore {
-            let selectionsRangesToRestore = buffer.selections.compactMap { $0 as? XCSourceTextRange }
+            let selectionsRangesToRestore = buffer.selections
+                .compactMap { $0 as? XCSourceTextRange }
             buffer.selections.removeAllObjects()
             buffer.lines.apply(modifications)
             for range in selectionsRangesToRestore {

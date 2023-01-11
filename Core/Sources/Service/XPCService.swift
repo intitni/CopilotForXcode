@@ -39,7 +39,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    public func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInConfirm(
+        userCode: String,
+        withReply reply: @escaping (String?, String?, Error?) -> Void
+    ) {
         Task { @ServiceActor in
             do {
                 let (username, status) = try await authService.signInConfirm(userCode: userCode)
@@ -240,7 +243,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             let fileURL = try await Environment.fetchCurrentFileURL()
             let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            if var state = UserDefaults.shared.dictionary(forKey: SettingsKey.realtimeSuggestionState) {
+            if var state = UserDefaults.shared
+                .dictionary(forKey: SettingsKey.realtimeSuggestionState)
+            {
                 state[workspace.projectRootURL.absoluteString] = enabled
                 UserDefaults.shared.set(state, forKey: SettingsKey.realtimeSuggestionState)
             } else {

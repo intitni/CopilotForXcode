@@ -18,7 +18,8 @@ extension LanguageIdentifier {
         case .c:
             return ["c", "cats", "idc"]
         case .cpp:
-            return ["cpp", "c++", "cc", "cp", "cxx", "h++", "hh", "hpp", "hxx", "inl", "ino", "ipp", "ixx", "re", "tcc", "tpp"]
+            return ["cpp", "c++", "cc", "cp", "cxx", "h++", "hh", "hpp", "hxx", "inl", "ino", "ipp",
+                    "ixx", "re", "tcc", "tpp"]
         case .csharp:
             return ["cs", "cake", "csx", "linq"]
         case .css:
@@ -52,7 +53,8 @@ extension LanguageIdentifier {
         case .java:
             return ["java"]
         case .javascript:
-            return ["js", "_js", "bones", "es6", "frag", "gs", "jake", "jsb", "jsfl", "jsm", "jss", "njs", "pac", "sjs", "ssjs", "xsjs", "xsjslib"]
+            return ["js", "_js", "bones", "es6", "frag", "gs", "jake", "jsb", "jsfl", "jsm", "jss",
+                    "njs", "pac", "sjs", "ssjs", "xsjs", "xsjslib"]
         case .javascriptreact:
             return ["jsx"]
         case .json:
@@ -72,9 +74,9 @@ extension LanguageIdentifier {
         case .objcpp:
             return ["mm"]
         case .perl:
-            return ["pl", "perl", "ph", "plx", /*"pm",*/ "pod", "psgi", /*"t"*/]
+            return ["pl", "perl", "ph", "plx", /* "pm", */ "pod", "psgi" /* "t" */ ]
         case .perl6:
-            return ["6pl", "6pm", "nqp", "p6", "p6l", "p6m", /*"pl",*/ "pl6", "pm", "pm6", "t"]
+            return ["6pl", "6pm", "nqp", "p6", "p6l", "p6m", /* "pl", */ "pl6", "pm", "pm6", "t"]
         case .php:
             return ["php", "aw", "ctp", "php3", "php4", "php5", "phpt"]
         case .powershell:
@@ -88,7 +90,9 @@ extension LanguageIdentifier {
         case .razor:
             return ["cshtml", "razor"]
         case .ruby:
-            return ["rb", "builder", "gemspec", "god", "irbrc", "jbuilder", "mspec", "pluginspec", "podspec", "rabl", "rake", "rbuild", "rbw", "rbx", "ru", "ruby", "thor", "watchr"]
+            return ["rb", "builder", "gemspec", "god", "irbrc", "jbuilder", "mspec", "pluginspec",
+                    "podspec", "rabl", "rake", "rbuild", "rbw", "rbx", "ru", "ruby", "thor",
+                    "watchr"]
         case .rust:
             return ["rs"]
         case .scss:
@@ -110,7 +114,8 @@ extension LanguageIdentifier {
         case .typescriptreact:
             return ["tsx"]
         case .tex:
-            return [/*"tex", */ "aux", "bbx", "cbx", "cls", "dtx", "ins", "lbx", "ltx", "mkii", "mkiv", "mkvi", "sty", "toc"]
+            return [ /* "tex", */ "aux", "bbx", "cbx", "cls", "dtx", "ins", "lbx", "ltx", "mkii",
+                     "mkiv", "mkvi", "sty", "toc"]
         case .vb:
             return [
                 "vb",

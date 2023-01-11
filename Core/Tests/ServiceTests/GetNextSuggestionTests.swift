@@ -64,13 +64,13 @@ final class GetNextSuggestionTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))!
-        
+
         let result2Lines = result1Lines.applying(result2.modifications)
 
         XCTAssertEqual(result2Lines.joined(), result2.content)
         XCTAssertEqual(result2.content, """
         struct Cat {}
-        
+
         /*========== Copilot Suggestion 2/2
 
         struct Wolf {}
@@ -93,13 +93,13 @@ final class GetNextSuggestionTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))!
-        
+
         let result3Lines = lines.applying(result3.modifications)
 
         XCTAssertEqual(result3.content, result3Lines.joined())
         XCTAssertEqual(result3.content, """
         struct Cat {}
-        
+
         /*========== Copilot Suggestion 1/2
 
         struct Dog {}

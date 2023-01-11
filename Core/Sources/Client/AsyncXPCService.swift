@@ -4,7 +4,7 @@ import XPCShared
 
 public struct AsyncXPCService {
     let connection: NSXPCConnection
-    
+
     public init(connection: NSXPCConnection) {
         self.connection = connection
     }
@@ -51,7 +51,9 @@ public struct AsyncXPCService {
         }
     }
 
-    public func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus) {
+    public func signInConfirm(userCode: String) async throws
+        -> (username: String, status: CopilotStatus)
+    {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.signInConfirm(userCode: userCode) { username, status, error in
@@ -75,7 +77,8 @@ public struct AsyncXPCService {
                     continuation.reject(error)
                     return
                 }
-                continuation.resume(finishstatus.flatMap(CopilotStatus.init(rawValue:)) ?? .notSignedIn)
+                continuation
+                    .resume(finishstatus.flatMap(CopilotStatus.init(rawValue:)) ?? .notSignedIn)
             }
         }
     }
@@ -96,7 +99,9 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getPreviousSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
+    public func getPreviousSuggestedCode(editorContent: EditorContent) async throws
+        -> UpdatedContent?
+    {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -104,7 +109,9 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getSuggestionAcceptedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
+    public func getSuggestionAcceptedCode(editorContent: EditorContent) async throws
+        -> UpdatedContent?
+    {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -112,15 +119,19 @@ public struct AsyncXPCService {
         )
     }
 
-    public func getSuggestionRejectedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
+    public func getSuggestionRejectedCode(editorContent: EditorContent) async throws
+        -> UpdatedContent?
+    {
         try await suggestionRequest(
             connection,
             editorContent,
             { $0.getSuggestionRejectedCode }
         )
     }
-    
-    public func getRealtimeSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
+
+    public func getRealtimeSuggestedCode(editorContent: EditorContent) async throws
+        -> UpdatedContent?
+    {
         try await suggestionRequest(
             connection,
             editorContent,
@@ -129,7 +140,7 @@ public struct AsyncXPCService {
     }
 
     public func setAutoSuggestion(enabled: Bool) async throws {
-        return try await withXPCServiceConnected(connection: connection) {
+        try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.setAutoSuggestion(enabled: enabled) { error in
                 if let error {
@@ -138,9 +149,9 @@ public struct AsyncXPCService {
                 }
                 continuation.resume(())
             }
-        }
+        } as Void
     }
-    
+
     public func prefetchRealtimeSuggestions(editorContent: EditorContent) async {
         guard let data = try? JSONEncoder().encode(editorContent) else { return }
         try? await withXPCServiceConnected(connection: connection) { service, continuation in

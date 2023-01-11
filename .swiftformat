@@ -20,7 +20,7 @@
 --hexliteralcase uppercase
 --ifdef no-indent
 --importgrouping testable-bottom
---indent 2
+--indent 4
 --indentcase false
 --lifecycle 
 --linebreaks lf

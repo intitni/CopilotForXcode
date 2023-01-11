@@ -96,9 +96,9 @@ final class GetSuggestionsTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         ))!
-        
+
         let resultLines = lines.applying(result.modifications)
-        
+
         XCTAssertEqual(resultLines.joined(), result.content)
         XCTAssertEqual(result.content, """
         struct Cat {

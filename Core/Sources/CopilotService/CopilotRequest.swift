@@ -28,16 +28,16 @@ enum CopilotRequest {
             .custom("setEditorInfo", .hash([
                 "editorInfo": .hash([
                     "name": "Xcode",
-                    "version": ""
+                    "version": "",
                 ]),
                 "editorPluginInfo": .hash([
                     "name": "Copilot for Xcode",
-                    "version": ""
-                ])
+                    "version": "",
+                ]),
             ]))
         }
     }
-    
+
     struct GetVersion: CopilotRequestType {
         struct Response: Codable {
             var version: String
@@ -47,7 +47,7 @@ enum CopilotRequest {
             .custom("getVersion", .hash([:]))
         }
     }
-    
+
     struct CheckStatus: CopilotRequestType {
         struct Response: Codable {
             var status: CopilotStatus
@@ -144,24 +144,24 @@ enum CopilotRequest {
             ]))
         }
     }
-    
+
     struct NotifyAccepted: CopilotRequestType {
         struct Response: Codable {}
-        
+
         var completionUUID: String
-        
+
         var request: ClientRequest {
             .custom("notifyAccepted", .hash([
                 "uuid": .string(completionUUID),
             ]))
         }
     }
-    
+
     struct NotifyRejected: CopilotRequestType {
         struct Response: Codable {}
-        
+
         var completionUUIDs: [String]
-        
+
         var request: ClientRequest {
             .custom("notifyRejected", .hash([
                 "uuids": .array(completionUUIDs.map(JSONValue.string)),

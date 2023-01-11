@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct CopilotForXcodeApp: App {
     var body: some Scene {
-        return WindowGroup {
+        WindowGroup {
             ContentView()
                 .frame(minWidth: 500, maxWidth: .infinity, minHeight: 700)
         }

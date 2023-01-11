@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
-import XPCShared
 import os.log
+import XPCShared
 
 public actor AutoTrigger {
     public static let shared = AutoTrigger()
@@ -24,7 +24,7 @@ public actor AutoTrigger {
                 }
             }
         }
-        
+
         // Start the auto trigger if Xcode is running.
         Task {
             for xcode in await Environment.runningXcodes() {
@@ -34,19 +34,23 @@ public actor AutoTrigger {
                 .notifications(named: NSWorkspace.didLaunchApplicationNotification)
             for await notification in sequence {
                 try Task.checkCancellation()
-                guard let app =  notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { continue }
+                guard let app = notification
+                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                else { continue }
                 guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
                 await start(by: app.processIdentifier)
             }
         }
-        
+
         // Remove listener if Xcode is terminated.
         Task {
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didTerminateApplicationNotification)
             for await notification in sequence {
                 try Task.checkCancellation()
-                guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { continue }
+                guard let app = notification
+                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                else { continue }
                 guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
                 await stop(by: app.processIdentifier)
             }
@@ -77,9 +81,11 @@ public actor AutoTrigger {
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
-                        guard let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
+                        guard let folderURL = try? await Environment
+                            .fetchCurrentProjectRootURL(fileURL)
                         else { return }
-                        let workspace = workspaces[folderURL] ?? Workspace(projectRootURL: folderURL)
+                        let workspace = workspaces[folderURL] ??
+                            Workspace(projectRootURL: folderURL)
                         workspaces[folderURL] = workspace
                         guard workspace.isRealtimeSuggestionEnabled else { return }
                         if Task.isCancelled { return }
