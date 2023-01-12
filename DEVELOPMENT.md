@@ -34,4 +34,6 @@ Testing Real-time Suggestions is a little bit different because the Apple Script
 
 Just run both the XPCService and the EditorExtension Target. 
 
+## App Versioning
 
+The app version and all targets' version in controlled by `Version.xcconfig`.
