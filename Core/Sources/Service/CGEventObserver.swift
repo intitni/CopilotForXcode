@@ -6,17 +6,22 @@ public protocol CGEventObserverType {
     @discardableResult
     func activateIfPossible() -> Bool
     func deactivate()
-    var stream: AsyncStream<Void> { get }
+    var stream: AsyncStream<CGEventType> { get }
     var isEnabled: Bool { get }
 }
 
 final class CGEventObserver: CGEventObserverType {
-    let stream: AsyncStream<Void>
+    let stream: AsyncStream<CGEventType>
     var isEnabled: Bool { port != nil }
 
-    private var continuation: AsyncStream<Void>.Continuation
+    private var continuation: AsyncStream<CGEventType>.Continuation
     private var port: CFMachPort?
-    private let eventsOfInterest: Set<CGEventType> = [.keyUp]
+    private let eventsOfInterest: Set<CGEventType> = [
+        .keyUp,
+        .keyDown,
+        .rightMouseDown,
+        .leftMouseDown,
+    ]
     private let tapLocation: CGEventTapLocation = .cghidEventTap
     private let tapPlacement: CGEventTapPlacement = .tailAppendEventTap
     private let tapOptions: CGEventTapOptions = .listenOnly
@@ -28,7 +33,7 @@ final class CGEventObserver: CGEventObserverType {
     }
 
     init() {
-        var continuation: AsyncStream<Void>.Continuation!
+        var continuation: AsyncStream<CGEventType>.Continuation!
         stream = AsyncStream { c in
             continuation = c
         }
@@ -66,9 +71,9 @@ final class CGEventObserver: CGEventObserverType {
             }
 
             if let continuation = continuationPointer?
-                .assumingMemoryBound(to: AsyncStream<Void>.Continuation.self)
+                .assumingMemoryBound(to: AsyncStream<CGEventType>.Continuation.self)
             {
-                continuation.pointee.yield(())
+                continuation.pointee.yield(eventType)
             }
 
             return .passRetained(event)
