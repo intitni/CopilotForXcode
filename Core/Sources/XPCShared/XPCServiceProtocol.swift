@@ -43,4 +43,6 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping () -> Void
     )
+
+    func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void)
 }

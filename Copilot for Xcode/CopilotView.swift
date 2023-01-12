@@ -12,6 +12,10 @@ struct CopilotView: View {
     @State var version: String?
     @State var isRunningAction: Bool = false
     @State var isUserCodeCopiedAlertPresented = false
+    @State var xpcServiceVersion: String?
+    var shouldRestartXPCService: Bool {
+        xpcServiceVersion != (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
+    }
 
     var body: some View {
         Section {
@@ -20,7 +24,8 @@ struct CopilotView: View {
                     Text("Copilot")
                         .font(.title)
                         .padding(.bottom, 12)
-                    Text("Version: \(version ?? "Loading..")")
+                    Text("XPCService Version: \(xpcServiceVersion ?? "Loading..")")
+                    Text("Copilot Version: \(version ?? "Loading..")")
                     Text("Status: \(copilotStatus?.description ?? "Loading..")")
                     HStack(alignment: .center) {
                         Button("Refresh") { checkStatus() }
@@ -74,9 +79,12 @@ struct CopilotView: View {
             defer { isRunningAction = false }
             do {
                 let service = try getService()
+                xpcServiceVersion = try await service.getXPCServiceVersion().version
                 copilotStatus = try await service.checkStatus()
                 version = try await service.getVersion()
-                message = nil
+                message = shouldRestartXPCService
+                    ? "Please restart XPC Service to update it to the latest version."
+                    : nil
                 isRunningAction = false
             } catch {
                 message = error.localizedDescription
@@ -159,9 +167,9 @@ struct ActivityIndicatorView: NSViewRepresentable {
 struct CopilotView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CopilotView(copilotStatus: .notSignedIn, version: "1.0.0")
+            CopilotView(copilotStatus: .notSignedIn, version: "1.0.0", xpcServiceVersion: "0.0.0")
 
-            CopilotView(copilotStatus: .alreadySignedIn, message: "Error")
+            CopilotView(copilotStatus: .alreadySignedIn, message: "Error", xpcServiceVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
 
             CopilotView(copilotStatus: .alreadySignedIn, isRunningAction: true)
         }
