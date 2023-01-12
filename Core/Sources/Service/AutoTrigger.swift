@@ -64,7 +64,7 @@ public actor AutoTrigger {
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 var triggerTask: Task<Void, Error>?
-                for await _ in stream {
+                for await eventType in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
                     guard await Environment.isXcodeActive() else { continue }
@@ -77,16 +77,17 @@ public actor AutoTrigger {
                         }
                     }
 
+                    guard eventType == .keyUp else { continue }
+
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        try? await Task.sleep(nanoseconds: 1_500_000_000)
                         if Task.isCancelled { return }
                         let fileURL = try? await Environment.fetchCurrentFileURL()
-                        guard let folderURL = try? await Environment
-                            .fetchCurrentProjectRootURL(fileURL)
-                        else { return }
-                        let workspace = workspaces[folderURL] ??
-                            Workspace(projectRootURL: folderURL)
-                        workspaces[folderURL] = workspace
+                        let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
+                        guard let workspaceURL = folderURL ?? fileURL else { return }
+                        let workspace = workspaces[workspaceURL]
+                            ?? Workspace(projectRootURL: workspaceURL)
+                        workspaces[workspaceURL] = workspace
                         guard workspace.isRealtimeSuggestionEnabled else { return }
                         if Task.isCancelled { return }
                         try? await Environment.triggerAction("Prefetch Suggestions")
