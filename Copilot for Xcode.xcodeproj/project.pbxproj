@@ -150,6 +150,7 @@
 		C8189B202938973000C9DCDA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Copilot_for_Xcode.entitlements; sourceTree = "<group>"; };
 		C8189B282938979000C9DCDA /* Core */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Core; sourceTree = "<group>"; };
+		C81E867D296FE4420026E908 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		C832A47B2940C71D000989F2 /* copilot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = copilot; path = copilot.vim/copilot; sourceTree = "<group>"; };
 		C83B2B79293D9C8C00C5ACCD /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
 		C83B2B7B293D9FB400C5ACCD /* CopilotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotView.swift; sourceTree = "<group>"; };
@@ -246,6 +247,7 @@
 				C832A47B2940C71D000989F2 /* copilot */,
 				C8520308293D805800460097 /* README.md */,
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
+				C81E867D296FE4420026E908 /* Version.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8189B282938979000C9DCDA /* Core */,

@@ -14,6 +14,12 @@ import XPCShared
 var workspaces = [URL: Workspace]()
 
 public class XPCService: NSObject, XPCServiceProtocol {
+    public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
+        reply(
+            Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A",
+            Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A")
+    }
+
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
 

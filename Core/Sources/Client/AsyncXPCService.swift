@@ -24,6 +24,15 @@ public struct AsyncXPCService {
             }
         }
     }
+    
+    public func getXPCServiceVersion() async throws -> (version: String, build: String) {
+        try await withXPCServiceConnected(connection: connection) {
+            service, continuation in
+            service.getXPCServiceVersion { version, build in
+                continuation.resume((version, build))
+            }
+        }
+    }
 
     public func getVersion() async throws -> String {
         try await withXPCServiceConnected(connection: connection) {
