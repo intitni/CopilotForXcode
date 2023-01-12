@@ -102,6 +102,8 @@ fi
 **Q: I turned on real-time suggestions, but nothing happens**
 
 > A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
+>
+> If that doesn't help, try to restart the XPC Service again.
 
 **Q: Will it work in future Xcode updates?**
 
