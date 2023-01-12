@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 import XPCShared
 
 var asyncService: AsyncXPCService?
@@ -30,11 +31,11 @@ class XPCService {
         connection.remoteObjectInterface =
             NSXPCInterface(with: XPCServiceProtocol.self)
         connection.invalidationHandler = { [weak self] in
-            print("XPCService Invalidated")
+            os_log(.info, "XPCService Invalidated")
             self?.isInvalidated = true
         }
         connection.interruptionHandler = { [weak self] in
-            print("XPCService interrupted")
+            os_log(.info, "XPCService interrupted")
         }
         connection.resume()
         return connection

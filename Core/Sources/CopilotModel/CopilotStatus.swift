@@ -6,7 +6,7 @@ public enum CopilotStatus: String, Codable, CustomStringConvertible {
     case notAuthorized = "NotAuthorized"
     case notSignedIn = "NotSignedIn"
     case ok = "OK"
-    
+
     public var description: String {
         switch self {
         case .alreadySignedIn:

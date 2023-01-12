@@ -5,14 +5,14 @@ public enum Modification: Codable, Equatable {
     case inserted(Int, [String])
 }
 
-public extension Array where Element == String {
+public extension [String] {
     mutating func apply(_ modifications: [Modification]) {
         for modification in modifications {
             switch modification {
             case let .deleted(range):
                 if isEmpty { break }
-                let removingRange = range.lowerBound ..< (range.upperBound + 1)
-                removeSubrange(removingRange.clamped(to: 0 ..< endIndex))
+                let removingRange = range.lowerBound..<(range.upperBound + 1)
+                removeSubrange(removingRange.clamped(to: 0..<endIndex))
             case let .inserted(index, strings):
                 insert(contentsOf: strings, at: Swift.min(endIndex, index))
             }
@@ -32,7 +32,7 @@ public extension NSMutableArray {
             switch modification {
             case let .deleted(range):
                 if count == 0 { break }
-                let newRange = range.clamped(to: 0 ... (count - 1))
+                let newRange = range.clamped(to: 0...(count - 1))
                 removeObjects(in: NSRange(newRange))
             case let .inserted(index, strings):
                 for string in strings.reversed() {

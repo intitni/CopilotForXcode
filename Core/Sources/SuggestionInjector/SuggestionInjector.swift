@@ -36,7 +36,7 @@ public struct SuggestionInjector {
                 suggestionStartIndex = -1
             }
         }
-        
+
         let reversedRanges = ranges.reversed()
 
         extraInfo.modifications.append(contentsOf: reversedRanges.map(Modification.deleted))
@@ -77,7 +77,7 @@ public struct SuggestionInjector {
 
         if !commonPrefix.isEmpty {
             lines[1].replaceSubrange(
-                lines[1].startIndex ..< (
+                lines[1].startIndex..<(
                     lines[1].index(
                         lines[1].startIndex,
                         offsetBy: commonPrefix.count,
@@ -96,12 +96,12 @@ public struct SuggestionInjector {
         }()
         if content.endIndex < lineIndex {
             extraInfo.didChangeContent = true
-            extraInfo.suggestionRange = content.endIndex ... content.endIndex + lines.count - 1
+            extraInfo.suggestionRange = content.endIndex...content.endIndex + lines.count - 1
             extraInfo.modifications.append(.inserted(content.endIndex, lines))
             content.append(contentsOf: lines)
         } else {
             extraInfo.didChangeContent = true
-            extraInfo.suggestionRange = lineIndex ... lineIndex + lines.count - 1
+            extraInfo.suggestionRange = lineIndex...lineIndex + lines.count - 1
             extraInfo.modifications.append(.inserted(lineIndex, lines))
             content.insert(contentsOf: lines, at: lineIndex)
         }
@@ -177,7 +177,7 @@ func longestCommonPrefix(of a: String, and b: String) -> String {
     let length = min(a.count, b.count)
 
     var prefix = ""
-    for i in 0 ..< length {
+    for i in 0..<length {
         let charIndex = a.index(a.startIndex, offsetBy: i)
         let firstStrChar = a[charIndex]
         guard b[charIndex] == firstStrChar else { return prefix }

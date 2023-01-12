@@ -20,39 +20,52 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Installation and Setup
 
-1. Download the Copilot for Xcode.app from the latest release, and extract it to the Applications folder.
-2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
-3. Refresh the Copilot status, if it fails, quit and restart the app. 
-4. Sign in. You will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
-5. After signing in, go back to the app and click "Confirm Sign-in" to finish.
-5. Enable the extension in the Settings.app, then maybe restart Xcode.
+### Install
 
-The first time the actions run, the extension will ask for 2 types of permissions:
+1. Download the Copilot for Xcode.app from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
+2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
+3. Enable the extension in the Settings.app, then maybe restart Xcode.
+
+### Sign In Github Copilot
+ 
+1. In the app, refresh the Copilot status, if it fails, quit and restart the app. 
+2. Click "Sign In", you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
+3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+
+The first time the commands run, the extension will ask for 2 types of permissions:
 1. Accessibility API: which the extension uses to get the editing file path.
 2. Folder Access: the extension needs, to run some Apple Scripts to get the project/workspace path. 
 
-## Actions
+## Update 
+
+You can manually download the latest release. After updating the app, don't forget to click `Restart XPC Service` in the app to kill the old version and run the new version.
+
+If you want to keep track of the new releases, you can watch this repo's releases to get notifications on updates.
+
+## Commands
 
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
 - Next Suggestion: If there is more than 1 suggestion, switch to the next one.
 - Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing. You have to manually turn it on for every open window of Xcode.
+- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Turn Off Real-time Suggestions: Turns the real-time suggestions off.
-- Real-time Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this action to bring you real-time suggestions. 
+- Real-time Suggestions: It is an entry point only for Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
+- Prefetch Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
 
 **About real-time suggestions**
 
-The implementation won't feel as smooth as that of VSCode.
+- The on/off state is persisted, make sure you turn it off manually if you no longer want it.
+- The implementation won't feel as smooth as that of VSCode.
+  
+    The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it.
 
-The magic behind it is that it will keep calling the action from the menu when you are not typing, or clicking mouse. So it will have to listen to those events, I am not sure if people like it.
-
-Hope that next year, Apple can spend some time on Xcode Extensions.  
+    Hope that next year, Apple can spend some time on Xcode Extensions.  
 
 ## Prevent Suggestions Being Committed
 
-Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening. Maybe later I will add an action for that.
+Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening.
 
 ```sh
 #!/bin/sh
@@ -89,6 +102,8 @@ fi
 **Q: I turned on real-time suggestions, but nothing happens**
 
 > A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
+>
+> If that doesn't help, try to restart the XPC Service again.
 
 **Q: Will it work in future Xcode updates?**
 

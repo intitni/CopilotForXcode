@@ -70,7 +70,7 @@ final class GetPreviousSuggestionTests: XCTestCase {
         XCTAssertEqual(result2Lines.joined(), result2.content)
         XCTAssertEqual(result2.content, """
         struct Cat {}
-        
+
         /*========== Copilot Suggestion 2/2
 
         struct Wolf {}
@@ -100,7 +100,7 @@ final class GetPreviousSuggestionTests: XCTestCase {
 
         XCTAssertEqual(result3.content, """
         struct Cat {}
-        
+
         /*========== Copilot Suggestion 1/2
 
         struct Dog {}

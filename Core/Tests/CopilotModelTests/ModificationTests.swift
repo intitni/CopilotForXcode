@@ -5,19 +5,19 @@ import XCTest
 final class ModificationTests: XCTestCase {
     func test_nsmutablearray_deleting_an_element() {
         let a = NSMutableArray(array: ["a", "b", "c"])
-        a.apply([.deleted(0 ... 0)])
+        a.apply([.deleted(0...0)])
         XCTAssertEqual(a as! [String], ["b", "c"])
     }
 
     func test_nsmutablearray_deleting_all_element() {
         let a = NSMutableArray(array: ["a", "b", "c"])
-        a.apply([.deleted(0 ... 2)])
+        a.apply([.deleted(0...2)])
         XCTAssertEqual(a as! [String], [])
     }
 
     func test_nsmutablearray_deleting_too_much_element() {
         let a = NSMutableArray(array: ["a", "b", "c"])
-        a.apply([.deleted(0 ... 100)])
+        a.apply([.deleted(0...100)])
         XCTAssertEqual(a as! [String], [])
     }
 

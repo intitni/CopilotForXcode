@@ -45,7 +45,12 @@ final class Workspace {
     }
 
     var filespaces = [URL: Filespace]()
-    var isRealtimeSuggestionEnabled = false
+    var isRealtimeSuggestionEnabled: Bool {
+        (UserDefaults.shared.dictionary(
+            forKey: SettingsKey.realtimeSuggestionState
+        )?[projectRootURL.absoluteString]) as? Bool ?? false
+    }
+
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()
 
     private lazy var service: CopilotSuggestionServiceType = Environment
@@ -95,7 +100,10 @@ final class Workspace {
             extraInfo: &extraInfo
         )
 
-        let snapshot = Filespace.Snapshot(linesHash: lines.hashValue, cursorPosition: cursorPosition)
+        let snapshot = Filespace.Snapshot(
+            linesHash: lines.hashValue,
+            cursorPosition: cursorPosition
+        )
 
         if snapshot != filespace.suggestionSourceSnapshot {
             let task = Task {

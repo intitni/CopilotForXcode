@@ -16,19 +16,29 @@ private struct FailedToFetchFileURLError: Error, LocalizedError {
 
 enum Environment {
     static var now = { Date() }
-    
-    static var isXcodeActive: () async ->  Bool = {
+
+    static var runningXcodes: () async -> [NSRunningApplication] = {
+        var xcodes = [NSRunningApplication]()
+        var retryCount = 0
+        // Sometimes runningApplications returns 0 items.
+        while xcodes.isEmpty, retryCount < 3 {
+            xcodes = NSRunningApplication
+                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
+            try? await Task.sleep(nanoseconds: 1_000_000)
+            retryCount += 1
+        }
+        return xcodes
+    }
+
+    static var isXcodeActive: () async -> Bool = {
         var activeXcodes = [NSRunningApplication]()
         var retryCount = 0
         // Sometimes runningApplications returns 0 items.
         while activeXcodes.isEmpty, retryCount < 3 {
             activeXcodes = NSRunningApplication
                 .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-                .sorted { lhs, _ in
-                    if lhs.isActive { return true }
-                    return false
-                }
-            if retryCount > 0 { try? await Task.sleep(nanoseconds: 1_000_000) }
+                .filter(\.isActive)
+            try? await Task.sleep(nanoseconds: 1_000_000)
             retryCount += 1
         }
         return !activeXcodes.isEmpty
@@ -52,9 +62,9 @@ enum Environment {
             }
             return url
         }
-        
+
         guard var currentURL = fileURL else { return nil }
-        var firstDirectoryURL: URL? = nil
+        var firstDirectoryURL: URL?
         while currentURL.pathComponents.count > 1 {
             defer { currentURL.deleteLastPathComponent() }
             guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
@@ -64,7 +74,7 @@ enum Environment {
                 return currentURL
             }
         }
-        
+
         return firstDirectoryURL ?? fileURL
     }
 
@@ -107,7 +117,10 @@ enum Environment {
                     }
                 }
                 if let path = path?.removingPercentEncoding {
-                    let url = URL(fileURLWithPath: path.replacingOccurrences(of: "file://", with: ""))
+                    let url = URL(
+                        fileURLWithPath: path
+                            .replacingOccurrences(of: "file://", with: "")
+                    )
                     return url
                 }
             } catch {
@@ -124,9 +137,10 @@ enum Environment {
         CopilotAuthService()
     }
 
-    static var createSuggestionService: (_ projectRootURL: URL) -> CopilotSuggestionServiceType = { projectRootURL in
-        CopilotSuggestionService(projectRootURL: projectRootURL)
-    }
+    static var createSuggestionService: (_ projectRootURL: URL)
+        -> CopilotSuggestionServiceType = { projectRootURL in
+            CopilotSuggestionService(projectRootURL: projectRootURL)
+        }
 
     static var triggerAction: (_ name: String) async throws -> Void = { name in
         var xcodes = [NSRunningApplication]()
@@ -140,7 +154,8 @@ enum Environment {
         }
 
         guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
-        let bundleName = Bundle.main.object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
+        let bundleName = Bundle.main
+            .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
 
         /// check if menu is open, if not, click the menu item.
         let appleScript = """

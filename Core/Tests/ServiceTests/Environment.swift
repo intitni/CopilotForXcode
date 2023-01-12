@@ -10,7 +10,7 @@ import XPCShared
 
 @ServiceActor func clearEnvironment() {
     workspaces = [:]
-    
+
     Environment.now = { Date() }
 
     Environment.fetchCurrentProjectRootURL = { _ in
@@ -28,7 +28,7 @@ import XPCShared
     Environment.createSuggestionService = {
         _ in fatalError("")
     }
-    
+
     Environment.triggerAction = { _ in }
 }
 
@@ -37,7 +37,7 @@ func getService() -> AsyncXPCService {
         class FakeConnection: NSXPCConnection {
             let xpcService = XPCService()
             override func remoteObjectProxyWithErrorHandler(_: @escaping (Error) -> Void) -> Any {
-                return xpcService
+                xpcService
             }
         }
         let connection = FakeConnection(machServiceName: "anything")
@@ -48,7 +48,7 @@ func getService() -> AsyncXPCService {
 }
 
 func completion(text: String, range: CursorRange, uuid: String = "") -> CopilotCompletion {
-    return .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
+    .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
 }
 
 class MockSuggestionService: CopilotSuggestionServiceType {
@@ -68,7 +68,7 @@ class MockSuggestionService: CopilotSuggestionServiceType {
         indentSize _: Int,
         usesTabsForIndentation _: Bool
     ) async throws -> [CopilotCompletion] {
-        return completions
+        completions
     }
 
     func notifyAccepted(_ completion: CopilotCompletion) async {

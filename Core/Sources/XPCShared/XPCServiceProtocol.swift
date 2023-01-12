@@ -5,7 +5,10 @@ import Foundation
 public protocol XPCServiceProtocol {
     func checkStatus(withReply reply: @escaping (String?, Error?) -> Void)
     func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void)
-    func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void)
+    func signInConfirm(
+        userCode: String,
+        withReply reply: @escaping (String?, String?, Error?) -> Void
+    )
     func signOut(withReply reply: @escaping (String?, Error?) -> Void)
     func getVersion(withReply reply: @escaping (String?, Error?) -> Void)
 
@@ -33,6 +36,13 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
-    
+
     func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void)
+
+    func prefetchRealtimeSuggestions(
+        editorContent: Data,
+        withReply reply: @escaping () -> Void
+    )
+
+    func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void)
 }

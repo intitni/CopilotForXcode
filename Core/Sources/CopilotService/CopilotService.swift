@@ -108,7 +108,7 @@ public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceTyp
     }
 
     public func checkStatus() async throws -> CopilotStatus {
-        return try await server.sendRequest(CopilotRequest.CheckStatus()).status
+        try await server.sendRequest(CopilotRequest.CheckStatus()).status
     }
 
     public func signInInitiate() async throws -> (verificationUri: String, userCode: String) {
@@ -116,17 +116,19 @@ public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceTyp
         return (result.verificationUri, result.userCode)
     }
 
-    public func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus) {
+    public func signInConfirm(userCode: String) async throws
+        -> (username: String, status: CopilotStatus)
+    {
         let result = try await server.sendRequest(CopilotRequest.SignInConfirm(userCode: userCode))
         return (result.user, result.status)
     }
 
     public func signOut() async throws -> CopilotStatus {
-        return try await server.sendRequest(CopilotRequest.SignOut()).status
+        try await server.sendRequest(CopilotRequest.SignOut()).status
     }
 
     public func version() async throws -> String {
-        return try await server.sendRequest(CopilotRequest.GetVersion()).version
+        try await server.sendRequest(CopilotRequest.GetVersion()).version
     }
 }
 
@@ -152,7 +154,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
                range.lowerBound == filePath.startIndex
             {
                 let relativePath = filePath.replacingCharacters(
-                    in: filePath.startIndex ..< range.upperBound,
+                    in: filePath.startIndex..<range.upperBound,
                     with: ""
                 )
                 return relativePath

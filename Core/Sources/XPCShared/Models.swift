@@ -2,7 +2,15 @@ import CopilotModel
 import Foundation
 
 public struct EditorContent: Codable {
-    public init(content: String, lines: [String], uti: String, cursorPosition: CursorPosition, tabSize: Int, indentSize: Int, usesTabsForIndentation: Bool) {
+    public init(
+        content: String,
+        lines: [String],
+        uti: String,
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool
+    ) {
         self.content = content
         self.lines = lines
         self.uti = uti

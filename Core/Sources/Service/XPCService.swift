@@ -2,6 +2,7 @@ import AppKit
 import CopilotService
 import Foundation
 import LanguageServerProtocol
+import os.log
 import XPCShared
 
 @globalActor enum ServiceActor {
@@ -13,23 +14,14 @@ import XPCShared
 var workspaces = [URL: Workspace]()
 
 public class XPCService: NSObject, XPCServiceProtocol {
+    public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
+        reply(
+            Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A",
+            Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A")
+    }
+
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
-
-    override public init() {
-        super.init()
-        let identifier = ObjectIdentifier(self)
-        Task {
-            await AutoTrigger.shared.start(by: identifier)
-        }
-    }
-
-    deinit {
-        let identifier = ObjectIdentifier(self)
-        Task {
-            await AutoTrigger.shared.stop(by: identifier)
-        }
-    }
 
     public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
@@ -53,7 +45,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    public func signInConfirm(userCode: String, withReply reply: @escaping (String?, String?, Error?) -> Void) {
+    public func signInConfirm(
+        userCode: String,
+        withReply reply: @escaping (String?, String?, Error?) -> Void
+    ) {
         Task { @ServiceActor in
             do {
                 let (username, status) = try await authService.signInConfirm(userCode: userCode)
@@ -110,7 +105,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -137,7 +132,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -164,7 +159,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -188,7 +183,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 )
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -215,7 +210,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -244,7 +239,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                print(error)
+                os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
@@ -254,8 +249,44 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in
             let fileURL = try await Environment.fetchCurrentFileURL()
             let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            workspace.isRealtimeSuggestionEnabled = enabled
+            if var state = UserDefaults.shared
+                .dictionary(forKey: SettingsKey.realtimeSuggestionState)
+            {
+                state[workspace.projectRootURL.absoluteString] = enabled
+                UserDefaults.shared.set(state, forKey: SettingsKey.realtimeSuggestionState)
+            } else {
+                UserDefaults.shared.set(
+                    [workspace.projectRootURL.absoluteString: enabled],
+                    forKey: SettingsKey.realtimeSuggestionState
+                )
+            }
             reply(nil)
+        }
+    }
+
+    public func prefetchRealtimeSuggestions(
+        editorContent: Data,
+        withReply reply: @escaping () -> Void
+    ) {
+        Task { @ServiceActor in
+            do {
+                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
+                let fileURL = try await Environment.fetchCurrentFileURL()
+                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                _ = workspace.getRealtimeSuggestedCode(
+                    forFileAt: fileURL,
+                    content: editor.content,
+                    lines: editor.lines,
+                    cursorPosition: editor.cursorPosition,
+                    tabSize: editor.tabSize,
+                    indentSize: editor.indentSize,
+                    usesTabsForIndentation: editor.usesTabsForIndentation
+                )
+                reply()
+            } catch {
+                os_log(.error, "%@", error.localizedDescription)
+                reply()
+            }
         }
     }
 }

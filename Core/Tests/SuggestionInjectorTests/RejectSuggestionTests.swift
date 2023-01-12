@@ -31,7 +31,11 @@ final class RejectSuggestionTests: XCTestCase {
             var name
         }
         """)
-        XCTAssertEqual(cursor, .init(line: 1, character: 12), "If cursor is above deletion, don't move it.")
+        XCTAssertEqual(
+            cursor,
+            .init(line: 1, character: 12),
+            "If cursor is above deletion, don't move it."
+        )
     }
 
     func test_broken_suggestion() async throws {
@@ -70,6 +74,10 @@ final class RejectSuggestionTests: XCTestCase {
 
 
         """)
-        XCTAssertEqual(cursor, .init(line: 2, character: 0), "If cursor is below deletion, move it up.")
+        XCTAssertEqual(
+            cursor,
+            .init(line: 2, character: 0),
+            "If cursor is below deletion, move it up."
+        )
     }
 }

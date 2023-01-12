@@ -5,7 +5,7 @@ struct InstructionView: View {
         Section {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-// swiftformat: disable indent
+                    // swiftformat:disable indent
 Text("Instruction")
     .font(.title)
     .padding(.bottom, 12)
@@ -28,7 +28,7 @@ Text("""
 1. Optionally sign out of GitHub Copilot.
 2. Click `Remove Launch Agent`.
 """)
-// swiftformat: enable indent
+// swiftformat:enable indent
                     Spacer()
                 }
                 Spacer()
