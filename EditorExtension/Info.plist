@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleShortVersionString</key>
-	<string>$(APP_VERSION)</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleVersion</key>
-	<string>$(APP_BUILD)</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleIdentifier</key>
