@@ -71,6 +71,22 @@ If you want to keep track of the new releases, you can watch this repo's release
 
     Hope that next year, Apple can spend some time on Xcode Extensions.  
 
+## Key Bindings
+
+It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`.
+
+A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that should cause no conflict is
+
+| Command | Key Binding |
+| --- | --- |
+| Get Suggestions | `⌥?` |
+| Accept Suggestions | `⌥}` |
+| Reject Suggestion | `⌥{` |
+| Next Suggestion | `⌥>` |
+| Previous Suggestion | `⌥<` |
+
+Essentially using `⌥⇧` as the "access" key combination for all bindings.
+
 ## Prevent Suggestions Being Committed
 
 Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening.
