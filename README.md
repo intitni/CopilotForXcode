@@ -22,23 +22,31 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ### Install
 
-1. Download the Copilot for Xcode.app from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
+1. Download the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
 2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
-3. Enable the extension in the Settings.app, then maybe restart Xcode.
+3. Enable the extension in `System Settings.app`. 
 
-### Sign In Github Copilot
+    From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
+    
+    If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
+
+### Sign In GitHub Copilot
  
-1. In the app, refresh the Copilot status, if it fails, quit and restart the app. 
-2. Click "Sign In", you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
+1. In the app, refresh the Copilot status (it may fail for the first time, try at least one more time). 
+2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
 
-The first time the commands run, the extension will ask for 2 types of permissions:
-1. Accessibility API: which the extension uses to get the editing file path.
-2. Folder Access: the extension needs, to run some Apple Scripts to get the project/workspace path. 
+### Giving Permissions to the App
+
+The first time the commands run, the extension will ask for the permissions needed.
+
+Or you can add them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
+- Accessibility API: Click `Accessibility`, and add `Copilot for Xcode.app` to the list.
+- Input Monitoring: Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
 
 ## Update 
 
-You can manually download the latest release. After updating the app, don't forget to click `Restart XPC Service` in the app to kill the old version and run the new version.
+You can manually download the latest release. After updating the app, don't forget to click `Restart XPC Service` in the app to kill the old version and run the new version. (I will make it auto-restartable later. )
 
 If you want to keep track of the new releases, you can watch this repo's releases to get notifications on updates.
 
@@ -87,21 +95,25 @@ fi
 
 **Q: The extension doesn't show up in the `Editor` menu.**
 
-> A: Please make sure it's turned on in `Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
+> A: Please make sure `Copilot for Xcode` is turned on in `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
 
 **Q: The extension says it can't connect to the XPC service/helper.**
 
-> A: Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
+> A: If you have just updated the app from an old version, make sure you have restarted the XPC Service.
+> 
+> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
+> 
+> If you are installing multiple versions of the extension on your machine, it's also possible that Xcode is using the older version of the extension.
 
 **Q: The extension complains that it has no access to the Accessibility API**
 
-> A: Check the list in `Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
+> A: Check the list in `System Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
 >  
 > If you have just **updated the app**, consider restarting XPCService in app or trying removing the Launch Agents and set it up again!
 
 **Q: I turned on real-time suggestions, but nothing happens**
 
-> A: Check the list in `Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
+> A: Check the list in `System Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
 >
 > If that doesn't help, try to restart the XPC Service again.
 
