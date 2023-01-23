@@ -19,83 +19,92 @@ public protocol CopilotSuggestionServiceType {
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool
+        usesTabsForIndentation: Bool,
+        ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CopilotCompletion]
     func notifyAccepted(_ completion: CopilotCompletion) async
     func notifyRejected(_ completions: [CopilotCompletion]) async
 }
 
+protocol CopilotLSP {
+    func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response
+}
+
 public class CopilotBaseService {
     let projectRootURL: URL
+    var server: CopilotLSP
+
+    init(designatedServer: CopilotLSP) {
+        projectRootURL = URL(fileURLWithPath: "/")
+        server = designatedServer
+    }
 
     init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
-    }
+        server = {
+            let supportURL = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first!.appendingPathComponent("com.intii.CopilotForXcode")
+            if !FileManager.default.fileExists(atPath: supportURL.path) {
+                try? FileManager.default
+                    .createDirectory(at: supportURL, withIntermediateDirectories: false)
+            }
+            let executionParams = {
+                let nodePath = UserDefaults.shared.string(forKey: SettingsKey.nodePath) ?? ""
+                return Process.ExecutionParameters(
+                    path: "/usr/bin/env",
+                    arguments: [
+                        nodePath.isEmpty ? "node" : nodePath,
+                        Bundle.main.url(
+                            forResource: "agent",
+                            withExtension: "js",
+                            subdirectory: "copilot/dist"
+                        )!.path,
+                        "--stdio",
+                    ],
+                    environment: [
+                        "PATH": "/usr/bin:/usr/local/bin",
+                    ],
+                    currentDirectoryURL: supportURL
+                )
+            }()
+            let localServer = LocalProcessServer(executionParameters: executionParams)
+            localServer.logMessages = false
+            let server = InitializingServer(server: localServer)
+            server.notificationHandler = { _, respond in
+                respond(nil)
+            }
 
-    lazy var server: InitializingServer = {
-        let supportURL = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first!.appendingPathComponent("com.intii.CopilotForXcode")
-        if !FileManager.default.fileExists(atPath: supportURL.path) {
-            try? FileManager.default
-                .createDirectory(at: supportURL, withIntermediateDirectories: false)
-        }
-        let executionParams = {
-            let nodePath = UserDefaults.shared.string(forKey: SettingsKey.nodePath) ?? ""
-            return Process.ExecutionParameters(
-                path: "/usr/bin/env",
-                arguments: [
-                    nodePath.isEmpty ? "node" : nodePath,
-                    Bundle.main.url(
-                        forResource: "agent",
-                        withExtension: "js",
-                        subdirectory: "copilot/dist"
-                    )!.path,
-                    "--stdio",
-                ],
-                environment: [
-                    "PATH": "/usr/bin:/usr/local/bin",
-                ],
-                currentDirectoryURL: supportURL
-            )
+            server.initializeParamsProvider = {
+                let capabilities = ClientCapabilities(
+                    workspace: nil,
+                    textDocument: nil,
+                    window: nil,
+                    general: nil,
+                    experimental: nil
+                )
+
+                return InitializeParams(
+                    processId: Int(ProcessInfo.processInfo.processIdentifier),
+                    clientInfo: .init(name: "Copilot for Xcode"),
+                    locale: nil,
+                    rootPath: projectRootURL.path,
+                    rootUri: projectRootURL.path,
+                    initializationOptions: nil,
+                    capabilities: capabilities,
+                    trace: nil,
+                    workspaceFolders: nil
+                )
+            }
+
+            server.notificationHandler = { _, respond in
+                respond(nil)
+            }
+
+            return server
         }()
-        let localServer = LocalProcessServer(executionParameters: executionParams)
-        localServer.logMessages = false
-        let server = InitializingServer(server: localServer)
-        server.notificationHandler = { _, respond in
-            respond(nil)
-        }
-
-        let projectRoot = self.projectRootURL
-        server.initializeParamsProvider = {
-            let capabilities = ClientCapabilities(
-                workspace: nil,
-                textDocument: nil,
-                window: nil,
-                general: nil,
-                experimental: nil
-            )
-
-            return InitializeParams(
-                processId: Int(ProcessInfo.processInfo.processIdentifier),
-                clientInfo: .init(name: "Copilot for Xcode"),
-                locale: nil,
-                rootPath: projectRoot.path,
-                rootUri: projectRoot.path,
-                initializationOptions: nil,
-                capabilities: capabilities,
-                trace: nil,
-                workspaceFolders: nil
-            )
-        }
-
-        server.notificationHandler = { _, respond in
-            respond(nil)
-        }
-
-        return server
-    }()
+    }
 }
 
 public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceType {
@@ -136,6 +145,10 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     override public init(projectRootURL: URL = URL(fileURLWithPath: "/")) {
         super.init(projectRootURL: projectRootURL)
     }
+    
+    override init(designatedServer: CopilotLSP) {
+        super.init(designatedServer: designatedServer)
+    }
 
     public func getCompletions(
         fileURL: URL,
@@ -143,7 +156,8 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool
+        usesTabsForIndentation: Bool,
+        ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CopilotCompletion] {
         guard let languageId = languageIdentifierFromFileURL(fileURL) else { return [] }
 
@@ -173,7 +187,14 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
                 relativePath: relativePath,
                 languageId: languageId,
                 position: cursorPosition
-            ))).completions
+            )))
+            .completions
+            .filter { completion in
+                if ignoreSpaceOnlySuggestions {
+                    return !completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
+                }
+                return true
+            }
 
         return completions
     }
@@ -191,7 +212,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     }
 }
 
-extension InitializingServer {
+extension InitializingServer: CopilotLSP {
     func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response {
         try await sendRequest(endpoint.request)
     }
