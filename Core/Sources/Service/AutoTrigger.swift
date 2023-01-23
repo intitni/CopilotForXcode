@@ -64,7 +64,7 @@ public actor AutoTrigger {
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 var triggerTask: Task<Void, Error>?
-                for await eventType in stream {
+                for await event in stream {
                     triggerTask?.cancel()
                     if Task.isCancelled { break }
                     guard await Environment.isXcodeActive() else { continue }
@@ -77,7 +77,11 @@ public actor AutoTrigger {
                         }
                     }
 
-                    guard eventType == .keyUp else { continue }
+                    let escape = 0x35
+
+                    guard event.type == .keyUp,
+                          event.getIntegerValueField(.keyboardEventKeycode) != escape
+                    else { continue }
 
                     triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: 1_500_000_000)
