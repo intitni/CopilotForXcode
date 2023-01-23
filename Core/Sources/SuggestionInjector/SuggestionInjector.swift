@@ -82,6 +82,17 @@ public struct SuggestionInjector {
         let commonPrefix = longestCommonPrefix(of: lines[1], and: existedLine ?? "")
 
         if !commonPrefix.isEmpty {
+            let replacingText = {
+                switch (commonPrefix.hasSuffix("\n"), commonPrefix.count) {
+                case (false, let count):
+                    return String(repeating: " ", count: count - 1) + "^"
+                case (true, let count) where count > 1:
+                    return String(repeating: " ", count: count - 2) + "^\n"
+                case (true, _):
+                    return "\n"
+                }
+            }()
+
             lines[1].replaceSubrange(
                 lines[1].startIndex..<(
                     lines[1].index(
@@ -90,18 +101,20 @@ public struct SuggestionInjector {
                         limitedBy: lines[1].endIndex
                     ) ?? lines[1].endIndex
                 ),
-                with: String(repeating: " ", count: commonPrefix.count - 1) + "^"
+                with: replacingText
             )
         }
-        
-        // if the suggestion is only appeding new lines and spaces, return without modification
-        if completion.text.dropFirst(commonPrefix.count).allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
 
+        // if the suggestion is only appeding new lines and spaces, return without modification
+        if completion.text.dropFirst(commonPrefix.count)
+            .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
+
+        // determin if it's inserted to the current line or the next line
         let lineIndex = start.line + {
             guard let existedLine else { return 0 }
             if existedLine.isEmptyOrNewLine { return 1 }
-            if !commonPrefix.isEmpty, commonPrefix.count <= existedLine.count - 1 { return 1 }
-            return 0
+            if commonPrefix.isEmpty { return 0 }
+            return 1
         }()
         if content.endIndex < lineIndex {
             extraInfo.didChangeContent = true
@@ -164,6 +177,7 @@ public struct SuggestionInjector {
 }
 
 extension String {
+    /// Break a string into lines.
     func breakLines(appendLineBreakToLastLine: Bool = false) -> [String] {
         let lines = split(separator: "\n", omittingEmptySubsequences: false)
         var all = [String]()
