@@ -6,15 +6,15 @@ public protocol CGEventObserverType {
     @discardableResult
     func activateIfPossible() -> Bool
     func deactivate()
-    var stream: AsyncStream<CGEventType> { get }
+    var stream: AsyncStream<CGEvent> { get }
     var isEnabled: Bool { get }
 }
 
 final class CGEventObserver: CGEventObserverType {
-    let stream: AsyncStream<CGEventType>
+    let stream: AsyncStream<CGEvent>
     var isEnabled: Bool { port != nil }
 
-    private var continuation: AsyncStream<CGEventType>.Continuation
+    private var continuation: AsyncStream<CGEvent>.Continuation
     private var port: CFMachPort?
     private let eventsOfInterest: Set<CGEventType> = [
         .keyUp,
@@ -33,7 +33,7 @@ final class CGEventObserver: CGEventObserverType {
     }
 
     init() {
-        var continuation: AsyncStream<CGEventType>.Continuation!
+        var continuation: AsyncStream<CGEvent>.Continuation!
         stream = AsyncStream { c in
             continuation = c
         }
@@ -71,9 +71,9 @@ final class CGEventObserver: CGEventObserverType {
             }
 
             if let continuation = continuationPointer?
-                .assumingMemoryBound(to: AsyncStream<CGEventType>.Continuation.self)
+                .assumingMemoryBound(to: AsyncStream<CGEvent>.Continuation.self)
             {
-                continuation.pointee.yield(eventType)
+                continuation.pointee.yield(event)
             }
 
             return .passRetained(event)
