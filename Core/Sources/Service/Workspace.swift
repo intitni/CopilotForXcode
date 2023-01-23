@@ -197,7 +197,8 @@ final class Workspace {
             cursorPosition: cursorPosition,
             tabSize: tabSize,
             indentSize: indentSize,
-            usesTabsForIndentation: usesTabsForIndentation
+            usesTabsForIndentation: usesTabsForIndentation,
+            ignoreSpaceOnlySuggestions: true
         )
 
         guard filespace.suggestionSourceSnapshot == snapshot else { return nil }
