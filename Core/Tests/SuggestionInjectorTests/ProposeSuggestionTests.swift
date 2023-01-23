@@ -186,7 +186,48 @@ final class ProposeSuggestionTests: XCTestCase {
     }
 
     // swiftformat:enable all
-
+    
+    func test_propose_suggestion_overlap_one_line_adding_only_spaces() async throws {
+        let content = """
+        if true {
+            print("hello")
+        } else {
+            print("world")
+        }
+        """
+        let text = "} else {\n"
+        let suggestion = CopilotCompletion(
+            text: text,
+            position: .init(line: 2, character: 0),
+            uuid: "",
+            range: .init(
+                start: .init(line: 2, character: 0),
+                end: .init(line: 2, character: 8)
+            ),
+            displayText: ""
+        )
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        SuggestionInjector().proposeSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            completion: suggestion,
+            index: 0,
+            count: 10,
+            extraInfo: &extraInfo
+        )
+        XCTAssertFalse(extraInfo.didChangeContent)
+        XCTAssertFalse(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        if true {
+            print("hello")
+        } else {
+            print("world")
+        }
+        """)
+    }
+    
     func test_propose_suggestion_partial_overlap() async throws {
         let content = "func quickSort() {}}\n"
         let text = """

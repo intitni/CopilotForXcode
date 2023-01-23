@@ -27,6 +27,7 @@ public struct SuggestionInjector {
         var ranges = [ClosedRange<Int>]()
         var suggestionStartIndex = -1
 
+        // find ranges of suggestion comments
         for (index, line) in content.enumerated() {
             if line.hasPrefix(suggestionStart) {
                 suggestionStartIndex = index
@@ -42,6 +43,7 @@ public struct SuggestionInjector {
         extraInfo.modifications.append(contentsOf: reversedRanges.map(Modification.deleted))
         extraInfo.didChangeContent = !ranges.isEmpty
 
+        // remove the lines from bottom to top
         for range in reversedRanges {
             for i in stride(from: range.upperBound, through: range.lowerBound, by: -1) {
                 if i <= cursorPosition.line, cursorPosition.line >= 0 {
@@ -65,13 +67,17 @@ public struct SuggestionInjector {
         count: Int,
         extraInfo: inout ExtraInfo
     ) {
+        // assemble suggestion comment
         let start = completion.range.start
         let startText = "\(suggestionStart) \(index + 1)/\(count)"
         var lines = [startText + "\n"]
         lines.append(contentsOf: completion.text.breakLines(appendLineBreakToLastLine: true))
         lines.append(suggestionEnd + "\n")
-        if lines.count <= 2 { return }
 
+        // if suggestion is empty, returns without modifying the code
+        guard lines.count > 2 else { return }
+
+        // replace the common prefix of the first line with space and carrot
         let existedLine = start.line < content.endIndex ? content[start.line] : nil
         let commonPrefix = longestCommonPrefix(of: lines[1], and: existedLine ?? "")
 
@@ -87,6 +93,9 @@ public struct SuggestionInjector {
                 with: String(repeating: " ", count: commonPrefix.count - 1) + "^"
             )
         }
+        
+        // if the suggestion is only appeding new lines and spaces, return without modification
+        if completion.text.dropFirst(commonPrefix.count).allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
 
         let lineIndex = start.line + {
             guard let existedLine else { return 0 }
