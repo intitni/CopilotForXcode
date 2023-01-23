@@ -213,7 +213,7 @@ func suggestionRequest(
             do {
                 if let updatedData {
                     let updatedContent = try JSONDecoder()
-                        .decode(UpdatedContent.self, from: updatedData ?? Data())
+                        .decode(UpdatedContent.self, from: updatedData)
                     continuation.resume(updatedContent)
                 } else {
                     continuation.resume(nil)
