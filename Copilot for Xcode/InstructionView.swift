@@ -14,10 +14,10 @@ Text("Enable Extension")
 Text("""
 1. Install Node.
 2. Click `Set Up Launch Agent` to set up an XPC service to run in the background.
-3. Refresh Copilot status or restart the app.
-4. Click `Sign In` to sign into your GitHub account. 
-5. After submitting your user code to the verification website, click `Confirm Sign-in` to finish the sign-in.
-6. Go to `Settings.app > Privacy & Security > Extension > Xcode Source Editor Extension` to turn **Copilot for Xcode** on.
+3. Refresh Copilot status (it may fail the first time).
+4. Click `Sign In` to sign into your GitHub account.
+5. After submitting your user code to the verification site, click `Confirm Sign-in` to complete the sign-in.
+6. Go to `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor` , check the **Copilot** checkbox to enable the extension.
 7. Restart Xcode, the Copilot commands should be available in the menu bar.
 """)
 
@@ -28,7 +28,11 @@ Text("""
 1. Optionally sign out of GitHub Copilot.
 2. Click `Remove Launch Agent`.
 """)
-// swiftformat:enable indent
+
+Text(
+    "For detailed instructions, please visit the [project's GitHub page](https://github.com/intitni/CopilotForXcode)."
+)
+                    // swiftformat:enable indent
                     Spacer()
                 }
                 Spacer()
