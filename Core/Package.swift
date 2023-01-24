@@ -9,11 +9,11 @@ let package = Package(
     products: [
         .library(
             name: "Service",
-            targets: ["Service", "SuggestionInjector"]
+            targets: ["Service", "SuggestionInjector", "FileChangeChecker", "LaunchAgentManager"]
         ),
         .library(
             name: "Client",
-            targets: ["CopilotModel", "Client", "XPCShared"]
+            targets: ["CopilotModel", "Client", "XPCShared", "LaunchAgentManager"]
         ),
     ],
     dependencies: [
@@ -60,5 +60,7 @@ let package = Package(
             name: "ServiceTests",
             dependencies: ["Service", "Client", "CopilotService", "SuggestionInjector", "XPCShared"]
         ),
+        .target(name: "FileChangeChecker"),
+        .target(name: "LaunchAgentManager"),
     ]
 )
