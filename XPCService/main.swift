@@ -27,9 +27,10 @@ func setupRestartOnUpdate() {
         guard let url = Bundle.main.executableURL else { return }
         let checker = await FileChangeChecker(fileURL: url)
 
-        // If Xcode or Copilot for Xcode is launched, check if the executable of this program is changed.
+        // If Xcode or Copilot for Xcode is launched, check if the executable of this program is
+        // changed.
         // If changed, restart the launch agent.
-        
+
         let sequence = NSWorkspace.shared.notificationCenter
             .notifications(named: NSWorkspace.didLaunchApplicationNotification)
         for await notification in sequence {
@@ -48,7 +49,15 @@ func setupRestartOnUpdate() {
             os_log(.info, "XPC Service will be restarted.")
             #if DEBUG
             #else
-            manager.restartLaunchAgent()
+            let manager = LaunchAgentManager(
+                serviceIdentifier: serviceIdentifier,
+                executablePath: Bundle.main.executablePath ?? ""
+            )
+            do {
+                try await manager.restartLaunchAgent()
+            } catch {
+                os_log(.error, "XPC Service failed to restart. %{public}s", error.localizedDescription)
+            }
             #endif
         }
     }

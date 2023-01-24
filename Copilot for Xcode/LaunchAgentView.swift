@@ -14,11 +14,13 @@ struct LaunchAgentView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Button(action: {
-                        do {
-                            try LaunchAgentManager().setupLaunchAgent()
-                            isDidSetupLaunchAgentAlertPresented = true
-                        } catch {
-                            errorMessage = error.localizedDescription
+                        Task {
+                            do {
+                                try await LaunchAgentManager().setupLaunchAgent()
+                                isDidSetupLaunchAgentAlertPresented = true
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
                         }
                     }) {
                         Text("Set Up Launch Agent for XPC Service")
@@ -27,18 +29,20 @@ struct LaunchAgentView: View {
                         .init(
                             title: Text("Finished Launch Agent Setup"),
                             message: Text(
-                                "You may need to restart Xcode to make the extension work."
+                                "Please refresh the Copilot status. (The first refresh may fail)"
                             ),
                             dismissButton: .default(Text("OK"))
                         )
                     }
 
                     Button(action: {
-                        do {
-                            try LaunchAgentManager().removeLaunchAgent()
-                            isDidRemoveLaunchAgentAlertPresented = true
-                        } catch {
-                            errorMessage = error.localizedDescription
+                        Task {
+                            do {
+                                try await LaunchAgentManager().removeLaunchAgent()
+                                isDidRemoveLaunchAgentAlertPresented = true
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
                         }
                     }) {
                         Text("Remove Launch Agent")
@@ -51,8 +55,14 @@ struct LaunchAgentView: View {
                     }
 
                     Button(action: {
-                        LaunchAgentManager().restartLaunchAgent()
-                        isDidRestartLaunchAgentAlertPresented = true
+                        Task {
+                            do {
+                                try await LaunchAgentManager().restartLaunchAgent()
+                                isDidRestartLaunchAgentAlertPresented = true
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
+                        }
                     }) {
                         Text("Restart XPC Service")
                     }.alert(isPresented: $isDidRestartLaunchAgentAlertPresented) {
@@ -62,15 +72,13 @@ struct LaunchAgentView: View {
                         )
                     }
 
-                    EmptyView()
+                    Spacer()
                         .alert(isPresented: .init(
                             get: { errorMessage != nil },
-                            set: { yes in
-                                if !yes { errorMessage = nil }
-                            }
+                            set: { _ in errorMessage = nil }
                         )) {
                             .init(
-                                title: Text("Failed. Got to the GitHub page for Help"),
+                                title: Text("Failed"),
                                 message: Text(errorMessage ?? "Unknown Error"),
                                 dismissButton: .default(Text("OK"))
                             )
