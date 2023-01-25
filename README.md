@@ -36,7 +36,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
 
-### Giving Permissions to the App
+### Granting Permissions to the App
 
 The first time the commands run, the extension will ask for the permissions needed.
 
@@ -54,15 +54,17 @@ Alternatively, you can skip the Launch Agent part and use other applications to 
 
 You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
-If you are upgrading from a version lower than 0.5.1, don't forget to click `Restart XPC Service` in the application after the update to kill the old version and start the new one.
+If you are upgrading from a version lower than 0.6.0, don't forget to click `Restart XPC Service` in the application after the update to kill the old version and start the new one.
 
 If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
+
+If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
 ## Commands
 
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
-- Next Suggestion: If there is more than 1 suggestion, switch to the next one.
-- Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
+- Next Suggestion: If there is more than one suggestion, switch to the next one.
+- Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
 - Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
