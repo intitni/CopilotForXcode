@@ -20,6 +20,14 @@ Text("""
 6. Go to `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor` , check the **Copilot** checkbox to enable the extension.
 7. Restart Xcode, the Copilot commands should be available in the menu bar.
 """)
+                    
+Text("Granting Permissions")
+    .font(.title3)
+Text("""
+The app needs at least **Accessibility API** permissions to work. If you are using real-time suggestions, **Input Monitoring** is also needed.
+
+please visit the [project's GitHub page](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) for instructions.
+""")
 
 Text("Disable Extension")
     .font(.title3)
