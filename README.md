@@ -36,7 +36,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
 
-### Giving Permissions to the App
+### Granting Permissions to the App
 
 The first time the commands run, the extension will ask for the permissions needed.
 
@@ -44,23 +44,33 @@ Or you can add them manually by going to the `Privacy & Security` tab in `System
 - Accessibility API: Click `Accessibility`, and add `Copilot for Xcode.app` to the list.
 - Input Monitoring: Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
 
+### Alternative Ways to Launch the XPC Service
+
+The launch agent is set to `RunAtLoad`, so it will start when you log on to your computer. If you have a solution to configure the launch agent to start and stop on demand, please file an issue or pull request (note that the XPC service must be started before the user calls any commands, as it needs to call some of the commands proactively to provide real-time suggestions).
+
+Alternatively, you can skip the Launch Agent part and use other applications to watch Xcode launch and then launch the XPC service when needed. The executable is located at `Copilot for Xcode.app/Contents/MacOS/CopilotForXcodeXPCService`. Or you can remove the `RunAtLoad` field from the plist and run it manually.
+
 ## Update 
 
-You can manually download the latest release. After updating the app, don't forget to click `Restart XPC Service` in the app to kill the old version and run the new version. (I will make it auto-restartable later. )
+You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
-If you want to keep track of the new releases, you can watch this repo's releases to get notifications on updates.
+If you are upgrading from a version lower than 0.6.0, don't forget to click `Restart XPC Service` in the application after the update to kill the old version and start the new one.
+
+If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
+
+If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
 ## Commands
 
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
-- Next Suggestion: If there is more than 1 suggestion, switch to the next one.
-- Previous Suggestion: If there is more than 1 suggestion, switch to the previous one.
+- Next Suggestion: If there is more than one suggestion, switch to the next one.
+- Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
 - Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Turn Off Real-time Suggestions: Turns the real-time suggestions off.
-- Real-time Suggestions: It is an entry point only for Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
-- Prefetch Suggestions: It is an entry point only for Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
+- Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
+- Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
 
 **About real-time suggestions**
 
