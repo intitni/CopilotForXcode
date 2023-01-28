@@ -22,6 +22,14 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ### Install
 
+You can install it via [Homebrew](http://brew.sh/):
+
+```bash
+brew install --cask copilot-for-xcode
+```
+
+Or install it manually,
+
 1. Download the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
 2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
 3. Enable the extension in `System Settings.app`. 
@@ -38,9 +46,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ### Granting Permissions to the App
 
-The first time the commands run, the extension will ask for the permissions needed.
+The first time the commands are run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
 
-Or you can add them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
+Or you can grant them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
 - Accessibility API: Click `Accessibility`, and add `Copilot for Xcode.app` to the list.
 - Input Monitoring: Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
 
@@ -52,7 +60,13 @@ Alternatively, you can skip the Launch Agent part and use other applications to 
 
 ## Update 
 
-You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
+If the app was installed via Homebrew, you can update it by running:
+
+```bash
+brew upgrade --cask copilot-for-xcode
+```
+
+Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
 If you are upgrading from a version lower than 0.6.0, don't forget to click `Restart XPC Service` in the application after the update to kill the old version and start the new one.
 
