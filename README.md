@@ -28,11 +28,12 @@ You can install it via [Homebrew](http://brew.sh/):
 brew install --cask copilot-for-xcode
 ```
 
-Or install it manually,
+Or install it manually, by downloading the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
 
-1. Download the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
-2. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
-3. Enable the extension in `System Settings.app`. 
+Then set it up with the following steps:
+
+1. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
+2. Enable the extension in `System Settings.app`. 
 
     From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
     
@@ -160,3 +161,7 @@ fi
 **Q: Will it work in future Xcode updates?**
 
 > A: I don't know. This extension uses many tricks to do its job, and these tricks can break in the future. 
+
+## License 
+
+MIT.
