@@ -86,18 +86,20 @@ public actor RealtimeSuggestionController {
         if Task.isCancelled { return }
         guard await Environment.isXcodeActive() else { return }
 
+        // cancel in-flight tasks
         await withTaskGroup(of: Void.self) { group in
             for (_, workspace) in await workspaces {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }
             }
+            group.addTask {
+                await { @ServiceActor in
+                    inflightRealtimeSuggestionsTasks.forEach { $0.cancel() }
+                    inflightRealtimeSuggestionsTasks.removeAll()
+                }()
+            }
         }
-
-        await { @ServiceActor in
-            inflightRealtimeSuggestionsTasks.forEach { $0.cancel() }
-            inflightRealtimeSuggestionsTasks.removeAll()
-        }()
 
         let escape = 0x35
         let isEditing = await Environment.frontmostXcodeWindowIsEditor()
@@ -109,7 +111,7 @@ public actor RealtimeSuggestionController {
         }
 
         let shouldTrigger = {
-            // closing suggestion panel
+            // closing auto-complete panel
             if isEditing, event.getIntegerValueField(.keyboardEventKeycode) == escape {
                 return true
             }
@@ -132,11 +134,10 @@ public actor RealtimeSuggestionController {
                     .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Int
                     ?? 800_000_000
             ))
-            if Task.isCancelled { return }
-            os_log(.info, "Prefetch suggestions.")
             guard UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
             else { return }
             if Task.isCancelled { return }
+            os_log(.info, "Prefetch suggestions.")
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
             } catch {
@@ -146,13 +147,25 @@ public actor RealtimeSuggestionController {
     }
 }
 
+/// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 final class RealtimeSuggestionIndicatorController {
     struct IndicatorContentView: View {
+        @State var opacity: CGFloat = 1
+        @State var scale: CGFloat = 1
         var body: some View {
             Circle()
-                .trim(from: 0.2, to: 1)
-                .fill(Color.accentColor)
+                .fill(Color.accentColor.opacity(opacity))
+                .scaleEffect(.init(width: scale, height: scale))
                 .frame(width: 8, height: 8)
+                .onAppear {
+                    Task {
+                        await Task.yield() // to avoid unwanted translations.
+                        withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                            opacity = 0.5
+                            scale = 0.5
+                        }
+                    }
+                }
         }
     }
 
