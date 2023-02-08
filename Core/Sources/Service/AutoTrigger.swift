@@ -85,18 +85,37 @@ public actor AutoTrigger {
                     }()
 
                     let escape = 0x35
-                    
-                    guard await Environment.frontmostXcodeWindowIsEditor() else { continue }
+                    let isEditing = await Environment.frontmostXcodeWindowIsEditor()
 
-                    guard event.type == .keyUp,
-                          event.getIntegerValueField(.keyboardEventKeycode) != escape
-                    else { continue }
+                    // if Xcode suggestion panel is presenting, and we are not trying to close it
+                    // ignore this event.
+                    if !isEditing, event.getIntegerValueField(.keyboardEventKeycode) != escape {
+                        continue
+                    }
+
+                    let shouldTrigger = {
+                        // closing suggestion panel
+                        if isEditing, event.getIntegerValueField(.keyboardEventKeycode) == escape {
+                            return true
+                        }
+
+                        // normally typing
+                        if event.type == .keyUp,
+                           event.getIntegerValueField(.keyboardEventKeycode) != escape
+                        {
+                            return true
+                        }
+
+                        return false
+                    }()
+
+                    guard shouldTrigger else { continue }
 
                     triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: UInt64(
                             UserDefaults.shared
                                 .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Int
-                                ?? 700_000_000
+                                ?? 800_000_000
                         ))
                         if Task.isCancelled { return }
                         os_log(.info, "Prefetch suggestions.")

@@ -224,6 +224,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         let task = Task { @ServiceActor in
             do {
+                try Task.checkCancellation()
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 try Task.checkCancellation()
                 let fileURL = try await Environment.fetchCurrentFileURL()
