@@ -2,13 +2,13 @@ import AppKit
 import CopilotService
 import Foundation
 
-private struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
+struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     var errorDescription: String? {
-        "Permission not granted to use Accessibility API. Please turn in on in System Settings.app."
+        "Accessibility API permission is not granted. Please enable in System Settings.app."
     }
 }
 
-private struct FailedToFetchFileURLError: Error, LocalizedError {
+struct FailedToFetchFileURLError: Error, LocalizedError {
     var errorDescription: String? {
         "Failed to fetch editing file url."
     }

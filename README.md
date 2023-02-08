@@ -14,9 +14,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Permissions Required
 
-- Accessibility
+- Accessibility API
 - Folder Access
-- Maybe Input Monitoring (Real-time Suggestions Only)
+- Maybe Input Monitoring
 
 ## Installation and Setup
 
@@ -51,7 +51,7 @@ The first time the commands are run, the extension will ask for the necessary pe
 
 Or you can grant them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
 - Accessibility API: Click `Accessibility`, and add `Copilot for Xcode.app` to the list.
-- Input Monitoring: Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
+- Input Monitoring: (Accessibility API should cover Input Monitoring. You can try to enable it if Accessibility API is not enough for you). Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
 
 ### Alternative Ways to Launch the XPC Service
 
@@ -154,7 +154,7 @@ fi
 
 **Q: I turned on real-time suggestions, but nothing happens**
 
-> A: Check the list in `System Settings.app > Privacy & Security > Input Monitoring`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually. After that, you may have to restart the XPC Service.
+> A: Please first check that the Accessibility API permission is granted, see the previous QA for details. The Accessibility API should cover Input Monitoring, but if real-time suggestions still do not work, try adding `Copilot for Xcode` to the list in `System Settings.app > Privacy & Security > Input Monitoring`. After that, you may then need to restart the XPC Service.
 >
 > If that doesn't help, try to restart the XPC Service again.
 

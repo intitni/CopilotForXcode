@@ -255,13 +255,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
     }
 
     public func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void) {
-        struct NoInputMonitoringPermission: Error, LocalizedError {
-            var errorDescription: String? {
-                "Permission for Input Monitoring is not granted to make real-time suggestions work. Please turn in on in System Settings.app and try again later."
-            }
-        }
         guard AXIsProcessTrusted() else {
-            reply(NoInputMonitoringPermission())
+            reply(NoAccessToAccessibilityAPIError())
             return
         }
         Task { @ServiceActor in

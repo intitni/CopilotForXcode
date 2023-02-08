@@ -24,7 +24,7 @@ Text("""
 Text("Granting Permissions")
     .font(.title3)
 Text("""
-The app needs at least **Accessibility API** permissions to work. If you are using real-time suggestions, **Input Monitoring** is also needed.
+The app needs at least **Accessibility API** permissions to work. If you are using real-time suggestions and it doesn't work properly with **Accessibility API** permissions, try also enabling **Input Monitoring**..
 
 please visit the [project's GitHub page](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) for instructions.
 """)
