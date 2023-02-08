@@ -180,7 +180,11 @@ struct AutoFinishContinuation<T> {
     }
 
     func reject(_ error: Error) {
-        continuation.finish(throwing: error)
+        if (error as NSError).code == -100 {
+            continuation.finish(throwing: CancellationError())
+        } else {
+            continuation.finish(throwing: error)
+        }
     }
 }
 
