@@ -46,7 +46,7 @@ final class Workspace {
 
     var filespaces = [URL: Filespace]()
     var isRealtimeSuggestionEnabled: Bool {
-        UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle) as? Bool ?? false
+        UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
     }
 
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()
