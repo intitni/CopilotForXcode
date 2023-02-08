@@ -3,10 +3,11 @@ import Foundation
 import XPCShared
 
 public struct AsyncXPCService {
-    let connection: NSXPCConnection
+    var connection: NSXPCConnection { service.connection }
+    let service: XPCService
 
-    public init(connection: NSXPCConnection) {
-        self.connection = connection
+    init(service: XPCService) {
+        self.service = service
     }
 
     public func checkStatus() async throws -> CopilotStatus {

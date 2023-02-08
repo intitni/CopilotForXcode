@@ -2,28 +2,29 @@ import Foundation
 import os.log
 import XPCShared
 
-var asyncService: AsyncXPCService?
-var shared = XPCService()
+let shared = XPCService()
 
 public func getService() throws -> AsyncXPCService {
     if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
         struct RunningInPreview: Error {}
         throw RunningInPreview()
     }
-    if shared.isInvalidated {
-        shared = XPCService()
-        asyncService = nil
-    }
-    if let asyncService { return asyncService }
-    let service = AsyncXPCService(connection: shared.connection)
-    asyncService = service
-    return service
+    return AsyncXPCService(service: shared)
 }
 
 class XPCService {
-    var isInvalidated = false
-
-    lazy var connection: NSXPCConnection = {
+    private var isInvalidated = false
+    private lazy var _connection: NSXPCConnection = buildConnection()
+    
+    var connection: NSXPCConnection {
+        if isInvalidated {
+            isInvalidated = false
+            rebuildConnection()
+        }
+        return _connection
+    }
+    
+    private func buildConnection() -> NSXPCConnection {
         let connection = NSXPCConnection(
             machServiceName: Bundle(for: XPCService.self)
                 .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String + ".XPCService"
@@ -36,12 +37,17 @@ class XPCService {
         }
         connection.interruptionHandler = { [weak self] in
             os_log(.info, "XPCService interrupted")
+            self?.isInvalidated = true
         }
         connection.resume()
         return connection
-    }()
+    }
+    
+    func rebuildConnection() {
+        _connection = buildConnection()
+    }
 
     deinit {
-        connection.invalidate()
+        _connection.invalidate()
     }
 }
