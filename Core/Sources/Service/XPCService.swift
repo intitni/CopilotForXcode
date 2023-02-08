@@ -89,7 +89,6 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         Task { @ServiceActor in
             do {
-                throw CancellationError()
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -265,19 +264,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
             return
         }
         Task { @ServiceActor in
-            let fileURL = try await Environment.fetchCurrentFileURL()
-            let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            if var state = UserDefaults.shared
-                .dictionary(forKey: SettingsKey.realtimeSuggestionState)
-            {
-                state[workspace.projectRootURL.absoluteString] = enabled
-                UserDefaults.shared.set(state, forKey: SettingsKey.realtimeSuggestionState)
-            } else {
-                UserDefaults.shared.set(
-                    [workspace.projectRootURL.absoluteString: enabled],
-                    forKey: SettingsKey.realtimeSuggestionState
-                )
-            }
+            UserDefaults.shared.set(
+                enabled,
+                forKey: SettingsKey.realtimeSuggestionToggle
+            )
             reply(nil)
         }
     }
@@ -290,8 +280,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
-                try Task.checkCancellation()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                try Task.checkCancellation()
                 _ = workspace.getRealtimeSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
