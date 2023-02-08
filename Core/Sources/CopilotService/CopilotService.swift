@@ -69,12 +69,13 @@ public class CopilotBaseService {
                     currentDirectoryURL: supportURL
                 )
             }()
-            let localServer = LocalProcessServer(executionParameters: executionParams)
+            let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
             localServer.logMessages = false
-            let server = InitializingServer(server: localServer)
-            server.notificationHandler = { _, respond in
-                respond(nil)
+            localServer.notificationHandler = { notification, respond in
+                print(notification)
+                respond(.timeout)
             }
+            let server = InitializingServer(server: localServer)
 
             server.initializeParamsProvider = {
                 let capabilities = ClientCapabilities(
@@ -93,13 +94,9 @@ public class CopilotBaseService {
                     rootUri: projectRootURL.path,
                     initializationOptions: nil,
                     capabilities: capabilities,
-                    trace: nil,
+                    trace: .off,
                     workspaceFolders: nil
                 )
-            }
-
-            server.notificationHandler = { _, respond in
-                respond(nil)
             }
 
             return server
