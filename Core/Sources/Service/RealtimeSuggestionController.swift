@@ -173,9 +173,9 @@ final class RealtimeSuggestionIndicatorController {
         @ObservedObject var viewModel: IndicatorContentViewModel
         @State var progress: CGFloat = 1
         var opacityA: CGFloat { progress }
-        var opacityB: CGFloat { (1 - progress) }
+        var opacityB: CGFloat { 1 - progress }
         var scaleA: CGFloat { progress / 2 + 0.5 }
-        var scaleB: CGFloat { 1 - progress }
+        var scaleB: CGFloat { max(1 - progress, 0.01) }
 
         var body: some View {
             Circle()
@@ -313,6 +313,36 @@ final class RealtimeSuggestionIndicatorController {
         Task { @MainActor in
             if !window.isVisible {
                 return
+            }
+
+            if let activeXcode = NSRunningApplication
+                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
+                .first(where: \.isActive)
+            {
+                let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+                if let focusElement: AXUIElement = try? application
+                    .copyValue(key: kAXFocusedUIElementAttribute),
+                    let selectedRange: AXValue = try? focusElement
+                    .copyValue(key: kAXSelectedTextRangeAttribute),
+                    let rect: AXValue = try? focusElement.copyParameterizedValue(
+                        key: kAXBoundsForRangeParameterizedAttribute,
+                        parameters: selectedRange
+                    )
+                {
+                    var frame: CGRect = .zero
+                    let found = AXValueGetValue(rect, .cgRect, &frame)
+                    let screen = NSScreen.screens.first
+                    if found, let screen {
+                        frame.origin = .init(
+                            x: frame.maxX + 5,
+                            y: screen.frame.height - frame.minY - 12
+                        )
+                        frame.size = .init(width: 10, height: 10)
+                        window.setFrame(frame, display: false)
+                        window.makeKey()
+                        return
+                    }
+                }
             }
 
             var frame = window.frame

@@ -204,4 +204,13 @@ extension AXUIElement {
         }
         throw error
     }
+    
+    func copyParameterizedValue<T>(key: String, parameters: AnyObject, ofType _: T.Type = T.self) throws -> T {
+        var value: AnyObject?
+        let error = AXUIElementCopyParameterizedAttributeValue(self, key as CFString, parameters as CFTypeRef, &value)
+        if error == .success, let value = value as? T {
+            return value
+        }
+        throw error
+    }
 }

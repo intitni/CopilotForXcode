@@ -3,8 +3,8 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class TurnOnRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Turn On Real-time Suggestions" }
+class ToggleRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Toggle Real-time Suggestions" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
