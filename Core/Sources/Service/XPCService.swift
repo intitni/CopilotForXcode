@@ -12,6 +12,8 @@ import XPCShared
 
 @ServiceActor
 var workspaces = [URL: Workspace]()
+@ServiceActor
+var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
 public class XPCService: NSObject, XPCServiceProtocol {
     public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
@@ -87,6 +89,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         Task { @ServiceActor in
             do {
+                throw CancellationError()
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -220,11 +223,14 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        Task { @ServiceActor in
+        let task = Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
+                try Task.checkCancellation()
                 let fileURL = try await Environment.fetchCurrentFileURL()
+                try Task.checkCancellation()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+                try Task.checkCancellation()
                 guard let updatedContent = workspace.getRealtimeSuggestedCode(
                     forFileAt: fileURL,
                     content: editor.content,
@@ -237,12 +243,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
                     reply(nil, nil)
                     return
                 }
+                try Task.checkCancellation()
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 os_log(.error, "%@", error.localizedDescription)
                 reply(nil, NSError.from(error))
             }
         }
+        
+        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
     public func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void) {
@@ -277,10 +286,11 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping () -> Void
     ) {
-        Task { @ServiceActor in
+        let task = Task { @ServiceActor in
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
+                try Task.checkCancellation()
                 let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
                 _ = workspace.getRealtimeSuggestedCode(
                     forFileAt: fileURL,
@@ -297,5 +307,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 reply()
             }
         }
+        
+        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 }

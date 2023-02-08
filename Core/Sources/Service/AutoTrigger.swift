@@ -77,17 +77,23 @@ public actor AutoTrigger {
                         }
                     }
 
+                    await { @ServiceActor in
+                        inflightRealtimeSuggestionsTasks.forEach {
+                            $0.cancel()
+                        }
+                        inflightRealtimeSuggestionsTasks.removeAll()
+                    }()
+
                     let escape = 0x35
 
                     guard event.type == .keyUp,
                           event.getIntegerValueField(.keyboardEventKeycode) != escape
                     else { continue }
-                    
-                    os_log(.info, "Prefetch suggestions.")
 
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 1_500_000_000)
+                        try? await Task.sleep(nanoseconds: 500_000_000)
                         if Task.isCancelled { return }
+                        os_log(.info, "Prefetch suggestions.")
                         let fileURL = try? await Environment.fetchCurrentFileURL()
                         let folderURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
                         guard let workspaceURL = folderURL ?? fileURL else { return }
