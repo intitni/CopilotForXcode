@@ -1,5 +1,6 @@
 import AppKit
 import Service
+import ServiceManagement
 import SwiftUI
 import UserNotifications
 import XPCShared
@@ -12,6 +13,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
+        AXIsProcessTrustedWithOptions(nil)
     }
 
     @objc private func buildStatusBarMenu() {
@@ -77,10 +79,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func toggleRealtimeSuggestions() {
-        UserDefaults.shared.set(
-            !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle),
-            forKey: SettingsKey.realtimeSuggestionToggle
-        )
+        let isOn = !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+        if isOn {
+            if !AXIsProcessTrusted() {
+                let alert = NSAlert()
+                let image = NSImage(
+                    systemSymbolName: "exclamationmark.triangle.fill",
+                    accessibilityDescription: nil
+                )
+                var config = NSImage.SymbolConfiguration(
+                    textStyle: .body,
+                    scale: .large
+                )
+                config = config.applying(.init(hierarchicalColor: .systemYellow))
+                alert.icon = image?.withSymbolConfiguration(config)
+                alert.messageText = "Accessibility API Permission Required"
+                alert.informativeText =
+                    "Permission not granted to use Accessibility API. Please turn in on in System Settings.app."
+                alert.addButton(withTitle: "OK")
+                alert.addButton(withTitle: "Cancel")
+                alert.alertStyle = .warning
+                alert.runModal()
+                return
+            }
+        }
+        UserDefaults.shared.set(isOn, forKey: SettingsKey.realtimeSuggestionToggle)
     }
 }
 
