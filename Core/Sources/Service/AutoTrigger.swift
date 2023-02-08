@@ -85,13 +85,19 @@ public actor AutoTrigger {
                     }()
 
                     let escape = 0x35
+                    
+                    guard await Environment.frontmostXcodeWindowIsEditor() else { continue }
 
                     guard event.type == .keyUp,
                           event.getIntegerValueField(.keyboardEventKeycode) != escape
                     else { continue }
 
                     triggerTask = Task { @ServiceActor in
-                        try? await Task.sleep(nanoseconds: 500_000_000)
+                        try? await Task.sleep(nanoseconds: UInt64(
+                            UserDefaults.shared
+                                .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Int
+                                ?? 700_000_000
+                        ))
                         if Task.isCancelled { return }
                         os_log(.info, "Prefetch suggestions.")
                         let fileURL = try? await Environment.fetchCurrentFileURL()
