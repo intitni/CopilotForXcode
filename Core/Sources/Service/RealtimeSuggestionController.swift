@@ -138,6 +138,7 @@ public actor RealtimeSuggestionController {
             else { return }
             if Task.isCancelled { return }
             os_log(.info, "Prefetch suggestions.")
+            realtimeSuggestionIndicatorController?.triggerPrefetchAnimation()
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
             } catch {
@@ -149,20 +150,49 @@ public actor RealtimeSuggestionController {
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 final class RealtimeSuggestionIndicatorController {
+    class IndicatorContentViewModel: ObservableObject {
+        @Published var isPrefetching = false
+        private var prefetchTask: Task<Void, Error>?
+
+        @MainActor
+        func prefetch() {
+            prefetchTask?.cancel()
+            withAnimation(.easeIn(duration: 0.2)) {
+                isPrefetching = true
+            }
+            prefetchTask = Task {
+                try await Task.sleep(nanoseconds: 2 * 1_000_000_000)
+                withAnimation(.easeOut(duration: 0.2)) {
+                    isPrefetching = false
+                }
+            }
+        }
+    }
+
     struct IndicatorContentView: View {
-        @State var opacity: CGFloat = 1
-        @State var scale: CGFloat = 1
+        @ObservedObject var viewModel: IndicatorContentViewModel
+        @State var progress: CGFloat = 1
+        var opacityA: CGFloat { progress }
+        var opacityB: CGFloat { (1 - progress) }
+        var scaleA: CGFloat { progress / 2 + 0.5 }
+        var scaleB: CGFloat { 1 - progress }
+
         var body: some View {
             Circle()
-                .fill(Color.accentColor.opacity(opacity))
-                .scaleEffect(.init(width: scale, height: scale))
+                .fill(Color.accentColor.opacity(opacityA))
+                .scaleEffect(.init(width: scaleA, height: scaleA))
                 .frame(width: 8, height: 8)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(viewModel.isPrefetching ? opacityB : 0))
+                        .scaleEffect(.init(width: scaleB, height: scaleB))
+                        .frame(width: 8, height: 8)
+                )
                 .onAppear {
                     Task {
                         await Task.yield() // to avoid unwanted translations.
                         withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                            opacity = 0.5
-                            scale = 0.5
+                            progress = 0
                         }
                     }
                 }
@@ -182,6 +212,7 @@ final class RealtimeSuggestionIndicatorController {
         }
     }
 
+    private let viewModel = IndicatorContentViewModel()
     private var displayLink: CVDisplayLink!
     private var isDisplayLinkStarted: Bool = false
     private var userDefaultsObserver = UserDefaultsObserver()
@@ -194,7 +225,7 @@ final class RealtimeSuggestionIndicatorController {
     }
 
     @MainActor
-    let window = {
+    lazy var window = {
         let it = NSWindow(
             contentRect: .zero,
             styleMask: .borderless,
@@ -206,7 +237,8 @@ final class RealtimeSuggestionIndicatorController {
         it.backgroundColor = .white.withAlphaComponent(0)
         it.level = .statusBar
         it.contentView = NSHostingView(
-            rootView: IndicatorContentView().frame(minWidth: 10, minHeight: 10)
+            rootView: IndicatorContentView(viewModel: self.viewModel)
+                .frame(minWidth: 10, minHeight: 10)
         )
         return it
     }()
@@ -289,6 +321,12 @@ final class RealtimeSuggestionIndicatorController {
             frame.size = .init(width: 10, height: 10)
             window.setFrame(frame, display: false)
             window.makeKey()
+        }
+    }
+
+    func triggerPrefetchAnimation() {
+        Task { @MainActor in
+            viewModel.prefetch()
         }
     }
 }
