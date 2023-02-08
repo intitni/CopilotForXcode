@@ -45,6 +45,7 @@
 		C882175A294187E100A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C8821759294187E100A22FD3 /* Client */; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
 		C882175E294187F900A22FD3 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C882175D294187F900A22FD3 /* Service */; };
+		C8FFC1D329939F7F002F4CA4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8FFC1D229939F7F002F4CA4 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -193,6 +194,7 @@
 		C87F3E5F293DC600008523E8 /* Section.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Section.swift; sourceTree = "<group>"; };
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
+		C8FFC1D229939F7F002F4CA4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -268,6 +270,7 @@
 				C848181C293A017300966BB2 /* XPCService.entitlements */,
 				C81458BC293A016100135263 /* Info.plist */,
 				C81458B7293A015C00135263 /* main.swift */,
+				C8FFC1D229939F7F002F4CA4 /* AppDelegate.swift */,
 				C87B03B3293B393100C77EAE /* ServiceDelegate.swift */,
 			);
 			path = XPCService;
@@ -521,6 +524,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8FFC1D329939F7F002F4CA4 /* AppDelegate.swift in Sources */,
 				C81458B8293A015C00135263 /* main.swift in Sources */,
 				C87B03B4293B393100C77EAE /* ServiceDelegate.swift in Sources */,
 			);

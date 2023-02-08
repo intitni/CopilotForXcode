@@ -19,7 +19,7 @@ func setupXPCListener() -> (NSXPCListener, ServiceDelegate) {
 }
 
 func setupAutoTrigger() {
-    _ = AutoTrigger.shared
+    _ = RealtimeSuggestionController.shared
 }
 
 func setupRestartOnUpdate() {
@@ -67,8 +67,11 @@ func setupRestartOnUpdate() {
     }
 }
 
+let app = NSApplication.shared
+let appDelegate = AppDelegate()
+app.delegate = appDelegate
 let xpcListener = setupXPCListener()
 setupAutoTrigger()
 setupRestartOnUpdate()
 os_log(.info, "XPC Service started.")
-RunLoop.main.run()
+app.run()

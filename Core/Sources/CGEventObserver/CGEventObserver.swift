@@ -10,18 +10,13 @@ public protocol CGEventObserverType {
     var isEnabled: Bool { get }
 }
 
-final class CGEventObserver: CGEventObserverType {
-    let stream: AsyncStream<CGEvent>
-    var isEnabled: Bool { port != nil }
+public final class CGEventObserver: CGEventObserverType {
+    public let stream: AsyncStream<CGEvent>
+    public var isEnabled: Bool { port != nil }
 
     private var continuation: AsyncStream<CGEvent>.Continuation
     private var port: CFMachPort?
-    private let eventsOfInterest: Set<CGEventType> = [
-        .keyUp,
-        .keyDown,
-        .rightMouseDown,
-        .leftMouseDown,
-    ]
+    private let eventsOfInterest: Set<CGEventType>
     private let tapLocation: CGEventTapLocation = .cghidEventTap
     private let tapPlacement: CGEventTapPlacement = .tailAppendEventTap
     private let tapOptions: CGEventTapOptions = .listenOnly
@@ -32,7 +27,8 @@ final class CGEventObserver: CGEventObserverType {
         CFMachPortInvalidate(port)
     }
 
-    init() {
+    public init(eventsOfInterest: Set<CGEventType>) {
+        self.eventsOfInterest = eventsOfInterest
         var continuation: AsyncStream<CGEvent>.Continuation!
         stream = AsyncStream { c in
             continuation = c
