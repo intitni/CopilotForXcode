@@ -82,6 +82,8 @@ public actor AutoTrigger {
                     guard event.type == .keyUp,
                           event.getIntegerValueField(.keyboardEventKeycode) != escape
                     else { continue }
+                    
+                    os_log(.info, "Prefetch suggestions.")
 
                     triggerTask = Task { @ServiceActor in
                         try? await Task.sleep(nanoseconds: 1_500_000_000)
@@ -94,7 +96,11 @@ public actor AutoTrigger {
                         workspaces[workspaceURL] = workspace
                         guard workspace.isRealtimeSuggestionEnabled else { return }
                         if Task.isCancelled { return }
-                        try? await Environment.triggerAction("Prefetch Suggestions")
+                        do {
+                            try await Environment.triggerAction("Prefetch Suggestions")
+                        } catch {
+                            os_log(.info, "%@", error.localizedDescription)
+                        }
                     }
                 }
             }
