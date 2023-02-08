@@ -15,6 +15,8 @@ class TurnOffRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, Comman
                 let service = try getService()
                 try await service.setAutoSuggestion(enabled: false)
                 completionHandler(nil)
+            } catch is CancellationError {
+                completionHandler(nil)
             } catch {
                 completionHandler(error)
             }

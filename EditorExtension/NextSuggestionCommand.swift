@@ -19,6 +19,8 @@ class NextSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
                     invocation.accept(content)
                 }
                 completionHandler(nil)
+            } catch is CancellationError {
+                completionHandler(nil)
             } catch {
                 completionHandler(error)
             }
