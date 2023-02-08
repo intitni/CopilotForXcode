@@ -4,7 +4,7 @@ import Foundation
 
 private struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     var errorDescription: String? {
-        "Permission not granted to use Accessibility API. Please turn in on in Settings.app."
+        "Permission not granted to use Accessibility API. Please turn in on in System Settings.app."
     }
 }
 
