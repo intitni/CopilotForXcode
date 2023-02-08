@@ -16,10 +16,7 @@ func runAppleScript(_ appleScript: String) async throws -> String {
     task.arguments = ["-e", appleScript]
     let outpipe = Pipe()
     task.standardOutput = outpipe
-    #if DEBUG
-    #else
     task.standardError = Pipe()
-    #endif
 
     return try await withUnsafeThrowingContinuation { continuation in
         do {

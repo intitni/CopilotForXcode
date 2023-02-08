@@ -20,6 +20,7 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
     ],
     targets: [
+        .target(name: "CGEventObserver"),
         .target(
             name: "CopilotService",
             dependencies: ["LanguageClient", "CopilotModel", "XPCShared"]
@@ -50,7 +51,7 @@ let package = Package(
         ),
         .target(
             name: "Service",
-            dependencies: ["CopilotModel", "CopilotService", "XPCShared"]
+            dependencies: ["CopilotModel", "CopilotService", "XPCShared", "CGEventObserver"]
         ),
         .target(
             name: "XPCShared",
