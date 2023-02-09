@@ -19,7 +19,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
     public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
         reply(
             Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A",
-            Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A")
+            Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A"
+        )
     }
 
     @ServiceActor
@@ -88,6 +89,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
@@ -118,6 +120,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
@@ -145,6 +148,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
@@ -172,6 +176,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
@@ -196,6 +201,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let fileURL = try await Environment.fetchCurrentFileURL()
@@ -250,7 +256,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 reply(nil, NSError.from(error))
             }
         }
-        
+
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
@@ -260,6 +266,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
             return
         }
         Task { @ServiceActor in
+            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
             UserDefaults.shared.set(
                 !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle),
                 forKey: SettingsKey.realtimeSuggestionToggle
@@ -293,7 +300,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 reply()
             }
         }
-        
+
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 }

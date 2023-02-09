@@ -18,6 +18,7 @@ public actor RealtimeSuggestionController {
     ])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
+    private var ignoreUntil = Date(timeIntervalSince1970: 0)
     let realtimeSuggestionIndicatorController = RealtimeSuggestionIndicatorController()
 
     private init() {
@@ -81,27 +82,13 @@ public actor RealtimeSuggestionController {
     }
 
     func handleKeyboardEvent(event: CGEvent) async {
-        inflightPrefetchTask?.cancel()
+        await cancelInFlightTasks()
 
         if Task.isCancelled { return }
         guard await Environment.isXcodeActive() else { return }
 
-        // cancel in-flight tasks
-        await withTaskGroup(of: Void.self) { group in
-            for (_, workspace) in await workspaces {
-                group.addTask {
-                    await workspace.cancelInFlightRealtimeSuggestionRequests()
-                }
-            }
-            group.addTask {
-                await { @ServiceActor in
-                    inflightRealtimeSuggestionsTasks.forEach { $0.cancel() }
-                    inflightRealtimeSuggestionsTasks.removeAll()
-                }()
-            }
-        }
-
         let escape = 0x35
+        let arrowKeys = [0x7B, 0x7C, 0x7D, 0x7E]
         let isEditing = await Environment.frontmostXcodeWindowIsEditor()
 
         // if Xcode suggestion panel is presenting, and we are not trying to close it
@@ -111,22 +98,29 @@ public actor RealtimeSuggestionController {
         }
 
         let shouldTrigger = {
+            let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             // closing auto-complete panel
-            if isEditing, event.getIntegerValueField(.keyboardEventKeycode) == escape {
+            if isEditing, code == escape {
                 return true
+            }
+            
+            // escape and arrows to cancel
+
+            if code == escape {
+                return false
+            }
+            
+            if arrowKeys.contains(code) {
+                return false
             }
 
             // normally typing
-            if event.type == .keyUp,
-               event.getIntegerValueField(.keyboardEventKeycode) != escape
-            {
-                return true
-            }
 
-            return false
+            return event.type == .keyUp
         }()
 
         guard shouldTrigger else { return }
+        guard Date().timeIntervalSince(ignoreUntil) > 0 else { return }
 
         inflightPrefetchTask = Task { @ServiceActor in
             try? await Task.sleep(nanoseconds: UInt64((
@@ -145,6 +139,31 @@ public actor RealtimeSuggestionController {
                 os_log(.info, "%@", error.localizedDescription)
             }
         }
+    }
+
+    func cancelInFlightTasks() async {
+        inflightPrefetchTask?.cancel()
+
+        // cancel in-flight tasks
+        await withTaskGroup(of: Void.self) { group in
+            for (_, workspace) in await workspaces {
+                group.addTask {
+                    await workspace.cancelInFlightRealtimeSuggestionRequests()
+                }
+            }
+            group.addTask {
+                await { @ServiceActor in
+                    inflightRealtimeSuggestionsTasks.forEach { $0.cancel() }
+                    inflightRealtimeSuggestionsTasks.removeAll()
+                }()
+            }
+        }
+    }
+
+    /// Prevent prefetch to be triggered by commands. Quick and dirty.
+    func cancelInFlightTasksAndIgnoreTriggerForAWhile() async {
+        ignoreUntil = Date(timeIntervalSinceNow: 5)
+        await cancelInFlightTasks()
     }
 }
 

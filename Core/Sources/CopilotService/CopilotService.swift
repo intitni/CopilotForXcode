@@ -72,7 +72,6 @@ public class CopilotBaseService {
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
             localServer.logMessages = false
             localServer.notificationHandler = { notification, respond in
-                print(notification)
                 respond(.timeout)
             }
             let server = InitializingServer(server: localServer)
