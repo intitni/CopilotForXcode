@@ -3,7 +3,7 @@ import Foundation
 import XPCShared
 
 public struct AsyncXPCService {
-    var connection: NSXPCConnection { service.connection }
+    public var connection: NSXPCConnection { service.connection }
     let service: XPCService
 
     init(service: XPCService) {

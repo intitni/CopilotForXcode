@@ -18,7 +18,10 @@ class XPCService {
     
     var connection: NSXPCConnection {
         if isInvalidated {
+            _connection.invalidationHandler = {}
+            _connection.interruptionHandler = {}
             isInvalidated = false
+            _connection.invalidate()
             rebuildConnection()
         }
         return _connection
@@ -48,6 +51,8 @@ class XPCService {
     }
 
     deinit {
+        _connection.invalidationHandler = {}
+        _connection.interruptionHandler = {}
         _connection.invalidate()
     }
 }
