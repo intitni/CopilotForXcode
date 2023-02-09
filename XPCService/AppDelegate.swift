@@ -1,5 +1,6 @@
 import AppKit
 import FileChangeChecker
+import LaunchAgentManager
 import os.log
 import Service
 import ServiceManagement
