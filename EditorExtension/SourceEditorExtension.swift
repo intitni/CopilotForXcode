@@ -1,3 +1,4 @@
+import Client
 import Foundation
 import XcodeKit
 
@@ -13,6 +14,20 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
         ].map(makeCommandDefinition)
+    }
+
+    func extensionDidFinishLaunching() {
+        #if DEBUG
+        // In a debug build, we usually want to use the XPC service run from Xcode.
+        #else
+        // When the source extension is initialized
+        // we can call a random command to wake up the XPC service.
+        Task.detached {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            let service = try getService()
+            _ = try await service.checkStatus()
+        }
+        #endif
     }
 }
 
