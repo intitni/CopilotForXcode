@@ -23,7 +23,7 @@ struct LaunchAgentView: View {
                             }
                         }
                     }) {
-                        Text("Set Up Launch Agent for XPC Service")
+                        Text("Set Up Launch Agent")
                     }
                     .alert(isPresented: $isDidSetupLaunchAgentAlertPresented) {
                         .init(

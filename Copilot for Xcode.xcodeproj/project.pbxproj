@@ -30,6 +30,7 @@
 		C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */; };
 		C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */; };
 		C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */; };
+		C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C841BB232994CAD400B0B336 /* SettingsView.swift */; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
 		C8520307293CF13600460097 /* CopilotForXcodeXPCService in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C81458B5293A015C00135263 /* CopilotForXcodeXPCService */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C87B03A5293B261200C77EAE /* AcceptSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B03A4293B261200C77EAE /* AcceptSuggestionCommand.swift */; };
@@ -180,6 +181,7 @@
 		C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfoView.swift; sourceTree = "<group>"; };
 		C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructionView.swift; sourceTree = "<group>"; };
 		C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentView.swift; sourceTree = "<group>"; };
+		C841BB232994CAD400B0B336 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C848181C293A017300966BB2 /* XPCService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = XPCService.entitlements; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -315,6 +317,7 @@
 				C83B2B7B293D9FB400C5ACCD /* CopilotView.swift */,
 				C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */,
 				C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */,
+				C841BB232994CAD400B0B336 /* SettingsView.swift */,
 				C87F3E61293DD004008523E8 /* Styles.swift */,
 				C8189B1D2938973000C9DCDA /* Assets.xcassets */,
 				C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */,
@@ -535,6 +538,7 @@
 				C87F3E62293DD004008523E8 /* Styles.swift in Sources */,
 				C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */,
 				C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */,
+				C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */,
 				C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */,
 				C83B2B7C293D9FB400C5ACCD /* CopilotView.swift in Sources */,
 				C83B2B7A293D9C8C00C5ACCD /* LaunchAgentManager.swift in Sources */,
