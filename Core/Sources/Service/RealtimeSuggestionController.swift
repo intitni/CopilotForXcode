@@ -172,7 +172,7 @@ final class RealtimeSuggestionIndicatorController {
     struct IndicatorContentView: View {
         @ObservedObject var viewModel: IndicatorContentViewModel
         @State var progress: CGFloat = 1
-        var opacityA: CGFloat { progress }
+        var opacityA: CGFloat { min(progress, 0.7) }
         var opacityB: CGFloat { 1 - progress }
         var scaleA: CGFloat { progress / 2 + 0.5 }
         var scaleB: CGFloat { max(1 - progress, 0.01) }
@@ -334,8 +334,8 @@ final class RealtimeSuggestionIndicatorController {
                     let screen = NSScreen.screens.first
                     if found, let screen {
                         frame.origin = .init(
-                            x: frame.maxX + 5,
-                            y: screen.frame.height - frame.minY - 12
+                            x: frame.maxX + 2,
+                            y: screen.frame.height - frame.minY - 4
                         )
                         frame.size = .init(width: 10, height: 10)
                         window.setFrame(frame, display: false)
