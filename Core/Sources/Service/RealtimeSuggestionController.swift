@@ -28,7 +28,7 @@ public actor RealtimeSuggestionController {
                 await start(by: xcode.processIdentifier)
             }
             let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didLaunchApplicationNotification)
+                .notifications(named: NSWorkspace.didActivateApplicationNotification)
             for await notification in sequence {
                 try Task.checkCancellation()
                 guard let app = notification
@@ -103,13 +103,13 @@ public actor RealtimeSuggestionController {
             if isEditing, code == escape {
                 return true
             }
-            
+
             // escape and arrows to cancel
 
             if code == escape {
                 return false
             }
-            
+
             if arrowKeys.contains(code) {
                 return false
             }

@@ -6,7 +6,7 @@ struct Helper: ParsableCommand {
         commandName: "helper",
         abstract: "Helper CLI for Copilot for Xcode",
         subcommands: [
-            ReloadLaunchAgent.self
+            ReloadLaunchAgent.self,
         ]
     )
 }

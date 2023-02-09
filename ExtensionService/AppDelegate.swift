@@ -18,7 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let userDefaultsObserver = UserDefaultsObserver()
     private var statusBarItem: NSStatusItem!
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
-    
+
     func applicationDidFinishLaunching(_: Notification) {
         // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
@@ -166,7 +166,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
     }
-    
+
     func setupXPCListener() -> (NSXPCListener, ServiceDelegate) {
         let listener = NSXPCListener(machServiceName: serviceIdentifier)
         let delegate = ServiceDelegate()
