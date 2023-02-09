@@ -72,12 +72,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 break
             }
         }
-        UserDefaults.shared.addObserver(
-            userDefaultsObserver,
-            forKeyPath: SettingsKey.realtimeSuggestionToggle,
-            options: .new,
-            context: nil
-        )
     }
 
     @objc func quit() {
@@ -187,6 +181,15 @@ private class UserDefaultsObserver: NSObject {
         context: UnsafeMutableRawPointer?
     ) {
         onChange?(keyPath)
+    }
+
+    override init() {
+        super.init()
+        observe(keyPath: SettingsKey.realtimeSuggestionToggle)
+    }
+
+    func observe(keyPath: String) {
+        UserDefaults.shared.addObserver(self, forKeyPath: keyPath, options: .new, context: nil)
     }
 }
 

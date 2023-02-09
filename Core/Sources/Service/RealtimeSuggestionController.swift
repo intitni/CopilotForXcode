@@ -129,11 +129,11 @@ public actor RealtimeSuggestionController {
         guard shouldTrigger else { return }
 
         inflightPrefetchTask = Task { @ServiceActor in
-            try? await Task.sleep(nanoseconds: UInt64(
+            try? await Task.sleep(nanoseconds: UInt64((
                 UserDefaults.shared
-                    .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Int
-                    ?? 800_000_000
-            ))
+                    .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double
+                    ?? 0.7
+            ) * 1_000_000_000))
             guard UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
             else { return }
             if Task.isCancelled { return }

@@ -5,7 +5,8 @@ struct CopilotForXcodeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 500, maxWidth: .infinity, minHeight: 700)
+                .frame(minWidth: 500, minHeight: 700)
+                .preferredColorScheme(.dark)
         }
         .windowStyle(.hiddenTitleBar)
     }

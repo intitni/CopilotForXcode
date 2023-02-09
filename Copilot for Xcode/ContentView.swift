@@ -15,6 +15,7 @@ struct ContentView: View {
                 AppInfoView()
                 LaunchAgentView()
                 CopilotView()
+                SettingsView()
                 InstructionView()
                 Spacer()
             }
