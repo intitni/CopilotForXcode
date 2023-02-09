@@ -9,8 +9,7 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RejectSuggestionCommand(),
             NextSuggestionCommand(),
             PreviousSuggestionCommand(),
-            TurnOnRealtimeSuggestionsCommand(),
-            TurnOffRealtimeSuggestionsCommand(),
+            ToggleRealtimeSuggestionsCommand(),
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
         ].map(makeCommandDefinition)

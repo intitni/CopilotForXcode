@@ -149,10 +149,10 @@ public struct AsyncXPCService {
         )
     }
 
-    public func setAutoSuggestion(enabled: Bool) async throws {
+    public func toggleRealtimeSuggestion() async throws {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
-            service.setAutoSuggestion(enabled: enabled) { error in
+            service.toggleRealtimeSuggestion { error in
                 if let error {
                     continuation.reject(error)
                     return

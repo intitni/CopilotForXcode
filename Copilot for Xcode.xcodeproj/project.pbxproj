@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C8009BFF2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */; };
-		C8009C012941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */; };
+		C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */; };
 		C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */; };
 		C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */; };
 		C814588F2939EFDC00135263 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C814588E2939EFDC00135263 /* Cocoa.framework */; };
@@ -149,8 +148,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOnRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
-		C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnOffRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
+		C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeSuggestionCommand.swift; sourceTree = "<group>"; };
 		C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C814588C2939EFDC00135263 /* Copilot.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Copilot.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -254,8 +252,7 @@
 				C87B03A6293B261900C77EAE /* RejectSuggestionCommand.swift */,
 				C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */,
 				C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */,
-				C8009BFE2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift */,
-				C8009C002941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift */,
+				C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */,
 				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
 				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
@@ -506,10 +503,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C8009C012941C56C007AA7E8 /* TurnOffRealtimeSuggestionsCommand.swift in Sources */,
 				C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */,
 				C8520301293C4D9000460097 /* Helpers.swift in Sources */,
-				C8009BFF2941C551007AA7E8 /* TurnOnRealtimeSuggestionsCommand.swift in Sources */,
+				C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */,
 				C87B03A5293B261200C77EAE /* AcceptSuggestionCommand.swift in Sources */,
 				C87B03A9293B262600C77EAE /* NextSuggestionCommand.swift in Sources */,
 				C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */,

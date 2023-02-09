@@ -254,14 +254,14 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
-    public func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void) {
+    public func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void) {
         guard AXIsProcessTrusted() else {
             reply(NoAccessToAccessibilityAPIError())
             return
         }
         Task { @ServiceActor in
             UserDefaults.shared.set(
-                enabled,
+                !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle),
                 forKey: SettingsKey.realtimeSuggestionToggle
             )
             reply(nil)
