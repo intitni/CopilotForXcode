@@ -5,19 +5,19 @@ struct ReloadLaunchAgent: ParsableCommand {
     static var configuration = CommandConfiguration(
         abstract: "Reload the launch agent"
     )
-    
+
     @Option(name: .long, help: "The service identifier of the service.")
     var serviceIdentifier: String
-    
+
     var launchAgentDirURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/LaunchAgents")
     }
-    
+
     var launchAgentPath: String {
         launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).plist").path
     }
-    
+
     func run() throws {
         try? launchctl("unload", launchAgentPath)
         try launchctl("load", launchAgentPath)

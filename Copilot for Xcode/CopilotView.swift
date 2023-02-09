@@ -169,7 +169,12 @@ struct CopilotView_Previews: PreviewProvider {
         VStack(alignment: .leading, spacing: 8) {
             CopilotView(copilotStatus: .notSignedIn, version: "1.0.0", xpcServiceVersion: "0.0.0")
 
-            CopilotView(copilotStatus: .alreadySignedIn, message: "Error", xpcServiceVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
+            CopilotView(
+                copilotStatus: .alreadySignedIn,
+                message: "Error",
+                xpcServiceVersion: Bundle.main
+                    .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+            )
 
             CopilotView(copilotStatus: .alreadySignedIn, isRunningAction: true)
         }

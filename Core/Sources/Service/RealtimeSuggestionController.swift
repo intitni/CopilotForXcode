@@ -103,13 +103,13 @@ public actor RealtimeSuggestionController {
             if isEditing, code == escape {
                 return true
             }
-            
+
             // escape and arrows to cancel
 
             if code == escape {
                 return false
             }
-            
+
             if arrowKeys.contains(code) {
                 return false
             }

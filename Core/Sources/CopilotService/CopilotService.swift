@@ -71,7 +71,7 @@ public class CopilotBaseService {
             }()
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
             localServer.logMessages = false
-            localServer.notificationHandler = { notification, respond in
+            localServer.notificationHandler = { _, respond in
                 respond(.timeout)
             }
             let server = InitializingServer(server: localServer)
@@ -141,7 +141,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     override public init(projectRootURL: URL = URL(fileURLWithPath: "/")) {
         super.init(projectRootURL: projectRootURL)
     }
-    
+
     override init(designatedServer: CopilotLSP) {
         super.init(designatedServer: designatedServer)
     }

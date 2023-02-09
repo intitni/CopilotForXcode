@@ -15,7 +15,7 @@ public func getService() throws -> AsyncXPCService {
 class XPCService {
     private var isInvalidated = false
     private lazy var _connection: NSXPCConnection = buildConnection()
-    
+
     var connection: NSXPCConnection {
         if isInvalidated {
             _connection.invalidationHandler = {}
@@ -26,11 +26,12 @@ class XPCService {
         }
         return _connection
     }
-    
+
     private func buildConnection() -> NSXPCConnection {
         let connection = NSXPCConnection(
             machServiceName: Bundle(for: XPCService.self)
-                .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String + ".ExtensionService"
+                .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String +
+                ".ExtensionService"
         )
         connection.remoteObjectInterface =
             NSXPCInterface(with: XPCServiceProtocol.self)
@@ -45,7 +46,7 @@ class XPCService {
         connection.resume()
         return connection
     }
-    
+
     func rebuildConnection() {
         _connection = buildConnection()
     }

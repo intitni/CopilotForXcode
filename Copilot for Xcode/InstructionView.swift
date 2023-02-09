@@ -20,7 +20,7 @@ Text("""
 6. Go to `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor` , check the **Copilot** checkbox to enable the extension.
 7. Restart Xcode, the Copilot commands should be available in the menu bar.
 """)
-                    
+
 Text("Granting Permissions")
     .font(.title3)
 Text("""
