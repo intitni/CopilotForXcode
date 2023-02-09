@@ -1,4 +1,6 @@
 import AppKit
+import FileChangeChecker
+import os.log
 import Service
 import ServiceManagement
 import SwiftUI
@@ -11,9 +13,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusBarItem: NSStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
+        // setup real-time suggestion controller
+        _ = RealtimeSuggestionController.shared
+        setupRestartOnUpdate()
+        setupQuitOnUserTerminated()
+
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
-        AXIsProcessTrustedWithOptions(nil)
     }
 
     @objc private func buildStatusBarMenu() {
@@ -105,6 +111,70 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         UserDefaults.shared.set(isOn, forKey: SettingsKey.realtimeSuggestionToggle)
     }
+
+    func setupRestartOnUpdate() {
+        Task {
+            guard let url = Bundle.main.executableURL else { return }
+            let checker = await FileChangeChecker(fileURL: url)
+
+            // If Xcode or Copilot for Xcode is made active, check if the executable of this program
+            // is changed. If changed, restart the launch agent.
+
+            let sequence = NSWorkspace.shared.notificationCenter
+                .notifications(named: NSWorkspace.didActivateApplicationNotification)
+            for await notification in sequence {
+                try Task.checkCancellation()
+                guard let app = notification
+                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                    app.isUserOfService
+                else { continue }
+                guard await checker.checkIfChanged() else {
+                    os_log(.info, "XPC Service is not updated, no need to restart.")
+                    continue
+                }
+                os_log(.info, "XPC Service will be restarted.")
+                #if DEBUG
+                #else
+                let manager = LaunchAgentManager(
+                    serviceIdentifier: serviceIdentifier,
+                    executablePath: Bundle.main.executablePath ?? ""
+                )
+                do {
+                    try await manager.restartLaunchAgent()
+                } catch {
+                    os_log(
+                        .error,
+                        "XPC Service failed to restart. %{public}s",
+                        error.localizedDescription
+                    )
+                }
+                #endif
+            }
+        }
+    }
+
+    func setupQuitOnUserTerminated() {
+        Task {
+            // Whenever Xcode or the host application quits, check if any of the two is running.
+            // If none, quit the XPC service.
+
+            let sequence = NSWorkspace.shared.notificationCenter
+                .notifications(named: NSWorkspace.didTerminateApplicationNotification)
+            for await notification in sequence {
+                try Task.checkCancellation()
+                guard UserDefaults.shared.bool(forKey: SettingsKey.quitXPCServiceOnXcodeAndAppQuit)
+                else { continue }
+                guard let app = notification
+                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                    app.isUserOfService
+                else { continue }
+                if NSWorkspace.shared.runningApplications.contains(where: \.isUserOfService) {
+                    continue
+                }
+                exit(0)
+            }
+        }
+    }
 }
 
 private class UserDefaultsObserver: NSObject {
@@ -117,5 +187,14 @@ private class UserDefaultsObserver: NSObject {
         context: UnsafeMutableRawPointer?
     ) {
         onChange?(keyPath)
+    }
+}
+
+extension NSRunningApplication {
+    var isUserOfService: Bool {
+        [
+            "com.apple.dt.Xcode",
+            bundleIdentifierBase,
+        ].contains(bundleIdentifier)
     }
 }
