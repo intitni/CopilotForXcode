@@ -13,6 +13,8 @@ struct CopilotDoc: Codable {
     var relativePath: String
     var languageId: LanguageIdentifier
     var position: Position
+    /// Buffer version. Not sure what this is for, not sure how to get it
+    var version: Int = 0
 }
 
 protocol CopilotRequestType {
