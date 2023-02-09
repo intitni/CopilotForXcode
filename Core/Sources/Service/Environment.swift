@@ -2,13 +2,13 @@ import AppKit
 import CopilotService
 import Foundation
 
-private struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
+struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     var errorDescription: String? {
-        "Permission not granted to use Accessibility API. Please turn in on in Settings.app."
+        "Accessibility API permission is not granted. Please enable in System Settings.app."
     }
 }
 
-private struct FailedToFetchFileURLError: Error, LocalizedError {
+struct FailedToFetchFileURLError: Error, LocalizedError {
     var errorDescription: String? {
         "Failed to fetch editing file url."
     }
@@ -44,6 +44,20 @@ enum Environment {
         return !activeXcodes.isEmpty
     }
 
+    static var frontmostXcodeWindowIsEditor: () async -> Bool = {
+        let appleScript = """
+        tell application "Xcode"
+            return path of document of the first window
+        end tell
+        """
+        do {
+            let result = try await runAppleScript(appleScript)
+            return !result.isEmpty
+        } catch {
+            return false
+        }
+    }
+
     static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws -> URL? = { fileURL in
         let appleScript = """
         tell application "Xcode"
@@ -51,7 +65,7 @@ enum Environment {
         end tell
         """
 
-        let path = try await runAppleScript(appleScript)
+        let path = (try? await runAppleScript(appleScript)) ?? ""
         if !path.isEmpty {
             let trimmedNewLine = path.trimmingCharacters(in: .newlines)
             var url = URL(fileURLWithPath: trimmedNewLine)
@@ -101,19 +115,20 @@ enum Environment {
                     key: kAXFocusedWindowAttribute,
                     ofType: AXUIElement.self
                 )
-                var path = try frontmostWindow.copyValue(
+                var path = try? frontmostWindow.copyValue(
                     key: kAXDocumentAttribute,
                     ofType: String?.self
                 )
                 if path == nil {
-                    if let firstWindow = try application.copyValue(
+                    for window in try application.copyValue(
                         key: kAXWindowsAttribute,
                         ofType: [AXUIElement].self
-                    ).first {
-                        path = try firstWindow.copyValue(
+                    ) {
+                        path = try? window.copyValue(
                             key: kAXDocumentAttribute,
-                            ofType: String.self
+                            ofType: String?.self
                         )
+                        if path != nil { break }
                     }
                 }
                 if let path = path?.removingPercentEncoding {
@@ -183,6 +198,24 @@ extension AXUIElement {
     func copyValue<T>(key: String, ofType _: T.Type = T.self) throws -> T {
         var value: AnyObject?
         let error = AXUIElementCopyAttributeValue(self, key as CFString, &value)
+        if error == .success, let value = value as? T {
+            return value
+        }
+        throw error
+    }
+
+    func copyParameterizedValue<T>(
+        key: String,
+        parameters: AnyObject,
+        ofType _: T.Type = T.self
+    ) throws -> T {
+        var value: AnyObject?
+        let error = AXUIElementCopyParameterizedAttributeValue(
+            self,
+            key as CFString,
+            parameters as CFTypeRef,
+            &value
+        )
         if error == .success, let value = value as? T {
             return value
         }

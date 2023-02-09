@@ -16,6 +16,7 @@ func runAppleScript(_ appleScript: String) async throws -> String {
     task.arguments = ["-e", appleScript]
     let outpipe = Pipe()
     task.standardOutput = outpipe
+    task.standardError = Pipe()
 
     return try await withUnsafeThrowingContinuation { continuation in
         do {
@@ -86,6 +87,11 @@ extension NSError {
             }
             return NSError(domain: "com.intii.CopilotForXcode", code: -1, userInfo: [
                 NSLocalizedDescriptionKey: message,
+            ])
+        }
+        if let error = error as? CancellationError {
+            return NSError(domain: "com.intii.CopilotForXcode", code: -100, userInfo: [
+                NSLocalizedDescriptionKey: error.localizedDescription,
             ])
         }
         return NSError(domain: "com.intii.CopilotForXcode", code: -1, userInfo: [

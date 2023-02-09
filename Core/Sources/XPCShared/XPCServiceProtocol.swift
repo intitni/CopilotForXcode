@@ -37,7 +37,7 @@ public protocol XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     )
 
-    func setAutoSuggestion(enabled: Bool, withReply reply: @escaping (Error?) -> Void)
+    func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void)
 
     func prefetchRealtimeSuggestions(
         editorContent: Data,

@@ -3,8 +3,8 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class TurnOnRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Turn On Real-time Suggestions for Workspace" }
+class ToggleRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String { "Toggle Real-time Suggestions" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
@@ -13,7 +13,9 @@ class TurnOnRealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, Command
         Task {
             do {
                 let service = try getService()
-                try await service.setAutoSuggestion(enabled: true)
+                try await service.toggleRealtimeSuggestion()
+                completionHandler(nil)
+            } catch is CancellationError {
                 completionHandler(nil)
             } catch {
                 completionHandler(error)

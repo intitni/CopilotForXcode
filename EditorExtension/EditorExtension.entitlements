@@ -10,7 +10,7 @@
 	</array>
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>
-		<string>$(BUNDLE_IDENTIFIER_BASE).XPCService</string>
+		<string>$(BUNDLE_IDENTIFIER_BASE).ExtensionService</string>
 	</array>
 </dict>
 </plist>

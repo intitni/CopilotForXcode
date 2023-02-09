@@ -3,10 +3,11 @@ import Foundation
 import XPCShared
 
 public struct AsyncXPCService {
-    let connection: NSXPCConnection
+    public var connection: NSXPCConnection { service.connection }
+    let service: XPCService
 
-    public init(connection: NSXPCConnection) {
-        self.connection = connection
+    init(service: XPCService) {
+        self.service = service
     }
 
     public func checkStatus() async throws -> CopilotStatus {
@@ -24,7 +25,7 @@ public struct AsyncXPCService {
             }
         }
     }
-    
+
     public func getXPCServiceVersion() async throws -> (version: String, build: String) {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
@@ -148,10 +149,10 @@ public struct AsyncXPCService {
         )
     }
 
-    public func setAutoSuggestion(enabled: Bool) async throws {
+    public func toggleRealtimeSuggestion() async throws {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
-            service.setAutoSuggestion(enabled: enabled) { error in
+            service.toggleRealtimeSuggestion { error in
                 if let error {
                     continuation.reject(error)
                     return
@@ -180,7 +181,11 @@ struct AutoFinishContinuation<T> {
     }
 
     func reject(_ error: Error) {
-        continuation.finish(throwing: error)
+        if (error as NSError).code == -100 {
+            continuation.finish(throwing: CancellationError())
+        } else {
+            continuation.finish(throwing: error)
+        }
     }
 }
 

@@ -6,5 +6,7 @@ public extension UserDefaults {
 
 public enum SettingsKey {
     public static let nodePath = "NodePath"
-    public static let realtimeSuggestionState = "RealtimeSuggestionState"
+    public static let realtimeSuggestionToggle = "RealtimeSuggestionToggle"
+    public static let realtimeSuggestionDebounce = "RealtimeSuggestionDebounce"
+    public static let quitXPCServiceOnXcodeAndAppQuit = "QuitXPCServiceOnXcodeAndAppQuit"
 }
