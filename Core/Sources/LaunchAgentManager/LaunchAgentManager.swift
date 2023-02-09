@@ -18,6 +18,14 @@ public struct LaunchAgentManager {
         self.executablePath = executablePath
     }
 
+    public func setupLaunchAgentForTheFirstTimeIfNeeded() async throws {
+        guard !FileManager.default.fileExists(atPath: launchAgentPath) else {
+            return
+        }
+        try await setupLaunchAgent()
+        await removeObsoleteLaunchAgent()
+    }
+
     public func setupLaunchAgent() async throws {
         let content = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -54,8 +62,15 @@ public struct LaunchAgentManager {
         try FileManager.default.removeItem(atPath: launchAgentPath)
     }
 
-    public func restartLaunchAgent() async throws {
+    public func reloadLaunchAgent() async throws {
         try await helper("reload-launch-agent", "--service-identifier", serviceIdentifier)
+    }
+
+    public func removeObsoleteLaunchAgent() async {
+        let path = launchAgentPath.replacingOccurrences(of: "ExtensionService", with: "XPCService")
+        if FileManager.default.fileExists(atPath: path) {
+            try? FileManager.default.removeItem(atPath: path)
+        }
     }
 }
 
@@ -98,8 +113,11 @@ private func process(_ launchPath: String, _ args: [String]) async throws {
 }
 
 private func helper(_ args: String...) async throws {
+    // TODO: A more robust way to locate the executable.
     guard let url = Bundle.main.executableURL?
         .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("Applications")
         .appendingPathComponent("Helper")
     else { throw E(errorDescription: "Unable to locate Helper.") }
     return try await process(url.path, args)

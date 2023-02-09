@@ -8,19 +8,27 @@ import SwiftUI
 import UserNotifications
 import XPCShared
 
+let bundleIdentifierBase = Bundle.main
+    .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
+let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
+
+@main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let scheduledCleaner = ScheduledCleaner()
     private let userDefaultsObserver = UserDefaultsObserver()
     private var statusBarItem: NSStatusItem!
-
+    private var xpcListener: (NSXPCListener, ServiceDelegate)?
+    
     func applicationDidFinishLaunching(_: Notification) {
         // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
-        setupRestartOnUpdate()
+        setupQuitOnUpdate()
         setupQuitOnUserTerminated()
-
+        xpcListener = setupXPCListener()
+        os_log(.info, "XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
+        AXIsProcessTrustedWithOptions(nil)
     }
 
     @objc private func buildStatusBarMenu() {
@@ -107,13 +115,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         UserDefaults.shared.set(isOn, forKey: SettingsKey.realtimeSuggestionToggle)
     }
 
-    func setupRestartOnUpdate() {
+    func setupQuitOnUpdate() {
         Task {
             guard let url = Bundle.main.executableURL else { return }
             let checker = await FileChangeChecker(fileURL: url)
 
             // If Xcode or Copilot for Xcode is made active, check if the executable of this program
-            // is changed. If changed, restart the launch agent.
+            // is changed. If changed, quit this program.
 
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didActivateApplicationNotification)
@@ -124,25 +132,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     app.isUserOfService
                 else { continue }
                 guard await checker.checkIfChanged() else {
-                    os_log(.info, "XPC Service is not updated, no need to restart.")
+                    os_log(.info, "Extension Service is not updated, no need to quit.")
                     continue
                 }
-                os_log(.info, "XPC Service will be restarted.")
+                os_log(.info, "Extension Service will quit.")
                 #if DEBUG
                 #else
-                let manager = LaunchAgentManager(
-                    serviceIdentifier: serviceIdentifier,
-                    executablePath: Bundle.main.executablePath ?? ""
-                )
-                do {
-                    try await manager.restartLaunchAgent()
-                } catch {
-                    os_log(
-                        .error,
-                        "XPC Service failed to restart. %{public}s",
-                        error.localizedDescription
-                    )
-                }
+                exit(0)
                 #endif
             }
         }
@@ -169,6 +165,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 exit(0)
             }
         }
+    }
+    
+    func setupXPCListener() -> (NSXPCListener, ServiceDelegate) {
+        let listener = NSXPCListener(machServiceName: serviceIdentifier)
+        let delegate = ServiceDelegate()
+        listener.delegate = delegate
+        listener.resume()
+        return (listener, delegate)
     }
 }
 

@@ -6,9 +6,14 @@ extension LaunchAgentManager {
         self.init(
             serviceIdentifier: Bundle.main
                 .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String +
-                ".XPCService",
-            executablePath: Bundle.main.executableURL?.deletingLastPathComponent()
-                .appendingPathComponent("CopilotForXcodeXPCService").path ?? ""
+                ".ExtensionService",
+            executablePath: Bundle.main.bundleURL
+                .appendingPathComponent("Contents")
+                .appendingPathComponent("Applications")
+                .appendingPathComponent(
+                    "CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService"
+                )
+                .path
         )
     }
 }

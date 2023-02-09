@@ -30,7 +30,7 @@ class XPCService {
     private func buildConnection() -> NSXPCConnection {
         let connection = NSXPCConnection(
             machServiceName: Bundle(for: XPCService.self)
-                .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String + ".XPCService"
+                .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String + ".ExtensionService"
         )
         connection.remoteObjectInterface =
             NSXPCInterface(with: XPCServiceProtocol.self)

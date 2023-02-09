@@ -57,17 +57,17 @@ struct LaunchAgentView: View {
                     Button(action: {
                         Task {
                             do {
-                                try await LaunchAgentManager().restartLaunchAgent()
+                                try await LaunchAgentManager().reloadLaunchAgent()
                                 isDidRestartLaunchAgentAlertPresented = true
                             } catch {
                                 errorMessage = error.localizedDescription
                             }
                         }
                     }) {
-                        Text("Restart XPC Service")
+                        Text("Reload Launch Agent")
                     }.alert(isPresented: $isDidRestartLaunchAgentAlertPresented) {
                         .init(
-                            title: Text("Launch Agent Restarted"),
+                            title: Text("Launch Agent Reloaded"),
                             dismissButton: .default(Text("OK"))
                         )
                     }
@@ -91,7 +91,21 @@ struct LaunchAgentView: View {
                         .textFieldStyle(.copilot)
                 }
             }
-        }.buttonStyle(.copilot)
+        }
+        .buttonStyle(.copilot)
+        .onAppear {
+            #if DEBUG
+            // do not auto install on debug build
+            #else
+            Task {
+                do {
+                    try await LaunchAgentManager().setupLaunchAgentForTheFirstTimeIfNeeded()
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+            }
+            #endif
+        }
     }
 }
 
