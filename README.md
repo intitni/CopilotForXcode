@@ -16,7 +16,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 - Accessibility API
 - Folder Access
-- Maybe Input Monitoring
+- Input Monitoring (for real-time suggestions)
 
 ## Installation and Setup
 
@@ -32,7 +32,7 @@ Or install it manually, by downloading the `Copilot for Xcode.app` from the late
 
 Then set it up with the following steps:
 
-1. Open the app, and click "Set Up Launch Agents" to set up a background running XPC Service that does the real job.
+1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
 2. Enable the extension in `System Settings.app`. 
 
     From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
@@ -47,17 +47,19 @@ Then set it up with the following steps:
 
 ### Granting Permissions to the App
 
+**Permissions should be granted to `CopilotForXcodeExtensionService.app`**. Not `Copilot for Xcode.app`. It is located in `Copilot for Xcode.app/Contents/Applications/CopilotForXcodeExtensionService.app`, you can access this directory by right-clicking the app icon, and selecting `Show Package Contents`.
+
 The first time the commands are run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
 
 Or you can grant them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
-- Accessibility API: Click `Accessibility`, and add `Copilot for Xcode.app` to the list.
-- Input Monitoring: (Accessibility API should cover Input Monitoring. You can try to enable it if Accessibility API is not enough for you). Click `Input Monitoring` and add `Copilot for Xcode.app` to the list.
+- Accessibility API: Click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list.
+- Input Monitoring (If you need real-time suggestions): Click `Input Monitoring` and drag `CopilotForXcodeExtensionService.app` to the list.
 
-### Alternative Ways to Launch the XPC Service
+### Managing `CopilotForXcodeExtensionService.app`
 
-The launch agent is set to `RunAtLoad`, so it will start when you log on to your computer. If you have a solution to configure the launch agent to start and stop on demand, please file an issue or pull request (note that the XPC service must be started before the user calls any commands, as it needs to call some of the commands proactively to provide real-time suggestions).
+This app runs whenever you open `Copilot for Xcode.app` or `Xcode.app`. You can quit it with its menu bar item that looks like a steering wheel.
 
-Alternatively, you can skip the Launch Agent part and use other applications to watch Xcode launch and then launch the XPC service when needed. The executable is located at `Copilot for Xcode.app/Contents/MacOS/CopilotForXcodeXPCService`. Or you can remove the `RunAtLoad` field from the plist and run it manually.
+You can also set it to quit automatically when the above 2 apps are closed.
 
 ## Update 
 
@@ -69,7 +71,7 @@ brew upgrade --cask copilot-for-xcode
 
 Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
-If you are upgrading from a version lower than 0.6.0, don't forget to click `Restart XPC Service` in the application after the update to kill the old version and start the new one.
+If you are upgrading from a version lower than 0.7.0, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you.
 
 If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
 
@@ -82,19 +84,19 @@ If you find that some of the features are no longer working, please first try re
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Turn On Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
-- Turn Off Real-time Suggestions: Turns the real-time suggestions off.
+- Toggle Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
 
 **About real-time suggestions**
 
-- The on/off state is persisted, make sure you turn it off manually if you no longer want it.
-- The implementation won't feel as smooth as that of VSCode.
-  
-    The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it.
+The on/off state is persisted, so be sure to turn it off manually when you no longer want it. When real-time suggestion is turned on, a breathing dot will show up next to the mouse pointer or the editing cursor. 
 
-    Hope that next year, Apple can spend some time on Xcode Extensions.  
+Whenever you stop typing for a few seconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
+
+When a fetch occurs, the dot will have a slightly different animation. If you don't see it, your permissions may not be set correctly.
+
+The implementation won't feel as smooth as that of VSCode. The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it. Hope that next year, Apple can spend some time on Xcode Extensions.  
 
 ## Key Bindings
 
@@ -136,27 +138,23 @@ fi
 
 **Q: The extension doesn't show up in the `Editor` menu.**
 
-> A: Please make sure `Copilot for Xcode` is turned on in `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
+> A: Please make sure `Copilot` is turned on in `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
 
 **Q: The extension says it can't connect to the XPC service/helper.**
 
 > A: If you have just updated the app from an old version, make sure you have restarted the XPC Service.
 > 
-> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.XPCService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.XPCService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
+> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.ExtensionService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.ExtensionService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
 > 
 > If you are installing multiple versions of the extension on your machine, it's also possible that Xcode is using the older version of the extension.
 
 **Q: The extension complains that it has no access to the Accessibility API**
 
-> A: Check the list in `System Settings.app > Privacy & Security > Accessibility`. Turn the toggle on for `Copilot for Xcode`. If it's not on the list, add it manually.
->  
-> If you have just **updated the app**, consider restarting XPCService in app or trying removing the Launch Agents and set it up again!
+> A: Please check if the [Accessibility API permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
 
 **Q: I turned on real-time suggestions, but nothing happens**
 
-> A: Please first check that the Accessibility API permission is granted, see the previous QA for details. The Accessibility API should cover Input Monitoring, but if real-time suggestions still do not work, try adding `Copilot for Xcode` to the list in `System Settings.app > Privacy & Security > Input Monitoring`. After that, you may then need to restart the XPC Service.
->
-> If that doesn't help, try to restart the XPC Service again.
+> A: Please check if the [Accessibility API and Input Monitoring permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
 
 **Q: Will it work in future Xcode updates?**
 

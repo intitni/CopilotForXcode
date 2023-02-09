@@ -10,13 +10,13 @@ Copilot for Xcode is the app containing both the XPCService and the editor exten
 
 As its name suggests, the editor extension. Since an editor extension must be sandboxed, it will need to talk to a trusted non-sandboxed XPCService to break out the limitations. The identifier of the XPCService must be listed under `com.apple.security.temporary-exception.mach-lookup.global-name` in entitlements.
 
-### XPCService
+### ExtensionService
 
-The XPCService is a program that runs in the background and does basically everything. It redirects the requests from EditorExtension to `CopilotService` and returns the updated code back to the extension.
+The ExtensionService is a program that runs in the background and does basically everything. It redirects the requests from EditorExtension to `CopilotService` and returns the updated code back to the extension.
 
-Since the Xcode source editor extension only allows its commands to be triggered manually, the XPCService has to use Apple Scripts to trigger the menu items to generate real-time suggestions.
+Since the Xcode source editor extension only allows its commands to be triggered manually, the ExtensionService has to use Apple Scripts to trigger the menu items to generate real-time suggestions.
 
-The XPCService is also using a lot of Apple Script tricks to get the file paths and project/workspace paths of the active Xcode window because Xcode is not providing this information.
+The ExtensionService is also using a lot of Apple Script tricks to get the file paths and project/workspace paths of the active Xcode window because Xcode is not providing this information.
 
 ## Building and Archiving the App
 
