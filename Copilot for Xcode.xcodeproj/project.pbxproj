@@ -143,7 +143,7 @@
 		C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeSuggestionCommand.swift; sourceTree = "<group>"; };
 		C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchSuggestionsCommand.swift; sourceTree = "<group>"; };
-		C81291D52994FE6900196E12 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = Main.storyboard; path = ../../../../.Trash/Main.storyboard; sourceTree = "<group>"; };
+		C81291D52994FE6900196E12 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		C81291D92994FE7900196E12 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C814588C2939EFDC00135263 /* Copilot.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Copilot.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C814588E2939EFDC00135263 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
