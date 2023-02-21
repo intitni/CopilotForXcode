@@ -6,6 +6,23 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copil
 
 Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Permissions Required](#permissions-required)
+- [Installation and Setup](#installation-and-setup)
+  - [Install](#install)
+  - [Sign In GitHub Copilot](#sign-in-github-copilot)
+  - [Granting Permissions to the App](#granting-permissions-to-the-app)
+  - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
+- [Update](#update)
+- [Commands](#commands)
+- [Key Bindings](#key-bindings)
+- [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
+- [Limitations](#limitations)
+- [FAQ](#faq)
+- [License](#license)
+
 ## Prerequisites
 
 - [Node](https://nodejs.org/) installed to run the Copilot LSP.
