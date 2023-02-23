@@ -19,6 +19,10 @@ final class Filespace {
     var suggestionIndex: Int = 0
     var currentSuggestionLineRange: ClosedRange<Int>?
     var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
+    var presentingSuggestion: CopilotCompletion? {
+        guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
+        return suggestions[suggestionIndex]
+    }
 
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
     var isExpired: Bool {
