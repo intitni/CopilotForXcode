@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CopilotCompletion: Codable {
+public struct CopilotCompletion: Codable, Equatable {
     public init(
         text: String,
         position: CursorPosition,
