@@ -5,7 +5,7 @@ import XCTest
 @testable import Service
 @testable import SuggestionInjector
 
-final class AcceptSuggestionTests: XCTestCase {
+final class CommentBase_AcceptSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
