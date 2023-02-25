@@ -17,7 +17,6 @@ final class Filespace {
     }
 
     var suggestionIndex: Int = 0
-    var currentSuggestionLineRange: ClosedRange<Int>?
     var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
     var presentingSuggestion: CopilotCompletion? {
         guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
@@ -36,7 +35,6 @@ final class Filespace {
     func reset() {
         suggestions = []
         suggestionIndex = 0
-        currentSuggestionLineRange = nil
     }
 }
 
@@ -48,7 +46,7 @@ final class Workspace {
         Environment.now().timeIntervalSince(lastTriggerDate) > 60 * 60 * 8
     }
 
-    var filespaces = [URL: Filespace]()
+    private(set) var filespaces = [URL: Filespace]()
     var isRealtimeSuggestionEnabled: Bool {
         UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
     }
@@ -74,6 +72,125 @@ final class Workspace {
         return false
     }
 
+    static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
+        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
+        let workspaceURL = projectURL ?? fileURL
+        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+        workspaces[workspaceURL] = workspace
+        return workspace
+    }
+}
+
+extension Workspace {
+    @discardableResult
+    func generateSuggestions(
+        forFileAt fileURL: URL,
+        content: String,
+        lines: [String],
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
+    ) async throws -> [CopilotCompletion] {
+        if shouldcancelInFlightRealtimeSuggestionRequests {
+            cancelInFlightRealtimeSuggestionRequests()
+        }
+        lastTriggerDate = Environment.now()
+
+        let filespace = filespaces[fileURL] ?? .init(fileURL: fileURL)
+        if filespaces[fileURL] == nil {
+            filespaces[fileURL] = filespace
+        }
+
+        let snapshot = Filespace.Snapshot(
+            linesHash: lines.hashValue,
+            cursorPosition: cursorPosition
+        )
+
+        filespace.suggestionSourceSnapshot = snapshot
+
+        let completions = try await service.getCompletions(
+            fileURL: fileURL,
+            content: lines.joined(separator: ""),
+            cursorPosition: cursorPosition,
+            tabSize: tabSize,
+            indentSize: indentSize,
+            usesTabsForIndentation: usesTabsForIndentation,
+            ignoreSpaceOnlySuggestions: true
+        )
+
+        filespace.suggestions = completions
+        
+        return completions
+    }
+
+    func selectNextSuggestion(
+        forFileAt fileURL: URL,
+        content _: String,
+        lines: [String]
+    ) {
+        cancelInFlightRealtimeSuggestionRequests()
+        lastTriggerDate = Environment.now()
+        guard let filespace = filespaces[fileURL],
+              filespace.suggestions.count > 1
+        else { return }
+        filespace.suggestionIndex += 1
+        if filespace.suggestionIndex >= filespace.suggestions.endIndex {
+            filespace.suggestionIndex = 0
+        }
+    }
+
+    func selectPreviousSuggestion(
+        forFileAt fileURL: URL,
+        content _: String,
+        lines: [String]
+    ) {
+        cancelInFlightRealtimeSuggestionRequests()
+        lastTriggerDate = Environment.now()
+        guard let filespace = filespaces[fileURL],
+              filespace.suggestions.count > 1
+        else { return }
+        filespace.suggestionIndex -= 1
+        if filespace.suggestionIndex < 0 {
+            filespace.suggestionIndex = filespace.suggestions.endIndex - 1
+        }
+    }
+
+    func rejectSuggestion(forFileAt fileURL: URL) {
+        cancelInFlightRealtimeSuggestionRequests()
+        lastTriggerDate = Environment.now()
+        Task {
+            await service.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
+        }
+        filespaces[fileURL]?.reset()
+    }
+
+    func acceptSuggestion(forFileAt fileURL: URL) -> CopilotCompletion? {
+        cancelInFlightRealtimeSuggestionRequests()
+        lastTriggerDate = Environment.now()
+        guard let filespace = filespaces[fileURL],
+              !filespace.suggestions.isEmpty,
+              filespace.suggestionIndex >= 0,
+              filespace.suggestionIndex < filespace.suggestions.endIndex
+        else { return nil }
+
+        var allSuggestions = filespace.suggestions
+        let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
+
+        Task {
+            await service.notifyAccepted(suggestion)
+            await service.notifyRejected(allSuggestions)
+        }
+
+        filespaces[fileURL]?.reset()
+
+        return suggestion
+    }
+}
+
+@available(*, deprecated, message: "These should be replaced.")
+extension Workspace {
     func getRealtimeSuggestedCode(
         forFileAt fileURL: URL,
         content: String,
@@ -222,8 +339,6 @@ final class Workspace {
             extraInfo: &extraInfo
         )
 
-        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
-
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -265,8 +380,6 @@ final class Workspace {
             extraInfo: &extraInfo
         )
 
-        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
-
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -306,8 +419,6 @@ final class Workspace {
             count: filespace.suggestions.count,
             extraInfo: &extraInfo
         )
-
-        filespace.currentSuggestionLineRange = extraInfo.suggestionRange
 
         return .init(
             content: String(lines.joined(separator: "")),
