@@ -9,7 +9,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         try await workspace.generateSuggestions(
             forFileAt: fileURL,
             content: editor.content,
@@ -20,7 +20,6 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
             usesTabsForIndentation: editor.usesTabsForIndentation
         )
 
-        guard let filespace = workspace.filespaces[fileURL] else { return nil }
         let presenter = PresentInCommentSuggestionPresenter()
         return try await presenter.presentSuggestion(
             for: filespace,
@@ -33,14 +32,13 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectNextSuggestion(
             forFileAt: fileURL,
             content: editor.content,
             lines: editor.lines
         )
 
-        guard let filespace = workspace.filespaces[fileURL] else { return nil }
         let presenter = PresentInCommentSuggestionPresenter()
         return try await presenter.presentSuggestion(
             for: filespace,
@@ -53,14 +51,13 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectPreviousSuggestion(
             forFileAt: fileURL,
             content: editor.content,
             lines: editor.lines
         )
 
-        guard let filespace = workspace.filespaces[fileURL] else { return nil }
         let presenter = PresentInCommentSuggestionPresenter()
         return try await presenter.presentSuggestion(
             for: filespace,
@@ -73,10 +70,9 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL)
 
-        guard let filespace = workspace.filespaces[fileURL] else { return nil }
         let presenter = PresentInCommentSuggestionPresenter()
         return try await presenter.discardSuggestion(
             for: filespace,
