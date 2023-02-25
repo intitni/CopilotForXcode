@@ -143,38 +143,35 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        // We don't need to wait for this.
-        Task { @ServiceActor in
-            let fileURL = try await Environment.fetchCurrentFileURL()
-            let (workspace, filespace) = try await Workspace
-                .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-            try Task.checkCancellation()
+        try Task.checkCancellation()
 
-            let snapshot = Filespace.Snapshot(
-                linesHash: editor.lines.hashValue,
-                cursorPosition: editor.cursorPosition
-            )
+        let snapshot = Filespace.Snapshot(
+            linesHash: editor.lines.hashValue,
+            cursorPosition: editor.cursorPosition
+        )
 
-            // There is no need to regenerate suggestions for the same editor content.
-            guard filespace.suggestionSourceSnapshot != snapshot else { return }
+        // There is no need to regenerate suggestions for the same editor content.
+        guard filespace.suggestionSourceSnapshot != snapshot else { return nil }
 
-            let suggestions = try await workspace.generateSuggestions(
-                forFileAt: fileURL,
-                content: editor.content,
-                lines: editor.lines,
-                cursorPosition: editor.cursorPosition,
-                tabSize: editor.tabSize,
-                indentSize: editor.indentSize,
-                usesTabsForIndentation: editor.usesTabsForIndentation
-            )
+        let suggestions = try await workspace.generateSuggestions(
+            forFileAt: fileURL,
+            content: editor.content,
+            lines: editor.lines,
+            cursorPosition: editor.cursorPosition,
+            tabSize: editor.tabSize,
+            indentSize: editor.indentSize,
+            usesTabsForIndentation: editor.usesTabsForIndentation
+        )
 
-            try Task.checkCancellation()
+        try Task.checkCancellation()
 
-            // If there is a suggestion available, call another command to present it.
-            guard !suggestions.isEmpty else { return }
-            try await Environment.triggerAction("Real-time Suggestions")
-        }
+        // If there is a suggestion available, call another command to present it.
+        guard !suggestions.isEmpty else { return nil }
+        try await Environment.triggerAction("Real-time Suggestions")
 
         return nil
     }

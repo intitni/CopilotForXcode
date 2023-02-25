@@ -141,7 +141,7 @@ public actor RealtimeSuggestionController {
         }
     }
 
-    func cancelInFlightTasks() async {
+    func cancelInFlightTasks(excluding: Task<Void, Never>? = nil) async {
         inflightPrefetchTask?.cancel()
 
         // cancel in-flight tasks
@@ -153,17 +153,24 @@ public actor RealtimeSuggestionController {
             }
             group.addTask {
                 await { @ServiceActor in
-                    inflightRealtimeSuggestionsTasks.forEach { $0.cancel() }
+                    inflightRealtimeSuggestionsTasks.forEach {
+                        if $0 == excluding { return }
+                        $0.cancel()
+                    }
                     inflightRealtimeSuggestionsTasks.removeAll()
+                    if let excluded = excluding {
+                        inflightRealtimeSuggestionsTasks.insert(excluded)
+                    }
                 }()
             }
         }
     }
 
+    #warning("TODO: Find a better way to prevent that from happening!")
     /// Prevent prefetch to be triggered by commands. Quick and dirty.
-    func cancelInFlightTasksAndIgnoreTriggerForAWhile() async {
+    func cancelInFlightTasksAndIgnoreTriggerForAWhile(excluding: Task<Void, Never>? = nil) async {
         ignoreUntil = Date(timeIntervalSinceNow: 5)
-        await cancelInFlightTasks()
+        await cancelInFlightTasks(excluding: excluding)
     }
 }
 

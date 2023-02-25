@@ -12,6 +12,8 @@ import XPCShared
 
 @ServiceActor
 var workspaces = [URL: Workspace]()
+
+#warning("Todo: Find a better place to store it!")
 @ServiceActor
 var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
@@ -95,18 +97,14 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         file: StaticString = #file,
         line: UInt = #line,
-        cancelInFlightTasks: Bool = true,
+        isRealtimeSuggestionRelatedCommand: Bool = false,
         withReply reply: @escaping (Data?, Error?) -> Void,
         getUpdatedContent: @escaping @ServiceActor (
             SuggestionCommandHanlder,
             EditorContent
         ) async throws -> UpdatedContent?
     ) -> Task<Void, Never> {
-        Task {
-            if cancelInFlightTasks {
-                await RealtimeSuggestionController.shared
-                    .cancelInFlightTasksAndIgnoreTriggerForAWhile()
-            }
+        let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
                 let handler = CommentBaseCommandHandler()
@@ -120,6 +118,17 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 reply(nil, NSError.from(error))
             }
         }
+
+        Task {
+            if isRealtimeSuggestionRelatedCommand {
+                await RealtimeSuggestionController.shared
+                    .cancelInFlightTasks(excluding: task)
+            } else {
+                await RealtimeSuggestionController.shared
+                    .cancelInFlightTasksAndIgnoreTriggerForAWhile(excluding: task)
+            }
+        }
+        return task
     }
 
     public func getSuggestedCode(
@@ -173,7 +182,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         let task = replyWithUpdatedContent(
             editorContent: editorContent,
-            cancelInFlightTasks: false,
+            isRealtimeSuggestionRelatedCommand: true,
             withReply: reply
         ) { handler, editor in
             try await handler.presentRealtimeSuggestions(editor: editor)
@@ -186,9 +195,13 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping () -> Void
     ) {
+        // We don't need to wait for this.
+        reply()
+
         let task = replyWithUpdatedContent(
             editorContent: editorContent,
-            withReply: { _, _ in reply() }
+            isRealtimeSuggestionRelatedCommand: true,
+            withReply: { _, _ in }
         ) { handler, editor in
             try await handler.generateRealtimeSuggestions(editor: editor)
         }
