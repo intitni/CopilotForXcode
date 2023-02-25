@@ -40,17 +40,6 @@ func runAppleScript(_ appleScript: String) async throws -> String {
     }
 }
 
-extension XPCService {
-    @ServiceActor
-    func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
-        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
-        let workspaceURL = projectURL ?? fileURL
-        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-        workspaces[workspaceURL] = workspace
-        return workspace
-    }
-}
-
 extension NSError {
     static func from(_ error: Error) -> NSError {
         if let error = error as? ServerError {
