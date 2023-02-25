@@ -12,16 +12,22 @@ import XPCShared
 
 @ServiceActor
 var workspaces = [URL: Workspace]()
+
+#warning("Todo: Find a better place to store it!")
 @ServiceActor
 var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
 public class XPCService: NSObject, XPCServiceProtocol {
+    // MARK: - Service
+
     public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
         reply(
             Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A",
             Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A"
         )
     }
+
+    // MARK: - Copilot Auth
 
     @ServiceActor
     lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
@@ -84,34 +90,53 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    public func getSuggestedCode(
+    // MARK: - Suggestion
+
+    @discardableResult
+    private func replyWithUpdatedContent(
         editorContent: Data,
-        withReply reply: @escaping (Data?, Error?) -> Void
-    ) {
-        Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
+        file: StaticString = #file,
+        line: UInt = #line,
+        isRealtimeSuggestionRelatedCommand: Bool = false,
+        withReply reply: @escaping (Data?, Error?) -> Void,
+        getUpdatedContent: @escaping @ServiceActor (
+            SuggestionCommandHanlder,
+            EditorContent
+        ) async throws -> UpdatedContent?
+    ) -> Task<Void, Never> {
+        let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                guard let updatedContent = try await workspace.getSuggestedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition,
-                    tabSize: editor.tabSize,
-                    indentSize: editor.indentSize,
-                    usesTabsForIndentation: editor.usesTabsForIndentation
-                ) else {
+                let handler = CommentBaseCommandHandler()
+                guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                os_log(.error, "%@", error.localizedDescription)
+                os_log(.error, "%@", "\(file):\(line) \(error.localizedDescription)")
                 reply(nil, NSError.from(error))
             }
+        }
+
+        Task {
+            if isRealtimeSuggestionRelatedCommand {
+                await RealtimeSuggestionController.shared
+                    .cancelInFlightTasks(excluding: task)
+            } else {
+                await RealtimeSuggestionController.shared
+                    .cancelInFlightTasksAndIgnoreTriggerForAWhile(excluding: task)
+            }
+        }
+        return task
+    }
+
+    public func getSuggestedCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.presentSuggestions(editor: editor)
         }
     }
 
@@ -119,27 +144,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
-            do {
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                guard let updatedContent = workspace.getNextSuggestedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition
-                ) else {
-                    reply(nil, nil)
-                    return
-                }
-                reply(try JSONEncoder().encode(updatedContent), nil)
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply(nil, NSError.from(error))
-            }
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.presentNextSuggestion(editor: editor)
         }
     }
 
@@ -147,27 +153,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
-            do {
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                guard let updatedContent = workspace.getPreviousSuggestedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition
-                ) else {
-                    reply(nil, nil)
-                    return
-                }
-                reply(try JSONEncoder().encode(updatedContent), nil)
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply(nil, NSError.from(error))
-            }
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.presentPreviousSuggestion(editor: editor)
         }
     }
 
@@ -175,24 +162,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
-            do {
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                let updatedContent = workspace.getSuggestionRejectedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition
-                )
-                reply(try JSONEncoder().encode(updatedContent), nil)
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply(nil, NSError.from(error))
-            }
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.rejectSuggestion(editor: editor)
         }
     }
 
@@ -200,27 +171,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
-            do {
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-
-                guard let updatedContent = workspace.getSuggestionAcceptedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition
-                ) else {
-                    reply(nil, nil)
-                    return
-                }
-                reply(try JSONEncoder().encode(updatedContent), nil)
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply(nil, NSError.from(error))
-            }
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.acceptSuggestion(editor: editor)
         }
     }
 
@@ -228,37 +180,36 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        let task = Task { @ServiceActor in
-            do {
-                try Task.checkCancellation()
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                try Task.checkCancellation()
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                try Task.checkCancellation()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                try Task.checkCancellation()
-                guard let updatedContent = workspace.getRealtimeSuggestedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition,
-                    tabSize: editor.tabSize,
-                    indentSize: editor.indentSize,
-                    usesTabsForIndentation: editor.usesTabsForIndentation
-                ) else {
-                    reply(nil, nil)
-                    return
-                }
-                try Task.checkCancellation()
-                reply(try JSONEncoder().encode(updatedContent), nil)
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply(nil, NSError.from(error))
-            }
+        let task = replyWithUpdatedContent(
+            editorContent: editorContent,
+            isRealtimeSuggestionRelatedCommand: true,
+            withReply: reply
+        ) { handler, editor in
+            try await handler.presentRealtimeSuggestions(editor: editor)
         }
 
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
+
+    public func prefetchRealtimeSuggestions(
+        editorContent: Data,
+        withReply reply: @escaping () -> Void
+    ) {
+        // We don't need to wait for this.
+        reply()
+
+        let task = replyWithUpdatedContent(
+            editorContent: editorContent,
+            isRealtimeSuggestionRelatedCommand: true,
+            withReply: { _, _ in }
+        ) { handler, editor in
+            try await handler.generateRealtimeSuggestions(editor: editor)
+        }
+
+        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
+    }
+
+    // MARK: - Settings
 
     public func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void) {
         guard AXIsProcessTrusted() else {
@@ -273,34 +224,5 @@ public class XPCService: NSObject, XPCServiceProtocol {
             )
             reply(nil)
         }
-    }
-
-    public func prefetchRealtimeSuggestions(
-        editorContent: Data,
-        withReply reply: @escaping () -> Void
-    ) {
-        let task = Task { @ServiceActor in
-            do {
-                let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                let workspace = try await fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-                try Task.checkCancellation()
-                _ = workspace.getRealtimeSuggestedCode(
-                    forFileAt: fileURL,
-                    content: editor.content,
-                    lines: editor.lines,
-                    cursorPosition: editor.cursorPosition,
-                    tabSize: editor.tabSize,
-                    indentSize: editor.indentSize,
-                    usesTabsForIndentation: editor.usesTabsForIndentation
-                )
-                reply()
-            } catch {
-                os_log(.error, "%@", error.localizedDescription)
-                reply()
-            }
-        }
-
-        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 }

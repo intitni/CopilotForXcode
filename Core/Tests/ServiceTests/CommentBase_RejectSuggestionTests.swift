@@ -5,7 +5,7 @@ import XCTest
 @testable import Service
 @testable import SuggestionInjector
 
-final class AcceptSuggestionTests: XCTestCase {
+final class CommentBase_RejectSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
@@ -13,8 +13,8 @@ final class AcceptSuggestionTests: XCTestCase {
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
-    func test_accept_suggestion_and_clear_all_sugguestions() async throws {
-        let service = getService()
+    func test_reject_suggestion_and_clear_all_sugguestions() async throws {
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -22,8 +22,8 @@ final class AcceptSuggestionTests: XCTestCase {
                 struct Dog {}
                 """,
                 range: .init(
-                    start: .init(line: 1, character: 0),
-                    end: .init(line: 1, character: 12)
+                    start: .init(line: 7, character: 0),
+                    end: .init(line: 7, character: 12)
                 )
             ),
         ]
@@ -33,7 +33,7 @@ final class AcceptSuggestionTests: XCTestCase {
             "\n",
         ]
 
-        let result1 = try await service.getSuggestedCode(editorContent: .init(
+        let result1 = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -45,7 +45,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         let result1Lines = lines.applying(result1.modifications)
 
-        let result2 = try await service.getSuggestionAcceptedCode(editorContent: .init(
+        let result2 = try await service.rejectSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",
@@ -56,31 +56,29 @@ final class AcceptSuggestionTests: XCTestCase {
         ))!
 
         let result2Lines = result1Lines.applying(result2.modifications)
-
         XCTAssertEqual(result2Lines.joined(), result2.content)
-        XCTAssertEqual(result2.content, """
-        struct Cat {}
-
-        struct Dog {}
-
-        """, "Previous suggestions should be removed.")
+        XCTAssertEqual(result2Lines, lines, "Previous suggestions should be removed.")
 
         XCTAssertEqual(
             result2.newCursor,
-            .init(line: 2, character: 13),
-            "Move cursor to the end of suggestion"
+            .init(line: 1, character: 0),
+            "cursor inside suggestion should move up"
         )
 
-        let result3 = try await service.getSuggestionAcceptedCode(editorContent: .init(
-            content: lines.joined(),
-            lines: lines,
+        let result3 = try await service.rejectSuggestion(editor: .init(
+            content: result1Lines.joined(),
+            lines: result1Lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 3),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
-        XCTAssertNil(result3, "Deleting the code and accept again does nothing")
+        let result3Lines = result1Lines.applying(result3.modifications)
+        XCTAssertEqual(result3Lines.joined(), result3.content)
+        XCTAssertEqual(result3Lines, lines, "Previous suggestions should be removed.")
+
+        XCTAssertEqual(result3.newCursor, .init(line: 0, character: 3))
     }
 }
