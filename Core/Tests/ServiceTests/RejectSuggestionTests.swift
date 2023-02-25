@@ -14,7 +14,7 @@ final class RejectSuggestionTests: XCTestCase {
     }
 
     func test_reject_suggestion_and_clear_all_sugguestions() async throws {
-        let service = getService()
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -33,7 +33,7 @@ final class RejectSuggestionTests: XCTestCase {
             "\n",
         ]
 
-        let result1 = try await service.getSuggestedCode(editorContent: .init(
+        let result1 = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -45,7 +45,7 @@ final class RejectSuggestionTests: XCTestCase {
 
         let result1Lines = lines.applying(result1.modifications)
 
-        let result2 = try await service.getSuggestionRejectedCode(editorContent: .init(
+        let result2 = try await service.rejectSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",
@@ -65,7 +65,7 @@ final class RejectSuggestionTests: XCTestCase {
             "cursor inside suggestion should move up"
         )
 
-        let result3 = try await service.getSuggestionRejectedCode(editorContent: .init(
+        let result3 = try await service.rejectSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",

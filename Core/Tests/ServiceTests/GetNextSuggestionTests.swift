@@ -14,7 +14,7 @@ final class GetNextSuggestionTests: XCTestCase {
     }
 
     func test_get_next_suggestions_without_rejecting_previous_suggestions() async throws {
-        let service = getService()
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -43,7 +43,7 @@ final class GetNextSuggestionTests: XCTestCase {
             "\n",
         ]
 
-        let result1 = try await service.getSuggestedCode(editorContent: .init(
+        let result1 = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -55,7 +55,7 @@ final class GetNextSuggestionTests: XCTestCase {
 
         let result1Lines = lines.applying(result1.modifications)
 
-        let result2 = try await service.getNextSuggestedCode(editorContent: .init(
+        let result2 = try await service.presentNextSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",
@@ -84,7 +84,7 @@ final class GetNextSuggestionTests: XCTestCase {
             "The cursor was in the deleted suggestion, reset it to 1 line above the suggestion, set its col to 0"
         )
 
-        let result3 = try await service.getNextSuggestedCode(editorContent: .init(
+        let result3 = try await service.presentNextSuggestion(editor: .init(
             content: result2Lines.joined(),
             lines: result2Lines,
             uti: "",

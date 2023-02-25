@@ -14,7 +14,7 @@ final class AcceptSuggestionTests: XCTestCase {
     }
 
     func test_accept_suggestion_and_clear_all_sugguestions() async throws {
-        let service = getService()
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -33,7 +33,7 @@ final class AcceptSuggestionTests: XCTestCase {
             "\n",
         ]
 
-        let result1 = try await service.getSuggestedCode(editorContent: .init(
+        let result1 = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -45,7 +45,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         let result1Lines = lines.applying(result1.modifications)
 
-        let result2 = try await service.getSuggestionAcceptedCode(editorContent: .init(
+        let result2 = try await service.acceptSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",
@@ -71,7 +71,7 @@ final class AcceptSuggestionTests: XCTestCase {
             "Move cursor to the end of suggestion"
         )
 
-        let result3 = try await service.getSuggestionAcceptedCode(editorContent: .init(
+        let result3 = try await service.acceptSuggestion(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",

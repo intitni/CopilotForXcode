@@ -32,21 +32,6 @@ import XPCShared
     Environment.triggerAction = { _ in }
 }
 
-func getService() -> AsyncXPCService {
-    AsyncXPCService(connection: {
-        class FakeConnection: NSXPCConnection {
-            let xpcService = XPCService()
-            override func remoteObjectProxyWithErrorHandler(_: @escaping (Error) -> Void) -> Any {
-                xpcService
-            }
-        }
-        let connection = FakeConnection(machServiceName: "anything")
-        connection.remoteObjectInterface = NSXPCInterface(with: XPCServiceProtocol.self)
-        connection.resume()
-        return connection
-    }())
-}
-
 func completion(text: String, range: CursorRange, uuid: String = "") -> CopilotCompletion {
     .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
 }
@@ -61,13 +46,14 @@ class MockSuggestionService: CopilotSuggestionServiceType {
     }
 
     func getCompletions(
-        fileURL _: URL,
-        content _: String,
-        cursorPosition _: CursorPosition,
-        tabSize _: Int,
-        indentSize _: Int,
-        usesTabsForIndentation _: Bool
-    ) async throws -> [CopilotCompletion] {
+        fileURL: URL,
+        content: String,
+        cursorPosition: CopilotModel.CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        ignoreSpaceOnlySuggestions: Bool
+    ) async throws -> [CopilotModel.CopilotCompletion] {
         completions
     }
 

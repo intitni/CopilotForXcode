@@ -14,7 +14,7 @@ final class GetSuggestionsTests: XCTestCase {
     }
 
     func test_suggestion_should_be_corretly_included_in_code() async throws {
-        let service = getService()
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -34,7 +34,7 @@ final class GetSuggestionsTests: XCTestCase {
             "}\n",
         ]
 
-        let result = try await service.getSuggestedCode(editorContent: .init(
+        let result = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -62,7 +62,7 @@ final class GetSuggestionsTests: XCTestCase {
     }
 
     func test_get_new_suggestions_without_rejecting_previous_suggestions() async throws {
-        let service = getService()
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -87,7 +87,7 @@ final class GetSuggestionsTests: XCTestCase {
             "\n",
         ]
 
-        let result = try await service.getSuggestedCode(editorContent: .init(
+        let result = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
