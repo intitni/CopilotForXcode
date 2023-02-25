@@ -72,12 +72,16 @@ final class Workspace {
         return false
     }
 
-    static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> Workspace {
+    static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> (workspace: Workspace, filespace: Filespace) {
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+        let filespace = workspace.filespaces[fileURL] ?? .init(fileURL: fileURL)
+        if workspace.filespaces[fileURL] == nil {
+            workspace.filespaces[fileURL] = filespace
+        }
         workspaces[workspaceURL] = workspace
-        return workspace
+        return (workspace, filespace)
     }
 }
 

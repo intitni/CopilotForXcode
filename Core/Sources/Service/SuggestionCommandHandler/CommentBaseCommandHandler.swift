@@ -6,10 +6,10 @@ import XPCShared
 @ServiceActor
 struct CommentBaseCommandHandler: SuggestionCommandHanlder {
     nonisolated init() {}
-    
+
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         try await workspace.generateSuggestions(
             forFileAt: fileURL,
             content: editor.content,
@@ -33,7 +33,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectNextSuggestion(
             forFileAt: fileURL,
             content: editor.content,
@@ -53,7 +53,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectPreviousSuggestion(
             forFileAt: fileURL,
             content: editor.content,
@@ -73,7 +73,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL)
 
         guard let filespace = workspace.filespaces[fileURL] else { return nil }
@@ -89,7 +89,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
         guard let acceptedSuggestion = workspace.acceptSuggestion(forFileAt: fileURL)
         else { return nil }
@@ -110,7 +110,6 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
             extraInfo: &extraInfo
         )
 
-        let presenter = PresentInCommentSuggestionPresenter()
         return .init(
             content: String(lines.joined(separator: "")),
             newCursor: cursorPosition,
@@ -120,8 +119,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        guard let filespace = workspace.filespaces[fileURL] else { return nil }
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
         try Task.checkCancellation()
 
@@ -147,8 +146,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
         // We don't need to wait for this.
         Task { @ServiceActor in
             let fileURL = try await Environment.fetchCurrentFileURL()
-            let workspace = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            guard let filespace = workspace.filespaces[fileURL] else { return }
+            let (workspace, filespace) = try await Workspace
+                .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
             try Task.checkCancellation()
 

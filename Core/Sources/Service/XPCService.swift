@@ -93,6 +93,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
     @discardableResult
     private func replyWithUpdatedContent(
         editorContent: Data,
+        file: StaticString = #file,
+        line: UInt = #line,
+        cancelInFlightTasks: Bool = true,
         withReply reply: @escaping (Data?, Error?) -> Void,
         getUpdatedContent: @escaping @ServiceActor (
             SuggestionCommandHanlder,
@@ -100,17 +103,20 @@ public class XPCService: NSObject, XPCServiceProtocol {
         ) async throws -> UpdatedContent?
     ) -> Task<Void, Never> {
         Task {
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
+            if cancelInFlightTasks {
+                await RealtimeSuggestionController.shared
+                    .cancelInFlightTasksAndIgnoreTriggerForAWhile()
+            }
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let handler = await CommentBaseCommandHandler()
+                let handler = CommentBaseCommandHandler()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return
                 }
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                os_log(.error, "%@", error.localizedDescription)
+                os_log(.error, "%@", "\(file):\(line) \(error.localizedDescription)")
                 reply(nil, NSError.from(error))
             }
         }
@@ -167,6 +173,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         let task = replyWithUpdatedContent(
             editorContent: editorContent,
+            cancelInFlightTasks: false,
             withReply: reply
         ) { handler, editor in
             try await handler.presentRealtimeSuggestions(editor: editor)
@@ -179,12 +186,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping () -> Void
     ) {
-        // prefetching never wait.
-        reply()
-
         let task = replyWithUpdatedContent(
             editorContent: editorContent,
-            withReply: { _, _ in }
+            withReply: { _, _ in reply() }
         ) { handler, editor in
             try await handler.generateRealtimeSuggestions(editor: editor)
         }
