@@ -48,6 +48,8 @@ final class SuggestionPanelController {
             let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),
+               let focusElementType: String = try? focusElement.copyValue(key: kAXDescriptionAttribute),
+               focusElementType == "Source Editor",
                let parent: AXUIElement = try? focusElement.copyValue(key: kAXParentAttribute),
                 let positionValue: AXValue = try? parent
                 .copyValue(key: kAXPositionAttribute),
