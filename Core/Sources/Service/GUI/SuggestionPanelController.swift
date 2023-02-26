@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import DisplayLink
 import SwiftUI
@@ -25,12 +26,22 @@ final class SuggestionPanelController {
     }()
 
     private var displayLinkTask: Task<Void, Never>?
+    private var activeApplicationMonitorTask: Task<Void, Never>?
     private let viewModel = SuggestionPanelViewModel()
+    private var activeApplication: NSRunningApplication? {
+        ActiveApplicationMonitor.activeApplication
+    }
 
     nonisolated init() {
         Task { @MainActor in
             displayLinkTask = Task {
                 for await _ in DisplayLink.createStream() {
+                    self.updateWindowLocation()
+                }
+            }
+
+            activeApplicationMonitorTask = Task {
+                for await _ in ActiveApplicationMonitor.createStream() {
                     self.updateWindowLocation()
                 }
             }
@@ -41,16 +52,16 @@ final class SuggestionPanelController {
     ///
     /// - note:
     private func updateWindowLocation() {
-        if let activeXcode = NSRunningApplication
-            .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-            .first(where: \.isActive)
+        if let activeXcode = activeApplication,
+           activeXcode.bundleIdentifier == "com.apple.dt.Xcode"
         {
             let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),
-               let focusElementType: String = try? focusElement.copyValue(key: kAXDescriptionAttribute),
-               focusElementType == "Source Editor",
-               let parent: AXUIElement = try? focusElement.copyValue(key: kAXParentAttribute),
+                let focusElementType: String = try? focusElement
+                .copyValue(key: kAXDescriptionAttribute),
+                focusElementType == "Source Editor",
+                let parent: AXUIElement = try? focusElement.copyValue(key: kAXParentAttribute),
                 let positionValue: AXValue = try? parent
                 .copyValue(key: kAXPositionAttribute),
                 let sizeValue: AXValue = try? parent
