@@ -3,7 +3,12 @@ import QuartzCore
 
 public actor DisplayLink {
     private var displayLink: CVDisplayLink!
-    static let shared = DisplayLink()
+    private static var _shared = DisplayLink()
+    static var shared: DisplayLink? {
+        if let _shared { return _shared }
+        _shared = DisplayLink()
+        return _shared
+    }
     private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     public static func createStream() -> AsyncStream<Void> {
