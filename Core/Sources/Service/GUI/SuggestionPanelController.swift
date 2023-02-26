@@ -14,12 +14,12 @@ final class SuggestionPanelController {
         )
         it.isReleasedWhenClosed = false
         it.isOpaque = false
-        it.backgroundColor = .white
+        it.backgroundColor = .clear
         it.level = .statusBar
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: viewModel)
                 .allowsHitTesting(false)
-                .frame(width: 500, height: 300)
+                .frame(width: 400, height: 250)
         )
         it.setIsVisible(true)
         return it
@@ -27,7 +27,7 @@ final class SuggestionPanelController {
 
     private var displayLinkTask: Task<Void, Never>?
     private var activeApplicationMonitorTask: Task<Void, Never>?
-    private let viewModel = SuggestionPanelViewModel()
+    let viewModel = SuggestionPanelViewModel()
     private var activeApplication: NSRunningApplication? {
         ActiveApplicationMonitor.activeApplication
     }
@@ -48,9 +48,10 @@ final class SuggestionPanelController {
         }
     }
 
-    /// Update the window location
+    /// Update the window location.
     ///
-    /// - note:
+    /// - note: It's possible to get the scroll view's postion by getting position on the focus
+    /// element.
     private func updateWindowLocation() {
         if let activeXcode = activeApplication,
            activeXcode.bundleIdentifier == "com.apple.dt.Xcode"
@@ -76,11 +77,11 @@ final class SuggestionPanelController {
                 if foundSize, foundPosition, let screen {
                     frame.origin = .init(
                         x: frame.maxX + 2,
-                        y: screen.frame.height - frame.minY - 300
+                        y: screen.frame.height - frame.minY - 250
                     )
-                    frame.size = .init(width: 500, height: 300)
+                    frame.size = .init(width: 400, height: 300)
                     window.alphaValue = 1
-                    window.setFrame(frame, display: false, animate: true)
+                    window.setFrame(frame, display: false)
                     return
                 }
             }
@@ -90,14 +91,53 @@ final class SuggestionPanelController {
     }
 }
 
+@MainActor
 final class SuggestionPanelViewModel: ObservableObject {
-    @Published var suggetion: String = "Hello World"
+    @Published var startLineIndex: Int = 0
+    @Published var suggestion: [String] = ["Hello", "World"] {
+        didSet {
+            isPanelDisplayed = !suggestion.isEmpty
+        }
+    }
+
+    @Published var isPanelDisplayed = true
+
+    func suggestCode(_ code: String, startLineIndex: Int) {
+        suggestion = code.split(separator: "\n").map(String.init)
+        self.startLineIndex = startLineIndex
+    }
 }
 
 struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
 
     var body: some View {
-        Text(viewModel.suggetion)
+        if viewModel.isPanelDisplayed {
+            if !viewModel.suggestion.isEmpty {
+                ZStack(alignment: .topLeading) {
+                    Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255)
+                    ScrollView {
+                        VStack(alignment: .leading) {
+                            ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("\(index)")
+                                    Text(viewModel.suggestion[index])
+                                }
+                            }
+                            Spacer()
+                        }
+                        .foregroundColor(.white)
+                        .font(.system(size: 12, design: .monospaced))
+                        .multilineTextAlignment(.leading)
+                        .padding()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255)
+            }
+        } else {
+            EmptyView()
+        }
     }
 }

@@ -13,7 +13,7 @@ import XPCShared
 @ServiceActor
 var workspaces = [URL: Workspace]()
 
-#warning("Todo: Find a better place to store it!")
+#warning("TODO: Find a better place to store it!")
 @ServiceActor
 var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
@@ -107,7 +107,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let handler = CommentBaseCommandHandler()
+                let handler = WindowBaseCommandHandler()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return
