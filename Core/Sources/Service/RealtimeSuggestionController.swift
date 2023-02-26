@@ -1,5 +1,6 @@
 import AppKit
 import CGEventObserver
+import DisplayLink
 import Foundation
 import os.log
 import QuartzCore
@@ -66,7 +67,7 @@ public actor RealtimeSuggestionController {
             }
         }
         if eventObserver.activateIfPossible() {
-            realtimeSuggestionIndicatorController?.isObserving = true
+            realtimeSuggestionIndicatorController.isObserving = true
         }
     }
 
@@ -78,7 +79,7 @@ public actor RealtimeSuggestionController {
         task?.cancel()
         task = nil
         eventObserver.deactivate()
-        realtimeSuggestionIndicatorController?.isObserving = false
+        realtimeSuggestionIndicatorController.isObserving = false
     }
 
     func handleKeyboardEvent(event: CGEvent) async {
@@ -132,7 +133,7 @@ public actor RealtimeSuggestionController {
             else { return }
             if Task.isCancelled { return }
             os_log(.info, "Prefetch suggestions.")
-            realtimeSuggestionIndicatorController?.triggerPrefetchAnimation()
+            realtimeSuggestionIndicatorController.triggerPrefetchAnimation()
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
             } catch {
@@ -239,8 +240,6 @@ final class RealtimeSuggestionIndicatorController {
     }
 
     private let viewModel = IndicatorContentViewModel()
-    private var displayLink: CVDisplayLink!
-    private var isDisplayLinkStarted: Bool = false
     private var userDefaultsObserver = UserDefaultsObserver()
     var isObserving = false {
         didSet {
@@ -249,6 +248,8 @@ final class RealtimeSuggestionIndicatorController {
             }
         }
     }
+
+    private var displayLinkTask: Task<Void, Never>?
 
     @MainActor
     lazy var window = {
@@ -269,15 +270,7 @@ final class RealtimeSuggestionIndicatorController {
         return it
     }()
 
-    init?() {
-        _ = CVDisplayLinkCreateWithCGDisplay(CGMainDisplayID(), &displayLink)
-        guard displayLink != nil else { return nil }
-        CVDisplayLinkSetOutputHandler(displayLink) { [weak self] _, _, _, _, _ in
-            guard let self else { return kCVReturnSuccess }
-            self.updateIndicatorLocation()
-            return kCVReturnSuccess
-        }
-
+    init() {
         Task {
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didActivateApplicationNotification)
@@ -327,9 +320,16 @@ final class RealtimeSuggestionIndicatorController {
         await { @MainActor in
             guard window.isVisible != isVisible else { return }
             if isVisible {
-                CVDisplayLinkStart(self.displayLink)
+                if displayLinkTask == nil {
+                    displayLinkTask = Task {
+                        for await _ in DisplayLink.createStream() {
+                            self.updateIndicatorLocation()
+                        }
+                    }
+                }
             } else {
-                CVDisplayLinkStop(self.displayLink)
+                displayLinkTask?.cancel()
+                displayLinkTask = nil
             }
             window.setIsVisible(isVisible)
         }()

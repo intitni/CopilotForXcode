@@ -51,7 +51,8 @@ let package = Package(
         ),
         .target(
             name: "Service",
-            dependencies: ["CopilotModel", "CopilotService", "XPCShared", "CGEventObserver"]
+            dependencies: ["CopilotModel", "CopilotService", "XPCShared", "CGEventObserver",
+                           "DisplayLink"]
         ),
         .target(
             name: "XPCShared",
@@ -63,5 +64,6 @@ let package = Package(
         ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
+        .target(name: "DisplayLink"),
     ]
 )
