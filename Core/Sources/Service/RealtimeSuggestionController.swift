@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import CGEventObserver
 import Foundation
@@ -6,8 +7,6 @@ import XPCShared
 
 public actor RealtimeSuggestionController {
     public static let shared = RealtimeSuggestionController()
-
-    private var listeners = Set<AnyHashable>()
     var eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [
         .keyUp,
         .keyDown,
@@ -22,41 +21,20 @@ public actor RealtimeSuggestionController {
     }
 
     private init() {
-        // Start the auto trigger if Xcode is running.
         Task {
-            for xcode in await Environment.runningXcodes() {
-                await start(by: xcode.processIdentifier)
-            }
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didActivateApplicationNotification)
-            for await notification in sequence {
+            for await _ in ActiveApplicationMonitor.createStream() {
                 try Task.checkCancellation()
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
-                await start(by: app.processIdentifier)
-            }
-        }
-
-        // Remove listener if Xcode is terminated.
-        Task {
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didTerminateApplicationNotification)
-            for await notification in sequence {
-                try Task.checkCancellation()
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
-                await stop(by: app.processIdentifier)
+                if ActiveApplicationMonitor.activeXcode != nil {
+                    await start(by: 1)
+                } else {
+                    await stop(by: 1)
+                }
             }
         }
     }
 
     private func start(by listener: AnyHashable) {
         os_log(.info, "Add auto trigger listener: %@.", listener as CVarArg)
-        listeners.insert(listener)
 
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
@@ -72,8 +50,6 @@ public actor RealtimeSuggestionController {
 
     private func stop(by listener: AnyHashable) {
         os_log(.info, "Remove auto trigger listener: %@.", listener as CVarArg)
-        listeners.remove(listener)
-        guard listeners.isEmpty else { return }
         os_log(.info, "Auto trigger is stopped.")
         task?.cancel()
         task = nil

@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import CopilotService
 import Foundation
@@ -17,31 +18,8 @@ struct FailedToFetchFileURLError: Error, LocalizedError {
 enum Environment {
     static var now = { Date() }
 
-    static var runningXcodes: () async -> [NSRunningApplication] = {
-        var xcodes = [NSRunningApplication]()
-        var retryCount = 0
-        // Sometimes runningApplications returns 0 items.
-        while xcodes.isEmpty, retryCount < 3 {
-            xcodes = NSRunningApplication
-                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-            try? await Task.sleep(nanoseconds: 1_000_000)
-            retryCount += 1
-        }
-        return xcodes
-    }
-
     static var isXcodeActive: () async -> Bool = {
-        var activeXcodes = [NSRunningApplication]()
-        var retryCount = 0
-        // Sometimes runningApplications returns 0 items.
-        while activeXcodes.isEmpty, retryCount < 3 {
-            activeXcodes = NSRunningApplication
-                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-                .filter(\.isActive)
-            try? await Task.sleep(nanoseconds: 1_000_000)
-            retryCount += 1
-        }
-        return !activeXcodes.isEmpty
+        ActiveApplicationMonitor.activeXcode != nil
     }
 
     static var frontmostXcodeWindowIsEditor: () async -> Bool = {
@@ -93,58 +71,37 @@ enum Environment {
     }
 
     static var fetchCurrentFileURL: () async throws -> URL = {
-        var activeXcodes = [NSRunningApplication]()
-        var retryCount = 0
-        // Sometimes runningApplications returns 0 items.
-        while activeXcodes.isEmpty, retryCount < 5 {
-            activeXcodes = NSRunningApplication
-                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-                .sorted { lhs, _ in
-                    if lhs.isActive { return true }
-                    return false
-                }
-            if retryCount > 0 { try await Task.sleep(nanoseconds: 10_000_000) }
-            retryCount += 1
+        guard let xcode = ActiveApplicationMonitor.activeXcode else {
+            throw FailedToFetchFileURLError()
         }
 
         // fetch file path of the frontmost window of Xcode through Accessability API.
-        for xcode in activeXcodes {
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            do {
-                let frontmostWindow = try application.copyValue(
-                    key: kAXFocusedWindowAttribute,
-                    ofType: AXUIElement.self
-                )
-                var path = try? frontmostWindow.copyValue(
-                    key: kAXDocumentAttribute,
-                    ofType: String?.self
-                )
-                if path == nil {
-                    for window in try application.copyValue(
-                        key: kAXWindowsAttribute,
-                        ofType: [AXUIElement].self
-                    ) {
-                        path = try? window.copyValue(
-                            key: kAXDocumentAttribute,
-                            ofType: String?.self
-                        )
-                        if path != nil { break }
-                    }
-                }
-                if let path = path?.removingPercentEncoding {
-                    let url = URL(
-                        fileURLWithPath: path
-                            .replacingOccurrences(of: "file://", with: "")
-                    )
-                    return url
-                }
-            } catch {
-                if let axError = error as? AXError, axError == .apiDisabled {
-                    throw NoAccessToAccessibilityAPIError()
+        let application = AXUIElementCreateApplication(xcode.processIdentifier)
+        do {
+            let frontmostWindow: AXUIElement = try application
+                .copyValue(key: kAXFocusedWindowAttribute)
+            var path: String? = try? frontmostWindow.copyValue(key: kAXDocumentAttribute)
+            if path == nil {
+                for window in try application.copyValue(
+                    key: kAXWindowsAttribute,
+                    ofType: [AXUIElement].self
+                ) {
+                    path = try? window.copyValue(key: kAXDocumentAttribute)
+                    if path != nil { break }
                 }
             }
+            if let path = path?.removingPercentEncoding {
+                let url = URL(
+                    fileURLWithPath: path
+                        .replacingOccurrences(of: "file://", with: "")
+                )
+                return url
+            }
+        } catch {
+            if let axError = error as? AXError, axError == .apiDisabled {
+                throw NoAccessToAccessibilityAPIError()
+            }
         }
-
         throw FailedToFetchFileURLError()
     }
 
