@@ -42,10 +42,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         if let suggestion = filespace.presentingSuggestion {
             presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            Task { @MainActor in
-                GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
-                    .suggestion = []
-            }
+            discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -69,10 +66,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         if let suggestion = filespace.presentingSuggestion {
             presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            Task { @MainActor in
-                GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
-                    .suggestion = []
-            }
+            discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -96,10 +90,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         if let suggestion = filespace.presentingSuggestion {
             presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            Task { @MainActor in
-                GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
-                    .suggestion = []
-            }
+            discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -115,18 +106,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL)
 
-        // hide it
-
-        Task { @MainActor in
-            GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
-                .suggestion = []
-        }
+        discardSuggestion(fileURL: fileURL)
     }
 
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        Task { @MainActor in
-            GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
-                .suggestion = []
+        Task {
+            let fileURL = try await Environment.fetchCurrentFileURL()
+            discardSuggestion(fileURL: fileURL)
         }
         return try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
     }
@@ -148,6 +134,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
                 startLineIndex: suggestion.position.line,
                 fileURL: fileURL
             )
+        }
+    }
+
+    func discardSuggestion(fileURL: URL) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionPanelController
+            controller.discardSuggestion(fileURL: fileURL)
         }
     }
 }
