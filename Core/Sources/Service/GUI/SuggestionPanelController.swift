@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import AXNotificationStream
 import DisplayLink
 import SwiftUI
 
@@ -25,25 +26,47 @@ final class SuggestionPanelController {
         return it
     }()
 
-    private var displayLinkTask: Task<Void, Never>?
-    private var activeApplicationMonitorTask: Task<Void, Never>?
     let viewModel = SuggestionPanelViewModel()
+
+    private var windowChangeObservationTask: Task<Void, Error>?
+    private var activeApplicationMonitorTask: Task<Void, Error>?
     private var activeApplication: NSRunningApplication? {
         ActiveApplicationMonitor.activeApplication
     }
 
     nonisolated init() {
         Task { @MainActor in
-            displayLinkTask = Task {
-                for await _ in DisplayLink.createStream() {
+            activeApplicationMonitorTask = Task { [weak self] in
+                guard let self else { return }
+                var previousApp: NSRunningApplication?
+                for await app in ActiveApplicationMonitor.createStream() {
+                    try Task.checkCancellation()
+                    defer { previousApp = app }
+                    if let app, app.bundleIdentifier == "com.apple.dt.Xcode" {
+                        if app != previousApp {
+                            windowChangeObservationTask?.cancel()
+                            windowChangeObservationTask = nil
+                            self.observeXcodeWindowChangeIfNeeded()
+                        }
+                    }
+
                     self.updateWindowLocation()
                 }
             }
+        }
+    }
 
-            activeApplicationMonitorTask = Task {
-                for await _ in ActiveApplicationMonitor.createStream() {
-                    self.updateWindowLocation()
-                }
+    private func observeXcodeWindowChangeIfNeeded() {
+        guard windowChangeObservationTask == nil else { return }
+        windowChangeObservationTask = Task { [weak self] in
+            guard let self else { return }
+            let notifications = AXNotificationStream(
+                app: activeApplication!,
+                notificationNames: kAXMovedNotification
+            )
+            for await _ in notifications {
+                try Task.checkCancellation()
+                self.updateWindowLocation()
             }
         }
     }
@@ -90,6 +113,8 @@ final class SuggestionPanelController {
         window.alphaValue = 0
     }
 }
+
+#warning("MUSTDO: Update when editing file is changed.")
 
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {

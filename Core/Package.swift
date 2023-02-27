@@ -58,6 +58,7 @@ let package = Package(
                 "CGEventObserver",
                 "DisplayLink",
                 "ActiveApplicationMonitor",
+                "AXNotificationStream",
             ]
         ),
         .target(
@@ -72,5 +73,6 @@ let package = Package(
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),
         .target(name: "ActiveApplicationMonitor"),
+        .target(name: "AXNotificationStream"),
     ]
 )

@@ -34,6 +34,7 @@ public final class ActiveApplicationMonitor {
             continuation.onTermination = { _ in
                 ActiveApplicationMonitor.shared.removeContinuation(id: id)
             }
+            continuation.yield(activeApplication)
         }
     }
 
