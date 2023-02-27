@@ -40,7 +40,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines)
+            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
             Task { @MainActor in
                 GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
@@ -67,7 +67,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines)
+            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
             Task { @MainActor in
                 GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
@@ -94,7 +94,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines)
+            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
             Task { @MainActor in
                 GraphicalUserInterfaceController.shared.suggestionPanelController.viewModel
@@ -140,11 +140,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         try await presentSuggestions(editor: editor)
     }
 
-    func presentSuggestion(_ suggestion: CopilotCompletion, lines: [String]) {
+    func presentSuggestion(_ suggestion: CopilotCompletion, lines: [String], fileURL: URL) {
         Task { @MainActor in
-            let viewModel = GraphicalUserInterfaceController.shared.suggestionPanelController
-                .viewModel
-            viewModel.suggestCode(suggestion.text, startLineIndex: suggestion.position.line)
+            let controller = GraphicalUserInterfaceController.shared.suggestionPanelController
+            controller.suggestCode(
+                suggestion.text,
+                startLineIndex: suggestion.position.line,
+                fileURL: fileURL
+            )
         }
     }
 }

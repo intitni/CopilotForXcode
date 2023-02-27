@@ -6,7 +6,7 @@ public final class AXNotificationStream: AsyncSequence {
     public typealias Stream = AsyncStream<Element>
     public typealias Continuation = Stream.Continuation
     public typealias AsyncIterator = Stream.AsyncIterator
-    public typealias Element = (String, CFDictionary)
+    public typealias Element = (name: String, info: CFDictionary)
 
     private var continuation: Continuation
     private let stream: Stream

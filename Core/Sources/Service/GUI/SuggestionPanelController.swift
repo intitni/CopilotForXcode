@@ -30,23 +30,26 @@ final class SuggestionPanelController {
 
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
-    private var activeApplication: NSRunningApplication? {
-        ActiveApplicationMonitor.activeApplication
+    private var xcode: NSRunningApplication?
+    private var suggestionForFiles: [URL: Suggestion] = [:]
+    
+    enum Suggestion {
+        case code([String], startLineIndex: Int)
     }
 
     nonisolated init() {
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
-                guard let self else { return }
                 var previousApp: NSRunningApplication?
                 for await app in ActiveApplicationMonitor.createStream() {
+                    guard let self else { return }
                     try Task.checkCancellation()
                     defer { previousApp = app }
-                    if let app, app.bundleIdentifier == "com.apple.dt.Xcode" {
+                    if let app = ActiveApplicationMonitor.activeXcode {
                         if app != previousApp {
                             windowChangeObservationTask?.cancel()
                             windowChangeObservationTask = nil
-                            self.observeXcodeWindowChangeIfNeeded()
+                            self.observeXcodeWindowChangeIfNeeded(app)
                         }
                     }
 
@@ -55,18 +58,44 @@ final class SuggestionPanelController {
             }
         }
     }
+    
+    func suggestCode(_ code: String, startLineIndex: Int, fileURL: URL) {
+        viewModel.suggestion = code.split(separator: "\n").map(String.init)
+        viewModel.startLineIndex = startLineIndex
+        suggestionForFiles[fileURL] = .code(viewModel.suggestion, startLineIndex: startLineIndex)
+    }
 
-    private func observeXcodeWindowChangeIfNeeded() {
+    private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
+        xcode = app
         guard windowChangeObservationTask == nil else { return }
         windowChangeObservationTask = Task { [weak self] in
-            guard let self else { return }
             let notifications = AXNotificationStream(
-                app: activeApplication!,
-                notificationNames: kAXMovedNotification
+                app: app,
+                notificationNames:
+                kAXMovedNotification,
+                kAXResizedNotification,
+                kAXMainWindowChangedNotification,
+                kAXFocusedWindowChangedNotification,
+                kAXFocusedUIElementChangedNotification
             )
-            for await _ in notifications {
+            for await notification in notifications {
+                guard let self else { return }
                 try Task.checkCancellation()
                 self.updateWindowLocation()
+                
+                if notification.name == kAXFocusedUIElementChangedNotification {
+                    guard let fileURL = try? await Environment.fetchCurrentFileURL(),
+                          let suggestion = suggestionForFiles[fileURL]
+                    else {
+                        viewModel.suggestion = []
+                        continue
+                    }
+                    switch suggestion {
+                    case let .code(code, startLineIndex):
+                        viewModel.suggestion = code
+                        viewModel.startLineIndex = startLineIndex
+                    }
+                }
             }
         }
     }
@@ -76,10 +105,8 @@ final class SuggestionPanelController {
     /// - note: It's possible to get the scroll view's postion by getting position on the focus
     /// element.
     private func updateWindowLocation() {
-        if let activeXcode = activeApplication,
-           activeXcode.bundleIdentifier == "com.apple.dt.Xcode"
-        {
-            let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+        if let xcode {
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),
                 let focusElementType: String = try? focusElement
@@ -126,11 +153,6 @@ final class SuggestionPanelViewModel: ObservableObject {
     }
 
     @Published var isPanelDisplayed = true
-
-    func suggestCode(_ code: String, startLineIndex: Int) {
-        suggestion = code.split(separator: "\n").map(String.init)
-        self.startLineIndex = startLineIndex
-    }
 }
 
 struct SuggestionPanelView: View {
