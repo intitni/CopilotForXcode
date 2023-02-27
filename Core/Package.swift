@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -59,6 +60,7 @@ let package = Package(
                 "DisplayLink",
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
         .target(
