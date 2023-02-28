@@ -1,5 +1,6 @@
 import AppKit
 import CopilotService
+import Environment
 import Foundation
 import LanguageServerProtocol
 import os.log
@@ -13,7 +14,7 @@ import XPCShared
 @ServiceActor
 var workspaces = [URL: Workspace]()
 
-#warning("Todo: Find a better place to store it!")
+#warning("TODO: Find a better place to store it!")
 @ServiceActor
 var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
@@ -107,7 +108,18 @@ public class XPCService: NSObject, XPCServiceProtocol {
         let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let handler = CommentBaseCommandHandler()
+                let mode = PresentationMode(
+                    rawValue: UserDefaults.shared
+                        .integer(forKey: SettingsKey.suggestionPresentationMode)
+                ) ?? .comment
+                let handler: SuggestionCommandHanlder = {
+                    switch mode {
+                    case .comment:
+                        return CommentBaseCommandHandler()
+                    case .floatingWidget:
+                        return WindowBaseCommandHandler()
+                    }
+                }()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return

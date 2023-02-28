@@ -9,6 +9,8 @@ struct SettingsView: View {
     var realtimeSuggestionToggle: Bool = false
     @AppStorage(SettingsKey.realtimeSuggestionDebounce, store: .shared)
     var realtimeSuggestionDebounce: Double = 0.7
+    @AppStorage(SettingsKey.suggestionPresentationMode, store: .shared)
+    var suggestionPresentationModeRawValue: Int = 0
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double ?? 0.7
 
@@ -19,6 +21,20 @@ struct SettingsView: View {
                     Text("Quit service when Xcode and host app are terminated")
                 }
                 .toggleStyle(.switch)
+
+                Picker(selection: $suggestionPresentationModeRawValue) {
+                    ForEach(PresentationMode.allCases, id: \.rawValue) {
+                        switch $0 {
+                        case .comment:
+                            Text("Comment")
+                        case .floatingWidget:
+                            Text("Floating Widget")
+                        }
+                    }
+                } label: {
+                    Text("Present suggestions in")
+                }
+                
                 Toggle(isOn: $realtimeSuggestionToggle) {
                     Text("Real-time suggestion")
                 }

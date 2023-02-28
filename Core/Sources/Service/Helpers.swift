@@ -1,45 +1,6 @@
 import Foundation
 import LanguageServerProtocol
 
-extension FileManager {
-    func fileIsDirectory(atPath path: String) -> Bool {
-        var isDirectory: ObjCBool = false
-        let exists = fileExists(atPath: path, isDirectory: &isDirectory)
-        return isDirectory.boolValue && exists
-    }
-}
-
-@discardableResult
-func runAppleScript(_ appleScript: String) async throws -> String {
-    let task = Process()
-    task.launchPath = "/usr/bin/osascript"
-    task.arguments = ["-e", appleScript]
-    let outpipe = Pipe()
-    task.standardOutput = outpipe
-    task.standardError = Pipe()
-
-    return try await withUnsafeThrowingContinuation { continuation in
-        do {
-            task.terminationHandler = { _ in
-                do {
-                    if let data = try outpipe.fileHandleForReading.readToEnd(),
-                       let content = String(data: data, encoding: .utf8)
-                    {
-                        continuation.resume(returning: content)
-                        return
-                    }
-                    continuation.resume(returning: "")
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-            try task.run()
-        } catch {
-            continuation.resume(throwing: error)
-        }
-    }
-}
-
 extension NSError {
     static func from(_ error: Error) -> NSError {
         if let error = error as? ServerError {

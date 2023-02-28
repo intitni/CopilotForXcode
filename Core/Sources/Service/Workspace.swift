@@ -1,5 +1,6 @@
 import CopilotModel
 import CopilotService
+import Environment
 import Foundation
 import SuggestionInjector
 import XPCShared
@@ -32,9 +33,12 @@ final class Filespace {
         self.fileURL = fileURL
     }
 
-    func reset() {
+    func reset(resetSnapshot: Bool = true) {
         suggestions = []
         suggestionIndex = 0
+        if resetSnapshot {
+            suggestionSourceSnapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
+        }
     }
 }
 
@@ -167,7 +171,7 @@ extension Workspace {
         Task {
             await service.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }
-        filespaces[fileURL]?.reset()
+        filespaces[fileURL]?.reset(resetSnapshot: false)
     }
 
     func acceptSuggestion(forFileAt fileURL: URL) -> CopilotCompletion? {

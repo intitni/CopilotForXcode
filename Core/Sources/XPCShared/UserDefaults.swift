@@ -9,4 +9,5 @@ public enum SettingsKey {
     public static let realtimeSuggestionToggle = "RealtimeSuggestionToggle"
     public static let realtimeSuggestionDebounce = "RealtimeSuggestionDebounce"
     public static let quitXPCServiceOnXcodeAndAppQuit = "QuitXPCServiceOnXcodeAndAppQuit"
+    public static let suggestionPresentationMode = "SuggestionPresentationMode"
 }

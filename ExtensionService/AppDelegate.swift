@@ -20,15 +20,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
 
     func applicationDidFinishLaunching(_: Notification) {
+        _ = GraphicalUserInterfaceController.shared
         // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
         os_log(.info, "XPC Service started.")
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
-        AXIsProcessTrustedWithOptions(nil)
+        AXIsProcessTrustedWithOptions([
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true
+        ] as NSDictionary)
     }
 
     @objc private func buildStatusBarMenu() {

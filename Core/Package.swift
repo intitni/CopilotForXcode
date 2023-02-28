@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -51,7 +52,18 @@ let package = Package(
         ),
         .target(
             name: "Service",
-            dependencies: ["CopilotModel", "CopilotService", "XPCShared", "CGEventObserver"]
+            dependencies: [
+                "CopilotModel",
+                "CopilotService",
+                "XPCShared",
+                "CGEventObserver",
+                "DisplayLink",
+                "ActiveApplicationMonitor",
+                "AXNotificationStream",
+                "Environment",
+                "SuggestionWidget",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+            ]
         ),
         .target(
             name: "XPCShared",
@@ -59,9 +71,31 @@ let package = Package(
         ),
         .testTarget(
             name: "ServiceTests",
-            dependencies: ["Service", "Client", "CopilotService", "SuggestionInjector", "XPCShared"]
+            dependencies: [
+                "Service",
+                "Client",
+                "CopilotService",
+                "SuggestionInjector",
+                "XPCShared",
+                "Environment",
+            ]
         ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
+        .target(name: "DisplayLink"),
+        .target(name: "ActiveApplicationMonitor"),
+        .target(name: "AXNotificationStream"),
+        .target(
+            name: "Environment",
+            dependencies: ["ActiveApplicationMonitor", "CopilotService"]
+        ),
+        .target(
+            name: "SuggestionWidget",
+            dependencies: [
+                "ActiveApplicationMonitor",
+                "AXNotificationStream",
+                "Environment",
+            ]
+        ),
     ]
 )
