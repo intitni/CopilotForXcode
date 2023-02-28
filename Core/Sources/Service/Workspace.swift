@@ -37,7 +37,7 @@ final class Filespace {
         suggestions = []
         suggestionIndex = 0
         if resetSnapshot {
-            Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
+            suggestionSourceSnapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
         }
     }
 }
