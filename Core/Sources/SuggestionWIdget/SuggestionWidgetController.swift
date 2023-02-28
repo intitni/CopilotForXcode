@@ -1,11 +1,11 @@
 import ActiveApplicationMonitor
 import AppKit
 import AXNotificationStream
-import DisplayLink
+import Environment
 import SwiftUI
 
 @MainActor
-final class SuggestionPanelController {
+public final class SuggestionWidgetController {
     private lazy var widgetWindow = {
         let it = NSWindow(
             contentRect: .zero,
@@ -57,7 +57,7 @@ final class SuggestionPanelController {
         case code([String], startLineIndex: Int)
     }
 
-    nonisolated init() {
+    public nonisolated init() {
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?
@@ -71,29 +71,41 @@ final class SuggestionPanelController {
                             windowChangeObservationTask = nil
                             self.observeXcodeWindowChangeIfNeeded(app)
                         }
+                        self.updateWindowLocation()
+                    } else {
+                        panelWindow.alphaValue = 0
+                        widgetWindow.alphaValue = 0
                     }
-
-                    self.updateWindowLocation()
                 }
             }
         }
     }
 
-    func suggestCode(_ code: String, startLineIndex: Int, fileURL: URL) {
-        suggestionPanelViewModel.suggestion = code.split(separator: "\n").map(String.init)
-        suggestionPanelViewModel.startLineIndex = startLineIndex
-        suggestionPanelViewModel.isPanelDisplayed = true
-        suggestionForFiles[fileURL] = .code(
-            suggestionPanelViewModel.suggestion,
-            startLineIndex: startLineIndex
-        )
+    public func suggestCode(_ code: String, startLineIndex: Int, fileURL: URL) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            suggestionPanelViewModel.suggestion = code.split(separator: "\n").map(String.init)
+            suggestionPanelViewModel.startLineIndex = startLineIndex
+            suggestionPanelViewModel.isPanelDisplayed = true
+            suggestionForFiles[fileURL] = .code(
+                suggestionPanelViewModel.suggestion,
+                startLineIndex: startLineIndex
+            )
+            widgetViewModel.isProcessing = false
+        }
     }
 
-    func discardSuggestion(fileURL: URL) {
-        suggestionForFiles[fileURL] = nil
-        suggestionPanelViewModel.suggestion = []
-        suggestionPanelViewModel.startLineIndex = 0
-        suggestionPanelViewModel.isPanelDisplayed = false
+    public func discardSuggestion(fileURL: URL) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            suggestionForFiles[fileURL] = nil
+            suggestionPanelViewModel.suggestion = []
+            suggestionPanelViewModel.startLineIndex = 0
+            suggestionPanelViewModel.isPanelDisplayed = false
+            widgetViewModel.isProcessing = false
+        }
+    }
+
+    public func markAsProcessing(_ isProcessing: Bool) {
+        widgetViewModel.isProcessing = isProcessing
     }
 
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
@@ -123,8 +135,7 @@ final class SuggestionPanelController {
                     }
                     switch suggestion {
                     case let .code(code, startLineIndex):
-                        return
-                            suggestionPanelViewModel.suggestion = code
+                        suggestionPanelViewModel.suggestion = code
                         suggestionPanelViewModel.startLineIndex = startLineIndex
                     }
                 }
@@ -159,7 +170,7 @@ final class SuggestionPanelController {
                 if foundSize, foundPosition, let screen {
                     let anchorFrame = CGRect(
                         x: frame.maxX - 4 - 30,
-                        y: screen.frame.height - frame.minY - 30,
+                        y: screen.frame.height - frame.minY - 30 - 4,
                         width: 30,
                         height: 30
                     )
@@ -168,91 +179,19 @@ final class SuggestionPanelController {
                     let panelFrame = CGRect(
                         x: anchorFrame.maxX + 8,
                         y: anchorFrame.minY - 300 + 30,
-                        width: 400,
+                        width: 450,
                         height: 300
                     )
-                    panelWindow.alphaValue = 1
                     panelWindow.setFrame(panelFrame, display: false)
+
+                    panelWindow.alphaValue = 1
+                    widgetWindow.alphaValue = 1
                     return
                 }
             }
         }
 
         panelWindow.alphaValue = 0
-    }
-}
-
-@MainActor
-final class SuggestionPanelViewModel: ObservableObject {
-    @Published var startLineIndex: Int = 0
-    @Published var suggestion: [String] = ["Hello", "World"]
-    @Published var isPanelDisplayed = true
-}
-
-struct SuggestionPanelView: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
-    @State var isHovered: Bool = false
-
-    var body: some View {
-        if !viewModel.suggestion.isEmpty {
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
-                ScrollView {
-                    VStack(alignment: .leading) {
-                        ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
-                            HStack(alignment: .firstTextBaseline) {
-                                Text("\(index)")
-                                Text(viewModel.suggestion[index])
-                            }
-                        }
-                        Spacer()
-                    }
-                    .foregroundColor(.white)
-                    .font(.system(size: 12, design: .monospaced))
-                    .multilineTextAlignment(.leading)
-                    .padding()
-                }
-            }
-            .opacity({
-                guard viewModel.isPanelDisplayed else { return 0 }
-                return isHovered ? 0.3 : 1
-            }())
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onHover { yes in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isHovered = yes
-                }
-            }
-            .allowsHitTesting(viewModel.isPanelDisplayed)
-        }
-    }
-}
-
-@MainActor
-final class WidgetViewModel: ObservableObject {
-    enum Position {
-        case topLeft
-        case topRight
-        case bottomLeft
-        case bottomRight
-    }
-
-    var position: Position = .topRight
-
-    init() {}
-}
-
-struct WidgetView: View {
-    @ObservedObject var viewModel: WidgetViewModel
-    var panelViewModel: SuggestionPanelViewModel
-
-    var body: some View {
-        Circle().fill(.blue)
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    panelViewModel.isPanelDisplayed.toggle()
-                }
-            }
+        widgetWindow.alphaValue = 0
     }
 }

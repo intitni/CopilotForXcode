@@ -3,26 +3,28 @@ import AppKit
 import CopilotService
 import Foundation
 
-struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
-    var errorDescription: String? {
+public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
+    public var errorDescription: String? {
         "Accessibility API permission is not granted. Please enable in System Settings.app."
     }
+    public init() {}
 }
 
-struct FailedToFetchFileURLError: Error, LocalizedError {
-    var errorDescription: String? {
+public struct FailedToFetchFileURLError: Error, LocalizedError {
+    public var errorDescription: String? {
         "Failed to fetch editing file url."
     }
+    public init() {}
 }
 
-enum Environment {
-    static var now = { Date() }
+public enum Environment {
+    public static var now = { Date() }
 
-    static var isXcodeActive: () async -> Bool = {
+    public static var isXcodeActive: () async -> Bool = {
         ActiveApplicationMonitor.activeXcode != nil
     }
 
-    static var frontmostXcodeWindowIsEditor: () async -> Bool = {
+    public static var frontmostXcodeWindowIsEditor: () async -> Bool = {
         let appleScript = """
         tell application "Xcode"
             return path of document of the first window
@@ -36,41 +38,42 @@ enum Environment {
         }
     }
 
-    static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws -> URL? = { fileURL in
-        let appleScript = """
-        tell application "Xcode"
-            return path of document of the first window
-        end tell
-        """
+    public static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws
+        -> URL? = { fileURL in
+            let appleScript = """
+            tell application "Xcode"
+                return path of document of the first window
+            end tell
+            """
 
-        let path = (try? await runAppleScript(appleScript)) ?? ""
-        if !path.isEmpty {
-            let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-            var url = URL(fileURLWithPath: trimmedNewLine)
-            while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                !url.pathExtension.isEmpty
-            {
-                url = url.deletingLastPathComponent()
+            let path = (try? await runAppleScript(appleScript)) ?? ""
+            if !path.isEmpty {
+                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                var url = URL(fileURLWithPath: trimmedNewLine)
+                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                    !url.pathExtension.isEmpty
+                {
+                    url = url.deletingLastPathComponent()
+                }
+                return url
             }
-            return url
+
+            guard var currentURL = fileURL else { return nil }
+            var firstDirectoryURL: URL?
+            while currentURL.pathComponents.count > 1 {
+                defer { currentURL.deleteLastPathComponent() }
+                guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+                if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
+                let gitURL = currentURL.appendingPathComponent(".git")
+                if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
+                    return currentURL
+                }
+            }
+
+            return firstDirectoryURL ?? fileURL
         }
 
-        guard var currentURL = fileURL else { return nil }
-        var firstDirectoryURL: URL?
-        while currentURL.pathComponents.count > 1 {
-            defer { currentURL.deleteLastPathComponent() }
-            guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
-            if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
-            let gitURL = currentURL.appendingPathComponent(".git")
-            if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                return currentURL
-            }
-        }
-
-        return firstDirectoryURL ?? fileURL
-    }
-
-    static var fetchCurrentFileURL: () async throws -> URL = {
+    public static var fetchCurrentFileURL: () async throws -> URL = {
         guard let xcode = ActiveApplicationMonitor.activeXcode else {
             throw FailedToFetchFileURLError()
         }
@@ -105,16 +108,16 @@ enum Environment {
         throw FailedToFetchFileURLError()
     }
 
-    static var createAuthService: () -> CopilotAuthServiceType = {
+    public static var createAuthService: () -> CopilotAuthServiceType = {
         CopilotAuthService()
     }
 
-    static var createSuggestionService: (_ projectRootURL: URL)
+    public static var createSuggestionService: (_ projectRootURL: URL)
         -> CopilotSuggestionServiceType = { projectRootURL in
             CopilotSuggestionService(projectRootURL: projectRootURL)
         }
 
-    static var triggerAction: (_ name: String) async throws -> Void = { name in
+    public static var triggerAction: (_ name: String) async throws -> Void = { name in
         var xcodes = [NSRunningApplication]()
         var retryCount = 0
         // Sometimes runningApplications returns 0 items.
@@ -151,7 +154,7 @@ enum Environment {
 
 extension AXError: Error {}
 
-extension AXUIElement {
+public extension AXUIElement {
     func copyValue<T>(key: String, ofType _: T.Type = T.self) throws -> T {
         var value: AnyObject?
         let error = AXUIElementCopyAttributeValue(self, key as CFString, &value)
@@ -177,5 +180,44 @@ extension AXUIElement {
             return value
         }
         throw error
+    }
+}
+
+@discardableResult
+func runAppleScript(_ appleScript: String) async throws -> String {
+    let task = Process()
+    task.launchPath = "/usr/bin/osascript"
+    task.arguments = ["-e", appleScript]
+    let outpipe = Pipe()
+    task.standardOutput = outpipe
+    task.standardError = Pipe()
+
+    return try await withUnsafeThrowingContinuation { continuation in
+        do {
+            task.terminationHandler = { _ in
+                do {
+                    if let data = try outpipe.fileHandleForReading.readToEnd(),
+                       let content = String(data: data, encoding: .utf8)
+                    {
+                        continuation.resume(returning: content)
+                        return
+                    }
+                    continuation.resume(returning: "")
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+            try task.run()
+        } catch {
+            continuation.resume(throwing: error)
+        }
+    }
+}
+
+extension FileManager {
+    func fileIsDirectory(atPath path: String) -> Bool {
+        var isDirectory: ObjCBool = false
+        let exists = fileExists(atPath: path, isDirectory: &isDirectory)
+        return isDirectory.boolValue && exists
     }
 }

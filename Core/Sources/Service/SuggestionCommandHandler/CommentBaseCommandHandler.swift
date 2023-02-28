@@ -1,4 +1,5 @@
 import CopilotModel
+import Environment
 import Foundation
 import SuggestionInjector
 import XPCShared
@@ -9,7 +10,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         try await workspace.generateSuggestions(
             forFileAt: fileURL,
             content: editor.content,
@@ -32,7 +34,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectNextSuggestion(
             forFileAt: fileURL,
             content: editor.content,
@@ -51,7 +54,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectPreviousSuggestion(
             forFileAt: fileURL,
             content: editor.content,
@@ -70,7 +74,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL)
 
         let presenter = PresentInCommentSuggestionPresenter()

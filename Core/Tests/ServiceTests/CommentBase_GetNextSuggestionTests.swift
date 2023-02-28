@@ -1,5 +1,6 @@
 import CopilotModel
 import CopilotService
+import Environment
 import XCTest
 
 @testable import Service

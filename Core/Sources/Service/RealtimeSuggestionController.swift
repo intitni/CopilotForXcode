@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import CGEventObserver
+import Environment
 import Foundation
 import os.log
 import XPCShared

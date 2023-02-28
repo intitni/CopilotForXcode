@@ -1,5 +1,6 @@
 import AppKit
 import DisplayLink
+import Environment
 import QuartzCore
 import SwiftUI
 import XPCShared

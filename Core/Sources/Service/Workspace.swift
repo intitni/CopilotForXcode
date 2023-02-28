@@ -1,5 +1,6 @@
 import CopilotModel
 import CopilotService
+import Environment
 import Foundation
 import SuggestionInjector
 import XPCShared

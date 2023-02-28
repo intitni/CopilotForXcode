@@ -1,5 +1,6 @@
 import AppKit
 import CopilotService
+import Environment
 import Foundation
 import LanguageServerProtocol
 import os.log

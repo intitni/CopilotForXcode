@@ -60,6 +60,8 @@ let package = Package(
                 "DisplayLink",
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
+                "Environment",
+                "SuggestionWidget",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -69,12 +71,31 @@ let package = Package(
         ),
         .testTarget(
             name: "ServiceTests",
-            dependencies: ["Service", "Client", "CopilotService", "SuggestionInjector", "XPCShared"]
+            dependencies: [
+                "Service",
+                "Client",
+                "CopilotService",
+                "SuggestionInjector",
+                "XPCShared",
+                "Environment",
+            ]
         ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),
         .target(name: "ActiveApplicationMonitor"),
         .target(name: "AXNotificationStream"),
+        .target(
+            name: "Environment",
+            dependencies: ["ActiveApplicationMonitor", "CopilotService"]
+        ),
+        .target(
+            name: "SuggestionWidget",
+            dependencies: [
+                "ActiveApplicationMonitor",
+                "AXNotificationStream",
+                "Environment",
+            ]
+        ),
     ]
 )
