@@ -176,9 +176,12 @@ public final class SuggestionWidgetController {
                     )
                     widgetWindow.setFrame(anchorFrame, display: false)
 
+                    let proposedPanelX = anchorFrame.maxX + 8
+                    let putPanelToTheRight = screen.frame.maxX > proposedPanelX + 450
+                    
                     let panelFrame = CGRect(
-                        x: anchorFrame.maxX + 8,
-                        y: anchorFrame.minY - 300 + 30,
+                        x: putPanelToTheRight ? proposedPanelX : anchorFrame.maxX - 450,
+                        y: putPanelToTheRight ? anchorFrame.minY - 300 + 30 : anchorFrame.minY - 300 - 4,
                         width: 450,
                         height: 300
                     )
