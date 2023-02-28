@@ -45,14 +45,6 @@ final class RealtimeSuggestionIndicatorController {
                         .scaleEffect(.init(width: scaleB, height: scaleB))
                         .frame(width: 8, height: 8)
                 )
-                .onAppear {
-                    Task {
-                        await Task.yield() // to avoid unwanted translations.
-                        withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                            progress = 0
-                        }
-                    }
-                }
         }
     }
 
