@@ -108,7 +108,18 @@ public class XPCService: NSObject, XPCServiceProtocol {
         let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let handler = WindowBaseCommandHandler()
+                let mode = PresentationMode(
+                    rawValue: UserDefaults.shared
+                        .integer(forKey: SettingsKey.suggestionPresentationMode)
+                ) ?? .comment
+                let handler: SuggestionCommandHanlder = {
+                    switch mode {
+                    case .comment:
+                        return CommentBaseCommandHandler()
+                    case .floatingWidget:
+                        return WindowBaseCommandHandler()
+                    }
+                }()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return

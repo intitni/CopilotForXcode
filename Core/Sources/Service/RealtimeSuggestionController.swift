@@ -69,9 +69,11 @@ public actor RealtimeSuggestionController {
         let isEditing = await Environment.frontmostXcodeWindowIsEditor()
 
         // if Xcode suggestion panel is presenting, and we are not trying to close it
-        // ignore this event.
+        // ignore this event. (except present in window mode)
         if !isEditing, event.getIntegerValueField(.keyboardEventKeycode) != escape {
-            return
+            if UserDefaults.shared.integer(forKey: SettingsKey.suggestionPresentationMode) != 1 {
+                return
+            }
         }
 
         let shouldTrigger = {
@@ -105,10 +107,14 @@ public actor RealtimeSuggestionController {
                     .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double
                     ?? 0.7
             ) * 1_000_000_000))
+            
             guard UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
             else { return }
+            
             if Task.isCancelled { return }
+            
             os_log(.info, "Prefetch suggestions.")
+            
             await realtimeSuggestionIndicatorController.triggerPrefetchAnimation()
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
