@@ -3,9 +3,23 @@ import AppKit
 import AXNotificationStream
 import Environment
 import SwiftUI
+import XPCShared
 
 @MainActor
 public final class SuggestionWidgetController {
+    class UserDefaultsObserver: NSObject {
+        var onChange: (() -> Void)?
+
+        override func observeValue(
+            forKeyPath keyPath: String?,
+            of object: Any?,
+            change: [NSKeyValueChangeKey: Any]?,
+            context: UnsafeMutableRawPointer?
+        ) {
+            onChange?()
+        }
+    }
+
     private lazy var widgetWindow = {
         let it = NSWindow(
             contentRect: .zero,
@@ -50,6 +64,7 @@ public final class SuggestionWidgetController {
     let widgetViewModel = WidgetViewModel()
     let suggestionPanelViewModel = SuggestionPanelViewModel()
 
+    private var userDefaultsObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var xcode: NSRunningApplication?
@@ -80,6 +95,19 @@ public final class SuggestionWidgetController {
                     }
                 }
             }
+        }
+
+        Task { @MainActor in
+            userDefaultsObserver.onChange = { [weak self] in
+                guard let self else { return }
+                self.updateWindowLocation()
+            }
+            UserDefaults.shared.addObserver(
+                userDefaultsObserver,
+                forKeyPath: SettingsKey.suggestionPresentationMode,
+                options: .new,
+                context: nil
+            )
         }
     }
 
@@ -164,6 +192,20 @@ public final class SuggestionWidgetController {
     /// - note: It's possible to get the scroll view's postion by getting position on the focus
     /// element.
     private func updateWindowLocation() {
+        func hide() {
+            panelWindow.alphaValue = 0
+            widgetWindow.alphaValue = 0
+        }
+
+        guard PresentationMode(
+            rawValue: UserDefaults.shared
+                .integer(forKey: SettingsKey.suggestionPresentationMode)
+        ) == .floatingWidget
+        else {
+            hide()
+            return
+        }
+
         if let xcode {
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
@@ -212,7 +254,6 @@ public final class SuggestionWidgetController {
             }
         }
 
-        panelWindow.alphaValue = 0
-        widgetWindow.alphaValue = 0
+        hide()
     }
 }
