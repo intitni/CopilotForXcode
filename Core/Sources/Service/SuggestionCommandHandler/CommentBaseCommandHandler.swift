@@ -173,6 +173,8 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
         // If there is a suggestion available, call another command to present it.
         guard !suggestions.isEmpty else { return nil }
         try await Environment.triggerAction("Real-time Suggestions")
+        GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+            .triggerPrefetchAnimation()
 
         return nil
     }
