@@ -17,6 +17,7 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .statusBar
+        it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
@@ -38,6 +39,7 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .statusBar
+        it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
@@ -169,21 +171,23 @@ public final class SuggestionWidgetController {
                 let frame = CGRect(origin: position, size: size)
                 if foundSize, foundPosition, let screen {
                     let anchorFrame = CGRect(
-                        x: frame.maxX - 4 - 30,
-                        y: screen.frame.height - frame.minY - 30 - 4,
-                        width: 30,
-                        height: 30
+                        x: frame.maxX - 4 - Style.widgetWidth,
+                        y: screen.frame.height - frame.minY - Style.widgetHeight - 4,
+                        width: Style.widgetWidth,
+                        height: Style.widgetHeight
                     )
                     widgetWindow.setFrame(anchorFrame, display: false)
 
                     let proposedPanelX = anchorFrame.maxX + 8
-                    let putPanelToTheRight = screen.frame.maxX > proposedPanelX + 450
-                    
+                    let putPanelToTheRight = screen.frame.maxX > proposedPanelX + Style.panelWidth
+
                     let panelFrame = CGRect(
-                        x: putPanelToTheRight ? proposedPanelX : anchorFrame.maxX - 450,
-                        y: putPanelToTheRight ? anchorFrame.minY - 300 + 30 : anchorFrame.minY - 300 - 4,
-                        width: 450,
-                        height: 300
+                        x: putPanelToTheRight ? proposedPanelX : anchorFrame.maxX - Style
+                            .panelWidth,
+                        y: putPanelToTheRight ? anchorFrame.minY - Style.panelHeight + Style
+                            .widgetHeight : anchorFrame.minY - Style.panelHeight - 4,
+                        width: Style.panelWidth,
+                        height: Style.panelHeight
                     )
                     panelWindow.setFrame(panelFrame, display: false)
 

@@ -30,74 +30,21 @@ struct SuggestionPanelView: View {
     @State var codeHeight: Double = 0
 
     var body: some View {
-        // weird, if the if statement is at the top level, the view may not update sometimes.
         VStack {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ScrollView {
-                        LazyVGrid(columns: [
-                            GridItem(.fixed(30), alignment: .top),
-                            GridItem(.flexible()),
-                        ], spacing: 4) {
-                            ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
-                                Text("\(index + viewModel.startLineIndex + 1)")
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Text(viewModel.suggestion[index])
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .multilineTextAlignment(.leading)
-                                    .lineSpacing(4)
-                            }
-                        }
-                        .foregroundColor(.white)
-                        .font(.system(size: 12, design: .monospaced))
-                        .padding()
-                        .background(
-                            GeometryReader { proxy -> Color in
-                                Task {
-                                    codeHeight = proxy.size.height
-                                }
-                                return Color.clear
-                            }
-                        )
-
-                        Spacer()
+                        CodeBlock(viewModel: viewModel)
                     }
-                    .frame(maxHeight: max(codeHeight, 300))
-                    .fixedSize(horizontal: false, vertical: true)
 
-                    HStack {
-                        Text("\(viewModel.currentSuggestionIndex)/\(viewModel.suggestionCount)")
-
-                        Spacer()
-
-                        Button(action: {
-                            Task {
-                                try await Environment.triggerAction("Accept Suggestion")
-                            }
-                        }) {
-                            Text("Accept")
-                        }.buttonStyle(CommandButtonStyle(color: .green))
-                        Button(action: {
-                            Task {
-                                try await Environment.triggerAction("Reject Suggestion")
-                            }
-                        }) {
-                            Text("Reject")
-                        }.buttonStyle(CommandButtonStyle(color: .red))
-                    }
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.white.opacity(0.1))
+                    ToolBar(viewModel: viewModel)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+            .fixedSize(horizontal: false, vertical: true)
             .background(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .opacity({
-                guard viewModel.isPanelDisplayed else { return 0 }
-                guard !viewModel.suggestion.isEmpty else { return 0 }
-                return 1
-            }())
-            .frame(maxWidth: .infinity)
+
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
@@ -109,6 +56,79 @@ struct SuggestionPanelView: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
                 .allowsHitTesting(false)
         }
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
+        )
+        .opacity({
+            guard viewModel.isPanelDisplayed else { return 0 }
+            guard !viewModel.suggestion.isEmpty else { return 0 }
+            return 1
+        }())
+    }
+}
+
+struct CodeBlock: View {
+    struct SizePreferenceKey: PreferenceKey {
+        public static var defaultValue: CGSize = .zero
+        public static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+            value = value.width + value.height > nextValue().width + nextValue()
+                .height ? value : nextValue()
+        }
+    }
+
+    @ObservedObject var viewModel: SuggestionPanelViewModel
+
+    var body: some View {
+        LazyVGrid(columns: [
+            GridItem(.fixed(30), alignment: .top),
+            GridItem(.flexible()),
+        ], spacing: 4) {
+            ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
+                Text("\(index + viewModel.startLineIndex + 1)")
+                    .foregroundColor(Color.white.opacity(0.6))
+                Text(viewModel.suggestion[index])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(4)
+            }
+        }
+        .foregroundColor(.white)
+        .font(.system(size: 12, design: .monospaced))
+        .padding()
+        .background(GeometryReader(content: { proxy in
+            Color.clear.preference(key: SizePreferenceKey.self, value: proxy.size)
+        }))
+    }
+}
+
+struct ToolBar: View {
+    @ObservedObject var viewModel: SuggestionPanelViewModel
+
+    var body: some View {
+        HStack {
+            Text("\(viewModel.currentSuggestionIndex)/\(viewModel.suggestionCount)")
+
+            Spacer()
+
+            Button(action: {
+                Task {
+                    try await Environment.triggerAction("Accept Suggestion")
+                }
+            }) {
+                Text("Accept")
+            }.buttonStyle(CommandButtonStyle(color: .green))
+            Button(action: {
+                Task {
+                    try await Environment.triggerAction("Reject Suggestion")
+                }
+            }) {
+                Text("Reject")
+            }.buttonStyle(CommandButtonStyle(color: .red))
+        }
+        .padding()
+        .foregroundColor(.white)
+        .background(Color.white.opacity(0.1))
     }
 }
 
