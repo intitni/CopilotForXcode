@@ -12,6 +12,7 @@ import XPCShared
 final class RealtimeSuggestionIndicatorController {
     class IndicatorContentViewModel: ObservableObject {
         @Published var isPrefetching = false
+        @Published var progress: Double = 1
         private var prefetchTask: Task<Void, Error>?
         
         @MainActor
@@ -21,33 +22,55 @@ final class RealtimeSuggestionIndicatorController {
                 isPrefetching = true
             }
             prefetchTask = Task {
-                try await Task.sleep(nanoseconds: 2 * 1_000_000_000)
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isPrefetching = false
+                try await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+                if isPrefetching {
+                    endPrefetch()
                 }
+            }
+        }
+        
+        @MainActor
+        func endPrefetch() {
+            withAnimation(.easeOut(duration: 0.2)) {
+                isPrefetching = false
+                progress = 1
             }
         }
     }
 
     struct IndicatorContentView: View {
         @ObservedObject var viewModel: IndicatorContentViewModel
-        @State var progress: CGFloat = 1
-        var opacityA: CGFloat { min(progress, 0.7) }
-        var opacityB: CGFloat { 1 - progress }
-        var scaleA: CGFloat { progress / 2 + 0.5 }
-        var scaleB: CGFloat { max(1 - progress, 0.01) }
+        var opacityA: CGFloat { min(viewModel.progress, 0.7) }
+        var opacityB: CGFloat { 1 - viewModel.progress }
+        var scaleA: CGFloat { viewModel.progress / 2 + 0.5 }
+        var scaleB: CGFloat { max(1 - viewModel.progress, 0.01) }
 
         var body: some View {
             Circle()
                 .fill(Color.accentColor.opacity(opacityA))
                 .scaleEffect(.init(width: scaleA, height: scaleA))
                 .frame(width: 8, height: 8)
-                .background(
-                    Circle()
-                        .fill(Color.white.opacity(viewModel.isPrefetching ? opacityB : 0))
-                        .scaleEffect(.init(width: scaleB, height: scaleB))
-                        .frame(width: 8, height: 8)
-                )
+                .overlay {
+                    if viewModel.isPrefetching {
+                        Circle()
+                            .fill(Color.white.opacity(opacityB))
+                            .scaleEffect(.init(width: scaleB, height: scaleB))
+                            .frame(width: 8, height: 8)
+                            .onAppear {
+                                Task {
+                                    await Task.yield()
+                                    withAnimation(
+                                        .easeInOut(duration: 0.4)
+                                            .repeatForever(
+                                                autoreverses: true
+                                            )
+                                    ) {
+                                        viewModel.progress = 0
+                                    }
+                                }
+                            }
+                    }
+                }
         }
     }
 
@@ -207,5 +230,9 @@ final class RealtimeSuggestionIndicatorController {
 
     func triggerPrefetchAnimation() {
         viewModel.prefetch()
+    }
+    
+    func endPrefetchAnimation() {
+        viewModel.endPrefetch()
     }
 }

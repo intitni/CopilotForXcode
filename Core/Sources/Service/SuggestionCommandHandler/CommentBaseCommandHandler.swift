@@ -134,6 +134,10 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
         guard filespace.suggestionSourceSnapshot == snapshot else { return nil }
 
         let presenter = PresentInCommentSuggestionPresenter()
+        
+        await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+            .endPrefetchAnimation()
+        
         return try await presenter.presentSuggestion(
             for: filespace,
             in: workspace,
