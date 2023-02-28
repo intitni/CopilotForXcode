@@ -44,9 +44,7 @@ public actor RealtimeSuggestionController {
                 }
             }
         }
-        if eventObserver.activateIfPossible() {
-            realtimeSuggestionIndicatorController.isObserving = true
-        }
+        eventObserver.activateIfPossible()
     }
 
     private func stop(by listener: AnyHashable) {
@@ -55,7 +53,6 @@ public actor RealtimeSuggestionController {
         task?.cancel()
         task = nil
         eventObserver.deactivate()
-        realtimeSuggestionIndicatorController.isObserving = false
     }
 
     func handleKeyboardEvent(event: CGEvent) async {
@@ -107,14 +104,14 @@ public actor RealtimeSuggestionController {
                     .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double
                     ?? 0.7
             ) * 1_000_000_000))
-            
+
             guard UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
             else { return }
-            
+
             if Task.isCancelled { return }
-            
+
             os_log(.info, "Prefetch suggestions.")
-            
+
             await realtimeSuggestionIndicatorController.triggerPrefetchAnimation()
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
