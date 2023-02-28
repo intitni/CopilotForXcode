@@ -107,7 +107,8 @@ struct ToolBar: View {
 
     var body: some View {
         HStack {
-            Text("\(viewModel.currentSuggestionIndex)/\(viewModel.suggestionCount)")
+            Text("\(viewModel.currentSuggestionIndex + 1)/\(viewModel.suggestionCount)")
+                .monospacedDigit()
 
             Spacer()
 

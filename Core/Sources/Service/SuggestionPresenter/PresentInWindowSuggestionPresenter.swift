@@ -2,13 +2,21 @@ import CopilotModel
 import Foundation
 
 struct PresentInWindowSuggestionPresenter {
-    func presentSuggestion(_ suggestion: CopilotCompletion, lines: [String], fileURL: URL) {
+    func presentSuggestion(
+        _ suggestion: CopilotCompletion,
+        lines: [String],
+        fileURL: URL,
+        currentSuggestionIndex: Int,
+        suggestionCount: Int
+    ) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.suggestCode(
                 suggestion.text,
                 startLineIndex: suggestion.position.line,
-                fileURL: fileURL
+                fileURL: fileURL,
+                currentSuggestionIndex: currentSuggestionIndex,
+                suggestionCount: suggestionCount
             )
         }
     }

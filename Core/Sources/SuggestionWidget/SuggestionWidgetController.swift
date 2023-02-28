@@ -56,7 +56,7 @@ public final class SuggestionWidgetController {
     private var suggestionForFiles: [URL: Suggestion] = [:]
 
     enum Suggestion {
-        case code([String], startLineIndex: Int)
+        case code([String], startLineIndex: Int, currentSuggestionIndex: Int, suggestionCount: Int)
     }
 
     public nonisolated init() {
@@ -83,14 +83,24 @@ public final class SuggestionWidgetController {
         }
     }
 
-    public func suggestCode(_ code: String, startLineIndex: Int, fileURL: URL) {
+    public func suggestCode(
+        _ code: String,
+        startLineIndex: Int,
+        fileURL: URL,
+        currentSuggestionIndex: Int,
+        suggestionCount: Int
+    ) {
         withAnimation(.easeInOut(duration: 0.2)) {
             suggestionPanelViewModel.suggestion = code.split(separator: "\n").map(String.init)
             suggestionPanelViewModel.startLineIndex = startLineIndex
             suggestionPanelViewModel.isPanelDisplayed = true
+            suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
+            suggestionPanelViewModel.suggestionCount = suggestionCount
             suggestionForFiles[fileURL] = .code(
                 suggestionPanelViewModel.suggestion,
-                startLineIndex: startLineIndex
+                startLineIndex: startLineIndex,
+                currentSuggestionIndex: currentSuggestionIndex,
+                suggestionCount: suggestionCount
             )
             widgetViewModel.isProcessing = false
         }
@@ -101,6 +111,8 @@ public final class SuggestionWidgetController {
             suggestionForFiles[fileURL] = nil
             suggestionPanelViewModel.suggestion = []
             suggestionPanelViewModel.startLineIndex = 0
+            suggestionPanelViewModel.currentSuggestionIndex = 0
+            suggestionPanelViewModel.suggestionCount = 0
             suggestionPanelViewModel.isPanelDisplayed = false
             widgetViewModel.isProcessing = false
         }
@@ -136,9 +148,11 @@ public final class SuggestionWidgetController {
                         continue
                     }
                     switch suggestion {
-                    case let .code(code, startLineIndex):
+                    case let .code(code, startLineIndex, currentSuggestionIndex, suggestionCount):
                         suggestionPanelViewModel.suggestion = code
                         suggestionPanelViewModel.startLineIndex = startLineIndex
+                        suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
+                        suggestionPanelViewModel.suggestionCount = suggestionCount
                     }
                 }
             }

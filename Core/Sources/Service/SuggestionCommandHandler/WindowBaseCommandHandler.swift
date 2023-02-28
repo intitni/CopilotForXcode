@@ -50,7 +50,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(
+                suggestion,
+                lines: editor.lines,
+                fileURL: fileURL,
+                currentSuggestionIndex: filespace.suggestionIndex,
+                suggestionCount: filespace.suggestions.count
+            )
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
@@ -76,7 +82,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(
+                suggestion,
+                lines: editor.lines,
+                fileURL: fileURL,
+                currentSuggestionIndex: filespace.suggestionIndex,
+                suggestionCount: filespace.suggestions.count
+            )
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
@@ -102,7 +114,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(
+                suggestion,
+                lines: editor.lines,
+                fileURL: fileURL,
+                currentSuggestionIndex: filespace.suggestionIndex,
+                suggestionCount: filespace.suggestions.count
+            )
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
