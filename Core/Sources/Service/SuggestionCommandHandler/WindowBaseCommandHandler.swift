@@ -9,6 +9,8 @@ import XPCShared
 struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     nonisolated init() {}
 
+    let presenter = PresentInWindowSuggestionPresenter()
+
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
@@ -21,8 +23,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     private func _presentSuggestions(editor: EditorContent) async throws {
-        markAsProcessing(true)
-        defer { markAsProcessing(false) }
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -48,9 +50,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            discardSuggestion(fileURL: fileURL)
+            presenter.discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -62,8 +64,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     private func _presentNextSuggestion(editor: EditorContent) async throws {
-        markAsProcessing(true)
-        defer { markAsProcessing(false) }
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -74,9 +76,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            discardSuggestion(fileURL: fileURL)
+            presenter.discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -88,8 +90,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     private func _presentPreviousSuggestion(editor: EditorContent) async throws {
-        markAsProcessing(true)
-        defer { markAsProcessing(false) }
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -100,9 +102,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
+            presenter.presentSuggestion(suggestion, lines: editor.lines, fileURL: fileURL)
         } else {
-            discardSuggestion(fileURL: fileURL)
+            presenter.discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -114,20 +116,20 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     private func _rejectSuggestion(editor: EditorContent) async throws {
-        markAsProcessing(true)
-        defer { markAsProcessing(false) }
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL)
-        discardSuggestion(fileURL: fileURL)
+        presenter.discardSuggestion(fileURL: fileURL)
     }
 
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        markAsProcessing(true)
-        defer { markAsProcessing(false) }
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
         Task {
             let fileURL = try await Environment.fetchCurrentFileURL()
-            discardSuggestion(fileURL: fileURL)
+            presenter.discardSuggestion(fileURL: fileURL)
         }
         return try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
     }
@@ -139,30 +141,5 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         try await presentSuggestions(editor: editor)
-    }
-
-    func presentSuggestion(_ suggestion: CopilotCompletion, lines: [String], fileURL: URL) {
-        Task { @MainActor in
-            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.suggestCode(
-                suggestion.text,
-                startLineIndex: suggestion.position.line,
-                fileURL: fileURL
-            )
-        }
-    }
-
-    func discardSuggestion(fileURL: URL) {
-        Task { @MainActor in
-            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.discardSuggestion(fileURL: fileURL)
-        }
-    }
-
-    func markAsProcessing(_ isProcessing: Bool) {
-        Task { @MainActor in
-            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.markAsProcessing(isProcessing)
-        }
     }
 }
