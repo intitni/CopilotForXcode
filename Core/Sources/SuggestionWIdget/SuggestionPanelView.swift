@@ -62,7 +62,8 @@ struct SuggestionPanelView: View {
 
                         Spacer()
                     }
-                    .frame(height: min(codeHeight, 300))
+                    .frame(maxHeight: max(codeHeight, 300))
+                    .fixedSize(horizontal: false, vertical: true)
 
                     HStack {
                         Text("\(viewModel.currentSuggestionIndex)/\(viewModel.suggestionCount)")

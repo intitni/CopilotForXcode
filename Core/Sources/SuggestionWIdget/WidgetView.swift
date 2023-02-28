@@ -9,16 +9,20 @@ final class WidgetViewModel: ObservableObject {
         case bottomRight
     }
 
-    var position: Position = .topRight
-    @Published var isProcessing: Bool = false
+    var position: Position
+    @Published var isProcessing: Bool
 
-    init() {}
+    init(position: Position = .topRight, isProcessing: Bool = false) {
+        self.position = position
+        self.isProcessing = isProcessing
+    }
 }
 
 struct WidgetView: View {
     @ObservedObject var viewModel: WidgetViewModel
     @ObservedObject var panelViewModel: SuggestionPanelViewModel
-    @State var isHovering = false
+    @State var isHovering: Bool = false
+    @State var processingProgress: Double = 0
 
     var body: some View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
@@ -28,21 +32,20 @@ struct WidgetView: View {
                 }
             }
             .overlay {
+                let lineWidth: Double = 4
+                
                 Circle()
                     .stroke(
                         panelViewModel.suggestion.isEmpty
                             ? Color(nsColor: .darkGray)
                             : Color.accentColor,
-                        style: .init(lineWidth: 4)
+                        style: .init(lineWidth: lineWidth)
                     )
-                    .padding(2)
+                    .padding(lineWidth / 2)
             }
             .overlay {
                 if viewModel.isProcessing {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(.primary)
-                        .scaleEffect(x: 0.5, y: 0.5)
+                    animationgRing()
                 }
             }
             .onHover { yes in
@@ -50,5 +53,62 @@ struct WidgetView: View {
                     isHovering = yes
                 }
             }
+    }
+    
+    @ViewBuilder
+    func animationgRing() -> some View {
+        let lineWidth = processingProgress * 5 + 4
+        
+        Circle()
+            .stroke(
+                Color.accentColor,
+                style: .init(lineWidth: lineWidth)
+            )
+            .onAppear {
+                Task {
+                    await Task.yield()
+                    withAnimation(
+                        .easeInOut(duration: 1)
+                            .repeatForever(
+                                autoreverses: true
+                            )
+                    ) {
+                        processingProgress = 1
+                    }
+                }
+            }
+            .padding(lineWidth / 2)
+    }
+}
+
+struct WidgetView_Preview: PreviewProvider {
+    static var previews: some View {
+        VStack {
+            WidgetView(
+                viewModel: .init(position: .topRight, isProcessing: false),
+                panelViewModel: .init(),
+                isHovering: false
+            )
+
+            WidgetView(
+                viewModel: .init(position: .topRight, isProcessing: false),
+                panelViewModel: .init(),
+                isHovering: true
+            )
+
+            WidgetView(
+                viewModel: .init(position: .topRight, isProcessing: true),
+                panelViewModel: .init(),
+                isHovering: false
+            )
+
+            WidgetView(
+                viewModel: .init(position: .topRight, isProcessing: false),
+                panelViewModel: .init(suggestion: ["Hello"]),
+                isHovering: false
+            )
+        }
+        .frame(width: 40)
+        .background(Color.black)
     }
 }
