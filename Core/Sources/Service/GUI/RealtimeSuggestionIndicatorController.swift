@@ -6,6 +6,7 @@ import Environment
 import QuartzCore
 import SwiftUI
 import XPCShared
+import AsyncAlgorithms
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 @MainActor
@@ -94,6 +95,7 @@ final class RealtimeSuggestionIndicatorController {
     private var userDefaultsObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
+    private var editorObservationTask: Task<Void, Error>?
     private var xcode: NSRunningApplication?
     var isObserving = false {
         didSet {
@@ -124,6 +126,7 @@ final class RealtimeSuggestionIndicatorController {
 
     nonisolated init() {
         Task { @MainActor in
+            observeEditorChangeIfNeeded()
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?
                 for await app in ActiveApplicationMonitor.createStream() {
@@ -170,14 +173,61 @@ final class RealtimeSuggestionIndicatorController {
                 notificationNames:
                 kAXMovedNotification,
                 kAXResizedNotification,
-                kAXMainWindowChangedNotification,
                 kAXFocusedWindowChangedNotification,
-                kAXFocusedUIElementChangedNotification,
-                kAXSelectedTextChangedNotification
+                kAXFocusedUIElementChangedNotification
             )
-            for await _ in notifications {
+            for await notification in notifications {
                 try Task.checkCancellation()
                 updateIndicatorLocation()
+
+                switch notification.name {
+                case kAXFocusedUIElementChangedNotification, kAXFocusedWindowChangedNotification:
+                    editorObservationTask?.cancel()
+                    editorObservationTask = nil
+                    observeEditorChangeIfNeeded()
+                default:
+                    continue
+                }
+            }
+        }
+    }
+
+    private func observeEditorChangeIfNeeded() {
+        guard editorObservationTask == nil,
+              let activeXcode = ActiveApplicationMonitor.activeXcode
+        else { return }
+        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+        guard let focusElement: AXUIElement = try? application
+            .copyValue(key: kAXFocusedUIElementAttribute),
+            let focusElementType: String = try? focusElement
+            .copyValue(key: kAXDescriptionAttribute),
+            focusElementType == "Source Editor",
+            let scrollView: AXUIElement = try? focusElement
+            .copyValue(key: kAXParentAttribute),
+            let scrollBar: AXUIElement = try? scrollView
+            .copyValue(key: kAXVerticalScrollBarAttribute)
+        else { return }
+
+        editorObservationTask = Task { [weak self] in
+            let notificationsFromEditor = AXNotificationStream(
+                app: activeXcode,
+                element: focusElement,
+                notificationNames:
+                kAXResizedNotification,
+                kAXMovedNotification,
+                kAXLayoutChangedNotification,
+                kAXSelectedTextChangedNotification
+            )
+            
+            let notificationsFromScrollBar = AXNotificationStream(
+                app: activeXcode,
+                element: scrollBar,
+                notificationNames: kAXValueChangedNotification
+            )
+            
+            for await _ in merge(notificationsFromEditor, notificationsFromScrollBar) {
+                try Task.checkCancellation()
+                self?.updateIndicatorLocation()
             }
         }
     }
@@ -198,10 +248,7 @@ final class RealtimeSuggestionIndicatorController {
             return
         }
 
-        if let activeXcode = NSRunningApplication
-            .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-            .first(where: \.isActive)
-        {
+        if let activeXcode = ActiveApplicationMonitor.activeXcode {
             let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),
