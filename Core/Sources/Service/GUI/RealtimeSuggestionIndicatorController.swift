@@ -14,7 +14,7 @@ final class RealtimeSuggestionIndicatorController {
         @Published var isPrefetching = false
         @Published var progress: Double = 1
         private var prefetchTask: Task<Void, Error>?
-        
+
         @MainActor
         func prefetch() {
             prefetchTask?.cancel()
@@ -28,12 +28,11 @@ final class RealtimeSuggestionIndicatorController {
                 }
             }
         }
-        
+
         @MainActor
         func endPrefetch() {
             withAnimation(.easeOut(duration: 0.2)) {
                 isPrefetching = false
-                progress = 1
             }
         }
     }
@@ -67,6 +66,10 @@ final class RealtimeSuggestionIndicatorController {
                                     ) {
                                         viewModel.progress = 0
                                     }
+                                }
+                            }.onDisappear {
+                                withAnimation(.default) {
+                                    viewModel.progress = 1
                                 }
                             }
                     }
@@ -202,6 +205,9 @@ final class RealtimeSuggestionIndicatorController {
             let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),
+                let focusElementType: String = try? focusElement
+                .copyValue(key: kAXDescriptionAttribute),
+                focusElementType == "Source Editor",
                 let selectedRange: AXValue = try? focusElement
                 .copyValue(key: kAXSelectedTextRangeAttribute),
                 let rect: AXValue = try? focusElement.copyParameterizedValue(
@@ -231,7 +237,7 @@ final class RealtimeSuggestionIndicatorController {
     func triggerPrefetchAnimation() {
         viewModel.prefetch()
     }
-    
+
     func endPrefetchAnimation() {
         viewModel.endPrefetch()
     }
