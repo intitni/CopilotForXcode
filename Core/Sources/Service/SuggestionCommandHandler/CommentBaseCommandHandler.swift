@@ -119,6 +119,13 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
+        defer {
+            Task {
+                await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+                    .endPrefetchAnimation()
+            }
+        }
+
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
@@ -134,6 +141,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
         guard filespace.suggestionSourceSnapshot == snapshot else { return nil }
 
         let presenter = PresentInCommentSuggestionPresenter()
+
         return try await presenter.presentSuggestion(
             for: filespace,
             in: workspace,
@@ -173,7 +181,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHanlder {
         // If there is a suggestion available, call another command to present it.
         guard !suggestions.isEmpty else { return nil }
         try await Environment.triggerAction("Real-time Suggestions")
-        GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+        await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
             .triggerPrefetchAnimation()
 
         return nil

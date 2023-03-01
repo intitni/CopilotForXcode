@@ -1,4 +1,6 @@
+import ActiveApplicationMonitor
 import AppKit
+import AXNotificationStream
 import DisplayLink
 import Environment
 import QuartzCore
@@ -6,9 +8,11 @@ import SwiftUI
 import XPCShared
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
+@MainActor
 final class RealtimeSuggestionIndicatorController {
     class IndicatorContentViewModel: ObservableObject {
         @Published var isPrefetching = false
+        @Published var progress: Double = 1
         private var prefetchTask: Task<Void, Error>?
 
         @MainActor
@@ -18,33 +22,58 @@ final class RealtimeSuggestionIndicatorController {
                 isPrefetching = true
             }
             prefetchTask = Task {
-                try await Task.sleep(nanoseconds: 2 * 1_000_000_000)
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isPrefetching = false
+                try await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+                if isPrefetching {
+                    endPrefetch()
                 }
+            }
+        }
+
+        @MainActor
+        func endPrefetch() {
+            withAnimation(.easeOut(duration: 0.2)) {
+                isPrefetching = false
             }
         }
     }
 
     struct IndicatorContentView: View {
         @ObservedObject var viewModel: IndicatorContentViewModel
-        @State var progress: CGFloat = 1
-        var opacityA: CGFloat { min(progress, 0.7) }
-        var opacityB: CGFloat { 1 - progress }
-        var scaleA: CGFloat { progress / 2 + 0.5 }
-        var scaleB: CGFloat { max(1 - progress, 0.01) }
+        var opacityA: CGFloat { min(viewModel.progress, 0.7) }
+        var opacityB: CGFloat { 1 - viewModel.progress }
+        var scaleA: CGFloat { viewModel.progress / 2 + 0.5 }
+        var scaleB: CGFloat { max(1 - viewModel.progress, 0.01) }
 
         var body: some View {
             Circle()
                 .fill(Color.accentColor.opacity(opacityA))
                 .scaleEffect(.init(width: scaleA, height: scaleA))
                 .frame(width: 8, height: 8)
-                .background(
-                    Circle()
-                        .fill(Color.white.opacity(viewModel.isPrefetching ? opacityB : 0))
-                        .scaleEffect(.init(width: scaleB, height: scaleB))
-                        .frame(width: 8, height: 8)
-                )
+                .overlay {
+                    if viewModel.isPrefetching {
+                        Circle()
+                            .fill(Color.white.opacity(opacityB))
+                            .scaleEffect(.init(width: scaleB, height: scaleB))
+                            .frame(width: 8, height: 8)
+                            .onAppear {
+                                Task {
+                                    await Task.yield()
+                                    withAnimation(
+                                        .easeInOut(duration: 0.4)
+                                            .repeatForever(
+                                                autoreverses: true
+                                            )
+                                    ) {
+                                        viewModel.progress = 0
+                                    }
+                                }
+                            }.onDisappear {
+                                withAnimation(.default) {
+                                    viewModel.progress = 1
+                                }
+                            }
+                    }
+                }
         }
     }
 
@@ -63,6 +92,9 @@ final class RealtimeSuggestionIndicatorController {
 
     private let viewModel = IndicatorContentViewModel()
     private var userDefaultsObserver = UserDefaultsObserver()
+    private var windowChangeObservationTask: Task<Void, Error>?
+    private var activeApplicationMonitorTask: Task<Void, Error>?
+    private var xcode: NSRunningApplication?
     var isObserving = false {
         didSet {
             Task {
@@ -70,8 +102,6 @@ final class RealtimeSuggestionIndicatorController {
             }
         }
     }
-
-    private var displayLinkTask: Task<Void, Never>?
 
     @MainActor
     lazy var window = {
@@ -92,35 +122,34 @@ final class RealtimeSuggestionIndicatorController {
         return it
     }()
 
-    init() {
-        Task {
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didActivateApplicationNotification)
-            for await notification in sequence {
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
-                await updateIndicatorVisibility()
+    nonisolated init() {
+        Task { @MainActor in
+            activeApplicationMonitorTask = Task { [weak self] in
+                var previousApp: NSRunningApplication?
+                for await app in ActiveApplicationMonitor.createStream() {
+                    guard let self else { return }
+                    try Task.checkCancellation()
+                    defer { previousApp = app }
+                    if let app = ActiveApplicationMonitor.activeXcode {
+                        if app != previousApp {
+                            windowChangeObservationTask?.cancel()
+                            windowChangeObservationTask = nil
+                            self.observeXcodeWindowChangeIfNeeded(app)
+                        }
+                        await self.updateIndicatorVisibility()
+                        self.updateIndicatorLocation()
+                    } else {
+                        await self.updateIndicatorVisibility()
+                    }
+                }
             }
         }
 
-        Task {
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didDeactivateApplicationNotification)
-            for await notification in sequence {
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                guard app.bundleIdentifier == "com.apple.dt.Xcode" else { continue }
-                await updateIndicatorVisibility()
-            }
-        }
-
-        Task {
+        Task { @MainActor in
             userDefaultsObserver.onChange = { [weak self] in
                 Task { [weak self] in
                     await self?.updateIndicatorVisibility()
+                    self?.updateIndicatorLocation()
                 }
             }
             UserDefaults.shared.addObserver(
@@ -132,74 +161,84 @@ final class RealtimeSuggestionIndicatorController {
         }
     }
 
+    private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
+        xcode = app
+        guard windowChangeObservationTask == nil else { return }
+        windowChangeObservationTask = Task {
+            let notifications = AXNotificationStream(
+                app: app,
+                notificationNames:
+                kAXMovedNotification,
+                kAXResizedNotification,
+                kAXMainWindowChangedNotification,
+                kAXFocusedWindowChangedNotification,
+                kAXFocusedUIElementChangedNotification,
+                kAXSelectedTextChangedNotification
+            )
+            for await _ in notifications {
+                try Task.checkCancellation()
+                updateIndicatorLocation()
+            }
+        }
+    }
+
     private func updateIndicatorVisibility() async {
         let isVisible = await {
             let isOn = UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
             let isXcodeActive = await Environment.isXcodeActive()
-            return isOn && isXcodeActive && isObserving
+            return isOn && isXcodeActive
         }()
 
-        await { @MainActor in
-            guard window.isVisible != isVisible else { return }
-            if isVisible {
-                if displayLinkTask == nil {
-                    displayLinkTask = Task {
-                        for await _ in DisplayLink.createStream() {
-                            self.updateIndicatorLocation()
-                        }
-                    }
-                }
-            } else {
-                displayLinkTask?.cancel()
-                displayLinkTask = nil
-            }
-            window.setIsVisible(isVisible)
-        }()
+        guard window.isVisible != isVisible else { return }
+        window.setIsVisible(isVisible)
     }
 
     private func updateIndicatorLocation() {
-        Task { @MainActor in
-            if !window.isVisible {
-                return
-            }
+        if !window.isVisible {
+            return
+        }
 
-            if let activeXcode = NSRunningApplication
-                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-                .first(where: \.isActive)
+        if let activeXcode = NSRunningApplication
+            .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
+            .first(where: \.isActive)
+        {
+            let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+            if let focusElement: AXUIElement = try? application
+                .copyValue(key: kAXFocusedUIElementAttribute),
+                let focusElementType: String = try? focusElement
+                .copyValue(key: kAXDescriptionAttribute),
+                focusElementType == "Source Editor",
+                let selectedRange: AXValue = try? focusElement
+                .copyValue(key: kAXSelectedTextRangeAttribute),
+                let rect: AXValue = try? focusElement.copyParameterizedValue(
+                    key: kAXBoundsForRangeParameterizedAttribute,
+                    parameters: selectedRange
+                )
             {
-                let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                if let focusElement: AXUIElement = try? application
-                    .copyValue(key: kAXFocusedUIElementAttribute),
-                    let selectedRange: AXValue = try? focusElement
-                    .copyValue(key: kAXSelectedTextRangeAttribute),
-                    let rect: AXValue = try? focusElement.copyParameterizedValue(
-                        key: kAXBoundsForRangeParameterizedAttribute,
-                        parameters: selectedRange
+                var frame: CGRect = .zero
+                let found = AXValueGetValue(rect, .cgRect, &frame)
+                let screen = NSScreen.screens.first
+                if found, let screen {
+                    frame.origin = .init(
+                        x: frame.maxX + 2,
+                        y: screen.frame.height - frame.minY - 4
                     )
-                {
-                    var frame: CGRect = .zero
-                    let found = AXValueGetValue(rect, .cgRect, &frame)
-                    let screen = NSScreen.screens.first
-                    if found, let screen {
-                        frame.origin = .init(
-                            x: frame.maxX + 2,
-                            y: screen.frame.height - frame.minY - 4
-                        )
-                        frame.size = .init(width: 10, height: 10)
-                        window.alphaValue = 1
-                        window.setFrame(frame, display: false, animate: true)
-                        return
-                    }
+                    frame.size = .init(width: 10, height: 10)
+                    window.alphaValue = 1
+                    window.setFrame(frame, display: false)
+                    return
                 }
             }
-
-            window.alphaValue = 0
         }
+
+        window.alphaValue = 0
     }
 
     func triggerPrefetchAnimation() {
-        Task { @MainActor in
-            viewModel.prefetch()
-        }
+        viewModel.prefetch()
+    }
+
+    func endPrefetchAnimation() {
+        viewModel.endPrefetch()
     }
 }
