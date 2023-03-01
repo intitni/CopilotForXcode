@@ -2,7 +2,7 @@
 
 ![ScreenRecording](/ScreenRecording.gif)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments.
+Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
 
 Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
 
@@ -69,6 +69,8 @@ Then set it up with the following steps:
 
 The first time the commands are run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
 
+If you encounter an alert requesting permission that you have previously granted, please remove the permission from the list and add it again to re-grant the necessary permissions.
+
 Or you can grant them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
 - Accessibility API: Click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list.
 - Input Monitoring (If you need real-time suggestions): Click `Input Monitoring` and drag `CopilotForXcodeExtensionService.app` to the list.
@@ -89,7 +91,7 @@ brew upgrade --cask copilot-for-xcode
 
 Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
-If you are upgrading from a version lower than 0.7.0, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you.
+If you are upgrading from a version lower than 0.8.0, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you.
 
 If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
 
@@ -108,13 +110,15 @@ If you find that some of the features are no longer working, please first try re
 
 **About real-time suggestions**
 
-The on/off state is persisted, so be sure to turn it off manually when you no longer want it. When real-time suggestion is turned on, a breathing dot will show up next to the mouse pointer or the editing cursor. 
+The on/off state is persisted, so be sure to turn it off manually when you no longer want it. When real-time suggestion is turned on, a dot will show up next to the text cursor. 
 
-Whenever you stop typing for a few seconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
+Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
 
-When a fetch occurs, the dot will have a slightly different animation. If you don't see it, your permissions may not be set correctly.
+When a fetch occurs, the dot will play an animation. If you don't see it, your permissions may not be set correctly.
 
 The implementation won't feel as smooth as that of VSCode. The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it. Hope that next year, Apple can spend some time on Xcode Extensions.  
+
+It will be a better experience if you use the "Floating Widget" mode with real-time suggestions turned on.
 
 ## Key Bindings
 
@@ -132,7 +136,7 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
-## Prevent Suggestions Being Committed
+## Prevent Suggestions Being Committed (in comment mode)
 
 Since the suggestions are presented as comments, they are in your code. If you are not careful enough, they can be committed to your git repo. To avoid that, I would recommend adding a pre-commit git hook to prevent this from happening.
 
@@ -150,7 +154,7 @@ fi
 
 - The first run of the extension will be slow. Be patient.
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
-- The suggestions are presented as C-style comments, they may break your code if you are editing a JSON file or something.
+- The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
 
 ## FAQ
 
