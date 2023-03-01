@@ -32,20 +32,59 @@ struct WidgetView: View {
                 }
             }
             .overlay {
-                let lineWidth: Double = 4
-                
-                Circle()
-                    .stroke(
-                        panelViewModel.suggestion.isEmpty
-                            ? Color(nsColor: .darkGray)
-                            : Color.accentColor,
-                        style: .init(lineWidth: lineWidth)
-                    )
-                    .padding(lineWidth / 2)
+                let minimumLineWidth: Double = 4
+                let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
+                let scale = max(processingProgress * 1, 0.0001)
+
+                ZStack {
+                    Circle()
+                        .stroke(
+                            Color(nsColor: .darkGray),
+                            style: .init(lineWidth: minimumLineWidth)
+                        )
+                        .padding(2)
+
+                    #warning("TODO: Tweak the animation")
+                    // how do I stop the repeatForever animation without removing the view?
+                    // I tried many solutions found on stackoverflow but non of them works.
+                    if viewModel.isProcessing {
+                        Circle()
+                            .stroke(
+                                Color.accentColor,
+                                style: .init(lineWidth: lineWidth)
+                            )
+                            .padding(2)
+                            .scaleEffect(x: scale, y: scale)
+                            .opacity(
+                                !panelViewModel.suggestion.isEmpty || viewModel.isProcessing ? 1 : 0
+                            )
+                            .animation(
+                                .easeInOut(duration: 1).repeatForever(autoreverses: true),
+                                value: processingProgress
+                            )
+                    } else {
+                        Circle()
+                            .stroke(
+                                Color.accentColor,
+                                style: .init(lineWidth: lineWidth)
+                            )
+                            .padding(2)
+                            .scaleEffect(x: scale, y: scale)
+                            .opacity(
+                                !panelViewModel.suggestion.isEmpty || viewModel.isProcessing ? 1 : 0
+                            )
+                            .animation(.easeInOut(duration: 1), value: processingProgress)
+                    }
+                }
             }
-            .overlay {
-                if viewModel.isProcessing {
-                    animationgRing()
+            .onChange(of: viewModel.isProcessing) { isProcessing in
+                Task {
+                    await Task.yield()
+                    if isProcessing {
+                        processingProgress = 1 - processingProgress
+                    } else {
+                        processingProgress = panelViewModel.suggestion.isEmpty ? 0 : 1
+                    }
                 }
             }
             .onHover { yes in
@@ -53,31 +92,6 @@ struct WidgetView: View {
                     isHovering = yes
                 }
             }
-    }
-    
-    @ViewBuilder
-    func animationgRing() -> some View {
-        let lineWidth = processingProgress * 5 + 4
-        
-        Circle()
-            .stroke(
-                Color.accentColor,
-                style: .init(lineWidth: lineWidth)
-            )
-            .onAppear {
-                Task {
-                    await Task.yield()
-                    withAnimation(
-                        .easeInOut(duration: 1)
-                            .repeatForever(
-                                autoreverses: true
-                            )
-                    ) {
-                        processingProgress = 1
-                    }
-                }
-            }
-            .padding(lineWidth / 2)
     }
 }
 
@@ -108,7 +122,7 @@ struct WidgetView_Preview: PreviewProvider {
                 isHovering: false
             )
         }
-        .frame(width: 40)
+        .frame(width: 30)
         .background(Color.black)
     }
 }
