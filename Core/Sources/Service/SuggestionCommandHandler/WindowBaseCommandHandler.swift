@@ -158,6 +158,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHanlder {
     }
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        try await presentSuggestions(editor: editor)
+        await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+            .triggerPrefetchAnimation()
+        defer {
+            Task {
+                await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+                    .endPrefetchAnimation()
+            }
+        }
+        return try await presentSuggestions(editor: editor)
     }
 }
