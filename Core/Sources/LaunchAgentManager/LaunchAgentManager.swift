@@ -10,7 +10,7 @@ public struct LaunchAgentManager {
     }
 
     var launchAgentPath: String {
-        launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).plist").path
+        launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).1.plist").path
     }
 
     public init(serviceIdentifier: String, executablePath: String) {
@@ -130,3 +130,4 @@ private func launchctl(_ args: String...) async throws {
 struct E: Error, LocalizedError {
     var errorDescription: String?
 }
+
