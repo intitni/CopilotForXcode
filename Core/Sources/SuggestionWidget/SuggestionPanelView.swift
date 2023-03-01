@@ -44,6 +44,10 @@ struct SuggestionPanelView: View {
             .fixedSize(horizontal: false, vertical: true)
             .background(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
+            )
 
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -56,10 +60,6 @@ struct SuggestionPanelView: View {
                 .frame(minHeight: 0, maxHeight: .infinity)
                 .allowsHitTesting(false)
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
-        )
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
             guard !viewModel.suggestion.isEmpty else { return 0 }
