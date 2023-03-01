@@ -132,13 +132,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
 
         Task {
-            if isRealtimeSuggestionRelatedCommand {
-                await RealtimeSuggestionController.shared
-                    .cancelInFlightTasks(excluding: task)
-            } else {
-                await RealtimeSuggestionController.shared
-                    .cancelInFlightTasksAndIgnoreTriggerForAWhile(excluding: task)
-            }
+            await RealtimeSuggestionController.shared.cancelInFlightTasks(excluding: task)
         }
         return task
     }
@@ -229,7 +223,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
             return
         }
         Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasksAndIgnoreTriggerForAWhile()
+            await RealtimeSuggestionController.shared.cancelInFlightTasks()
             UserDefaults.shared.set(
                 !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle),
                 forKey: SettingsKey.realtimeSuggestionToggle

@@ -1,13 +1,17 @@
 import ActiveApplicationMonitor
 import AppKit
+import AsyncAlgorithms
+import AXNotificationStream
 import CGEventObserver
 import Environment
 import Foundation
 import os.log
+import QuartzCore
 import XPCShared
 
-public actor RealtimeSuggestionController {
-    public static let shared = RealtimeSuggestionController()
+@ServiceActor
+public class RealtimeSuggestionController {
+    public nonisolated static let shared = RealtimeSuggestionController()
     var eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [
         .keyUp,
         .keyDown,
@@ -16,38 +20,52 @@ public actor RealtimeSuggestionController {
     ])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
-    private var ignoreUntil = Date(timeIntervalSince1970: 0)
-    var realtimeSuggestionIndicatorController: RealtimeSuggestionIndicatorController {
-        GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
-    }
+    private var windowChangeObservationTask: Task<Void, Error>?
+    private var activeApplicationMonitorTask: Task<Void, Error>?
+    private var editorObservationTask: Task<Void, Error>?
+    private var focusedUIElement: AXUIElement?
 
-    private init() {
-        Task {
-            for await _ in ActiveApplicationMonitor.createStream() {
+    private nonisolated init() {
+        Task { [weak self] in
+
+            if let app = ActiveApplicationMonitor.activeXcode {
+                await self?.handleXcodeChanged(app)
+                await startHIDObservation(by: 1)
+            }
+            var previousApp = ActiveApplicationMonitor.activeXcode
+            for await app in ActiveApplicationMonitor.createStream() {
+                guard let self else { return }
                 try Task.checkCancellation()
+                defer { previousApp = app }
+
+                if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
+                    await self.handleXcodeChanged(app)
+                }
+
+                #warning("TOOD: Is it possible to get rid of hid event observation with only AXObserver?")
                 if ActiveApplicationMonitor.activeXcode != nil {
-                    await start(by: 1)
+                    await startHIDObservation(by: 1)
                 } else {
-                    await stop(by: 1)
+                    await stopHIDObservation(by: 1)
                 }
             }
         }
     }
 
-    private func start(by listener: AnyHashable) {
+    private func startHIDObservation(by listener: AnyHashable) {
         os_log(.info, "Add auto trigger listener: %@.", listener as CVarArg)
 
         if task == nil {
             task = Task { [stream = eventObserver.stream] in
                 for await event in stream {
-                    await self.handleKeyboardEvent(event: event)
+                    await self.handleHIDEvent(event: event)
                 }
             }
         }
         eventObserver.activateIfPossible()
     }
 
-    private func stop(by listener: AnyHashable) {
+    private func stopHIDObservation(by listener: AnyHashable) {
         os_log(.info, "Remove auto trigger listener: %@.", listener as CVarArg)
         os_log(.info, "Auto trigger is stopped.")
         task?.cancel()
@@ -55,49 +73,89 @@ public actor RealtimeSuggestionController {
         eventObserver.deactivate()
     }
 
-    func handleKeyboardEvent(event: CGEvent) async {
-        await cancelInFlightTasks()
+    private func handleXcodeChanged(_ app: NSRunningApplication) {
+        windowChangeObservationTask?.cancel()
+        windowChangeObservationTask = nil
+        observeXcodeWindowChangeIfNeeded(app)
+    }
 
-        if Task.isCancelled { return }
+    private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
+        guard windowChangeObservationTask == nil else { return }
+        handleFocusElementChange()
+        windowChangeObservationTask = Task { [weak self] in
+            let notifications = AXNotificationStream(
+                app: app,
+                notificationNames: kAXFocusedUIElementChangedNotification,
+                kAXMainWindowChangedNotification
+            )
+            for await _ in notifications {
+                guard let self else { return }
+                try Task.checkCancellation()
+                self.handleFocusElementChange()
+            }
+        }
+    }
+
+    private func handleFocusElementChange() {
+        editorObservationTask?.cancel()
+        editorObservationTask = nil
+        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return }
+        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+        guard let focusElement = application.focusedElement else { return }
+        let focusElementType = focusElement.description
+        guard focusElementType == "Source Editor" else { return }
+
+        editorObservationTask = Task { [weak self] in
+            let notificationsFromEditor = AXNotificationStream(
+                app: activeXcode,
+                element: focusElement,
+                notificationNames: kAXValueChangedNotification
+            )
+
+            for await notification in notificationsFromEditor {
+                guard let self else { return }
+                try Task.checkCancellation()
+                await cancelInFlightTasks()
+
+                switch notification.name {
+                case kAXValueChangedNotification:
+                    self.triggerPrefetchDebounced()
+                default:
+                    continue
+                }
+            }
+        }
+    }
+
+    func handleHIDEvent(event: CGEvent) async {
         guard await Environment.isXcodeActive() else { return }
+
+        let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
 
         let escape = 0x35
         let arrowKeys = [0x7B, 0x7C, 0x7D, 0x7E]
-        let isEditing = await Environment.frontmostXcodeWindowIsEditor()
 
-        // if Xcode suggestion panel is presenting, and we are not trying to close it
-        // ignore this event. (except present in window mode)
-        if !isEditing, event.getIntegerValueField(.keyboardEventKeycode) != escape {
-            if UserDefaults.shared.integer(forKey: SettingsKey.suggestionPresentationMode) != 1 {
-                return
-            }
+        // Mouse clicks should cancel in-flight tasks.
+        if [CGEventType.rightMouseDown, .leftMouseDown].contains(event.type) {
+            await cancelInFlightTasks()
+            return
         }
 
-        let shouldTrigger = {
-            let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
-            // closing auto-complete panel
-            if isEditing, code == escape {
-                return true
-            }
+        // Arror keys should cancel in-flight tasks.
+        if arrowKeys.contains(keycode) {
+            await cancelInFlightTasks()
+            return
+        }
 
-            // escape and arrows to cancel
+        // Escape should cancel in-flight tasks.
+        // Except that when the completion panel is presented, it should trigger prefetch instead.
+        if keycode == escape {
+            await cancelInFlightTasks()
+            if isCompletionPanelPresenting() { triggerPrefetchDebounced(force: true) }
+        }
+    }
 
-            if code == escape {
-                return false
-            }
-
-            if arrowKeys.contains(code) {
-                return false
-            }
-
-            // normally typing
-
-            return event.type == .keyUp
-        }()
-
-        guard shouldTrigger else { return }
-        guard Date().timeIntervalSince(ignoreUntil) > 0 else { return }
-
+    func triggerPrefetchDebounced(force: Bool = false) {
         inflightPrefetchTask = Task { @ServiceActor in
             try? await Task.sleep(nanoseconds: UInt64((
                 UserDefaults.shared
@@ -112,9 +170,14 @@ public actor RealtimeSuggestionController {
 
             os_log(.info, "Prefetch suggestions.")
 
-            await realtimeSuggestionIndicatorController.triggerPrefetchAnimation()
+            if !force, isCompletionPanelPresenting() {
+                os_log(.info, "Completion panel is open, blocked.")
+                return
+            }
+
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
+
             } catch {
                 os_log(.info, "%@", error.localizedDescription)
             }
@@ -126,7 +189,7 @@ public actor RealtimeSuggestionController {
 
         // cancel in-flight tasks
         await withTaskGroup(of: Void.self) { group in
-            for (_, workspace) in await workspaces {
+            for (_, workspace) in workspaces {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }
@@ -146,10 +209,80 @@ public actor RealtimeSuggestionController {
         }
     }
 
-    #warning("TODO: Find a better way to prevent that from happening!")
-    /// Prevent prefetch to be triggered by commands. Quick and dirty.
-    func cancelInFlightTasksAndIgnoreTriggerForAWhile(excluding: Task<Void, Never>? = nil) async {
-        ignoreUntil = Date(timeIntervalSinceNow: 5)
-        await cancelInFlightTasks(excluding: excluding)
+    func isCompletionPanelPresenting() -> Bool {
+        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
+        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
+        if let completionPanel = application.child(identifier: "_XC_COMPLETION_TABLE_"),
+           completionPanel.window != nil
+        {
+            return true
+        }
+        return false
+    }
+}
+
+extension AXUIElement {
+    var identifier: String {
+        (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
+    }
+
+    var description: String {
+        (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
+    }
+
+    var focusedElement: AXUIElement? {
+        try? copyValue(key: kAXFocusedUIElementAttribute)
+    }
+
+    var sharedFocusElements: [AXUIElement] {
+        (try? copyValue(key: kAXChildrenAttribute)) ?? []
+    }
+
+    var window: AXUIElement? {
+        try? copyValue(key: kAXWindowAttribute)
+    }
+
+    var topLevelElement: AXUIElement? {
+        try? copyValue(key: kAXTopLevelUIElementAttribute)
+    }
+
+    var rows: [AXUIElement] {
+        (try? copyValue(key: kAXRowsAttribute)) ?? []
+    }
+
+    var parent: AXUIElement? {
+        try? copyValue(key: kAXParentAttribute)
+    }
+
+    var children: [AXUIElement] {
+        (try? copyValue(key: kAXChildrenAttribute)) ?? []
+    }
+
+    var visibleChildren: [AXUIElement] {
+        (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
+    }
+
+    var isFocused: Bool {
+        (try? copyValue(key: kAXFocusedAttribute)) ?? false
+    }
+
+    var isEnabled: Bool {
+        (try? copyValue(key: kAXEnabledAttribute)) ?? false
+    }
+
+    func child(identifier: String) -> AXUIElement? {
+        for child in children {
+            if child.identifier == identifier { return child }
+            if let target = child.child(identifier: identifier) { return target }
+        }
+        return nil
+    }
+
+    func visibleChild(identifier: String) -> AXUIElement? {
+        for child in visibleChildren {
+            if child.identifier == identifier { return child }
+            if let target = child.visibleChild(identifier: identifier) { return target }
+        }
+        return nil
     }
 }

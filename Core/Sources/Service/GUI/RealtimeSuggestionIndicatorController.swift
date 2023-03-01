@@ -167,7 +167,7 @@ final class RealtimeSuggestionIndicatorController {
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
         xcode = app
         guard windowChangeObservationTask == nil else { return }
-        windowChangeObservationTask = Task {
+        windowChangeObservationTask = Task { [weak self] in
             let notifications = AXNotificationStream(
                 app: app,
                 notificationNames:
@@ -177,14 +177,15 @@ final class RealtimeSuggestionIndicatorController {
                 kAXFocusedUIElementChangedNotification
             )
             for await notification in notifications {
+                guard let self else { return }
                 try Task.checkCancellation()
-                updateIndicatorLocation()
+                self.updateIndicatorLocation()
 
                 switch notification.name {
                 case kAXFocusedUIElementChangedNotification, kAXFocusedWindowChangedNotification:
-                    editorObservationTask?.cancel()
-                    editorObservationTask = nil
-                    observeEditorChangeIfNeeded()
+                    self.editorObservationTask?.cancel()
+                    self.editorObservationTask = nil
+                    self.observeEditorChangeIfNeeded()
                 default:
                     continue
                 }
@@ -226,8 +227,9 @@ final class RealtimeSuggestionIndicatorController {
             )
             
             for await _ in merge(notificationsFromEditor, notificationsFromScrollBar) {
+                guard let self else { return }
                 try Task.checkCancellation()
-                self?.updateIndicatorLocation()
+                self.updateIndicatorLocation()
             }
         }
     }
