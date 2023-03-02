@@ -41,8 +41,10 @@ public class RealtimeSuggestionController {
                 if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
                     await self.handleXcodeChanged(app)
                 }
-
-                #warning("TOOD: Is it possible to get rid of hid event observation with only AXObserver?")
+                
+                #warning(
+                    "TOOD: Is it possible to get rid of hid event observation with only AXObserver?"
+                )
                 if ActiveApplicationMonitor.activeXcode != nil {
                     await startHIDObservation(by: 1)
                 } else {
@@ -67,7 +69,6 @@ public class RealtimeSuggestionController {
 
     private func stopHIDObservation(by listener: AnyHashable) {
         os_log(.info, "Remove auto trigger listener: %@.", listener as CVarArg)
-        os_log(.info, "Auto trigger is stopped.")
         task?.cancel()
         task = nil
         eventObserver.deactivate()
@@ -97,13 +98,15 @@ public class RealtimeSuggestionController {
     }
 
     private func handleFocusElementChange() {
-        editorObservationTask?.cancel()
-        editorObservationTask = nil
         guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
         guard focusElementType == "Source Editor" else { return }
+        focusedUIElement = focusElement
+
+        editorObservationTask?.cancel()
+        editorObservationTask = nil
 
         editorObservationTask = Task { [weak self] in
             let notificationsFromEditor = AXNotificationStream(
@@ -130,18 +133,17 @@ public class RealtimeSuggestionController {
     func handleHIDEvent(event: CGEvent) async {
         guard await Environment.isXcodeActive() else { return }
 
-        let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
-
-        let escape = 0x35
-        let arrowKeys = [0x7B, 0x7C, 0x7D, 0x7E]
-
         // Mouse clicks should cancel in-flight tasks.
         if [CGEventType.rightMouseDown, .leftMouseDown].contains(event.type) {
             await cancelInFlightTasks()
             return
         }
 
-        // Arror keys should cancel in-flight tasks.
+        let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
+        let escape = 0x35
+        let arrowKeys = [0x7B, 0x7C, 0x7D, 0x7E]
+
+        // Arrow keys should cancel in-flight tasks.
         if arrowKeys.contains(keycode) {
             await cancelInFlightTasks()
             return
@@ -150,8 +152,20 @@ public class RealtimeSuggestionController {
         // Escape should cancel in-flight tasks.
         // Except that when the completion panel is presented, it should trigger prefetch instead.
         if keycode == escape {
-            await cancelInFlightTasks()
-            if isCompletionPanelPresenting() { triggerPrefetchDebounced(force: true) }
+            if event.type == .keyDown {
+                await cancelInFlightTasks()
+            } else {
+                let task = Task {
+                    #warning(
+                        "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
+                    )
+                    if await Environment.frontmostXcodeWindowIsEditor() {
+                        if Task.isCancelled { return }
+                        self.triggerPrefetchDebounced(force: true)
+                    }
+                }
+                inflightRealtimeSuggestionsTasks.insert(task)
+            }
         }
     }
 
@@ -177,7 +191,6 @@ public class RealtimeSuggestionController {
 
             do {
                 try await Environment.triggerAction("Prefetch Suggestions")
-
             } catch {
                 os_log(.info, "%@", error.localizedDescription)
             }
@@ -209,15 +222,13 @@ public class RealtimeSuggestionController {
         }
     }
 
+    /// This method will still return true if the completion panel is hidden by esc.
+    /// Looks like the Xcode will keep the panel around until content is changed,
+    /// not sure how to observe that it's hidden.
     func isCompletionPanelPresenting() -> Bool {
         guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
-        if let completionPanel = application.child(identifier: "_XC_COMPLETION_TABLE_"),
-           completionPanel.window != nil
-        {
-            return true
-        }
-        return false
+        return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
     }
 }
 
@@ -240,6 +251,10 @@ extension AXUIElement {
 
     var window: AXUIElement? {
         try? copyValue(key: kAXWindowAttribute)
+    }
+
+    var focusedWindow: AXUIElement? {
+        try? copyValue(key: kAXFocusedWindowAttribute)
     }
 
     var topLevelElement: AXUIElement? {
