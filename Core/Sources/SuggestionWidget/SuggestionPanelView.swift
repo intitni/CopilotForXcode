@@ -9,18 +9,31 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var suggestionCount: Int
     @Published var currentSuggestionIndex: Int
 
+    var onAcceptButtonTapped: (() -> Void)?
+    var onRejectButtonTapped: (() -> Void)?
+    var onPreviousButtonTapped: (() -> Void)?
+    var onNextButtonTapped: (() -> Void)?
+
     public init(
         startLineIndex: Int = 0,
         suggestion: [String] = [],
         isPanelDisplayed: Bool = false,
         suggestionCount: Int = 0,
-        currentSuggestionIndex: Int = 0
+        currentSuggestionIndex: Int = 0,
+        onAcceptButtonTapped: (() -> Void)? = nil,
+        onRejectButtonTapped: (() -> Void)? = nil,
+        onPreviousButtonTapped: (() -> Void)? = nil,
+        onNextButtonTapped: (() -> Void)? = nil
     ) {
         self.startLineIndex = startLineIndex
         self.suggestion = suggestion
         self.isPanelDisplayed = isPanelDisplayed
         self.suggestionCount = suggestionCount
         self.currentSuggestionIndex = currentSuggestionIndex
+        self.onAcceptButtonTapped = onAcceptButtonTapped
+        self.onRejectButtonTapped = onRejectButtonTapped
+        self.onPreviousButtonTapped = onPreviousButtonTapped
+        self.onNextButtonTapped = onNextButtonTapped
     }
 }
 
@@ -107,7 +120,7 @@ struct CodeBlock: View {
         }))
     }
 }
-        
+
 struct ToolBar: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
 
@@ -115,27 +128,39 @@ struct ToolBar: View {
         HStack {
             Button(action: {
                 Task {
+                    if let block = viewModel.onPreviousButtonTapped {
+                        block()
+                        return
+                    }
                     try await Environment.triggerAction("Previous Suggestion")
                 }
             }) {
                 Image(systemName: "chevron.left")
             }.buttonStyle(.plain)
-            
+
             Text("\(viewModel.currentSuggestionIndex + 1) / \(viewModel.suggestionCount)")
                 .monospacedDigit()
-            
+
             Button(action: {
                 Task {
+                    if let block = viewModel.onNextButtonTapped {
+                        block()
+                        return
+                    }
                     try await Environment.triggerAction("Next Suggestion")
                 }
             }) {
-                Image(systemName: "chevron.right")     
+                Image(systemName: "chevron.right")
             }.buttonStyle(.plain)
 
             Spacer()
 
             Button(action: {
                 Task {
+                    if let block = viewModel.onRejectButtonTapped {
+                        block()
+                        return
+                    }
                     try await Environment.triggerAction("Reject Suggestion")
                 }
             }) {
@@ -144,6 +169,10 @@ struct ToolBar: View {
 
             Button(action: {
                 Task {
+                    if let block = viewModel.onAcceptButtonTapped {
+                        block()
+                        return
+                    }
                     try await Environment.triggerAction("Accept Suggestion")
                 }
             }) {

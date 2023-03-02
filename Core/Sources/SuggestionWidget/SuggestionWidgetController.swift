@@ -70,6 +70,26 @@ public final class SuggestionWidgetController {
     private var xcode: NSRunningApplication?
     private var suggestionForFiles: [URL: Suggestion] = [:]
 
+    public var onAcceptButtonTapped: (() -> Void)? {
+        get { suggestionPanelViewModel.onAcceptButtonTapped }
+        set { suggestionPanelViewModel.onAcceptButtonTapped = newValue }
+    }
+
+    public var onRejectButtonTapped: (() -> Void)? {
+        get { suggestionPanelViewModel.onRejectButtonTapped }
+        set { suggestionPanelViewModel.onRejectButtonTapped = newValue }
+    }
+
+    public var onPreviousButtonTapped: (() -> Void)? {
+        get { suggestionPanelViewModel.onPreviousButtonTapped }
+        set { suggestionPanelViewModel.onPreviousButtonTapped = newValue }
+    }
+
+    public var onNextButtonTapped: (() -> Void)? {
+        get { suggestionPanelViewModel.onNextButtonTapped }
+        set { suggestionPanelViewModel.onNextButtonTapped = newValue }
+    }
+
     enum Suggestion {
         case code([String], startLineIndex: Int, currentSuggestionIndex: Int, suggestionCount: Int)
     }
