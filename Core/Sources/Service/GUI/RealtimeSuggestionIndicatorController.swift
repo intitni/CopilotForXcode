@@ -48,6 +48,7 @@ final class RealtimeSuggestionIndicatorController {
         var body: some View {
             Circle()
                 .fill(Color.accentColor.opacity(opacityA))
+                .opacity(0.7)
                 .scaleEffect(.init(width: scaleA, height: scaleA))
                 .frame(width: 8, height: 8)
                 .overlay {

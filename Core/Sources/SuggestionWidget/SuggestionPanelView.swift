@@ -36,17 +36,22 @@ struct SuggestionPanelView: View {
                     ScrollView {
                         CodeBlock(viewModel: viewModel)
                     }
+                    .background(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
 
                     ToolBar(viewModel: viewModel)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
             .fixedSize(horizontal: false, vertical: true)
-            .background(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
+                    .padding(2)
             )
 
             .onHover { yes in
@@ -55,6 +60,7 @@ struct SuggestionPanelView: View {
                 }
             }
             .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.isEmpty)
+            .preferredColorScheme(.dark)
 
             Spacer()
                 .frame(minHeight: 0, maxHeight: .infinity)
@@ -101,16 +107,40 @@ struct CodeBlock: View {
         }))
     }
 }
-
+        
 struct ToolBar: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
 
     var body: some View {
         HStack {
-            Text("\(viewModel.currentSuggestionIndex + 1)/\(viewModel.suggestionCount)")
+            Button(action: {
+                Task {
+                    try await Environment.triggerAction("Previous Suggestion")
+                }
+            }) {
+                Image(systemName: "chevron.left")
+            }.buttonStyle(.plain)
+            
+            Text("\(viewModel.currentSuggestionIndex + 1) / \(viewModel.suggestionCount)")
                 .monospacedDigit()
+            
+            Button(action: {
+                Task {
+                    try await Environment.triggerAction("Next Suggestion")
+                }
+            }) {
+                Image(systemName: "chevron.right")     
+            }.buttonStyle(.plain)
 
             Spacer()
+
+            Button(action: {
+                Task {
+                    try await Environment.triggerAction("Reject Suggestion")
+                }
+            }) {
+                Text("Reject")
+            }.buttonStyle(CommandButtonStyle(color: .gray))
 
             Button(action: {
                 Task {
@@ -118,18 +148,11 @@ struct ToolBar: View {
                 }
             }) {
                 Text("Accept")
-            }.buttonStyle(CommandButtonStyle(color: .green))
-            Button(action: {
-                Task {
-                    try await Environment.triggerAction("Reject Suggestion")
-                }
-            }) {
-                Text("Reject")
-            }.buttonStyle(CommandButtonStyle(color: .red))
+            }.buttonStyle(CommandButtonStyle(color: .indigo))
         }
         .padding()
-        .foregroundColor(.white)
-        .background(Color.white.opacity(0.1))
+        .foregroundColor(.secondary)
+        .background(.thickMaterial)
     }
 }
 
@@ -171,5 +194,12 @@ struct SuggestionPanelView_Preview: PreviewProvider {
             isPanelDisplayed: true
         ))
         .frame(width: 450, height: 400)
+        .background {
+            HStack {
+                Color.red
+                Color.green
+                Color.blue
+            }
+        }
     }
 }
