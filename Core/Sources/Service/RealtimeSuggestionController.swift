@@ -184,7 +184,7 @@ public class RealtimeSuggestionController {
 
             os_log(.info, "Prefetch suggestions.")
 
-            if !force, isCompletionPanelPresenting() {
+            if !force, await !Environment.frontmostXcodeWindowIsEditor() {
                 os_log(.info, "Completion panel is open, blocked.")
                 return
             }
