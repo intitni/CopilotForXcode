@@ -5,7 +5,7 @@ import SuggestionInjector
 import XPCShared
 
 @ServiceActor
-struct CommentBaseCommandHandler: SuggestionCommandHanlder {
+struct CommentBaseCommandHandler: SuggestionCommandHandler {
     nonisolated init() {}
 
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {

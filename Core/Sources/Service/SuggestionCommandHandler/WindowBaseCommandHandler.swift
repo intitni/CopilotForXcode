@@ -6,7 +6,7 @@ import SuggestionInjector
 import XPCShared
 
 @ServiceActor
-struct WindowBaseCommandHandler: SuggestionCommandHanlder {
+struct WindowBaseCommandHandler: SuggestionCommandHandler {
     nonisolated init() {}
 
     let presenter = PresentInWindowSuggestionPresenter()

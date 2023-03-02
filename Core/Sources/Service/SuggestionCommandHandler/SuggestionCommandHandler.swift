@@ -1,7 +1,7 @@
 import CopilotModel
 import XPCShared
 
-protocol SuggestionCommandHanlder {
+protocol SuggestionCommandHandler {
     @ServiceActor
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor

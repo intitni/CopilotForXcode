@@ -101,7 +101,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         isRealtimeSuggestionRelatedCommand: Bool = false,
         withReply reply: @escaping (Data?, Error?) -> Void,
         getUpdatedContent: @escaping @ServiceActor (
-            SuggestionCommandHanlder,
+            SuggestionCommandHandler,
             EditorContent
         ) async throws -> UpdatedContent?
     ) -> Task<Void, Never> {
@@ -112,7 +112,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                     rawValue: UserDefaults.shared
                         .integer(forKey: SettingsKey.suggestionPresentationMode)
                 ) ?? .comment
-                let handler: SuggestionCommandHanlder = {
+                let handler: SuggestionCommandHandler = {
                     switch mode {
                     case .comment:
                         return CommentBaseCommandHandler()
@@ -120,10 +120,12 @@ public class XPCService: NSObject, XPCServiceProtocol {
                         return WindowBaseCommandHandler()
                     }
                 }()
+                try Task.checkCancellation()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
                     reply(nil, nil)
                     return
                 }
+                try Task.checkCancellation()
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
                 os_log(.error, "%@", "\(file):\(line) \(error.localizedDescription)")
