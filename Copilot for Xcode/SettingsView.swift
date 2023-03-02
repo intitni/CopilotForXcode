@@ -2,7 +2,7 @@ import LaunchAgentManager
 import SwiftUI
 import XPCShared
 
-struct SettingsView: View {
+final class Settings: ObservableObject {
     @AppStorage(SettingsKey.quitXPCServiceOnXcodeAndAppQuit, store: .shared)
     var quitXPCServiceOnXcodeAndAppQuit: Bool = false
     @AppStorage(SettingsKey.realtimeSuggestionToggle, store: .shared)
@@ -11,18 +11,24 @@ struct SettingsView: View {
     var realtimeSuggestionDebounce: Double = 0.7
     @AppStorage(SettingsKey.suggestionPresentationMode, store: .shared)
     var suggestionPresentationModeRawValue: Int = 0
+    init() {}
+}
+
+#warning("MUSTDO: Settings are not synced.")
+struct SettingsView: View {
+    @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double ?? 0.7
-
+    
     var body: some View {
         Section {
             Form {
-                Toggle(isOn: $quitXPCServiceOnXcodeAndAppQuit) {
+                Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
                     Text("Quit service when Xcode and host app are terminated")
                 }
                 .toggleStyle(.switch)
 
-                Picker(selection: $suggestionPresentationModeRawValue) {
+                Picker(selection: $settings.suggestionPresentationModeRawValue) {
                     ForEach(PresentationMode.allCases, id: \.rawValue) {
                         switch $0 {
                         case .comment:
@@ -34,8 +40,8 @@ struct SettingsView: View {
                 } label: {
                     Text("Present suggestions in")
                 }
-                
-                Toggle(isOn: $realtimeSuggestionToggle) {
+
+                Toggle(isOn: $settings.realtimeSuggestionToggle) {
                     Text("Real-time suggestion")
                 }
                 .toggleStyle(.switch)
@@ -44,7 +50,7 @@ struct SettingsView: View {
                     Slider(value: $editingRealtimeSuggestionDebounce, in: 0...2, step: 0.1) {
                         Text("Real-time suggestion fetch debounce")
                     } onEditingChanged: { _ in
-                        realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
+                        settings.realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
                     }
 
                     Text(

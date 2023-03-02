@@ -1,4 +1,5 @@
 import SwiftUI
+import XPCShared
 
 @main
 struct CopilotForXcodeApp: App {
@@ -7,6 +8,9 @@ struct CopilotForXcodeApp: App {
             ContentView()
                 .frame(minWidth: 500, minHeight: 700)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    UserDefaults.setupDefaultSettings()
+                }
         }
         .windowStyle(.hiddenTitleBar)
     }

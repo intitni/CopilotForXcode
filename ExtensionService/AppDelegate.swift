@@ -23,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = GraphicalUserInterfaceController.shared
         // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
-        setupDefaultSettings()
+        UserDefaults.setupDefaultSettings()
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
@@ -177,18 +177,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         listener.delegate = delegate
         listener.resume()
         return (listener, delegate)
-    }
-    
-    func setupDefaultSettings() {
-        func setDefaultValue<T>(_ value: T, forKey: String) {
-            let userDefaults = UserDefaults.shared
-            if userDefaults.value(forKey: forKey) == nil {
-                userDefaults.set(value, forKey: forKey)
-            }
-        }
-        setDefaultValue(true, forKey: SettingsKey.quitXPCServiceOnXcodeAndAppQuit)
-        setDefaultValue(false, forKey: SettingsKey.realtimeSuggestionToggle)
-        setDefaultValue(1 as Double, forKey: SettingsKey.realtimeSuggestionDebounce)
     }
 }
 
