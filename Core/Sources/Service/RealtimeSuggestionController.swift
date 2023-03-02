@@ -188,12 +188,9 @@ public class RealtimeSuggestionController {
                 os_log(.info, "Completion panel is open, blocked.")
                 return
             }
-
-            do {
-                try await Environment.triggerAction("Prefetch Suggestions")
-            } catch {
-                os_log(.info, "%@", error.localizedDescription)
-            }
+            
+            // So the editor won't be blocked (after information are cached)!
+            await PseudoCommandHandler().generateRealtimeSuggestions()
         }
     }
 
@@ -236,13 +233,27 @@ extension AXUIElement {
     var identifier: String {
         (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
     }
+    
+    var value: String {
+        (try? copyValue(key: kAXValueAttribute)) ?? ""
+    }
+    
+    var focusedElement: AXUIElement? {
+        try? copyValue(key: kAXFocusedUIElementAttribute)
+    }
 
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
 
-    var focusedElement: AXUIElement? {
-        try? copyValue(key: kAXFocusedUIElementAttribute)
+    var selectedTextRange: Range<Int>? {
+        guard let value: AXValue = try? copyValue(key: kAXSelectedTextRangeAttribute)
+        else { return nil }
+        var range: CFRange = .init(location: 0, length: 0)
+        if AXValueGetValue(value, .cfRange, &range) {
+            return Range(.init(location: range.location, length: range.length))
+        }
+        return nil
     }
 
     var sharedFocusElements: [AXUIElement] {

@@ -17,6 +17,13 @@ final class Filespace {
         didSet { lastSuggestionUpdateTime = Environment.now() }
     }
 
+    // stored for pseudo command handler
+    var uti: String?
+    var tabSize: Int?
+    var indentSize: Int?
+    var usesTabsForIndentation: Bool?
+    // ---------------------------------
+
     var suggestionIndex: Int = 0
     var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
     var presentingSuggestion: CopilotCompletion? {
@@ -76,7 +83,9 @@ final class Workspace {
         return false
     }
 
-    static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws -> (workspace: Workspace, filespace: Filespace) {
+    static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws
+        -> (workspace: Workspace, filespace: Filespace)
+    {
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
@@ -93,12 +102,7 @@ extension Workspace {
     @discardableResult
     func generateSuggestions(
         forFileAt fileURL: URL,
-        content: String,
-        lines: [String],
-        cursorPosition: CursorPosition,
-        tabSize: Int,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
+        editor: EditorContent,
         shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
     ) async throws -> [CopilotCompletion] {
         if shouldcancelInFlightRealtimeSuggestionRequests {
@@ -111,33 +115,34 @@ extension Workspace {
             filespaces[fileURL] = filespace
         }
 
+        filespace.uti = editor.uti
+        filespace.tabSize = editor.tabSize
+        filespace.indentSize = editor.indentSize
+        filespace.usesTabsForIndentation = editor.usesTabsForIndentation
+
         let snapshot = Filespace.Snapshot(
-            linesHash: lines.hashValue,
-            cursorPosition: cursorPosition
+            linesHash: editor.lines.hashValue,
+            cursorPosition: editor.cursorPosition
         )
 
         filespace.suggestionSourceSnapshot = snapshot
 
         let completions = try await service.getCompletions(
             fileURL: fileURL,
-            content: lines.joined(separator: ""),
-            cursorPosition: cursorPosition,
-            tabSize: tabSize,
-            indentSize: indentSize,
-            usesTabsForIndentation: usesTabsForIndentation,
+            content: editor.lines.joined(separator: ""),
+            cursorPosition: editor.cursorPosition,
+            tabSize: editor.tabSize,
+            indentSize: editor.indentSize,
+            usesTabsForIndentation: editor.usesTabsForIndentation,
             ignoreSpaceOnlySuggestions: true
         )
 
         filespace.suggestions = completions
-        
+
         return completions
     }
 
-    func selectNextSuggestion(
-        forFileAt fileURL: URL,
-        content _: String,
-        lines: [String]
-    ) {
+    func selectNextSuggestion(forFileAt fileURL: URL) {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
@@ -149,11 +154,7 @@ extension Workspace {
         }
     }
 
-    func selectPreviousSuggestion(
-        forFileAt fileURL: URL,
-        content _: String,
-        lines: [String]
-    ) {
+    func selectPreviousSuggestion(forFileAt fileURL: URL) {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
@@ -165,16 +166,23 @@ extension Workspace {
         }
     }
 
-    func rejectSuggestion(forFileAt fileURL: URL) {
+    func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
+        
+        if let editor {
+            filespaces[fileURL]?.uti = editor.uti
+            filespaces[fileURL]?.tabSize = editor.tabSize
+            filespaces[fileURL]?.indentSize = editor.indentSize
+            filespaces[fileURL]?.usesTabsForIndentation = editor.usesTabsForIndentation
+        }
         Task {
             await service.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }
         filespaces[fileURL]?.reset(resetSnapshot: false)
     }
 
-    func acceptSuggestion(forFileAt fileURL: URL) -> CopilotCompletion? {
+    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CopilotCompletion? {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
         guard let filespace = filespaces[fileURL],
@@ -182,6 +190,13 @@ extension Workspace {
               filespace.suggestionIndex >= 0,
               filespace.suggestionIndex < filespace.suggestions.endIndex
         else { return nil }
+
+        if let editor {
+            filespaces[fileURL]?.uti = editor.uti
+            filespaces[fileURL]?.tabSize = editor.tabSize
+            filespaces[fileURL]?.indentSize = editor.indentSize
+            filespaces[fileURL]?.usesTabsForIndentation = editor.usesTabsForIndentation
+        }
 
         var allSuggestions = filespace.suggestions
         let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)

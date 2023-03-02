@@ -48,12 +48,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         try await workspace.generateSuggestions(
             forFileAt: fileURL,
-            content: editor.content,
-            lines: editor.lines,
-            cursorPosition: editor.cursorPosition,
-            tabSize: editor.tabSize,
-            indentSize: editor.indentSize,
-            usesTabsForIndentation: editor.usesTabsForIndentation
+            editor: editor
         )
 
         if let suggestion = filespace.presentingSuggestion {
@@ -82,11 +77,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        workspace.selectNextSuggestion(
-            forFileAt: fileURL,
-            content: editor.content,
-            lines: editor.lines
-        )
+        workspace.selectNextSuggestion(forFileAt: fileURL)
 
         if let suggestion = filespace.presentingSuggestion {
             presenter.presentSuggestion(
@@ -114,11 +105,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        workspace.selectPreviousSuggestion(
-            forFileAt: fileURL,
-            content: editor.content,
-            lines: editor.lines
-        )
+        workspace.selectPreviousSuggestion(forFileAt: fileURL)
 
         if let suggestion = filespace.presentingSuggestion {
             presenter.presentSuggestion(
@@ -145,7 +132,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        workspace.rejectSuggestion(forFileAt: fileURL)
+        workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
     }
 
