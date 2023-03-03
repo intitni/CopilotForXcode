@@ -65,15 +65,19 @@ Then set it up with the following steps:
 
 ### Granting Permissions to the App
 
-**Permissions should be granted to `CopilotForXcodeExtensionService.app`**. Not `Copilot for Xcode.app`. It is located in `Copilot for Xcode.app/Contents/Applications/CopilotForXcodeExtensionService.app`, you can access this directory by right-clicking the app icon, and selecting `Show Package Contents`.
+The first time the app is open and command run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
 
-The first time the commands are run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
+Alternatively, you may manually grant the required permissions by navigating to the `Privacy & Security` tab in the `System Settings.app`. Please note that different permissions must be assigned to different apps.
+
+- To grant permissions for the Accessibility API, click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list. You can locate the extension app by clicking `Reveal Extension App in Finder` in the host app.
+
+![Accessibility API](/accessibility_api_permision.png)
+
+- To enable Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse), click `Input Monitoring`, and add `Copilot for Xcode.app` to the list.
+
+![Input Monitoring](/input_monitoring_permission.png)
 
 If you encounter an alert requesting permission that you have previously granted, please remove the permission from the list and add it again to re-grant the necessary permissions.
-
-Or you can grant them manually by going to the `Privacy & Security` tab in `System Settings.app`, and
-- Accessibility API: Click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list.
-- Input Monitoring (If you need real-time suggestions): Click `Input Monitoring` and drag `CopilotForXcodeExtensionService.app` to the list.
 
 ### Managing `CopilotForXcodeExtensionService.app`
 
@@ -91,7 +95,7 @@ brew upgrade --cask copilot-for-xcode
 
 Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
-If you are upgrading from a version lower than 0.8.0, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you.
+If you are upgrading from a version lower than **0.8.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
 If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
 
@@ -155,6 +159,7 @@ fi
 - The first run of the extension will be slow. Be patient.
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
+- When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
 
 ## FAQ
 
@@ -176,7 +181,12 @@ fi
 
 **Q: I turned on real-time suggestions, but nothing happens**
 
+> A: Try typing something in the editor and wait for a little while, if you see an animation from the real-time suggestion indicator or the floating widget, that means the real-time suggestion is correctly triggered. 
+
+**Q: I can't cancel real-time suggestions with mouse clicks, or pressing esc.**
+
 > A: Please check if the [Accessibility API and Input Monitoring permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
+    If you have followed the setup instructions as directed, please also consider granting Input Monitoring permissions to the extension app.
 
 **Q: Will it work in future Xcode updates?**
 
