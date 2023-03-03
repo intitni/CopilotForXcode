@@ -40,39 +40,44 @@ public enum Environment {
         }
     }
 
+    #warning("""
+    The current version causes an issue in real-time suggestion that when completion panel is own,
+    the command handler can not find the correct workspace, so we are not using it for now.
+    """)
     public static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws
         -> URL? = { fileURL in
-            let appleScript = """
-            tell application "Xcode"
-                return path of document of the first window
-            end tell
-            """
-
-            let path = (try? await runAppleScript(appleScript)) ?? ""
-            if !path.isEmpty {
-                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                var url = URL(fileURLWithPath: trimmedNewLine)
-                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                    !url.pathExtension.isEmpty
-                {
-                    url = url.deletingLastPathComponent()
-                }
-                return url
-            }
-
-            guard var currentURL = fileURL else { return nil }
-            var firstDirectoryURL: URL?
-            while currentURL.pathComponents.count > 1 {
-                defer { currentURL.deleteLastPathComponent() }
-                guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
-                if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
-                let gitURL = currentURL.appendingPathComponent(".git")
-                if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                    return currentURL
-                }
-            }
-
-            return firstDirectoryURL ?? fileURL
+            return URL(fileURLWithPath: "/")
+//            let appleScript = """
+//            tell application "Xcode"
+//                return path of document of the first window
+//            end tell
+//            """
+//
+//            let path = (try? await runAppleScript(appleScript)) ?? ""
+//            if !path.isEmpty {
+//                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+//                var url = URL(fileURLWithPath: trimmedNewLine)
+//                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+//                    !url.pathExtension.isEmpty
+//                {
+//                    url = url.deletingLastPathComponent()
+//                }
+//                return url
+//            }
+//
+//            guard var currentURL = fileURL else { return nil }
+//            var firstDirectoryURL: URL?
+//            while currentURL.pathComponents.count > 1 {
+//                defer { currentURL.deleteLastPathComponent() }
+//                guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+//                if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
+//                let gitURL = currentURL.appendingPathComponent(".git")
+//                if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
+//                    return currentURL
+//                }
+//            }
+//
+//            return firstDirectoryURL ?? fileURL
         }
 
     public static var fetchCurrentFileURL: () async throws -> URL = {

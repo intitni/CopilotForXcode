@@ -139,11 +139,17 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        Task {
-            let fileURL = try await Environment.fetchCurrentFileURL()
-            presenter.discardSuggestion(fileURL: fileURL)
+        
+        do {
+            let result = try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
+            Task {
+                let fileURL = try await Environment.fetchCurrentFileURL()
+                presenter.discardSuggestion(fileURL: fileURL)
+            }
+            return result
+        } catch {
+            throw error
         }
-        return try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {

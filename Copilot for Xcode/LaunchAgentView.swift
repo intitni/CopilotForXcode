@@ -97,7 +97,7 @@ struct LaunchAgentView: View {
                             let workspace = NSWorkspace.shared
                             let url = Bundle.main.bundleURL
                                 .appendingPathComponent("Contents")
-                                .appendingPathComponent("XPCServices")
+                                .appendingPathComponent("Applications")
                                 .appendingPathComponent("CopilotForXcodeExtensionService.app")
                             workspace.activateFileViewerSelecting([url])
                         }
