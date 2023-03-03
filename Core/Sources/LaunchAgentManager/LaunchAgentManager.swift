@@ -1,6 +1,7 @@
 import Foundation
 
 public struct LaunchAgentManager {
+    let lastLaunchAgentVersionKey = "LastLaunchAgentVersion"
     let serviceIdentifier: String
     let executablePath: String
 
@@ -10,7 +11,7 @@ public struct LaunchAgentManager {
     }
 
     var launchAgentPath: String {
-        launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).1.plist").path
+        launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).plist").path
     }
 
     public init(serviceIdentifier: String, executablePath: String) {
@@ -19,9 +20,11 @@ public struct LaunchAgentManager {
     }
 
     public func setupLaunchAgentForTheFirstTimeIfNeeded() async throws {
-        guard !FileManager.default.fileExists(atPath: launchAgentPath) else {
+        if UserDefaults.standard.integer(forKey: lastLaunchAgentVersionKey) < 40 {
+            try await setupLaunchAgent()
             return
         }
+        guard !FileManager.default.fileExists(atPath: launchAgentPath) else { return }
         try await setupLaunchAgent()
         await removeObsoleteLaunchAgent()
     }
@@ -54,6 +57,9 @@ public struct LaunchAgentManager {
             atPath: launchAgentPath,
             contents: content.data(using: .utf8)
         )
+        let buildNumber = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String)
+            .flatMap(Int.init)
+        UserDefaults.standard.set(buildNumber, forKey: lastLaunchAgentVersionKey)
         try await launchctl("load", launchAgentPath)
     }
 
@@ -130,4 +136,3 @@ private func launchctl(_ args: String...) async throws {
 struct E: Error, LocalizedError {
     var errorDescription: String?
 }
-
