@@ -299,6 +299,8 @@ public final class SuggestionWidgetController {
                         }
                     }
 
+                    panelWindow.orderFront(nil)
+                    widgetWindow.orderFront(nil)
                     panelWindow.alphaValue = 1
                     widgetWindow.alphaValue = 1
                     return
