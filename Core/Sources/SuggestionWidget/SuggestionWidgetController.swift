@@ -247,7 +247,7 @@ public final class SuggestionWidgetController {
                 if foundSize, foundPosition, let screen, let firstScreen {
                     let proposedAnchorFrameOnTheRightSide = CGRect(
                         x: frame.maxX - Style.widgetPadding - Style.widgetWidth,
-                        y: max(firstScreen.frame.height - frame.maxY + Style.widgetPadding, 4),
+                        y: max(firstScreen.frame.height - frame.maxY + Style.widgetPadding, 4 + screen.frame.minY),
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
