@@ -2,18 +2,9 @@ import SwiftUI
 
 @MainActor
 final class WidgetViewModel: ObservableObject {
-    enum Position {
-        case topLeft
-        case topRight
-        case bottomLeft
-        case bottomRight
-    }
-
-    var position: Position
     @Published var isProcessing: Bool
 
-    init(position: Position = .topRight, isProcessing: Bool = false) {
-        self.position = position
+    init(isProcessing: Bool = false) {
         self.isProcessing = isProcessing
     }
 }
@@ -99,25 +90,25 @@ struct WidgetView_Preview: PreviewProvider {
     static var previews: some View {
         VStack {
             WidgetView(
-                viewModel: .init(position: .topRight, isProcessing: false),
+                viewModel: .init(isProcessing: false),
                 panelViewModel: .init(),
                 isHovering: false
             )
 
             WidgetView(
-                viewModel: .init(position: .topRight, isProcessing: false),
+                viewModel: .init(isProcessing: false),
                 panelViewModel: .init(),
                 isHovering: true
             )
 
             WidgetView(
-                viewModel: .init(position: .topRight, isProcessing: true),
+                viewModel: .init(isProcessing: true),
                 panelViewModel: .init(),
                 isHovering: false
             )
 
             WidgetView(
-                viewModel: .init(position: .topRight, isProcessing: false),
+                viewModel: .init(isProcessing: false),
                 panelViewModel: .init(suggestion: ["Hello"]),
                 isHovering: false
             )

@@ -186,7 +186,7 @@ public final class SuggestionWidgetController {
             for await notification in notifications {
                 guard let self else { return }
                 try Task.checkCancellation()
-                self.updateWindowLocation()
+                self.updateWindowLocation(animated: false)
 
                 if notification.name == kAXFocusedUIElementChangedNotification {
                     guard let fileURL = try? await Environment.fetchCurrentFileURL(),
@@ -211,7 +211,7 @@ public final class SuggestionWidgetController {
     ///
     /// - note: It's possible to get the scroll view's postion by getting position on the focus
     /// element.
-    private func updateWindowLocation() {
+    private func updateWindowLocation(animated: Bool = false) {
         func hide() {
             panelWindow.alphaValue = 0
             widgetWindow.alphaValue = 0
@@ -246,26 +246,60 @@ public final class SuggestionWidgetController {
                 let screen = NSScreen.screens.first
                 let frame = CGRect(origin: position, size: size)
                 if foundSize, foundPosition, let screen {
-                    let anchorFrame = CGRect(
-                        x: frame.maxX - 4 - Style.widgetWidth,
-                        y: screen.frame.height - frame.minY - Style.widgetHeight - 4,
+                    let proposedAnchorFrameOnTheRightSide = CGRect(
+                        x: frame.maxX - Style.widgetPadding - Style.widgetWidth,
+                        y: max(screen.frame.height - frame.maxY + Style.widgetPadding, 4),
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
-                    widgetWindow.setFrame(anchorFrame, display: false)
 
-                    let proposedPanelX = anchorFrame.maxX + 8
+                    let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
+                        .widgetPadding * 2
                     let putPanelToTheRight = screen.frame.maxX > proposedPanelX + Style.panelWidth
 
-                    let panelFrame = CGRect(
-                        x: putPanelToTheRight ? proposedPanelX : anchorFrame.maxX - Style
-                            .panelWidth,
-                        y: putPanelToTheRight ? anchorFrame.minY - Style.panelHeight + Style
-                            .widgetHeight : anchorFrame.minY - Style.panelHeight - 4,
-                        width: Style.panelWidth,
-                        height: Style.panelHeight
-                    )
-                    panelWindow.setFrame(panelFrame, display: false)
+                    if putPanelToTheRight {
+                        let anchorFrame = proposedAnchorFrameOnTheRightSide
+                        let panelFrame = CGRect(
+                            x: proposedPanelX,
+                            y: anchorFrame.minY,
+                            width: Style.panelWidth,
+                            height: Style.panelHeight
+                        )
+                        widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
+                        panelWindow.setFrame(panelFrame, display: false, animate: animated)
+                    } else {
+                        let proposedAnchorFrameOnTheLeftSide = CGRect(
+                            x: frame.minX + Style.widgetPadding + Style.widgetWidth,
+                            y: proposedAnchorFrameOnTheRightSide.origin.y,
+                            width: Style.widgetWidth,
+                            height: Style.widgetHeight
+                        )
+                        let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
+                            .widgetPadding * 2 - Style.panelWidth
+                        let putAnchorToTheLeft = proposedPanelX > screen.frame.minX
+
+                        if putAnchorToTheLeft {
+                            let anchorFrame = proposedAnchorFrameOnTheLeftSide
+                            let panelFrame = CGRect(
+                                x: proposedPanelX,
+                                y: anchorFrame.minY,
+                                width: Style.panelWidth,
+                                height: Style.panelHeight
+                            )
+                            widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
+                            panelWindow.setFrame(panelFrame, display: false, animate: animated)
+                        } else {
+                            let anchorFrame = proposedAnchorFrameOnTheRightSide
+                            let panelFrame = CGRect(
+                                x: anchorFrame.maxX - Style.panelWidth,
+                                y: anchorFrame.maxY + Style.widgetPadding,
+                                width: Style.panelWidth,
+                                height: Style.panelHeight
+                            )
+                            widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
+                            panelWindow.setFrame(panelFrame, display: false, animate: animated)
+                        }
+                    }
 
                     panelWindow.alphaValue = 1
                     widgetWindow.alphaValue = 1

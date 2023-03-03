@@ -3,5 +3,6 @@ enum Style {
     static let panelWidth: Double = 450
     static let widgetHeight: Double = 30
     static var widgetWidth: Double { widgetHeight }
+    static let widgetPadding: Double = 4
 }
 
