@@ -67,15 +67,15 @@ Then set it up with the following steps:
 
 The first time the app is open and command run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
 
-Alternatively, you may manually grant the required permissions by navigating to the `Privacy & Security` tab in the `System Settings.app`. Please note that different permissions must be assigned to different apps.
+Alternatively, you may manually grant the required permissions by navigating to the `Privacy & Security` tab in the `System Settings.app`.
 
 - To grant permissions for the Accessibility API, click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list. You can locate the extension app by clicking `Reveal Extension App in Finder` in the host app.
 
-![Accessibility API](/accessibility_api_permision.png)
+<img alt="Accessibility API" src="/accessibility_api_permission.png" width="500px">
 
-- To enable Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse), click `Input Monitoring`, and add `Copilot for Xcode.app` to the list.
+- To enable Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse), click `Input Monitoring`, and drag `CopilotForXcodeExtensionService.app` to the list. You can locate the extension app by clicking `Reveal Extension App in Finder` in the host app.
 
-![Input Monitoring](/input_monitoring_permission.png)
+<img alt="Input Monitoring" src="/input_monitoring_permission.png" width="500px">
 
 If you encounter an alert requesting permission that you have previously granted, please remove the permission from the list and add it again to re-grant the necessary permissions.
 
