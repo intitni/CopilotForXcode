@@ -67,7 +67,6 @@ public final class SuggestionWidgetController {
     private var userDefaultsObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
-    private var xcode: NSRunningApplication?
     private var suggestionForFiles: [URL: Suggestion] = [:]
 
     public var onAcceptButtonTapped: (() -> Void)? {
@@ -171,7 +170,6 @@ public final class SuggestionWidgetController {
     }
 
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
-        xcode = app
         guard windowChangeObservationTask == nil else { return }
         windowChangeObservationTask = Task { [weak self] in
             let notifications = AXNotificationStream(
@@ -226,7 +224,7 @@ public final class SuggestionWidgetController {
             return
         }
 
-        if let xcode {
+        if let xcode = ActiveApplicationMonitor.activeXcode {
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             if let focusElement: AXUIElement = try? application
                 .copyValue(key: kAXFocusedUIElementAttribute),

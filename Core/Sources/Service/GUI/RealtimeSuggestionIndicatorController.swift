@@ -1,12 +1,12 @@
 import ActiveApplicationMonitor
 import AppKit
+import AsyncAlgorithms
 import AXNotificationStream
 import DisplayLink
 import Environment
 import QuartzCore
 import SwiftUI
 import XPCShared
-import AsyncAlgorithms
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 @MainActor
@@ -97,7 +97,6 @@ final class RealtimeSuggestionIndicatorController {
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
-    private var xcode: NSRunningApplication?
     var isObserving = false {
         didSet {
             Task {
@@ -166,7 +165,6 @@ final class RealtimeSuggestionIndicatorController {
     }
 
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
-        xcode = app
         guard windowChangeObservationTask == nil else { return }
         windowChangeObservationTask = Task { [weak self] in
             let notifications = AXNotificationStream(
@@ -177,6 +175,7 @@ final class RealtimeSuggestionIndicatorController {
                 kAXFocusedWindowChangedNotification,
                 kAXFocusedUIElementChangedNotification
             )
+            self?.observeEditorChangeIfNeeded()
             for await notification in notifications {
                 guard let self else { return }
                 try Task.checkCancellation()
@@ -210,6 +209,7 @@ final class RealtimeSuggestionIndicatorController {
             .copyValue(key: kAXVerticalScrollBarAttribute)
         else { return }
 
+        updateIndicatorLocation()
         editorObservationTask = Task { [weak self] in
             let notificationsFromEditor = AXNotificationStream(
                 app: activeXcode,
@@ -220,13 +220,13 @@ final class RealtimeSuggestionIndicatorController {
                 kAXLayoutChangedNotification,
                 kAXSelectedTextChangedNotification
             )
-            
+
             let notificationsFromScrollBar = AXNotificationStream(
                 app: activeXcode,
                 element: scrollBar,
                 notificationNames: kAXValueChangedNotification
             )
-            
+
             for await _ in merge(notificationsFromEditor, notificationsFromScrollBar) {
                 guard let self else { return }
                 try Task.checkCancellation()
