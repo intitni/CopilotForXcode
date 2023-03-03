@@ -70,7 +70,9 @@ struct PseudoCommandHandler {
 }
 
 private extension PseudoCommandHandler {
-    func getFileContent() async -> (String, [String], CursorPosition)? {
+    func getFileContent() async
+        -> (content: String, lines: [String], cursorPosition: CursorPosition)?
+    {
         guard let xcode = ActiveApplicationMonitor.activeXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         guard let focusElement = application.focusedElement,
@@ -119,10 +121,10 @@ private extension PseudoCommandHandler {
             let content = await getFileContent()
         else { return nil }
         return .init(
-            content: content.0,
-            lines: content.1,
+            content: content.content,
+            lines: content.lines,
             uti: uti,
-            cursorPosition: content.2,
+            cursorPosition: content.cursorPosition,
             tabSize: tabSize,
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation

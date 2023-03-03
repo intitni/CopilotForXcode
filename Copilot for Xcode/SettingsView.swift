@@ -14,7 +14,6 @@ final class Settings: ObservableObject {
     init() {}
 }
 
-#warning("MUSTDO: Settings are not synced.")
 struct SettingsView: View {
     @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
