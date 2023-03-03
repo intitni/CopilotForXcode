@@ -138,6 +138,7 @@ extension Workspace {
         )
 
         filespace.suggestions = completions
+        filespace.suggestionIndex = 0
 
         return completions
     }
