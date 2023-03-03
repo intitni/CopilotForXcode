@@ -169,7 +169,7 @@ extension Workspace {
     func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
-        
+
         if let editor {
             filespaces[fileURL]?.uti = editor.uti
             filespaces[fileURL]?.tabSize = editor.tabSize

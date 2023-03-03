@@ -7,6 +7,7 @@ public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     public var errorDescription: String? {
         "Accessibility API permission is not granted. Please enable in System Settings.app."
     }
+
     public init() {}
 }
 
@@ -14,6 +15,7 @@ public struct FailedToFetchFileURLError: Error, LocalizedError {
     public var errorDescription: String? {
         "Failed to fetch editing file url."
     }
+
     public init() {}
 }
 

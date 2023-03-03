@@ -9,6 +9,7 @@ public actor DisplayLink {
         _shared = DisplayLink()
         return _shared
     }
+
     private var continuations: [UUID: AsyncStream<Void>.Continuation] = [:]
 
     public static func createStream() -> AsyncStream<Void> {

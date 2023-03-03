@@ -47,14 +47,14 @@ final class CommentBase_RealtimeSuggestionsTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         )
-        
+
         var triggeredCommand = ""
         Environment.triggerAction = { triggeredCommand = $0 }
 
         _ = try await service.generateRealtimeSuggestions(editor: editor)
-        
+
         XCTAssertEqual(triggeredCommand, "Real-time Suggestions")
-        
+
         let result = try await service.presentRealtimeSuggestions(editor: editor)!
 
         let resultLines = lines.applying(result.modifications)
@@ -73,7 +73,7 @@ final class CommentBase_RealtimeSuggestionsTests: XCTestCase {
 
         XCTAssertEqual(result.newCursor, .init(line: 0, character: 17))
     }
-    
+
     func test_if_content_is_changed_no_suggestions_will_be_presented() async throws {
         let service = CommentBaseCommandHandler()
         mock.completions = [
@@ -94,7 +94,7 @@ final class CommentBase_RealtimeSuggestionsTests: XCTestCase {
             "\n",
             "}\n",
         ]
-        
+
         var editor = EditorContent(
             content: lines.joined(),
             lines: lines,
@@ -104,13 +104,13 @@ final class CommentBase_RealtimeSuggestionsTests: XCTestCase {
             indentSize: 1,
             usesTabsForIndentation: false
         )
-        
+
         Environment.triggerAction = { _ in }
 
         _ = try await service.generateRealtimeSuggestions(editor: editor)
-        
+
         editor.cursorPosition = .init(line: 1, character: 17)
-        
+
         let result = try await service.presentRealtimeSuggestions(editor: editor)
 
         XCTAssertNil(result)

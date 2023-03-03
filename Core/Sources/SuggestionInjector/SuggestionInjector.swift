@@ -182,11 +182,11 @@ public struct SuggestionAnalyzer {
             case currentLine
             case nextLine
         }
-        
+
         var insertPosition: InsertPostion
         var commonPrefix: String?
     }
-    
+
     func analyze() -> Result {
         fatalError()
     }

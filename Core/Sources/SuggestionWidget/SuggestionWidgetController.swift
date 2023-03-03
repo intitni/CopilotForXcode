@@ -241,12 +241,13 @@ public final class SuggestionWidgetController {
                 let foundPosition = AXValueGetValue(positionValue, .cgPoint, &position)
                 var size: CGSize = .zero
                 let foundSize = AXValueGetValue(sizeValue, .cgSize, &size)
-                let screen = NSScreen.screens.first
+                let screen = NSScreen.main
+                let firstScreen = NSScreen.screens.first
                 let frame = CGRect(origin: position, size: size)
-                if foundSize, foundPosition, let screen {
+                if foundSize, foundPosition, let screen, let firstScreen {
                     let proposedAnchorFrameOnTheRightSide = CGRect(
                         x: frame.maxX - Style.widgetPadding - Style.widgetWidth,
-                        y: max(screen.frame.height - frame.maxY + Style.widgetPadding, 4),
+                        y: max(firstScreen.frame.height - frame.maxY + Style.widgetPadding, 4),
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
@@ -299,12 +300,14 @@ public final class SuggestionWidgetController {
                         }
                     }
 
+                    panelWindow.orderFront(nil)
+                    widgetWindow.orderFront(nil)
                     panelWindow.alphaValue = 1
                     widgetWindow.alphaValue = 1
                     return
                 }
             }
-        } 
+        }
 
         hide()
     }

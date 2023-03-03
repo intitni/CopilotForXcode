@@ -2,6 +2,7 @@ import AppKit
 import Client
 import CopilotModel
 import CopilotService
+import Environment
 import Foundation
 import XCTest
 import XPCShared

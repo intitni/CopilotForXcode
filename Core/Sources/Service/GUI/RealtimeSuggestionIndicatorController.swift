@@ -275,7 +275,8 @@ final class RealtimeSuggestionIndicatorController {
                     )
                     frame.size = .init(width: 10, height: 10)
                     window.alphaValue = 1
-                    window.setFrame(frame, display: false)
+                    window.setFrame(frame, display: true)
+                    window.orderFront(nil)
                     return
                 }
             }

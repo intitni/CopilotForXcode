@@ -30,8 +30,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         os_log(.info, "XPC Service started.")
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
+        #warning("TODO: disable in tests")
         AXIsProcessTrustedWithOptions([
-            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
         ] as NSDictionary)
     }
 
