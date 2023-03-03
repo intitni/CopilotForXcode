@@ -68,7 +68,7 @@ struct SuggestionPanelView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
-                    .padding(2)
+                    .padding(1)
             )
 
             .onHover { yes in
@@ -181,7 +181,7 @@ struct ToolBar: View {
         }
         .padding()
         .foregroundColor(.secondary)
-        .background(.thickMaterial)
+        .background(.regularMaterial)
     }
 }
 
