@@ -1,11 +1,12 @@
 import CopilotModel
 import CopilotService
+import Environment
 import XCTest
 
 @testable import Service
 @testable import SuggestionInjector
 
-final class AcceptSuggestionTests: XCTestCase {
+final class CommentBase_GetPreviousSuggestionTests: XCTestCase {
     let mock = MockSuggestionService(completions: [])
 
     override func setUp() async throws {
@@ -13,8 +14,8 @@ final class AcceptSuggestionTests: XCTestCase {
         Environment.createSuggestionService = { [unowned self] _ in self.mock }
     }
 
-    func test_accept_suggestion_and_clear_all_sugguestions() async throws {
-        let service = getService()
+    func test_get_next_suggestions_without_rejecting_previous_suggestions() async throws {
+        let service = CommentBaseCommandHandler()
         mock.completions = [
             completion(
                 text: """
@@ -22,8 +23,18 @@ final class AcceptSuggestionTests: XCTestCase {
                 struct Dog {}
                 """,
                 range: .init(
-                    start: .init(line: 1, character: 0),
-                    end: .init(line: 1, character: 12)
+                    start: .init(line: 7, character: 0),
+                    end: .init(line: 7, character: 12)
+                )
+            ),
+            completion(
+                text: """
+
+                struct Wolf {}
+                """,
+                range: .init(
+                    start: .init(line: 7, character: 0),
+                    end: .init(line: 7, character: 12)
                 )
             ),
         ]
@@ -33,7 +44,7 @@ final class AcceptSuggestionTests: XCTestCase {
             "\n",
         ]
 
-        let result1 = try await service.getSuggestedCode(editorContent: .init(
+        let result1 = try await service.presentSuggestions(editor: .init(
             content: lines.joined(),
             lines: lines,
             uti: "",
@@ -45,7 +56,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         let result1Lines = lines.applying(result1.modifications)
 
-        let result2 = try await service.getSuggestionAcceptedCode(editorContent: .init(
+        let result2 = try await service.presentPreviousSuggestion(editor: .init(
             content: result1Lines.joined(),
             lines: result1Lines,
             uti: "",
@@ -61,26 +72,43 @@ final class AcceptSuggestionTests: XCTestCase {
         XCTAssertEqual(result2.content, """
         struct Cat {}
 
-        struct Dog {}
+        /*========== Copilot Suggestion 2/2
+
+        struct Wolf {}
+        *///======== End of Copilot Suggestion
 
         """, "Previous suggestions should be removed.")
 
         XCTAssertEqual(
             result2.newCursor,
-            .init(line: 2, character: 13),
-            "Move cursor to the end of suggestion"
+            .init(line: 1, character: 0),
+            "The cursor was in the deleted suggestion, reset it to 1 line above the suggestion, set its col to 0"
         )
 
-        let result3 = try await service.getSuggestionAcceptedCode(editorContent: .init(
-            content: lines.joined(),
-            lines: lines,
+        let result3 = try await service.presentPreviousSuggestion(editor: .init(
+            content: result2Lines.joined(),
+            lines: result2Lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 3),
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
-        ))
+        ))!
 
-        XCTAssertNil(result3, "Deleting the code and accept again does nothing")
+        let result3Lines = lines.applying(result3.modifications)
+
+        XCTAssertEqual(result3.content, result3Lines.joined())
+
+        XCTAssertEqual(result3.content, """
+        struct Cat {}
+
+        /*========== Copilot Suggestion 1/2
+
+        struct Dog {}
+        *///======== End of Copilot Suggestion
+
+        """, "Cycling through the suggestions.")
+
+        XCTAssertEqual(result3.newCursor, .init(line: 0, character: 3))
     }
 }

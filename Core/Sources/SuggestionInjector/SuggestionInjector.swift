@@ -176,6 +176,22 @@ public struct SuggestionInjector {
     }
 }
 
+public struct SuggestionAnalyzer {
+    struct Result {
+        enum InsertPostion {
+            case currentLine
+            case nextLine
+        }
+
+        var insertPosition: InsertPostion
+        var commonPrefix: String?
+    }
+
+    func analyze() -> Result {
+        fatalError()
+    }
+}
+
 extension String {
     /// Break a string into lines.
     func breakLines(appendLineBreakToLastLine: Bool = false) -> [String] {

@@ -45,7 +45,7 @@
 		C87F3E62293DD004008523E8 /* Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87F3E61293DD004008523E8 /* Styles.swift */; };
 		C882175A294187E100A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C8821759294187E100A22FD3 /* Client */; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
-		C8E93DB429950C8A00E6D43D /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed Service */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,20 +110,9 @@
 			dstPath = ../Applications;
 			dstSubfolderSpec = 6;
 			files = (
-				C8E93DB429950C8A00E6D43D /* CopilotForXcodeExtensionService.app in Embed XPCService */,
 				C8216B802980378300AD38C7 /* Helper in Embed XPCService */,
 			);
 			name = "Embed XPCService";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C861E6062994F50D0056CB02 /* Embed Old XPCService Target */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 6;
-			files = (
-			);
-			name = "Embed Old XPCService Target";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C87B03AE293B2CF300C77EAE /* Embed Frameworks */ = {
@@ -135,6 +124,17 @@
 				C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C8C8B60829AFA32800034BEE /* Embed Service */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed Service */,
+			);
+			name = "Embed Service";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -369,7 +369,7 @@
 				C8189B142938972F00C9DCDA /* Resources */,
 				C814589F2939EFDC00135263 /* Embed Foundation Extensions */,
 				C8520306293CF0EF00460097 /* Embed XPCService */,
-				C861E6062994F50D0056CB02 /* Embed Old XPCService Target */,
+				C8C8B60829AFA32800034BEE /* Embed Service */,
 			);
 			buildRules = (
 			);

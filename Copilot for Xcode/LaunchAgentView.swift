@@ -90,6 +90,23 @@ struct LaunchAgentView: View {
                     TextField("node", text: $nodePath)
                         .textFieldStyle(.copilot)
                 }
+
+                HStack {
+                    Button(action: {
+                        Task {
+                            let workspace = NSWorkspace.shared
+                            let url = Bundle.main.bundleURL
+                                .appendingPathComponent("Contents")
+                                .appendingPathComponent("XPCServices")
+                                .appendingPathComponent("CopilotForXcodeExtensionService.app")
+                            workspace.activateFileViewerSelecting([url])
+                        }
+                    }) {
+                        Text("Reveal Extension App in Finder")
+                    }
+
+                    Spacer()
+                }
             }
         }
         .buttonStyle(.copilot)
