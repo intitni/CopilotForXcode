@@ -33,7 +33,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 - Accessibility API
 - Folder Access
-- Input Monitoring (for real-time suggestions)
+- Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse)
+
+* Note: you **don't need** Input Monitoring to use real-time suggestion any more with 0.8.1+. If you don't need the cancellation feature, you can just skip this permission.
 
 ## Installation and Setup
 
