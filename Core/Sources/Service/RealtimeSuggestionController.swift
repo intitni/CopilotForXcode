@@ -25,6 +25,13 @@ public class RealtimeSuggestionController {
     private var editorObservationTask: Task<Void, Error>?
     private var focusedUIElement: AXUIElement?
 
+    var isCommentMode: Bool {
+        PresentationMode(
+            rawValue: UserDefaults.shared
+                .integer(forKey: SettingsKey.suggestionPresentationMode)
+        ) == .comment
+    }
+
     private nonisolated init() {
         Task { [weak self] in
 
@@ -41,7 +48,7 @@ public class RealtimeSuggestionController {
                 if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
                     await self.handleXcodeChanged(app)
                 }
-                
+
                 #warning(
                     "TOOD: Is it possible to get rid of hid event observation with only AXObserver?"
                 )
@@ -159,7 +166,7 @@ public class RealtimeSuggestionController {
                     #warning(
                         "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
                     )
-                    if await Environment.frontmostXcodeWindowIsEditor() {
+                    if isCommentMode, await Environment.frontmostXcodeWindowIsEditor() {
                         if Task.isCancelled { return }
                         self.triggerPrefetchDebounced(force: true)
                     }
@@ -184,11 +191,16 @@ public class RealtimeSuggestionController {
 
             os_log(.info, "Prefetch suggestions.")
 
-            if !force, await !Environment.frontmostXcodeWindowIsEditor() {
+            let isCommentMode = PresentationMode(
+                rawValue: UserDefaults.shared
+                    .integer(forKey: SettingsKey.suggestionPresentationMode)
+            ) == .comment
+
+            if isCommentMode, !force, await !Environment.frontmostXcodeWindowIsEditor() {
                 os_log(.info, "Completion panel is open, blocked.")
                 return
             }
-            
+
             // So the editor won't be blocked (after information are cached)!
             await PseudoCommandHandler().generateRealtimeSuggestions()
         }
@@ -233,11 +245,11 @@ extension AXUIElement {
     var identifier: String {
         (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
     }
-    
+
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
-    
+
     var focusedElement: AXUIElement? {
         try? copyValue(key: kAXFocusedUIElementAttribute)
     }
