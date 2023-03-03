@@ -306,7 +306,7 @@ public final class SuggestionWidgetController {
                     return
                 }
             }
-        } 
+        }
 
         hide()
     }

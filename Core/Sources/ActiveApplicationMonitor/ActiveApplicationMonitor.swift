@@ -26,7 +26,7 @@ public final class ActiveApplicationMonitor {
     }
 
     public static var activeApplication: NSRunningApplication? { shared.activeApplication }
-    
+
     public static var activeXcode: NSRunningApplication? {
         if activeApplication?.bundleIdentifier == "com.apple.dt.Xcode" {
             return activeApplication

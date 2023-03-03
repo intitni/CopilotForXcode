@@ -1,6 +1,6 @@
 import AppKit
-import SuggestionWidget
 import Environment
+import SuggestionWidget
 
 @MainActor
 public final class GraphicalUserInterfaceController {
@@ -15,21 +15,21 @@ public final class GraphicalUserInterfaceController {
                     await handler.presentNextSuggestion()
                 }
             }
-            
+
             suggestionWidget.onPreviousButtonTapped = {
                 Task { @ServiceActor in
                     let handler = PseudoCommandHandler()
                     await handler.presentPreviousSuggestion()
                 }
             }
-            
+
             suggestionWidget.onRejectButtonTapped = {
                 Task { @ServiceActor in
                     let handler = PseudoCommandHandler()
                     await handler.rejectSuggestions()
                 }
             }
-            
+
             suggestionWidget.onAcceptButtonTapped = {
                 Task {
                     try await Environment.triggerAction("Accept Suggestion")

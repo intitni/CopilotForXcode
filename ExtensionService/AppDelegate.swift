@@ -31,7 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
         AXIsProcessTrustedWithOptions([
-            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
         ] as NSDictionary)
     }
 

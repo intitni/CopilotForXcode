@@ -47,7 +47,7 @@ struct SuggestionPanelView: View {
             Spacer()
                 .frame(minHeight: 0, maxHeight: .infinity)
                 .allowsHitTesting(false)
-            
+
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ScrollView {
