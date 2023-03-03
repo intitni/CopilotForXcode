@@ -9,7 +9,7 @@ extension LaunchAgentManager {
                 ".ExtensionService",
             executablePath: Bundle.main.bundleURL
                 .appendingPathComponent("Contents")
-                .appendingPathComponent("XPCServices")
+                .appendingPathComponent("Applications")
                 .appendingPathComponent(
                     "CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService"
                 )
