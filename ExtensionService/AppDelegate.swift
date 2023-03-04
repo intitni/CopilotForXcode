@@ -5,6 +5,7 @@ import os.log
 import Service
 import ServiceManagement
 import SwiftUI
+import UpdateChecker
 import UserNotifications
 import XPCShared
 
@@ -20,6 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
 
     func applicationDidFinishLaunching(_: Notification) {
+        #warning("TODO: disable in tests")
         _ = GraphicalUserInterfaceController.shared
         // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
@@ -30,10 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         os_log(.info, "XPC Service started.")
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
-        #warning("TODO: disable in tests")
-        AXIsProcessTrustedWithOptions([
-            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
-        ] as NSDictionary)
+        checkForUpdate()
     }
 
     @objc private func buildStatusBarMenu() {
@@ -178,6 +177,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         listener.delegate = delegate
         listener.resume()
         return (listener, delegate)
+    }
+
+    func requestAccessoryAPIPermission() {
+        AXIsProcessTrustedWithOptions([
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
+        ] as NSDictionary)
+    }
+
+    func checkForUpdate() {
+        guard UserDefaults.shared.bool(forKey: SettingsKey.automaticallyCheckForUpdate)
+        else { return }
+        Task {
+            await UpdateChecker().checkForUpdate()
+        }
     }
 }
 

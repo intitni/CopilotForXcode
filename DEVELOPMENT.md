@@ -20,6 +20,8 @@ The ExtensionService is also using a lot of Apple Script tricks to get the file 
 
 ## Building and Archiving the App
 
+Firstly, create a `Secrets.xcconfig` next to the others. You can provide a `GITHUB_TOKEN` here if you want to check for updates.
+
 This project contains a Git submodule `copilot.vim`, so you will have to initialize the submodule or download it from [copilot.vim](https://github.com/github/copilot.vim).
 
 Then archive the target Copilot for Xcode.

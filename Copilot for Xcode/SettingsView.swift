@@ -11,6 +11,8 @@ final class Settings: ObservableObject {
     var realtimeSuggestionDebounce: Double = 0.7
     @AppStorage(SettingsKey.suggestionPresentationMode, store: .shared)
     var suggestionPresentationModeRawValue: Int = 0
+    @AppStorage(SettingsKey.automaticallyCheckForUpdate, store: .shared)
+    var automaticallyCheckForUpdate: Bool = false
     init() {}
 }
 
@@ -24,6 +26,11 @@ struct SettingsView: View {
             Form {
                 Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
                     Text("Quit service when Xcode and host app are terminated")
+                }
+                .toggleStyle(.switch)
+                
+                Toggle(isOn: $settings.automaticallyCheckForUpdate) {
+                    Text("Automatically Check for Update")
                 }
                 .toggleStyle(.switch)
 
