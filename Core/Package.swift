@@ -68,6 +68,7 @@ let package = Package(
                 "AXNotificationStream",
                 "Environment",
                 "SuggestionWidget",
+                "AXExtension",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -93,7 +94,7 @@ let package = Package(
         .target(name: "AXNotificationStream"),
         .target(
             name: "Environment",
-            dependencies: ["ActiveApplicationMonitor", "CopilotService"]
+            dependencies: ["ActiveApplicationMonitor", "CopilotService", "AXExtension"]
         ),
         .target(
             name: "SuggestionWidget",
@@ -104,5 +105,6 @@ let package = Package(
             ]
         ),
         .target(name: "UpdateChecker"),
+        .target(name: "AXExtension"),
     ]
 )
