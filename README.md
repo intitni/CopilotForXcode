@@ -35,7 +35,11 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - Folder Access
 - Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse)
 
-* Note: you **don't need** Input Monitoring to use real-time suggestion any more with 0.8.1+. If you don't need the cancellation feature, you can just skip this permission.
+> You no longer require Input Monitoring to utilize real-time suggestions with version 0.8.1+. If you do not need the cancellation feature, you can simply ignore this permission.
+> 
+> However, to be frank, the Accessibility API is more dangerous than Input Monitoring. To remove the need for Input Monitoring, we can simply change the `CGEventTapOptions` from `listenOnly` to `defaultTap`, which allows for input manipulation.
+>
+> If you are concerned about key logging and cannot trust the binary, we recommend examining the code and building it yourself. To address any concerns, you can specifically search for `CGEvent.tapCreate`, `AXObserver`, `AX___` within the code.
 
 ## Installation and Setup
 
