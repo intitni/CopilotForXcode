@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
+import AXExtension
 import AXNotificationStream
 import CGEventObserver
 import Environment
@@ -166,7 +167,7 @@ public class RealtimeSuggestionController {
                     #warning(
                         "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
                     )
-                    if await Environment.frontmostXcodeWindowIsEditor() {
+                    if isCommentMode, await Environment.frontmostXcodeWindowIsEditor() {
                         if Task.isCancelled { return }
                         self.triggerPrefetchDebounced(force: true)
                     }
@@ -190,8 +191,8 @@ public class RealtimeSuggestionController {
             if Task.isCancelled { return }
 
             os_log(.info, "Prefetch suggestions.")
-
-            if !force, await !Environment.frontmostXcodeWindowIsEditor() {
+            
+            if !force, isCommentMode, await !Environment.frontmostXcodeWindowIsEditor() {
                 os_log(.info, "Completion panel is open, blocked.")
                 return
             }
@@ -233,89 +234,5 @@ public class RealtimeSuggestionController {
         guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
-    }
-}
-
-extension AXUIElement {
-    var identifier: String {
-        (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
-    }
-
-    var value: String {
-        (try? copyValue(key: kAXValueAttribute)) ?? ""
-    }
-
-    var focusedElement: AXUIElement? {
-        try? copyValue(key: kAXFocusedUIElementAttribute)
-    }
-
-    var description: String {
-        (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
-    }
-
-    var selectedTextRange: Range<Int>? {
-        guard let value: AXValue = try? copyValue(key: kAXSelectedTextRangeAttribute)
-        else { return nil }
-        var range: CFRange = .init(location: 0, length: 0)
-        if AXValueGetValue(value, .cfRange, &range) {
-            return Range(.init(location: range.location, length: range.length))
-        }
-        return nil
-    }
-
-    var sharedFocusElements: [AXUIElement] {
-        (try? copyValue(key: kAXChildrenAttribute)) ?? []
-    }
-
-    var window: AXUIElement? {
-        try? copyValue(key: kAXWindowAttribute)
-    }
-
-    var focusedWindow: AXUIElement? {
-        try? copyValue(key: kAXFocusedWindowAttribute)
-    }
-
-    var topLevelElement: AXUIElement? {
-        try? copyValue(key: kAXTopLevelUIElementAttribute)
-    }
-
-    var rows: [AXUIElement] {
-        (try? copyValue(key: kAXRowsAttribute)) ?? []
-    }
-
-    var parent: AXUIElement? {
-        try? copyValue(key: kAXParentAttribute)
-    }
-
-    var children: [AXUIElement] {
-        (try? copyValue(key: kAXChildrenAttribute)) ?? []
-    }
-
-    var visibleChildren: [AXUIElement] {
-        (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
-    }
-
-    var isFocused: Bool {
-        (try? copyValue(key: kAXFocusedAttribute)) ?? false
-    }
-
-    var isEnabled: Bool {
-        (try? copyValue(key: kAXEnabledAttribute)) ?? false
-    }
-
-    func child(identifier: String) -> AXUIElement? {
-        for child in children {
-            if child.identifier == identifier { return child }
-            if let target = child.child(identifier: identifier) { return target }
-        }
-        return nil
-    }
-
-    func visibleChild(identifier: String) -> AXUIElement? {
-        for child in visibleChildren {
-            if child.identifier == identifier { return child }
-            if let target = child.visibleChild(identifier: identifier) { return target }
-        }
-        return nil
     }
 }
