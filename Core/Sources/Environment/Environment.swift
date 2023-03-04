@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import AXExtension
 import CopilotService
 import Foundation
 
@@ -40,28 +41,24 @@ public enum Environment {
         }
     }
 
-    #warning("""
-    TODO: The current version causes an issue in real-time suggestion that when completion panel is open,
-    the command handler can not find the correct workspace.
-    """)
     public static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws
         -> URL? = { fileURL in
-            let appleScript = """
-            tell application "Xcode"
-                return path of document of the first window
-            end tell
-            """
-
-            let path = (try? await runAppleScript(appleScript)) ?? ""
-            if !path.isEmpty {
-                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                var url = URL(fileURLWithPath: trimmedNewLine)
-                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                    !url.pathExtension.isEmpty
-                {
-                    url = url.deletingLastPathComponent()
+            if let xcode = ActiveApplicationMonitor.activeXcode {
+                let application = AXUIElementCreateApplication(xcode.processIdentifier)
+                let focusedWindow = application.focusedWindow
+                for child in focusedWindow?.children ?? [] {
+                    if child.description.starts(with: "/") {
+                        let path = child.description
+                        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                        var url = URL(fileURLWithPath: trimmedNewLine)
+                        while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                            !url.pathExtension.isEmpty
+                        {
+                            url = url.deletingLastPathComponent()
+                        }
+                        return url
+                    }
                 }
-                return url
             }
 
             guard var currentURL = fileURL else { return nil }
@@ -86,30 +83,20 @@ public enum Environment {
 
         // fetch file path of the frontmost window of Xcode through Accessability API.
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
-        do {
-            let frontmostWindow: AXUIElement = try application
-                .copyValue(key: kAXFocusedWindowAttribute)
-            var path: String? = try? frontmostWindow.copyValue(key: kAXDocumentAttribute)
-            if path == nil {
-                for window in try application.copyValue(
-                    key: kAXWindowsAttribute,
-                    ofType: [AXUIElement].self
-                ) {
-                    path = try? window.copyValue(key: kAXDocumentAttribute)
-                    if path != nil { break }
-                }
+        let focusedWindow = application.focusedWindow
+        var path = focusedWindow?.document
+        if path == nil {
+            for window in application.windows {
+                path = window.document
+                if path != nil { break }
             }
-            if let path = path?.removingPercentEncoding {
-                let url = URL(
-                    fileURLWithPath: path
-                        .replacingOccurrences(of: "file://", with: "")
-                )
-                return url
-            }
-        } catch {
-            if let axError = error as? AXError, axError == .apiDisabled {
-                throw NoAccessToAccessibilityAPIError()
-            }
+        }
+        if let path = path?.removingPercentEncoding {
+            let url = URL(
+                fileURLWithPath: path
+                    .replacingOccurrences(of: "file://", with: "")
+            )
+            return url
         }
         throw FailedToFetchFileURLError()
     }
@@ -155,37 +142,6 @@ public enum Environment {
         """
 
         try await runAppleScript(appleScript)
-    }
-}
-
-extension AXError: Error {}
-
-public extension AXUIElement {
-    func copyValue<T>(key: String, ofType _: T.Type = T.self) throws -> T {
-        var value: AnyObject?
-        let error = AXUIElementCopyAttributeValue(self, key as CFString, &value)
-        if error == .success, let value = value as? T {
-            return value
-        }
-        throw error
-    }
-
-    func copyParameterizedValue<T>(
-        key: String,
-        parameters: AnyObject,
-        ofType _: T.Type = T.self
-    ) throws -> T {
-        var value: AnyObject?
-        let error = AXUIElementCopyParameterizedAttributeValue(
-            self,
-            key as CFString,
-            parameters as CFTypeRef,
-            &value
-        )
-        if error == .success, let value = value as? T {
-            return value
-        }
-        throw error
     }
 }
 
