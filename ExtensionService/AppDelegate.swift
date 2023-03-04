@@ -186,6 +186,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func checkForUpdate() {
+        guard UserDefaults.shared.bool(forKey: SettingsKey.automaticallyCheckForUpdate)
+        else { return }
         Task {
             await UpdateChecker().checkForUpdate()
         }
