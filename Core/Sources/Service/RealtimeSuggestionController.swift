@@ -166,7 +166,7 @@ public class RealtimeSuggestionController {
                     #warning(
                         "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
                     )
-                    if isCommentMode, await Environment.frontmostXcodeWindowIsEditor() {
+                    if await Environment.frontmostXcodeWindowIsEditor() {
                         if Task.isCancelled { return }
                         self.triggerPrefetchDebounced(force: true)
                     }
@@ -191,12 +191,7 @@ public class RealtimeSuggestionController {
 
             os_log(.info, "Prefetch suggestions.")
 
-            let isCommentMode = PresentationMode(
-                rawValue: UserDefaults.shared
-                    .integer(forKey: SettingsKey.suggestionPresentationMode)
-            ) == .comment
-
-            if isCommentMode, !force, await !Environment.frontmostXcodeWindowIsEditor() {
+            if !force, await !Environment.frontmostXcodeWindowIsEditor() {
                 os_log(.info, "Completion panel is open, blocked.")
                 return
             }

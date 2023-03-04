@@ -154,6 +154,7 @@
 		C81458982939EFDC00135263 /* EditorExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EditorExtension.entitlements; sourceTree = "<group>"; };
 		C81458AD293A009600135263 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		C81458AE293A009800135263 /* Config.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.debug.xcconfig; sourceTree = "<group>"; };
+		C815034B29B3A7CC00751CAC /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		C8189B162938972F00C9DCDA /* Copilot for Xcode Dev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Copilot for Xcode Dev.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8189B192938972F00C9DCDA /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		C8189B1B2938972F00C9DCDA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -262,6 +263,7 @@
 				C8520308293D805800460097 /* README.md */,
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
+				C815034B29B3A7CC00751CAC /* Secrets.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8189B282938979000C9DCDA /* Core */,

@@ -9,7 +9,13 @@ let package = Package(
     products: [
         .library(
             name: "Service",
-            targets: ["Service", "SuggestionInjector", "FileChangeChecker", "LaunchAgentManager"]
+            targets: [
+                "Service",
+                "SuggestionInjector",
+                "FileChangeChecker",
+                "LaunchAgentManager",
+                "UpdateChecker",
+            ]
         ),
         .library(
             name: "Client",
@@ -97,5 +103,6 @@ let package = Package(
                 "Environment",
             ]
         ),
+        .target(name: "UpdateChecker"),
     ]
 )
