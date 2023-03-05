@@ -13,6 +13,7 @@ final class Filespace {
     }
 
     let fileURL: URL
+    private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL)?.rawValue ?? "plaintext"
     var suggestions: [CopilotCompletion] = [] {
         didSet { lastSuggestionUpdateTime = Environment.now() }
     }

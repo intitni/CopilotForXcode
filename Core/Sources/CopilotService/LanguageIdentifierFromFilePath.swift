@@ -219,7 +219,7 @@ let fileExtensionToLanguageId = {
     return dict
 }()
 
-func languageIdentifierFromFileURL(_ fileURL: URL) -> LanguageIdentifier? {
+public func languageIdentifierFromFileURL(_ fileURL: URL) -> LanguageIdentifier? {
     let fileExtension = fileURL.pathExtension
     return fileExtensionToLanguageId[fileExtension]
 }
