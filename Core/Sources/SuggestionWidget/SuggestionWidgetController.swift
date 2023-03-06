@@ -2,6 +2,8 @@ import ActiveApplicationMonitor
 import AppKit
 import AXNotificationStream
 import Environment
+import Highlightr
+import Splash
 import SwiftUI
 import XPCShared
 
@@ -90,7 +92,13 @@ public final class SuggestionWidgetController {
     }
 
     enum Suggestion {
-        case code([String], startLineIndex: Int, currentSuggestionIndex: Int, suggestionCount: Int)
+        case code(
+            String,
+            language: String,
+            startLineIndex: Int,
+            currentSuggestionIndex: Int,
+            suggestionCount: Int
+        )
     }
 
     public nonisolated init() {
@@ -132,19 +140,21 @@ public final class SuggestionWidgetController {
 
     public func suggestCode(
         _ code: String,
+        language: String,
         startLineIndex: Int,
         fileURL: URL,
         currentSuggestionIndex: Int,
         suggestionCount: Int
     ) {
         withAnimation(.easeInOut(duration: 0.2)) {
-            suggestionPanelViewModel.suggestion = code.split(separator: "\n").map(String.init)
+            suggestionPanelViewModel.suggestion = highlighted(code: code, language: language)
             suggestionPanelViewModel.startLineIndex = startLineIndex
             suggestionPanelViewModel.isPanelDisplayed = true
             suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
             suggestionPanelViewModel.suggestionCount = suggestionCount
             suggestionForFiles[fileURL] = .code(
-                suggestionPanelViewModel.suggestion,
+                code,
+                language: language,
                 startLineIndex: startLineIndex,
                 currentSuggestionIndex: currentSuggestionIndex,
                 suggestionCount: suggestionCount
@@ -194,8 +204,17 @@ public final class SuggestionWidgetController {
                         continue
                     }
                     switch suggestion {
-                    case let .code(code, startLineIndex, currentSuggestionIndex, suggestionCount):
-                        suggestionPanelViewModel.suggestion = code
+                    case let .code(
+                        code,
+                        language,
+                        startLineIndex,
+                        currentSuggestionIndex,
+                        suggestionCount
+                    ):
+                        suggestionPanelViewModel.suggestion = highlighted(
+                            code: code,
+                            language: language
+                        )
                         suggestionPanelViewModel.startLineIndex = startLineIndex
                         suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
                         suggestionPanelViewModel.suggestionCount = suggestionCount
@@ -247,7 +266,10 @@ public final class SuggestionWidgetController {
                 if foundSize, foundPosition, let screen, let firstScreen {
                     let proposedAnchorFrameOnTheRightSide = CGRect(
                         x: frame.maxX - Style.widgetPadding - Style.widgetWidth,
-                        y: max(firstScreen.frame.height - frame.maxY + Style.widgetPadding, 4 + screen.frame.minY),
+                        y: max(
+                            firstScreen.frame.height - frame.maxY + Style.widgetPadding,
+                            4 + screen.frame.minY
+                        ),
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
@@ -311,4 +333,59 @@ public final class SuggestionWidgetController {
 
         hide()
     }
+}
+
+func highlighted(code: String, language: String) -> [NSAttributedString] {
+    switch language {
+    case "swift":
+        let plainTextColor = #colorLiteral(red: 0.6509803922, green: 0.6980392157, blue: 0.7529411765, alpha: 1)
+        let highlighter =
+            SyntaxHighlighter(
+                format: AttributedStringOutputFormat(theme: .init(
+                    font: .init(size: 14),
+                    plainTextColor: plainTextColor,
+                    tokenColors: [
+                        .keyword: #colorLiteral(red: 0.8258609176, green: 0.5708742738, blue: 0.8922662139, alpha: 1),
+                        .string: #colorLiteral(red: 0.6253595352, green: 0.7963448763, blue: 0.5427476764, alpha: 1),
+                        .type: #colorLiteral(red: 0.9221783876, green: 0.7978314757, blue: 0.5575165749, alpha: 1),
+                        .call: #colorLiteral(red: 0.4466812611, green: 0.742190659, blue: 0.9515134692, alpha: 1),
+                        .number: #colorLiteral(red: 0.8620631099, green: 0.6468816996, blue: 0.4395158887, alpha: 1),
+                        .comment: #colorLiteral(red: 0.4233166873, green: 0.4612616301, blue: 0.5093258619, alpha: 1),
+                        .property: #colorLiteral(red: 0.906378448, green: 0.5044228435, blue: 0.5263597369, alpha: 1),
+                        .dotAccess: #colorLiteral(red: 0.906378448, green: 0.5044228435, blue: 0.5263597369, alpha: 1),
+                        .preprocessing: #colorLiteral(red: 0.3776347041, green: 0.8792117238, blue: 0.4709561467, alpha: 1),
+                    ]
+                ))
+            )
+        let formatted = NSMutableAttributedString(attributedString: highlighter.highlight(code))
+        formatted.addAttributes(
+            [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
+            range: NSRange(location: 0, length: formatted.length)
+        )
+        return splitAttributedString(formatted)
+    default:
+        guard let highlighter = Highlightr() else {
+            return splitAttributedString(NSAttributedString(string: code))
+        }
+        highlighter.setTheme(to: "atom-one-dark")
+        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
+        guard let formatted = highlighter.highlight(code, as: "swift") else {
+            return splitAttributedString(NSAttributedString(string: code))
+        }
+        return splitAttributedString(formatted)
+    }
+}
+
+func splitAttributedString(_ inputString: NSAttributedString) -> [NSAttributedString] {
+    let input = inputString.string
+    let separatedInput = input.components(separatedBy: "\n")
+    var output = [NSAttributedString]()
+    var start = 0
+    for sub in separatedInput {
+        let range = NSMakeRange(start, sub.utf16.count)
+        let attributedString = inputString.attributedSubstring(from: range)
+        output.append(attributedString)
+        start += range.length + 1
+    }
+    return output
 }

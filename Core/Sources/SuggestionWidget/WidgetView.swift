@@ -109,7 +109,7 @@ struct WidgetView_Preview: PreviewProvider {
 
             WidgetView(
                 viewModel: .init(isProcessing: false),
-                panelViewModel: .init(suggestion: ["Hello"]),
+                panelViewModel: .init(suggestion: [.init(string: "Hello")]),
                 isHovering: false
             )
         }

@@ -1,4 +1,5 @@
 import CopilotModel
+import CopilotService
 import Environment
 import Foundation
 import os.log
@@ -55,6 +56,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
@@ -83,6 +85,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
@@ -111,6 +114,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
