@@ -32,7 +32,7 @@ public final class SuggestionWidgetController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .statusBar
+        it.level = .floating
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -54,7 +54,7 @@ public final class SuggestionWidgetController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .statusBar
+        it.level = .floating
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)

@@ -116,7 +116,7 @@ final class RealtimeSuggestionIndicatorController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .white.withAlphaComponent(0)
-        it.level = .statusBar
+        it.level = .floating
         it.contentView = NSHostingView(
             rootView: IndicatorContentView(viewModel: self.viewModel)
                 .frame(minWidth: 10, minHeight: 10)

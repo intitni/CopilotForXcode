@@ -67,7 +67,7 @@ public struct UpdateChecker {
                     backing: .buffered,
                     defer: true
                 )
-                window.level = .statusBar
+                window.level = .floating
                 window.isReleasedWhenClosed = false
                 alert.beginSheetModal(for: window) { [window] response in
                     switch response {
