@@ -376,7 +376,7 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
     }
 }
 
-func splitAttributedString(_ inputString: NSAttributedString) -> [NSAttributedString] {
+private func splitAttributedString(_ inputString: NSAttributedString) -> [NSAttributedString] {
     let input = inputString.string
     let separatedInput = input.components(separatedBy: "\n")
     var output = [NSAttributedString]()

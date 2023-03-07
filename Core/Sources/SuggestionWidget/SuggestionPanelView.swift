@@ -107,10 +107,8 @@ struct CodeBlock: View {
             ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
                 Text("\(index + viewModel.startLineIndex + 1)")
                     .foregroundColor(Color.white.opacity(0.6))
-                Text(AttributedString(viewModel.suggestion[index]))
+                BreakByCharText(viewModel.suggestion[index])
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                    .lineSpacing(4)
             }
         }
         .foregroundColor(.white)
@@ -233,4 +231,39 @@ struct SuggestionPanelView_Preview: PreviewProvider {
             }
         }
     }
+}
+
+// Super dirty hack to workaround that AttributedText doesn't support paragraphStyle.lineBreakMode
+struct BreakByCharText: View {
+    let attributedString: NSAttributedString
+    let attributedChars: [NSAttributedString]
+
+    init(_ attributedString: NSAttributedString) {
+        self.attributedString = attributedString
+        attributedChars = splitAttributedString(attributedString)
+    }
+
+    var body: some View {
+        LazyVGrid(
+            columns: [.init(.adaptive(minimum: 8), spacing: 0, alignment: .leading)],
+            alignment: .leading,
+            spacing: 4
+        ) {
+            ForEach(0..<attributedChars.endIndex, id: \.self) { index in
+                Text(AttributedString(attributedChars[index]))
+            }
+        }
+    }
+}
+
+private func splitAttributedString(_ inputString: NSAttributedString) -> [NSAttributedString] {
+    var output = [NSAttributedString]()
+    var start = 0
+    for char in inputString.string {
+        let range = NSMakeRange(start, char.utf16.count)
+        let attributedString = inputString.attributedSubstring(from: range)
+        output.append(attributedString)
+        start += range.length
+    }
+    return output
 }
