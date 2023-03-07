@@ -22,6 +22,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Limitations](#limitations)
 - [FAQ](#faq)
 - [License](#license)
+- [Development](DEVELOPMENT.md)
 
 ## Prerequisites
 
