@@ -362,29 +362,48 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
             [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
             range: NSRange(location: 0, length: formatted.length)
         )
-        return splitAttributedString(formatted)
+        return convertToCodeLines(formatted)
     default:
         guard let highlighter = Highlightr() else {
-            return splitAttributedString(NSAttributedString(string: code))
+            return convertToCodeLines(NSAttributedString(string: code))
         }
         highlighter.setTheme(to: "atom-one-dark")
         highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
         guard let formatted = highlighter.highlight(code, as: "swift") else {
-            return splitAttributedString(NSAttributedString(string: code))
+            return convertToCodeLines(NSAttributedString(string: code))
         }
-        return splitAttributedString(formatted)
+        return convertToCodeLines(formatted)
     }
 }
 
-private func splitAttributedString(_ inputString: NSAttributedString) -> [NSAttributedString] {
-    let input = inputString.string
+private func convertToCodeLines(_ formatedCode: NSAttributedString) -> [NSAttributedString] {
+    let input = formatedCode.string
     let separatedInput = input.components(separatedBy: "\n")
     var output = [NSAttributedString]()
     var start = 0
     for sub in separatedInput {
         let range = NSMakeRange(start, sub.utf16.count)
-        let attributedString = inputString.attributedSubstring(from: range)
-        output.append(attributedString)
+        let attributedString = formatedCode.attributedSubstring(from: range)
+        let mutable = NSMutableAttributedString(attributedString: attributedString)
+        // use regex to replace all spaces to a middle dot
+        do {
+            let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
+            let result = regex.matches(
+                in: mutable.string,
+                range: NSRange(location: 0, length: mutable.mutableString.length)
+            )
+            for r in result {
+                let range = r.range
+                mutable.replaceCharacters(
+                    in: range,
+                    with: String(repeating: "·", count: range.length)
+                )
+                mutable.addAttributes([
+                    .foregroundColor: NSColor.white.withAlphaComponent(0.1),
+                ], range: range)
+            }
+        } catch {}
+        output.append(mutable)
         start += range.length + 1
     }
     return output
