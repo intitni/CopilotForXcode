@@ -145,6 +145,7 @@
 		C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C81291D52994FE6900196E12 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		C81291D92994FE7900196E12 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C813B41E29B7B0F100FADAE3 /* Secrets.sample.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.sample.xcconfig; sourceTree = "<group>"; };
 		C814588C2939EFDC00135263 /* Copilot.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Copilot.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C814588E2939EFDC00135263 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		C81458902939EFDC00135263 /* XcodeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XcodeKit.framework; path = Library/Frameworks/XcodeKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -263,6 +264,7 @@
 				C8520308293D805800460097 /* README.md */,
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
+				C813B41E29B7B0F100FADAE3 /* Secrets.sample.xcconfig */,
 				C815034B29B3A7CC00751CAC /* Secrets.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
