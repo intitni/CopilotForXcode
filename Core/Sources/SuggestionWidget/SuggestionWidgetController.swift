@@ -264,63 +264,13 @@ public final class SuggestionWidgetController {
                 let firstScreen = NSScreen.screens.first
                 let frame = CGRect(origin: position, size: size)
                 if foundSize, foundPosition, let screen, let firstScreen {
-                    let proposedAnchorFrameOnTheRightSide = CGRect(
-                        x: frame.maxX - Style.widgetPadding - Style.widgetWidth,
-                        y: max(
-                            firstScreen.frame.height - frame.maxY + Style.widgetPadding,
-                            4 + screen.frame.minY
-                        ),
-                        width: Style.widgetWidth,
-                        height: Style.widgetHeight
+                    let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen
                     )
-
-                    let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
-                        .widgetPadding * 2
-                    let putPanelToTheRight = screen.frame.maxX > proposedPanelX + Style.panelWidth
-
-                    if putPanelToTheRight {
-                        let anchorFrame = proposedAnchorFrameOnTheRightSide
-                        let panelFrame = CGRect(
-                            x: proposedPanelX,
-                            y: anchorFrame.minY,
-                            width: Style.panelWidth,
-                            height: Style.panelHeight
-                        )
-                        widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
-                        panelWindow.setFrame(panelFrame, display: false, animate: animated)
-                    } else {
-                        let proposedAnchorFrameOnTheLeftSide = CGRect(
-                            x: frame.minX + Style.widgetPadding + Style.widgetWidth,
-                            y: proposedAnchorFrameOnTheRightSide.origin.y,
-                            width: Style.widgetWidth,
-                            height: Style.widgetHeight
-                        )
-                        let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
-                            .widgetPadding * 2 - Style.panelWidth
-                        let putAnchorToTheLeft = proposedPanelX > screen.frame.minX
-
-                        if putAnchorToTheLeft {
-                            let anchorFrame = proposedAnchorFrameOnTheLeftSide
-                            let panelFrame = CGRect(
-                                x: proposedPanelX,
-                                y: anchorFrame.minY,
-                                width: Style.panelWidth,
-                                height: Style.panelHeight
-                            )
-                            widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
-                            panelWindow.setFrame(panelFrame, display: false, animate: animated)
-                        } else {
-                            let anchorFrame = proposedAnchorFrameOnTheRightSide
-                            let panelFrame = CGRect(
-                                x: anchorFrame.maxX - Style.panelWidth,
-                                y: anchorFrame.maxY + Style.widgetPadding,
-                                width: Style.panelWidth,
-                                height: Style.panelHeight
-                            )
-                            widgetWindow.setFrame(anchorFrame, display: false, animate: animated)
-                            panelWindow.setFrame(panelFrame, display: false, animate: animated)
-                        }
-                    }
+                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
+                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
 
                     panelWindow.orderFront(nil)
                     widgetWindow.orderFront(nil)
@@ -407,4 +357,69 @@ private func convertToCodeLines(_ formatedCode: NSAttributedString) -> [NSAttrib
         start += range.length + 1
     }
     return output
+}
+
+enum UpdateLocationStrategy {
+    struct FixedToBottom {
+        func framesForWindows(
+            editorFrame: CGRect,
+            mainScreen: NSScreen,
+            activeScreen: NSScreen
+        ) -> (widgetFrame: CGRect, panelFrame: CGRect) {
+            let proposedAnchorFrameOnTheRightSide = CGRect(
+                x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
+                y: max(
+                    activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                    4 + mainScreen.frame.minY
+                ),
+                width: Style.widgetWidth,
+                height: Style.widgetHeight
+            )
+
+            let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
+                .widgetPadding * 2
+            let putPanelToTheRight = mainScreen.frame.maxX > proposedPanelX + Style.panelWidth
+
+            if putPanelToTheRight {
+                let anchorFrame = proposedAnchorFrameOnTheRightSide
+                let panelFrame = CGRect(
+                    x: proposedPanelX,
+                    y: anchorFrame.minY,
+                    width: Style.panelWidth,
+                    height: Style.panelHeight
+                )
+                return (anchorFrame, panelFrame)
+            } else {
+                let proposedAnchorFrameOnTheLeftSide = CGRect(
+                    x: editorFrame.minX + Style.widgetPadding + Style.widgetWidth,
+                    y: proposedAnchorFrameOnTheRightSide.origin.y,
+                    width: Style.widgetWidth,
+                    height: Style.widgetHeight
+                )
+                let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
+                    .widgetPadding * 2 - Style.panelWidth
+                let putAnchorToTheLeft = proposedPanelX > mainScreen.frame.minX
+
+                if putAnchorToTheLeft {
+                    let anchorFrame = proposedAnchorFrameOnTheLeftSide
+                    let panelFrame = CGRect(
+                        x: proposedPanelX,
+                        y: anchorFrame.minY,
+                        width: Style.panelWidth,
+                        height: Style.panelHeight
+                    )
+                    return (anchorFrame, panelFrame)
+                } else {
+                    let anchorFrame = proposedAnchorFrameOnTheRightSide
+                    let panelFrame = CGRect(
+                        x: anchorFrame.maxX - Style.panelWidth,
+                        y: anchorFrame.maxY + Style.widgetPadding,
+                        width: Style.panelWidth,
+                        height: Style.panelHeight
+                    )
+                    return (anchorFrame, panelFrame)
+                }
+            }
+        }
+    }
 }
