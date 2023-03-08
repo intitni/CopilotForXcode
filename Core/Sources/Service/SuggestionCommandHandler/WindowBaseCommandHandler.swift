@@ -27,11 +27,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer {
             presenter.markAsProcessing(false)
-            Task {
-                await GraphicalUserInterfaceController.shared
-                    .realtimeSuggestionIndicatorController
-                    .endPrefetchAnimation()
-            }
         }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
@@ -162,8 +157,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
-            .triggerPrefetchAnimation()
         return try await presentSuggestions(editor: editor)
     }
 }

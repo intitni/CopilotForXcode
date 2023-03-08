@@ -238,8 +238,12 @@ final class RealtimeSuggestionIndicatorController {
     private func updateIndicatorVisibility() async {
         let isVisible = await {
             let isOn = UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+            let isCommentMode = (PresentationMode(
+                rawValue: UserDefaults.shared
+                    .integer(forKey: SettingsKey.suggestionPresentationMode)
+            ) ?? .comment) == .comment
             let isXcodeActive = await Environment.isXcodeActive()
-            return isOn && isXcodeActive
+            return isOn && isXcodeActive && isCommentMode
         }()
 
         guard window.isVisible != isVisible else { return }
