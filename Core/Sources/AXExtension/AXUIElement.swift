@@ -1,6 +1,8 @@
 import AppKit
 import Foundation
 
+// MARK: - State
+
 public extension AXUIElement {
     var identifier: String {
         (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
@@ -9,13 +11,9 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
-    
+
     var document: String? {
         try? copyValue(key: kAXDocumentAttribute)
-    }
-
-    var focusedElement: AXUIElement? {
-        try? copyValue(key: kAXFocusedUIElementAttribute)
     }
 
     var description: String {
@@ -32,6 +30,51 @@ public extension AXUIElement {
         return nil
     }
 
+    var isFocused: Bool {
+        (try? copyValue(key: kAXFocusedAttribute)) ?? false
+    }
+
+    var isEnabled: Bool {
+        (try? copyValue(key: kAXEnabledAttribute)) ?? false
+    }
+}
+
+// MARK: - Rect
+
+public extension AXUIElement {
+    var position: CGPoint? {
+        guard let value: AXValue = try? copyValue(key: kAXPositionAttribute)
+        else { return nil }
+        var point: CGPoint = .zero
+        if AXValueGetValue(value, .cgPoint, &point) {
+            return point
+        }
+        return nil
+    }
+    
+    var size: CGSize? {
+        guard let value: AXValue = try? copyValue(key: kAXSizeAttribute)
+        else { return nil }
+        var size: CGSize = .zero
+        if AXValueGetValue(value, .cgSize, &size) {
+            return size
+        }
+        return nil
+    }
+    
+    var rect: CGRect? {
+        guard let position, let size else { return nil }
+        return .init(origin: position, size: size)
+    }
+}
+
+// MARK: - Relationship
+
+public extension AXUIElement {
+    var focusedElement: AXUIElement? {
+        try? copyValue(key: kAXFocusedUIElementAttribute)
+    }
+
     var sharedFocusElements: [AXUIElement] {
         (try? copyValue(key: kAXChildrenAttribute)) ?? []
     }
@@ -39,7 +82,7 @@ public extension AXUIElement {
     var window: AXUIElement? {
         try? copyValue(key: kAXWindowAttribute)
     }
-    
+
     var windows: [AXUIElement] {
         (try? copyValue(key: kAXWindowsAttribute)) ?? []
     }
@@ -68,14 +111,6 @@ public extension AXUIElement {
         (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
     }
 
-    var isFocused: Bool {
-        (try? copyValue(key: kAXFocusedAttribute)) ?? false
-    }
-
-    var isEnabled: Bool {
-        (try? copyValue(key: kAXEnabledAttribute)) ?? false
-    }
-
     func child(identifier: String) -> AXUIElement? {
         for child in children {
             if child.identifier == identifier { return child }
@@ -92,6 +127,14 @@ public extension AXUIElement {
         return nil
     }
     
+    var verticalScrollBar: AXUIElement? {
+        try? copyValue(key: kAXVerticalScrollBarAttribute)
+    }
+}
+
+// MARK: - Helper
+
+public extension AXUIElement {
     func copyValue<T>(key: String, ofType _: T.Type = T.self) throws -> T {
         var value: AnyObject?
         let error = AXUIElementCopyAttributeValue(self, key as CFString, &value)
@@ -118,7 +161,6 @@ public extension AXUIElement {
         }
         throw error
     }
-
 }
 
 extension AXError: Error {}

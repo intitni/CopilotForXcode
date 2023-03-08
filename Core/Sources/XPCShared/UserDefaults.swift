@@ -24,4 +24,5 @@ public enum SettingsKey {
     public static let quitXPCServiceOnXcodeAndAppQuit = "QuitXPCServiceOnXcodeAndAppQuit"
     public static let suggestionPresentationMode = "SuggestionPresentationMode"
     public static let automaticallyCheckForUpdate = "AutomaticallyCheckForUpdate"
+    public static let suggestionWidgetPositionMode = "SuggestionWidgetPositionMode"
 }

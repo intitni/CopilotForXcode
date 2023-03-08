@@ -8,6 +8,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var isPanelDisplayed: Bool
     @Published var suggestionCount: Int
     @Published var currentSuggestionIndex: Int
+    @Published var alignTopToAnchor = false
 
     var onAcceptButtonTapped: (() -> Void)?
     var onRejectButtonTapped: (() -> Void)?
@@ -45,9 +46,11 @@ struct SuggestionPanelView: View {
 
     var body: some View {
         VStack {
-            Spacer()
-                .frame(minHeight: 0, maxHeight: .infinity)
-                .allowsHitTesting(false)
+            if !viewModel.alignTopToAnchor {
+                Spacer()
+                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
 
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
@@ -79,6 +82,12 @@ struct SuggestionPanelView: View {
             }
             .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.isEmpty)
             .preferredColorScheme(.dark)
+            
+            if viewModel.alignTopToAnchor {
+                Spacer()
+                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
         }
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }

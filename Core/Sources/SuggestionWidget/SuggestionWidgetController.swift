@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import AsyncAlgorithms
 import AXNotificationStream
 import Environment
 import Highlightr
@@ -69,6 +70,7 @@ public final class SuggestionWidgetController {
     private var userDefaultsObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
+    private var sourceEditorMonitorTask: Task<Void, Error>?
     private var suggestionForFiles: [URL: Suggestion] = [:]
     private var currentFileURL: URL?
 
@@ -186,6 +188,7 @@ public final class SuggestionWidgetController {
 
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
         guard windowChangeObservationTask == nil else { return }
+        observeEditorChangeIfNeeded(app)
         windowChangeObservationTask = Task { [weak self] in
             let notifications = AXNotificationStream(
                 app: app,
@@ -200,8 +203,12 @@ public final class SuggestionWidgetController {
                 guard let self else { return }
                 try Task.checkCancellation()
                 self.updateWindowLocation(animated: false)
-                
+
                 if notification.name == kAXFocusedUIElementChangedNotification {
+                    sourceEditorMonitorTask?.cancel()
+                    sourceEditorMonitorTask = nil
+                    observeEditorChangeIfNeeded(app)
+
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
                         suggestionPanelViewModel.suggestion = []
                         continue
@@ -212,6 +219,7 @@ public final class SuggestionWidgetController {
                         suggestionPanelViewModel.suggestion = []
                         continue
                     }
+
                     switch suggestion {
                     case let .code(
                         code,
@@ -227,6 +235,54 @@ public final class SuggestionWidgetController {
                         suggestionPanelViewModel.startLineIndex = startLineIndex
                         suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
                         suggestionPanelViewModel.suggestionCount = suggestionCount
+                    }
+                }
+            }
+        }
+    }
+
+    private func observeEditorChangeIfNeeded(_ app: NSRunningApplication) {
+        guard sourceEditorMonitorTask == nil else { return }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        if let focusedElement = appElement.focusedElement,
+           focusedElement.description == "Source Editor",
+           let scrollView = focusedElement.parent,
+           let scrollBar = scrollView.verticalScrollBar
+        {
+            sourceEditorMonitorTask = Task { [weak self] in
+                let selectionRangeChange = AXNotificationStream(
+                    app: app,
+                    element: focusedElement,
+                    notificationNames: kAXSelectedTextChangedNotification
+                )
+                let scroll = AXNotificationStream(
+                    app: app,
+                    element: scrollBar, notificationNames: kAXValueChangedNotification
+                )
+
+                if #available(macOS 13.0, *) {
+                    for await _ in merge(selectionRangeChange, scroll)
+                        .debounce(for: Duration.milliseconds(500))
+                    {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        let mode = SuggestionWidgetPositionMode(
+                            rawValue: UserDefaults.shared
+                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
+                        )
+                        if mode != .alignToTextCursor { break }
+                        self.updateWindowLocation(animated: true)
+                    }
+                } else {
+                    for await _ in merge(selectionRangeChange, scroll) {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        let mode = SuggestionWidgetPositionMode(
+                            rawValue: UserDefaults.shared
+                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
+                        )
+                        if mode != .alignToTextCursor { break }
+                        self.updateWindowLocation(animated: false)
                     }
                 }
             }
@@ -254,25 +310,19 @@ public final class SuggestionWidgetController {
 
         if let xcode = ActiveApplicationMonitor.activeXcode {
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            if let focusElement: AXUIElement = try? application
-                .copyValue(key: kAXFocusedUIElementAttribute),
-                let focusElementType: String = try? focusElement
-                .copyValue(key: kAXDescriptionAttribute),
-                focusElementType == "Source Editor",
-                let parent: AXUIElement = try? focusElement.copyValue(key: kAXParentAttribute),
-                let positionValue: AXValue = try? parent
-                .copyValue(key: kAXPositionAttribute),
-                let sizeValue: AXValue = try? parent
-                .copyValue(key: kAXSizeAttribute)
+            if let focusElement = application.focusedElement,
+               focusElement.description == "Source Editor",
+               let parent = focusElement.parent,
+               let frame = parent.rect,
+               let screen = NSScreen.main,
+               let firstScreen = NSScreen.screens.first
             {
-                var position: CGPoint = .zero
-                let foundPosition = AXValueGetValue(positionValue, .cgPoint, &position)
-                var size: CGSize = .zero
-                let foundSize = AXValueGetValue(sizeValue, .cgSize, &size)
-                let screen = NSScreen.main
-                let firstScreen = NSScreen.screens.first
-                let frame = CGRect(origin: position, size: size)
-                if foundSize, foundPosition, let screen, let firstScreen {
+                let mode = SuggestionWidgetPositionMode(
+                    rawValue: UserDefaults.shared
+                        .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
+                ) ?? .fixedToBottom
+                switch mode {
+                case .fixedToBottom:
                     let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
@@ -280,13 +330,24 @@ public final class SuggestionWidgetController {
                     )
                     widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
                     panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
-
-                    panelWindow.orderFront(nil)
-                    widgetWindow.orderFront(nil)
-                    panelWindow.alphaValue = 1
-                    widgetWindow.alphaValue = 1
-                    return
+                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
+                case .alignToTextCursor:
+                    let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen,
+                        editor: focusElement
+                    )
+                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
+                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
+                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
+
+                panelWindow.orderFront(nil)
+                widgetWindow.orderFront(nil)
+                panelWindow.alphaValue = 1
+                widgetWindow.alphaValue = 1
+                return
             }
         }
 
@@ -369,18 +430,84 @@ private func convertToCodeLines(_ formatedCode: NSAttributedString) -> [NSAttrib
 }
 
 enum UpdateLocationStrategy {
+    struct AlignToTextCursor {
+        func framesForWindows(
+            editorFrame: CGRect,
+            mainScreen: NSScreen,
+            activeScreen: NSScreen,
+            editor: AXUIElement
+        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+            guard let selectedRange: AXValue = try? editor
+                .copyValue(key: kAXSelectedTextRangeAttribute),
+                let rect: AXValue = try? editor.copyParameterizedValue(
+                    key: kAXBoundsForRangeParameterizedAttribute,
+                    parameters: selectedRange
+                )
+            else {
+                return FixedToBottom().framesForWindows(
+                    editorFrame: editorFrame,
+                    mainScreen: mainScreen,
+                    activeScreen: activeScreen
+                )
+            }
+            var frame: CGRect = .zero
+            let found = AXValueGetValue(rect, .cgRect, &frame)
+            guard found else {
+                return FixedToBottom().framesForWindows(
+                    editorFrame: editorFrame,
+                    mainScreen: mainScreen,
+                    activeScreen: activeScreen
+                )
+            }
+            return HorizontalMovable().framesForWindows(
+                y: activeScreen.frame.height - frame.maxY,
+                alignPanelTopToAnchor: nil,
+                editorFrame: editorFrame,
+                mainScreen: mainScreen,
+                activeScreen: activeScreen
+            )
+        }
+    }
+
     struct FixedToBottom {
         func framesForWindows(
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect) {
+        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+            return HorizontalMovable().framesForWindows(
+                y: activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                alignPanelTopToAnchor: false,
+                editorFrame: editorFrame,
+                mainScreen: mainScreen,
+                activeScreen: activeScreen
+            )
+        }
+    }
+
+    struct HorizontalMovable {
+        func framesForWindows(
+            y: CGFloat,
+            alignPanelTopToAnchor fixedAlignment: Bool?,
+            editorFrame: CGRect,
+            mainScreen: NSScreen,
+            activeScreen: NSScreen
+        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+            let maxY = max(
+                y,
+                activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                4 + mainScreen.frame.minY
+            )
+            let y = min(
+                maxY,
+                mainScreen.frame.maxY - 4,
+                activeScreen.frame.height - editorFrame.minY - Style.widgetHeight - Style
+                    .widgetPadding
+            )
+
             let proposedAnchorFrameOnTheRightSide = CGRect(
                 x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
-                y: max(
-                    activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
-                    4 + mainScreen.frame.minY
-                ),
+                y: y,
                 width: Style.widgetWidth,
                 height: Style.widgetHeight
             )
@@ -388,19 +515,21 @@ enum UpdateLocationStrategy {
             let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
                 .widgetPadding * 2
             let putPanelToTheRight = mainScreen.frame.maxX > proposedPanelX + Style.panelWidth
+            let alignPanelTopToAnchor = fixedAlignment ?? (y > activeScreen.frame.midY)
 
             if putPanelToTheRight {
                 let anchorFrame = proposedAnchorFrameOnTheRightSide
                 let panelFrame = CGRect(
                     x: proposedPanelX,
-                    y: anchorFrame.minY,
+                    y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight : anchorFrame
+                        .minY,
                     width: Style.panelWidth,
                     height: Style.panelHeight
                 )
-                return (anchorFrame, panelFrame)
+                return (anchorFrame, panelFrame, alignPanelTopToAnchor)
             } else {
                 let proposedAnchorFrameOnTheLeftSide = CGRect(
-                    x: editorFrame.minX + Style.widgetPadding + Style.widgetWidth,
+                    x: editorFrame.minX + Style.widgetPadding,
                     y: proposedAnchorFrameOnTheRightSide.origin.y,
                     width: Style.widgetWidth,
                     height: Style.widgetHeight
@@ -413,20 +542,24 @@ enum UpdateLocationStrategy {
                     let anchorFrame = proposedAnchorFrameOnTheLeftSide
                     let panelFrame = CGRect(
                         x: proposedPanelX,
-                        y: anchorFrame.minY,
+                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style
+                            .panelHeight : anchorFrame
+                            .minY,
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
-                    return (anchorFrame, panelFrame)
+                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
                 } else {
                     let anchorFrame = proposedAnchorFrameOnTheRightSide
                     let panelFrame = CGRect(
                         x: anchorFrame.maxX - Style.panelWidth,
-                        y: anchorFrame.maxY + Style.widgetPadding,
+                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight - Style
+                            .widgetHeight - Style.widgetPadding : anchorFrame.maxY + Style
+                            .widgetPadding,
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
-                    return (anchorFrame, panelFrame)
+                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
                 }
             }
         }
