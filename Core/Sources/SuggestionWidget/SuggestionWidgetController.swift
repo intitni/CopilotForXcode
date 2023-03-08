@@ -70,6 +70,7 @@ public final class SuggestionWidgetController {
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var suggestionForFiles: [URL: Suggestion] = [:]
+    private var currentFileURL: URL?
 
     public var onAcceptButtonTapped: (() -> Void)? {
         get { suggestionPanelViewModel.onAcceptButtonTapped }
@@ -147,11 +148,13 @@ public final class SuggestionWidgetController {
         suggestionCount: Int
     ) {
         withAnimation(.easeInOut(duration: 0.2)) {
-            suggestionPanelViewModel.suggestion = highlighted(code: code, language: language)
-            suggestionPanelViewModel.startLineIndex = startLineIndex
-            suggestionPanelViewModel.isPanelDisplayed = true
-            suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
-            suggestionPanelViewModel.suggestionCount = suggestionCount
+            if fileURL == currentFileURL || currentFileURL == nil {
+                suggestionPanelViewModel.suggestion = highlighted(code: code, language: language)
+                suggestionPanelViewModel.startLineIndex = startLineIndex
+                suggestionPanelViewModel.isPanelDisplayed = true
+                suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
+                suggestionPanelViewModel.suggestionCount = suggestionCount
+            }
             suggestionForFiles[fileURL] = .code(
                 code,
                 language: language,
@@ -166,11 +169,13 @@ public final class SuggestionWidgetController {
     public func discardSuggestion(fileURL: URL) {
         withAnimation(.easeInOut(duration: 0.2)) {
             suggestionForFiles[fileURL] = nil
-            suggestionPanelViewModel.suggestion = []
-            suggestionPanelViewModel.startLineIndex = 0
-            suggestionPanelViewModel.currentSuggestionIndex = 0
-            suggestionPanelViewModel.suggestionCount = 0
-            suggestionPanelViewModel.isPanelDisplayed = false
+            if fileURL == currentFileURL || currentFileURL == nil {
+                suggestionPanelViewModel.suggestion = []
+                suggestionPanelViewModel.startLineIndex = 0
+                suggestionPanelViewModel.currentSuggestionIndex = 0
+                suggestionPanelViewModel.suggestionCount = 0
+                suggestionPanelViewModel.isPanelDisplayed = false
+            }
             widgetViewModel.isProcessing = false
         }
     }
@@ -195,10 +200,14 @@ public final class SuggestionWidgetController {
                 guard let self else { return }
                 try Task.checkCancellation()
                 self.updateWindowLocation(animated: false)
-
+                
                 if notification.name == kAXFocusedUIElementChangedNotification {
-                    guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-                          let suggestion = suggestionForFiles[fileURL]
+                    guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
+                        suggestionPanelViewModel.suggestion = []
+                        continue
+                    }
+                    currentFileURL = fileURL
+                    guard let suggestion = suggestionForFiles[fileURL]
                     else {
                         suggestionPanelViewModel.suggestion = []
                         continue
