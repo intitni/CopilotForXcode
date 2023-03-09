@@ -389,7 +389,7 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
         }
         highlighter.setTheme(to: "atom-one-dark")
         highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
-        guard let formatted = highlighter.highlight(code, as: "swift") else {
+        guard let formatted = highlighter.highlight(code, as: language) else {
             return convertToCodeLines(NSAttributedString(string: code))
         }
         return convertToCodeLines(formatted)
