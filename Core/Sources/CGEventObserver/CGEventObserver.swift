@@ -6,39 +6,50 @@ public protocol CGEventObserverType {
     @discardableResult
     func activateIfPossible() -> Bool
     func deactivate()
-    var stream: AsyncStream<CGEvent> { get }
+    func createStream() -> AsyncStream<CGEvent>
     var isEnabled: Bool { get }
 }
 
 public final class CGEventObserver: CGEventObserverType {
-    public let stream: AsyncStream<CGEvent>
     public var isEnabled: Bool { port != nil }
 
-    private var continuation: AsyncStream<CGEvent>.Continuation
+    private var continuations: [UUID: AsyncStream<CGEvent>.Continuation] = [:]
     private var port: CFMachPort?
     private let eventsOfInterest: Set<CGEventType>
     private let tapLocation: CGEventTapLocation = .cghidEventTap
     private let tapPlacement: CGEventTapPlacement = .tailAppendEventTap
-    private let tapOptions: CGEventTapOptions = .listenOnly
-    private var retryTask: Task<Void, Error>?
+    private let tapOptions: CGEventTapOptions = .defaultTap
 
     deinit {
-        continuation.finish()
+        for continuation in continuations {
+            continuation.value.finish()
+        }
         CFMachPortInvalidate(port)
     }
 
     public init(eventsOfInterest: Set<CGEventType>) {
         self.eventsOfInterest = eventsOfInterest
-        var continuation: AsyncStream<CGEvent>.Continuation!
-        stream = AsyncStream { c in
-            continuation = c
+    }
+
+    public func createStream() -> AsyncStream<CGEvent> {
+        .init { continuation in
+            let id = UUID()
+            addContinuation(continuation, id: id)
+            continuation.onTermination = { [weak self] _ in
+                self?.removeContinuation(id: id)
+            }
         }
-        self.continuation = continuation
+    }
+
+    private func addContinuation(_ continuation: AsyncStream<CGEvent>.Continuation, id: UUID) {
+        continuations[id] = continuation
+    }
+
+    private func removeContinuation(id: UUID) {
+        continuations[id] = nil
     }
 
     public func deactivate() {
-        retryTask?.cancel()
-        retryTask = nil
         guard let port else { return }
         os_log(.info, "CGEventObserver deactivated.")
         CFMachPortInvalidate(port)
@@ -56,7 +67,7 @@ public final class CGEventObserver: CGEventObserverType {
             tapProxy _: CGEventTapProxy,
             eventType: CGEventType,
             event: CGEvent,
-            continuationPointer: UnsafeMutableRawPointer?
+            continuationsPointer: UnsafeMutableRawPointer?
         ) -> Unmanaged<CGEvent>? {
             guard AXIsProcessTrusted() else {
                 return .passRetained(event)
@@ -66,10 +77,12 @@ public final class CGEventObserver: CGEventObserverType {
                 return .passRetained(event)
             }
 
-            if let continuation = continuationPointer?
-                .assumingMemoryBound(to: AsyncStream<CGEvent>.Continuation.self)
+            if let continuations = continuationsPointer?
+                .assumingMemoryBound(to: [UUID: AsyncStream<CGEvent>.Continuation].self)
             {
-                continuation.pointee.yield(event)
+                for continuation in continuations.pointee {
+                    continuation.value.yield(event)
+                }
             }
 
             return .passRetained(event)
@@ -79,7 +92,7 @@ public final class CGEventObserver: CGEventObserverType {
         let tapPlacement = tapPlacement
         let tapOptions = tapOptions
 
-        guard let port = withUnsafeMutablePointer(to: &continuation, { pointer in
+        guard let port = withUnsafeMutablePointer(to: &continuations, { pointer in
             CGEvent.tapCreate(
                 tap: tapLocation,
                 place: tapPlacement,
@@ -89,11 +102,6 @@ public final class CGEventObserver: CGEventObserverType {
                 userInfo: pointer
             )
         }) else {
-            retryTask = Task {
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                try Task.checkCancellation()
-                activateIfPossible()
-            }
             return false
         }
         self.port = port

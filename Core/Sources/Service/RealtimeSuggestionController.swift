@@ -66,8 +66,9 @@ public class RealtimeSuggestionController {
         os_log(.info, "Add auto trigger listener: %@.", listener as CVarArg)
 
         if task == nil {
-            task = Task { [stream = eventObserver.stream] in
-                for await event in stream {
+            task = Task { [weak self, eventObserver] in
+                for await event in eventObserver.createStream() {
+                    guard let self else { return }
                     await self.handleHIDEvent(event: event)
                 }
             }

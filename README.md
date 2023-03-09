@@ -22,7 +22,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Limitations](#limitations)
 - [FAQ](#faq)
 - [License](#license)
-- [Development](DEVELOPMENT.md)
+
+
+For development instruction, check [Development.md](DEVELOPMENT.md).
 
 ## Prerequisites
 
@@ -32,15 +34,10 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 ## Permissions Required
 
-- Accessibility API
 - Folder Access
-- Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse)
+- Accessibility API
 
-> You no longer require Input Monitoring to utilize real-time suggestions with version 0.8.1+. If you do not need the cancellation feature, you can simply ignore this permission.
-> 
-> However, to be frank, the Accessibility API is more dangerous than Input Monitoring. To remove the need for Input Monitoring, we can simply change the `CGEventTapOptions` from `listenOnly` to `defaultTap`, which allows for input manipulation.
->
-> If you are concerned about key logging and cannot trust the binary, we recommend examining the code and building it yourself. To address any concerns, you can specifically search for `CGEvent.tapCreate`, `AXObserver`, `AX___` within the code.
+> If you are concerned about key logging and cannot trust the binary, we recommend examining the code and [building it yourself](DEVELOPMENT.md). To address any concerns, you can specifically search for `CGEvent.tapCreate`, `AXObserver`, `AX___` within the code.
 
 ## Installation and Setup
 
@@ -72,17 +69,13 @@ Then set it up with the following steps:
 
 ### Granting Permissions to the App
 
-The first time the app is open and command run, the extension will ask for the necessary permissions. (except Input Monitoring, you have to enable it manually) 
+The first time the app is open and command run, the extension will ask for the necessary permissions.
 
 Alternatively, you may manually grant the required permissions by navigating to the `Privacy & Security` tab in the `System Settings.app`.
 
 - To grant permissions for the Accessibility API, click `Accessibility`, and drag `CopilotForXcodeExtensionService.app` to the list. You can locate the extension app by clicking `Reveal Extension App in Finder` in the host app.
 
 <img alt="Accessibility API" src="/accessibility_api_permission.png" width="500px">
-
-- To enable Input Monitoring (for real-time suggestions cancellation by pressing esc, arrow keys or clicking the mouse), click `Input Monitoring`, and drag `CopilotForXcodeExtensionService.app` to the list. You can locate the extension app by clicking `Reveal Extension App in Finder` in the host app.
-
-<img alt="Input Monitoring" src="/input_monitoring_permission.png" width="500px">
 
 If you encounter an alert requesting permission that you have previously granted, please remove the permission from the list and add it again to re-grant the necessary permissions.
 
