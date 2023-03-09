@@ -1,6 +1,6 @@
 # Copilot for Xcode <img alt="Logo" src="/AppIcon.png" align="right" height="50">
 
-![ScreenRecording](/ScreenRecording.gif)
+![Screenshot](/Screenshot.png)
 
 Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
 
