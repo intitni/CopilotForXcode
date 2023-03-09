@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1410"
+   LastUpgradeVersion = "1420"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C8189B152938972F00C9DCDA"
-               BuildableName = "Copilot for Xcode.app"
-               BlueprintName = "Copilot for Xcode"
+               BlueprintIdentifier = "C861E60D2994F6070056CB02"
+               BuildableName = "CopilotForXcodeExtensionService.app"
+               BlueprintName = "ExtensionService"
                ReferencedContainer = "container:Copilot for Xcode.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -48,9 +48,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C8189B152938972F00C9DCDA"
-            BuildableName = "Copilot for Xcode.app"
-            BlueprintName = "Copilot for Xcode"
+            BlueprintIdentifier = "C861E60D2994F6070056CB02"
+            BuildableName = "CopilotForXcodeExtensionService.app"
+            BlueprintName = "ExtensionService"
             ReferencedContainer = "container:Copilot for Xcode.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -65,9 +65,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C8189B152938972F00C9DCDA"
-            BuildableName = "Copilot for Xcode.app"
-            BlueprintName = "Copilot for Xcode"
+            BlueprintIdentifier = "C861E60D2994F6070056CB02"
+            BuildableName = "CopilotForXcodeExtensionService.app"
+            BlueprintName = "ExtensionService"
             ReferencedContainer = "container:Copilot for Xcode.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

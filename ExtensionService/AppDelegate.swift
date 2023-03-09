@@ -21,9 +21,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
 
     func applicationDidFinishLaunching(_: Notification) {
-        #warning("TODO: disable in tests")
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+        
         _ = GraphicalUserInterfaceController.shared
-        // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
         UserDefaults.setupDefaultSettings()
         setupQuitOnUpdate()

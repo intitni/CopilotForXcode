@@ -189,6 +189,7 @@
 		C87F3E5F293DC600008523E8 /* Section.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Section.swift; sourceTree = "<group>"; };
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
+		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -260,14 +261,15 @@
 		C8189B0D2938972F00C9DCDA = {
 			isa = PBXGroup;
 			children = (
-				C832A47B2940C71D000989F2 /* copilot */,
-				C8520308293D805800460097 /* README.md */,
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
+				C8520308293D805800460097 /* README.md */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
 				C813B41E29B7B0F100FADAE3 /* Secrets.sample.xcconfig */,
 				C815034B29B3A7CC00751CAC /* Secrets.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
+				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
+				C832A47B2940C71D000989F2 /* copilot */,
 				C8189B282938979000C9DCDA /* Core */,
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
 				C81458922939EFDC00135263 /* EditorExtension */,
