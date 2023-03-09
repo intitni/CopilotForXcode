@@ -2,7 +2,7 @@ import CopilotModel
 import CopilotService
 import Environment
 import Foundation
-import os.log
+import Logger
 import SuggestionInjector
 import XPCShared
 
@@ -17,7 +17,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _presentSuggestions(editor: editor)
             } catch {
-                os_log(.error, "%@", error.localizedDescription)
+                Logger.service.error(error)
             }
         }
         return nil

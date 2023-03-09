@@ -1,6 +1,6 @@
 import AppKit
 import Foundation
-import os.log
+import Logger
 import SwiftUI
 
 struct Release: Codable {
@@ -84,7 +84,7 @@ public struct UpdateChecker {
                 }
             }
         } catch {
-            os_log(.error, "%@", error.localizedDescription)
+            Logger.updateChecker.error(error)
         }
     }
 }

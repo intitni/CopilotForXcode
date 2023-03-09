@@ -6,7 +6,7 @@ import AXNotificationStream
 import CGEventObserver
 import Environment
 import Foundation
-import os.log
+import Logger
 import QuartzCore
 import XPCShared
 
@@ -63,7 +63,7 @@ public class RealtimeSuggestionController {
     }
 
     private func startHIDObservation(by listener: AnyHashable) {
-        os_log(.info, "Add auto trigger listener: %@.", listener as CVarArg)
+        Logger.service.info("Add auto trigger listener: \(listener).")
 
         if task == nil {
             task = Task { [weak self, eventObserver] in
@@ -77,7 +77,7 @@ public class RealtimeSuggestionController {
     }
 
     private func stopHIDObservation(by listener: AnyHashable) {
-        os_log(.info, "Remove auto trigger listener: %@.", listener as CVarArg)
+        Logger.service.info("Remove auto trigger listener: \(listener).")
         task?.cancel()
         task = nil
         eventObserver.deactivate()
@@ -191,10 +191,10 @@ public class RealtimeSuggestionController {
 
             if Task.isCancelled { return }
 
-            os_log(.info, "Prefetch suggestions.")
+            Logger.service.info("Prefetch suggestions.")
             
             if !force, isCommentMode, await !Environment.frontmostXcodeWindowIsEditor() {
-                os_log(.info, "Completion panel is open, blocked.")
+                Logger.service.info("Completion panel is open, blocked.")
                 return
             }
 

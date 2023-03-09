@@ -1,6 +1,7 @@
 import Foundation
 import os.log
 import XPCShared
+import Logger
 
 let shared = XPCService()
 
@@ -36,11 +37,11 @@ class XPCService {
         connection.remoteObjectInterface =
             NSXPCInterface(with: XPCServiceProtocol.self)
         connection.invalidationHandler = { [weak self] in
-            os_log(.info, "XPCService Invalidated")
+            Logger.client.info("XPCService Invalidated")
             self?.isInvalidated = true
         }
         connection.interruptionHandler = { [weak self] in
-            os_log(.info, "XPCService interrupted")
+            Logger.client.info("XPCService interrupted")
             self?.isInvalidated = true
         }
         connection.resume()

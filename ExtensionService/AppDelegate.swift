@@ -1,7 +1,7 @@
 import AppKit
 import FileChangeChecker
 import LaunchAgentManager
-import os.log
+import Logger
 import Service
 import ServiceManagement
 import SwiftUI
@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
-        os_log(.info, "XPC Service started.")
+        Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
         checkForUpdate()
@@ -136,10 +136,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     app.isUserOfService
                 else { continue }
                 guard await checker.checkIfChanged() else {
-                    os_log(.info, "Extension Service is not updated, no need to quit.")
+                    Logger.service.info("Extension Service is not updated, no need to quit.")
                     continue
                 }
-                os_log(.info, "Extension Service will quit.")
+                Logger.service.info("Extension Service will quit.")
                 #if DEBUG
                 #else
                 exit(0)

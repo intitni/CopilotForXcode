@@ -15,11 +15,18 @@ let package = Package(
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
+                "Logger",
             ]
         ),
         .library(
             name: "Client",
-            targets: ["CopilotModel", "Client", "XPCShared", "LaunchAgentManager"]
+            targets: [
+                "CopilotModel",
+                "Client",
+                "XPCShared",
+                "LaunchAgentManager",
+                "Logger",
+            ]
         ),
     ],
     dependencies: [
@@ -56,7 +63,7 @@ let package = Package(
         ),
         .target(
             name: "Client",
-            dependencies: ["CopilotModel", "XPCShared"]
+            dependencies: ["CopilotModel", "XPCShared", "Logger"]
         ),
         .target(
             name: "Service",
@@ -71,6 +78,7 @@ let package = Package(
                 "Environment",
                 "SuggestionWidget",
                 "AXExtension",
+                "Logger",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -108,7 +116,8 @@ let package = Package(
                 "Splash",
             ]
         ),
-        .target(name: "UpdateChecker"),
+        .target(name: "UpdateChecker", dependencies: ["Logger"]),
         .target(name: "AXExtension"),
+        .target(name: "Logger"),
     ]
 )
