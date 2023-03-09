@@ -271,7 +271,7 @@ public final class SuggestionWidgetController {
                                 .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
                         )
                         if mode != .alignToTextCursor { break }
-                        self.updateWindowLocation(animated: true)
+                        self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
