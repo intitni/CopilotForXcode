@@ -34,6 +34,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
+        .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -116,7 +117,10 @@ let package = Package(
                 "Splash",
             ]
         ),
-        .target(name: "UpdateChecker", dependencies: ["Logger"]),
+        .target(
+            name: "UpdateChecker",
+            dependencies: ["Logger", .product(name: "FeedKit", package: "FeedKit")]
+        ),
         .target(name: "AXExtension"),
         .target(name: "Logger"),
     ]
