@@ -47,7 +47,7 @@ public enum Environment {
                 let application = AXUIElementCreateApplication(xcode.processIdentifier)
                 let focusedWindow = application.focusedWindow
                 for child in focusedWindow?.children ?? [] {
-                    if child.description.starts(with: "/") {
+                    if child.description.starts(with: "/"), child.description.count > 1 {
                         let path = child.description
                         let trimmedNewLine = path.trimmingCharacters(in: .newlines)
                         var url = URL(fileURLWithPath: trimmedNewLine)
