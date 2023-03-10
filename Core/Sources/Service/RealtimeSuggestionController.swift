@@ -192,7 +192,7 @@ public class RealtimeSuggestionController {
             if Task.isCancelled { return }
 
             Logger.service.info("Prefetch suggestions.")
-            
+
             if !force, isCommentMode, await !Environment.frontmostXcodeWindowIsEditor() {
                 Logger.service.info("Completion panel is open, blocked.")
                 return

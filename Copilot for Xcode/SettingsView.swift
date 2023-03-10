@@ -22,7 +22,7 @@ struct SettingsView: View {
     @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double ?? 0.7
-    
+
     var body: some View {
         Section {
             Form {

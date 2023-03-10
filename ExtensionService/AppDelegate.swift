@@ -22,7 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        
+
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
         UserDefaults.setupDefaultSettings()
