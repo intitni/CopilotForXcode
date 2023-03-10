@@ -15,16 +15,26 @@ let package = Package(
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
+                "Logger",
             ]
         ),
         .library(
             name: "Client",
-            targets: ["CopilotModel", "Client", "XPCShared", "LaunchAgentManager"]
+            targets: [
+                "CopilotModel",
+                "Client",
+                "XPCShared",
+                "LaunchAgentManager",
+                "Logger",
+            ]
         ),
     ],
     dependencies: [
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
+        .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
+        .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
+        .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -54,7 +64,7 @@ let package = Package(
         ),
         .target(
             name: "Client",
-            dependencies: ["CopilotModel", "XPCShared"]
+            dependencies: ["CopilotModel", "XPCShared", "Logger"]
         ),
         .target(
             name: "Service",
@@ -68,6 +78,8 @@ let package = Package(
                 "AXNotificationStream",
                 "Environment",
                 "SuggestionWidget",
+                "AXExtension",
+                "Logger",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -93,7 +105,7 @@ let package = Package(
         .target(name: "AXNotificationStream"),
         .target(
             name: "Environment",
-            dependencies: ["ActiveApplicationMonitor", "CopilotService"]
+            dependencies: ["ActiveApplicationMonitor", "CopilotService", "AXExtension"]
         ),
         .target(
             name: "SuggestionWidget",
@@ -101,8 +113,15 @@ let package = Package(
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
                 "Environment",
+                "Highlightr",
+                "Splash",
             ]
         ),
-        .target(name: "UpdateChecker"),
+        .target(
+            name: "UpdateChecker",
+            dependencies: ["Logger", .product(name: "FeedKit", package: "FeedKit")]
+        ),
+        .target(name: "AXExtension"),
+        .target(name: "Logger"),
     ]
 )

@@ -116,7 +116,7 @@ final class RealtimeSuggestionIndicatorController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .white.withAlphaComponent(0)
-        it.level = .statusBar
+        it.level = .floating
         it.contentView = NSHostingView(
             rootView: IndicatorContentView(viewModel: self.viewModel)
                 .frame(minWidth: 10, minHeight: 10)
@@ -238,8 +238,12 @@ final class RealtimeSuggestionIndicatorController {
     private func updateIndicatorVisibility() async {
         let isVisible = await {
             let isOn = UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+            let isCommentMode = (PresentationMode(
+                rawValue: UserDefaults.shared
+                    .integer(forKey: SettingsKey.suggestionPresentationMode)
+            ) ?? .comment) == .comment
             let isXcodeActive = await Environment.isXcodeActive()
-            return isOn && isXcodeActive
+            return isOn && isXcodeActive && isCommentMode
         }()
 
         guard window.isVisible != isVisible else { return }

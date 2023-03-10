@@ -1,14 +1,8 @@
 import AppKit
+import FeedKit
 import Foundation
-import os.log
+import Logger
 import SwiftUI
-
-struct Release: Codable {
-    let tag_name: String?
-    let html_url: String?
-    let body: String?
-    let published_at: String?
-}
 
 let skippedUpdateVersionKey = "skippedUpdateVersion"
 
@@ -19,94 +13,85 @@ public struct UpdateChecker {
 
     public init() {}
 
-    public func checkForUpdate() async {
-        let url =
-            URL(string: "https://api.github.com/repos/intitni/CopilotForXcode/releases/latest")!
-        do {
-            var request = URLRequest(url: url)
-            let token = (Bundle.main.infoDictionary?["GITHUB_TOKEN"] as? String) ?? ""
-            if !token.isEmpty {
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
-            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            request.setValue("X-GitHub-Api-Version", forHTTPHeaderField: "2022-11-28")
-
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let decoder = JSONDecoder()
-            let release = try decoder.decode(Release.self, from: data)
-            guard let version = release.tag_name,
-                  version != skippedUpdateVersion,
-                  version != Bundle.main
-                  .infoDictionary?["CFBundleShortVersionString"] as? String
-            else { return }
-
-            Task { @MainActor in
-                let alert = NSAlert()
-                alert.messageText = "Copilot for Xcode \(version) is available!"
-                alert.informativeText = "Would you like to visit the release page?"
-                let view = NSHostingView(
-                    rootView:
-                    AccessoryView(releaseNote: release.body)
-                )
-                view.frame = .init(origin: .zero, size: .init(width: 400, height: 200))
-                alert.accessoryView = view
-
-                alert.addButton(withTitle: "Visit Release Page")
-                alert.addButton(withTitle: "Skip This Version")
-                alert.addButton(withTitle: "Cancel")
-                alert.alertStyle = .informational
-                let screenFrame = NSScreen.main?.frame ?? .zero
-                let window = NSWindow(
-                    contentRect: .init(
-                        x: screenFrame.midX,
-                        y: screenFrame.midY,
-                        width: 1,
-                        height: 1
-                    ),
-                    styleMask: .borderless,
-                    backing: .buffered,
-                    defer: true
-                )
-                window.level = .statusBar
-                window.isReleasedWhenClosed = false
-                alert.beginSheetModal(for: window) { [window] response in
-                    switch response {
-                    case .alertFirstButtonReturn:
-                        if let url = URL(string: release.html_url ?? "") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    case .alertSecondButtonReturn:
-                        UserDefaults.standard.set(version, forKey: skippedUpdateVersionKey)
-                    default:
-                        break
-                    }
-                    window.close()
+    public func checkForUpdate() {
+        let url = URL(string: "https://github.com/intitni/CopilotForXcode/releases.atom")!
+        let parser = FeedParser(URL: url)
+        parser.parseAsync { result in
+            switch result {
+            case let .success(.atom(feed)):
+                if let entry = feed.entries?.first(where: {
+                    guard let title = $0.title else { return false }
+                    return !title.contains("-")
+                }) {
+                    self.alertIfUpdateAvailable(entry)
                 }
+            case let .failure(error):
+                Logger.updateChecker.error(error)
+            default: break
             }
-        } catch {
-            os_log(.error, "%@", error.localizedDescription)
+        }
+    }
+
+    func alertIfUpdateAvailable(_ entry: AtomFeedEntry) {
+        guard let version = entry.title,
+              let currentVersion = Bundle.main
+              .infoDictionary?["CFBundleShortVersionString"] as? String,
+              version != skippedUpdateVersion,
+              version.compare(currentVersion, options: .numeric) == .orderedDescending
+        else { return }
+
+        Task { @MainActor in
+            let screenFrame = NSScreen.main?.frame ?? .zero
+            let window = NSWindow(
+                contentRect: .init(
+                    x: screenFrame.midX,
+                    y: screenFrame.midY + 200,
+                    width: 500,
+                    height: 500
+                ),
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: true
+            )
+            window.level = .floating
+            window.isReleasedWhenClosed = false
+            window.contentViewController = NSHostingController(
+                rootView: AlertView(entry: entry, window: window)
+            )
+            window.makeKeyAndOrderFront(nil)
         }
     }
 }
 
-struct AccessoryView: View {
-    let releaseNote: String?
+struct AlertView: View {
+    let entry: AtomFeedEntry
+    let window: NSWindow
 
     var body: some View {
-        if let releaseNote {
-            ScrollView {
-                Text(releaseNote)
-                    .padding()
+        let version = entry.title ?? "0.0.0"
+        Color.clear.alert(
+            "Copilot for Xcode \(version) is available!",
+            isPresented: .constant(true)
+        ) {
+            Button {
+                if let url = URL(string: entry.links?.first?.attributes?.href ?? "") {
+                    NSWorkspace.shared.open(url)
+                }
+                window.close()
+            } label: {
+                Text("Visit Release Page")
+            }
 
-                Spacer()
+            Button {
+                UserDefaults.standard.set(version, forKey: skippedUpdateVersionKey)
+                window.close()
+            } label: {
+                Text("Skip This Version")
             }
-            .background(Color(nsColor: .textBackgroundColor))
-            .overlay {
-                Rectangle()
-                    .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 2))
-            }
-        } else {
-            EmptyView()
+
+            Button { window.close() } label: { Text("Cancel") }
+        } message: {
+            Text("Would you like to visit the release page?")
         }
     }
 }

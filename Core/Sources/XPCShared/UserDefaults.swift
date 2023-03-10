@@ -14,6 +14,10 @@ public extension UserDefaults {
         setDefaultValue(false, forKey: SettingsKey.realtimeSuggestionToggle)
         setDefaultValue(1 as Double, forKey: SettingsKey.realtimeSuggestionDebounce)
         setDefaultValue(false, forKey: SettingsKey.automaticallyCheckForUpdate)
+        setDefaultValue(
+            PresentationMode.floatingWidget.rawValue,
+            forKey: SettingsKey.suggestionPresentationMode
+        )
     }
 }
 
@@ -24,4 +28,5 @@ public enum SettingsKey {
     public static let quitXPCServiceOnXcodeAndAppQuit = "QuitXPCServiceOnXcodeAndAppQuit"
     public static let suggestionPresentationMode = "SuggestionPresentationMode"
     public static let automaticallyCheckForUpdate = "AutomaticallyCheckForUpdate"
+    public static let suggestionWidgetPositionMode = "SuggestionWidgetPositionMode"
 }

@@ -1,5 +1,4 @@
 #include "Version.xcconfig"
-#include "Secrets.xcconfig"
 
 BUNDLE_IDENTIFIER_BASE = dev.com.intii.CopilotForXcode
 EXTENSION_BUNDLE_NAME = Copilot Dev

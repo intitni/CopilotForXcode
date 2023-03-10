@@ -1,0 +1,51 @@
+{
+  "configurations" : [
+    {
+      "id" : "586480F5-DC84-425D-814F-7A5F569A1974",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "environmentVariableEntries" : [
+      {
+        "key" : "IS_UNIT_TEST",
+        "value" : "YES"
+      }
+    ],
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "CopilotModelTests",
+        "name" : "CopilotModelTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "CopilotServiceTests",
+        "name" : "CopilotServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ServiceTests",
+        "name" : "ServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "SuggestionInjectorTests",
+        "name" : "SuggestionInjectorTests"
+      }
+    }
+  ],
+  "version" : 1
+}

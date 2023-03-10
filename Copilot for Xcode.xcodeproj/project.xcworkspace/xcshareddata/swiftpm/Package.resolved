@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "feedkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nmdias/FeedKit",
+      "state" : {
+        "revision" : "68493a33d862c33c9a9f67ec729b3b7df1b20ade",
+        "version" : "9.1.2"
+      }
+    },
+    {
       "identity" : "fseventswrapper",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Frizlab/FSEventsWrapper",
@@ -16,6 +25,15 @@
       "state" : {
         "revision" : "deda6e163d2ff2a8d7e138e2c3326dbd71157faf",
         "version" : "1.0.5"
+      }
+    },
+    {
+      "identity" : "highlightr",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/raspu/Highlightr",
+      "state" : {
+        "revision" : "93199b9e434f04bda956a613af8f571933f9f037",
+        "version" : "2.1.2"
       }
     },
     {
@@ -61,6 +79,15 @@
       "state" : {
         "revision" : "29487b6581bb785c372c611c943541ef4309d051",
         "version" : "0.3.1"
+      }
+    },
+    {
+      "identity" : "splash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/JohnSundell/Splash",
+      "state" : {
+        "revision" : "7f4df436eb78fe64fe2c32c58006e9949fa28ad8",
+        "version" : "0.16.0"
       }
     },
     {

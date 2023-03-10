@@ -3,7 +3,7 @@ import CopilotService
 import Environment
 import Foundation
 import LanguageServerProtocol
-import os.log
+import Logger
 import XPCShared
 
 @globalActor enum ServiceActor {
@@ -128,7 +128,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                 try Task.checkCancellation()
                 reply(try JSONEncoder().encode(updatedContent), nil)
             } catch {
-                os_log(.error, "%@", "\(file):\(line) \(error.localizedDescription)")
+                Logger.service.error("\(file):\(line) \(error.localizedDescription)")
                 reply(nil, NSError.from(error))
             }
         }

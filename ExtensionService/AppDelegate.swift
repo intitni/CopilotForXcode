@@ -1,7 +1,7 @@
 import AppKit
 import FileChangeChecker
 import LaunchAgentManager
-import os.log
+import Logger
 import Service
 import ServiceManagement
 import SwiftUI
@@ -21,15 +21,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
 
     func applicationDidFinishLaunching(_: Notification) {
-        #warning("TODO: disable in tests")
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+
         _ = GraphicalUserInterfaceController.shared
-        // setup real-time suggestion controller
         _ = RealtimeSuggestionController.shared
         UserDefaults.setupDefaultSettings()
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
-        os_log(.info, "XPC Service started.")
+        Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
         checkForUpdate()
@@ -136,10 +136,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     app.isUserOfService
                 else { continue }
                 guard await checker.checkIfChanged() else {
-                    os_log(.info, "Extension Service is not updated, no need to quit.")
+                    Logger.service.info("Extension Service is not updated, no need to quit.")
                     continue
                 }
-                os_log(.info, "Extension Service will quit.")
+                Logger.service.info("Extension Service will quit.")
                 #if DEBUG
                 #else
                 exit(0)
@@ -188,9 +188,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func checkForUpdate() {
         guard UserDefaults.shared.bool(forKey: SettingsKey.automaticallyCheckForUpdate)
         else { return }
-        Task {
-            await UpdateChecker().checkForUpdate()
-        }
+        UpdateChecker().checkForUpdate()
     }
 }
 

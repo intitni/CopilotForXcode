@@ -4,10 +4,11 @@ import SwiftUI
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {
     @Published var startLineIndex: Int
-    @Published var suggestion: [String]
+    @Published var suggestion: [NSAttributedString]
     @Published var isPanelDisplayed: Bool
     @Published var suggestionCount: Int
     @Published var currentSuggestionIndex: Int
+    @Published var alignTopToAnchor = false
 
     var onAcceptButtonTapped: (() -> Void)?
     var onRejectButtonTapped: (() -> Void)?
@@ -16,7 +17,7 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     public init(
         startLineIndex: Int = 0,
-        suggestion: [String] = [],
+        suggestion: [NSAttributedString] = [],
         isPanelDisplayed: Bool = false,
         suggestionCount: Int = 0,
         currentSuggestionIndex: Int = 0,
@@ -41,19 +42,22 @@ struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
     @State var isHovering: Bool = false
     @State var codeHeight: Double = 0
+    let backgroundColor = #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
 
     var body: some View {
         VStack {
-            Spacer()
-                .frame(minHeight: 0, maxHeight: .infinity)
-                .allowsHitTesting(false)
+            if !viewModel.alignTopToAnchor {
+                Spacer()
+                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
 
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ScrollView {
                         CodeBlock(viewModel: viewModel)
                     }
-                    .background(Color(red: 31 / 255, green: 31 / 255, blue: 36 / 255))
+                    .background(Color(nsColor: backgroundColor))
 
                     ToolBar(viewModel: viewModel)
                 }
@@ -78,6 +82,12 @@ struct SuggestionPanelView: View {
             }
             .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.isEmpty)
             .preferredColorScheme(.dark)
+
+            if viewModel.alignTopToAnchor {
+                Spacer()
+                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
         }
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
@@ -106,7 +116,8 @@ struct CodeBlock: View {
             ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
                 Text("\(index + viewModel.startLineIndex + 1)")
                     .foregroundColor(Color.white.opacity(0.6))
-                Text(viewModel.suggestion[index])
+                Text(AttributedString(viewModel.suggestion[index]))
+                    .foregroundColor(.white.opacity(0.1))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .multilineTextAlignment(.leading)
                     .lineSpacing(4)
@@ -210,16 +221,17 @@ struct SuggestionPanelView_Preview: PreviewProvider {
         SuggestionPanelView(viewModel: .init(
             startLineIndex: 8,
             suggestion:
-            """
-            LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+            highlighted(
+                code: """
+                LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
                 ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
                     Text(viewModel.suggestion[index])
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                 }
-                Spacer()
-            }
-            """.split(separator: "\n").map(String.init),
+                """,
+                language: "swift"
+            ),
             isPanelDisplayed: true
         ))
         .frame(width: 450, height: 400)

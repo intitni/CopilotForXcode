@@ -13,6 +13,8 @@ final class Settings: ObservableObject {
     var suggestionPresentationModeRawValue: Int = 0
     @AppStorage(SettingsKey.automaticallyCheckForUpdate, store: .shared)
     var automaticallyCheckForUpdate: Bool = false
+    @AppStorage(SettingsKey.suggestionWidgetPositionMode, store: .shared)
+    var suggestionWidgetPositionModeRawValue: Int = 0
     init() {}
 }
 
@@ -28,7 +30,7 @@ struct SettingsView: View {
                     Text("Quit service when Xcode and host app are terminated")
                 }
                 .toggleStyle(.switch)
-                
+
                 Toggle(isOn: $settings.automaticallyCheckForUpdate) {
                     Text("Automatically Check for Update")
                 }
@@ -45,6 +47,23 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text("Present suggestions in")
+                }
+
+                if settings.suggestionPresentationModeRawValue == PresentationMode.floatingWidget
+                    .rawValue
+                {
+                    Picker(selection: $settings.suggestionWidgetPositionModeRawValue) {
+                        ForEach(SuggestionWidgetPositionMode.allCases, id: \.rawValue) {
+                            switch $0 {
+                            case .fixedToBottom:
+                                Text("Fixed to Bottom")
+                            case .alignToTextCursor:
+                                Text("Follow Text Cursor")
+                            }
+                        }
+                    } label: {
+                        Text("Widget position")
+                    }
                 }
 
                 Toggle(isOn: $settings.realtimeSuggestionToggle) {

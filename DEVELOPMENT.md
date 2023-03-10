@@ -4,37 +4,42 @@
 
 ### Copilot for Xcode
 
-Copilot for Xcode is the app containing both the XPCService and the editor extension.
+Copilot for Xcode is the host app containing both the XPCService and the editor extension.
 
 ### EditorExtension
 
-As its name suggests, the editor extension. Since an editor extension must be sandboxed, it will need to talk to a trusted non-sandboxed XPCService to break out the limitations. The identifier of the XPCService must be listed under `com.apple.security.temporary-exception.mach-lookup.global-name` in entitlements.
+As its name suggests, the editor extension. Its sole purpose is to forward editor content to the XPCService for processing, and update the editor with the returned content. Due to the sandboxing requirements for editor extensions, it has to communicate with a trusted, non-sandboxed XPCService to bypass the limitations. The XPCService identifier must be included in the `com.apple.security.temporary-exception.mach-lookup.global-name` entitlements.
 
 ### ExtensionService
 
-The ExtensionService is a program that runs in the background and does basically everything. It redirects the requests from EditorExtension to `CopilotService` and returns the updated code back to the extension.
+The `ExtensionService` is a program that operates in the background and performs a wide range of tasks. It redirects requests from the `EditorExtension` to the `CopilotService` and returns the updated code back to the extension, or presents it in a GUI outside of Xcode.
 
-Since the Xcode source editor extension only allows its commands to be triggered manually, the ExtensionService has to use Apple Scripts to trigger the menu items to generate real-time suggestions.
+### Core
 
-The ExtensionService is also using a lot of Apple Script tricks to get the file paths and project/workspace paths of the active Xcode window because Xcode is not providing this information.
+Most of the logics are implemented inside the package `Core`.
+
+- The `CopilotService` is responsible for communicating with the GitHub Copilot LSP.
+- The `Service` is responsible for handling the requests from the `EditorExtension`, communicating with the `CopilotService`, update the code blocks and present the GUI.
+- The `Client` is basically just a wrapper around the XPCService
+- The `SuggestionInjector` is responsible for injecting the suggestions into the code. Used in comment mode to present the suggestions, and all modes to accept suggestions.
+- The `Environment` contains some swappable global functions. It is used to make testing easier.
+- The `SuggestionWidget` is responsible for presenting the suggestions in floating widget mode.
 
 ## Building and Archiving the App
 
-Firstly, create a `Secrets.xcconfig` next to the others. You can provide a `GITHUB_TOKEN` here if you want to check for updates.
+This project includes a Git submodule, `copilot.vim`, so you will need to either initialize the submodule or download it from the [copilot.vim](https://github.com/github/copilot.vim) repository.
 
-This project contains a Git submodule `copilot.vim`, so you will have to initialize the submodule or download it from [copilot.vim](https://github.com/github/copilot.vim).
-
-Then archive the target Copilot for Xcode.
+Finally, archive the Copilot for Xcode target.
 
 ## Testing Extension
 
-### Testing Real-time Suggestions Commands
+Just run both the `ExtensionService` and the `EditorExtension` Target.
 
-Testing Real-time Suggestions is a little bit different because the Apple Script can't find the commands when debugging the extension in Xcode. Instead, you will have to archive the debug version of the app, run the XPCService target simultaneously and use them against each other.
+## Unit Tests
 
-### Testing Other Commands
+To run unit tests, just run test from the `Copilot for Xcode` target.
 
-Just run both the XPCService and the EditorExtension Target. 
+For new tests, they should be added to the `TestPlan.xctestplan`.
 
 ## Code Style
 

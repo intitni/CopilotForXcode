@@ -68,21 +68,24 @@ struct WidgetView: View {
                     }
                 }
             }
-            .onChange(of: viewModel.isProcessing) { isProcessing in
-                Task {
-                    await Task.yield()
-                    if isProcessing {
-                        processingProgress = 1 - processingProgress
-                    } else {
-                        processingProgress = panelViewModel.suggestion.isEmpty ? 0 : 1
-                    }
-                }
-            }
+            .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
+            .onChange(of: panelViewModel.suggestion.isEmpty) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
                 }
             }
+    }
+
+    func refreshRing() {
+        Task {
+            await Task.yield()
+            if viewModel.isProcessing {
+                processingProgress = 1 - processingProgress
+            } else {
+                processingProgress = panelViewModel.suggestion.isEmpty ? 0 : 1
+            }
+        }
     }
 }
 
@@ -109,7 +112,7 @@ struct WidgetView_Preview: PreviewProvider {
 
             WidgetView(
                 viewModel: .init(isProcessing: false),
-                panelViewModel: .init(suggestion: ["Hello"]),
+                panelViewModel: .init(suggestion: [.init(string: "Hello")]),
                 isHovering: false
             )
         }

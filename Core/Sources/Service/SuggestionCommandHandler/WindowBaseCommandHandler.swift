@@ -1,7 +1,8 @@
 import CopilotModel
+import CopilotService
 import Environment
 import Foundation
-import os.log
+import Logger
 import SuggestionInjector
 import XPCShared
 
@@ -16,7 +17,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _presentSuggestions(editor: editor)
             } catch {
-                os_log(.error, "%@", error.localizedDescription)
+                Logger.service.error(error)
             }
         }
         return nil
@@ -26,11 +27,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer {
             presenter.markAsProcessing(false)
-            Task {
-                await GraphicalUserInterfaceController.shared
-                    .realtimeSuggestionIndicatorController
-                    .endPrefetchAnimation()
-            }
         }
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, filespace) = try await Workspace
@@ -55,6 +51,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
@@ -83,6 +80,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
@@ -111,6 +109,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentSuggestion(
                 suggestion,
                 lines: editor.lines,
+                language: filespace.language,
                 fileURL: fileURL,
                 currentSuggestionIndex: filespace.suggestionIndex,
                 suggestionCount: filespace.suggestions.count
@@ -139,7 +138,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        
+
         do {
             let result = try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
             Task {
@@ -158,8 +157,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
-            .triggerPrefetchAnimation()
         return try await presentSuggestions(editor: editor)
     }
 }

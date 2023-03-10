@@ -5,6 +5,7 @@ struct PresentInWindowSuggestionPresenter {
     func presentSuggestion(
         _ suggestion: CopilotCompletion,
         lines: [String],
+        language: String,
         fileURL: URL,
         currentSuggestionIndex: Int,
         suggestionCount: Int
@@ -13,6 +14,7 @@ struct PresentInWindowSuggestionPresenter {
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.suggestCode(
                 suggestion.text,
+                language: language,
                 startLineIndex: suggestion.position.line,
                 fileURL: fileURL,
                 currentSuggestionIndex: currentSuggestionIndex,
