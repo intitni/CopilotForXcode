@@ -51,7 +51,7 @@ public extension AXUIElement {
         }
         return nil
     }
-    
+
     var size: CGSize? {
         guard let value: AXValue = try? copyValue(key: kAXSizeAttribute)
         else { return nil }
@@ -61,7 +61,7 @@ public extension AXUIElement {
         }
         return nil
     }
-    
+
     var rect: CGRect? {
         guard let position, let size else { return nil }
         return .init(origin: position, size: size)
@@ -126,7 +126,7 @@ public extension AXUIElement {
         }
         return nil
     }
-    
+
     var verticalScrollBar: AXUIElement? {
         try? copyValue(key: kAXVerticalScrollBarAttribute)
     }

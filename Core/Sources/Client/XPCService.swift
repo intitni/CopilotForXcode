@@ -1,7 +1,7 @@
 import Foundation
+import Logger
 import os.log
 import XPCShared
-import Logger
 
 let shared = XPCService()
 

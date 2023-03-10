@@ -76,7 +76,7 @@ struct WidgetView: View {
                 }
             }
     }
-    
+
     func refreshRing() {
         Task {
             await Task.yield()

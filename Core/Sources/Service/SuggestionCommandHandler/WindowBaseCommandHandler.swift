@@ -138,7 +138,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        
+
         do {
             let result = try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
             Task {

@@ -82,7 +82,7 @@ struct SuggestionPanelView: View {
             }
             .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.isEmpty)
             .preferredColorScheme(.dark)
-            
+
             if viewModel.alignTopToAnchor {
                 Spacer()
                     .frame(minHeight: 0, maxHeight: .infinity)
