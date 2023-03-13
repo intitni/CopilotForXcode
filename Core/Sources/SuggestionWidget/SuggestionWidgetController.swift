@@ -396,14 +396,14 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
     }
 }
 
-private func convertToCodeLines(_ formatedCode: NSAttributedString) -> [NSAttributedString] {
-    let input = formatedCode.string
+private func convertToCodeLines(_ formattedCode: NSAttributedString) -> [NSAttributedString] {
+    let input = formattedCode.string
     let separatedInput = input.components(separatedBy: "\n")
     var output = [NSAttributedString]()
     var start = 0
     for sub in separatedInput {
         let range = NSMakeRange(start, sub.utf16.count)
-        let attributedString = formatedCode.attributedSubstring(from: range)
+        let attributedString = formattedCode.attributedSubstring(from: range)
         let mutable = NSMutableAttributedString(attributedString: attributedString)
         // use regex to replace all spaces to a middle dot
         do {
