@@ -109,18 +109,19 @@ struct CodeBlock: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
 
     var body: some View {
-        LazyVGrid(columns: [
-            GridItem(.fixed(30), alignment: .top),
-            GridItem(.flexible()),
-        ], spacing: 4) {
-            ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
-                Text("\(index + viewModel.startLineIndex + 1)")
-                    .foregroundColor(Color.white.opacity(0.6))
-                Text(AttributedString(viewModel.suggestion[index]))
-                    .foregroundColor(.white.opacity(0.1))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                    .lineSpacing(4)
+        VStack {
+            ForEach(0..<viewModel.suggestion.endIndex, id: \.self) { index in
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(index + viewModel.startLineIndex + 1)")
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .frame(minWidth: 40)
+                    Text(AttributedString(viewModel.suggestion[index]))
+                        .foregroundColor(.white.opacity(0.1))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(4)
+                }
             }
         }
         .foregroundColor(.white)
