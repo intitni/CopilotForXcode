@@ -3,11 +3,22 @@ import SwiftUI
 
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {
-    @Published var startLineIndex: Int
-    @Published var suggestion: [NSAttributedString]
+    struct Suggestion: Equatable {
+        var startLineIndex: Int
+        var code: [NSAttributedString]
+        var suggestionCount: Int
+        var currentSuggestionIndex: Int
+
+        static let empty = Suggestion(
+            startLineIndex: 0,
+            code: [],
+            suggestionCount: 0,
+            currentSuggestionIndex: 0
+        )
+    }
+
+    @Published var suggestion: Suggestion
     @Published var isPanelDisplayed: Bool
-    @Published var suggestionCount: Int
-    @Published var currentSuggestionIndex: Int
     @Published var alignTopToAnchor = false
 
     var onAcceptButtonTapped: (() -> Void)?
@@ -16,21 +27,15 @@ final class SuggestionPanelViewModel: ObservableObject {
     var onNextButtonTapped: (() -> Void)?
 
     public init(
-        startLineIndex: Int = 0,
-        suggestion: [NSAttributedString] = [],
+        suggestion: Suggestion = .empty,
         isPanelDisplayed: Bool = false,
-        suggestionCount: Int = 0,
-        currentSuggestionIndex: Int = 0,
         onAcceptButtonTapped: (() -> Void)? = nil,
         onRejectButtonTapped: (() -> Void)? = nil,
         onPreviousButtonTapped: (() -> Void)? = nil,
         onNextButtonTapped: (() -> Void)? = nil
     ) {
-        self.startLineIndex = startLineIndex
         self.suggestion = suggestion
         self.isPanelDisplayed = isPanelDisplayed
-        self.suggestionCount = suggestionCount
-        self.currentSuggestionIndex = currentSuggestionIndex
         self.onAcceptButtonTapped = onAcceptButtonTapped
         self.onRejectButtonTapped = onRejectButtonTapped
         self.onPreviousButtonTapped = onPreviousButtonTapped
@@ -40,7 +45,6 @@ final class SuggestionPanelViewModel: ObservableObject {
 
 struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
-    @State var isHovering: Bool = false
     @State var codeHeight: Double = 0
     let backgroundColor = #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
 
@@ -74,13 +78,7 @@ struct SuggestionPanelView: View {
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )
-
-            .onHover { yes in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isHovering = yes
-                }
-            }
-            .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.isEmpty)
+            .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.code.isEmpty)
             .preferredColorScheme(.dark)
 
             if viewModel.alignTopToAnchor {
@@ -91,21 +89,15 @@ struct SuggestionPanelView: View {
         }
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
-            guard !viewModel.suggestion.isEmpty else { return 0 }
+            guard !viewModel.suggestion.code.isEmpty else { return 0 }
             return 1
         }())
+        .animation(.easeInOut(duration: 0.2), value: viewModel.suggestion)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
     }
 }
 
 struct CodeBlock: View {
-    struct SizePreferenceKey: PreferenceKey {
-        public static var defaultValue: CGSize = .zero
-        public static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-            value = value.width + value.height > nextValue().width + nextValue()
-                .height ? value : nextValue()
-        }
-    }
-
     @ObservedObject var viewModel: SuggestionPanelViewModel
 
     var body: some View {
@@ -113,10 +105,10 @@ struct CodeBlock: View {
             GridItem(.fixed(30), alignment: .top),
             GridItem(.flexible()),
         ], spacing: 4) {
-            ForEach(0..<viewModel.suggestion.count, id: \.self) { index in
-                Text("\(index + viewModel.startLineIndex + 1)")
+            ForEach(0..<viewModel.suggestion.code.endIndex, id: \.self) { index in
+                Text("\(index + viewModel.suggestion.startLineIndex + 1)")
                     .foregroundColor(Color.white.opacity(0.6))
-                Text(AttributedString(viewModel.suggestion[index]))
+                Text(AttributedString(viewModel.suggestion.code[index]))
                     .foregroundColor(.white.opacity(0.1))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .multilineTextAlignment(.leading)
@@ -126,9 +118,6 @@ struct CodeBlock: View {
         .foregroundColor(.white)
         .font(.system(size: 12, design: .monospaced))
         .padding()
-        .background(GeometryReader(content: { proxy in
-            Color.clear.preference(key: SizePreferenceKey.self, value: proxy.size)
-        }))
     }
 }
 
@@ -149,8 +138,10 @@ struct ToolBar: View {
                 Image(systemName: "chevron.left")
             }.buttonStyle(.plain)
 
-            Text("\(viewModel.currentSuggestionIndex + 1) / \(viewModel.suggestionCount)")
-                .monospacedDigit()
+            if let suggestion = viewModel.suggestion {
+                Text("\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)")
+                    .monospacedDigit()
+            }
 
             Button(action: {
                 Task {
@@ -219,18 +210,21 @@ struct CommandButtonStyle: ButtonStyle {
 struct SuggestionPanelView_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            startLineIndex: 8,
-            suggestion:
-            highlighted(
-                code: """
-                LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-                ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                    Text(viewModel.suggestion[index])
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                }
-                """,
-                language: "swift"
+            suggestion: .init(
+                startLineIndex: 8,
+                code: highlighted(
+                    code: """
+                    LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+                    ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+                        Text(viewModel.suggestion[index])
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
+                    }
+                    """,
+                    language: "swift"
+                ),
+                suggestionCount: 2,
+                currentSuggestionIndex: 0
             ),
             isPanelDisplayed: true
         ))
