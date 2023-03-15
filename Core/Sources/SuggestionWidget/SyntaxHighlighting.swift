@@ -32,6 +32,10 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
         )
         return convertToCodeLines(formatted)
     default:
+        var language = language
+        if language == "objective-c" {
+            language = "objectivec"
+        }
         func unhighlightedCode() -> [NSAttributedString] {
             return convertToCodeLines(NSAttributedString(string: code, attributes: [.foregroundColor: NSColor.white]))
         }
