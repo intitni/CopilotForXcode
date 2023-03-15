@@ -139,10 +139,10 @@ struct ToolBar: View {
                 Image(systemName: "chevron.left")
             }.buttonStyle(.plain)
 
-            if let suggestion = viewModel.suggestion {
-                Text("\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)")
-                    .monospacedDigit()
-            }
+            Text(
+                "\(viewModel.suggestion.currentSuggestionIndex + 1) / \(viewModel.suggestion.suggestionCount)"
+            )
+            .monospacedDigit()
 
             Button(action: {
                 Task {
