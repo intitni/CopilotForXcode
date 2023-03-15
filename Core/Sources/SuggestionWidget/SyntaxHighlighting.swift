@@ -32,13 +32,19 @@ func highlighted(code: String, language: String) -> [NSAttributedString] {
         )
         return convertToCodeLines(formatted)
     default:
+        func unhighlightedCode() -> [NSAttributedString] {
+            return convertToCodeLines(NSAttributedString(string: code, attributes: [.foregroundColor: NSColor.white]))
+        }
         guard let highlighter = Highlightr() else {
-            return convertToCodeLines(NSAttributedString(string: code))
+            return unhighlightedCode()
         }
         highlighter.setTheme(to: "atom-one-dark")
         highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
         guard let formatted = highlighter.highlight(code, as: language) else {
-            return convertToCodeLines(NSAttributedString(string: code))
+            return unhighlightedCode()
+        }
+        if formatted.string == "undefined" {
+            return unhighlightedCode()
         }
         return convertToCodeLines(formatted)
     }
