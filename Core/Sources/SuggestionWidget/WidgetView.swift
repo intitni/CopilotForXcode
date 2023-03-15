@@ -47,7 +47,8 @@ struct WidgetView: View {
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !panelViewModel.suggestion.isEmpty || viewModel.isProcessing ? 1 : 0
+                                !panelViewModel.suggestion.code.isEmpty || viewModel
+                                    .isProcessing ? 1 : 0
                             )
                             .animation(
                                 .easeInOut(duration: 1).repeatForever(autoreverses: true),
@@ -62,14 +63,15 @@ struct WidgetView: View {
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !panelViewModel.suggestion.isEmpty || viewModel.isProcessing ? 1 : 0
+                                !panelViewModel.suggestion.code.isEmpty || viewModel
+                                    .isProcessing ? 1 : 0
                             )
                             .animation(.easeInOut(duration: 1), value: processingProgress)
                     }
                 }
             }
             .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
-            .onChange(of: panelViewModel.suggestion.isEmpty) { _ in refreshRing() }
+            .onChange(of: panelViewModel.suggestion.code.isEmpty) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
@@ -83,7 +85,7 @@ struct WidgetView: View {
             if viewModel.isProcessing {
                 processingProgress = 1 - processingProgress
             } else {
-                processingProgress = panelViewModel.suggestion.isEmpty ? 0 : 1
+                processingProgress = panelViewModel.suggestion.code.isEmpty ? 0 : 1
             }
         }
     }
@@ -112,7 +114,14 @@ struct WidgetView_Preview: PreviewProvider {
 
             WidgetView(
                 viewModel: .init(isProcessing: false),
-                panelViewModel: .init(suggestion: [.init(string: "Hello")]),
+                panelViewModel: .init(
+                    suggestion: .init(
+                        startLineIndex: 0,
+                        code: [.init(string: "Hello")],
+                        suggestionCount: 0,
+                        currentSuggestionIndex: 0
+                    )
+                ),
                 isHovering: false
             )
         }

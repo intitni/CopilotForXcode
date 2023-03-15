@@ -3,8 +3,6 @@ import AppKit
 import AsyncAlgorithms
 import AXNotificationStream
 import Environment
-import Highlightr
-import Splash
 import SwiftUI
 import XPCShared
 
@@ -149,37 +147,34 @@ public final class SuggestionWidgetController {
         currentSuggestionIndex: Int,
         suggestionCount: Int
     ) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if fileURL == currentFileURL || currentFileURL == nil {
-                suggestionPanelViewModel.suggestion = highlighted(code: code, language: language)
-                suggestionPanelViewModel.startLineIndex = startLineIndex
-                suggestionPanelViewModel.isPanelDisplayed = true
-                suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
-                suggestionPanelViewModel.suggestionCount = suggestionCount
-            }
-            suggestionForFiles[fileURL] = .code(
-                code,
-                language: language,
+        if fileURL == currentFileURL || currentFileURL == nil {
+            suggestionPanelViewModel.suggestion = .init(
                 startLineIndex: startLineIndex,
-                currentSuggestionIndex: currentSuggestionIndex,
-                suggestionCount: suggestionCount
+                code: highlighted(code: code, language: language),
+                suggestionCount: suggestionCount,
+                currentSuggestionIndex: currentSuggestionIndex
             )
-            widgetViewModel.isProcessing = false
+
+            suggestionPanelViewModel.isPanelDisplayed = true
         }
+
+        widgetViewModel.isProcessing = false
+        suggestionForFiles[fileURL] = .code(
+            code,
+            language: language,
+            startLineIndex: startLineIndex,
+            currentSuggestionIndex: currentSuggestionIndex,
+            suggestionCount: suggestionCount
+        )
     }
 
     public func discardSuggestion(fileURL: URL) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            suggestionForFiles[fileURL] = nil
-            if fileURL == currentFileURL || currentFileURL == nil {
-                suggestionPanelViewModel.suggestion = []
-                suggestionPanelViewModel.startLineIndex = 0
-                suggestionPanelViewModel.currentSuggestionIndex = 0
-                suggestionPanelViewModel.suggestionCount = 0
-                suggestionPanelViewModel.isPanelDisplayed = false
-            }
-            widgetViewModel.isProcessing = false
+        suggestionForFiles[fileURL] = nil
+        if fileURL == currentFileURL || currentFileURL == nil {
+            suggestionPanelViewModel.suggestion = .empty
+            suggestionPanelViewModel.isPanelDisplayed = false
         }
+        widgetViewModel.isProcessing = false
     }
 
     public func markAsProcessing(_ isProcessing: Bool) {
@@ -210,13 +205,13 @@ public final class SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.suggestion = []
+                        suggestionPanelViewModel.suggestion = .empty
                         continue
                     }
+                    guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
-                    guard let suggestion = suggestionForFiles[fileURL]
-                    else {
-                        suggestionPanelViewModel.suggestion = []
+                    guard let suggestion = suggestionForFiles[fileURL] else {
+                        suggestionPanelViewModel.suggestion = .empty
                         continue
                     }
 
@@ -228,13 +223,12 @@ public final class SuggestionWidgetController {
                         currentSuggestionIndex,
                         suggestionCount
                     ):
-                        suggestionPanelViewModel.suggestion = highlighted(
-                            code: code,
-                            language: language
+                        suggestionPanelViewModel.suggestion = .init(
+                            startLineIndex: startLineIndex,
+                            code: highlighted(code: code, language: language),
+                            suggestionCount: suggestionCount,
+                            currentSuggestionIndex: currentSuggestionIndex
                         )
-                        suggestionPanelViewModel.startLineIndex = startLineIndex
-                        suggestionPanelViewModel.currentSuggestionIndex = currentSuggestionIndex
-                        suggestionPanelViewModel.suggestionCount = suggestionCount
                     }
                 }
             }
@@ -261,9 +255,10 @@ public final class SuggestionWidgetController {
                 )
 
                 if #available(macOS 13.0, *) {
-                    for await _ in merge(selectionRangeChange, scroll)
-                        .debounce(for: Duration.milliseconds(500))
-                    {
+                    for await _ in merge(
+                        selectionRangeChange.debounce(for: Duration.milliseconds(500)),
+                        scroll
+                    ) {
                         guard let self else { return }
                         try Task.checkCancellation()
                         let mode = SuggestionWidgetPositionMode(
@@ -291,7 +286,7 @@ public final class SuggestionWidgetController {
 
     /// Update the window location.
     ///
-    /// - note: It's possible to get the scroll view's postion by getting position on the focus
+    /// - note: It's possible to get the scroll view's position by getting position on the focus
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
         func hide() {
@@ -343,8 +338,6 @@ public final class SuggestionWidgetController {
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
 
-                panelWindow.orderFront(nil)
-                widgetWindow.orderFront(nil)
                 panelWindow.alphaValue = 1
                 widgetWindow.alphaValue = 1
                 return
@@ -352,216 +345,5 @@ public final class SuggestionWidgetController {
         }
 
         hide()
-    }
-}
-
-func highlighted(code: String, language: String) -> [NSAttributedString] {
-    switch language {
-    case "swift":
-        let plainTextColor = #colorLiteral(red: 0.6509803922, green: 0.6980392157, blue: 0.7529411765, alpha: 1)
-        let highlighter =
-            SyntaxHighlighter(
-                format: AttributedStringOutputFormat(theme: .init(
-                    font: .init(size: 14),
-                    plainTextColor: plainTextColor,
-                    tokenColors: [
-                        .keyword: #colorLiteral(red: 0.8258609176, green: 0.5708742738, blue: 0.8922662139, alpha: 1),
-                        .string: #colorLiteral(red: 0.6253595352, green: 0.7963448763, blue: 0.5427476764, alpha: 1),
-                        .type: #colorLiteral(red: 0.9221783876, green: 0.7978314757, blue: 0.5575165749, alpha: 1),
-                        .call: #colorLiteral(red: 0.4466812611, green: 0.742190659, blue: 0.9515134692, alpha: 1),
-                        .number: #colorLiteral(red: 0.8620631099, green: 0.6468816996, blue: 0.4395158887, alpha: 1),
-                        .comment: #colorLiteral(red: 0.4233166873, green: 0.4612616301, blue: 0.5093258619, alpha: 1),
-                        .property: #colorLiteral(red: 0.906378448, green: 0.5044228435, blue: 0.5263597369, alpha: 1),
-                        .dotAccess: #colorLiteral(red: 0.906378448, green: 0.5044228435, blue: 0.5263597369, alpha: 1),
-                        .preprocessing: #colorLiteral(red: 0.3776347041, green: 0.8792117238, blue: 0.4709561467, alpha: 1),
-                    ]
-                ))
-            )
-        let formatted = NSMutableAttributedString(attributedString: highlighter.highlight(code))
-        formatted.addAttributes(
-            [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
-            range: NSRange(location: 0, length: formatted.length)
-        )
-        return convertToCodeLines(formatted)
-    default:
-        guard let highlighter = Highlightr() else {
-            return convertToCodeLines(NSAttributedString(string: code))
-        }
-        highlighter.setTheme(to: "atom-one-dark")
-        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
-        guard let formatted = highlighter.highlight(code, as: language) else {
-            return convertToCodeLines(NSAttributedString(string: code))
-        }
-        return convertToCodeLines(formatted)
-    }
-}
-
-private func convertToCodeLines(_ formatedCode: NSAttributedString) -> [NSAttributedString] {
-    let input = formatedCode.string
-    let separatedInput = input.components(separatedBy: "\n")
-    var output = [NSAttributedString]()
-    var start = 0
-    for sub in separatedInput {
-        let range = NSMakeRange(start, sub.utf16.count)
-        let attributedString = formatedCode.attributedSubstring(from: range)
-        let mutable = NSMutableAttributedString(attributedString: attributedString)
-        // use regex to replace all spaces to a middle dot
-        do {
-            let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
-            let result = regex.matches(
-                in: mutable.string,
-                range: NSRange(location: 0, length: mutable.mutableString.length)
-            )
-            for r in result {
-                let range = r.range
-                mutable.replaceCharacters(
-                    in: range,
-                    with: String(repeating: "·", count: range.length)
-                )
-                mutable.addAttributes([
-                    .foregroundColor: NSColor.white.withAlphaComponent(0.1),
-                ], range: range)
-            }
-        } catch {}
-        output.append(mutable)
-        start += range.length + 1
-    }
-    return output
-}
-
-enum UpdateLocationStrategy {
-    struct AlignToTextCursor {
-        func framesForWindows(
-            editorFrame: CGRect,
-            mainScreen: NSScreen,
-            activeScreen: NSScreen,
-            editor: AXUIElement
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
-            guard let selectedRange: AXValue = try? editor
-                .copyValue(key: kAXSelectedTextRangeAttribute),
-                let rect: AXValue = try? editor.copyParameterizedValue(
-                    key: kAXBoundsForRangeParameterizedAttribute,
-                    parameters: selectedRange
-                )
-            else {
-                return FixedToBottom().framesForWindows(
-                    editorFrame: editorFrame,
-                    mainScreen: mainScreen,
-                    activeScreen: activeScreen
-                )
-            }
-            var frame: CGRect = .zero
-            let found = AXValueGetValue(rect, .cgRect, &frame)
-            guard found else {
-                return FixedToBottom().framesForWindows(
-                    editorFrame: editorFrame,
-                    mainScreen: mainScreen,
-                    activeScreen: activeScreen
-                )
-            }
-            return HorizontalMovable().framesForWindows(
-                y: activeScreen.frame.height - frame.maxY,
-                alignPanelTopToAnchor: nil,
-                editorFrame: editorFrame,
-                mainScreen: mainScreen,
-                activeScreen: activeScreen
-            )
-        }
-    }
-
-    struct FixedToBottom {
-        func framesForWindows(
-            editorFrame: CGRect,
-            mainScreen: NSScreen,
-            activeScreen: NSScreen
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
-            return HorizontalMovable().framesForWindows(
-                y: activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
-                alignPanelTopToAnchor: false,
-                editorFrame: editorFrame,
-                mainScreen: mainScreen,
-                activeScreen: activeScreen
-            )
-        }
-    }
-
-    struct HorizontalMovable {
-        func framesForWindows(
-            y: CGFloat,
-            alignPanelTopToAnchor fixedAlignment: Bool?,
-            editorFrame: CGRect,
-            mainScreen: NSScreen,
-            activeScreen: NSScreen
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
-            let maxY = max(
-                y,
-                activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
-                4 + mainScreen.frame.minY
-            )
-            let y = min(
-                maxY,
-                mainScreen.frame.maxY - 4,
-                activeScreen.frame.height - editorFrame.minY - Style.widgetHeight - Style
-                    .widgetPadding
-            )
-
-            let proposedAnchorFrameOnTheRightSide = CGRect(
-                x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
-                y: y,
-                width: Style.widgetWidth,
-                height: Style.widgetHeight
-            )
-
-            let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
-                .widgetPadding * 2
-            let putPanelToTheRight = mainScreen.frame.maxX > proposedPanelX + Style.panelWidth
-            let alignPanelTopToAnchor = fixedAlignment ?? (y > activeScreen.frame.midY)
-
-            if putPanelToTheRight {
-                let anchorFrame = proposedAnchorFrameOnTheRightSide
-                let panelFrame = CGRect(
-                    x: proposedPanelX,
-                    y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight : anchorFrame
-                        .minY,
-                    width: Style.panelWidth,
-                    height: Style.panelHeight
-                )
-                return (anchorFrame, panelFrame, alignPanelTopToAnchor)
-            } else {
-                let proposedAnchorFrameOnTheLeftSide = CGRect(
-                    x: editorFrame.minX + Style.widgetPadding,
-                    y: proposedAnchorFrameOnTheRightSide.origin.y,
-                    width: Style.widgetWidth,
-                    height: Style.widgetHeight
-                )
-                let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
-                    .widgetPadding * 2 - Style.panelWidth
-                let putAnchorToTheLeft = proposedPanelX > mainScreen.frame.minX
-
-                if putAnchorToTheLeft {
-                    let anchorFrame = proposedAnchorFrameOnTheLeftSide
-                    let panelFrame = CGRect(
-                        x: proposedPanelX,
-                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style
-                            .panelHeight : anchorFrame
-                            .minY,
-                        width: Style.panelWidth,
-                        height: Style.panelHeight
-                    )
-                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
-                } else {
-                    let anchorFrame = proposedAnchorFrameOnTheRightSide
-                    let panelFrame = CGRect(
-                        x: anchorFrame.maxX - Style.panelWidth,
-                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight - Style
-                            .widgetHeight - Style.widgetPadding : anchorFrame.maxY + Style
-                            .widgetPadding,
-                        width: Style.panelWidth,
-                        height: Style.panelHeight
-                    )
-                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
-                }
-            }
-        }
     }
 }
