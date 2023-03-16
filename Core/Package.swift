@@ -123,5 +123,13 @@ let package = Package(
         ),
         .target(name: "AXExtension"),
         .target(name: "Logger"),
+        .target(
+            name: "OpenAIService",
+            dependencies: [.product(name: "AsyncAlgorithms", package: "swift-async-algorithms")]
+        ),
+        .testTarget(
+            name: "OpenAIServiceTests",
+            dependencies: ["OpenAIService"]
+        ),
     ]
 )
