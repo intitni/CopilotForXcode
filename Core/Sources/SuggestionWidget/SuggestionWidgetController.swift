@@ -198,6 +198,8 @@ public final class SuggestionWidgetController {
                 guard let self else { return }
                 try Task.checkCancellation()
                 self.updateWindowLocation(animated: false)
+                panelWindow.orderFront(nil)
+                widgetWindow.orderFront(nil)
 
                 if notification.name == kAXFocusedUIElementChangedNotification {
                     sourceEditorMonitorTask?.cancel()
