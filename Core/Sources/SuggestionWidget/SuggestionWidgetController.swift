@@ -162,6 +162,9 @@ public final class SuggestionWidgetController {
                     }
                 }()
                 self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                Task {
+                    await self.updateSuggestionsForActiveEditor()
+                }
             }
 
             updateColorScheme()
