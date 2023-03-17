@@ -26,6 +26,15 @@ struct ContentView: View {
             startPoint: .topLeading,
             endPoint: .bottom
         ))
+        .overlay(alignment: .top) {
+            LinearGradient(
+                colors: [Color("BackgroundColorTop"), Color("BackgroundColorTop").opacity(0)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+            .frame(height: 44)
+            .ignoresSafeArea()
+        }
     }
 }
 

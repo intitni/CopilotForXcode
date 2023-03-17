@@ -15,6 +15,8 @@ final class Settings: ObservableObject {
     var automaticallyCheckForUpdate: Bool = false
     @AppStorage(SettingsKey.suggestionWidgetPositionMode, store: .shared)
     var suggestionWidgetPositionModeRawValue: Int = 0
+    @AppStorage(SettingsKey.widgetColorScheme, store: .shared)
+    var widgetColorScheme: Int = 0
     init() {}
 }
 
@@ -63,6 +65,21 @@ struct SettingsView: View {
                         }
                     } label: {
                         Text("Widget position")
+                    }
+                    
+                    Picker(selection: $settings.widgetColorScheme) {
+                        ForEach(WidgetColorScheme.allCases, id: \.rawValue) {
+                            switch $0 {
+                            case .system:
+                                Text("System")
+                            case .light:
+                                Text("Light")
+                            case .dark:
+                                Text("Dark")
+                            }
+                        }
+                    } label: {
+                        Text("Widget color scheme")
                     }
                 }
 

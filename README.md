@@ -128,7 +128,7 @@ It will be a better experience if you use the "Floating Widget" mode with real-t
 
 ## Key Bindings
 
-It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`.
+It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`. You can filter the list by typing `copilot` in the search bar.
 
 A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that should cause no conflict is
 
@@ -189,6 +189,10 @@ fi
 
 > A: Please check if the [Accessibility API and Input Monitoring permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
     If you have followed the setup instructions as directed, please also consider granting Input Monitoring permissions to the extension app.
+
+**Q: I have signed in my GitHub account, but the app doesn't generate any suggestions.
+
+> A: Please make sure the GitHub Copilot status is `OK`. If it's not, it's likely that your GitHub Copilot subscription is not valid. 
 
 **Q: Will it work in future Xcode updates?**
 

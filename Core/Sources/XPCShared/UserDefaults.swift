@@ -18,6 +18,10 @@ public extension UserDefaults {
             PresentationMode.floatingWidget.rawValue,
             forKey: SettingsKey.suggestionPresentationMode
         )
+        setDefaultValue(
+            WidgetColorScheme.dark.rawValue,
+            forKey: SettingsKey.widgetColorScheme
+        )
     }
 }
 
@@ -29,4 +33,5 @@ public enum SettingsKey {
     public static let suggestionPresentationMode = "SuggestionPresentationMode"
     public static let automaticallyCheckForUpdate = "AutomaticallyCheckForUpdate"
     public static let suggestionWidgetPositionMode = "SuggestionWidgetPositionMode"
+    public static let widgetColorScheme = "WidgetColorScheme"
 }
