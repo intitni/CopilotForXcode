@@ -261,3 +261,65 @@ struct SuggestionPanelView_Bright_Preview: PreviewProvider {
         }
     }
 }
+
+struct SuggestionPanelView_Dark_Objc_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionPanelView(viewModel: .init(
+            suggestion: .init(
+                startLineIndex: 8,
+                code: highlighted(
+                    code: """
+                    - (void)addSubview:(UIView *)view {
+                        [self addSubview:view];
+                    }
+                    """,
+                    language: "objective-c",
+                    brightMode: false
+                ),
+                suggestionCount: 2,
+                currentSuggestionIndex: 0
+            ),
+            isPanelDisplayed: true,
+            colorScheme: .dark
+        ))
+        .frame(width: 450, height: 400)
+        .background {
+            HStack {
+                Color.red
+                Color.green
+                Color.blue
+            }
+        }
+    }
+}
+
+struct SuggestionPanelView_Bright_Objc_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionPanelView(viewModel: .init(
+            suggestion: .init(
+                startLineIndex: 8,
+                code: highlighted(
+                    code: """
+                    - (void)addSubview:(UIView *)view {
+                        [self addSubview:view];
+                    }
+                    """,
+                    language: "objective-c",
+                    brightMode: true
+                ),
+                suggestionCount: 2,
+                currentSuggestionIndex: 0
+            ),
+            isPanelDisplayed: true,
+            colorScheme: .light
+        ))
+        .frame(width: 450, height: 400)
+        .background {
+            HStack {
+                Color.red
+                Color.green
+                Color.blue
+            }
+        }
+    }
+}
