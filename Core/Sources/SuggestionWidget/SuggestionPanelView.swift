@@ -1,5 +1,5 @@
-import Environment
 import SwiftUI
+import XPCShared
 
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {
@@ -20,6 +20,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var suggestion: Suggestion
     @Published var isPanelDisplayed: Bool
     @Published var alignTopToAnchor = false
+    @Published var colorScheme: ColorScheme
 
     var onAcceptButtonTapped: (() -> Void)?
     var onRejectButtonTapped: (() -> Void)?
@@ -29,6 +30,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     public init(
         suggestion: Suggestion = .empty,
         isPanelDisplayed: Bool = false,
+        colorScheme: ColorScheme = .dark,
         onAcceptButtonTapped: (() -> Void)? = nil,
         onRejectButtonTapped: (() -> Void)? = nil,
         onPreviousButtonTapped: (() -> Void)? = nil,
@@ -36,6 +38,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     ) {
         self.suggestion = suggestion
         self.isPanelDisplayed = isPanelDisplayed
+        self.colorScheme = colorScheme
         self.onAcceptButtonTapped = onAcceptButtonTapped
         self.onRejectButtonTapped = onRejectButtonTapped
         self.onPreviousButtonTapped = onPreviousButtonTapped
@@ -46,7 +49,8 @@ final class SuggestionPanelViewModel: ObservableObject {
 struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
     @State var codeHeight: Double = 0
-    let backgroundColor = #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
+    // get color scheme
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack {
@@ -60,8 +64,18 @@ struct SuggestionPanelView: View {
                 VStack(spacing: 0) {
                     ScrollView {
                         CodeBlock(viewModel: viewModel)
+                            .frame(maxWidth: .infinity)
                     }
-                    .background(Color(nsColor: backgroundColor))
+                    .background(Color(nsColor: {
+                        switch viewModel.colorScheme {
+                        case .dark:
+                            return #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
+                        case .light:
+                            return .white
+                        @unknown default:
+                            return .white
+                        }
+                    }()))
 
                     ToolBar(viewModel: viewModel)
                 }
@@ -79,7 +93,7 @@ struct SuggestionPanelView: View {
                     .padding(1)
             )
             .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.code.isEmpty)
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(viewModel.colorScheme)
 
             if viewModel.alignTopToAnchor {
                 Spacer()
@@ -106,7 +120,7 @@ struct CodeBlock: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(index + viewModel.suggestion.startLineIndex + 1)")
                         .multilineTextAlignment(.trailing)
-                        .foregroundColor(Color.white.opacity(0.6))
+                        .foregroundColor(.secondary)
                         .frame(minWidth: 40)
                     Text(AttributedString(viewModel.suggestion.code[index]))
                         .foregroundColor(.white.opacity(0.1))
@@ -128,13 +142,7 @@ struct ToolBar: View {
     var body: some View {
         HStack {
             Button(action: {
-                Task {
-                    if let block = viewModel.onPreviousButtonTapped {
-                        block()
-                        return
-                    }
-                    try await Environment.triggerAction("Previous Suggestion")
-                }
+                viewModel.onPreviousButtonTapped?()
             }) {
                 Image(systemName: "chevron.left")
             }.buttonStyle(.plain)
@@ -145,13 +153,7 @@ struct ToolBar: View {
             .monospacedDigit()
 
             Button(action: {
-                Task {
-                    if let block = viewModel.onNextButtonTapped {
-                        block()
-                        return
-                    }
-                    try await Environment.triggerAction("Next Suggestion")
-                }
+                viewModel.onNextButtonTapped?()
             }) {
                 Image(systemName: "chevron.right")
             }.buttonStyle(.plain)
@@ -159,25 +161,13 @@ struct ToolBar: View {
             Spacer()
 
             Button(action: {
-                Task {
-                    if let block = viewModel.onRejectButtonTapped {
-                        block()
-                        return
-                    }
-                    try await Environment.triggerAction("Reject Suggestion")
-                }
+                viewModel.onRejectButtonTapped?()
             }) {
                 Text("Reject")
             }.buttonStyle(CommandButtonStyle(color: .gray))
 
             Button(action: {
-                Task {
-                    if let block = viewModel.onAcceptButtonTapped {
-                        block()
-                        return
-                    }
-                    try await Environment.triggerAction("Accept Suggestion")
-                }
+                viewModel.onAcceptButtonTapped?()
             }) {
                 Text("Accept")
             }.buttonStyle(CommandButtonStyle(color: .indigo))
@@ -208,7 +198,7 @@ struct CommandButtonStyle: ButtonStyle {
     }
 }
 
-struct SuggestionPanelView_Preview: PreviewProvider {
+struct SuggestionPanelView_Dark_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
             suggestion: .init(
@@ -222,12 +212,48 @@ struct SuggestionPanelView_Preview: PreviewProvider {
                             .multilineTextAlignment(.leading)
                     }
                     """,
-                    language: "swift"
+                    language: "swift",
+                    brightMode: false
                 ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
             ),
-            isPanelDisplayed: true
+            isPanelDisplayed: true,
+            colorScheme: .dark
+        ))
+        .frame(width: 450, height: 400)
+        .background {
+            HStack {
+                Color.red
+                Color.green
+                Color.blue
+            }
+        }
+    }
+}
+
+struct SuggestionPanelView_Bright_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionPanelView(viewModel: .init(
+            suggestion: .init(
+                startLineIndex: 8,
+                code: highlighted(
+                    code: """
+                    LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+                    ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+                        Text(viewModel.suggestion[index])
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
+                    }
+                    """,
+                    language: "swift",
+                    brightMode: true
+                ),
+                suggestionCount: 2,
+                currentSuggestionIndex: 0
+            ),
+            isPanelDisplayed: true,
+            colorScheme: .light
         ))
         .frame(width: 450, height: 400)
         .background {
