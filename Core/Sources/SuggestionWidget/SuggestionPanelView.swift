@@ -1,5 +1,4 @@
 import SwiftUI
-import XPCShared
 
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {
@@ -48,9 +47,6 @@ final class SuggestionPanelViewModel: ObservableObject {
 
 struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
-    @State var codeHeight: Double = 0
-    // get color scheme
-    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack {
