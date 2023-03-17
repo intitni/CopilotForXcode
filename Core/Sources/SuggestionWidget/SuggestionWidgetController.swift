@@ -65,12 +65,14 @@ public final class SuggestionWidgetController {
     let widgetViewModel = WidgetViewModel()
     let suggestionPanelViewModel = SuggestionPanelViewModel()
 
-    private var userDefaultsObserver = UserDefaultsObserver()
+    private var presentationModeChangeObserver = UserDefaultsObserver()
+    private var colorSchemeChangeObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var suggestionForFiles: [URL: Suggestion] = [:]
     private var currentFileURL: URL?
+    private var colorScheme: ColorScheme = .light
 
     public var onAcceptButtonTapped: (() -> Void)? {
         get { suggestionPanelViewModel.onAcceptButtonTapped }
@@ -126,13 +128,60 @@ public final class SuggestionWidgetController {
         }
 
         Task { @MainActor in
-            userDefaultsObserver.onChange = { [weak self] in
+            presentationModeChangeObserver.onChange = { [weak self] in
                 guard let self else { return }
                 self.updateWindowLocation()
             }
+
             UserDefaults.shared.addObserver(
-                userDefaultsObserver,
+                presentationModeChangeObserver,
                 forKeyPath: SettingsKey.suggestionPresentationMode,
+                options: .new,
+                context: nil
+            )
+        }
+
+        Task { @MainActor in
+            let updateColorScheme = { @MainActor [weak self] in
+                guard let self else { return }
+                let widgetColorScheme = WidgetColorScheme(
+                    rawValue: UserDefaults.shared
+                        .integer(forKey: SettingsKey.widgetColorScheme)
+                ) ?? .system
+                let systemColorScheme: ColorScheme = NSApp.effectiveAppearance.name == .darkAqua
+                    ? .dark
+                    : .light
+                self.colorScheme = {
+                    switch (widgetColorScheme, systemColorScheme) {
+                    case (.system, .dark), (.dark, _):
+                        return .dark
+                    case (.system, .light), (.light, _):
+                        return .light
+                    case (.system, _):
+                        return .light
+                    }
+                }()
+                self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                Task {
+                    await self.updateSuggestionsForActiveEditor()
+                }
+            }
+
+            updateColorScheme()
+            colorSchemeChangeObserver.onChange = {
+                updateColorScheme()
+            }
+
+            UserDefaults.shared.addObserver(
+                colorSchemeChangeObserver,
+                forKeyPath: SettingsKey.widgetColorScheme,
+                options: .new,
+                context: nil
+            )
+
+            UserDefaults.standard.addObserver(
+                colorSchemeChangeObserver,
+                forKeyPath: "AppleInterfaceStyle",
                 options: .new,
                 context: nil
             )
@@ -150,7 +199,11 @@ public final class SuggestionWidgetController {
         if fileURL == currentFileURL || currentFileURL == nil {
             suggestionPanelViewModel.suggestion = .init(
                 startLineIndex: startLineIndex,
-                code: highlighted(code: code, language: language),
+                code: highlighted(
+                    code: code,
+                    language: language,
+                    brightMode: colorScheme == .light
+                ),
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
             )
@@ -212,26 +265,7 @@ public final class SuggestionWidgetController {
                     }
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
-                    guard let suggestion = suggestionForFiles[fileURL] else {
-                        suggestionPanelViewModel.suggestion = .empty
-                        continue
-                    }
-
-                    switch suggestion {
-                    case let .code(
-                        code,
-                        language,
-                        startLineIndex,
-                        currentSuggestionIndex,
-                        suggestionCount
-                    ):
-                        suggestionPanelViewModel.suggestion = .init(
-                            startLineIndex: startLineIndex,
-                            code: highlighted(code: code, language: language),
-                            suggestionCount: suggestionCount,
-                            currentSuggestionIndex: currentSuggestionIndex
-                        )
-                    }
+                    await updateSuggestionsForActiveEditor(fileURL: fileURL)
                 }
             }
         }
@@ -347,5 +381,37 @@ public final class SuggestionWidgetController {
         }
 
         hide()
+    }
+
+    private func updateSuggestionsForActiveEditor(fileURL: URL? = nil) async {
+        guard let fileURL = await {
+            if let fileURL { return fileURL }
+            return try? await Environment.fetchCurrentFileURL()
+        }(),
+            let suggestion = suggestionForFiles[fileURL]
+        else {
+            suggestionPanelViewModel.suggestion = .empty
+            return
+        }
+
+        switch suggestion {
+        case let .code(
+            code,
+            language,
+            startLineIndex,
+            currentSuggestionIndex,
+            suggestionCount
+        ):
+            suggestionPanelViewModel.suggestion = .init(
+                startLineIndex: startLineIndex,
+                code: highlighted(
+                    code: code,
+                    language: language,
+                    brightMode: colorScheme == .light
+                ),
+                suggestionCount: suggestionCount,
+                currentSuggestionIndex: currentSuggestionIndex
+            )
+        }
     }
 }
