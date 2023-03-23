@@ -36,4 +36,11 @@ struct PresentInWindowSuggestionPresenter {
             controller.markAsProcessing(isProcessing)
         }
     }
+    
+    func presentError(_ error: Error) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
+            controller.presentError(error.localizedDescription)
+        }
+    }
 }

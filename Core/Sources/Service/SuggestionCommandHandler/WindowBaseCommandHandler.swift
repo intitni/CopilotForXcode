@@ -17,6 +17,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _presentSuggestions(editor: editor)
             } catch {
+                presenter.presentError(error)
                 Logger.service.error(error)
             }
         }
@@ -63,7 +64,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
-            try await _presentNextSuggestion(editor: editor)
+            do {
+                try await _presentNextSuggestion(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
         }
         return nil
     }
@@ -92,7 +97,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
-            try await _presentPreviousSuggestion(editor: editor)
+            do {
+                try await _presentPreviousSuggestion(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
         }
         return nil
     }
@@ -121,7 +130,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
-            try await _rejectSuggestion(editor: editor)
+            do {
+                try await _rejectSuggestion(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
         }
         return nil
     }
@@ -147,6 +160,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             }
             return result
         } catch {
+            presenter.presentError(error)
             throw error
         }
     }

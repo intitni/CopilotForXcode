@@ -237,6 +237,8 @@ public extension SuggestionWidgetController {
 
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
+        widgetViewModel.isProcessing = false
+        suggestionPanelViewModel.isPanelDisplayed = true
     }
 }
 

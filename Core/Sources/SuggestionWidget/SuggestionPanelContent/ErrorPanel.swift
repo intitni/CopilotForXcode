@@ -21,6 +21,7 @@ struct ErrorPanel: View {
                 Image(systemName: "xmark")
                     .padding([.leading, .bottom], 16)
                     .padding([.top, .trailing], 8)
+                    .foregroundColor(.white)
             }
             .buttonStyle(.plain)
         }
