@@ -36,6 +36,7 @@ let package = Package(
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
+        .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.0.0"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -118,6 +119,7 @@ let package = Package(
                 "Environment",
                 "Highlightr",
                 "Splash",
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
         ),
         .target(
