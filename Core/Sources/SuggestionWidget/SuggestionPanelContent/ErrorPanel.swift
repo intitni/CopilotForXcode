@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ErrorPanel: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
+    var viewModel: SuggestionPanelViewModel
     var description: String
 
     var body: some View {

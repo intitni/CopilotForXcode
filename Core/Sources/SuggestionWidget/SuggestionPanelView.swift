@@ -16,9 +16,21 @@ final class SuggestionPanelViewModel: ObservableObject {
         )
     }
 
+    struct Chat: Equatable {
+        struct ChatMessage: Equatable {
+            var id: String
+            var isUser: Bool
+            var text: String
+        }
+
+        var history: [ChatMessage]
+        var isReceivingMessage: Bool
+    }
+
     enum Content: Equatable {
         case empty
         case suggestion(Suggestion)
+        case chat(Chat)
         case error(String)
     }
 
@@ -70,6 +82,8 @@ struct SuggestionPanelView: View {
                     CodeBlockSuggestionPanel(viewModel: viewModel, suggestion: suggestion)
                 case let .error(description):
                     ErrorPanel(viewModel: viewModel, description: description)
+                case let .chat(chat):
+                    ChatPanel(viewModel: viewModel, chat: chat)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
