@@ -22,9 +22,8 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Key Bindings](#key-bindings)
 - [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
 - [Limitations](#limitations)
-- [FAQ](#faq)
 - [License](#license)
-
+- [FAQ](https://github.com/intitni/CopilotForXcode/issues/65)
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
@@ -162,41 +161,6 @@ fi
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
 - When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
-
-## FAQ
-
-**Q: The extension doesn't show up in the `Editor` menu.**
-
-> A: Please make sure `Copilot` is turned on in `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
-
-**Q: The extension says it can't connect to the XPC service/helper.**
-
-> A: If you have just updated the app from an old version, make sure you have restarted the XPC Service.
-> 
-> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.ExtensionService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.ExtensionService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
-> 
-> If you are installing multiple versions of the extension on your machine, it's also possible that Xcode is using the older version of the extension.
-
-**Q: The extension complains that it has no access to the Accessibility API**
-
-> A: Please check if the [Accessibility API permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
-
-**Q: I turned on real-time suggestions, but nothing happens**
-
-> A: Try typing something in the editor and wait for a little while, if you see an animation from the real-time suggestion indicator or the floating widget, that means the real-time suggestion is correctly triggered. 
-
-**Q: I can't cancel real-time suggestions with mouse clicks, or pressing esc.**
-
-> A: Please check if the [Accessibility API and Input Monitoring permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
-    If you have followed the setup instructions as directed, please also consider granting Input Monitoring permissions to the extension app.
-
-**Q: I have signed in my GitHub account, but the app doesn't generate any suggestions.
-
-> A: Please make sure the GitHub Copilot status is `OK`. If it's not, it's likely that your GitHub Copilot subscription is not valid. 
-
-**Q: Will it work in future Xcode updates?**
-
-> A: I don't know. This extension uses many tricks to do its job, and these tricks can break in the future. 
 
 ## License 
 
