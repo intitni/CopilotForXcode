@@ -109,10 +109,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let mode = PresentationMode(
-                    rawValue: UserDefaults.shared
-                        .integer(forKey: SettingsKey.suggestionPresentationMode)
-                ) ?? .comment
+                let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
                 let handler: SuggestionCommandHandler = {
                     switch mode {
                     case .comment:
@@ -227,10 +224,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
         Task { @ServiceActor in
             await RealtimeSuggestionController.shared.cancelInFlightTasks()
-            UserDefaults.shared.set(
-                !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle),
-                forKey: SettingsKey.realtimeSuggestionToggle
-            )
+            UserDefaults.shared.set(!UserDefaults.shared.value(for: \.realtimeSuggestionToggle), for: \.realtimeSuggestionToggle)
             reply(nil)
         }
     }

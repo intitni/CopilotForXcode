@@ -3,27 +3,27 @@ import Preferences
 import SwiftUI
 
 final class Settings: ObservableObject {
-    @AppStorage(SettingsKey.quitXPCServiceOnXcodeAndAppQuit, store: .shared)
-    var quitXPCServiceOnXcodeAndAppQuit: Bool = false
-    @AppStorage(SettingsKey.realtimeSuggestionToggle, store: .shared)
-    var realtimeSuggestionToggle: Bool = false
-    @AppStorage(SettingsKey.realtimeSuggestionDebounce, store: .shared)
-    var realtimeSuggestionDebounce: Double = 0.7
-    @AppStorage(SettingsKey.suggestionPresentationMode, store: .shared)
-    var suggestionPresentationModeRawValue: Int = 0
-    @AppStorage(SettingsKey.automaticallyCheckForUpdate, store: .shared)
-    var automaticallyCheckForUpdate: Bool = false
-    @AppStorage(SettingsKey.suggestionWidgetPositionMode, store: .shared)
-    var suggestionWidgetPositionModeRawValue: Int = 0
-    @AppStorage(SettingsKey.widgetColorScheme, store: .shared)
-    var widgetColorScheme: Int = 0
+    @AppStorage(\.quitXPCServiceOnXcodeAndAppQuit)
+    var quitXPCServiceOnXcodeAndAppQuit: Bool
+    @AppStorage(\.realtimeSuggestionToggle)
+    var realtimeSuggestionToggle: Bool
+    @AppStorage(\.realtimeSuggestionDebounce)
+    var realtimeSuggestionDebounce: Double
+    @AppStorage(\.suggestionPresentationMode)
+    var suggestionPresentationMode: Preferences.PresentationMode
+    @AppStorage(\.automaticallyCheckForUpdate)
+    var automaticallyCheckForUpdate: Bool
+    @AppStorage(\.suggestionWidgetPositionMode)
+    var suggestionWidgetPositionMode: SuggestionWidgetPositionMode
+    @AppStorage(\.widgetColorScheme)
+    var widgetColorScheme: WidgetColorScheme
     init() {}
 }
 
 struct SettingsView: View {
     @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
-        .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double ?? 0.7
+        .value(for: \.realtimeSuggestionDebounce)
 
     var body: some View {
         Section {
@@ -38,29 +38,27 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
 
-                Picker(selection: $settings.suggestionPresentationModeRawValue) {
+                Picker(selection: $settings.suggestionPresentationMode) {
                     ForEach(PresentationMode.allCases, id: \.rawValue) {
                         switch $0 {
                         case .comment:
-                            Text("Comment")
+                            Text("Comment").tag($0)
                         case .floatingWidget:
-                            Text("Floating Widget")
+                            Text("Floating Widget").tag($0)
                         }
                     }
                 } label: {
                     Text("Present suggestions in")
                 }
 
-                if settings.suggestionPresentationModeRawValue == PresentationMode.floatingWidget
-                    .rawValue
-                {
-                    Picker(selection: $settings.suggestionWidgetPositionModeRawValue) {
+                if settings.suggestionPresentationMode == PresentationMode.floatingWidget {
+                    Picker(selection: $settings.suggestionWidgetPositionMode) {
                         ForEach(SuggestionWidgetPositionMode.allCases, id: \.rawValue) {
                             switch $0 {
                             case .fixedToBottom:
-                                Text("Fixed to Bottom")
+                                Text("Fixed to Bottom").tag($0)
                             case .alignToTextCursor:
-                                Text("Follow Text Cursor")
+                                Text("Follow Text Cursor").tag($0)
                             }
                         }
                     } label: {
@@ -71,11 +69,11 @@ struct SettingsView: View {
                         ForEach(WidgetColorScheme.allCases, id: \.rawValue) {
                             switch $0 {
                             case .system:
-                                Text("System")
+                                Text("System").tag($0)
                             case .light:
-                                Text("Light")
+                                Text("Light").tag($0)
                             case .dark:
-                                Text("Dark")
+                                Text("Dark").tag($0)
                             }
                         }
                     } label: {

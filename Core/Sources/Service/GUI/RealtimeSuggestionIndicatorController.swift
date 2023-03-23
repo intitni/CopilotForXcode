@@ -4,9 +4,9 @@ import AsyncAlgorithms
 import AXNotificationStream
 import DisplayLink
 import Environment
+import Preferences
 import QuartzCore
 import SwiftUI
-import Preferences
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 @MainActor
@@ -157,7 +157,7 @@ final class RealtimeSuggestionIndicatorController {
             }
             UserDefaults.shared.addObserver(
                 userDefaultsObserver,
-                forKeyPath: SettingsKey.realtimeSuggestionToggle,
+                forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key,
                 options: .new,
                 context: nil
             )
@@ -237,11 +237,9 @@ final class RealtimeSuggestionIndicatorController {
 
     private func updateIndicatorVisibility() async {
         let isVisible = await {
-            let isOn = UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
-            let isCommentMode = (PresentationMode(
-                rawValue: UserDefaults.shared
-                    .integer(forKey: SettingsKey.suggestionPresentationMode)
-            ) ?? .comment) == .comment
+            let isOn = UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
+            let isCommentMode = UserDefaults.shared
+                .value(for: \.suggestionPresentationMode) == .comment
             let isXcodeActive = await Environment.isXcodeActive()
             return isOn && isXcodeActive && isCommentMode
         }()

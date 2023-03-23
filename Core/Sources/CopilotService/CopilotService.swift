@@ -52,7 +52,7 @@ public class CopilotBaseService {
                     .createDirectory(at: supportURL, withIntermediateDirectories: false)
             }
             let executionParams = {
-                let nodePath = UserDefaults.shared.string(forKey: SettingsKey.nodePath) ?? ""
+                let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 return Process.ExecutionParameters(
                     path: "/usr/bin/env",
                     arguments: [

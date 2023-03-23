@@ -3,8 +3,8 @@ import AppKit
 import AsyncAlgorithms
 import AXNotificationStream
 import Environment
-import SwiftUI
 import Preferences
+import SwiftUI
 
 @MainActor
 public final class SuggestionWidgetController {
@@ -135,7 +135,7 @@ public final class SuggestionWidgetController {
 
             UserDefaults.shared.addObserver(
                 presentationModeChangeObserver,
-                forKeyPath: SettingsKey.suggestionPresentationMode,
+                forKeyPath: UserDefaultPreferenceKeys().suggestionPresentationMode.key,
                 options: .new,
                 context: nil
             )
@@ -144,10 +144,7 @@ public final class SuggestionWidgetController {
         Task { @MainActor in
             let updateColorScheme = { @MainActor [weak self] in
                 guard let self else { return }
-                let widgetColorScheme = WidgetColorScheme(
-                    rawValue: UserDefaults.shared
-                        .integer(forKey: SettingsKey.widgetColorScheme)
-                ) ?? .system
+                let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
                 let systemColorScheme: ColorScheme = NSApp.effectiveAppearance.name == .darkAqua
                     ? .dark
                     : .light
@@ -174,7 +171,7 @@ public final class SuggestionWidgetController {
 
             UserDefaults.shared.addObserver(
                 colorSchemeChangeObserver,
-                forKeyPath: SettingsKey.widgetColorScheme,
+                forKeyPath: UserDefaultPreferenceKeys().widgetColorScheme.key,
                 options: .new,
                 context: nil
             )
@@ -297,10 +294,7 @@ public final class SuggestionWidgetController {
                     ) {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        let mode = SuggestionWidgetPositionMode(
-                            rawValue: UserDefaults.shared
-                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                        )
+                        let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
                         self.updateWindowLocation(animated: false)
                     }
@@ -308,10 +302,7 @@ public final class SuggestionWidgetController {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        let mode = SuggestionWidgetPositionMode(
-                            rawValue: UserDefaults.shared
-                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                        )
+                        let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
                         self.updateWindowLocation(animated: false)
                     }
@@ -330,10 +321,7 @@ public final class SuggestionWidgetController {
             widgetWindow.alphaValue = 0
         }
 
-        guard PresentationMode(
-            rawValue: UserDefaults.shared
-                .integer(forKey: SettingsKey.suggestionPresentationMode)
-        ) == .floatingWidget
+        guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
         else {
             hide()
             return
@@ -348,10 +336,7 @@ public final class SuggestionWidgetController {
                let screen = NSScreen.main,
                let firstScreen = NSScreen.screens.first
             {
-                let mode = SuggestionWidgetPositionMode(
-                    rawValue: UserDefaults.shared
-                        .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                ) ?? .fixedToBottom
+                let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                 switch mode {
                 case .fixedToBottom:
                     let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
