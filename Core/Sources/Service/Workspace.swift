@@ -2,6 +2,7 @@ import CopilotModel
 import CopilotService
 import Environment
 import Foundation
+import Preferences
 import SuggestionInjector
 import XPCShared
 
@@ -61,7 +62,7 @@ final class Workspace {
 
     private(set) var filespaces = [URL: Filespace]()
     var isRealtimeSuggestionEnabled: Bool {
-        UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+        UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
     }
 
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()

@@ -7,8 +7,8 @@ import CGEventObserver
 import Environment
 import Foundation
 import Logger
+import Preferences
 import QuartzCore
-import XPCShared
 
 @ServiceActor
 public class RealtimeSuggestionController {
@@ -27,10 +27,7 @@ public class RealtimeSuggestionController {
     private var focusedUIElement: AXUIElement?
 
     var isCommentMode: Bool {
-        PresentationMode(
-            rawValue: UserDefaults.shared
-                .integer(forKey: SettingsKey.suggestionPresentationMode)
-        ) == .comment
+        UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
     }
 
     private nonisolated init() {
@@ -181,12 +178,10 @@ public class RealtimeSuggestionController {
     func triggerPrefetchDebounced(force: Bool = false) {
         inflightPrefetchTask = Task { @ServiceActor in
             try? await Task.sleep(nanoseconds: UInt64((
-                UserDefaults.shared
-                    .value(forKey: SettingsKey.realtimeSuggestionDebounce) as? Double
-                    ?? 0.7
+                UserDefaults.shared.value(for: \.realtimeSuggestionDebounce)
             ) * 1_000_000_000))
 
-            guard UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+            guard UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
             else { return }
 
             if Task.isCancelled { return }

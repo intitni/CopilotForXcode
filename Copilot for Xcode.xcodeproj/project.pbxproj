@@ -46,6 +46,8 @@
 		C882175A294187E100A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C8821759294187E100A22FD3 /* Client */; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C8EE079D29CC21300043B6D9 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079C29CC21300043B6D9 /* AccountView.swift */; };
+		C8EE079F29CC25C20043B6D9 /* OpenAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -188,6 +190,8 @@
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		C8EE079C29CC21300043B6D9 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -298,6 +302,8 @@
 				C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */,
 				C83B2B7B293D9FB400C5ACCD /* CopilotView.swift */,
 				C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */,
+				C8EE079C29CC21300043B6D9 /* AccountView.swift */,
+				C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */,
 				C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */,
 				C841BB232994CAD400B0B336 /* SettingsView.swift */,
 				C87F3E61293DD004008523E8 /* Styles.swift */,
@@ -531,7 +537,9 @@
 				C87F3E60293DC600008523E8 /* Section.swift in Sources */,
 				C87F3E62293DD004008523E8 /* Styles.swift in Sources */,
 				C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */,
+				C8EE079D29CC21300043B6D9 /* AccountView.swift in Sources */,
 				C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */,
+				C8EE079F29CC25C20043B6D9 /* OpenAIView.swift in Sources */,
 				C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */,
 				C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */,
 				C83B2B7C293D9FB400C5ACCD /* CopilotView.swift in Sources */,

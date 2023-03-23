@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import CopilotModel
 import Environment
+import Preferences
 import SuggestionInjector
 import XPCShared
 
@@ -40,10 +41,7 @@ struct PseudoCommandHandler {
             try? await Environment.triggerAction("Prefetch Suggestions")
             return
         }
-        let mode = PresentationMode(
-            rawValue: UserDefaults.shared
-                .integer(forKey: SettingsKey.suggestionPresentationMode)
-        ) ?? .comment
+        let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
         let handler: SuggestionCommandHandler = {
             switch mode {
             case .comment:

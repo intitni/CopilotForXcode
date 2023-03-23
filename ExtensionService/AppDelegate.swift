@@ -2,12 +2,12 @@ import AppKit
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
+import Preferences
 import Service
 import ServiceManagement
 import SwiftUI
 import UpdateChecker
 import UserNotifications
-import XPCShared
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -60,7 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             keyEquivalent: ""
         )
         toggleRealtimeSuggestions.state = UserDefaults.shared
-            .bool(forKey: SettingsKey.realtimeSuggestionToggle) ? .on : .off
+            .value(for: \.realtimeSuggestionToggle) ? .on : .off
         toggleRealtimeSuggestions.target = self
 
         let quitItem = NSMenuItem(
@@ -78,9 +78,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         userDefaultsObserver.onChange = { key in
             switch key {
-            case SettingsKey.realtimeSuggestionToggle:
+            case UserDefaultPreferenceKeys().realtimeSuggestionToggle.key:
                 toggleRealtimeSuggestions.state = UserDefaults.shared
-                    .bool(forKey: SettingsKey.realtimeSuggestionToggle) ? .on : .off
+                    .value(for: \.realtimeSuggestionToggle) ? .on : .off
             default:
                 break
             }
@@ -92,7 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func toggleRealtimeSuggestions() {
-        let isOn = !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+        let isOn = !UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
         if isOn {
             if !AXIsProcessTrusted() {
                 let alert = NSAlert()
@@ -116,7 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 return
             }
         }
-        UserDefaults.shared.set(isOn, forKey: SettingsKey.realtimeSuggestionToggle)
+        UserDefaults.shared.set(isOn, for: \.realtimeSuggestionToggle)
     }
 
     func setupQuitOnUpdate() {
@@ -157,7 +157,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .notifications(named: NSWorkspace.didTerminateApplicationNotification)
             for await notification in sequence {
                 try Task.checkCancellation()
-                guard UserDefaults.shared.bool(forKey: SettingsKey.quitXPCServiceOnXcodeAndAppQuit)
+                guard UserDefaults.shared.value(for: \.quitXPCServiceOnXcodeAndAppQuit)
                 else { continue }
                 guard let app = notification
                     .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
@@ -186,7 +186,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func checkForUpdate() {
-        guard UserDefaults.shared.bool(forKey: SettingsKey.automaticallyCheckForUpdate)
+        guard UserDefaults.shared.value(for: \.automaticallyCheckForUpdate)
         else { return }
         UpdateChecker().checkForUpdate()
     }
@@ -206,7 +206,7 @@ private class UserDefaultsObserver: NSObject {
 
     override init() {
         super.init()
-        observe(keyPath: SettingsKey.realtimeSuggestionToggle)
+        observe(keyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
     }
 
     func observe(keyPath: String) {
