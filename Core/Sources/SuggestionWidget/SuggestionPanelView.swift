@@ -16,7 +16,13 @@ final class SuggestionPanelViewModel: ObservableObject {
         )
     }
 
-    @Published var suggestion: Suggestion
+    enum Content: Equatable {
+        case empty
+        case suggestion(Suggestion)
+        case error(String)
+    }
+
+    @Published var content: Content
     @Published var isPanelDisplayed: Bool
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
@@ -27,7 +33,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     var onNextButtonTapped: (() -> Void)?
 
     public init(
-        suggestion: Suggestion = .empty,
+        content: Content = .empty,
         isPanelDisplayed: Bool = false,
         colorScheme: ColorScheme = .dark,
         onAcceptButtonTapped: (() -> Void)? = nil,
@@ -35,7 +41,7 @@ final class SuggestionPanelViewModel: ObservableObject {
         onPreviousButtonTapped: (() -> Void)? = nil,
         onNextButtonTapped: (() -> Void)? = nil
     ) {
-        self.suggestion = suggestion
+        self.content = content
         self.isPanelDisplayed = isPanelDisplayed
         self.colorScheme = colorScheme
         self.onAcceptButtonTapped = onAcceptButtonTapped
@@ -57,23 +63,13 @@ struct SuggestionPanelView: View {
             }
 
             ZStack(alignment: .topLeading) {
-                VStack(spacing: 0) {
-                    ScrollView {
-                        CodeBlock(viewModel: viewModel)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .background(Color(nsColor: {
-                        switch viewModel.colorScheme {
-                        case .dark:
-                            return #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
-                        case .light:
-                            return .white
-                        @unknown default:
-                            return .white
-                        }
-                    }()))
-
-                    ToolBar(viewModel: viewModel)
+                switch viewModel.content {
+                case .empty:
+                    EmptyView()
+                case let .suggestion(suggestion):
+                    CodeBlockSuggestionPanel(viewModel: viewModel, suggestion: suggestion)
+                case let .error(description):
+                    ErrorPanel(viewModel: viewModel, description: description)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
@@ -88,7 +84,7 @@ struct SuggestionPanelView: View {
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )
-            .allowsHitTesting(viewModel.isPanelDisplayed && !viewModel.suggestion.code.isEmpty)
+            .allowsHitTesting(viewModel.isPanelDisplayed && viewModel.content != .empty)
             .preferredColorScheme(viewModel.colorScheme)
 
             if viewModel.alignTopToAnchor {
@@ -99,78 +95,11 @@ struct SuggestionPanelView: View {
         }
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
-            guard !viewModel.suggestion.code.isEmpty else { return 0 }
+            guard viewModel.content != .empty else { return 0 }
             return 1
         }())
-        .animation(.easeInOut(duration: 0.2), value: viewModel.suggestion)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.content)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
-    }
-}
-
-struct CodeBlock: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
-
-    var body: some View {
-        VStack {
-            ForEach(0..<viewModel.suggestion.code.endIndex, id: \.self) { index in
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(index + viewModel.suggestion.startLineIndex + 1)")
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(.secondary)
-                        .frame(minWidth: 40)
-                    Text(AttributedString(viewModel.suggestion.code[index]))
-                        .foregroundColor(.white.opacity(0.1))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(4)
-                }
-            }
-        }
-        .foregroundColor(.white)
-        .font(.system(size: 12, design: .monospaced))
-        .padding()
-    }
-}
-
-struct ToolBar: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
-
-    var body: some View {
-        HStack {
-            Button(action: {
-                viewModel.onPreviousButtonTapped?()
-            }) {
-                Image(systemName: "chevron.left")
-            }.buttonStyle(.plain)
-
-            Text(
-                "\(viewModel.suggestion.currentSuggestionIndex + 1) / \(viewModel.suggestion.suggestionCount)"
-            )
-            .monospacedDigit()
-
-            Button(action: {
-                viewModel.onNextButtonTapped?()
-            }) {
-                Image(systemName: "chevron.right")
-            }.buttonStyle(.plain)
-
-            Spacer()
-
-            Button(action: {
-                viewModel.onRejectButtonTapped?()
-            }) {
-                Text("Reject")
-            }.buttonStyle(CommandButtonStyle(color: .gray))
-
-            Button(action: {
-                viewModel.onAcceptButtonTapped?()
-            }) {
-                Text("Accept")
-            }.buttonStyle(CommandButtonStyle(color: .indigo))
-        }
-        .padding()
-        .foregroundColor(.secondary)
-        .background(.regularMaterial)
     }
 }
 
@@ -194,10 +123,12 @@ struct CommandButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Previews
+
 struct SuggestionPanelView_Dark_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            suggestion: .init(
+            content: .suggestion(.init(
                 startLineIndex: 8,
                 code: highlighted(
                     code: """
@@ -213,7 +144,7 @@ struct SuggestionPanelView_Dark_Preview: PreviewProvider {
                 ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
-            ),
+            )),
             isPanelDisplayed: true,
             colorScheme: .dark
         ))
@@ -231,7 +162,7 @@ struct SuggestionPanelView_Dark_Preview: PreviewProvider {
 struct SuggestionPanelView_Bright_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            suggestion: .init(
+            content: .suggestion(.init(
                 startLineIndex: 8,
                 code: highlighted(
                     code: """
@@ -247,7 +178,7 @@ struct SuggestionPanelView_Bright_Preview: PreviewProvider {
                 ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
-            ),
+            )),
             isPanelDisplayed: true,
             colorScheme: .light
         ))
@@ -265,7 +196,7 @@ struct SuggestionPanelView_Bright_Preview: PreviewProvider {
 struct SuggestionPanelView_Dark_Objc_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            suggestion: .init(
+            content: .suggestion(.init(
                 startLineIndex: 8,
                 code: highlighted(
                     code: """
@@ -278,7 +209,7 @@ struct SuggestionPanelView_Dark_Objc_Preview: PreviewProvider {
                 ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
-            ),
+            )),
             isPanelDisplayed: true,
             colorScheme: .dark
         ))
@@ -296,7 +227,7 @@ struct SuggestionPanelView_Dark_Objc_Preview: PreviewProvider {
 struct SuggestionPanelView_Bright_Objc_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            suggestion: .init(
+            content: .suggestion(.init(
                 startLineIndex: 8,
                 code: highlighted(
                     code: """
@@ -309,7 +240,7 @@ struct SuggestionPanelView_Bright_Objc_Preview: PreviewProvider {
                 ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
-            ),
+            )),
             isPanelDisplayed: true,
             colorScheme: .light
         ))
@@ -321,5 +252,15 @@ struct SuggestionPanelView_Bright_Objc_Preview: PreviewProvider {
                 Color.blue
             }
         }
+    }
+}
+
+struct SuggestionPanelView_Error_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionPanelView(viewModel: .init(
+            content: .error("This is an error\nerror"),
+            isPanelDisplayed: true
+        ))
+        .frame(width: 450, height: 200)
     }
 }

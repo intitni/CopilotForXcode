@@ -47,7 +47,7 @@ struct WidgetView: View {
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !panelViewModel.suggestion.code.isEmpty || viewModel
+                                panelViewModel.content != .empty || viewModel
                                     .isProcessing ? 1 : 0
                             )
                             .animation(
@@ -63,7 +63,7 @@ struct WidgetView: View {
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !panelViewModel.suggestion.code.isEmpty || viewModel
+                                panelViewModel.content != .empty || viewModel
                                     .isProcessing ? 1 : 0
                             )
                             .animation(.easeInOut(duration: 1), value: processingProgress)
@@ -71,7 +71,7 @@ struct WidgetView: View {
                 }
             }
             .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
-            .onChange(of: panelViewModel.suggestion.code.isEmpty) { _ in refreshRing() }
+            .onChange(of: panelViewModel.content) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
@@ -85,7 +85,7 @@ struct WidgetView: View {
             if viewModel.isProcessing {
                 processingProgress = 1 - processingProgress
             } else {
-                processingProgress = panelViewModel.suggestion.code.isEmpty ? 0 : 1
+                processingProgress = panelViewModel.content == .empty ? 0 : 1
             }
         }
     }
@@ -115,12 +115,12 @@ struct WidgetView_Preview: PreviewProvider {
             WidgetView(
                 viewModel: .init(isProcessing: false),
                 panelViewModel: .init(
-                    suggestion: .init(
+                    content: .suggestion(.init(
                         startLineIndex: 0,
                         code: [.init(string: "Hello")],
                         suggestionCount: 0,
                         currentSuggestionIndex: 0
-                    )
+                    ))
                 ),
                 isHovering: false
             )

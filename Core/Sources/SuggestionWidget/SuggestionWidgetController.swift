@@ -184,8 +184,12 @@ public final class SuggestionWidgetController {
             )
         }
     }
+}
 
-    public func suggestCode(
+// MARK: - Handle Events
+
+public extension SuggestionWidgetController {
+    func suggestCode(
         _ code: String,
         language: String,
         startLineIndex: Int,
@@ -194,7 +198,7 @@ public final class SuggestionWidgetController {
         suggestionCount: Int
     ) {
         if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.suggestion = .init(
+            suggestionPanelViewModel.content = .suggestion(.init(
                 startLineIndex: startLineIndex,
                 code: highlighted(
                     code: code,
@@ -203,7 +207,7 @@ public final class SuggestionWidgetController {
                 ),
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
-            )
+            ))
 
             suggestionPanelViewModel.isPanelDisplayed = true
         }
@@ -218,19 +222,27 @@ public final class SuggestionWidgetController {
         )
     }
 
-    public func discardSuggestion(fileURL: URL) {
+    func discardSuggestion(fileURL: URL) {
         suggestionForFiles[fileURL] = nil
         if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.suggestion = .empty
+            suggestionPanelViewModel.content = .empty
             suggestionPanelViewModel.isPanelDisplayed = false
         }
         widgetViewModel.isProcessing = false
     }
 
-    public func markAsProcessing(_ isProcessing: Bool) {
+    func markAsProcessing(_ isProcessing: Bool) {
         widgetViewModel.isProcessing = isProcessing
     }
 
+    func presentError(_ errorDescription: String) {
+        suggestionPanelViewModel.content = .error(errorDescription)
+    }
+}
+
+// MARK: - Private
+
+extension SuggestionWidgetController {
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
         guard windowChangeObservationTask == nil else { return }
         observeEditorChangeIfNeeded(app)
@@ -257,7 +269,7 @@ public final class SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.suggestion = .empty
+                        suggestionPanelViewModel.content = .empty
                         continue
                     }
                     guard fileURL != currentFileURL else { continue }
@@ -375,7 +387,7 @@ public final class SuggestionWidgetController {
         }(),
             let suggestion = suggestionForFiles[fileURL]
         else {
-            suggestionPanelViewModel.suggestion = .empty
+            suggestionPanelViewModel.content = .empty
             return
         }
 
@@ -387,7 +399,7 @@ public final class SuggestionWidgetController {
             currentSuggestionIndex,
             suggestionCount
         ):
-            suggestionPanelViewModel.suggestion = .init(
+            suggestionPanelViewModel.content = .suggestion(.init(
                 startLineIndex: startLineIndex,
                 code: highlighted(
                     code: code,
@@ -396,7 +408,7 @@ public final class SuggestionWidgetController {
                 ),
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
-            )
+            ))
         }
     }
 }
