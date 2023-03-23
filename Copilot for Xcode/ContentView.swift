@@ -14,7 +14,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 8) {
                 AppInfoView()
                 LaunchAgentView()
-                CopilotView()
+                AccountView()
                 SettingsView()
                 InstructionView()
                 Spacer()
