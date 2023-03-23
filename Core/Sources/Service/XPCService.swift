@@ -215,6 +215,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
+    public func explainSelection(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.explainSelection(editor: editor)
+        }
+    }
+
     // MARK: - Settings
 
     public func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void) {
@@ -224,7 +233,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
         Task { @ServiceActor in
             await RealtimeSuggestionController.shared.cancelInFlightTasks()
-            UserDefaults.shared.set(!UserDefaults.shared.value(for: \.realtimeSuggestionToggle), for: \.realtimeSuggestionToggle)
+            UserDefaults.shared.set(
+                !UserDefaults.shared.value(for: \.realtimeSuggestionToggle),
+                for: \.realtimeSuggestionToggle
+            )
             reply(nil)
         }
     }

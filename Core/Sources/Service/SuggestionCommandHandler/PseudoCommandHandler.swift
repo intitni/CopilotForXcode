@@ -17,6 +17,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -30,6 +31,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -60,6 +62,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -123,6 +126,7 @@ private extension PseudoCommandHandler {
             lines: content.lines,
             uti: uti,
             cursorPosition: content.cursorPosition,
+            selections: [],
             tabSize: tabSize,
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation

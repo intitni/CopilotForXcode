@@ -16,21 +16,10 @@ final class SuggestionPanelViewModel: ObservableObject {
         )
     }
 
-    struct Chat: Equatable {
-        struct ChatMessage: Equatable {
-            var id: String
-            var isUser: Bool
-            var text: String
-        }
-
-        var history: [ChatMessage]
-        var isReceivingMessage: Bool
-    }
-
     enum Content: Equatable {
         case empty
         case suggestion(Suggestion)
-        case chat(Chat)
+        case chat(ChatRoom)
         case error(String)
     }
 

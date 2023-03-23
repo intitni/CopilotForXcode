@@ -12,8 +12,13 @@ protocol CompletionStreamAPI {
 
 /// https://platform.openai.com/docs/api-reference/chat/create
 struct CompletionRequestBody: Codable {
+    struct Message: Codable {
+        var role: ChatMessage.Role
+        var content: String
+    }
+    
     var model: String
-    var messages: [ChatMessage]
+    var messages: [Message]
     var temperature: Double?
     var top_p: Double?
     var n: Double?

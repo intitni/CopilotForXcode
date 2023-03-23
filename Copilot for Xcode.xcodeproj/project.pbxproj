@@ -48,6 +48,7 @@
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8EE079D29CC21300043B6D9 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079C29CC21300043B6D9 /* AccountView.swift */; };
 		C8EE079F29CC25C20043B6D9 /* OpenAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */; };
+		C8EE07A129CC9ED30043B6D9 /* ExplainSelectionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -192,6 +193,7 @@
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8EE079C29CC21300043B6D9 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIView.swift; sourceTree = "<group>"; };
+		C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplainSelectionCommand.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -254,6 +256,7 @@
 				C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */,
 				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
 				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
+				C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
 			);
@@ -523,6 +526,7 @@
 				C87B03A9293B262600C77EAE /* NextSuggestionCommand.swift in Sources */,
 				C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */,
 				C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */,
+				C8EE07A129CC9ED30043B6D9 /* ExplainSelectionCommand.swift in Sources */,
 				C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */,
 				C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */,
 				C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */,

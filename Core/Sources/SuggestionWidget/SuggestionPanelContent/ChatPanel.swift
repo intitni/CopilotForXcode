@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ChatPanel: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
-    var chat: SuggestionPanelViewModel.Chat
+    @ObservedObject var chat: ChatRoom
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -34,6 +34,7 @@ struct ChatPanel: View {
             Button(action: {
                 viewModel.isPanelDisplayed = false
                 viewModel.content = .empty
+                chat.stop()
             }) {
                 Image(systemName: "xmark")
                     .padding([.leading, .bottom], 16)

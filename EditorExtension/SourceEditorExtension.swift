@@ -13,6 +13,7 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             ToggleRealtimeSuggestionsCommand(),
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
+            ExplainSelectionCommand(),
         ].map(makeCommandDefinition)
     }
 

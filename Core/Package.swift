@@ -73,6 +73,7 @@ let package = Package(
             dependencies: [
                 "CopilotModel",
                 "CopilotService",
+                "OpenAIService",
                 "Preferences",
                 "XPCShared",
                 "CGEventObserver",

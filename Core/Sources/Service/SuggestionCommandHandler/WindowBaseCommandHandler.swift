@@ -3,7 +3,9 @@ import CopilotService
 import Environment
 import Foundation
 import Logger
+import OpenAIService
 import SuggestionInjector
+import SuggestionWidget
 import XPCShared
 
 @ServiceActor
@@ -172,5 +174,43 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         return try await presentSuggestions(editor: editor)
+    }
+
+    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _explainSelection(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    private func _explainSelection(editor: EditorContent) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
+        let model = UserDefaults.shared.value(for: \.chatGPTModel)
+        guard let selection = editor.selections.last else { return }
+        let service = ChatGPTService(
+            systemPrompt: """
+            You are a code explanation engine, you can only explain the code, do not interpret or translate it. Reply in Chinese
+            """,
+            apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
+            endpoint: endpoint.isEmpty ? nil : endpoint,
+            model: model.isEmpty ? nil : model,
+            temperature: 1,
+            maxToken: 2048
+        )
+        
+        let code = editor.selectedCode(in: selection)
+        Task {
+            try? await service.send(content: code, summary: "Explain selected code.")
+        }
+        
+        presenter.presentChatGPTConversation(service, fileURL: fileURL)
     }
 }

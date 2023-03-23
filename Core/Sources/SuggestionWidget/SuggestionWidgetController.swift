@@ -102,6 +102,7 @@ public final class SuggestionWidgetController {
             currentSuggestionIndex: Int,
             suggestionCount: Int
         )
+        case chat(ChatRoom)
     }
 
     public nonisolated init() {
@@ -239,6 +240,13 @@ public extension SuggestionWidgetController {
         suggestionPanelViewModel.content = .error(errorDescription)
         widgetViewModel.isProcessing = false
         suggestionPanelViewModel.isPanelDisplayed = true
+    }
+
+    func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
+        suggestionPanelViewModel.content = .chat(chatRoom)
+        widgetViewModel.isProcessing = false
+        suggestionPanelViewModel.isPanelDisplayed = true
+        suggestionForFiles[fileURL] = .chat(chatRoom)
     }
 }
 
@@ -411,6 +419,8 @@ extension SuggestionWidgetController {
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
             ))
+        case let .chat(chatRoom):
+            suggestionPanelViewModel.content = .chat(chatRoom)
         }
     }
 }
