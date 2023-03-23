@@ -45,6 +45,13 @@
         "identifier" : "SuggestionInjectorTests",
         "name" : "SuggestionInjectorTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "OpenAIServiceTests",
+        "name" : "OpenAIServiceTests"
+      }
     }
   ],
   "version" : 1

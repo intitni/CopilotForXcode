@@ -8,9 +8,18 @@ public protocol ChatGPTServiceType {
     func mutateSystemPrompt(_ newPrompt: String) async
 }
 
-public enum ChatGPTServiceError: Error {
+public enum ChatGPTServiceError: Error, LocalizedError {
     case endpointIncorrect
     case responseInvalid
+    
+    public var errorDescription: String? {
+        switch self {
+        case .endpointIncorrect:
+            return "ChatGPT endpoint is incorrect"
+        case .responseInvalid:
+            return "Response is invalid"
+        }
+    }
 }
 
 public struct ChatGPTError: Error, Codable, LocalizedError {
@@ -45,12 +54,13 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     public var apiKey: String
     public var systemPrompt: String
     public var maxToken: Int
-    public var history: [ChatGPTMessage] = [] {
+    public var history: [ChatMessage] = [] {
         didSet { objectWillChange.send() }
     }
 
     public internal(set) var isReceivingMessage = false
-    var ongoingTask: URLSessionDataTask?
+    var cancelTask: Cancellable?
+    var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
 
     public init(
         systemPrompt: String,
@@ -74,55 +84,29 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     ) async throws -> AsyncThrowingStream<String, Error> {
         guard !isReceivingMessage else { throw CancellationError() }
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        let newMessage = ChatGPTMessage(role: .user, content: content, summary: summary)
+        let newMessage = ChatMessage(role: .user, content: content, summary: summary)
         history.append(newMessage)
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
 
-        let requestBody = ChatGPTRequest(
+        let requestBody = CompletionRequestBody(
             model: model.rawValue,
             messages: combineHistoryWithSystemPrompt(),
             temperature: temperature,
             stream: true,
             max_tokens: maxToken
         )
-        
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
         isReceivingMessage = true
         
         do {
-            let (result, response) = try await URLSession.shared.bytes(for: request)
-            ongoingTask = result.task
-
-            guard let response = response as? HTTPURLResponse else {
-                throw ChatGPTServiceError.responseInvalid
-            }
-            guard response.statusCode == 200 else {
-                let text = try await result.lines.reduce(into: "") { partialResult, current in
-                    partialResult += current
-                }
-                guard let data = text.data(using: .utf8)
-                else { throw ChatGPTServiceError.responseInvalid }
-                let decoder = JSONDecoder()
-                let error = try? decoder.decode(ChatGPTError.self, from: data)
-                throw error ?? ChatGPTServiceError.responseInvalid
-            }
+            let api = buildCompletionStreamAPI(apiKey, url, requestBody)
+            let (trunks, cancel) = try await api()
+            cancelTask = cancel
 
             return AsyncThrowingStream<String, Error> { continuation in
                 Task {
                     do {
-                        for try await line in result.lines {
-                            let prefix = "data: "
-                            guard line.hasPrefix(prefix),
-                                  let content = line.dropFirst(prefix.count).data(using: .utf8),
-                                  let trunk = try? JSONDecoder()
-                                  .decode(ChatGPTDataTrunk.self, from: content),
-                                  let delta = trunk.choices.first?.delta
-                            else { continue }
+                        for try await trunk in trunks {
+                            guard let delta = trunk.choices.first?.delta else { continue }
 
                             if history.last?.id == trunk.id {
                                 if let role = delta.role {
@@ -158,8 +142,8 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     }
 
     public func stopReceivingMessage() {
-        ongoingTask?.cancel()
-        ongoingTask = nil
+        cancelTask?()
+        cancelTask = nil
         isReceivingMessage = false
     }
 
@@ -173,7 +157,11 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
 }
 
 extension ChatGPTService {
-    func combineHistoryWithSystemPrompt() -> [ChatGPTMessage] {
+    func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
+        buildCompletionStreamAPI = builder
+    }
+    
+    func combineHistoryWithSystemPrompt() -> [ChatMessage] {
         if history.count > 4 {
             return [.init(role: .system, content: systemPrompt)] +
                 history[history.endIndex - 4..<history.endIndex]
