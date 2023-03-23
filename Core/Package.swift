@@ -24,6 +24,7 @@ let package = Package(
                 "CopilotModel",
                 "Client",
                 "XPCShared",
+                "Preferences",
                 "LaunchAgentManager",
                 "Logger",
             ]
@@ -40,7 +41,7 @@ let package = Package(
         .target(name: "CGEventObserver"),
         .target(
             name: "CopilotService",
-            dependencies: ["LanguageClient", "CopilotModel", "XPCShared"]
+            dependencies: ["LanguageClient", "CopilotModel", "XPCShared", "Preferences"]
         ),
         .testTarget(
             name: "CopilotServiceTests",
@@ -64,13 +65,14 @@ let package = Package(
         ),
         .target(
             name: "Client",
-            dependencies: ["CopilotModel", "XPCShared", "Logger"]
+            dependencies: ["CopilotModel", "Preferences", "XPCShared", "Logger"]
         ),
         .target(
             name: "Service",
             dependencies: [
                 "CopilotModel",
                 "CopilotService",
+                "Preferences",
                 "XPCShared",
                 "CGEventObserver",
                 "DisplayLink",
@@ -94,6 +96,7 @@ let package = Package(
                 "Client",
                 "CopilotService",
                 "SuggestionInjector",
+                "Preferences",
                 "XPCShared",
                 "Environment",
             ]
@@ -131,5 +134,6 @@ let package = Package(
             name: "OpenAIServiceTests",
             dependencies: ["OpenAIService"]
         ),
+        .target(name: "Preferences"),
     ]
 )

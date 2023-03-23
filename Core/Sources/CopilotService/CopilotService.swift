@@ -3,6 +3,7 @@ import Foundation
 import LanguageClient
 import LanguageServerProtocol
 import XPCShared
+import Preferences
 
 public protocol CopilotAuthServiceType {
     func checkStatus() async throws -> CopilotStatus

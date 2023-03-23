@@ -6,7 +6,7 @@ import DisplayLink
 import Environment
 import QuartzCore
 import SwiftUI
-import XPCShared
+import Preferences
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 @MainActor

@@ -4,6 +4,7 @@ import Environment
 import Foundation
 import LanguageServerProtocol
 import Logger
+import Preferences
 import XPCShared
 
 @globalActor enum ServiceActor {

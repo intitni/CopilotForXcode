@@ -1,6 +1,6 @@
 import LaunchAgentManager
 import SwiftUI
-import XPCShared
+import Preferences
 
 struct LaunchAgentView: View {
     @State var errorMessage: String?

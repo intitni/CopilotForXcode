@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import CopilotModel
 import Environment
+import Preferences
 import SuggestionInjector
 import XPCShared
 

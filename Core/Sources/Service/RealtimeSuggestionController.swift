@@ -7,8 +7,8 @@ import CGEventObserver
 import Environment
 import Foundation
 import Logger
+import Preferences
 import QuartzCore
-import XPCShared
 
 @ServiceActor
 public class RealtimeSuggestionController {

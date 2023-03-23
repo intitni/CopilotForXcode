@@ -1,6 +1,6 @@
 import LaunchAgentManager
+import Preferences
 import SwiftUI
-import XPCShared
 
 final class Settings: ObservableObject {
     @AppStorage(SettingsKey.quitXPCServiceOnXcodeAndAppQuit, store: .shared)
@@ -66,7 +66,7 @@ struct SettingsView: View {
                     } label: {
                         Text("Widget position")
                     }
-                    
+
                     Picker(selection: $settings.widgetColorScheme) {
                         ForEach(WidgetColorScheme.allCases, id: \.rawValue) {
                             switch $0 {

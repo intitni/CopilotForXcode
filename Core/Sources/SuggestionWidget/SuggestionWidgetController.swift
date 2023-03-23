@@ -4,7 +4,7 @@ import AsyncAlgorithms
 import AXNotificationStream
 import Environment
 import SwiftUI
-import XPCShared
+import Preferences
 
 @MainActor
 public final class SuggestionWidgetController {

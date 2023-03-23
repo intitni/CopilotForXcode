@@ -2,12 +2,12 @@ import AppKit
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
+import Preferences
 import Service
 import ServiceManagement
 import SwiftUI
 import UpdateChecker
 import UserNotifications
-import XPCShared
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
