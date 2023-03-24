@@ -30,7 +30,7 @@ struct ChatPanel: View {
                 Image(systemName: "xmark")
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
-                    .padding([.leading, .bottom], 8)
+                    .padding(4)
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
