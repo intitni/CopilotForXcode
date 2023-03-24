@@ -386,9 +386,10 @@ struct SuggestionPanelView_Chat_Preview: PreviewProvider {
                     .init(id: "3", isUser: true, text: "What's up?"),
                 ]
             ),
-            isPanelDisplayed: true
+            isPanelDisplayed: true,
+            activeTab: .chat
         ))
-        .frame(width: 450, height: 200)
+        .frame(width: 450, height: 300)
     }
 }
 
