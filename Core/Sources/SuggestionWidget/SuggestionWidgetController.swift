@@ -44,7 +44,7 @@ public final class SuggestionWidgetController {
     }()
 
     private lazy var panelWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -54,11 +54,15 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.hasShadow = true
+        it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
+            if case .chat = suggestionPanelViewModel.content { return false }
+            return false
+        }
         return it
     }()
 
@@ -121,8 +125,10 @@ public final class SuggestionWidgetController {
                         }
                         self.updateWindowLocation()
                     } else {
-                        panelWindow.alphaValue = 0
-                        widgetWindow.alphaValue = 0
+                        if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                            self.widgetWindow.alphaValue = 0
+                            self.panelWindow.alphaValue = 0
+                        }
                     }
                 }
             }
@@ -423,4 +429,10 @@ extension SuggestionWidgetController {
             suggestionPanelViewModel.content = .chat(chatRoom)
         }
     }
+}
+
+class CanBecomeKeyWindow: NSWindow {
+    var canBecomeKeyChecker: () -> Bool = { true }
+    override var canBecomeKey: Bool { canBecomeKeyChecker() }
+    override var canBecomeMain: Bool { canBecomeKeyChecker() }
 }

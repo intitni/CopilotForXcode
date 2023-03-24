@@ -25,5 +25,6 @@ struct ErrorPanel: View {
             }
             .buttonStyle(.plain)
         }
+        .xcodeStyleFrame()
     }
 }

@@ -82,5 +82,6 @@ struct CodeBlockSuggestionPanel: View {
 
             ToolBar(viewModel: viewModel, suggestion: suggestion)
         }
+        .xcodeStyleFrame()
     }
 }

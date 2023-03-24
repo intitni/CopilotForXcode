@@ -199,12 +199,15 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         let service = ChatGPTService(
             systemPrompt: """
-            You are a code explanation engine, you can only explain the code, do not interpret or translate it. Reply in \(language.isEmpty ? language : "English")
+            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it. Reply in \(
+                language
+                    .isEmpty ? language : "English"
+            )
             """,
             apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
             endpoint: endpoint.isEmpty ? nil : endpoint,
             model: model.isEmpty ? nil : model,
-            temperature: 0.6,
+            temperature: 1,
             maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
         )
 
@@ -212,7 +215,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         Task {
             try? await service.send(
                 content: removeContinousSpaces(from: code),
-                summary: "Explain selected code from \(selection.start.line):\(selection.start.character) to \(selection.end.line):\(selection.end.character)."
+                summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
             )
         }
 
