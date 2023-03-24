@@ -16,7 +16,7 @@ struct ErrorPanel: View {
             // close button
             Button(action: {
                 viewModel.isPanelDisplayed = false
-                viewModel.content = .empty
+                viewModel.content = nil
             }) {
                 Image(systemName: "xmark")
                     .padding([.leading, .bottom], 16)

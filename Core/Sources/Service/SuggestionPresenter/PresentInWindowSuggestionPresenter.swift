@@ -46,6 +46,13 @@ struct PresentInWindowSuggestionPresenter {
             controller.presentError(error.localizedDescription)
         }
     }
+    
+    func closeChatRoom(fileURL: URL) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
+            controller.closeChatRoom(fileURL: fileURL)
+        }
+    }
 
     func presentChatGPTConversation(_ service: ChatGPTService, fileURL: URL) {
         let chatRoom = ChatRoom()
@@ -82,6 +89,13 @@ struct PresentInWindowSuggestionPresenter {
         chatRoom.onClear = {
             Task {
                 await service.clearHistory()
+            }
+        }
+        
+        chatRoom.onClose = {
+            Task {
+                await service.stopReceivingMessage()
+                closeChatRoom(fileURL: fileURL)
             }
         }
         

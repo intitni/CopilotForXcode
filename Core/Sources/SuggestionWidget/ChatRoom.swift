@@ -6,19 +6,22 @@ public final class ChatRoom: ObservableObject, Equatable {
     public var onMessageSend: (String) -> Void
     public var onStop: () -> Void
     public var onClear: () -> Void
+    public var onClose: () -> Void
 
     public init(
         history: [ChatMessage] = [],
         isReceivingMessage: Bool = false,
         onMessageSend: @escaping (String) -> Void = { _ in },
         onStop: @escaping () -> Void = {},
-        onClear: @escaping () -> Void = {}
+        onClear: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
     ) {
         self.history = history
         self.isReceivingMessage = isReceivingMessage
         self.onMessageSend = onMessageSend
         self.onStop = onStop
         self.onClear = onClear
+        self.onClose = onClose
     }
 
     public static func == (lhs: ChatRoom, rhs: ChatRoom) -> Bool {
@@ -28,6 +31,7 @@ public final class ChatRoom: ObservableObject, Equatable {
     public func send(_ message: String) { onMessageSend(message) }
     public func stop() { onStop() }
     public func clear() { onClear() }
+    public func close() { onClose() }
 }
 
 public struct ChatMessage: Equatable {
