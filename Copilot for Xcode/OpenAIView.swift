@@ -8,6 +8,8 @@ final class OpenAIViewSettings: ObservableObject {
     @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
     @AppStorage(\.chatGPTModel) var chatGPTModel: String
     @AppStorage(\.chatGPTEndpoint) var chatGPTEndpoint: String
+    @AppStorage(\.chatGPTLanguage) var chatGPTLanguage: String
+    @AppStorage(\.chatGPTMaxToken) var chatGPTMaxToken: Int
     init() {}
 }
 
@@ -59,6 +61,29 @@ struct OpenAIView: View {
                         TextField(
                             text: $settings.chatGPTEndpoint,
                             prompt: Text("https://api.openai.com/v1/chat/completions")
+                        ) {
+                            EmptyView()
+                        }.textFieldStyle(.copilot)
+                    }
+                    
+                    HStack {
+                        Text("Reply in Language")
+                        TextField(
+                            text: $settings.chatGPTLanguage,
+                            prompt: Text("English")
+                        ) {
+                            EmptyView()
+                        }.textFieldStyle(.copilot)
+                    }
+                    
+                    HStack {
+                        Text("Max Token")
+                        TextField(
+                            text: .init(get: {
+                                String(settings.chatGPTMaxToken)
+                            }, set: { newValue in
+                                settings.chatGPTMaxToken = Int(newValue) ?? 0
+                            })
                         ) {
                             EmptyView()
                         }.textFieldStyle(.copilot)

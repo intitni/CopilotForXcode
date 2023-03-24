@@ -194,23 +194,32 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         guard let selection = editor.selections.last else { return }
+
         let service = ChatGPTService(
             systemPrompt: """
-            You are a code explanation engine, you can only explain the code, do not interpret or translate it. Reply in Chinese
+            You are a code explanation engine, you can only explain the code, do not interpret or translate it. Reply in \(language.isEmpty ? language : "English")
             """,
             apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
             endpoint: endpoint.isEmpty ? nil : endpoint,
             model: model.isEmpty ? nil : model,
-            temperature: 1,
-            maxToken: 2048
+            temperature: 0.6,
+            maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
         )
-        
+
         let code = editor.selectedCode(in: selection)
         Task {
-            try? await service.send(content: code, summary: "Explain selected code.")
+            try? await service.send(
+                content: removeContinousSpaces(from: code),
+                summary: "Explain selected code from \(selection.start.line):\(selection.start.character) to \(selection.end.line):\(selection.end.character)."
+            )
         }
-        
+
         presenter.presentChatGPTConversation(service, fileURL: fileURL)
     }
+}
+
+func removeContinousSpaces(from string: String) -> String {
+    return string.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
 }

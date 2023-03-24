@@ -85,4 +85,18 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var chatGPTModel: ChatGPTModel { .init() }
+    
+    public struct ChatGPTMaxToken: UserDefaultPreferenceKey {
+        public let defaultValue = 2048
+        public let key = "ChatGPTMaxToken"
+    }
+
+    public var chatGPTMaxToken: ChatGPTMaxToken { .init() }
+    
+    public struct ChatGPTLanguage: UserDefaultPreferenceKey {
+        public let defaultValue = ""
+        public let key = "ChatGPTLanguage"
+    }
+
+    public var chatGPTLanguage: ChatGPTLanguage { .init() }
 }
