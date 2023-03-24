@@ -23,7 +23,20 @@ final class SuggestionPanelViewModel: ObservableObject {
         case error(String)
     }
 
-    @Published var content: Content
+    @Published var content: Content {
+        didSet {
+            #warning("""
+            TODO: There should be a better way for that
+            Currently, we have to make the app an accessory so that we can type things in the chat mode.
+            But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
+            """)
+            if case .chat = content {
+                NSApp.setActivationPolicy(.accessory)
+            } else {
+                NSApp.setActivationPolicy(.prohibited)
+            }
+        }
+    }
     @Published var isPanelDisplayed: Bool
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
