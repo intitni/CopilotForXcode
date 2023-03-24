@@ -39,6 +39,7 @@ final class CommentBase_RejectSuggestionTests: XCTestCase {
             lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 0),
+            selections: [],
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
@@ -51,6 +52,7 @@ final class CommentBase_RejectSuggestionTests: XCTestCase {
             lines: result1Lines,
             uti: "",
             cursorPosition: .init(line: 3, character: 5),
+            selections: [],
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
@@ -71,6 +73,7 @@ final class CommentBase_RejectSuggestionTests: XCTestCase {
             lines: result1Lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 3),
+            selections: [],
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false

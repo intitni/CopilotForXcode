@@ -40,6 +40,7 @@ final class CommentBase_GetSuggestionsTests: XCTestCase {
             lines: lines,
             uti: "",
             cursorPosition: .init(line: 0, character: 17),
+            selections: [],
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
@@ -93,6 +94,7 @@ final class CommentBase_GetSuggestionsTests: XCTestCase {
             lines: lines,
             uti: "",
             cursorPosition: .init(line: 6, character: 1),
+            selections: [],
             tabSize: 1,
             indentSize: 1,
             usesTabsForIndentation: false
