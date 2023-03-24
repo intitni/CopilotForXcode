@@ -59,13 +59,12 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         didSet { objectWillChange.send() }
     }
 
-    public internal(set) var isReceivingMessage = false
+    public internal(set) var isReceivingMessage = false {
+        didSet { objectWillChange.send() }
+    }
+
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
-
-    deinit {
-        print("deinit")
-    }
 
     public init(
         systemPrompt: String,
@@ -135,6 +134,12 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
 
                         continuation.finish()
                         isReceivingMessage = false
+                    } catch let error as CancellationError {
+                        isReceivingMessage = false
+                        continuation.finish(throwing: error)
+                    } catch let error as NSError where error.code == NSURLErrorCancelled {
+                        isReceivingMessage = false
+                        continuation.finish(throwing: error)
                     } catch {
                         Logger.service.error(error)
                         history.append(.init(
