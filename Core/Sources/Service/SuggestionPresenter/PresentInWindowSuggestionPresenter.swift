@@ -79,6 +79,12 @@ struct PresentInWindowSuggestionPresenter {
             }
         }
         
+        chatRoom.onClear = {
+            Task {
+                await service.clearHistory()
+            }
+        }
+        
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.presentChatRoom(chatRoom, fileURL: fileURL)

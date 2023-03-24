@@ -5,8 +5,9 @@ import Logger
 public protocol ChatGPTServiceType {
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
     func stopReceivingMessage() async
-    func restart() async
+    func clearHistory() async
     func mutateSystemPrompt(_ newPrompt: String) async
+    func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -160,12 +161,16 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         isReceivingMessage = false
     }
 
-    public func restart() {
+    public func clearHistory() {
         history = []
     }
 
     public func mutateSystemPrompt(_ newPrompt: String) {
         systemPrompt = newPrompt
+    }
+
+    public func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async {
+        mutate(&history)
     }
 }
 

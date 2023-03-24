@@ -5,24 +5,29 @@ public final class ChatRoom: ObservableObject, Equatable {
     @Published public var isReceivingMessage = false
     public var onMessageSend: (String) -> Void
     public var onStop: () -> Void
-    public func send(_ message: String) { onMessageSend(message) }
-    public func stop() { onStop() }
+    public var onClear: () -> Void
 
     public init(
         history: [ChatMessage] = [],
         isReceivingMessage: Bool = false,
         onMessageSend: @escaping (String) -> Void = { _ in },
-        onStop: @escaping () -> Void = {}
+        onStop: @escaping () -> Void = {},
+        onClear: @escaping () -> Void = {}
     ) {
         self.history = history
         self.isReceivingMessage = isReceivingMessage
         self.onMessageSend = onMessageSend
         self.onStop = onStop
+        self.onClear = onClear
     }
 
     public static func == (lhs: ChatRoom, rhs: ChatRoom) -> Bool {
         lhs.history == rhs.history && lhs.isReceivingMessage == rhs.isReceivingMessage
     }
+    
+    public func send(_ message: String) { onMessageSend(message) }
+    public func stop() { onStop() }
+    public func clear() { onClear() }
 }
 
 public struct ChatMessage: Equatable {
