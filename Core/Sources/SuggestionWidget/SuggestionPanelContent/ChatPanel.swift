@@ -25,14 +25,12 @@ struct ChatPanel: View {
 
             // close button
             Button(action: {
-                viewModel.isPanelDisplayed = false
-                viewModel.content = .empty
-                chat.stop()
+                chat.close()
             }) {
                 Image(systemName: "xmark")
                     .padding(8)
                     .background(.regularMaterial, in: Circle())
-                    .padding([.leading, .bottom], 8)
+                    .padding(4)
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
@@ -196,7 +194,6 @@ struct ChatPanel_Preview: PreviewProvider {
 
     static var previews: some View {
         ChatPanel(viewModel: .init(
-            content: .empty,
             isPanelDisplayed: true
         ), chat: .init(
             history: ChatPanel_Preview.history,
@@ -212,7 +209,6 @@ struct ChatPanel_Preview: PreviewProvider {
 struct ChatPanel_InputText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(viewModel: .init(
-            content: .empty,
             isPanelDisplayed: true
         ), chat: .init(
             history: ChatPanel_Preview.history,
@@ -229,7 +225,6 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(
             viewModel: .init(
-                content: .empty,
                 isPanelDisplayed: true
             ),
             chat: .init(
@@ -248,7 +243,6 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
 struct ChatPanel_Light_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(viewModel: .init(
-            content: .empty,
             isPanelDisplayed: true
         ), chat: .init(
             history: ChatPanel_Preview.history,

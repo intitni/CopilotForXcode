@@ -26,7 +26,8 @@ struct WidgetView: View {
                 let minimumLineWidth: Double = 4
                 let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
-
+                let empty = panelViewModel.content == nil && panelViewModel.chat == nil
+                
                 ZStack {
                     Circle()
                         .stroke(
@@ -46,10 +47,7 @@ struct WidgetView: View {
                             )
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
-                            .opacity(
-                                panelViewModel.content != .empty || viewModel
-                                    .isProcessing ? 1 : 0
-                            )
+                            .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(
                                 .easeInOut(duration: 1).repeatForever(autoreverses: true),
                                 value: processingProgress
@@ -62,10 +60,7 @@ struct WidgetView: View {
                             )
                             .padding(2)
                             .scaleEffect(x: scale, y: scale)
-                            .opacity(
-                                panelViewModel.content != .empty || viewModel
-                                    .isProcessing ? 1 : 0
-                            )
+                            .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(.easeInOut(duration: 1), value: processingProgress)
                     }
                 }
@@ -85,7 +80,8 @@ struct WidgetView: View {
             if viewModel.isProcessing {
                 processingProgress = 1 - processingProgress
             } else {
-                processingProgress = panelViewModel.content == .empty ? 0 : 1
+                let empty = panelViewModel.content == nil && panelViewModel.chat == nil
+                processingProgress = empty ? 0 : 1
             }
         }
     }

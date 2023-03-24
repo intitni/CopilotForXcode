@@ -60,7 +60,7 @@ public final class SuggestionWidgetController {
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .chat = suggestionPanelViewModel.content { return false }
+            if case .chat = suggestionPanelViewModel.activeTab { return false }
             return false
         }
         return it
@@ -75,6 +75,7 @@ public final class SuggestionWidgetController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var suggestionForFiles: [URL: Suggestion] = [:]
+    private var chatForFiles: [URL: ChatRoom] = [:]
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
 
@@ -106,13 +107,14 @@ public final class SuggestionWidgetController {
             currentSuggestionIndex: Int,
             suggestionCount: Int
         )
-        case chat(ChatRoom)
     }
 
     public nonisolated init() {
-        #warning("TODO: A test is initializing this class for unknown reasons, try a better way to avoid this.")
+        #warning(
+            "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
+        )
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        
+
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?
@@ -128,7 +130,9 @@ public final class SuggestionWidgetController {
                         }
                         self.updateWindowLocation()
                     } else {
-                        if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                        if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle
+                            .main.bundleIdentifier
+                        {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                         }
@@ -218,8 +222,6 @@ public extension SuggestionWidgetController {
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
             ))
-
-            suggestionPanelViewModel.isPanelDisplayed = true
         }
 
         widgetViewModel.isProcessing = false
@@ -235,8 +237,7 @@ public extension SuggestionWidgetController {
     func discardSuggestion(fileURL: URL) {
         suggestionForFiles[fileURL] = nil
         if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.content = .empty
-            suggestionPanelViewModel.isPanelDisplayed = false
+            suggestionPanelViewModel.content = nil
         }
         widgetViewModel.isProcessing = false
     }
@@ -248,14 +249,19 @@ public extension SuggestionWidgetController {
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
         widgetViewModel.isProcessing = false
-        suggestionPanelViewModel.isPanelDisplayed = true
     }
 
     func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
-        suggestionPanelViewModel.content = .chat(chatRoom)
+        if fileURL == currentFileURL || currentFileURL == nil {
+            suggestionPanelViewModel.chat = chatRoom
+        }
         widgetViewModel.isProcessing = false
-        suggestionPanelViewModel.isPanelDisplayed = true
-        suggestionForFiles[fileURL] = .chat(chatRoom)
+        chatForFiles[fileURL] = chatRoom
+    }
+
+    func closeChatRoom(fileURL: URL) {
+        suggestionPanelViewModel.chat = nil
+        chatForFiles[fileURL] = nil
     }
 }
 
@@ -288,7 +294,8 @@ extension SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.content = .empty
+                        suggestionPanelViewModel.content = nil
+                        suggestionPanelViewModel.chat = nil
                         continue
                     }
                     guard fileURL != currentFileURL else { continue }
@@ -403,33 +410,40 @@ extension SuggestionWidgetController {
         guard let fileURL = await {
             if let fileURL { return fileURL }
             return try? await Environment.fetchCurrentFileURL()
-        }(),
-            let suggestion = suggestionForFiles[fileURL]
-        else {
-            suggestionPanelViewModel.content = .empty
+        }() else {
+            suggestionPanelViewModel.content = nil
+            suggestionPanelViewModel.chat = nil
             return
         }
 
-        switch suggestion {
-        case let .code(
-            code,
-            language,
-            startLineIndex,
-            currentSuggestionIndex,
-            suggestionCount
-        ):
-            suggestionPanelViewModel.content = .suggestion(.init(
-                startLineIndex: startLineIndex,
-                code: highlighted(
-                    code: code,
-                    language: language,
-                    brightMode: colorScheme == .light
-                ),
-                suggestionCount: suggestionCount,
-                currentSuggestionIndex: currentSuggestionIndex
-            ))
-        case let .chat(chatRoom):
-            suggestionPanelViewModel.content = .chat(chatRoom)
+        if let suggestion = suggestionForFiles[fileURL] {
+            switch suggestion {
+            case let .code(
+                code,
+                language,
+                startLineIndex,
+                currentSuggestionIndex,
+                suggestionCount
+            ):
+                suggestionPanelViewModel.content = .suggestion(.init(
+                    startLineIndex: startLineIndex,
+                    code: highlighted(
+                        code: code,
+                        language: language,
+                        brightMode: colorScheme == .light
+                    ),
+                    suggestionCount: suggestionCount,
+                    currentSuggestionIndex: currentSuggestionIndex
+                ))
+            }
+        } else {
+            suggestionPanelViewModel.content = nil
+        }
+        
+        if let chat = chatForFiles[fileURL] {
+            suggestionPanelViewModel.chat = chat
+        } else {
+            suggestionPanelViewModel.chat = nil
         }
     }
 }
