@@ -173,8 +173,30 @@ fi
 
 > A: If you have just updated the app from an old version, make sure you have restarted the XPC Service.
 > 
-> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.ExtensionService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.ExtensionService.plist` exists. If they don't, and the button in the app fails to create them, please try to do it by hand.
-> 
+> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.ExtensionService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.ExtensionService.plist` exists. If they don't, and the button in the app fails to create them, please try to add the file manually:
+
+> This is an example of the .plist file. Please note that the application path may need to be adjusted based on your installation location.
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+        <string>com.intii.CopilotForXcode.ExtensionService</string>
+        <key>Program</key>
+        <string>/Applications/Copilot for Xcode.app/Contents/Applications/CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService</string>
+    <key>MachServices</key>
+    <dict>
+        <key>com.intii.CopilotForXcode.ExtensionService</key>
+        <true/>
+    </dict>
+</dict>
+</plist>
+```
+
+> After creating the file, set the proper permissions: `chmod 755 ~/Library/LaunchAgents/com.intii.CopilotForXcode.ExtensionService`.
+
 > If you are installing multiple versions of the extension on your machine, it's also possible that Xcode is using the older version of the extension.
 
 **Q: The extension complains that it has no access to the Accessibility API**
