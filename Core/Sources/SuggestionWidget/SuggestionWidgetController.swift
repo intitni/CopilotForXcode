@@ -279,7 +279,9 @@ extension SuggestionWidgetController {
                 kAXResizedNotification,
                 kAXMainWindowChangedNotification,
                 kAXFocusedWindowChangedNotification,
-                kAXFocusedUIElementChangedNotification
+                kAXFocusedUIElementChangedNotification,
+                kAXWindowMovedNotification,
+                kAXWindowResizedNotification
             )
             for await notification in notifications {
                 guard let self else { return }
@@ -322,7 +324,8 @@ extension SuggestionWidgetController {
                 )
                 let scroll = AXNotificationStream(
                     app: app,
-                    element: scrollBar, notificationNames: kAXValueChangedNotification
+                    element: scrollBar,
+                    notificationNames: kAXValueChangedNotification
                 )
 
                 if #available(macOS 13.0, *) {
@@ -332,8 +335,6 @@ extension SuggestionWidgetController {
                     ) {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
-                        if mode != .alignToTextCursor { break }
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
@@ -439,7 +440,7 @@ extension SuggestionWidgetController {
         } else {
             suggestionPanelViewModel.content = nil
         }
-        
+
         if let chat = chatForFiles[fileURL] {
             suggestionPanelViewModel.chat = chat
         } else {

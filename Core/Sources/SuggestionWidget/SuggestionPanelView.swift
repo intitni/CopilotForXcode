@@ -118,7 +118,7 @@ struct SuggestionPanelView: View {
     @Namespace var namespace
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             if !viewModel.alignTopToAnchor {
                 Spacer()
                     .frame(minHeight: 0, maxHeight: .infinity)
@@ -194,7 +194,7 @@ struct SuggestionPanelView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+            .frame(maxWidth: .infinity)
 
             if viewModel.alignTopToAnchor {
                 Spacer()
