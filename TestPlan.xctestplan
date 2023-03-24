@@ -48,7 +48,7 @@
     },
     {
       "target" : {
-        "containerPath" : "container:",
+        "containerPath" : "container:Core",
         "identifier" : "OpenAIServiceTests",
         "name" : "OpenAIServiceTests"
       }

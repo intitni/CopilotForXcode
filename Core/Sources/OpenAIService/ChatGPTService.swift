@@ -1,6 +1,5 @@
 import AsyncAlgorithms
 import Foundation
-import Logger
 
 public protocol ChatGPTServiceType {
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
@@ -64,6 +63,7 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         didSet { objectWillChange.send() }
     }
 
+    var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
 
@@ -89,7 +89,12 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     ) async throws -> AsyncThrowingStream<String, Error> {
         guard !isReceivingMessage else { throw CancellationError() }
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        let newMessage = ChatMessage(role: .user, content: content, summary: summary)
+        let newMessage = ChatMessage(
+            id: uuidGenerator(),
+            role: .user,
+            content: content,
+            summary: summary
+        )
         history.append(newMessage)
 
         let requestBody = CompletionRequestBody(
@@ -142,7 +147,6 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
                         isReceivingMessage = false
                         continuation.finish(throwing: error)
                     } catch {
-                        Logger.service.error(error)
                         history.append(.init(
                             role: .assistant,
                             content: error.localizedDescription
@@ -177,6 +181,10 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
 extension ChatGPTService {
     func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
+    }
+    
+    func changeUUIDGenerator(_ generator: @escaping () -> String) {
+        uuidGenerator = generator
     }
 
     func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {

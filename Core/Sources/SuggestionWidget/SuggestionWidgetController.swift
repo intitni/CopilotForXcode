@@ -110,6 +110,9 @@ public final class SuggestionWidgetController {
     }
 
     public nonisolated init() {
+        #warning("TODO: A test is initializing this class for unknown reasons, try a better way to avoid this.")
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+        
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?

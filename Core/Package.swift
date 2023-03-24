@@ -131,7 +131,10 @@ let package = Package(
         .target(name: "Logger"),
         .target(
             name: "OpenAIService",
-            dependencies: [.product(name: "AsyncAlgorithms", package: "swift-async-algorithms")]
+            dependencies: [
+                "Logger",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+            ]
         ),
         .testTarget(
             name: "OpenAIServiceTests",
