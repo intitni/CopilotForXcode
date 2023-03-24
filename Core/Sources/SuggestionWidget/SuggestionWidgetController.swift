@@ -44,7 +44,7 @@ public final class SuggestionWidgetController {
     }()
 
     private lazy var panelWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -54,11 +54,15 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.hasShadow = true
+        it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
+            if case .chat = suggestionPanelViewModel.content { return false }
+            return false
+        }
         return it
     }()
 
@@ -102,9 +106,13 @@ public final class SuggestionWidgetController {
             currentSuggestionIndex: Int,
             suggestionCount: Int
         )
+        case chat(ChatRoom)
     }
 
     public nonisolated init() {
+        #warning("TODO: A test is initializing this class for unknown reasons, try a better way to avoid this.")
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+        
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?
@@ -120,8 +128,10 @@ public final class SuggestionWidgetController {
                         }
                         self.updateWindowLocation()
                     } else {
-                        panelWindow.alphaValue = 0
-                        widgetWindow.alphaValue = 0
+                        if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                            self.widgetWindow.alphaValue = 0
+                            self.panelWindow.alphaValue = 0
+                        }
                     }
                 }
             }
@@ -239,6 +249,13 @@ public extension SuggestionWidgetController {
         suggestionPanelViewModel.content = .error(errorDescription)
         widgetViewModel.isProcessing = false
         suggestionPanelViewModel.isPanelDisplayed = true
+    }
+
+    func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
+        suggestionPanelViewModel.content = .chat(chatRoom)
+        widgetViewModel.isProcessing = false
+        suggestionPanelViewModel.isPanelDisplayed = true
+        suggestionForFiles[fileURL] = .chat(chatRoom)
     }
 }
 
@@ -411,6 +428,14 @@ extension SuggestionWidgetController {
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
             ))
+        case let .chat(chatRoom):
+            suggestionPanelViewModel.content = .chat(chatRoom)
         }
     }
+}
+
+class CanBecomeKeyWindow: NSWindow {
+    var canBecomeKeyChecker: () -> Bool = { true }
+    override var canBecomeKey: Bool { canBecomeKeyChecker() }
+    override var canBecomeMain: Bool { canBecomeKeyChecker() }
 }

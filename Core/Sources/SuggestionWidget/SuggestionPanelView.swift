@@ -19,10 +19,24 @@ final class SuggestionPanelViewModel: ObservableObject {
     enum Content: Equatable {
         case empty
         case suggestion(Suggestion)
+        case chat(ChatRoom)
         case error(String)
     }
 
-    @Published var content: Content
+    @Published var content: Content {
+        didSet {
+            #warning("""
+            TODO: There should be a better way for that
+            Currently, we have to make the app an accessory so that we can type things in the chat mode.
+            But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
+            """)
+            if case .chat = content {
+                NSApp.setActivationPolicy(.accessory)
+            } else {
+                NSApp.setActivationPolicy(.prohibited)
+            }
+        }
+    }
     @Published var isPanelDisplayed: Bool
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
@@ -70,20 +84,12 @@ struct SuggestionPanelView: View {
                     CodeBlockSuggestionPanel(viewModel: viewModel, suggestion: suggestion)
                 case let .error(description):
                     ErrorPanel(viewModel: viewModel, description: description)
+                case let .chat(chat):
+                    ChatPanel(viewModel: viewModel, chat: chat)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
             .fixedSize(horizontal: false, vertical: true)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
-                    .padding(1)
-            )
             .allowsHitTesting(viewModel.isPanelDisplayed && viewModel.content != .empty)
             .preferredColorScheme(viewModel.colorScheme)
 
@@ -259,6 +265,22 @@ struct SuggestionPanelView_Error_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
             content: .error("This is an error\nerror"),
+            isPanelDisplayed: true
+        ))
+        .frame(width: 450, height: 200)
+    }
+}
+
+struct SuggestionPanelView_Chat_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionPanelView(viewModel: .init(
+            content: .chat(.init(
+                history: [
+                    .init(id: "1", isUser: true, text: "Hello"),
+                    .init(id: "2", isUser: false, text: "Hi"),
+                    .init(id: "3", isUser: true, text: "What's up?"),
+                ]
+            )),
             isPanelDisplayed: true
         ))
         .frame(width: 450, height: 200)

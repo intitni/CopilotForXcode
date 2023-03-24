@@ -36,6 +36,11 @@ final class ChatGPTServiceTests: XCTestCase {
     func test_success() async throws {
         let service = ChatGPTService(systemPrompt: "system", apiKey: "Key")
         var apiKey = ""
+        var idCounter = 0
+        await service.changeUUIDGenerator {
+            defer { idCounter += 1 }
+            return "\(idCounter)"
+        }
         var requestBody: CompletionRequestBody?
         await service.changeBuildCompletionStreamAPI { _apiKey, _, _requestBody in
             apiKey = _apiKey
@@ -62,8 +67,8 @@ final class ChatGPTServiceTests: XCTestCase {
         XCTAssertEqual(all, ["hello", "my", "friends"], "Text stream is correct")
         let history = await service.history
         XCTAssertEqual(history, [
-            .init(role: .user, content: "Hello"),
-            .init(role: .assistant, content: "hellomyfriends", id: "1"),
+            .init(id: "0", role: .user, content: "Hello"),
+            .init(id: "1", role: .assistant, content: "hellomyfriends"),
         ], "History is correctly updated")
     }
 }

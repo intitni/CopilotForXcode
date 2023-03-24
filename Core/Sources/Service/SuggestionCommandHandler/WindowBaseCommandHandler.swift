@@ -3,7 +3,9 @@ import CopilotService
 import Environment
 import Foundation
 import Logger
+import OpenAIService
 import SuggestionInjector
+import SuggestionWidget
 import XPCShared
 
 @ServiceActor
@@ -173,4 +175,54 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         return try await presentSuggestions(editor: editor)
     }
+
+    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _explainSelection(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    private func _explainSelection(editor: EditorContent) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
+        let model = UserDefaults.shared.value(for: \.chatGPTModel)
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        guard let selection = editor.selections.last else { return }
+
+        let service = ChatGPTService(
+            systemPrompt: """
+            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it. Reply in \(
+                language
+                    .isEmpty ? language : "English"
+            )
+            """,
+            apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
+            endpoint: endpoint.isEmpty ? nil : endpoint,
+            model: model.isEmpty ? nil : model,
+            temperature: 1,
+            maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
+        )
+
+        let code = editor.selectedCode(in: selection)
+        Task {
+            try? await service.send(
+                content: removeContinousSpaces(from: code),
+                summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
+            )
+        }
+
+        presenter.presentChatGPTConversation(service, fileURL: fileURL)
+    }
+}
+
+func removeContinousSpaces(from string: String) -> String {
+    return string.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
 }

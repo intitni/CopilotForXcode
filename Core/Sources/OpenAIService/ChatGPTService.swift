@@ -4,14 +4,15 @@ import Foundation
 public protocol ChatGPTServiceType {
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
     func stopReceivingMessage() async
-    func restart() async
+    func clearHistory() async
     func mutateSystemPrompt(_ newPrompt: String) async
+    func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
     case endpointIncorrect
     case responseInvalid
-    
+
     public var errorDescription: String? {
         switch self {
         case .endpointIncorrect:
@@ -49,7 +50,7 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
 public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     public var temperature: Double
-    public var model: ChatGPTModel
+    public var model: String
     public var endpoint: String
     public var apiKey: String
     public var systemPrompt: String
@@ -58,24 +59,28 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         didSet { objectWillChange.send() }
     }
 
-    public internal(set) var isReceivingMessage = false
+    public internal(set) var isReceivingMessage = false {
+        didSet { objectWillChange.send() }
+    }
+
+    var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
 
     public init(
         systemPrompt: String,
         apiKey: String,
-        endpoint: String = "https://api.openai.com/v1/chat/completions",
-        model: ChatGPTModel = .gpt_3_5_turbo,
+        endpoint: String? = nil,
+        model: String? = nil,
         temperature: Double = 1,
         maxToken: Int = 2048
     ) {
         self.systemPrompt = systemPrompt
         self.apiKey = apiKey
-        self.model = model
+        self.model = model ?? "gpt-3.5-turbo"
         self.temperature = temperature
         self.maxToken = maxToken
-        self.endpoint = endpoint
+        self.endpoint = endpoint ?? "https://api.openai.com/v1/chat/completions"
     }
 
     public func send(
@@ -84,11 +89,16 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     ) async throws -> AsyncThrowingStream<String, Error> {
         guard !isReceivingMessage else { throw CancellationError() }
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        let newMessage = ChatMessage(role: .user, content: content, summary: summary)
+        let newMessage = ChatMessage(
+            id: uuidGenerator(),
+            role: .user,
+            content: content,
+            summary: summary
+        )
         history.append(newMessage)
 
         let requestBody = CompletionRequestBody(
-            model: model.rawValue,
+            model: model,
             messages: combineHistoryWithSystemPrompt(),
             temperature: temperature,
             stream: true,
@@ -96,15 +106,15 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         )
 
         isReceivingMessage = true
-        
+
         do {
             let api = buildCompletionStreamAPI(apiKey, url, requestBody)
-            let (trunks, cancel) = try await api()
-            cancelTask = cancel
 
             return AsyncThrowingStream<String, Error> { continuation in
                 Task {
                     do {
+                        let (trunks, cancel) = try await api()
+                        cancelTask = cancel
                         for try await trunk in trunks {
                             guard let delta = trunk.choices.first?.delta else { continue }
 
@@ -117,9 +127,9 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
                                 }
                             } else {
                                 history.append(.init(
+                                    id: trunk.id,
                                     role: delta.role ?? .assistant,
-                                    content: delta.content ?? "",
-                                    id: trunk.id
+                                    content: delta.content ?? ""
                                 ))
                             }
 
@@ -130,14 +140,22 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
 
                         continuation.finish()
                         isReceivingMessage = false
+                    } catch let error as CancellationError {
+                        isReceivingMessage = false
+                        continuation.finish(throwing: error)
+                    } catch let error as NSError where error.code == NSURLErrorCancelled {
+                        isReceivingMessage = false
+                        continuation.finish(throwing: error)
                     } catch {
+                        history.append(.init(
+                            role: .assistant,
+                            content: error.localizedDescription
+                        ))
+                        isReceivingMessage = false
                         continuation.finish(throwing: error)
                     }
                 }
             }
-        } catch {
-            isReceivingMessage = false
-            throw error
         }
     }
 
@@ -147,12 +165,16 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
         isReceivingMessage = false
     }
 
-    public func restart() {
+    public func clearHistory() {
         history = []
     }
 
     public func mutateSystemPrompt(_ newPrompt: String) {
         systemPrompt = newPrompt
+    }
+
+    public func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async {
+        mutate(&history)
     }
 }
 
@@ -161,11 +183,19 @@ extension ChatGPTService {
         buildCompletionStreamAPI = builder
     }
     
-    func combineHistoryWithSystemPrompt() -> [ChatMessage] {
+    func changeUUIDGenerator(_ generator: @escaping () -> String) {
+        uuidGenerator = generator
+    }
+
+    func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {
         if history.count > 4 {
             return [.init(role: .system, content: systemPrompt)] +
-                history[history.endIndex - 4..<history.endIndex]
+                history[history.endIndex - 4..<history.endIndex].map {
+                    .init(role: $0.role, content: $0.content)
+                }
         }
-        return [.init(role: .system, content: systemPrompt)] + history
+        return [.init(role: .system, content: systemPrompt)] + history.map {
+            .init(role: $0.role, content: $0.content)
+        }
     }
 }

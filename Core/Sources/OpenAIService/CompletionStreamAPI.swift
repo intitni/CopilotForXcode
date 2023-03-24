@@ -11,9 +11,14 @@ protocol CompletionStreamAPI {
 }
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionRequestBody: Codable {
+struct CompletionRequestBody: Codable, Equatable {
+    struct Message: Codable, Equatable {
+        var role: ChatMessage.Role
+        var content: String
+    }
+
     var model: String
-    var messages: [ChatMessage]
+    var messages: [Message]
     var temperature: Double?
     var top_p: Double?
     var n: Double?
@@ -71,7 +76,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         guard let response = response as? HTTPURLResponse else {
             throw ChatGPTServiceError.responseInvalid
         }
-        
+
         guard response.statusCode == 200 else {
             let text = try await result.lines.reduce(into: "") { partialResult, current in
                 partialResult += current
@@ -108,5 +113,3 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         )
     }
 }
-
-

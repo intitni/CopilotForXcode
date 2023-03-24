@@ -78,18 +78,10 @@ struct CodeBlockSuggestionPanel: View {
                 CodeBlock(suggestion: suggestion)
                     .frame(maxWidth: .infinity)
             }
-            .background(Color(nsColor: {
-                switch viewModel.colorScheme {
-                case .dark:
-                    return #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
-                case .light:
-                    return .white
-                @unknown default:
-                    return .white
-                }
-            }()))
+            .background(Color.contentBackground)
 
             ToolBar(viewModel: viewModel, suggestion: suggestion)
         }
+        .xcodeStyleFrame()
     }
 }

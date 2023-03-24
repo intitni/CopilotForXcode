@@ -36,6 +36,10 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
+    func explainSelection(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    )
 
     func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void)
 
