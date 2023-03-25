@@ -178,6 +178,14 @@ public struct AsyncXPCService {
             { $0.explainSelection }
         )
     }
+    
+    public func chatWithSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
+        try await suggestionRequest(
+            connection,
+            editorContent,
+            { $0.chatWithSelection }
+        )
+    }
 }
 
 struct AutoFinishContinuation<T> {

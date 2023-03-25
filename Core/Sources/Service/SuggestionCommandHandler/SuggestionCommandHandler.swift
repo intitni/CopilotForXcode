@@ -18,4 +18,6 @@ protocol SuggestionCommandHandler {
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
     func explainSelection(editor: EditorContent) async throws -> UpdatedContent?
+    @ServiceActor
+    func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent?
 }

@@ -194,15 +194,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        var language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        if language.isEmpty { language = "English" }
         guard let selection = editor.selections.last else { return }
 
         let service = ChatGPTService(
             systemPrompt: """
-            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it. Reply in \(
-                language
-                    .isEmpty ? language : "English"
-            )
+            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it
+            Reply in \(language)
             """,
             apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
             endpoint: endpoint.isEmpty ? nil : endpoint,
@@ -214,15 +213,82 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let code = editor.selectedCode(in: selection)
         Task {
             try? await service.send(
-                content: removeContinousSpaces(from: code),
+                content: removeContinuousSpaces(from: code),
                 summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
             )
         }
 
         presenter.presentChatGPTConversation(service, fileURL: fileURL)
     }
+
+    func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _chatWithSelection(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    private func _chatWithSelection(editor: EditorContent) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
+        let model = UserDefaults.shared.value(for: \.chatGPTModel)
+        var language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        if language.isEmpty { language = "English" }
+
+        let code = {
+            guard let selection = editor.selections.last,
+                  selection.start != selection.end else { return "" }
+            return editor.selectedCode(in: selection)
+        }()
+
+        let prompt = {
+            if code.isEmpty {
+                return """
+                You are a senior programmer, you will answer my questions concisely in \(language)
+                """
+            }
+            return """
+            You are a senior programmer, you will answer my questions concisely in \(
+                language
+            ) about the code
+            ```
+            \(removeContinuousSpaces(from: code))
+            ```
+            """
+        }()
+
+        let service = ChatGPTService(
+            systemPrompt: prompt,
+            apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
+            endpoint: endpoint.isEmpty ? nil : endpoint,
+            model: model.isEmpty ? nil : model,
+            temperature: 1,
+            maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
+        )
+
+        Task {
+            if !code.isEmpty, let selection = editor.selections.last {
+                await service.mutateHistory { history in
+                    history.append(.init(
+                        role: .user,
+                        content: "",
+                        summary: "Chat about selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persisted in the conversation."
+                    ))
+                }
+            }
+        }
+
+        presenter.presentChatGPTConversation(service, fileURL: fileURL)
+    }
 }
 
-func removeContinousSpaces(from string: String) -> String {
+func removeContinuousSpaces(from string: String) -> String {
     return string.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
 }

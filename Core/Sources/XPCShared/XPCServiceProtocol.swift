@@ -40,6 +40,10 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
+    func chatWithSelection(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    )
 
     func toggleRealtimeSuggestion(withReply reply: @escaping (Error?) -> Void)
 
