@@ -45,9 +45,21 @@ extension EditorContent {
             content: buffer.completeBuffer,
             lines: buffer.lines as! [String],
             uti: buffer.contentUTI,
-            cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.start).map {
+            cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.end).map {
                 CursorPosition(line: $0.line, character: $0.column)
             } ?? CursorPosition(line: 0, character: 0),
+            selections: buffer.selections.map {
+                Selection(
+                    start: CursorPosition(
+                        line: ($0 as! XCSourceTextRange).start.line,
+                        character: ($0 as! XCSourceTextRange).start.column
+                    ),
+                    end: CursorPosition(
+                        line: ($0 as! XCSourceTextRange).end.line,
+                        character: ($0 as! XCSourceTextRange).end.column
+                    )
+                )
+            },
             tabSize: buffer.tabWidth,
             indentSize: buffer.indentationWidth,
             usesTabsForIndentation: buffer.usesTabsForIndentation

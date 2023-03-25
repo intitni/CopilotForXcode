@@ -13,6 +13,10 @@
       {
         "key" : "IS_UNIT_TEST",
         "value" : "YES"
+      },
+      {
+        "key" : "SUEnableAutomaticChecks",
+        "value" : "NO"
       }
     ],
     "testTimeoutsEnabled" : true
@@ -44,6 +48,13 @@
         "containerPath" : "container:Core",
         "identifier" : "SuggestionInjectorTests",
         "name" : "SuggestionInjectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "OpenAIServiceTests",
+        "name" : "OpenAIServiceTests"
       }
     }
   ],

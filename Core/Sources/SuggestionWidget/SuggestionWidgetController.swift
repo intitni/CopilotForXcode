@@ -3,8 +3,8 @@ import AppKit
 import AsyncAlgorithms
 import AXNotificationStream
 import Environment
+import Preferences
 import SwiftUI
-import XPCShared
 
 @MainActor
 public final class SuggestionWidgetController {
@@ -44,7 +44,7 @@ public final class SuggestionWidgetController {
     }()
 
     private lazy var panelWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -54,11 +54,15 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.hasShadow = true
+        it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
+            if case .chat = suggestionPanelViewModel.activeTab { return false }
+            return false
+        }
         return it
     }()
 
@@ -71,6 +75,7 @@ public final class SuggestionWidgetController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var suggestionForFiles: [URL: Suggestion] = [:]
+    private var chatForFiles: [URL: ChatRoom] = [:]
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
 
@@ -105,6 +110,11 @@ public final class SuggestionWidgetController {
     }
 
     public nonisolated init() {
+        #warning(
+            "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
+        )
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+
         Task { @MainActor in
             activeApplicationMonitorTask = Task { [weak self] in
                 var previousApp: NSRunningApplication?
@@ -120,8 +130,12 @@ public final class SuggestionWidgetController {
                         }
                         self.updateWindowLocation()
                     } else {
-                        panelWindow.alphaValue = 0
-                        widgetWindow.alphaValue = 0
+                        if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle
+                            .main.bundleIdentifier
+                        {
+                            self.widgetWindow.alphaValue = 0
+                            self.panelWindow.alphaValue = 0
+                        }
                     }
                 }
             }
@@ -135,7 +149,7 @@ public final class SuggestionWidgetController {
 
             UserDefaults.shared.addObserver(
                 presentationModeChangeObserver,
-                forKeyPath: SettingsKey.suggestionPresentationMode,
+                forKeyPath: UserDefaultPreferenceKeys().suggestionPresentationMode.key,
                 options: .new,
                 context: nil
             )
@@ -144,10 +158,7 @@ public final class SuggestionWidgetController {
         Task { @MainActor in
             let updateColorScheme = { @MainActor [weak self] in
                 guard let self else { return }
-                let widgetColorScheme = WidgetColorScheme(
-                    rawValue: UserDefaults.shared
-                        .integer(forKey: SettingsKey.widgetColorScheme)
-                ) ?? .system
+                let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
                 let systemColorScheme: ColorScheme = NSApp.effectiveAppearance.name == .darkAqua
                     ? .dark
                     : .light
@@ -174,7 +185,7 @@ public final class SuggestionWidgetController {
 
             UserDefaults.shared.addObserver(
                 colorSchemeChangeObserver,
-                forKeyPath: SettingsKey.widgetColorScheme,
+                forKeyPath: UserDefaultPreferenceKeys().widgetColorScheme.key,
                 options: .new,
                 context: nil
             )
@@ -186,9 +197,31 @@ public final class SuggestionWidgetController {
                 context: nil
             )
         }
-    }
 
-    public func suggestCode(
+        Task { @MainActor in
+            suggestionPanelViewModel.onActiveTabChanged = { [weak self] activeTab in
+                #warning("""
+                TODO: There should be a better way for that
+                Currently, we have to make the app an accessory so that we can type things in the chat mode.
+                But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
+                """)
+                if case .chat = activeTab {
+                    NSApp.setActivationPolicy(.accessory)
+                } else {
+                    Task {
+                        try await Environment.makeXcodeActive()
+                        NSApp.setActivationPolicy(.prohibited)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Handle Events
+
+public extension SuggestionWidgetController {
+    func suggestCode(
         _ code: String,
         language: String,
         startLineIndex: Int,
@@ -197,7 +230,7 @@ public final class SuggestionWidgetController {
         suggestionCount: Int
     ) {
         if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.suggestion = .init(
+            suggestionPanelViewModel.content = .suggestion(.init(
                 startLineIndex: startLineIndex,
                 code: highlighted(
                     code: code,
@@ -206,9 +239,7 @@ public final class SuggestionWidgetController {
                 ),
                 suggestionCount: suggestionCount,
                 currentSuggestionIndex: currentSuggestionIndex
-            )
-
-            suggestionPanelViewModel.isPanelDisplayed = true
+            ))
         }
 
         widgetViewModel.isProcessing = false
@@ -221,19 +252,40 @@ public final class SuggestionWidgetController {
         )
     }
 
-    public func discardSuggestion(fileURL: URL) {
+    func discardSuggestion(fileURL: URL) {
         suggestionForFiles[fileURL] = nil
         if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.suggestion = .empty
-            suggestionPanelViewModel.isPanelDisplayed = false
+            suggestionPanelViewModel.content = nil
         }
         widgetViewModel.isProcessing = false
     }
 
-    public func markAsProcessing(_ isProcessing: Bool) {
+    func markAsProcessing(_ isProcessing: Bool) {
         widgetViewModel.isProcessing = isProcessing
     }
 
+    func presentError(_ errorDescription: String) {
+        suggestionPanelViewModel.content = .error(errorDescription)
+        widgetViewModel.isProcessing = false
+    }
+
+    func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
+        if fileURL == currentFileURL || currentFileURL == nil {
+            suggestionPanelViewModel.chat = chatRoom
+        }
+        widgetViewModel.isProcessing = false
+        chatForFiles[fileURL] = chatRoom
+    }
+
+    func closeChatRoom(fileURL: URL) {
+        suggestionPanelViewModel.chat = nil
+        chatForFiles[fileURL] = nil
+    }
+}
+
+// MARK: - Private
+
+extension SuggestionWidgetController {
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
         guard windowChangeObservationTask == nil else { return }
         observeEditorChangeIfNeeded(app)
@@ -245,7 +297,9 @@ public final class SuggestionWidgetController {
                 kAXResizedNotification,
                 kAXMainWindowChangedNotification,
                 kAXFocusedWindowChangedNotification,
-                kAXFocusedUIElementChangedNotification
+                kAXFocusedUIElementChangedNotification,
+                kAXWindowMovedNotification,
+                kAXWindowResizedNotification
             )
             for await notification in notifications {
                 guard let self else { return }
@@ -260,7 +314,8 @@ public final class SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.suggestion = .empty
+                        suggestionPanelViewModel.content = nil
+                        suggestionPanelViewModel.chat = nil
                         continue
                     }
                     guard fileURL != currentFileURL else { continue }
@@ -287,7 +342,8 @@ public final class SuggestionWidgetController {
                 )
                 let scroll = AXNotificationStream(
                     app: app,
-                    element: scrollBar, notificationNames: kAXValueChangedNotification
+                    element: scrollBar,
+                    notificationNames: kAXValueChangedNotification
                 )
 
                 if #available(macOS 13.0, *) {
@@ -297,21 +353,13 @@ public final class SuggestionWidgetController {
                     ) {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        let mode = SuggestionWidgetPositionMode(
-                            rawValue: UserDefaults.shared
-                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                        )
-                        if mode != .alignToTextCursor { break }
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        let mode = SuggestionWidgetPositionMode(
-                            rawValue: UserDefaults.shared
-                                .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                        )
+                        let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
                         self.updateWindowLocation(animated: false)
                     }
@@ -330,10 +378,7 @@ public final class SuggestionWidgetController {
             widgetWindow.alphaValue = 0
         }
 
-        guard PresentationMode(
-            rawValue: UserDefaults.shared
-                .integer(forKey: SettingsKey.suggestionPresentationMode)
-        ) == .floatingWidget
+        guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
         else {
             hide()
             return
@@ -348,10 +393,7 @@ public final class SuggestionWidgetController {
                let screen = NSScreen.main,
                let firstScreen = NSScreen.screens.first
             {
-                let mode = SuggestionWidgetPositionMode(
-                    rawValue: UserDefaults.shared
-                        .integer(forKey: SettingsKey.suggestionWidgetPositionMode)
-                ) ?? .fixedToBottom
+                let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                 switch mode {
                 case .fixedToBottom:
                     let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
@@ -360,7 +402,8 @@ public final class SuggestionWidgetController {
                         activeScreen: firstScreen
                     )
                     widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
+                    panelWindow.setFrame(result.panelFrame, display: true, animate: animated)
+                    
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 case .alignToTextCursor:
                     let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
@@ -387,31 +430,46 @@ public final class SuggestionWidgetController {
         guard let fileURL = await {
             if let fileURL { return fileURL }
             return try? await Environment.fetchCurrentFileURL()
-        }(),
-            let suggestion = suggestionForFiles[fileURL]
-        else {
-            suggestionPanelViewModel.suggestion = .empty
+        }() else {
+            suggestionPanelViewModel.content = nil
+            suggestionPanelViewModel.chat = nil
             return
         }
 
-        switch suggestion {
-        case let .code(
-            code,
-            language,
-            startLineIndex,
-            currentSuggestionIndex,
-            suggestionCount
-        ):
-            suggestionPanelViewModel.suggestion = .init(
-                startLineIndex: startLineIndex,
-                code: highlighted(
-                    code: code,
-                    language: language,
-                    brightMode: colorScheme == .light
-                ),
-                suggestionCount: suggestionCount,
-                currentSuggestionIndex: currentSuggestionIndex
-            )
+        if let suggestion = suggestionForFiles[fileURL] {
+            switch suggestion {
+            case let .code(
+                code,
+                language,
+                startLineIndex,
+                currentSuggestionIndex,
+                suggestionCount
+            ):
+                suggestionPanelViewModel.content = .suggestion(.init(
+                    startLineIndex: startLineIndex,
+                    code: highlighted(
+                        code: code,
+                        language: language,
+                        brightMode: colorScheme == .light
+                    ),
+                    suggestionCount: suggestionCount,
+                    currentSuggestionIndex: currentSuggestionIndex
+                ))
+            }
+        } else {
+            suggestionPanelViewModel.content = nil
+        }
+
+        if let chat = chatForFiles[fileURL] {
+            suggestionPanelViewModel.chat = chat
+        } else {
+            suggestionPanelViewModel.chat = nil
         }
     }
+}
+
+class CanBecomeKeyWindow: NSWindow {
+    var canBecomeKeyChecker: () -> Bool = { true }
+    override var canBecomeKey: Bool { canBecomeKeyChecker() }
+    override var canBecomeMain: Bool { canBecomeKeyChecker() }
 }

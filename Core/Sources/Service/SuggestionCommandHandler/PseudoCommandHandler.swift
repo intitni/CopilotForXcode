@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import CopilotModel
 import Environment
+import Preferences
 import SuggestionInjector
 import XPCShared
 
@@ -16,6 +17,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -29,6 +31,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -40,10 +43,7 @@ struct PseudoCommandHandler {
             try? await Environment.triggerAction("Prefetch Suggestions")
             return
         }
-        let mode = PresentationMode(
-            rawValue: UserDefaults.shared
-                .integer(forKey: SettingsKey.suggestionPresentationMode)
-        ) ?? .comment
+        let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
         let handler: SuggestionCommandHandler = {
             switch mode {
             case .comment:
@@ -62,6 +62,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            selections: [],
             tabSize: 0,
             indentSize: 0,
             usesTabsForIndentation: false
@@ -125,6 +126,7 @@ private extension PseudoCommandHandler {
             lines: content.lines,
             uti: uti,
             cursorPosition: content.cursorPosition,
+            selections: [],
             tabSize: tabSize,
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation

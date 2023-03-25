@@ -111,36 +111,40 @@ public enum Environment {
         }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
-        var xcodes = [NSRunningApplication]()
-        var retryCount = 0
-        // Sometimes runningApplications returns 0 items.
-        while xcodes.isEmpty, retryCount < 5 {
-            xcodes = NSRunningApplication
-                .runningApplications(withBundleIdentifier: "com.apple.dt.Xcode")
-            if retryCount > 0 { try await Task.sleep(nanoseconds: 10_000_000) }
-            retryCount += 1
-        }
-
-        guard let activeXcode = xcodes.first(where: { $0.isActive }) else { return }
+        guard let activeXcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode
+        else { return }
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
 
         /// check if menu is open, if not, click the menu item.
         let appleScript = """
         tell application "System Events"
-            set proc to item 1 of (processes whose unix id is \(activeXcode.processIdentifier))
-            tell proc
-                repeat with theMenu in menus of menu bar 1
-                    set theValue to value of attribute "AXVisibleChildren" of theMenu
-                    if theValue is not {} then
-                        return
-                    end if
-                end repeat
-                click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
-            end tell
+            set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
+            repeat with proc in theprocs
+            set the frontmost of proc to true
+                tell proc
+                    repeat with theMenu in menus of menu bar 1
+                        set theValue to value of attribute "AXVisibleChildren" of theMenu
+                        if theValue is not {} then
+                            return
+                        end if
+                    end repeat
+                    click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
+                end tell
+            end repeat
         end tell
         """
 
+        try await runAppleScript(appleScript)
+    }
+
+    public static var makeXcodeActive: () async throws -> Void = {
+        let appleScript = """
+        tell application "Xcode"
+            activate
+        end tell
+        """
         try await runAppleScript(appleScript)
     }
 }

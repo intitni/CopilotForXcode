@@ -2,11 +2,11 @@
 
 ![Screenshot](/Screenshot.png)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
+Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot and ChatGPT support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
 
 Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/intitni)
+<a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ## Table of Contents
 
@@ -22,9 +22,8 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Key Bindings](#key-bindings)
 - [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
 - [Limitations](#limitations)
-- [FAQ](#faq)
 - [License](#license)
-
+- [FAQ](https://github.com/intitni/CopilotForXcode/issues/65)
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
@@ -32,7 +31,8 @@ For development instruction, check [Development.md](DEVELOPMENT.md).
 
 - [Node](https://nodejs.org/) installed to run the Copilot LSP.
 - Public network connection.
-- Active GitHub Copilot subscription.  
+- Active GitHub Copilot subscription (to use suggestion features).
+- Valid OpenAI API key (to use chat features).  
 
 ## Permissions Required
 
@@ -95,7 +95,7 @@ If the app was installed via Homebrew, you can update it by running:
 brew upgrade --cask copilot-for-xcode
 ```
 
-Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
+Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
@@ -105,6 +105,8 @@ If you find that some of the features are no longer working, please first try re
 
 ## Commands
 
+### Suggestion
+
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
 - Next Suggestion: If there is more than one suggestion, switch to the next one.
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
@@ -112,19 +114,18 @@ If you find that some of the features are no longer working, please first try re
 - Reject Suggestion: Remove the suggestion comments.
 - Toggle Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
-- Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
+- Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
 **About real-time suggestions**
 
-The on/off state is persisted, so be sure to turn it off manually when you no longer want it. When real-time suggestion is turned on, a dot will show up next to the text cursor. 
-
 Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
 
-When a fetch occurs, the dot will play an animation. If you don't see it, your permissions may not be set correctly.
+### Chat
 
-The implementation won't feel as smooth as that of VSCode. The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it. Hope that next year, Apple can spend some time on Xcode Extensions.  
+- Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
+- Explain Selection: Open a chat window and explain the selected code.
 
-It will be a better experience if you use the "Floating Widget" mode with real-time suggestions turned on.
+Chat commands are not available in comment mode.
 
 ## Key Bindings
 
@@ -141,6 +142,8 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 | Previous Suggestion | `⌥<` |
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
+
+Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
 ## Prevent Suggestions Being Committed (in comment mode)
 
@@ -162,63 +165,6 @@ fi
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
 - When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
-
-## FAQ
-
-**Q: The extension doesn't show up in the `Editor` menu.**
-
-> A: Please make sure `Copilot` is turned on in `System Settings.app > Privacy & Security > Extensions > Xcode Source Editor Extension`.
-
-**Q: The extension says it can't connect to the XPC service/helper.**
-
-> A: If you have just updated the app from an old version, make sure you have restarted the XPC Service.
-> 
-> Please make sure you have set up Launch Agents, try running `launchctl list | grep com.intii` from the terminal, and see if `com.intii.CopilotForXcode.ExtensionService` exists. If not, check `~/Library/LaunchAgents` to see if `com.intii.CopilotForXcode.ExtensionService.plist` exists. If they don't, and the button in the app fails to create them, please try to add the file manually:
-
-> This is an example of the .plist file. Please note that the application path may need to be adjusted based on your installation location.
-
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-        <string>com.intii.CopilotForXcode.ExtensionService</string>
-        <key>Program</key>
-        <string>/Applications/Copilot for Xcode.app/Contents/Applications/CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService</string>
-    <key>MachServices</key>
-    <dict>
-        <key>com.intii.CopilotForXcode.ExtensionService</key>
-        <true/>
-    </dict>
-</dict>
-</plist>
-```
-
-> After creating the file, set the proper permissions: `chmod 755 ~/Library/LaunchAgents/com.intii.CopilotForXcode.ExtensionService`.
-
-> If you are installing multiple versions of the extension on your machine, it's also possible that Xcode is using the older version of the extension.
-
-**Q: The extension complains that it has no access to the Accessibility API**
-
-> A: Please check if the [Accessibility API permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
-
-**Q: I turned on real-time suggestions, but nothing happens**
-
-> A: Try typing something in the editor and wait for a little while, if you see an animation from the real-time suggestion indicator or the floating widget, that means the real-time suggestion is correctly triggered. 
-
-**Q: I can't cancel real-time suggestions with mouse clicks, or pressing esc.**
-
-> A: Please check if the [Accessibility API and Input Monitoring permission](https://github.com/intitni/CopilotForXcode#granting-permissions-to-the-app) is setup correctly.
-    If you have followed the setup instructions as directed, please also consider granting Input Monitoring permissions to the extension app.
-
-**Q: I have signed in my GitHub account, but the app doesn't generate any suggestions.
-
-> A: Please make sure the GitHub Copilot status is `OK`. If it's not, it's likely that your GitHub Copilot subscription is not valid. 
-
-**Q: Will it work in future Xcode updates?**
-
-> A: I don't know. This extension uses many tricks to do its job, and these tricks can break in the future. 
 
 ## License 
 

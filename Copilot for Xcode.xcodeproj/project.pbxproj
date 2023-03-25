@@ -31,6 +31,7 @@
 		C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */; };
 		C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C841BB232994CAD400B0B336 /* SettingsView.swift */; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
+		C85AF32D29CF0C170031E18B /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85AF32C29CF0C170031E18B /* DebugView.swift */; };
 		C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861E6102994F6070056CB02 /* AppDelegate.swift */; };
 		C861E6152994F6080056CB02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C861E6142994F6080056CB02 /* Assets.xcassets */; };
 		C861E61E2994F6150056CB02 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C861E61D2994F6150056CB02 /* Service */; };
@@ -46,6 +47,10 @@
 		C882175A294187E100A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C8821759294187E100A22FD3 /* Client */; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
+		C8EE079D29CC21300043B6D9 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079C29CC21300043B6D9 /* AccountView.swift */; };
+		C8EE079F29CC25C20043B6D9 /* OpenAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */; };
+		C8EE07A129CC9ED30043B6D9 /* ExplainSelectionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -174,6 +179,7 @@
 		C841BB232994CAD400B0B336 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		C85AF32C29CF0C170031E18B /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CopilotForXcodeExtensionService.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C861E6102994F6070056CB02 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C861E6142994F6080056CB02 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -188,6 +194,10 @@
 		C87F3E61293DD004008523E8 /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
+		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
+		C8EE079C29CC21300043B6D9 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIView.swift; sourceTree = "<group>"; };
+		C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplainSelectionCommand.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -250,6 +260,8 @@
 				C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */,
 				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
 				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
+				C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */,
+				C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
 			);
@@ -298,8 +310,11 @@
 				C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */,
 				C83B2B7B293D9FB400C5ACCD /* CopilotView.swift */,
 				C83B2B7D293DA0CA00C5ACCD /* AppInfoView.swift */,
+				C8EE079C29CC21300043B6D9 /* AccountView.swift */,
+				C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */,
 				C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */,
 				C841BB232994CAD400B0B336 /* SettingsView.swift */,
+				C85AF32C29CF0C170031E18B /* DebugView.swift */,
 				C87F3E61293DD004008523E8 /* Styles.swift */,
 				C8189B1D2938973000C9DCDA /* Assets.xcassets */,
 				C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */,
@@ -510,6 +525,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */,
 				C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */,
 				C8520301293C4D9000460097 /* Helpers.swift in Sources */,
 				C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */,
@@ -517,6 +533,7 @@
 				C87B03A9293B262600C77EAE /* NextSuggestionCommand.swift in Sources */,
 				C87B03AB293B262E00C77EAE /* PreviousSuggestionCommand.swift in Sources */,
 				C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */,
+				C8EE07A129CC9ED30043B6D9 /* ExplainSelectionCommand.swift in Sources */,
 				C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */,
 				C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */,
 				C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */,
@@ -531,10 +548,13 @@
 				C87F3E60293DC600008523E8 /* Section.swift in Sources */,
 				C87F3E62293DD004008523E8 /* Styles.swift in Sources */,
 				C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */,
+				C8EE079D29CC21300043B6D9 /* AccountView.swift in Sources */,
 				C83B2B7E293DA0CA00C5ACCD /* AppInfoView.swift in Sources */,
+				C8EE079F29CC25C20043B6D9 /* OpenAIView.swift in Sources */,
 				C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */,
 				C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */,
 				C83B2B7C293D9FB400C5ACCD /* CopilotView.swift in Sources */,
+				C85AF32D29CF0C170031E18B /* DebugView.swift in Sources */,
 				C83B2B7A293D9C8C00C5ACCD /* LaunchAgentManager.swift in Sources */,
 				C8189B1A2938972F00C9DCDA /* App.swift in Sources */,
 			);

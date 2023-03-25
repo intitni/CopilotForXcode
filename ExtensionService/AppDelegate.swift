@@ -2,12 +2,12 @@ import AppKit
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
+import Preferences
 import Service
 import ServiceManagement
 import SwiftUI
 import UpdateChecker
 import UserNotifications
-import XPCShared
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -19,6 +19,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let userDefaultsObserver = UserDefaultsObserver()
     private var statusBarItem: NSStatusItem!
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
+    private let updateChecker =
+        UpdateChecker(
+            hostBundle: locateHostBundleURL(url: Bundle.main.bundleURL)
+                .flatMap(Bundle.init(url:))
+        )
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
@@ -32,7 +37,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.prohibited)
         buildStatusBarMenu()
-        checkForUpdate()
     }
 
     @objc private func buildStatusBarMenu() {
@@ -48,9 +52,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let statusBarMenu = NSMenu(title: "Status Bar Menu")
         statusBarItem.menu = statusBarMenu
 
+        #if DEBUG
+        let copilotName = NSMenuItem(
+            title: "Copilot for Xcode - DEBUG",
+            action: nil,
+            keyEquivalent: ""
+        )
+        #else
         let copilotName = NSMenuItem(
             title: "Copilot for Xcode",
             action: nil,
+            keyEquivalent: ""
+        )
+        #endif
+        
+        let checkForUpdate = NSMenuItem(
+            title: "Check for Updates",
+            action: #selector(checkForUpdate),
             keyEquivalent: ""
         )
 
@@ -60,7 +78,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             keyEquivalent: ""
         )
         toggleRealtimeSuggestions.state = UserDefaults.shared
-            .bool(forKey: SettingsKey.realtimeSuggestionToggle) ? .on : .off
+            .value(for: \.realtimeSuggestionToggle) ? .on : .off
         toggleRealtimeSuggestions.target = self
 
         let quitItem = NSMenuItem(
@@ -71,6 +89,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         quitItem.target = self
 
         statusBarMenu.addItem(copilotName)
+        statusBarMenu.addItem(checkForUpdate)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(toggleRealtimeSuggestions)
         statusBarMenu.addItem(.separator())
@@ -78,9 +97,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         userDefaultsObserver.onChange = { key in
             switch key {
-            case SettingsKey.realtimeSuggestionToggle:
+            case UserDefaultPreferenceKeys().realtimeSuggestionToggle.key:
                 toggleRealtimeSuggestions.state = UserDefaults.shared
-                    .bool(forKey: SettingsKey.realtimeSuggestionToggle) ? .on : .off
+                    .value(for: \.realtimeSuggestionToggle) ? .on : .off
             default:
                 break
             }
@@ -92,7 +111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func toggleRealtimeSuggestions() {
-        let isOn = !UserDefaults.shared.bool(forKey: SettingsKey.realtimeSuggestionToggle)
+        let isOn = !UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
         if isOn {
             if !AXIsProcessTrusted() {
                 let alert = NSAlert()
@@ -116,7 +135,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 return
             }
         }
-        UserDefaults.shared.set(isOn, forKey: SettingsKey.realtimeSuggestionToggle)
+        UserDefaults.shared.set(isOn, for: \.realtimeSuggestionToggle)
     }
 
     func setupQuitOnUpdate() {
@@ -157,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .notifications(named: NSWorkspace.didTerminateApplicationNotification)
             for await notification in sequence {
                 try Task.checkCancellation()
-                guard UserDefaults.shared.bool(forKey: SettingsKey.quitXPCServiceOnXcodeAndAppQuit)
+                guard UserDefaults.shared.value(for: \.quitXPCServiceOnXcodeAndAppQuit)
                 else { continue }
                 guard let app = notification
                     .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
@@ -185,10 +204,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ] as NSDictionary)
     }
 
-    func checkForUpdate() {
-        guard UserDefaults.shared.bool(forKey: SettingsKey.automaticallyCheckForUpdate)
-        else { return }
-        UpdateChecker().checkForUpdate()
+    @objc func checkForUpdate() {
+        updateChecker.checkForUpdates()
     }
 }
 
@@ -206,7 +223,7 @@ private class UserDefaultsObserver: NSObject {
 
     override init() {
         super.init()
-        observe(keyPath: SettingsKey.realtimeSuggestionToggle)
+        observe(keyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
     }
 
     func observe(keyPath: String) {
@@ -221,4 +238,18 @@ extension NSRunningApplication {
             bundleIdentifierBase,
         ].contains(bundleIdentifier)
     }
+}
+
+func locateHostBundleURL(url: URL) -> URL? {
+    var nextURL = url
+    while nextURL.path != "/" {
+        nextURL = nextURL.deletingLastPathComponent()
+        if nextURL.lastPathComponent.hasSuffix(".app") {
+            return nextURL
+        }
+    }
+    let devAppURL = url
+        .deletingLastPathComponent()
+        .appendingPathComponent("Copilot for Xcode Dev.app")
+    return devAppURL
 }

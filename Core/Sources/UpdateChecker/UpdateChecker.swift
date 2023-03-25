@@ -1,97 +1,37 @@
-import AppKit
-import FeedKit
-import Foundation
+import Sparkle
 import Logger
-import SwiftUI
 
-let skippedUpdateVersionKey = "skippedUpdateVersion"
+public final class UpdateChecker {
+    let updater: SPUUpdater
+    let hostBundleFound: Bool
 
-public struct UpdateChecker {
-    var skippedUpdateVersion: String? {
-        UserDefaults.standard.string(forKey: skippedUpdateVersionKey)
-    }
-
-    public init() {}
-
-    public func checkForUpdate() {
-        let url = URL(string: "https://github.com/intitni/CopilotForXcode/releases.atom")!
-        let parser = FeedParser(URL: url)
-        parser.parseAsync { result in
-            switch result {
-            case let .success(.atom(feed)):
-                if let entry = feed.entries?.first(where: {
-                    guard let title = $0.title else { return false }
-                    return !title.contains("-")
-                }) {
-                    self.alertIfUpdateAvailable(entry)
-                }
-            case let .failure(error):
-                Logger.updateChecker.error(error)
-            default: break
-            }
+    public init(hostBundle: Bundle?) {
+        if hostBundle == nil {
+            hostBundleFound = false
+            Logger.updateChecker.error("Host bundle not found")
+        } else {
+            hostBundleFound = true
+        }
+        updater = SPUUpdater(
+            hostBundle: hostBundle ?? Bundle.main,
+            applicationBundle: Bundle.main,
+            userDriver: SPUStandardUserDriver(hostBundle: hostBundle ?? Bundle.main, delegate: nil),
+            delegate: nil
+        )
+        do {
+            try updater.start()
+        } catch {
+            Logger.updateChecker.error(error.localizedDescription)
         }
     }
 
-    func alertIfUpdateAvailable(_ entry: AtomFeedEntry) {
-        guard let version = entry.title,
-              let currentVersion = Bundle.main
-              .infoDictionary?["CFBundleShortVersionString"] as? String,
-              version != skippedUpdateVersion,
-              version.compare(currentVersion, options: .numeric) == .orderedDescending
-        else { return }
+    public func checkForUpdates() {
+        updater.checkForUpdates()
+    }
 
-        Task { @MainActor in
-            let screenFrame = NSScreen.main?.frame ?? .zero
-            let window = NSWindow(
-                contentRect: .init(
-                    x: screenFrame.midX,
-                    y: screenFrame.midY + 200,
-                    width: 500,
-                    height: 500
-                ),
-                styleMask: .borderless,
-                backing: .buffered,
-                defer: true
-            )
-            window.level = .floating
-            window.isReleasedWhenClosed = false
-            window.contentViewController = NSHostingController(
-                rootView: AlertView(entry: entry, window: window)
-            )
-            window.makeKeyAndOrderFront(nil)
-        }
+    public var automaticallyChecksForUpdates: Bool {
+        get { updater.automaticallyChecksForUpdates }
+        set { updater.automaticallyChecksForUpdates = newValue }
     }
 }
 
-struct AlertView: View {
-    let entry: AtomFeedEntry
-    let window: NSWindow
-
-    var body: some View {
-        let version = entry.title ?? "0.0.0"
-        Color.clear.alert(
-            "Copilot for Xcode \(version) is available!",
-            isPresented: .constant(true)
-        ) {
-            Button {
-                if let url = URL(string: entry.links?.first?.attributes?.href ?? "") {
-                    NSWorkspace.shared.open(url)
-                }
-                window.close()
-            } label: {
-                Text("Visit Release Page")
-            }
-
-            Button {
-                UserDefaults.standard.set(version, forKey: skippedUpdateVersionKey)
-                window.close()
-            } label: {
-                Text("Skip This Version")
-            }
-
-            Button { window.close() } label: { Text("Cancel") }
-        } message: {
-            Text("Would you like to visit the release page?")
-        }
-    }
-}

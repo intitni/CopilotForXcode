@@ -1,13 +1,13 @@
 import LaunchAgentManager
 import SwiftUI
-import XPCShared
+import Preferences
 
 struct LaunchAgentView: View {
     @State var errorMessage: String?
     @State var isDidRemoveLaunchAgentAlertPresented = false
     @State var isDidSetupLaunchAgentAlertPresented = false
     @State var isDidRestartLaunchAgentAlertPresented = false
-    @AppStorage(SettingsKey.nodePath, store: .shared) var nodePath: String = ""
+    @AppStorage(\.nodePath) var nodePath: String
 
     var body: some View {
         Section {

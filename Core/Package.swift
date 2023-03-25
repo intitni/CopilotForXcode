@@ -24,8 +24,10 @@ let package = Package(
                 "CopilotModel",
                 "Client",
                 "XPCShared",
+                "Preferences",
                 "LaunchAgentManager",
                 "Logger",
+                "UpdateChecker",
             ]
         ),
     ],
@@ -35,12 +37,14 @@ let package = Package(
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
+        .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.0.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
         .target(
             name: "CopilotService",
-            dependencies: ["LanguageClient", "CopilotModel", "XPCShared"]
+            dependencies: ["LanguageClient", "CopilotModel", "XPCShared", "Preferences"]
         ),
         .testTarget(
             name: "CopilotServiceTests",
@@ -64,13 +68,15 @@ let package = Package(
         ),
         .target(
             name: "Client",
-            dependencies: ["CopilotModel", "XPCShared", "Logger"]
+            dependencies: ["CopilotModel", "Preferences", "XPCShared", "Logger"]
         ),
         .target(
             name: "Service",
             dependencies: [
                 "CopilotModel",
                 "CopilotService",
+                "OpenAIService",
+                "Preferences",
                 "XPCShared",
                 "CGEventObserver",
                 "DisplayLink",
@@ -94,6 +100,7 @@ let package = Package(
                 "Client",
                 "CopilotService",
                 "SuggestionInjector",
+                "Preferences",
                 "XPCShared",
                 "Environment",
             ]
@@ -115,13 +122,30 @@ let package = Package(
                 "Environment",
                 "Highlightr",
                 "Splash",
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
         ),
         .target(
             name: "UpdateChecker",
-            dependencies: ["Logger", .product(name: "FeedKit", package: "FeedKit")]
+            dependencies: [
+                "Logger",
+                "Sparkle",
+                .product(name: "FeedKit", package: "FeedKit"),
+            ]
         ),
         .target(name: "AXExtension"),
         .target(name: "Logger"),
+        .target(
+            name: "OpenAIService",
+            dependencies: [
+                "Logger",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+            ]
+        ),
+        .testTarget(
+            name: "OpenAIServiceTests",
+            dependencies: ["OpenAIService"]
+        ),
+        .target(name: "Preferences"),
     ]
 )

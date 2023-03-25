@@ -171,4 +171,20 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
 
         return nil
     }
+    
+    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        throw NotSupportedInCommentMode()
+    }
+    
+    func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        throw NotSupportedInCommentMode()
+    }
+}
+
+// MARK: - Unsupported
+
+extension CommentBaseCommandHandler {
+    struct NotSupportedInCommentMode: Error, LocalizedError {
+        var errorDescription: String { "This command is not supported in comment mode." }
+    }
 }

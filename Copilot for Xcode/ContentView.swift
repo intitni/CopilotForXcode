@@ -14,9 +14,10 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 8) {
                 AppInfoView()
                 LaunchAgentView()
-                CopilotView()
+                AccountView()
                 SettingsView()
                 InstructionView()
+                DebugSettingsView()
                 Spacer()
             }
             .padding(.all, 12)
@@ -41,6 +42,6 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
-            .frame(height: 800)
+            .frame(height: 1200)
     }
 }
