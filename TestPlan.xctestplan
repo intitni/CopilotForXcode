@@ -13,6 +13,10 @@
       {
         "key" : "IS_UNIT_TEST",
         "value" : "YES"
+      },
+      {
+        "key" : "SUEnableAutomaticChecks",
+        "value" : "NO"
       }
     ],
     "testTimeoutsEnabled" : true

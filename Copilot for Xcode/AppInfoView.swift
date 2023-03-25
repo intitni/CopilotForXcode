@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AppInfoView: View {
     @State var appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+    @Environment(\.updateChecker) var updateChecker
 
     var body: some View {
         Section {
@@ -14,15 +15,35 @@ struct AppInfoView: View {
                         .foregroundColor(.white.opacity(0.5))
 
                     Spacer()
+
+                    Button(action: {
+                        updateChecker.checkForUpdates()
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "arrow.up.right.circle.fill")
+                            Text("Check for Updates")
+                        }
+                    }
+                    .buttonStyle(.copilot)
                 }
 
-                Link(destination: URL(string: "https://github.com/intitni/CopilotForXcode")!) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "link")
-                        Text("GitHub")
+                HStack(spacing: 16) {
+                    Link(destination: URL(string: "https://github.com/intitni/CopilotForXcode")!) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "link")
+                            Text("GitHub")
+                        }
                     }
+                    .focusable(false)
+
+                    Link(destination: URL(string: "https://www.buymeacoffee.com/intitni")!) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "cup.and.saucer.fill")
+                            Text("Buy Me A Coffee")
+                        }
+                    }
+                    .focusable(false)
                 }
-                .focusable(false)
             }
         }
     }

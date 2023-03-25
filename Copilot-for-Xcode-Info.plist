@@ -6,5 +6,11 @@
 	<string>$(BUNDLE_IDENTIFIER_BASE)</string>
 	<key>EXTENSION_BUNDLE_NAME</key>
 	<string>$(EXTENSION_BUNDLE_NAME)</string>
+	<key>SUEnableJavaScript</key>
+	<string>YES</string>
+	<key>SUFeedURL</key>
+	<string>$(SPARKLE_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_KEY)</string>
 </dict>
 </plist>

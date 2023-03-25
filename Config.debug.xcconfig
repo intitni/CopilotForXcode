@@ -1,4 +1,7 @@
 #include "Version.xcconfig"
+SLASH = /
 
 BUNDLE_IDENTIFIER_BASE = dev.com.intii.CopilotForXcode
 EXTENSION_BUNDLE_NAME = Copilot Dev
+SPARKLE_FEED_URL = http:$(SLASH)$(SLASH)127.0.0.1:9433/appcast.xml
+SPARKLE_PUBLIC_KEY = WDzm5GHnc6c8kjeJEgX5GuGiPpW6Lc/ovGjLnrrZvPY=
