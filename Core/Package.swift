@@ -27,6 +27,7 @@ let package = Package(
                 "Preferences",
                 "LaunchAgentManager",
                 "Logger",
+                "UpdateChecker",
             ]
         ),
     ],
@@ -37,6 +38,7 @@ let package = Package(
         .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.0.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -125,7 +127,11 @@ let package = Package(
         ),
         .target(
             name: "UpdateChecker",
-            dependencies: ["Logger", .product(name: "FeedKit", package: "FeedKit")]
+            dependencies: [
+                "Logger",
+                "Sparkle",
+                .product(name: "FeedKit", package: "FeedKit"),
+            ]
         ),
         .target(name: "AXExtension"),
         .target(name: "Logger"),
@@ -133,7 +139,7 @@ let package = Package(
             name: "OpenAIService",
             dependencies: [
                 "Logger",
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
         .testTarget(

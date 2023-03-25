@@ -1,5 +1,6 @@
 import SwiftUI
 import XPCShared
+import UpdateChecker
 
 @main
 struct CopilotForXcodeApp: App {
@@ -11,9 +12,23 @@ struct CopilotForXcodeApp: App {
                 .onAppear {
                     UserDefaults.setupDefaultSettings()
                 }
+                .environment(\.updateChecker, UpdateChecker(hostBundle: Bundle.main))
         }
         .windowStyle(.hiddenTitleBar)
     }
 }
 
 var isPreview: Bool { ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" }
+
+struct UpdateCheckerKey: EnvironmentKey {
+    static var defaultValue: UpdateChecker = UpdateChecker(hostBundle: nil)
+}
+
+extension EnvironmentValues {
+    var updateChecker: UpdateChecker {
+        get { self[UpdateCheckerKey.self] }
+        set { self[UpdateCheckerKey.self] = newValue }
+    }
+}
+
+

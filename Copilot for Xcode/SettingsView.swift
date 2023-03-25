@@ -11,8 +11,6 @@ final class Settings: ObservableObject {
     var realtimeSuggestionDebounce: Double
     @AppStorage(\.suggestionPresentationMode)
     var suggestionPresentationMode: Preferences.PresentationMode
-    @AppStorage(\.automaticallyCheckForUpdate)
-    var automaticallyCheckForUpdate: Bool
     @AppStorage(\.suggestionWidgetPositionMode)
     var suggestionWidgetPositionMode: SuggestionWidgetPositionMode
     @AppStorage(\.widgetColorScheme)
@@ -24,6 +22,7 @@ struct SettingsView: View {
     @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(for: \.realtimeSuggestionDebounce)
+    @Environment(\.updateChecker) var updateChecker
 
     var body: some View {
         Section {
@@ -33,7 +32,10 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
 
-                Toggle(isOn: $settings.automaticallyCheckForUpdate) {
+                Toggle(isOn: .init(
+                    get: { updateChecker.automaticallyChecksForUpdates },
+                    set: { updateChecker.automaticallyChecksForUpdates = $0 }
+                )) {
                     Text("Automatically Check for Update")
                 }
                 .toggleStyle(.switch)

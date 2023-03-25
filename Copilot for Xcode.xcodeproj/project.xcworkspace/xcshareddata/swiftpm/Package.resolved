@@ -82,6 +82,15 @@
       }
     },
     {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "631846cc829f0f0cae327df9bafe5a32b7ddadce",
+        "version" : "2.4.0"
+      }
+    },
+    {
       "identity" : "splash",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/JohnSundell/Splash",
