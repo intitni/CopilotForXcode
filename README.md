@@ -95,7 +95,7 @@ If the app was installed via Homebrew, you can update it by running:
 brew upgrade --cask copilot-for-xcode
 ```
 
-Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
+Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
