@@ -197,6 +197,24 @@ public final class SuggestionWidgetController {
                 context: nil
             )
         }
+
+        Task { @MainActor in
+            suggestionPanelViewModel.onActiveTabChanged = { [weak self] activeTab in
+                #warning("""
+                TODO: There should be a better way for that
+                Currently, we have to make the app an accessory so that we can type things in the chat mode.
+                But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
+                """)
+                if case .chat = activeTab {
+                    NSApp.setActivationPolicy(.accessory)
+                } else {
+                    Task {
+                        try await Environment.makeXcodeActive()
+                        NSApp.setActivationPolicy(.prohibited)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -384,7 +402,8 @@ extension SuggestionWidgetController {
                         activeScreen: firstScreen
                     )
                     widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
+                    panelWindow.setFrame(result.panelFrame, display: true, animate: animated)
+                    
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 case .alignToTextCursor:
                     let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
