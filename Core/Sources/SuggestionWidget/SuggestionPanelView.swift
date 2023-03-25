@@ -114,7 +114,6 @@ final class SuggestionPanelViewModel: ObservableObject {
 
 struct SuggestionPanelView: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
-    @Namespace var namespace
 
     var body: some View {
         VStack(spacing: 0) {
@@ -142,26 +141,6 @@ struct SuggestionPanelView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .allowsHitTesting(viewModel.isPanelDisplayed)
                         .preferredColorScheme(viewModel.colorScheme)
-                        .matchedGeometryEffect(id: "suggestion", in: namespace)
-                    } else {
-                        Button(action: {
-                            viewModel.activeTab = .suggestion
-                        }, label: {
-                            HStack {
-                                Image(systemName: "lightbulb.fill")
-                                Text("Suggestion")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Color.userChatContentBackground,
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            )
-                            .fixedSize(horizontal: false, vertical: true)
-                        })
-                        .buttonStyle(.plain)
-                        .xcodeStyleFrame()
-                        .matchedGeometryEffect(id: "suggestion", in: namespace)
                     }
                 }
 
@@ -171,27 +150,7 @@ struct SuggestionPanelView: View {
                             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                             .fixedSize(horizontal: false, vertical: true)
                             .allowsHitTesting(viewModel.isPanelDisplayed)
-                            .preferredColorScheme(viewModel.colorScheme)
-                            .matchedGeometryEffect(id: "chat", in: namespace)
-                    } else {
-                        Button(action: {
-                            viewModel.activeTab = .chat
-                        }, label: {
-                            HStack {
-                                Image(systemName: "ellipsis.bubble.fill")
-                                Text("Chat")
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Color.userChatContentBackground,
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            )
-                            .fixedSize(horizontal: false, vertical: true)
-                        })
-                        .buttonStyle(.plain)
-                        .xcodeStyleFrame()
-                        .matchedGeometryEffect(id: "chat", in: namespace)
+                            .preferredColorScheme(viewModel.colorScheme) 
                     }
                 }
             }
@@ -225,7 +184,7 @@ struct CommandButtonStyle: ButtonStyle {
         configuration.label
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
-            .foregroundColor(.white) 
+            .foregroundColor(.white)
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(color.opacity(configuration.isPressed ? 0.8 : 1))
