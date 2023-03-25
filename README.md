@@ -2,7 +2,7 @@
 
 ![Screenshot](/Screenshot.png)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
+Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot and ChatGPT support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
 
 Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
 
@@ -31,7 +31,8 @@ For development instruction, check [Development.md](DEVELOPMENT.md).
 
 - [Node](https://nodejs.org/) installed to run the Copilot LSP.
 - Public network connection.
-- Active GitHub Copilot subscription.  
+- Active GitHub Copilot subscription (to use suggestion features).
+- Valid OpenAI API key (to use chat features).  
 
 ## Permissions Required
 
@@ -94,7 +95,7 @@ If the app was installed via Homebrew, you can update it by running:
 brew upgrade --cask copilot-for-xcode
 ```
 
-Alternatively, You can download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
+Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
@@ -104,6 +105,8 @@ If you find that some of the features are no longer working, please first try re
 
 ## Commands
 
+### Suggestion
+
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
 - Next Suggestion: If there is more than one suggestion, switch to the next one.
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
@@ -111,19 +114,18 @@ If you find that some of the features are no longer working, please first try re
 - Reject Suggestion: Remove the suggestion comments.
 - Toggle Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
-- Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions. 
+- Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
 **About real-time suggestions**
 
-The on/off state is persisted, so be sure to turn it off manually when you no longer want it. When real-time suggestion is turned on, a dot will show up next to the text cursor. 
-
 Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
 
-When a fetch occurs, the dot will play an animation. If you don't see it, your permissions may not be set correctly.
+### Chat
 
-The implementation won't feel as smooth as that of VSCode. The magic behind it is that it will keep calling the command from the menu when you are not typing or clicking the mouse. So it will have to listen to those events, I am not sure if people like it. Hope that next year, Apple can spend some time on Xcode Extensions.  
+- Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
+- Explain Selection: Open a chat window and explain the selected code.
 
-It will be a better experience if you use the "Floating Widget" mode with real-time suggestions turned on.
+Chat commands are not available in comment mode.
 
 ## Key Bindings
 
@@ -140,6 +142,8 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 | Previous Suggestion | `⌥<` |
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
+
+Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
 ## Prevent Suggestions Being Committed (in comment mode)
 

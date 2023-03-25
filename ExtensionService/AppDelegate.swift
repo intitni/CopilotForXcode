@@ -54,13 +54,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         #if DEBUG
         let copilotName = NSMenuItem(
-            title: "Copilot for Xcode",
+            title: "Copilot for Xcode - DEBUG",
             action: nil,
             keyEquivalent: ""
         )
         #else
         let copilotName = NSMenuItem(
-            title: "Copilot for Xcode - DEBUG",
+            title: "Copilot for Xcode",
             action: nil,
             keyEquivalent: ""
         )

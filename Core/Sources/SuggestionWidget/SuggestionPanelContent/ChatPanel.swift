@@ -28,9 +28,9 @@ struct ChatPanel: View {
                 chat.close()
             }) {
                 Image(systemName: "xmark")
-                    .padding(8)
-                    .background(.regularMaterial, in: Circle())
                     .padding(4)
+                    .background(.regularMaterial, in: Circle())
+                    .padding(2)
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
@@ -112,6 +112,7 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
+                        
                 }
             }
         }

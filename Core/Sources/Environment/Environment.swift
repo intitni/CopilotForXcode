@@ -138,6 +138,15 @@ public enum Environment {
 
         try await runAppleScript(appleScript)
     }
+
+    public static var makeXcodeActive: () async throws -> Void = {
+        let appleScript = """
+        tell application "Xcode"
+            activate
+        end tell
+        """
+        try await runAppleScript(appleScript)
+    }
 }
 
 @discardableResult

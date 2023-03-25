@@ -1,3 +1,4 @@
+import Environment
 import SwiftUI
 
 @MainActor
@@ -40,15 +41,8 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     @Published var activeTab: ActiveTab {
         didSet {
-            #warning("""
-            TODO: There should be a better way for that
-            Currently, we have to make the app an accessory so that we can type things in the chat mode.
-            But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
-            """)
-            if case .chat = activeTab {
-                NSApp.setActivationPolicy(.accessory)
-            } else {
-                NSApp.setActivationPolicy(.prohibited)
+            if activeTab != oldValue {
+                onActiveTabChanged?(activeTab)
             }
         }
     }
@@ -61,6 +55,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     var onRejectButtonTapped: (() -> Void)?
     var onPreviousButtonTapped: (() -> Void)?
     var onNextButtonTapped: (() -> Void)?
+    var onActiveTabChanged: ((ActiveTab) -> Void)?
 
     public init(
         content: Content? = nil,
@@ -71,7 +66,8 @@ final class SuggestionPanelViewModel: ObservableObject {
         onAcceptButtonTapped: (() -> Void)? = nil,
         onRejectButtonTapped: (() -> Void)? = nil,
         onPreviousButtonTapped: (() -> Void)? = nil,
-        onNextButtonTapped: (() -> Void)? = nil
+        onNextButtonTapped: (() -> Void)? = nil,
+        onActiveTabChanged: ((ActiveTab) -> Void)? = nil
     ) {
         self.content = content
         self.chat = chat
@@ -82,6 +78,7 @@ final class SuggestionPanelViewModel: ObservableObject {
         self.onRejectButtonTapped = onRejectButtonTapped
         self.onPreviousButtonTapped = onPreviousButtonTapped
         self.onNextButtonTapped = onNextButtonTapped
+        self.onActiveTabChanged = onActiveTabChanged
     }
 
     func adjustActiveTabAndShowHideIfNeeded(tab: ActiveTab) {
@@ -90,11 +87,13 @@ final class SuggestionPanelViewModel: ObservableObject {
             if content != nil {
                 activeTab = .suggestion
                 isPanelDisplayed = true
+                return
             }
         case .chat:
             if chat != nil {
                 activeTab = .chat
                 isPanelDisplayed = true
+                return
             }
         }
 
@@ -158,6 +157,7 @@ struct SuggestionPanelView: View {
                                 Color.userChatContentBackground,
                                 in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                             )
+                            .fixedSize(horizontal: false, vertical: true)
                         })
                         .buttonStyle(.plain)
                         .xcodeStyleFrame()
@@ -187,6 +187,7 @@ struct SuggestionPanelView: View {
                                 Color.userChatContentBackground,
                                 in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                             )
+                            .fixedSize(horizontal: false, vertical: true)
                         })
                         .buttonStyle(.plain)
                         .xcodeStyleFrame()
@@ -211,6 +212,9 @@ struct SuggestionPanelView: View {
         .animation(.easeInOut(duration: 0.2), value: viewModel.chat)
         .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
+        .shadow(color: .black.opacity(0.1), radius: 2)
+        .padding(2)
+        .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
     }
 }
 
@@ -221,7 +225,7 @@ struct CommandButtonStyle: ButtonStyle {
         configuration.label
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
-            .foregroundColor(.white)
+            .foregroundColor(.white) 
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(color.opacity(configuration.isPressed ? 0.8 : 1))
