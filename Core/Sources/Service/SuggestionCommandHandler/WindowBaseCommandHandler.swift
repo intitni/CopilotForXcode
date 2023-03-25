@@ -279,7 +279,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     history.append(.init(
                         role: .user,
                         content: "",
-                        summary: "Chat about selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persisted in the conversation."
+                        summary: "Chat about selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             }
