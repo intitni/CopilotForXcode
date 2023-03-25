@@ -188,9 +188,9 @@ extension ChatGPTService {
     }
 
     func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {
-        if history.count > 4 {
+        if history.count > 5 {
             return [.init(role: .system, content: systemPrompt)] +
-                history[history.endIndex - 4..<history.endIndex].map {
+                history[history.endIndex - 5..<history.endIndex].map {
                     .init(role: $0.role, content: $0.content)
                 }
         }
