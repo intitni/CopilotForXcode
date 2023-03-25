@@ -43,6 +43,25 @@ public final class SuggestionWidgetController {
         return it
     }()
 
+    private lazy var tabWindow = {
+        let it = NSWindow(
+            contentRect: .zero,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.level = .floating
+        it.hasShadow = true
+        it.contentView = NSHostingView(
+            rootView: TabView(panelViewModel: suggestionPanelViewModel)
+        )
+        it.setIsVisible(true)
+        return it
+    }()
+
     private lazy var panelWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -135,6 +154,7 @@ public final class SuggestionWidgetController {
                         {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
+                            self.tabWindow.alphaValue = 0
                         }
                     }
                 }
@@ -307,6 +327,7 @@ extension SuggestionWidgetController {
                 self.updateWindowLocation(animated: false)
                 panelWindow.orderFront(nil)
                 widgetWindow.orderFront(nil)
+                tabWindow.orderFront(nil)
 
                 if notification.name == kAXFocusedUIElementChangedNotification {
                     sourceEditorMonitorTask?.cancel()
@@ -376,6 +397,7 @@ extension SuggestionWidgetController {
         func hide() {
             panelWindow.alphaValue = 0
             widgetWindow.alphaValue = 0
+            tabWindow.alphaValue = 0
         }
 
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
@@ -402,8 +424,8 @@ extension SuggestionWidgetController {
                         activeScreen: firstScreen
                     )
                     widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: true, animate: animated)
-                    
+                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
+                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 case .alignToTextCursor:
                     let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
@@ -414,11 +436,13 @@ extension SuggestionWidgetController {
                     )
                     widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
                     panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
+                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
 
                 panelWindow.alphaValue = 1
                 widgetWindow.alphaValue = 1
+                tabWindow.alphaValue = 1
                 return
             }
         }

@@ -8,7 +8,12 @@ enum UpdateLocationStrategy {
             mainScreen: NSScreen,
             activeScreen: NSScreen,
             editor: AXUIElement
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+        ) -> (
+            widgetFrame: CGRect,
+            panelFrame: CGRect,
+            tabFrame: CGRect,
+            alignPanelTopToAnchor: Bool
+        ) {
             guard let selectedRange: AXValue = try? editor
                 .copyValue(key: kAXSelectedTextRangeAttribute),
                 let rect: AXValue = try? editor.copyParameterizedValue(
@@ -46,7 +51,12 @@ enum UpdateLocationStrategy {
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+        ) -> (
+            widgetFrame: CGRect,
+            panelFrame: CGRect,
+            tabFrame: CGRect,
+            alignPanelTopToAnchor: Bool
+        ) {
             return HorizontalMovable().framesForWindows(
                 y: activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
                 alignPanelTopToAnchor: false,
@@ -64,7 +74,12 @@ enum UpdateLocationStrategy {
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen
-        ) -> (widgetFrame: CGRect, panelFrame: CGRect, alignPanelTopToAnchor: Bool) {
+        ) -> (
+            widgetFrame: CGRect,
+            panelFrame: CGRect,
+            tabFrame: CGRect,
+            alignPanelTopToAnchor: Bool
+        ) {
             let maxY = max(
                 y,
                 activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
@@ -98,7 +113,16 @@ enum UpdateLocationStrategy {
                     width: Style.panelWidth,
                     height: Style.panelHeight
                 )
-                return (anchorFrame, panelFrame, alignPanelTopToAnchor)
+                let tabFrame = CGRect(
+                    x: anchorFrame.origin.x,
+                    y: alignPanelTopToAnchor
+                        ? anchorFrame.minY - Style.widgetHeight - Style.widgetPadding
+                        : anchorFrame.maxY + Style.widgetPadding,
+                    width: Style.widgetWidth,
+                    height: Style.widgetHeight
+                )
+
+                return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
             } else {
                 let proposedAnchorFrameOnTheLeftSide = CGRect(
                     x: editorFrame.minX + Style.widgetPadding,
@@ -120,7 +144,15 @@ enum UpdateLocationStrategy {
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
-                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
+                    let tabFrame = CGRect(
+                        x: anchorFrame.origin.x,
+                        y: alignPanelTopToAnchor
+                            ? anchorFrame.minY - Style.widgetHeight - Style.widgetPadding
+                            : anchorFrame.maxY + Style.widgetPadding,
+                        width: Style.widgetWidth,
+                        height: Style.widgetHeight
+                    )
+                    return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
                 } else {
                     let anchorFrame = proposedAnchorFrameOnTheRightSide
                     let panelFrame = CGRect(
@@ -131,7 +163,15 @@ enum UpdateLocationStrategy {
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
-                    return (anchorFrame, panelFrame, alignPanelTopToAnchor)
+                    let tabFrame = CGRect(
+                        x: anchorFrame.origin.x,
+                        y: alignPanelTopToAnchor
+                            ? anchorFrame.minY - Style.widgetHeight - Style.widgetPadding
+                            : anchorFrame.maxY + Style.widgetPadding,
+                        width: Style.widgetWidth,
+                        height: Style.widgetHeight
+                    )
+                    return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
                 }
             }
         }
