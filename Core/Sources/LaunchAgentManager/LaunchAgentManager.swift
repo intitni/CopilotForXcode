@@ -36,9 +36,9 @@ public struct LaunchAgentManager {
         <plist version="1.0">
         <dict>
             <key>Label</key>
-                <string>\(serviceIdentifier)</string>
-                <key>Program</key>
-                <string>\(executablePath)</string>
+            <string>\(serviceIdentifier)</string>
+            <key>Program</key>
+            <string>\(executablePath)</string>
             <key>MachServices</key>
             <dict>
                 <key>\(serviceIdentifier)</key>
