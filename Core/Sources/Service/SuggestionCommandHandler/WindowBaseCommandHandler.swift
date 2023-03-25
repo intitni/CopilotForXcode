@@ -194,14 +194,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
-        var language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        if language.isEmpty { language = "English" }
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         guard let selection = editor.selections.last else { return }
 
         let service = ChatGPTService(
             systemPrompt: """
             You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it
-            Reply in \(language)
+            Reply in \(language.isEmpty ? "" : "in \(language)")
             """,
             apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
             endpoint: endpoint.isEmpty ? nil : endpoint,
@@ -239,8 +238,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
-        var language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        if language.isEmpty { language = "English" }
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
 
         let code = {
             guard let selection = editor.selections.last,
@@ -251,12 +249,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let prompt = {
             if code.isEmpty {
                 return """
-                You are a senior programmer, you will answer my questions concisely in \(language)
+                You are a senior programmer, you will answer my questions concisely \(
+                    language.isEmpty ? "" : "in \(language)"
+                )
                 """
             }
             return """
             You are a senior programmer, you will answer my questions concisely in \(
-                language
+                language.isEmpty ? "" : "in \(language)"
             ) about the code
             ```
             \(removeContinuousSpaces(from: code))
