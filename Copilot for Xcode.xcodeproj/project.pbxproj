@@ -31,6 +31,7 @@
 		C83B2B82293DC38400C5ACCD /* LaunchAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83B2B81293DC38400C5ACCD /* LaunchAgentView.swift */; };
 		C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C841BB232994CAD400B0B336 /* SettingsView.swift */; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
+		C85AF32D29CF0C170031E18B /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85AF32C29CF0C170031E18B /* DebugView.swift */; };
 		C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861E6102994F6070056CB02 /* AppDelegate.swift */; };
 		C861E6152994F6080056CB02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C861E6142994F6080056CB02 /* Assets.xcassets */; };
 		C861E61E2994F6150056CB02 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C861E61D2994F6150056CB02 /* Service */; };
@@ -178,6 +179,7 @@
 		C841BB232994CAD400B0B336 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		C85AF32C29CF0C170031E18B /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CopilotForXcodeExtensionService.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C861E6102994F6070056CB02 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C861E6142994F6080056CB02 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -312,6 +314,7 @@
 				C8EE079E29CC25C20043B6D9 /* OpenAIView.swift */,
 				C83B2B7F293DA1B600C5ACCD /* InstructionView.swift */,
 				C841BB232994CAD400B0B336 /* SettingsView.swift */,
+				C85AF32C29CF0C170031E18B /* DebugView.swift */,
 				C87F3E61293DD004008523E8 /* Styles.swift */,
 				C8189B1D2938973000C9DCDA /* Assets.xcassets */,
 				C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */,
@@ -551,6 +554,7 @@
 				C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */,
 				C83B2B80293DA1B600C5ACCD /* InstructionView.swift in Sources */,
 				C83B2B7C293D9FB400C5ACCD /* CopilotView.swift in Sources */,
+				C85AF32D29CF0C170031E18B /* DebugView.swift in Sources */,
 				C83B2B7A293D9C8C00C5ACCD /* LaunchAgentManager.swift in Sources */,
 				C8189B1A2938972F00C9DCDA /* App.swift in Sources */,
 			);

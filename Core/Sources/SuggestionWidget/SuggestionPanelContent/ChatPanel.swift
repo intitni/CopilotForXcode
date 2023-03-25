@@ -41,10 +41,24 @@ struct ChatPanel: View {
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatRoom
     var inputAreaNamespace: Namespace.ID
+    @AppStorage(\.disableLazyVStack) var disableLazyVStack
 
+    @ViewBuilder
+    func vstack(@ViewBuilder content: () -> some View) -> some View {
+        if disableLazyVStack {
+            VStack {
+                content()
+            }
+        } else {
+            LazyVStack {
+                content()
+            }
+        }
+    }
+    
     var body: some View {
         ScrollView {
-            LazyVStack {
+            vstack {
                 if chat.isReceivingMessage {
                     Button(action: {
                         chat.stop()

@@ -64,39 +64,48 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var widgetColorScheme: WidgetColorSchemeKey { .init() }
-    
+
     public struct OpenAIAPIKey: UserDefaultPreferenceKey {
         public let defaultValue = ""
         public let key = "OpenAIAPIKey"
     }
 
     public var openAIAPIKey: OpenAIAPIKey { .init() }
-    
+
     public struct ChatGPTEndpoint: UserDefaultPreferenceKey {
         public let defaultValue = ""
         public let key = "ChatGPTEndpoint"
     }
 
     public var chatGPTEndpoint: ChatGPTEndpoint { .init() }
-    
+
     public struct ChatGPTModel: UserDefaultPreferenceKey {
         public let defaultValue = ""
         public let key = "ChatGPTModel"
     }
 
     public var chatGPTModel: ChatGPTModel { .init() }
-    
+
     public struct ChatGPTMaxToken: UserDefaultPreferenceKey {
         public let defaultValue = 2048
         public let key = "ChatGPTMaxToken"
     }
 
     public var chatGPTMaxToken: ChatGPTMaxToken { .init() }
-    
+
     public struct ChatGPTLanguage: UserDefaultPreferenceKey {
         public let defaultValue = ""
         public let key = "ChatGPTLanguage"
     }
 
     public var chatGPTLanguage: ChatGPTLanguage { .init() }
+
+    public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
+}
+
+public enum FeatureFlags {
+    public struct DisableLazyVStack: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "FeatureFlag-DisableLazyVStack"
+    }
 }
