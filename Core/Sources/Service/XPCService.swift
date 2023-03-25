@@ -223,6 +223,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
             try await handler.explainSelection(editor: editor)
         }
     }
+    
+    public func chatWithSelection(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.chatWithSelection(editor: editor)
+        }
+    }
 
     // MARK: - Settings
 

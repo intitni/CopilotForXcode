@@ -70,7 +70,7 @@ struct OpenAIView: View {
                         Text("Reply in Language")
                         TextField(
                             text: $settings.chatGPTLanguage,
-                            prompt: Text("English")
+                            prompt: Text("e.g. English. Leave it blank to let the bot decide.")
                         ) {
                             EmptyView()
                         }.textFieldStyle(.copilot)
