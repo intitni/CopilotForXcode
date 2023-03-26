@@ -6,7 +6,7 @@ let suggestionEnd = "*///======== End of Copilot Suggestion"
 
 // NOTE: Every lines from Xcode Extension has a line break at its end, even the last line.
 // NOTE: Copilot's completion always start at character 0, no matter where the cursor is.
-// NOTE: range.end and postion in Copilot's completion are useless, don't bother looking at them.
+// NOTE: range.end and position in Copilot's completion are useless, don't bother looking at them.
 
 public struct SuggestionInjector {
     public init() {}
