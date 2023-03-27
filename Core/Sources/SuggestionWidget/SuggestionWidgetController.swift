@@ -225,9 +225,9 @@ public final class SuggestionWidgetController {
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
                 But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
                 """)
-                if case .chat = activeTab {
+                if case .chat = activeTab, NSApp.activationPolicy() != .accessory {
                     NSApp.setActivationPolicy(.accessory)
-                } else {
+                } else if NSApp.activationPolicy() != .prohibited {
                     Task {
                         try await Environment.makeXcodeActive()
                         NSApp.setActivationPolicy(.prohibited)

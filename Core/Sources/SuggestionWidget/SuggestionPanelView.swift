@@ -41,9 +41,7 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     @Published var activeTab: ActiveTab {
         didSet {
-            if activeTab != oldValue {
-                onActiveTabChanged?(activeTab)
-            }
+            onActiveTabChanged?(activeTab)
         }
     }
 
