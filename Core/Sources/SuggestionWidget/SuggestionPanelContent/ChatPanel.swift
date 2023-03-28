@@ -263,7 +263,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
                 history: ChatPanel_Preview.history,
                 isReceivingMessage: false
             ),
-            typedMessage: "Hello\nWorld\nPikachu\nCat"
+            typedMessage: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce turpis dolor, malesuada quis fringilla sit amet, placerat at nunc. Suspendisse orci tortor, tempor nec blandit a, malesuada vel tellus. Nunc sed leo ligula. Ut at ligula eget turpis pharetra tristique. Integer luctus leo non elit rhoncus fermentum."
         )
         .padding(8)
         .background(Color.contentBackground)
