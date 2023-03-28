@@ -14,7 +14,7 @@ public enum ChatGPTModel: String {
     case textAda001 = "text-ada-001"
 }
 
-extension ChatGPTModel {
+public extension ChatGPTModel {
     var endpoint: String {
         switch self {
         case .gpt35Turbo:
