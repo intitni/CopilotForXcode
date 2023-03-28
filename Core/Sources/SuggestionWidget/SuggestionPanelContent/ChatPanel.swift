@@ -77,6 +77,7 @@ struct ChatPanelMessages: View {
                     .buttonStyle(.plain)
                     .xcodeStyleFrame()
                     .matchedGeometryEffect(id: "input", in: inputAreaNamespace)
+                    .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
 
                 if chat.history.isEmpty {
@@ -89,6 +90,7 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
+                        .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
@@ -112,10 +114,12 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
+                        .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
             }
         }
         .rotationEffect(Angle(degrees: 180))
+        .scaleEffect(x: -1, y: 1, anchor: .center)
     }
 }
 
