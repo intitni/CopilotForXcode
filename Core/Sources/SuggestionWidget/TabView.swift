@@ -38,6 +38,7 @@ struct TabView: View {
         }
         .opacity(panelViewModel.isPanelDisplayed ? 1 : 0)
         .preferredColorScheme(panelViewModel.colorScheme)
+        .frame(maxWidth: Style.widgetWidth, maxHeight: Style.widgetHeight)
     }
 }
 

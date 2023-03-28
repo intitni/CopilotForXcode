@@ -79,7 +79,7 @@ public final class SuggestionWidgetController {
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .chat = suggestionPanelViewModel.activeTab { return false }
+            if case .chat = suggestionPanelViewModel.activeTab { return true }
             return false
         }
         return it
@@ -219,19 +219,26 @@ public final class SuggestionWidgetController {
         }
 
         Task { @MainActor in
-            suggestionPanelViewModel.onActiveTabChanged = { [weak self] activeTab in
+            var switchTask: Task<Void, Error>?
+            suggestionPanelViewModel.onActiveTabChanged = { activeTab in
                 #warning("""
                 TODO: There should be a better way for that
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
                 But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
                 """)
-                if case .chat = activeTab, NSApp.activationPolicy() != .accessory {
-                    NSApp.setActivationPolicy(.accessory)
-                } else if NSApp.activationPolicy() != .prohibited {
-                    Task {
+                switch activeTab {
+                case .suggestion:
+                    guard NSApp.activationPolicy() != .prohibited else { return }
+                    switchTask?.cancel()
+                    switchTask = Task {
                         try await Environment.makeXcodeActive()
+                        try Task.checkCancellation()
                         NSApp.setActivationPolicy(.prohibited)
                     }
+                case .chat:
+                    guard NSApp.activationPolicy() != .accessory else { return }
+                    switchTask?.cancel()
+                    NSApp.setActivationPolicy(.accessory)
                 }
             }
         }
@@ -292,6 +299,11 @@ public extension SuggestionWidgetController {
     func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
         if fileURL == currentFileURL || currentFileURL == nil {
             suggestionPanelViewModel.chat = chatRoom
+            Task { @MainActor in  
+                // looks like we need a delay.
+                try await Task.sleep(nanoseconds: 100_000_000)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
         }
         widgetViewModel.isProcessing = false
         chatForFiles[fileURL] = chatRoom
@@ -335,8 +347,11 @@ extension SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.content = nil
-                        suggestionPanelViewModel.chat = nil
+                        // if it's switching to a ui component that is not a text area.
+                        if ActiveApplicationMonitor.activeApplication?.isXcode ?? false {
+                            suggestionPanelViewModel.content = nil
+                            suggestionPanelViewModel.chat = nil
+                        }
                         continue
                     }
                     guard fileURL != currentFileURL else { continue }
@@ -373,12 +388,14 @@ extension SuggestionWidgetController {
                         scroll
                     ) {
                         guard let self else { return }
+                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
                         try Task.checkCancellation()
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
+                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
                         try Task.checkCancellation()
                         let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }

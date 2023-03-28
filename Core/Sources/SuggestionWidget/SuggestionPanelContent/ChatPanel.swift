@@ -55,7 +55,7 @@ struct ChatPanelMessages: View {
             }
         }
     }
-    
+
     var body: some View {
         ScrollView {
             vstack {
@@ -77,6 +77,7 @@ struct ChatPanelMessages: View {
                     .buttonStyle(.plain)
                     .xcodeStyleFrame()
                     .matchedGeometryEffect(id: "input", in: inputAreaNamespace)
+                    .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
 
                 if chat.history.isEmpty {
@@ -89,8 +90,9 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
+                        .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
-                
+
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
                         .text
@@ -112,11 +114,12 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
-                        
+                        .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
             }
         }
         .rotationEffect(Angle(degrees: 180))
+        .scaleEffect(x: -1, y: 1, anchor: .center)
     }
 }
 
@@ -124,6 +127,7 @@ struct ChatPanelInputArea: View {
     @ObservedObject var chat: ChatRoom
     var inputAreaNamespace: Namespace.ID
     @Binding var typedMessage: String
+    @FocusState var isInputAreaFocused: Bool
 
     var body: some View {
         HStack {
@@ -131,12 +135,18 @@ struct ChatPanelInputArea: View {
             Button(action: {
                 chat.clear()
             }) {
-                Image(systemName: "eraser.line.dashed.fill")
-                    .padding(8)
-                    .background(
-                        .regularMaterial,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    )
+                Group {
+                    if #available(macOS 13.0, *) {
+                        Image(systemName: "eraser.line.dashed.fill")
+                    } else {
+                        Image(systemName: "trash.fill")
+                    }
+                }
+                .padding(8)
+                .background(
+                    .regularMaterial,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
             }
             .buttonStyle(.plain)
             .xcodeStyleFrame()
@@ -145,9 +155,13 @@ struct ChatPanelInputArea: View {
                 if #available(macOS 13.0, *) {
                     TextField("Type a message", text: $typedMessage, axis: .vertical)
                 } else {
-                    TextField("Type a message", text: $typedMessage)
+                    TextEditor(text: $typedMessage)
+                        .frame(height: 42, alignment: .leading)
+                        .font(.body)
+                        .background(Color.clear)
                 }
             }
+            .focused($isInputAreaFocused)
             .lineLimit(3)
             .multilineTextAlignment(.leading)
             .textFieldStyle(.plain)
@@ -178,6 +192,9 @@ struct ChatPanelInputArea: View {
             }
             .buttonStyle(.plain)
             .xcodeStyleFrame()
+        }
+        .onAppear {
+            isInputAreaFocused = true
         }
     }
 }
@@ -246,7 +263,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
                 history: ChatPanel_Preview.history,
                 isReceivingMessage: false
             ),
-            typedMessage: "Hello\nWorld"
+            typedMessage: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce turpis dolor, malesuada quis fringilla sit amet, placerat at nunc. Suspendisse orci tortor, tempor nec blandit a, malesuada vel tellus. Nunc sed leo ligula. Ut at ligula eget turpis pharetra tristique. Integer luctus leo non elit rhoncus fermentum."
         )
         .padding(8)
         .background(Color.contentBackground)
