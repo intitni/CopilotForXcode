@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Language: String {
+public enum ChatGPTLanguage: String {
     case somali = "Somali"
     case afrikaans = "Afrikaans"
     case azerbaijani = "Azerbaijani"
@@ -101,8 +101,8 @@ public enum Language: String {
     case japanese = "Japanese"
 }
 
-extension Language {
-    var name: String {
+public extension ChatGPTLanguage {
+    var fullName: String {
         switch self {
         case .somali: return "Af Soomaali"
         case .afrikaans: return "Afrikaans"
@@ -206,4 +206,4 @@ extension Language {
     }
 }
 
-extension Language: CaseIterable {}
+extension ChatGPTLanguage: CaseIterable {}
