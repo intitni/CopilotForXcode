@@ -124,6 +124,7 @@ struct ChatPanelInputArea: View {
     @ObservedObject var chat: ChatRoom
     var inputAreaNamespace: Namespace.ID
     @Binding var typedMessage: String
+    @FocusState var isInputAreaFocused: Bool
 
     var body: some View {
         HStack {
@@ -148,6 +149,7 @@ struct ChatPanelInputArea: View {
                     TextField("Type a message", text: $typedMessage)
                 }
             }
+            .focused($isInputAreaFocused)
             .lineLimit(3)
             .multilineTextAlignment(.leading)
             .textFieldStyle(.plain)
@@ -178,6 +180,9 @@ struct ChatPanelInputArea: View {
             }
             .buttonStyle(.plain)
             .xcodeStyleFrame()
+        }
+        .onAppear {
+            isInputAreaFocused = true
         }
     }
 }
