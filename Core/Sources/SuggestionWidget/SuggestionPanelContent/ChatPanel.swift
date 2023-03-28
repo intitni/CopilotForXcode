@@ -55,7 +55,7 @@ struct ChatPanelMessages: View {
             }
         }
     }
-    
+
     var body: some View {
         ScrollView {
             vstack {
@@ -90,7 +90,7 @@ struct ChatPanelMessages: View {
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
                 }
-                
+
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
                         .text
@@ -112,7 +112,6 @@ struct ChatPanelMessages: View {
                         )
                         .xcodeStyleFrame()
                         .rotationEffect(Angle(degrees: 180))
-                        
                 }
             }
         }
@@ -146,7 +145,10 @@ struct ChatPanelInputArea: View {
                 if #available(macOS 13.0, *) {
                     TextField("Type a message", text: $typedMessage, axis: .vertical)
                 } else {
-                    TextField("Type a message", text: $typedMessage)
+                    TextEditor(text: $typedMessage)
+                        .frame(height: 42, alignment: .leading)
+                        .font(.body)
+                        .background(Color.clear)
                 }
             }
             .focused($isInputAreaFocused)
@@ -251,7 +253,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
                 history: ChatPanel_Preview.history,
                 isReceivingMessage: false
             ),
-            typedMessage: "Hello\nWorld"
+            typedMessage: "Hello\nWorld\nPikachu\nCat"
         )
         .padding(8)
         .background(Color.contentBackground)
