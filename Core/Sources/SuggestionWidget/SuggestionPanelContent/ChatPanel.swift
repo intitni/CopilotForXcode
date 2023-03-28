@@ -131,12 +131,18 @@ struct ChatPanelInputArea: View {
             Button(action: {
                 chat.clear()
             }) {
-                Image(systemName: "eraser.line.dashed.fill")
-                    .padding(8)
-                    .background(
-                        .regularMaterial,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    )
+                Group {
+                    if #available(macOS 13.0, *) {
+                        Image(systemName: "eraser.line.dashed.fill")
+                    } else {
+                        Image(systemName: "trash.fill")
+                    }
+                }
+                .padding(8)
+                .background(
+                    .regularMaterial,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
             }
             .buttonStyle(.plain)
             .xcodeStyleFrame()
