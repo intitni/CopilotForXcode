@@ -219,19 +219,22 @@ public final class SuggestionWidgetController {
         }
 
         Task { @MainActor in
-            suggestionPanelViewModel.onActiveTabChanged = { [weak self] activeTab in
+            suggestionPanelViewModel.onActiveTabChanged = { activeTab in
                 #warning("""
                 TODO: There should be a better way for that
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
                 But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
                 """)
-                if case .chat = activeTab, NSApp.activationPolicy() != .accessory {
-                    NSApp.setActivationPolicy(.accessory)
-                } else if NSApp.activationPolicy() != .prohibited {
+                switch activeTab {
+                case .suggestion:
+                    guard NSApp.activationPolicy() != .prohibited else { return }
                     Task {
                         try await Environment.makeXcodeActive()
                         NSApp.setActivationPolicy(.prohibited)
                     }
+                case .chat:
+                    guard NSApp.activationPolicy() != .accessory else { return }
+                    NSApp.setActivationPolicy(.accessory)
                 }
             }
         }
