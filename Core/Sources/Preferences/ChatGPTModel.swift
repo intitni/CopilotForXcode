@@ -8,21 +8,11 @@ public enum ChatGPTModel: String {
 
 public extension ChatGPTModel {
     var endpoint: String {
-        switch self {
-        case .gpt35Turbo:
-            return "https://api.openai.com/v1/chat/completions"
-        case .gpt35Turbo0301:
-            return "https://api.openai.com/v1/chat/completions"
-        }
+        "https://api.openai.com/v1/chat/completions"
     }
 
     var maxToken: Int {
-        switch self {
-        case .gpt35Turbo:
-            return 2049
-        case .gpt35Turbo0301:
-            return 2049
-        }
+        2049
     }
 }
 
