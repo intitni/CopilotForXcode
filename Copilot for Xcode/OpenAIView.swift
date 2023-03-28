@@ -42,7 +42,7 @@ struct OpenAIView: View {
 
                     HStack {
                         Picker(selection: $settings.chatGPTModel) {
-                            ForEach(ChatGPTModel.allCases, id: \.hashValue) { model in
+                            ForEach(ChatGPTModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
                             }
                         } label: {
@@ -60,15 +60,13 @@ struct OpenAIView: View {
                         settings.chatGPTMaxToken = model.maxToken
                     }
 
-                    HStack {
+                    Picker(selection: $settings.chatGPTLanguage) {
+                        ForEach(ChatGPTLanguage.allCases, id: \.self) { language in
+                            Text(language.fullName).tag(language.rawValue)
+                        }
+                    } label: {
                         Text("Reply in Language")
-                        TextField(
-                            text: $settings.chatGPTLanguage,
-                            prompt: Text("e.g. English. Leave it blank to let the bot decide.")
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-                    }
+                    }.pickerStyle(.menu)
                 }
             }
         }
