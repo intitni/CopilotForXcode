@@ -79,7 +79,7 @@ public final class SuggestionWidgetController {
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .chat = suggestionPanelViewModel.activeTab { return false }
+            if case .chat = suggestionPanelViewModel.activeTab { return true }
             return false
         }
         return it
@@ -299,6 +299,11 @@ public extension SuggestionWidgetController {
     func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
         if fileURL == currentFileURL || currentFileURL == nil {
             suggestionPanelViewModel.chat = chatRoom
+            Task { @MainActor in  
+                // looks like we need a delay.
+                try await Task.sleep(nanoseconds: 100_000_000)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
         }
         widgetViewModel.isProcessing = false
         chatForFiles[fileURL] = chatRoom
@@ -342,8 +347,11 @@ extension SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        suggestionPanelViewModel.content = nil
-                        suggestionPanelViewModel.chat = nil
+                        // if it's switching to a ui component that is not a text area.
+                        if ActiveApplicationMonitor.activeApplication?.isXcode ?? false {
+                            suggestionPanelViewModel.content = nil
+                            suggestionPanelViewModel.chat = nil
+                        }
                         continue
                     }
                     guard fileURL != currentFileURL else { continue }
