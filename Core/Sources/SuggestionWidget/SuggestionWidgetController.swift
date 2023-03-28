@@ -219,6 +219,7 @@ public final class SuggestionWidgetController {
         }
 
         Task { @MainActor in
+            var switchTask: Task<Void, Error>?
             suggestionPanelViewModel.onActiveTabChanged = { activeTab in
                 #warning("""
                 TODO: There should be a better way for that
@@ -228,12 +229,15 @@ public final class SuggestionWidgetController {
                 switch activeTab {
                 case .suggestion:
                     guard NSApp.activationPolicy() != .prohibited else { return }
-                    Task {
+                    switchTask?.cancel()
+                    switchTask = Task {
                         try await Environment.makeXcodeActive()
+                        try Task.checkCancellation()
                         NSApp.setActivationPolicy(.prohibited)
                     }
                 case .chat:
                     guard NSApp.activationPolicy() != .accessory else { return }
+                    switchTask?.cancel()
                     NSApp.setActivationPolicy(.accessory)
                 }
             }
@@ -376,12 +380,14 @@ extension SuggestionWidgetController {
                         scroll
                     ) {
                         guard let self else { return }
+                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
                         try Task.checkCancellation()
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
+                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
                         try Task.checkCancellation()
                         let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
