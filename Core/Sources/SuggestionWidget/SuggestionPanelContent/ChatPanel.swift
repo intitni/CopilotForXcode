@@ -76,7 +76,6 @@ struct ChatPanelMessages: View {
                     }
                     .buttonStyle(.plain)
                     .xcodeStyleFrame()
-                    .matchedGeometryEffect(id: "input", in: inputAreaNamespace)
                     .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
 
@@ -165,6 +164,7 @@ struct ChatPanelInputArea: View {
             .lineLimit(3)
             .multilineTextAlignment(.leading)
             .textFieldStyle(.plain)
+            .frame(maxWidth: .infinity)
             .padding(8)
             .background(
                 .regularMaterial,
@@ -176,7 +176,6 @@ struct ChatPanelInputArea: View {
                 chat.send(typedMessage)
                 typedMessage = ""
             }
-            .matchedGeometryEffect(id: "input", in: inputAreaNamespace)
 
             Button(action: {
                 if typedMessage.isEmpty { return }
