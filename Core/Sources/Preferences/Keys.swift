@@ -100,6 +100,15 @@ public struct UserDefaultPreferenceKeys {
 
     public var chatGPTLanguage: ChatGPTLanguage { .init() }
 
+    public struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "AcceptSuggestionWithAccessibilityAPI"
+    }
+
+    public var acceptSuggestionWithAccessibilityAPI: AcceptSuggestionWithAccessibilityAPI {
+        .init()
+    }
+
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }
 

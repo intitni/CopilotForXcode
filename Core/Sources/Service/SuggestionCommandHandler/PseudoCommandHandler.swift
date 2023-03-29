@@ -70,63 +70,67 @@ struct PseudoCommandHandler {
     }
 
     func acceptSuggestion() async {
-        do {
-            try await Environment.triggerAction("Accept Suggestion")
-            return
-        } catch {
-            PresentInWindowSuggestionPresenter().presentError(error)
-        }
-        guard let xcode = ActiveApplicationMonitor.activeXcode else { return }
-        let application = AXUIElementCreateApplication(xcode.processIdentifier)
-        guard let focusElement = application.focusedElement,
-              focusElement.description == "Source Editor"
-        else { return }
-        guard let (content, lines, cursorPosition) = await getFileContent() else {
-            PresentInWindowSuggestionPresenter().presentErrorMessage("Unable to get file content.")
-            return
-        }
-        let handler = CommentBaseCommandHandler()
-        do {
-            guard let result = try await handler.acceptSuggestion(editor: .init(
-                content: content,
-                lines: lines,
-                uti: "",
-                cursorPosition: cursorPosition,
-                selections: [],
-                tabSize: 0,
-                indentSize: 0,
-                usesTabsForIndentation: false
-            )) else { return }
-
-            let oldPosition = focusElement.selectedTextRange
-
-            let error = AXUIElementSetAttributeValue(
-                focusElement,
-                kAXValueAttribute as CFString,
-                result.content as CFTypeRef
-            )
-
-            if error != AXError.success {
+        if UserDefaults.shared.value(for: \.acceptSuggestionWithAccessibilityAPI) {
+            guard let xcode = ActiveApplicationMonitor.activeXcode else { return }
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            guard let focusElement = application.focusedElement,
+                  focusElement.description == "Source Editor"
+            else { return }
+            guard let (content, lines, cursorPosition) = await getFileContent() else {
                 PresentInWindowSuggestionPresenter()
-                    .presentErrorMessage("Fail to set editor content.")
+                    .presentErrorMessage("Unable to get file content.")
+                return
             }
+            let handler = CommentBaseCommandHandler()
+            do {
+                guard let result = try await handler.acceptSuggestion(editor: .init(
+                    content: content,
+                    lines: lines,
+                    uti: "",
+                    cursorPosition: cursorPosition,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )) else { return }
 
-            if let oldPosition {
-                var range = CFRange(
-                    location: oldPosition.lowerBound,
-                    length: oldPosition.upperBound
+                let oldPosition = focusElement.selectedTextRange
+
+                let error = AXUIElementSetAttributeValue(
+                    focusElement,
+                    kAXValueAttribute as CFString,
+                    result.content as CFTypeRef
                 )
-                if let value = AXValueCreate(.cfRange, &range) {
-                    AXUIElementSetAttributeValue(
-                        focusElement,
-                        kAXSelectedTextRangeAttribute as CFString,
-                        value
-                    )
-                }
-            }
 
-        } catch {
-            PresentInWindowSuggestionPresenter().presentError(error)
+                if error != AXError.success {
+                    PresentInWindowSuggestionPresenter()
+                        .presentErrorMessage("Fail to set editor content.")
+                }
+
+                if let oldPosition {
+                    var range = CFRange(
+                        location: oldPosition.lowerBound,
+                        length: 0
+                    )
+                    if let value = AXValueCreate(.cfRange, &range) {
+                        AXUIElementSetAttributeValue(
+                            focusElement,
+                            kAXSelectedTextRangeAttribute as CFString,
+                            value
+                        )
+                    }
+                }
+
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
+        } else {
+            do {
+                try await Environment.triggerAction("Accept Suggestion")
+                return
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
         }
     }
 }
