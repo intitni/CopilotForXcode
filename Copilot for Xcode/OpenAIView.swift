@@ -70,6 +70,16 @@ struct OpenAIView: View {
 
                     HStack {
                         if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                            let binding = Binding(
+                                get: { String(settings.chatGPTMaxToken) },
+                                set: {
+                                    if let selectionMaxToken = Int($0) {
+                                        settings.chatGPTMaxToken = model.maxToken < selectionMaxToken ? model.maxToken : selectionMaxToken
+                                    } else {
+                                        settings.chatGPTMaxToken = 0
+                                    }
+                                }
+                            )
                             Stepper(
                                 value: $settings.chatGPTMaxToken,
                                 in: 0...model.maxToken,
@@ -77,16 +87,12 @@ struct OpenAIView: View {
                             ) {
                                 Text("Max Token")
                             }
+                            TextField(text: binding) {
+                                EmptyView()
+                            }
+                            .labelsHidden()
+                            .textFieldStyle(.roundedBorder)
                         }
-                        Text(settings.chatGPTMaxToken.description)
-                            .font(.body)
-                            .monospacedDigit()
-                            .padding(.vertical, 2)
-                            .padding(.horizontal, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .fill(Color.white.opacity(0.2))
-                            )
                     }
                 }
             }
