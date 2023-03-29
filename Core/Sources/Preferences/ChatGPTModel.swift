@@ -12,7 +12,7 @@ public extension ChatGPTModel {
     }
 
     var maxToken: Int {
-        2049
+        4096
     }
 }
 
