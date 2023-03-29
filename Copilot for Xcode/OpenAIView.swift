@@ -70,7 +70,11 @@ struct OpenAIView: View {
 
                     HStack {
                         if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
-                            Stepper(value: $settings.chatGPTMaxToken, in: 0...model.maxToken, step: 1) {
+                            Stepper(
+                                value: $settings.chatGPTMaxToken,
+                                in: 0...model.maxToken,
+                                step: 1
+                            ) {
                                 Text("Max Token")
                             }
                         }
