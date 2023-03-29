@@ -55,9 +55,9 @@ struct OpenAIView: View {
                         }.buttonStyle(.plain)
                     }
                     .onChange(of: settings.chatGPTModel) { newValue in
-                        guard let model = ChatGPTModel(rawValue: newValue) else { return }
-                        settings.chatGPTEndpoint = model.endpoint
-                        settings.chatGPTMaxToken = model.maxToken
+                        if let model = ChatGPTModel(rawValue: newValue) {
+                            settings.chatGPTEndpoint = model.endpoint
+                        }
                     }
 
                     Picker(selection: $settings.chatGPTLanguage) {
@@ -67,6 +67,23 @@ struct OpenAIView: View {
                     } label: {
                         Text("Reply in Language")
                     }.pickerStyle(.menu)
+
+                    HStack {
+                        if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                            Stepper(value: $settings.chatGPTMaxToken, in: 0...model.maxToken, step: 1) {
+                                Text("Max Token")
+                            }
+                        }
+                        Text(settings.chatGPTMaxToken.description)
+                            .font(.body)
+                            .monospacedDigit()
+                            .padding(.vertical, 2)
+                            .padding(.horizontal, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                    .fill(Color.white.opacity(0.2))
+                            )
+                    }
                 }
             }
         }
