@@ -31,8 +31,9 @@ public final class GraphicalUserInterfaceController {
             }
 
             suggestionWidget.onAcceptButtonTapped = {
-                Task {
-                    try await Environment.triggerAction("Accept Suggestion")
+                Task { @ServiceActor in
+                    let handler = PseudoCommandHandler()
+                    await handler.acceptSuggestion()
                 }
             }
         }
