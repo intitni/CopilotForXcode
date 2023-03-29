@@ -134,6 +134,27 @@ public class RealtimeSuggestionController {
                 }
             }
         }
+
+        Task { // Get cache ready for real-time suggestions.
+            guard
+                let fileURL = try? await Environment.fetchCurrentFileURL(),
+                let (_, filespace) = try? await Workspace
+                .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            else { return }
+
+            if filespace.uti == nil {
+                Logger.service.info("Generate cache for file.")
+                // avoid the command get called twice
+                filespace.uti = ""
+                do {
+                    try await Environment.triggerAction("Real-time Suggestions")
+                } catch {
+                    if filespace.uti?.isEmpty ?? true {
+                        filespace.uti = nil
+                    }
+                }
+            }
+        }
     }
 
     func handleHIDEvent(event: CGEvent) async {

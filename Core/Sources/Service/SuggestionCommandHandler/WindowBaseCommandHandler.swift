@@ -168,7 +168,20 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        // not needed.
+        Task {
+            try? await prepareCache(editor: editor)
+        }
+        return nil
+    }
+    
+    func prepareCache(editor: EditorContent) async throws -> UpdatedContent? {
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (_, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        filespace.uti = editor.uti
+        filespace.tabSize = editor.tabSize
+        filespace.indentSize = editor.indentSize
+        filespace.usesTabsForIndentation = editor.usesTabsForIndentation
         return nil
     }
 
