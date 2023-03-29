@@ -61,8 +61,8 @@ struct OpenAIView: View {
                     }
 
                     Picker(selection: $settings.chatGPTLanguage) {
-                        ForEach(ChatGPTLanguage.allCases, id: \.self) { language in
-                            Text(language.fullName).tag(language.rawValue)
+                        ForEach(Locale.availableLocales, id: \.identifier) { locale in
+                            Text(locale.languageName).tag(locale.languageName)
                         }
                     } label: {
                         Text("Reply in Language")
