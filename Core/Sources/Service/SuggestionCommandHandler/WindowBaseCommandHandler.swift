@@ -7,6 +7,7 @@ import OpenAIService
 import SuggestionInjector
 import SuggestionWidget
 import XPCShared
+import LanguageServerProtocol
 
 @ServiceActor
 struct WindowBaseCommandHandler: SuggestionCommandHandler {
@@ -18,6 +19,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         Task {
             do {
                 try await _presentSuggestions(editor: editor)
+            } catch let error as ServerError {
+                Logger.service.error(error)
             } catch {
                 presenter.presentError(error)
                 Logger.service.error(error)
