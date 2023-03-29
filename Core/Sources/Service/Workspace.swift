@@ -118,10 +118,12 @@ extension Workspace {
             filespaces[fileURL] = filespace
         }
 
-        filespace.uti = editor.uti
-        filespace.tabSize = editor.tabSize
-        filespace.indentSize = editor.indentSize
-        filespace.usesTabsForIndentation = editor.usesTabsForIndentation
+        if !editor.uti.isEmpty {
+            filespace.uti = editor.uti
+            filespace.tabSize = editor.tabSize
+            filespace.indentSize = editor.indentSize
+            filespace.usesTabsForIndentation = editor.usesTabsForIndentation
+        }
 
         let snapshot = Filespace.Snapshot(
             linesHash: editor.lines.hashValue,
@@ -174,7 +176,7 @@ extension Workspace {
         cancelInFlightRealtimeSuggestionRequests()
         lastTriggerDate = Environment.now()
 
-        if let editor {
+        if let editor, !editor.uti.isEmpty {
             filespaces[fileURL]?.uti = editor.uti
             filespaces[fileURL]?.tabSize = editor.tabSize
             filespaces[fileURL]?.indentSize = editor.indentSize
@@ -195,7 +197,7 @@ extension Workspace {
               filespace.suggestionIndex < filespace.suggestions.endIndex
         else { return nil }
 
-        if let editor {
+        if let editor, !editor.uti.isEmpty {
             filespaces[fileURL]?.uti = editor.uti
             filespaces[fileURL]?.tabSize = editor.tabSize
             filespaces[fileURL]?.indentSize = editor.indentSize

@@ -47,6 +47,13 @@ struct PresentInWindowSuggestionPresenter {
         }
     }
     
+    func presentErrorMessage(_ message: String) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
+            controller.presentError(message)
+        }
+    }
+    
     func closeChatRoom(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget

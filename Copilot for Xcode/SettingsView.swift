@@ -15,6 +15,8 @@ final class Settings: ObservableObject {
     var suggestionWidgetPositionMode: SuggestionWidgetPositionMode
     @AppStorage(\.widgetColorScheme)
     var widgetColorScheme: WidgetColorScheme
+    @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
+    var acceptSuggestionWithAccessibilityAPI: Bool
     init() {}
 }
 
@@ -107,6 +109,11 @@ struct SettingsView: View {
                             .fill(Color.white.opacity(0.2))
                     )
                 }
+                
+                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
+                    Text("Use accessibility API to accept suggestion in widget")
+                }
+                .toggleStyle(.switch)
             }
         }.buttonStyle(.copilot)
     }
