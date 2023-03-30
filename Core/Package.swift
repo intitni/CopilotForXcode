@@ -147,5 +147,7 @@ let package = Package(
             dependencies: ["OpenAIService"]
         ),
         .target(name: "Preferences"),
+        .target(name: "ChatPlugins", dependencies: ["OpenAIService", "Environment"]),
+        .target(name: "Terminal"),
     ]
 )
