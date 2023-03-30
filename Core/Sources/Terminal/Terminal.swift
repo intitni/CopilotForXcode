@@ -15,6 +15,8 @@ public protocol TerminalType {
         currentDirectoryPath: String,
         environment: [String: String]
     ) async throws -> String
+    
+    func terminate() async
 }
 
 public final class Terminal: TerminalType, @unchecked Sendable {
@@ -144,5 +146,10 @@ public final class Terminal: TerminalType, @unchecked Sendable {
 
         inputPipe?.fileHandleForWriting.write(data)
         inputPipe?.fileHandleForWriting.closeFile()
+    }
+    
+    public func terminate() async {
+        process?.terminate()
+        process = nil
     }
 }

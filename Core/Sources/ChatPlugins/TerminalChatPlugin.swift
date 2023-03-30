@@ -90,7 +90,8 @@ public actor TerminalChatPlugin: ChatPlugin {
         delegate?.pluginDidEnd(self)
     }
 
-    public func cancel() {
+    public func cancel() async {
         isCancelled = true
+        await terminal.terminate()
     }
 }
