@@ -1,6 +1,33 @@
 import Foundation
 import LanguageServerProtocol
 
+public enum CopilotLanguage: RawRepresentable, Codable {
+    case builtIn(LanguageIdentifier)
+    case plaintext
+    case other(String)
+
+    public var rawValue: String {
+        switch self {
+        case let .builtIn(language):
+            return language.rawValue
+        case .plaintext:
+            return "plaintext"
+        case let .other(language):
+            return language
+        }
+    }
+
+    public init?(rawValue: String) {
+        if let language = LanguageIdentifier(rawValue: rawValue) {
+            self = .builtIn(language)
+        } else if rawValue == "txt" || rawValue.isEmpty {
+            self = .plaintext
+        } else {
+            self = .other(rawValue)
+        }
+    }
+}
+
 extension LanguageIdentifier {
     /// Copied from https://github.com/github/linguist/blob/master/lib/linguist/languages.yml [MIT]
     var fileExtensions: [String] {
@@ -219,7 +246,10 @@ let fileExtensionToLanguageId = {
     return dict
 }()
 
-public func languageIdentifierFromFileURL(_ fileURL: URL) -> LanguageIdentifier? {
+public func languageIdentifierFromFileURL(_ fileURL: URL) -> CopilotLanguage {
     let fileExtension = fileURL.pathExtension
-    return fileExtensionToLanguageId[fileExtension]
+    if let builtIn = fileExtensionToLanguageId[fileExtension] {
+        return .builtIn(builtIn)
+    }
+    return .init(rawValue: fileExtension) ?? .plaintext
 }

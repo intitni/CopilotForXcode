@@ -156,8 +156,8 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CopilotCompletion] {
-        guard let languageId = languageIdentifierFromFileURL(fileURL) else { return [] }
-
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        
         let relativePath = {
             let filePath = fileURL.path
             let rootPath = projectRootURL.path
