@@ -1,7 +1,8 @@
+import ChatService
 import CopilotModel
 import Foundation
-import SuggestionWidget
 import OpenAIService
+import SuggestionWidget
 
 struct PresentInWindowSuggestionPresenter {
     func presentSuggestion(
@@ -46,14 +47,14 @@ struct PresentInWindowSuggestionPresenter {
             controller.presentError(error.localizedDescription)
         }
     }
-    
+
     func presentErrorMessage(_ message: String) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.presentError(message)
         }
     }
-    
+
     func closeChatRoom(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
@@ -63,6 +64,7 @@ struct PresentInWindowSuggestionPresenter {
 
     func presentChatGPTConversation(_ service: ChatGPTService, fileURL: URL) {
         let chatRoom = ChatRoom()
+        let chatService = ChatService(chatGPTService: service)
         let cancellable = service.objectWillChange.sink { [weak chatRoom] in
             guard let chatRoom else { return }
             Task { @MainActor in
@@ -81,7 +83,7 @@ struct PresentInWindowSuggestionPresenter {
             _ = cancellable
             Task {
                 do {
-                    _ = try await service.send(content: message)
+                    _ = try await chatService.send(content: message)
                 } catch {
                     presentError(error)
                 }
@@ -89,23 +91,23 @@ struct PresentInWindowSuggestionPresenter {
         }
         chatRoom.onStop = {
             Task {
-                await service.stopReceivingMessage()
+                await chatService.stopReceivingMessage()
             }
         }
-        
+
         chatRoom.onClear = {
             Task {
-                await service.clearHistory()
+                await chatService.clearHistory()
             }
         }
-        
+
         chatRoom.onClose = {
             Task {
-                await service.stopReceivingMessage()
+                await chatService.stopReceivingMessage()
                 closeChatRoom(fileURL: fileURL)
             }
         }
-        
+
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.presentChatRoom(chatRoom, fileURL: fileURL)
