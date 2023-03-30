@@ -86,6 +86,7 @@ let package = Package(
                 "SuggestionWidget",
                 "AXExtension",
                 "Logger",
+                "ChatService",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -149,5 +150,6 @@ let package = Package(
         .target(name: "Preferences"),
         .target(name: "ChatPlugins", dependencies: ["OpenAIService", "Environment"]),
         .target(name: "Terminal"),
+        .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
     ]
 )
