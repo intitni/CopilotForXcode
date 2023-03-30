@@ -7,6 +7,7 @@ public protocol ChatGPTServiceType {
     func clearHistory() async
     func mutateSystemPrompt(_ newPrompt: String) async
     func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async
+    func markReceivingMessage(_ receiving: Bool) async
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -166,6 +167,7 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     }
 
     public func clearHistory() {
+        stopReceivingMessage()
         history = []
     }
 
@@ -176,13 +178,17 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     public func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async {
         mutate(&history)
     }
+
+    public func markReceivingMessage(_ receiving: Bool) {
+        isReceivingMessage = receiving
+    }
 }
 
 extension ChatGPTService {
     func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
     }
-    
+
     func changeUUIDGenerator(_ generator: @escaping () -> String) {
         uuidGenerator = generator
     }

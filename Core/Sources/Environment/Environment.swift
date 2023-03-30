@@ -43,7 +43,9 @@ public enum Environment {
 
     public static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws
         -> URL? = { fileURL in
-            if let xcode = ActiveApplicationMonitor.activeXcode {
+            if let xcode = ActiveApplicationMonitor.activeXcode
+                ?? ActiveApplicationMonitor.latestXcode
+            {
                 let application = AXUIElementCreateApplication(xcode.processIdentifier)
                 let focusedWindow = application.focusedWindow
                 for child in focusedWindow?.children ?? [] {
@@ -77,7 +79,9 @@ public enum Environment {
         }
 
     public static var fetchCurrentFileURL: () async throws -> URL = {
-        guard let xcode = ActiveApplicationMonitor.activeXcode else {
+        guard let xcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode
+        else {
             throw FailedToFetchFileURLError()
         }
 
