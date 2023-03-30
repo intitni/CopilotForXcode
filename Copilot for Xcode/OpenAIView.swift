@@ -60,26 +60,33 @@ struct OpenAIView: View {
                         }
                     }
 
+                    TextField(
+                        text: $settings.chatGPTEndpoint,
+                        prompt: Text("https://api.openai.com/v1/chat/completions")
+                    ) {
+                        Text("ChatGPT Server")
+                    }.textFieldStyle(.roundedBorder)
+
                     Picker(selection: $settings.chatGPTLanguage) {
-                        ForEach(Locale.availableLocales, id: \.identifier) { locale in
-                            Text(locale.languageName).tag(locale.languageName)
+                        ForEach(Locale.availableLocalizedLocales, id: \.self) { localizedLocales in
+                            Text(localizedLocales).tag(localizedLocales)
                         }
                     } label: {
                         Text("Reply in Language")
                     }.pickerStyle(.menu)
 
-                    HStack {
-                        if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
-                            let binding = Binding(
-                                get: { String(settings.chatGPTMaxToken) },
-                                set: {
-                                    if let selectionMaxToken = Int($0) {
-                                        settings.chatGPTMaxToken = model.maxToken < selectionMaxToken ? model.maxToken : selectionMaxToken
-                                    } else {
-                                        settings.chatGPTMaxToken = 0
-                                    }
+                    if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                        let binding = Binding(
+                            get: { String(settings.chatGPTMaxToken) },
+                            set: {
+                                if let selectionMaxToken = Int($0) {
+                                    settings.chatGPTMaxToken = model.maxToken < selectionMaxToken ? model.maxToken : selectionMaxToken
+                                } else {
+                                    settings.chatGPTMaxToken = 0
                                 }
-                            )
+                            }
+                        )
+                        HStack {
                             Stepper(
                                 value: $settings.chatGPTMaxToken,
                                 in: 0...model.maxToken,
