@@ -1,12 +1,13 @@
 import Foundation
 
 public extension Locale {
-    static var availableLocales: [Locale] {
-        Locale.availableIdentifiers.compactMap(Locale.init).reduce(into: []) { (locales, locale) in
-            if !locales.contains(where: { $0.languageCode == locale.languageCode }) {
-                locales.append(locale)
-            }
-        }.sorted(by: { $0.languageName < $1.languageName })
+    static var availableLocalizedLocales: [String] {
+        var localizedLocales = Locale.availableIdentifiers.compactMap {
+            Locale(identifier: $0).localizedString(forIdentifier: $0)
+        }
+        .sorted()
+        localizedLocales.insert("", at: 0)
+        return localizedLocales
     }
 
     var languageName: String {
