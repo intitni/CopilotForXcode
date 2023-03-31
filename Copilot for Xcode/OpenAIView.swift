@@ -68,6 +68,11 @@ struct OpenAIView: View {
                     }.textFieldStyle(.roundedBorder)
 
                     Picker(selection: $settings.chatGPTLanguage) {
+                        if !settings.chatGPTLanguage.isEmpty,
+                           !Locale.availableLocalizedLocales.contains(settings.chatGPTLanguage)
+                        {
+                            Text(settings.chatGPTLanguage).tag(settings.chatGPTLanguage)
+                        }
                         ForEach(Locale.availableLocalizedLocales, id: \.self) { localizedLocales in
                             Text(localizedLocales).tag(localizedLocales)
                         }
@@ -80,7 +85,9 @@ struct OpenAIView: View {
                             get: { String(settings.chatGPTMaxToken) },
                             set: {
                                 if let selectionMaxToken = Int($0) {
-                                    settings.chatGPTMaxToken = model.maxToken < selectionMaxToken ? model.maxToken : selectionMaxToken
+                                    settings.chatGPTMaxToken = model
+                                        .maxToken < selectionMaxToken ? model
+                                        .maxToken : selectionMaxToken
                                 } else {
                                     settings.chatGPTMaxToken = 0
                                 }
