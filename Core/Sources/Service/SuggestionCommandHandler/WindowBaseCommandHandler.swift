@@ -230,7 +230,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         Task {
             try? await service.send(
                 content: """
-                ```\(codeLanguage?.rawValue ?? "")
+                ```\(codeLanguage.rawValue)
                 \(removeContinuousSpaces(from: code))
                 ```
                 """,
@@ -278,7 +278,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             return """
             \(language.isEmpty ? "" : "You must always reply in \(language)")
             You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
-            ```\(codeLanguage?.rawValue ?? "")
+            ```\(codeLanguage.rawValue)
             \(removeContinuousSpaces(from: code))
             ```
             """
