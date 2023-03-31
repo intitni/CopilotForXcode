@@ -80,7 +80,7 @@ public struct UserDefaultPreferenceKeys {
     public var chatGPTEndpoint: ChatGPTEndpoint { .init() }
 
     public struct ChatGPTModel: UserDefaultPreferenceKey {
-        public let defaultValue = ""
+        public let defaultValue = Preferences.ChatGPTModel.gpt35Turbo.rawValue
         public let key = "ChatGPTModel"
     }
 

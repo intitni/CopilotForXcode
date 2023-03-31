@@ -30,63 +30,76 @@ struct OpenAIView: View {
 
                 Form {
                     HStack {
-                        Text("OpenAI API Key")
                         TextField(text: $settings.openAIAPIKey, prompt: Text("sk-*")) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
+                            Text("OpenAI API Key")
+                        }.textFieldStyle(.roundedBorder)
                         Button(action: {
                             openURL(apiKeyURL)
                         }) {
                             Image(systemName: "questionmark.circle.fill")
-                        }
-                        .buttonStyle(.plain)
+                        }.buttonStyle(.plain)
                     }
 
                     HStack {
-                        Text("ChatGPT Model")
-                        TextField(text: $settings.chatGPTModel, prompt: Text("gpt-3.5-turbo")) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-
+                        Picker(selection: $settings.chatGPTModel) {
+                            ForEach(ChatGPTModel.allCases, id: \.self) { model in
+                                Text(model.rawValue).tag(model.rawValue)
+                            }
+                        } label: {
+                            Text("ChatGPT Model")
+                        }.pickerStyle(.menu)
                         Button(action: {
                             openURL(modelURL)
                         }) {
                             Image(systemName: "questionmark.circle.fill")
+                        }.buttonStyle(.plain)
+                    }
+                    .onChange(of: settings.chatGPTModel) { newValue in
+                        if let model = ChatGPTModel(rawValue: newValue) {
+                            settings.chatGPTEndpoint = model.endpoint
                         }
-                        .buttonStyle(.plain)
                     }
 
-                    HStack {
-                        Text("ChatGPT Endpoint")
-                        TextField(
-                            text: $settings.chatGPTEndpoint,
-                            prompt: Text("https://api.openai.com/v1/chat/completions")
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-                    }
-                    
-                    HStack {
+                    TextField(
+                        text: $settings.chatGPTEndpoint,
+                        prompt: Text("https://api.openai.com/v1/chat/completions")
+                    ) {
+                        Text("ChatGPT Server")
+                    }.textFieldStyle(.roundedBorder)
+
+                    Picker(selection: $settings.chatGPTLanguage) {
+                        ForEach(Locale.availableLocalizedLocales, id: \.self) { localizedLocales in
+                            Text(localizedLocales).tag(localizedLocales)
+                        }
+                    } label: {
                         Text("Reply in Language")
-                        TextField(
-                            text: $settings.chatGPTLanguage,
-                            prompt: Text("e.g. English. Leave it blank to let the bot decide.")
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-                    }
-                    
-                    HStack {
-                        Text("Max Token")
-                        TextField(
-                            text: .init(get: {
-                                String(settings.chatGPTMaxToken)
-                            }, set: { newValue in
-                                settings.chatGPTMaxToken = Int(newValue) ?? 0
-                            })
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
+                    }.pickerStyle(.menu)
+
+                    if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                        let binding = Binding(
+                            get: { String(settings.chatGPTMaxToken) },
+                            set: {
+                                if let selectionMaxToken = Int($0) {
+                                    settings.chatGPTMaxToken = model.maxToken < selectionMaxToken ? model.maxToken : selectionMaxToken
+                                } else {
+                                    settings.chatGPTMaxToken = 0
+                                }
+                            }
+                        )
+                        HStack {
+                            Stepper(
+                                value: $settings.chatGPTMaxToken,
+                                in: 0...model.maxToken,
+                                step: 1
+                            ) {
+                                Text("Max Token")
+                            }
+                            TextField(text: binding) {
+                                EmptyView()
+                            }
+                            .labelsHidden()
+                            .textFieldStyle(.roundedBorder)
+                        }
                     }
                 }
             }
