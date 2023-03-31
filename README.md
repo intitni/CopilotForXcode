@@ -14,7 +14,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Permissions Required](#permissions-required)
 - [Installation and Setup](#installation-and-setup)
   - [Install](#install)
+  - [Enable the Extension](#enable-the-extension)
   - [Sign In GitHub Copilot](#sign-in-github-copilot)
+  - [Setting Up OpenAI API Key](#setting-up-openai-api-key)
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
@@ -58,17 +60,25 @@ Then set it up with the following steps:
 
 1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
 2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from `/usr/bin:/usr/local/bin`. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.   
-3. Enable the extension in `System Settings.app`. 
 
-    From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
+### Enable the Extension
+
+Enable the extension in `System Settings.app`. 
+
+From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
     
-    If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
+If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
 
 ### Sign In GitHub Copilot
  
-1. In the app, refresh the Copilot status (it may fail for the first time, try at least one more time). 
+1. In the host app, click GitHub Copilot to enter the GitHub Copilot account settings. 
 2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+
+### Setting Up OpenAI API Key
+
+1. In the host app, click OpenAI to enter the OpenAI account settings.
+2. Enter your api key to the text field.
 
 ### Granting Permissions to the App
 
@@ -99,8 +109,6 @@ brew upgrade --cask copilot-for-xcode
 Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
-
-If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
 
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
