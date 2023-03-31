@@ -19,6 +19,7 @@ public actor TerminalChatPlugin: ChatPlugin {
 
     public func send(content: String) async {
         delegate?.pluginDidStart(self)
+        delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
         var message = ChatMessage(id: id, role: .assistant, content: "")
@@ -87,10 +88,16 @@ public actor TerminalChatPlugin: ChatPlugin {
             }
         }
 
+        delegate?.pluginDidEndResponding(self)
         delegate?.pluginDidEnd(self)
     }
 
     public func cancel() async {
+        isCancelled = true
+        await terminal.terminate()
+    }
+    
+    public func stopResponding() async {
         isCancelled = true
         await terminal.terminate()
     }

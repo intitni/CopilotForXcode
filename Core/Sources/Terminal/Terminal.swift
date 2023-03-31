@@ -15,14 +15,18 @@ public protocol TerminalType {
         currentDirectoryPath: String,
         environment: [String: String]
     ) async throws -> String
-    
+
     func terminate() async
+    func writeInput(_ input: String) async
+    var isRunning: Bool { get }
 }
 
 public final class Terminal: TerminalType, @unchecked Sendable {
     var process: Process?
     var outputPipe: Pipe?
     var inputPipe: Pipe?
+    
+    public var isRunning: Bool { process?.isRunning ?? false }
 
     public struct TerminationError: Error {
         public let reason: Process.TerminationReason
@@ -84,13 +88,14 @@ public final class Terminal: TerminalType, @unchecked Sendable {
                 if !(self.process?.isRunning ?? false) {
                     let reason = self.process?.terminationReason ?? .exit
                     let status = self.process?.terminationStatus ?? 1
-                    if let output = (self.process?.standardOutput as? Pipe)?.fileHandleForReading.readDataToEndOfFile(),
-                       let content = String(data: output, encoding: .utf8),
-                       !content.isEmpty
+                    if let output = (self.process?.standardOutput as? Pipe)?.fileHandleForReading
+                        .readDataToEndOfFile(),
+                        let content = String(data: output, encoding: .utf8),
+                        !content.isEmpty
                     {
                         continuation?.yield(content)
                     }
-                    
+
                     if status == 0 {
                         continuation?.finish()
                     } else {
@@ -139,7 +144,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         return result
     }
 
-    func writeInput(_ input: String) {
+    public func writeInput(_ input: String) {
         guard let data = input.data(using: .utf8) else {
             return
         }
@@ -147,7 +152,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         inputPipe?.fileHandleForWriting.write(data)
         inputPipe?.fileHandleForWriting.closeFile()
     }
-    
+
     public func terminate() async {
         process?.terminate()
         process = nil
