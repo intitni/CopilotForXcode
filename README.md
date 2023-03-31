@@ -23,7 +23,8 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
 - [Limitations](#limitations)
 - [License](#license)
-- [FAQ](https://github.com/intitni/CopilotForXcode/issues/65)
+
+For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/issues/65).
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
@@ -127,6 +128,17 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 
 Chat commands are not available in comment mode.
 
+#### Chat Plugins
+
+The chat panel supports chat plugins that may not require an OpenAI API key. For example, if you need to use the `/run` plugin, you just type 
+```
+/run echo hello
+```
+
+| Command | Description |
+|:---:|---|
+| `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
+
 ## Key Bindings
 
 It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`. You can filter the list by typing `copilot` in the search bar.
@@ -164,7 +176,6 @@ fi
 - The first run of the extension will be slow. Be patient.
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
-- When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
 
 ## License 
 
