@@ -73,19 +73,16 @@ struct OpenAIView: View {
                         Text("ChatGPT Server")
                     }.textFieldStyle(.roundedBorder)
 
-                    Picker(selection: $settings.chatGPTLanguage) {
-                        if !settings.chatGPTLanguage.isEmpty,
-                           !OpenAIViewSettings.availableLocalizedLocales.contains(settings.chatGPTLanguage)
-                        {
-                            Text(settings.chatGPTLanguage).tag(settings.chatGPTLanguage)
+                    if #available(macOS 13.0, *) {
+                        LabeledContent("Reply in Language") {
+                            languagePicker
                         }
-                        Text("Auto-detected by ChatGPT").tag("")
-                        ForEach(OpenAIViewSettings.availableLocalizedLocales, id: \.self) { localizedLocales in
-                            Text(localizedLocales).tag(localizedLocales)
+                    } else {
+                        HStack {
+                            Text("Reply in Language")
+                            languagePicker
                         }
-                    } label: {
-                        Text("Reply in Language")
-                    }.pickerStyle(.menu)
+                    }
 
                     if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
                         let binding = Binding(
@@ -117,6 +114,39 @@ struct OpenAIView: View {
                     }
                 }
             }
+        }
+    }
+    
+    var languagePicker: some View {
+        Menu {
+            if !settings.chatGPTLanguage.isEmpty,
+               !OpenAIViewSettings.availableLocalizedLocales
+                .contains(settings.chatGPTLanguage)
+            {
+                Button(
+                    settings.chatGPTLanguage,
+                    action: { self.settings.chatGPTLanguage = settings.chatGPTLanguage }
+                )
+            }
+            Button(
+                "Auto-detected by ChatGPT",
+                action: { self.settings.chatGPTLanguage = "" }
+            )
+            ForEach(
+                OpenAIViewSettings.availableLocalizedLocales,
+                id: \.self
+            ) { localizedLocales in
+                Button(
+                    localizedLocales,
+                    action: { self.settings.chatGPTLanguage = localizedLocales }
+                )
+            }
+        } label: {
+            Text(
+                settings.chatGPTLanguage.isEmpty
+                ? "Auto-detected by ChatGPT"
+                : settings.chatGPTLanguage
+            )
         }
     }
 }
