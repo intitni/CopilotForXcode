@@ -6,7 +6,7 @@ public extension Locale {
             Locale(identifier: $0).localizedString(forIdentifier: $0)
         }
         .sorted()
-        localizedLocales.insert("", at: 0)
+        localizedLocales.insert("Auto-detected by ChatGPT", at: 0)
         return localizedLocales
     }
 
