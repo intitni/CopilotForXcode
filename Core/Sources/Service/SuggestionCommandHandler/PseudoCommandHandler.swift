@@ -107,7 +107,16 @@ struct PseudoCommandHandler {
                         .presentErrorMessage("Fail to set editor content.")
                 }
 
-                if let oldPosition {
+                if let cursor = result.newCursor {
+                    var range = convertCursorPositionToRange(cursor, in: result.content)
+                    if let value = AXValueCreate(.cfRange, &range) {
+                        AXUIElementSetAttributeValue(
+                            focusElement,
+                            kAXSelectedTextRangeAttribute as CFString,
+                            value
+                        )
+                    }
+                } else if let oldPosition {
                     var range = CFRange(
                         location: oldPosition.lowerBound,
                         length: 0
@@ -198,6 +207,23 @@ private extension PseudoCommandHandler {
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation
         )
+    }
+
+    // a function to convert CursorPosition(line:character:) into a Range(location:length) in given
+    // content
+    func convertCursorPositionToRange(
+        _ cursorPosition: CursorPosition,
+        in content: String
+    ) -> CFRange {
+        let lines = content.breakLines()
+        var count = 0
+        for (i, line) in lines.enumerated() {
+            if i == cursorPosition.line {
+                return CFRange(location: count + cursorPosition.character, length: 0)
+            }
+            count += line.count
+        }
+        return CFRange(location: count, length: 0)
     }
 }
 
