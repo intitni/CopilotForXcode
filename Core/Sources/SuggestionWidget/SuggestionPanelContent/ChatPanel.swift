@@ -2,7 +2,7 @@ import MarkdownUI
 import SwiftUI
 
 struct ChatPanel: View {
-    var viewModel: SuggestionPanelViewModel
+    @ObservedObject var viewModel: SuggestionPanelViewModel
     @ObservedObject var chat: ChatRoom
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
@@ -10,8 +10,12 @@ struct ChatPanel: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack {
-                ChatPanelMessages(chat: chat, inputAreaNamespace: inputAreaNamespace)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                ChatPanelMessages(
+                    chat: chat,
+                    inputAreaNamespace: inputAreaNamespace,
+                    colorScheme: viewModel.colorScheme
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 if !chat.isReceivingMessage {
                     ChatPanelInputArea(
@@ -41,6 +45,7 @@ struct ChatPanel: View {
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatRoom
     var inputAreaNamespace: Namespace.ID
+    var colorScheme: ColorScheme
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
 
     @ViewBuilder
@@ -101,6 +106,9 @@ struct ChatPanelMessages: View {
                         .markdownTheme(.gitHub.text {
                             BackgroundColor(Color.clear)
                         })
+                        .markdownCodeSyntaxHighlighter(
+                            ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                         .background(
@@ -219,6 +227,9 @@ struct ChatPanel_Preview: PreviewProvider {
             ```swift
             func foo() {}
             ```
+            ```objectivec
+            - (void)bar {}
+            ```
             """#
         ),
     ]
@@ -234,6 +245,23 @@ struct ChatPanel_Preview: PreviewProvider {
         .background(Color.contentBackground)
         .frame(width: 450, height: 500)
         .colorScheme(.dark)
+    }
+}
+
+struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
+    let brightMode: Bool
+
+    init(brightMode: Bool) {
+        self.brightMode = brightMode
+    }
+
+    func highlightCode(_ content: String, language: String?) -> Text {
+        let content = highlightedCodeBlock(
+            code: content,
+            language: language ?? "",
+            brightMode: brightMode
+        )
+        return Text(AttributedString(content))
     }
 }
 
