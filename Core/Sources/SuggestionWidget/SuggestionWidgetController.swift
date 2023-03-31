@@ -301,7 +301,7 @@ public extension SuggestionWidgetController {
             suggestionPanelViewModel.chat = chatRoom
             Task { @MainActor in  
                 // looks like we need a delay.
-                try await Task.sleep(nanoseconds: 100_000_000)
+                try await Task.sleep(nanoseconds: 150_000_000)
                 NSApplication.shared.activate(ignoringOtherApps: true)
             }
         }
