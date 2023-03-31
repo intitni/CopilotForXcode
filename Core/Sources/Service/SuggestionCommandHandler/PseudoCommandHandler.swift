@@ -139,7 +139,8 @@ private extension PseudoCommandHandler {
     func getFileContent() async
         -> (content: String, lines: [String], cursorPosition: CursorPosition)?
     {
-        guard let xcode = ActiveApplicationMonitor.activeXcode else { return nil }
+        guard let xcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         guard let focusElement = application.focusedElement,
               focusElement.description == "Source Editor"
@@ -169,23 +170,24 @@ private extension PseudoCommandHandler {
 
     @ServiceActor
     func getFilespace() async -> Filespace? {
-        guard let fileURL = await getFileURL() else { return nil }
-        for (_, workspace) in workspaces {
-            if let space = workspace.filespaces[fileURL] { return space }
-        }
-        return nil
+        guard
+            let fileURL = await getFileURL(),
+            let (_, filespace) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        else { return nil }
+        return filespace
     }
 
     @ServiceActor
     func getEditorContent() async -> EditorContent? {
         guard
             let filespace = await getFilespace(),
-            let uti = filespace.uti,
-            let tabSize = filespace.tabSize,
-            let indentSize = filespace.indentSize,
-            let usesTabsForIndentation = filespace.usesTabsForIndentation,
             let content = await getFileContent()
         else { return nil }
+        let uti = filespace.uti ?? ""
+        let tabSize = filespace.tabSize ?? 4
+        let indentSize = filespace.indentSize ?? 4
+        let usesTabsForIndentation = filespace.usesTabsForIndentation ?? false
         return .init(
             content: content.content,
             lines: content.lines,
