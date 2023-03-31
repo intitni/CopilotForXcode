@@ -2,11 +2,10 @@ import Foundation
 
 public extension Locale {
     static var availableLocalizedLocales: [String] {
-        var localizedLocales = Locale.availableIdentifiers.compactMap {
-            Locale(identifier: $0).localizedString(forIdentifier: $0)
+        let localizedLocales = Locale.isoLanguageCodes.compactMap {
+            Locale(identifier: "en-US").localizedString(forLanguageCode: $0)
         }
         .sorted()
-        localizedLocales.insert("Auto-detected by ChatGPT", at: 0)
         return localizedLocales
     }
 

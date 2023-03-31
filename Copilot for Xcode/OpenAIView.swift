@@ -5,6 +5,7 @@ import Preferences
 import SwiftUI
 
 final class OpenAIViewSettings: ObservableObject {
+    static let availableLocalizedLocales = Locale.availableLocalizedLocales
     @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
     @AppStorage(\.chatGPTModel) var chatGPTModel: String
     @AppStorage(\.chatGPTEndpoint) var chatGPTEndpoint: String
@@ -74,11 +75,12 @@ struct OpenAIView: View {
 
                     Picker(selection: $settings.chatGPTLanguage) {
                         if !settings.chatGPTLanguage.isEmpty,
-                           !Locale.availableLocalizedLocales.contains(settings.chatGPTLanguage)
+                           !OpenAIViewSettings.availableLocalizedLocales.contains(settings.chatGPTLanguage)
                         {
                             Text(settings.chatGPTLanguage).tag(settings.chatGPTLanguage)
                         }
-                        ForEach(Locale.availableLocalizedLocales, id: \.self) { localizedLocales in
+                        Text("Auto-detected by ChatGPT").tag("")
+                        ForEach(OpenAIViewSettings.availableLocalizedLocales, id: \.self) { localizedLocales in
                             Text(localizedLocales).tag(localizedLocales)
                         }
                     } label: {
