@@ -13,10 +13,6 @@ public final class ChatService: ObservableObject {
         self.chatGPTService = chatGPTService
     }
     
-    deinit {
-        print("deinit")
-    }
-
     public func send(content: String) async throws {
         // look for the prefix of content, see if there is something like /command.
         // If there is, then we need to find the plugin that can handle this command.
@@ -50,17 +46,23 @@ public final class ChatService: ObservableObject {
 }
 
 extension ChatService: ChatPluginDelegate {
-    public func pluginDidStart(_ plugin: ChatPlugin) {
+    public func pluginDidStartResponding(_ plugin: ChatPlugins.ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(true)
         }
+    }
+    
+    public func pluginDidEndResponding(_ plugin: ChatPlugins.ChatPlugin) {
+        Task {
+            await chatGPTService.markReceivingMessage(false)
+        }
+    }
+    
+    public func pluginDidStart(_ plugin: ChatPlugin) {
         runningPlugin = plugin
     }
     
     public func pluginDidEnd(_ plugin: ChatPlugin) {
-        Task {
-            await chatGPTService.markReceivingMessage(false)
-        }
         runningPlugin = nil
     }
 }
