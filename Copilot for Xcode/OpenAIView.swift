@@ -42,6 +42,11 @@ struct OpenAIView: View {
 
                     HStack {
                         Picker(selection: $settings.chatGPTModel) {
+                            if !settings.chatGPTModel.isEmpty,
+                               ChatGPTModel(rawValue: settings.chatGPTModel) == nil
+                            {
+                                Text(settings.chatGPTModel).tag(settings.chatGPTModel)
+                            }
                             ForEach(ChatGPTModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
                             }
