@@ -3,11 +3,9 @@ import Foundation
 import Highlightr
 import Splash
 import XPCShared
+import SwiftUI
 
-func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttributedString] {
-    let middleDotColor = brightMode
-        ? NSColor.black.withAlphaComponent(0.1)
-        : NSColor.white.withAlphaComponent(0.1)
+func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> NSAttributedString {
     switch language {
     case "swift":
         let plainTextColor = brightMode
@@ -47,17 +45,17 @@ func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttribu
             [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
             range: NSRange(location: 0, length: formatted.length)
         )
-        return convertToCodeLines(formatted, middleDotColor: middleDotColor)
+        return formatted
     default:
         var language = language
         if language == "objective-c" {
             language = "objectivec"
         }
-        func unhighlightedCode() -> [NSAttributedString] {
-            return convertToCodeLines(NSAttributedString(
+        func unhighlightedCode() -> NSAttributedString {
+            return NSAttributedString(
                 string: code,
                 attributes: [.foregroundColor: NSColor.white]
-            ), middleDotColor: middleDotColor)
+            )
         }
         guard let highlighter = Highlightr() else {
             return unhighlightedCode()
@@ -70,8 +68,16 @@ func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttribu
         if formatted.string == "undefined" {
             return unhighlightedCode()
         }
-        return convertToCodeLines(formatted, middleDotColor: middleDotColor)
+        return formatted
     }
+}
+
+func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttributedString] {
+    let formatted = highlightedCodeBlock(code: code, language: language, brightMode: brightMode)
+    let middleDotColor = brightMode
+        ? NSColor.black.withAlphaComponent(0.1)
+        : NSColor.white.withAlphaComponent(0.1)
+    return convertToCodeLines(formatted, middleDotColor: middleDotColor)
 }
 
 private func convertToCodeLines(

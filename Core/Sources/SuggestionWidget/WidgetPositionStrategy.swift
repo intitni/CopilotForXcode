@@ -164,10 +164,8 @@ enum UpdateLocationStrategy {
                         height: Style.panelHeight
                     )
                     let tabFrame = CGRect(
-                        x: anchorFrame.origin.x,
-                        y: alignPanelTopToAnchor
-                            ? anchorFrame.minY - Style.widgetHeight - Style.widgetPadding
-                            : anchorFrame.maxY + Style.widgetPadding,
+                        x: anchorFrame.minX - Style.widgetPadding - Style.widgetWidth,
+                        y: anchorFrame.origin.y,
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )

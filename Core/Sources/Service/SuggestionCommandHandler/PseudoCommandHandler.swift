@@ -68,13 +68,88 @@ struct PseudoCommandHandler {
             usesTabsForIndentation: false
         ))
     }
+
+    func acceptSuggestion() async {
+        if UserDefaults.shared.value(for: \.acceptSuggestionWithAccessibilityAPI) {
+            guard let xcode = ActiveApplicationMonitor.activeXcode else { return }
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            guard let focusElement = application.focusedElement,
+                  focusElement.description == "Source Editor"
+            else { return }
+            guard let (content, lines, cursorPosition) = await getFileContent() else {
+                PresentInWindowSuggestionPresenter()
+                    .presentErrorMessage("Unable to get file content.")
+                return
+            }
+            let handler = CommentBaseCommandHandler()
+            do {
+                guard let result = try await handler.acceptSuggestion(editor: .init(
+                    content: content,
+                    lines: lines,
+                    uti: "",
+                    cursorPosition: cursorPosition,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )) else { return }
+
+                let oldPosition = focusElement.selectedTextRange
+
+                let error = AXUIElementSetAttributeValue(
+                    focusElement,
+                    kAXValueAttribute as CFString,
+                    result.content as CFTypeRef
+                )
+
+                if error != AXError.success {
+                    PresentInWindowSuggestionPresenter()
+                        .presentErrorMessage("Fail to set editor content.")
+                }
+
+                if let cursor = result.newCursor {
+                    var range = convertCursorPositionToRange(cursor, in: result.content)
+                    if let value = AXValueCreate(.cfRange, &range) {
+                        AXUIElementSetAttributeValue(
+                            focusElement,
+                            kAXSelectedTextRangeAttribute as CFString,
+                            value
+                        )
+                    }
+                } else if let oldPosition {
+                    var range = CFRange(
+                        location: oldPosition.lowerBound,
+                        length: 0
+                    )
+                    if let value = AXValueCreate(.cfRange, &range) {
+                        AXUIElementSetAttributeValue(
+                            focusElement,
+                            kAXSelectedTextRangeAttribute as CFString,
+                            value
+                        )
+                    }
+                }
+
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
+        } else {
+            do {
+                try await Environment.triggerAction("Accept Suggestion")
+                return
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
+        }
+    }
 }
 
 private extension PseudoCommandHandler {
     func getFileContent() async
         -> (content: String, lines: [String], cursorPosition: CursorPosition)?
     {
-        guard let xcode = ActiveApplicationMonitor.activeXcode else { return nil }
+        guard let xcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         guard let focusElement = application.focusedElement,
               focusElement.description == "Source Editor"
@@ -104,23 +179,24 @@ private extension PseudoCommandHandler {
 
     @ServiceActor
     func getFilespace() async -> Filespace? {
-        guard let fileURL = await getFileURL() else { return nil }
-        for (_, workspace) in workspaces {
-            if let space = workspace.filespaces[fileURL] { return space }
-        }
-        return nil
+        guard
+            let fileURL = await getFileURL(),
+            let (_, filespace) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        else { return nil }
+        return filespace
     }
 
     @ServiceActor
     func getEditorContent() async -> EditorContent? {
         guard
             let filespace = await getFilespace(),
-            let uti = filespace.uti,
-            let tabSize = filespace.tabSize,
-            let indentSize = filespace.indentSize,
-            let usesTabsForIndentation = filespace.usesTabsForIndentation,
             let content = await getFileContent()
         else { return nil }
+        let uti = filespace.uti ?? ""
+        let tabSize = filespace.tabSize ?? 4
+        let indentSize = filespace.indentSize ?? 4
+        let usesTabsForIndentation = filespace.usesTabsForIndentation ?? false
         return .init(
             content: content.content,
             lines: content.lines,
@@ -131,6 +207,23 @@ private extension PseudoCommandHandler {
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation
         )
+    }
+
+    // a function to convert CursorPosition(line:character:) into a Range(location:length) in given
+    // content
+    func convertCursorPositionToRange(
+        _ cursorPosition: CursorPosition,
+        in content: String
+    ) -> CFRange {
+        let lines = content.breakLines()
+        var count = 0
+        for (i, line) in lines.enumerated() {
+            if i == cursorPosition.line {
+                return CFRange(location: count + cursorPosition.character, length: 0)
+            }
+            count += line.count
+        }
+        return CFRange(location: count, length: 0)
     }
 }
 

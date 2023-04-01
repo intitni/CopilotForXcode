@@ -33,7 +33,7 @@ public final class Logger {
         }
 
         let osLog = OSLog(subsystem: subsystem, category: category)
-        os_log("%@", log: osLog, type: osLogType, message as CVarArg)
+        os_log("%{public}@", log: osLog, type: osLogType, message as CVarArg)
     }
 
     public func debug(_ message: String) {

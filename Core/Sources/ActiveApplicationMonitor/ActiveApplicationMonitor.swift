@@ -2,7 +2,8 @@ import AppKit
 
 public final class ActiveApplicationMonitor {
     static let shared = ActiveApplicationMonitor()
-    var latestXcode: NSRunningApplication?
+    var latestXcode: NSRunningApplication? = NSWorkspace.shared.runningApplications
+        .first(where: \.isXcode)
     var activeApplication = NSWorkspace.shared.runningApplications.first(where: \.isActive) {
         didSet {
             if activeApplication?.isXcode ?? false {
@@ -10,6 +11,7 @@ public final class ActiveApplicationMonitor {
             }
         }
     }
+
     private var continuations: [UUID: AsyncStream<NSRunningApplication?>.Continuation] = [:]
 
     private init() {
@@ -40,7 +42,7 @@ public final class ActiveApplicationMonitor {
         }
         return nil
     }
-    
+
     public static var latestXcode: NSRunningApplication? { shared.latestXcode }
 
     public static func createStream() -> AsyncStream<NSRunningApplication?> {
@@ -72,7 +74,6 @@ public final class ActiveApplicationMonitor {
     }
 }
 
-extension NSRunningApplication {
-    public var isXcode: Bool { bundleIdentifier == "com.apple.dt.Xcode" }
+public extension NSRunningApplication {
+    var isXcode: Bool { bundleIdentifier == "com.apple.dt.Xcode" }
 }
-

@@ -2,6 +2,7 @@ import CopilotModel
 import CopilotService
 import Environment
 import Foundation
+import LanguageServerProtocol
 import Logger
 import OpenAIService
 import SuggestionInjector
@@ -18,6 +19,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         Task {
             do {
                 try await _presentSuggestions(editor: editor)
+            } catch let error as ServerError {
+                Logger.service.error(error)
             } catch {
                 presenter.presentError(error)
                 Logger.service.error(error)
@@ -168,7 +171,20 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
-        // not needed.
+        Task {
+            try? await prepareCache(editor: editor)
+        }
+        return nil
+    }
+
+    func prepareCache(editor: EditorContent) async throws -> UpdatedContent? {
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (_, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        filespace.uti = editor.uti
+        filespace.tabSize = editor.tabSize
+        filespace.indentSize = editor.indentSize
+        filespace.usesTabsForIndentation = editor.usesTabsForIndentation
         return nil
     }
 
@@ -195,12 +211,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
 
         let service = ChatGPTService(
             systemPrompt: """
-            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it
-            Reply in \(language.isEmpty ? "" : "in \(language)")
+            \(language.isEmpty ? "" : "You must always reply in \(language)")
+            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it.
             """,
             apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
             endpoint: endpoint.isEmpty ? nil : endpoint,
@@ -212,7 +229,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let code = editor.selectedCode(in: selection)
         Task {
             try? await service.send(
-                content: removeContinuousSpaces(from: code),
+                content: """
+                ```\(codeLanguage.rawValue)
+                \(removeContinuousSpaces(from: code))
+                ```
+                """,
                 summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
             )
         }
@@ -239,6 +260,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let code = {
             guard let selection = editor.selections.last,
@@ -249,16 +271,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let prompt = {
             if code.isEmpty {
                 return """
-                You are a senior programmer, you will answer my questions concisely \(
-                    language.isEmpty ? "" : "in \(language)"
-                )
+                \(language.isEmpty ? "" : "You must always reply in \(language)")
+                You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
                 """
             }
             return """
-            You are a senior programmer, you will answer my questions concisely in \(
-                language.isEmpty ? "" : "in \(language)"
-            ) about the code
-            ```
+            \(language.isEmpty ? "" : "You must always reply in \(language)")
+            You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
+            ```\(codeLanguage.rawValue)
             \(removeContinuousSpaces(from: code))
             ```
             """

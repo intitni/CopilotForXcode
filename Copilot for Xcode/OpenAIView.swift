@@ -5,6 +5,7 @@ import Preferences
 import SwiftUI
 
 final class OpenAIViewSettings: ObservableObject {
+    static let availableLocalizedLocales = Locale.availableLocalizedLocales
     @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
     @AppStorage(\.chatGPTModel) var chatGPTModel: String
     @AppStorage(\.chatGPTEndpoint) var chatGPTEndpoint: String
@@ -30,66 +31,122 @@ struct OpenAIView: View {
 
                 Form {
                     HStack {
-                        Text("OpenAI API Key")
                         TextField(text: $settings.openAIAPIKey, prompt: Text("sk-*")) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
+                            Text("OpenAI API Key")
+                        }.textFieldStyle(.roundedBorder)
                         Button(action: {
                             openURL(apiKeyURL)
                         }) {
                             Image(systemName: "questionmark.circle.fill")
-                        }
-                        .buttonStyle(.plain)
+                        }.buttonStyle(.plain)
                     }
 
                     HStack {
-                        Text("ChatGPT Model")
-                        TextField(text: $settings.chatGPTModel, prompt: Text("gpt-3.5-turbo")) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-
+                        Picker(selection: $settings.chatGPTModel) {
+                            if !settings.chatGPTModel.isEmpty,
+                               ChatGPTModel(rawValue: settings.chatGPTModel) == nil
+                            {
+                                Text(settings.chatGPTModel).tag(settings.chatGPTModel)
+                            }
+                            ForEach(ChatGPTModel.allCases, id: \.self) { model in
+                                Text(model.rawValue).tag(model.rawValue)
+                            }
+                        } label: {
+                            Text("ChatGPT Model")
+                        }.pickerStyle(.menu)
                         Button(action: {
                             openURL(modelURL)
                         }) {
                             Image(systemName: "questionmark.circle.fill")
+                        }.buttonStyle(.plain)
+                    }
+                    .onChange(of: settings.chatGPTModel) { newValue in
+                        if let model = ChatGPTModel(rawValue: newValue) {
+                            settings.chatGPTEndpoint = model.endpoint
                         }
-                        .buttonStyle(.plain)
                     }
 
-                    HStack {
-                        Text("ChatGPT Endpoint")
-                        TextField(
-                            text: $settings.chatGPTEndpoint,
-                            prompt: Text("https://api.openai.com/v1/chat/completions")
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
+                    TextField(
+                        text: $settings.chatGPTEndpoint,
+                        prompt: Text("https://api.openai.com/v1/chat/completions")
+                    ) {
+                        Text("ChatGPT Server")
+                    }.textFieldStyle(.roundedBorder)
+
+                    if #available(macOS 13.0, *) {
+                        LabeledContent("Reply in Language") {
+                            languagePicker
+                        }
+                    } else {
+                        HStack {
+                            Text("Reply in Language")
+                            languagePicker
+                        }
                     }
-                    
-                    HStack {
-                        Text("Reply in Language")
-                        TextField(
-                            text: $settings.chatGPTLanguage,
-                            prompt: Text("e.g. English. Leave it blank to let the bot decide.")
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
-                    }
-                    
-                    HStack {
-                        Text("Max Token")
-                        TextField(
-                            text: .init(get: {
-                                String(settings.chatGPTMaxToken)
-                            }, set: { newValue in
-                                settings.chatGPTMaxToken = Int(newValue) ?? 0
-                            })
-                        ) {
-                            EmptyView()
-                        }.textFieldStyle(.copilot)
+
+                    if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                        let binding = Binding(
+                            get: { String(settings.chatGPTMaxToken) },
+                            set: {
+                                if let selectionMaxToken = Int($0) {
+                                    settings.chatGPTMaxToken = model
+                                        .maxToken < selectionMaxToken ? model
+                                        .maxToken : selectionMaxToken
+                                } else {
+                                    settings.chatGPTMaxToken = 0
+                                }
+                            }
+                        )
+                        HStack {
+                            Stepper(
+                                value: $settings.chatGPTMaxToken,
+                                in: 0...model.maxToken,
+                                step: 1
+                            ) {
+                                Text("Max Token")
+                            }
+                            TextField(text: binding) {
+                                EmptyView()
+                            }
+                            .labelsHidden()
+                            .textFieldStyle(.roundedBorder)
+                        }
                     }
                 }
             }
+        }
+    }
+    
+    var languagePicker: some View {
+        Menu {
+            if !settings.chatGPTLanguage.isEmpty,
+               !OpenAIViewSettings.availableLocalizedLocales
+                .contains(settings.chatGPTLanguage)
+            {
+                Button(
+                    settings.chatGPTLanguage,
+                    action: { self.settings.chatGPTLanguage = settings.chatGPTLanguage }
+                )
+            }
+            Button(
+                "Auto-detected by ChatGPT",
+                action: { self.settings.chatGPTLanguage = "" }
+            )
+            ForEach(
+                OpenAIViewSettings.availableLocalizedLocales,
+                id: \.self
+            ) { localizedLocales in
+                Button(
+                    localizedLocales,
+                    action: { self.settings.chatGPTLanguage = localizedLocales }
+                )
+            }
+        } label: {
+            Text(
+                settings.chatGPTLanguage.isEmpty
+                ? "Auto-detected by ChatGPT"
+                : settings.chatGPTLanguage
+            )
         }
     }
 }

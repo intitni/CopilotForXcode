@@ -80,7 +80,7 @@ public struct UserDefaultPreferenceKeys {
     public var chatGPTEndpoint: ChatGPTEndpoint { .init() }
 
     public struct ChatGPTModel: UserDefaultPreferenceKey {
-        public let defaultValue = ""
+        public let defaultValue = Preferences.ChatGPTModel.gpt35Turbo.rawValue
         public let key = "ChatGPTModel"
     }
 
@@ -99,6 +99,15 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var chatGPTLanguage: ChatGPTLanguage { .init() }
+
+    public struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "AcceptSuggestionWithAccessibilityAPI"
+    }
+
+    public var acceptSuggestionWithAccessibilityAPI: AcceptSuggestionWithAccessibilityAPI {
+        .init()
+    }
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }

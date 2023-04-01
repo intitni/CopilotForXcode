@@ -37,8 +37,8 @@ let package = Package(
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
-        .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.0.0"),
-        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
+        .package(url: "https://github.com/intitni/swift-markdown-ui", branch: "main"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"), 
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -86,6 +86,7 @@ let package = Package(
                 "SuggestionWidget",
                 "AXExtension",
                 "Logger",
+                "ChatService",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -147,5 +148,8 @@ let package = Package(
             dependencies: ["OpenAIService"]
         ),
         .target(name: "Preferences"),
+        .target(name: "ChatPlugins", dependencies: ["OpenAIService", "Environment", "Terminal"]),
+        .target(name: "Terminal"),
+        .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
     ]
 )

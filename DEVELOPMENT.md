@@ -41,6 +41,10 @@ To run unit tests, just run test from the `Copilot for Xcode` target.
 
 For new tests, they should be added to the `TestPlan.xctestplan`.
 
+## Chat Plugins
+
+To create a chat plugin, please use the `TerminalChatPlugin` as an example. You should add your plugin to the target `ChatPlugin` and register it in `ChatService`.
+
 ## Code Style
 
 We use SwiftFormat to format the code.
