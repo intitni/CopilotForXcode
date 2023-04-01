@@ -3,12 +3,30 @@
   <channel>
     <title>Copilot for Xcode</title>
     <item>
-      <title>0.9.0</title>
+      <title>0.10.0</title>
+      <pubDate>Fri, 31 Mar 2023 23:12:28 +0800</pubDate>
+      <sparkle:version>70</sparkle:version>
+      <sparkle:shortVersionString>0.10.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.10.0
+      </sparkle:releaseNotesLink>
+      <enclosure
+        url="https://github.com/intitni/CopilotForXcode/releases/download/0.10.0/Copilot.for.Xcode.app.zip"
+        length="19323141" type="application/octet-stream"
+        sparkle:edSignature="ZZaFNR57G+EzHtYM3+xCJRSSMZXX1Leq2HKFaZBpD/lUW38z6oB4D561toB4r5M8nelfkNEJ3dLPgIUYl1qNBw==" />
+    </item>
+
+    <item>
+      <title>
+        0.9.0</title>
       <pubDate>Sat, 25 Mar 2023 23:43:42 +0800</pubDate>
       <sparkle:version>62</sparkle:version>
       <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.9.0</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.9.0
+      </sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/intitni/CopilotForXcode/releases/download/0.9.0/Copilot.for.Xcode.app.zip"
         sparkle:edSignature="VMbUoqNEeVUMhJVkz+yVljTC7m0PxQFxv1uDJnXB1AUwoe1JMTMR4kBiriul+UWMoXTeSB6Bo+1TTJDOBbToDA=="

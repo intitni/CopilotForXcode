@@ -14,7 +14,9 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Permissions Required](#permissions-required)
 - [Installation and Setup](#installation-and-setup)
   - [Install](#install)
+  - [Enable the Extension](#enable-the-extension)
   - [Sign In GitHub Copilot](#sign-in-github-copilot)
+  - [Setting Up OpenAI API Key](#setting-up-openai-api-key)
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
@@ -23,7 +25,8 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 - [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
 - [Limitations](#limitations)
 - [License](#license)
-- [FAQ](https://github.com/intitni/CopilotForXcode/issues/65)
+
+For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/issues/65).
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
@@ -57,17 +60,25 @@ Then set it up with the following steps:
 
 1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
 2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from `/usr/bin:/usr/local/bin`. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.   
-3. Enable the extension in `System Settings.app`. 
 
-    From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
+### Enable the Extension
+
+Enable the extension in `System Settings.app`. 
+
+From the Apple menu located in the top-left corner of your screen click `System Settings`. Navigate to `Privacy & Security` then toward the bottom click `Extensions`. Click `Xcode Source Editor` and tick `Copilot`.
     
-    If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
+If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
 
 ### Sign In GitHub Copilot
  
-1. In the app, refresh the Copilot status (it may fail for the first time, try at least one more time). 
+1. In the host app, click GitHub Copilot to enter the GitHub Copilot account settings. 
 2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+
+### Setting Up OpenAI API Key
+
+1. In the host app, click OpenAI to enter the OpenAI account settings.
+2. Enter your api key to the text field.
 
 ### Granting Permissions to the App
 
@@ -99,8 +110,6 @@ Alternatively, You can use the in-app updater or download the latest version man
 
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
-If you want to keep track of the new releases, you can watch the releases of this repo to get notifications about updates.
-
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
 ## Commands
@@ -126,6 +135,17 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 - Explain Selection: Open a chat window and explain the selected code.
 
 Chat commands are not available in comment mode.
+
+#### Chat Plugins
+
+The chat panel supports chat plugins that may not require an OpenAI API key. For example, if you need to use the `/run` plugin, you just type 
+```
+/run echo hello
+```
+
+| Command | Description |
+|:---:|---|
+| `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
 
 ## Key Bindings
 
@@ -164,7 +184,6 @@ fi
 - The first run of the extension will be slow. Be patient.
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
-- When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
 
 ## License 
 
