@@ -209,7 +209,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             try? await chat.chatGPTService.send(
                 content: """
                 ```\(codeLanguage.rawValue)
-                \(removeContinuousSpaces(from: code))
+                \(code)
                 ```
                 """,
                 summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
@@ -257,7 +257,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             \(language.isEmpty ? "" : "You must always reply in \(language)")
             You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
             ```\(codeLanguage.rawValue)
-            \(removeContinuousSpaces(from: code))
+            \(code)
             ```
             """
         }()
@@ -281,8 +281,4 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         presenter.presentChatGPTConversation(fileURL: fileURL)
     }
-}
-
-func removeContinuousSpaces(from string: String) -> String {
-    return string.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
 }
