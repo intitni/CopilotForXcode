@@ -54,7 +54,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             editor: editor
         )
 
-        if let suggestion = filespace.presentingSuggestion {
+        if filespace.presentingSuggestion != nil {
             presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
@@ -80,7 +80,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectNextSuggestion(forFileAt: fileURL)
 
-        if let suggestion = filespace.presentingSuggestion {
+        if filespace.presentingSuggestion != nil {
             presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
@@ -106,7 +106,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.selectPreviousSuggestion(forFileAt: fileURL)
 
-        if let suggestion = filespace.presentingSuggestion {
+        if filespace.presentingSuggestion != nil {
             presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
@@ -190,8 +190,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (_, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
-        let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
@@ -239,8 +237,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (_, filespace) = try await Workspace
             .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
-        let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
