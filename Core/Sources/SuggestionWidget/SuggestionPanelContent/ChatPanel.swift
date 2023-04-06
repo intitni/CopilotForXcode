@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ChatPanel: View {
     @ObservedObject var viewModel: SuggestionPanelViewModel
-    @ObservedObject var chat: ChatRoom
+    @ObservedObject var chat: ChatProvider
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
 
@@ -30,7 +30,7 @@ struct ChatPanel: View {
 }
 
 struct ChatPanelToolbar: View {
-    let chat: ChatRoom
+    let chat: ChatProvider
 
     var body: some View {
         HStack {
@@ -52,7 +52,7 @@ struct ChatPanelToolbar: View {
 }
 
 struct ChatPanelMessages: View {
-    @ObservedObject var chat: ChatRoom
+    @ObservedObject var chat: ChatProvider
     var inputAreaNamespace: Namespace.ID
     var colorScheme: ColorScheme
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
@@ -174,7 +174,7 @@ struct ChatPanelMessages: View {
 }
 
 struct ChatPanelInputArea: View {
-    @ObservedObject var chat: ChatRoom
+    @ObservedObject var chat: ChatProvider
     var inputAreaNamespace: Namespace.ID
     @Binding var typedMessage: String
     @FocusState var isInputAreaFocused: Bool

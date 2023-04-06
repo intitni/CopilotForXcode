@@ -33,7 +33,7 @@ final class SuggestionPanelViewModel: ObservableObject {
         }
     }
 
-    @Published var chat: ChatRoom? {
+    @Published var chat: ChatProvider? {
         didSet {
             adjustActiveTabAndShowHideIfNeeded(tab: .chat)
         }
@@ -57,7 +57,7 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     public init(
         content: Content? = nil,
-        chat: ChatRoom? = nil,
+        chat: ChatProvider? = nil,
         isPanelDisplayed: Bool = false,
         activeTab: ActiveTab = .suggestion,
         colorScheme: ColorScheme = .dark,
