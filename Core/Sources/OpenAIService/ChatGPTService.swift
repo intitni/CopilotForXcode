@@ -1,7 +1,10 @@
 import AsyncAlgorithms
 import Foundation
+import Preferences
 
-public protocol ChatGPTServiceType {
+public protocol ChatGPTServiceType: ObservableObject {
+    var isReceivingMessage: Bool { get async }
+    var history: [ChatMessage] { get async }
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
     func stopReceivingMessage() async
     func clearHistory() async
@@ -49,13 +52,31 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
     }
 }
 
-public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
-    public var temperature: Double
-    public var model: String
-    public var endpoint: String
-    public var apiKey: String
+public actor ChatGPTService: ChatGPTServiceType {
     public var systemPrompt: String
-    public var maxToken: Int
+    public var temperature: Double
+
+    public var model: String {
+        let value = UserDefaults.shared.value(for: \.chatGPTModel)
+        if value.isEmpty { return "gpt-3.5-turbo" }
+        return value
+    }
+
+    public var endpoint: String {
+        let value = UserDefaults.shared.value(for: \.chatGPTEndpoint)
+        if value.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+
+        return value
+    }
+
+    public var apiKey: String {
+        UserDefaults.shared.value(for: \.openAIAPIKey)
+    }
+
+    public var maxToken: Int {
+        UserDefaults.shared.value(for: \.chatGPTMaxToken)
+    }
+
     public var history: [ChatMessage] = [] {
         didSet { objectWillChange.send() }
     }
@@ -69,19 +90,11 @@ public actor ChatGPTService: ChatGPTServiceType, ObservableObject {
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
 
     public init(
-        systemPrompt: String,
-        apiKey: String,
-        endpoint: String? = nil,
-        model: String? = nil,
-        temperature: Double = 1,
-        maxToken: Int = 2048
+        systemPrompt: String = "",
+        temperature: Double = 1
     ) {
         self.systemPrompt = systemPrompt
-        self.apiKey = apiKey
-        self.model = model ?? "gpt-3.5-turbo"
         self.temperature = temperature
-        self.maxToken = maxToken
-        self.endpoint = endpoint ?? "https://api.openai.com/v1/chat/completions"
     }
 
     public func send(

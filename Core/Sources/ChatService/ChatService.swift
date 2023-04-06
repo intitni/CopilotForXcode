@@ -1,4 +1,5 @@
 import ChatPlugins
+import Combine
 import Foundation
 import OpenAIService
 
@@ -8,11 +9,16 @@ public final class ChatService: ObservableObject {
         TerminalChatPlugin.self
     )
     var runningPlugin: ChatPlugin?
+    var cancellable = Set<AnyCancellable>()
 
-    public init(chatGPTService: ChatGPTServiceType) {
+    public init<T: ChatGPTServiceType>(chatGPTService: T) {
         self.chatGPTService = chatGPTService
+
+        chatGPTService.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &cancellable)
     }
-    
+
     public func send(content: String) async throws {
         // look for the prefix of content, see if there is something like /command.
         // If there is, then we need to find the plugin that can handle this command.
@@ -43,26 +49,30 @@ public final class ChatService: ObservableObject {
         }
         await chatGPTService.clearHistory()
     }
+
+    public func mutateSystemPrompt(_ newPrompt: String) async {
+        await chatGPTService.mutateSystemPrompt(newPrompt)
+    }
 }
 
 extension ChatService: ChatPluginDelegate {
-    public func pluginDidStartResponding(_ plugin: ChatPlugins.ChatPlugin) {
+    public func pluginDidStartResponding(_: ChatPlugins.ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(true)
         }
     }
-    
-    public func pluginDidEndResponding(_ plugin: ChatPlugins.ChatPlugin) {
+
+    public func pluginDidEndResponding(_: ChatPlugins.ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(false)
         }
     }
-    
+
     public func pluginDidStart(_ plugin: ChatPlugin) {
         runningPlugin = plugin
     }
-    
-    public func pluginDidEnd(_ plugin: ChatPlugin) {
+
+    public func pluginDidEnd(_: ChatPlugin) {
         runningPlugin = nil
     }
 }
