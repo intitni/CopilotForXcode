@@ -73,6 +73,8 @@ struct ChatPanelMessages: View {
     var body: some View {
         ScrollView {
             vstack {
+                let r = 6 as Double
+                
                 Spacer()
 
                 if chat.isReceivingMessage {
@@ -87,10 +89,10 @@ struct ChatPanelMessages: View {
                         .padding(8)
                         .background(
                             .regularMaterial,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: r, style: .continuous)
                         )
                         .overlay {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            RoundedRectangle(cornerRadius: r, style: .continuous)
                                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                         }
                     }
@@ -110,6 +112,7 @@ struct ChatPanelMessages: View {
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
                         .text
+                    
 
                     if message.isUser {
                         Markdown(text)
@@ -123,17 +126,18 @@ struct ChatPanelMessages: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tl: 12, tr: 12, bl: 12)
+                                RoundedCorners(tl: r, tr: r, bl: r)
                                     .fill(Color.userChatContentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: 12, tr: 12, bl: 12)
+                                RoundedCorners(tl: r, tr: r, bl: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
                             .padding(.trailing, 4)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
+                            .shadow(color: .black.opacity(0.1), radius: 2)
                     } else {
                         Markdown(text)
                             .textSelection(.enabled)
@@ -146,17 +150,18 @@ struct ChatPanelMessages: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tl: 12, tr: 12, br: 12)
+                                RoundedCorners(tl: r, tr: r, br: r)
                                     .fill(Color.contentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: 12, tr: 12, br: 12)
+                                RoundedCorners(tl: r, tr: r, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading, 4)
                             .padding(.trailing)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
+                            .shadow(color: .black.opacity(0.1), radius: 2)
                     }
                 }
 
@@ -233,11 +238,11 @@ struct ChatPanelInputArea: View {
             }
             .frame(maxWidth: .infinity)
             .background {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(Color(nsColor: .controlBackgroundColor))
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .stroke(Color(nsColor: .controlColor), lineWidth: 1)
             }
         }
