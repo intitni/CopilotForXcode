@@ -3,23 +3,18 @@ import SwiftUI
 
 @MainActor
 final class SuggestionPanelViewModel: ObservableObject {
-    struct Suggestion: Equatable {
-        var startLineIndex: Int
-        var code: [NSAttributedString]
-        var suggestionCount: Int
-        var currentSuggestionIndex: Int
-
-        static let empty = Suggestion(
-            startLineIndex: 0,
-            code: [],
-            suggestionCount: 0,
-            currentSuggestionIndex: 0
-        )
-    }
-
-    enum Content: Equatable {
-        case suggestion(Suggestion)
+    enum Content {
+        case suggestion(SuggestionProvider)
         case error(String)
+
+        var contentHash: String {
+            switch self {
+            case let .error(e):
+                return "error: \(e)"
+            case let .suggestion(provider):
+                return "suggestion: \(provider.code.hashValue)"
+            }
+        }
     }
 
     enum ActiveTab {
@@ -49,10 +44,6 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
 
-    var onAcceptButtonTapped: (() -> Void)?
-    var onRejectButtonTapped: (() -> Void)?
-    var onPreviousButtonTapped: (() -> Void)?
-    var onNextButtonTapped: (() -> Void)?
     var onActiveTabChanged: ((ActiveTab) -> Void)?
 
     public init(
@@ -61,10 +52,6 @@ final class SuggestionPanelViewModel: ObservableObject {
         isPanelDisplayed: Bool = false,
         activeTab: ActiveTab = .suggestion,
         colorScheme: ColorScheme = .dark,
-        onAcceptButtonTapped: (() -> Void)? = nil,
-        onRejectButtonTapped: (() -> Void)? = nil,
-        onPreviousButtonTapped: (() -> Void)? = nil,
-        onNextButtonTapped: (() -> Void)? = nil,
         onActiveTabChanged: ((ActiveTab) -> Void)? = nil
     ) {
         self.content = content
@@ -72,10 +59,6 @@ final class SuggestionPanelViewModel: ObservableObject {
         self.isPanelDisplayed = isPanelDisplayed
         self.activeTab = activeTab
         self.colorScheme = colorScheme
-        self.onAcceptButtonTapped = onAcceptButtonTapped
-        self.onRejectButtonTapped = onRejectButtonTapped
-        self.onPreviousButtonTapped = onPreviousButtonTapped
-        self.onNextButtonTapped = onNextButtonTapped
         self.onActiveTabChanged = onActiveTabChanged
     }
 
@@ -127,10 +110,7 @@ struct SuggestionPanelView: View {
                         ZStack(alignment: .topLeading) {
                             switch content {
                             case let .suggestion(suggestion):
-                                CodeBlockSuggestionPanel(
-                                    viewModel: viewModel,
-                                    suggestion: suggestion
-                                )
+                                CodeBlockSuggestionPanel(suggestion: suggestion)
                             case let .error(description):
                                 ErrorPanel(viewModel: viewModel, description: description)
                             }
@@ -148,7 +128,7 @@ struct SuggestionPanelView: View {
                             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                             .fixedSize(horizontal: false, vertical: true)
                             .allowsHitTesting(viewModel.isPanelDisplayed)
-                            .preferredColorScheme(viewModel.colorScheme) 
+                            .preferredColorScheme(viewModel.colorScheme)
                     }
                 }
             }
@@ -165,7 +145,7 @@ struct SuggestionPanelView: View {
             guard viewModel.content != nil || viewModel.chat != nil else { return 0 }
             return 1
         }())
-        .animation(.easeInOut(duration: 0.2), value: viewModel.content)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.content?.contentHash)
         .animation(.easeInOut(duration: 0.2), value: viewModel.chat)
         .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
@@ -194,136 +174,6 @@ struct CommandButtonStyle: ButtonStyle {
 }
 
 // MARK: - Previews
-
-struct SuggestionPanelView_Dark_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
-                startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-                    ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                        Text(viewModel.suggestion[index])
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .multilineTextAlignment(.leading)
-                    }
-                    """,
-                    language: "swift",
-                    brightMode: false
-                ),
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            isPanelDisplayed: true,
-            colorScheme: .dark
-        ))
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
-struct SuggestionPanelView_Bright_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
-                startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-                    ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                        Text(viewModel.suggestion[index])
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .multilineTextAlignment(.leading)
-                    }
-                    """,
-                    language: "swift",
-                    brightMode: true
-                ),
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            isPanelDisplayed: true,
-            colorScheme: .light
-        ))
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
-struct SuggestionPanelView_Dark_Objc_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
-                startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    - (void)addSubview:(UIView *)view {
-                        [self addSubview:view];
-                    }
-                    """,
-                    language: "objective-c",
-                    brightMode: false
-                ),
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            isPanelDisplayed: true,
-            colorScheme: .dark
-        ))
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
-struct SuggestionPanelView_Bright_Objc_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
-                startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    - (void)addSubview:(UIView *)view {
-                        [self addSubview:view];
-                    }
-                    """,
-                    language: "objective-c",
-                    brightMode: true
-                ),
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            isPanelDisplayed: true,
-            colorScheme: .light
-        ))
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
 
 struct SuggestionPanelView_Error_Preview: PreviewProvider {
     static var previews: some View {
@@ -355,17 +205,14 @@ struct SuggestionPanelView_Chat_Preview: PreviewProvider {
 struct SuggestionPanelView_Both_DisplayingChat_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
+            content: .suggestion(SuggestionProvider(
+                code: """
+                - (void)addSubview:(UIView *)view {
+                    [self addSubview:view];
+                }
+                """,
+                language: "objective-c",
                 startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    - (void)addSubview:(UIView *)view {
-                        [self addSubview:view];
-                    }
-                    """,
-                    language: "objective-c",
-                    brightMode: true
-                ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
             )),
@@ -394,17 +241,14 @@ struct SuggestionPanelView_Both_DisplayingChat_Preview: PreviewProvider {
 struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
-            content: .suggestion(.init(
+            content: .suggestion(SuggestionProvider(
+                code: """
+                - (void)addSubview:(UIView *)view {
+                    [self addSubview:view];
+                }
+                """,
+                language: "objective-c",
                 startLineIndex: 8,
-                code: highlighted(
-                    code: """
-                    - (void)addSubview:(UIView *)view {
-                        [self addSubview:view];
-                    }
-                    """,
-                    language: "objective-c",
-                    brightMode: false
-                ),
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
             )),

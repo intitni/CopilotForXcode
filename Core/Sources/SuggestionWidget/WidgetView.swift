@@ -27,7 +27,7 @@ struct WidgetView: View {
                 let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
                 let empty = panelViewModel.content == nil && panelViewModel.chat == nil
-                
+
                 ZStack {
                     Circle()
                         .stroke(
@@ -66,7 +66,7 @@ struct WidgetView: View {
                 }
             }
             .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
-            .onChange(of: panelViewModel.content) { _ in refreshRing() }
+            .onChange(of: panelViewModel.content?.contentHash) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
@@ -111,9 +111,9 @@ struct WidgetView_Preview: PreviewProvider {
             WidgetView(
                 viewModel: .init(isProcessing: false),
                 panelViewModel: .init(
-                    content: .suggestion(.init(
+                    content: .suggestion(SuggestionProvider(
+                        code: "Hello",
                         startLineIndex: 0,
-                        code: [.init(string: "Hello")],
                         suggestionCount: 0,
                         currentSuggestionIndex: 0
                     ))
