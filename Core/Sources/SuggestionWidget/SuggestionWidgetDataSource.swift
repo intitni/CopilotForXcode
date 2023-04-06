@@ -1,12 +1,12 @@
 import Foundation
 
 public protocol SuggestionWidgetDataSource {
-    func suggestionForFile(at path: URL) -> (SuggestionProvider)?
-    func chatForFile(at path: URL) -> ChatProvider?
+    func suggestionForFile(at url: URL) async -> (SuggestionProvider)?
+    func chatForFile(at url: URL) async -> ChatProvider?
 }
 
 struct MockWidgetDataSource: SuggestionWidgetDataSource {
-    func suggestionForFile(at path: URL) -> (SuggestionProvider)? {
+    func suggestionForFile(at url: URL) async -> (SuggestionProvider)? {
         return SuggestionProvider(
             code: """
             func test() {
@@ -22,7 +22,7 @@ struct MockWidgetDataSource: SuggestionWidgetDataSource {
         )
     }
 
-    func chatForFile(at path: URL) -> ChatProvider? {
+    func chatForFile(at url: URL) async -> ChatProvider? {
         return nil
     }
 }
