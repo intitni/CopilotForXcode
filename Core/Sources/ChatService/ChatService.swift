@@ -3,7 +3,7 @@ import Foundation
 import OpenAIService
 
 public final class ChatService: ObservableObject {
-    let chatGPTService: ChatGPTServiceType
+    public let chatGPTService: any ChatGPTServiceType
     let plugins = registerPlugins(
         TerminalChatPlugin.self
     )
