@@ -35,7 +35,7 @@ public class RealtimeSuggestionController {
 
             if let app = ActiveApplicationMonitor.activeXcode {
                 await self?.handleXcodeChanged(app)
-                await startHIDObservation(by: 1)
+                await self?.startHIDObservation(by: 1)
             }
             var previousApp = ActiveApplicationMonitor.activeXcode
             for await app in ActiveApplicationMonitor.createStream() {

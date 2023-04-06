@@ -60,7 +60,7 @@ public struct UpdatedContent: Codable {
 
 func selectedCode(in selection: EditorContent.Selection, for lines: [String]) -> String {
     let startPosition = selection.start
-    var endPosition = CursorPosition(
+    let endPosition = CursorPosition(
         line: selection.end.line,
         character: selection.end.character - 1
     )
