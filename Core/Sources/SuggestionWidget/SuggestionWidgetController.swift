@@ -73,7 +73,7 @@ public final class SuggestionWidgetController {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.hasShadow = false
+        it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )

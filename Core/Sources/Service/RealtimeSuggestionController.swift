@@ -48,7 +48,7 @@ public class RealtimeSuggestionController {
                 }
 
                 #warning(
-                    "TOOD: Is it possible to get rid of hid event observation with only AXObserver?"
+                    "TODO: Is it possible to get rid of hid event observation with only AXObserver?"
                 )
                 if ActiveApplicationMonitor.activeXcode != nil {
                     await startHIDObservation(by: 1)
