@@ -169,8 +169,6 @@ struct SuggestionPanelView: View {
         .animation(.easeInOut(duration: 0.2), value: viewModel.chat)
         .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
-        .shadow(color: .black.opacity(0.1), radius: 2)
-        .padding(2)
         .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
     }
 }
