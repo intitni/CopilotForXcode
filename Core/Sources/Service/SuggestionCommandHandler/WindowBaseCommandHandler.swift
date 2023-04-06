@@ -1,3 +1,4 @@
+import ChatService
 import CopilotModel
 import CopilotService
 import Environment
@@ -54,14 +55,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         )
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(
-                suggestion,
-                lines: editor.lines,
-                language: filespace.language,
-                fileURL: fileURL,
-                currentSuggestionIndex: filespace.suggestionIndex,
-                suggestionCount: filespace.suggestions.count
-            )
+            presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
@@ -87,14 +81,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         workspace.selectNextSuggestion(forFileAt: fileURL)
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(
-                suggestion,
-                lines: editor.lines,
-                language: filespace.language,
-                fileURL: fileURL,
-                currentSuggestionIndex: filespace.suggestionIndex,
-                suggestionCount: filespace.suggestions.count
-            )
+            presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
@@ -120,14 +107,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         workspace.selectPreviousSuggestion(forFileAt: fileURL)
 
         if let suggestion = filespace.presentingSuggestion {
-            presenter.presentSuggestion(
-                suggestion,
-                lines: editor.lines,
-                language: filespace.language,
-                fileURL: fileURL,
-                currentSuggestionIndex: filespace.suggestionIndex,
-                suggestionCount: filespace.suggestions.count
-            )
+            presenter.presentSuggestion(fileURL: fileURL)
         } else {
             presenter.discardSuggestion(fileURL: fileURL)
         }
@@ -208,27 +188,27 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
+        let (_, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
 
-        let service = ChatGPTService(
-            systemPrompt: """
+        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
+        filespace.chatService = chat
+
+        await chat.mutateSystemPrompt(
+            """
             \(language.isEmpty ? "" : "You must always reply in \(language)")
             You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it.
-            """,
-            apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
-            endpoint: endpoint.isEmpty ? nil : endpoint,
-            model: model.isEmpty ? nil : model,
-            temperature: 1,
-            maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
+            """
         )
 
         let code = editor.selectedCode(in: selection)
         Task {
-            try? await service.send(
+            try? await chat.chatGPTService.send(
                 content: """
                 ```\(codeLanguage.rawValue)
                 \(removeContinuousSpaces(from: code))
@@ -238,7 +218,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             )
         }
 
-        presenter.presentChatGPTConversation(service, fileURL: fileURL)
+        presenter.presentChatGPTConversation(fileURL: fileURL)
     }
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
@@ -257,6 +237,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
+        let (_, filespace) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let endpoint = UserDefaults.shared.value(for: \.chatGPTEndpoint)
         let model = UserDefaults.shared.value(for: \.chatGPTModel)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
@@ -284,18 +266,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             """
         }()
 
-        let service = ChatGPTService(
-            systemPrompt: prompt,
-            apiKey: UserDefaults.shared.value(for: \.openAIAPIKey),
-            endpoint: endpoint.isEmpty ? nil : endpoint,
-            model: model.isEmpty ? nil : model,
-            temperature: 1,
-            maxToken: UserDefaults.shared.value(for: \.chatGPTMaxToken)
-        )
+        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
+        filespace.chatService = chat
+
+        await chat.mutateSystemPrompt(prompt)
 
         Task {
             if !code.isEmpty, let selection = editor.selections.last {
-                await service.mutateHistory { history in
+                await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
                         role: .user,
                         content: "",
@@ -305,7 +283,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             }
         }
 
-        presenter.presentChatGPTConversation(service, fileURL: fileURL)
+        presenter.presentChatGPTConversation(fileURL: fileURL)
     }
 }
 
