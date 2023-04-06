@@ -4,6 +4,8 @@ import SuggestionWidget
 
 final class WidgetDataSource: SuggestionWidgetDataSource {
     static let shared = WidgetDataSource()
+    
+    var globalChat: ChatService? = nil
 
     private init() {}
 
@@ -49,6 +51,19 @@ final class WidgetDataSource: SuggestionWidgetDataSource {
     }
 
     func chatForFile(at url: URL) async -> ChatProvider? {
+        let useGlobalChat = UserDefaults.standard.value(for: \.useGlobalChat)
+        if useGlobalChat, let globalChat {
+            return .init(
+                service: globalChat,
+                fileURL: url,
+                onCloseChat: { [weak self] in
+                    Task { @ServiceActor [weak self] in
+                        self?.globalChat = nil
+                    }
+                }
+            )
+        }
+        
         for workspace in await workspaces.values {
             if let filespace = await workspace.filespaces[url],
                let service = await filespace.chatService

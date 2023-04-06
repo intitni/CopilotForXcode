@@ -194,8 +194,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
 
-        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
-        filespace.chatService = chat
+        let chat = createChatServiceIfNeeded(filespace: filespace)
 
         await chat.mutateSystemPrompt(
             """
@@ -262,8 +261,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             """
         }()
 
-        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
-        filespace.chatService = chat
+        let chat = createChatServiceIfNeeded(filespace: filespace)
 
         await chat.mutateSystemPrompt(prompt)
 
@@ -280,5 +278,21 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         }
 
         presenter.presentChatGPTConversation(fileURL: fileURL)
+    }
+}
+
+extension SuggestionCommandHandler {
+    @ServiceActor
+    func createChatServiceIfNeeded(filespace: Filespace) -> ChatService {
+        let chat: ChatService
+        if UserDefaults.shared.value(for: \.useGlobalChat) {
+            chat = WidgetDataSource.shared.globalChat
+                ?? ChatService(chatGPTService: ChatGPTService())
+            WidgetDataSource.shared.globalChat = chat
+        } else {
+            chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
+            filespace.chatService = chat
+        }
+        return chat
     }
 }

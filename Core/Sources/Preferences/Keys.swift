@@ -109,6 +109,13 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    public struct UseGlobalChat: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "UseGlobalChat"
+    }
+
+    public var useGlobalChat: UseGlobalChat { .init() }
+
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }
 
