@@ -1,3 +1,4 @@
+import ChatService
 import CopilotModel
 import CopilotService
 import Environment
@@ -37,6 +38,8 @@ final class Filespace {
     var isExpired: Bool {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
     }
+
+    var chatService: ChatService? = nil
 
     init(fileURL: URL) {
         self.fileURL = fileURL
