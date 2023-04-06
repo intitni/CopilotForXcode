@@ -2,10 +2,15 @@ import AppKit
 import Foundation
 import Highlightr
 import Splash
-import XPCShared
 import SwiftUI
+import XPCShared
 
-func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> NSAttributedString {
+func highlightedCodeBlock(
+    code: String,
+    language: String,
+    brightMode: Bool,
+    fontSize: Double
+) -> NSAttributedString {
     switch language {
     case "swift":
         let plainTextColor = brightMode
@@ -42,7 +47,7 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
             )
         let formatted = NSMutableAttributedString(attributedString: highlighter.highlight(code))
         formatted.addAttributes(
-            [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
+            [.font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)],
             range: NSRange(location: 0, length: formatted.length)
         )
         return formatted
@@ -54,14 +59,17 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
         func unhighlightedCode() -> NSAttributedString {
             return NSAttributedString(
                 string: code,
-                attributes: [.foregroundColor: NSColor.white]
+                attributes: [
+                    .foregroundColor: brightMode ? NSColor.black : NSColor.white,
+                    .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+                ]
             )
         }
         guard let highlighter = Highlightr() else {
             return unhighlightedCode()
         }
         highlighter.setTheme(to: brightMode ? "xcode" : "atom-one-dark")
-        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
+        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: fontSize, weight: .regular))
         guard let formatted = highlighter.highlight(code, as: language) else {
             return unhighlightedCode()
         }
@@ -73,7 +81,12 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
 }
 
 func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttributedString] {
-    let formatted = highlightedCodeBlock(code: code, language: language, brightMode: brightMode)
+    let formatted = highlightedCodeBlock(
+        code: code,
+        language: language,
+        brightMode: brightMode,
+        fontSize: 13
+    )
     let middleDotColor = brightMode
         ? NSColor.black.withAlphaComponent(0.1)
         : NSColor.white.withAlphaComponent(0.1)
