@@ -1,6 +1,6 @@
 import Foundation
 
-public final class ChatRoom: ObservableObject, Equatable {
+public final class ChatProvider: ObservableObject, Equatable {
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
     public var onMessageSend: (String) -> Void
@@ -24,7 +24,7 @@ public final class ChatRoom: ObservableObject, Equatable {
         self.onClose = onClose
     }
 
-    public static func == (lhs: ChatRoom, rhs: ChatRoom) -> Bool {
+    public static func == (lhs: ChatProvider, rhs: ChatProvider) -> Bool {
         lhs.history == rhs.history && lhs.isReceivingMessage == rhs.isReceivingMessage
     }
     

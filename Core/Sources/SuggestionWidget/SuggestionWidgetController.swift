@@ -93,41 +93,11 @@ public final class SuggestionWidgetController {
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
-    private var suggestionForFiles: [URL: Suggestion] = [:]
-    private var chatForFiles: [URL: ChatRoom] = [:]
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
 
-    public var onAcceptButtonTapped: (() -> Void)? {
-        get { suggestionPanelViewModel.onAcceptButtonTapped }
-        set { suggestionPanelViewModel.onAcceptButtonTapped = newValue }
-    }
-
-    public var onRejectButtonTapped: (() -> Void)? {
-        get { suggestionPanelViewModel.onRejectButtonTapped }
-        set { suggestionPanelViewModel.onRejectButtonTapped = newValue }
-    }
-
-    public var onPreviousButtonTapped: (() -> Void)? {
-        get { suggestionPanelViewModel.onPreviousButtonTapped }
-        set { suggestionPanelViewModel.onPreviousButtonTapped = newValue }
-    }
-
-    public var onNextButtonTapped: (() -> Void)? {
-        get { suggestionPanelViewModel.onNextButtonTapped }
-        set { suggestionPanelViewModel.onNextButtonTapped = newValue }
-    }
-
-    enum Suggestion {
-        case code(
-            String,
-            language: String,
-            startLineIndex: Int,
-            currentSuggestionIndex: Int,
-            suggestionCount: Int
-        )
-    }
-
+    public var dataSource: SuggestionWidgetDataSource?
+   
     public nonisolated init() {
         #warning(
             "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
@@ -194,7 +164,7 @@ public final class SuggestionWidgetController {
                 }()
                 self.suggestionPanelViewModel.colorScheme = self.colorScheme
                 Task {
-                    await self.updateSuggestionsForActiveEditor()
+                    await self.updateContentForActiveEditor()
                 }
             }
 
@@ -248,43 +218,20 @@ public final class SuggestionWidgetController {
 // MARK: - Handle Events
 
 public extension SuggestionWidgetController {
-    func suggestCode(
-        _ code: String,
-        language: String,
-        startLineIndex: Int,
-        fileURL: URL,
-        currentSuggestionIndex: Int,
-        suggestionCount: Int
-    ) {
-        if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.content = .suggestion(.init(
-                startLineIndex: startLineIndex,
-                code: highlighted(
-                    code: code,
-                    language: language,
-                    brightMode: colorScheme == .light
-                ),
-                suggestionCount: suggestionCount,
-                currentSuggestionIndex: currentSuggestionIndex
-            ))
-        }
-
+    func suggestCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
-        suggestionForFiles[fileURL] = .code(
-            code,
-            language: language,
-            startLineIndex: startLineIndex,
-            currentSuggestionIndex: currentSuggestionIndex,
-            suggestionCount: suggestionCount
-        )
+        Task {
+            if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
+                suggestionPanelViewModel.content = .suggestion(suggestion)
+            }
+        }
     }
 
     func discardSuggestion(fileURL: URL) {
-        suggestionForFiles[fileURL] = nil
-        if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.content = nil
-        }
         widgetViewModel.isProcessing = false
+        Task {
+            await updateContentForActiveEditor(fileURL: fileURL)
+        }
     }
 
     func markAsProcessing(_ isProcessing: Bool) {
@@ -296,22 +243,26 @@ public extension SuggestionWidgetController {
         widgetViewModel.isProcessing = false
     }
 
-    func presentChatRoom(_ chatRoom: ChatRoom, fileURL: URL) {
-        if fileURL == currentFileURL || currentFileURL == nil {
-            suggestionPanelViewModel.chat = chatRoom
-            Task { @MainActor in  
-                // looks like we need a delay.
-                try await Task.sleep(nanoseconds: 150_000_000)
-                NSApplication.shared.activate(ignoringOtherApps: true)
+    func presentChatRoom(fileURL: URL) {
+        widgetViewModel.isProcessing = false
+        Task {
+            if let chat = await dataSource?.chatForFile(at: fileURL) {
+                suggestionPanelViewModel.chat = chat
+                
+                Task { @MainActor in
+                    // looks like we need a delay.
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
             }
         }
-        widgetViewModel.isProcessing = false
-        chatForFiles[fileURL] = chatRoom
     }
 
     func closeChatRoom(fileURL: URL) {
-        suggestionPanelViewModel.chat = nil
-        chatForFiles[fileURL] = nil
+        widgetViewModel.isProcessing = false
+        Task {
+            await updateContentForActiveEditor(fileURL: fileURL)
+        }
     }
 }
 
@@ -356,7 +307,7 @@ extension SuggestionWidgetController {
                     }
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
-                    await updateSuggestionsForActiveEditor(fileURL: fileURL)
+                    await updateContentForActiveEditor(fileURL: fileURL)
                 }
             }
         }
@@ -467,7 +418,7 @@ extension SuggestionWidgetController {
         hide()
     }
 
-    private func updateSuggestionsForActiveEditor(fileURL: URL? = nil) async {
+    private func updateContentForActiveEditor(fileURL: URL? = nil) async {
         guard let fileURL = await {
             if let fileURL { return fileURL }
             return try? await Environment.fetchCurrentFileURL()
@@ -477,31 +428,13 @@ extension SuggestionWidgetController {
             return
         }
 
-        if let suggestion = suggestionForFiles[fileURL] {
-            switch suggestion {
-            case let .code(
-                code,
-                language,
-                startLineIndex,
-                currentSuggestionIndex,
-                suggestionCount
-            ):
-                suggestionPanelViewModel.content = .suggestion(.init(
-                    startLineIndex: startLineIndex,
-                    code: highlighted(
-                        code: code,
-                        language: language,
-                        brightMode: colorScheme == .light
-                    ),
-                    suggestionCount: suggestionCount,
-                    currentSuggestionIndex: currentSuggestionIndex
-                ))
-            }
+        if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
+            suggestionPanelViewModel.content = .suggestion(suggestion)
         } else {
             suggestionPanelViewModel.content = nil
         }
 
-        if let chat = chatForFiles[fileURL] {
+        if let chat = await dataSource?.chatForFile(at: fileURL) {
             suggestionPanelViewModel.chat = chat
         } else {
             suggestionPanelViewModel.chat = nil
