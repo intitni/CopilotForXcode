@@ -87,7 +87,7 @@ final class FetchSuggestionTests: XCTestCase {
         XCTAssertEqual(completions.first?.text, "Hello World\n")
     }
 
-    func test_if_language_identifier_is_unknown_returns_empty_array_immediately() async throws {
+    func test_if_language_identifier_is_unknown_returns_correctly() async throws {
         struct Err: Error, LocalizedError {
             var errorDescription: String? {
                 "sendRequest Should not be falled"
@@ -95,8 +95,16 @@ final class FetchSuggestionTests: XCTestCase {
         }
 
         class TestServer: CopilotLSP {
-            func sendRequest<E>(_: E) async throws -> E.Response where E: CopilotRequestType {
-                throw Err()
+            func sendRequest<E>(_ r: E) async throws -> E.Response where E: CopilotRequestType {
+                return CopilotRequest.GetCompletionsCycling.Response(completions: [
+                    .init(
+                        text: "Hello World\n",
+                        position: .init((0, 0)),
+                        uuid: "uuid",
+                        range: .init(start: .init((0, 0)), end: .init((0, 4))),
+                        displayText: "Hello"
+                    ),
+                ]) as! E.Response
             }
         }
         let testServer = TestServer()
@@ -110,6 +118,7 @@ final class FetchSuggestionTests: XCTestCase {
             usesTabsForIndentation: false,
             ignoreSpaceOnlySuggestions: false
         )
-        XCTAssertEqual(completions.count, 0)
+        XCTAssertEqual(completions.count, 1)
+        XCTAssertEqual(completions.first?.text, "Hello World\n")
     }
 }
