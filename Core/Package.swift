@@ -140,6 +140,7 @@ let package = Package(
             name: "OpenAIService",
             dependencies: [
                 "Logger",
+                "Preferences",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),

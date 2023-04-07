@@ -34,7 +34,7 @@ struct MockCompletionStreamAPI_Success: CompletionStreamAPI {
 
 final class ChatGPTServiceTests: XCTestCase {
     func test_success() async throws {
-        let service = ChatGPTService(systemPrompt: "system", apiKey: "Key")
+        let service = ChatGPTService()
         var apiKey = ""
         var idCounter = 0
         await service.changeUUIDGenerator {
