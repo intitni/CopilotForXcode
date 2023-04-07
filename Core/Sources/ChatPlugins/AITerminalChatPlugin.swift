@@ -120,7 +120,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
         let d = """
         Check if the given content is a phrase or sentence that considered a confirmation to run a command.
 
-        For example: "Yes", "Confirm", "True", "Please run it". It can be in any language.
+        For example: "Yes", "Confirm", "True", "Run it". It can be in any language.
         """
 
         let result = try await callAIFunction(function: f, args: [content], description: d)
