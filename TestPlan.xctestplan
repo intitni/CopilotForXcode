@@ -56,6 +56,13 @@
         "identifier" : "OpenAIServiceTests",
         "name" : "OpenAIServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "SuggestionWidgetTests",
+        "name" : "SuggestionWidgetTests"
+      }
     }
   ],
   "version" : 1

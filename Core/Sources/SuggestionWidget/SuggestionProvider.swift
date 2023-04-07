@@ -11,22 +11,26 @@ public final class SuggestionProvider: ObservableObject {
     @Published public var startLineIndex: Int = 0
     @Published public var suggestionCount: Int = 0
     @Published public var currentSuggestionIndex: Int = 0
+    @Published public var commonPrecedingSpaceCount = 0
     
     private var colorScheme: ColorScheme = .light
     private var highlightedCode: [NSAttributedString]? = nil
+    
     func highlightedCode(colorScheme: ColorScheme) -> [NSAttributedString] {
         if colorScheme != self.colorScheme { highlightedCode = nil }
         self.colorScheme = colorScheme
         if let highlightedCode { return highlightedCode }
-        let new = highlighted(
+        let (new, spaceCount) = highlighted(
             code: code,
             language: language,
-            brightMode: colorScheme != .dark
+            brightMode: colorScheme != .dark,
+            droppingLeadingSpaces: true
         )
         highlightedCode = new
+        commonPrecedingSpaceCount = spaceCount
         return new
     }
-
+    
     public var onSelectPreviousSuggestionTapped: () -> Void
     public var onSelectNextSuggestionTapped: () -> Void
     public var onRejectSuggestionTapped: () -> Void

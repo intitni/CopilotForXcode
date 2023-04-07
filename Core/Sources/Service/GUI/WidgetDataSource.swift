@@ -18,6 +18,7 @@ final class WidgetDataSource {
         if useGlobalChat {
             chat = globalChat ?? ChatService(chatGPTService: ChatGPTService())
             globalChat = chat
+            
         } else {
             chat = chats[url] ?? ChatService(chatGPTService: ChatGPTService())
             chats[url] = chat
