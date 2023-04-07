@@ -19,7 +19,7 @@ struct CodeBlock: View {
                         .multilineTextAlignment(.leading)
                         .lineSpacing(4)
                         .overlay(alignment: .topLeading) {
-                            if index == 0 {
+                            if index == 0, suggestion.commonPrecedingSpaceCount > 0 {
                                 Text("\(suggestion.commonPrecedingSpaceCount + 1)")
                                     .padding(.top, -12)
                                     .font(.footnote)

@@ -5,17 +5,19 @@ public final class SuggestionProvider: ObservableObject {
     @Published public var code: String = "" {
         didSet { highlightedCode = nil }
     }
+
     @Published public var language: String = "" {
         didSet { highlightedCode = nil }
     }
+
     @Published public var startLineIndex: Int = 0
     @Published public var suggestionCount: Int = 0
     @Published public var currentSuggestionIndex: Int = 0
     @Published public var commonPrecedingSpaceCount = 0
-    
+
     private var colorScheme: ColorScheme = .light
-    private var highlightedCode: [NSAttributedString]? = nil
-    
+    private var highlightedCode: [NSAttributedString]?
+
     func highlightedCode(colorScheme: ColorScheme) -> [NSAttributedString] {
         if colorScheme != self.colorScheme { highlightedCode = nil }
         self.colorScheme = colorScheme
@@ -24,7 +26,8 @@ public final class SuggestionProvider: ObservableObject {
             code: code,
             language: language,
             brightMode: colorScheme != .dark,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: UserDefaults.shared
+                .value(for: \.hideCommonPrecedingSpacesInSuggestion)
         )
         highlightedCode = new
         Task { @MainActor in
@@ -32,7 +35,7 @@ public final class SuggestionProvider: ObservableObject {
         }
         return new
     }
-    
+
     public var onSelectPreviousSuggestionTapped: () -> Void
     public var onSelectNextSuggestionTapped: () -> Void
     public var onRejectSuggestionTapped: () -> Void

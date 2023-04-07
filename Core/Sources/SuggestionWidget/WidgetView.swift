@@ -93,6 +93,7 @@ struct WidgetContextMenu: View {
     @AppStorage(\.useGlobalChat) var useGlobalChat
     @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
     @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
+    @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
 
     var body: some View {
         Group {
@@ -119,6 +120,15 @@ struct WidgetContextMenu: View {
             }, label: {
                 Text("Accept Suggestion with Accessibility API")
                 if acceptSuggestionWithAccessibilityAPI {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Button(action: {
+                hideCommonPrecedingSpacesInSuggestion.toggle()
+            }, label: {
+                Text("Hide Common Preceding Spaces in Suggestion")
+                if hideCommonPrecedingSpacesInSuggestion {
                     Image(systemName: "checkmark")
                 }
             })

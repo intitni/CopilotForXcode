@@ -116,6 +116,15 @@ public struct UserDefaultPreferenceKeys {
 
     public var useGlobalChat: UseGlobalChat { .init() }
 
+    public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "HideCommonPrecedingSpacesInSuggestion"
+    }
+
+    public var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
+        .init()
+    }
+
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }
 
