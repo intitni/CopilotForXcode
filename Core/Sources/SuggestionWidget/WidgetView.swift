@@ -71,6 +71,8 @@ struct WidgetView: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
                 }
+            }.contextMenu {
+                WidgetContextMenu()
             }
     }
 
@@ -82,6 +84,51 @@ struct WidgetView: View {
             } else {
                 let empty = panelViewModel.content == nil && panelViewModel.chat == nil
                 processingProgress = empty ? 0 : 1
+            }
+        }
+    }
+}
+
+struct WidgetContextMenu: View {
+    @AppStorage(\.useGlobalChat) var useGlobalChat
+    @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
+    @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
+
+    var body: some View {
+        Group {
+            Button(action: {
+                useGlobalChat.toggle()
+            }) {
+                Text("Use Global Chat")
+                if useGlobalChat {
+                    Image(systemName: "checkmark")
+                }
+            }
+
+            Button(action: {
+                realtimeSuggestionToggle.toggle()
+            }) {
+                Text("Realtime Suggestion")
+                if realtimeSuggestionToggle {
+                    Image(systemName: "checkmark")
+                }
+            }
+            
+            Button(action: {
+                acceptSuggestionWithAccessibilityAPI.toggle()
+            }, label: {
+                Text("Accept Suggestion with Accessibility API")
+                if acceptSuggestionWithAccessibilityAPI {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Divider()
+            
+            Button(action: {
+                exit(0)
+            }) {
+                Text("Quit")
             }
         }
     }
