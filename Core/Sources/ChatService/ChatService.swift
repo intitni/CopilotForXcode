@@ -56,7 +56,16 @@ public final class ChatService: ObservableObject {
                 await runningPlugin.send(content: content)
             } else if let pluginType = plugins[command] {
                 let plugin = pluginType.init(inside: chatGPTService, delegate: self)
-                await plugin.send(content: String(content.dropFirst(command.count + 1)))
+                if #available(macOS 13.0, *) {
+                    await plugin.send(
+                        content: String(
+                            content.dropFirst(command.count + 1)
+                                .trimmingPrefix(while: { $0 == " " })
+                        )
+                    )
+                } else {
+                    await plugin.send(content: String(content.dropFirst(command.count + 1)))
+                }
             } else {
                 _ = try await chatGPTService.send(content: content, summary: nil)
             }
@@ -106,7 +115,7 @@ extension ChatService: ChatPluginDelegate {
     public func pluginDidEnd(_: ChatPlugin) {
         runningPlugin = nil
     }
-    
+
     public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
         let plugin = type.init(inside: chatGPTService, delegate: self)
         Task {
