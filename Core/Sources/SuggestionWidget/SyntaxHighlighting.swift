@@ -115,7 +115,7 @@ func convertToCodeLines(
 
         // use regex to replace all spaces to a middle dot
         do {
-            let regex = try NSRegularExpression(pattern: #"\s*"#, options: [])
+            let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
             let result = regex.matches(
                 in: mutable.string,
                 range: NSRange(location: 0, length: mutable.mutableString.length)
