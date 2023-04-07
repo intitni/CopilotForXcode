@@ -8,7 +8,7 @@ struct CodeBlock: View {
         VStack(spacing: 4) {
             let code = suggestion.highlightedCode(colorScheme: colorScheme)
             ForEach(0..<code.endIndex, id: \.self) { index in
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(index + suggestion.startLineIndex + 1)")
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.secondary)
@@ -32,7 +32,8 @@ struct CodeBlock: View {
         }
         .foregroundColor(.white)
         .font(.system(size: 12, design: .monospaced))
-        .padding()
+        .padding(.leading, 4)
+        .padding([.trailing, .top, .bottom])
     }
 }
 
