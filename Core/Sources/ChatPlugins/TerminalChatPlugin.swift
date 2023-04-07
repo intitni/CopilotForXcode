@@ -43,9 +43,12 @@ public actor TerminalChatPlugin: ChatPlugin {
 
             if isCancelled { throw CancellationError() }
 
+            let env = ProcessInfo.processInfo.environment
+            let shell = env["SHELL"] ?? "/bin/bash"
+            
             let output = terminal.streamCommand(
-                "/bin/bash",
-                arguments: ["-c", content],
+                shell,
+                arguments: ["-l", "-c", content],
                 currentDirectoryPath: projectURL?.path ?? fileURL.path,
                 environment: [
                     "PROJECT_ROOT": projectURL?.path ?? fileURL.path,
