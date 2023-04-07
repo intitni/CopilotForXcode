@@ -27,7 +27,30 @@ public final class ChatService: ObservableObject {
         let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
         if let match = matches.first {
             let command = String(content[Range(match.range(at: 1), in: content)!])
-            if let pluginType = plugins[command] {
+            if command == "/exit" {
+                if let plugin = runningPlugin {
+                    _ = await chatGPTService.mutateHistory { history in
+                        history.append(.init(
+                            role: .user,
+                            content: "",
+                            summary: "Exit plugin \(plugin.name)."
+                        ))
+                        history.append(.init(
+                            role: .system,
+                            content: "",
+                            summary: "Exited plugin \(plugin.name)."
+                        ))
+                    }
+                } else {
+                    _ = await chatGPTService.mutateHistory { history in
+                        history.append(.init(
+                            role: .system,
+                            content: "",
+                            summary: "No plugin running."
+                        ))
+                    }
+                }
+            } else if let pluginType = plugins[command] {
                 let plugin = pluginType.init(inside: chatGPTService, delegate: self)
                 await plugin.send(content: String(content.dropFirst(command.count + 1)))
             }
