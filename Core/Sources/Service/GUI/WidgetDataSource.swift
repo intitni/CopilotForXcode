@@ -11,8 +11,9 @@ final class WidgetDataSource {
 
     private init() {}
 
+    @discardableResult
     func createChatIfNeeded(for url: URL) -> ChatService {
-        let useGlobalChat = UserDefaults.standard.value(for: \.useGlobalChat)
+        let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
         let chat: ChatService
         if useGlobalChat {
             chat = globalChat ?? ChatService(chatGPTService: ChatGPTService())
@@ -68,30 +69,31 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
     }
 
     func chatForFile(at url: URL) async -> ChatProvider? {
-        let useGlobalChat = UserDefaults.standard.value(for: \.useGlobalChat)
-        if useGlobalChat, let globalChat {
-            return .init(
-                service: globalChat,
-                fileURL: url,
-                onCloseChat: { [weak self] in
-                    Task { @ServiceActor [weak self] in
-                        self?.globalChat = nil
-                    }
-                }
-            )
-        }
-
-        if let service = chats[url] {
-            return .init(
+        let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
+        let buildChatProvider = { (service: ChatService) in
+            return ChatProvider(
                 service: service,
                 fileURL: url,
                 onCloseChat: { [weak self] in
-                    Task { @ServiceActor [weak self] in
-                        self?.chats[url] = nil
-                    }
+                    self?.globalChat = nil
+                },
+                onSwitchContext: { [weak self] in
+                    UserDefaults.shared.set(!useGlobalChat, for: \.useGlobalChat)
+                    self?.createChatIfNeeded(for: url)
+                    let presenter = PresentInWindowSuggestionPresenter()
+                    presenter.presentChatRoom(fileURL: url)
                 }
             )
         }
+        
+        if useGlobalChat, let globalChat {
+            return buildChatProvider(globalChat)
+        }
+
+        if let service = chats[url] {
+            return buildChatProvider(service)
+        }
+        
         return nil
     }
 }

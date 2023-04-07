@@ -213,7 +213,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             )
         }
 
-        presenter.presentChatGPTConversation(fileURL: fileURL)
+        presenter.presentChatRoom(fileURL: fileURL)
     }
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
@@ -273,6 +273,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             }
         }
 
-        presenter.presentChatGPTConversation(fileURL: fileURL)
+        presenter.presentChatRoom(fileURL: fileURL)
     }
 }

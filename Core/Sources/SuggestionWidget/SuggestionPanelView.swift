@@ -124,7 +124,7 @@ struct SuggestionPanelView: View {
 
                 if let chat = viewModel.chat {
                     if case .chat = viewModel.activeTab {
-                        ChatPanel(viewModel: viewModel, chat: chat)
+                        ChatPanel(chat: chat)
                             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                             .fixedSize(horizontal: false, vertical: true)
                             .allowsHitTesting(viewModel.isPanelDisplayed)
@@ -146,7 +146,6 @@ struct SuggestionPanelView: View {
             return 1
         }())
         .animation(.easeInOut(duration: 0.2), value: viewModel.content?.contentHash)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.chat)
         .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
         .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)

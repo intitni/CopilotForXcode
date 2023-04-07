@@ -4,7 +4,12 @@ import OpenAIService
 import SuggestionWidget
 
 extension ChatProvider {
-    convenience init(service: ChatService, fileURL: URL, onCloseChat: @escaping () -> Void) {
+    convenience init(
+        service: ChatService,
+        fileURL: URL,
+        onCloseChat: @escaping () -> Void,
+        onSwitchContext: @escaping () -> Void
+    ) {
         self.init()
         let cancellable = service.objectWillChange.sink { [weak self] in
             guard let self else { return }
@@ -19,7 +24,7 @@ extension ChatProvider {
                 self.isReceivingMessage = await service.chatGPTService.isReceivingMessage
             }
         }
-        
+
         service.objectWillChange.send()
 
         onMessageSend = { [cancellable] message in
@@ -50,6 +55,10 @@ extension ChatProvider {
                 PresentInWindowSuggestionPresenter().closeChatRoom(fileURL: fileURL)
                 onCloseChat()
             }
+        }
+        
+        self.onSwitchContext = {
+            onSwitchContext()
         }
     }
 }
