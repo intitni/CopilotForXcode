@@ -312,6 +312,9 @@ extension SuggestionWidgetController {
                 }
 
                 self.updateWindowLocation(animated: false)
+                panelWindow.orderFront(nil)
+                widgetWindow.orderFront(nil)
+                tabWindow.orderFront(nil)
             }
         }
     }
@@ -436,7 +439,7 @@ extension SuggestionWidgetController {
         } else {
             suggestionPanelViewModel.chat = nil
         }
-        
+
         if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
             suggestionPanelViewModel.content = .suggestion(suggestion)
         } else {
