@@ -1,14 +1,31 @@
 import ChatService
 import Foundation
+import OpenAIService
 import SuggestionWidget
 
-final class WidgetDataSource: SuggestionWidgetDataSource {
+final class WidgetDataSource {
     static let shared = WidgetDataSource()
-    
-    var globalChat: ChatService? = nil
+
+    var globalChat: ChatService?
+    var chats = [URL: ChatService]()
 
     private init() {}
 
+    func createChatIfNeeded(for url: URL) -> ChatService {
+        let useGlobalChat = UserDefaults.standard.value(for: \.useGlobalChat)
+        let chat: ChatService
+        if useGlobalChat {
+            chat = globalChat ?? ChatService(chatGPTService: ChatGPTService())
+            globalChat = chat
+        } else {
+            chat = chats[url] ?? ChatService(chatGPTService: ChatGPTService())
+            chats[url] = chat
+        }
+        return chat
+    }
+}
+
+extension WidgetDataSource: SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider? {
         for workspace in await workspaces.values {
             if let filespace = await workspace.filespaces[url],
@@ -63,30 +80,17 @@ final class WidgetDataSource: SuggestionWidgetDataSource {
                 }
             )
         }
-        
-        for workspace in await workspaces.values {
-            if let filespace = await workspace.filespaces[url],
-               let service = await filespace.chatService
-            {
-                return .init(
-                    service: service,
-                    fileURL: url,
-                    onCloseChat: { [weak filespace] in
-                        Task { @ServiceActor [weak filespace] in
-                            filespace?.chatService = nil
-                        }
-                    }
-                )
-            }
-        }
-        return nil
-    }
 
-    func chatServiceForFile(at url: URL) async -> ChatService? {
-        for workspace in await workspaces.values {
-            if let filespace = await workspace.filespaces[url] {
-                return await filespace.chatService
-            }
+        if let service = chats[url] {
+            return .init(
+                service: service,
+                fileURL: url,
+                onCloseChat: { [weak self] in
+                    Task { @ServiceActor [weak self] in
+                        self?.chats[url] = nil
+                    }
+                }
+            )
         }
         return nil
     }

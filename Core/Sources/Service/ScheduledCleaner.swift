@@ -2,7 +2,7 @@ import Foundation
 
 public final class ScheduledCleaner {
     public init() {
-        // Occasionally cleanup workspaces.
+        // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
                 try await Task.sleep(nanoseconds: 8 * 60 * 60 * 1_000_000_000)
@@ -10,7 +10,15 @@ public final class ScheduledCleaner {
                     if workspace.isExpired {
                         workspaces[url] = nil
                     } else {
-                        workspaces[url]?.cleanUp()
+                        // cleanup chats for unused files
+                        let filespaces = workspace.filespaces
+                        for (url, filespace) in filespaces {
+                            if filespace.isExpired {
+                                WidgetDataSource.shared.chats[url] = nil
+                            }
+                        }
+                        // cleanup workspace
+                        workspace.cleanUp()
                     }
                 }
             }

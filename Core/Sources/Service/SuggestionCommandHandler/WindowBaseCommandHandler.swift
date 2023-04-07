@@ -188,13 +188,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (_, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
 
-        let chat = createChatServiceIfNeeded(filespace: filespace)
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
         await chat.mutateSystemPrompt(
             """
@@ -234,8 +232,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (_, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
@@ -261,7 +257,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             """
         }()
 
-        let chat = createChatServiceIfNeeded(filespace: filespace)
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
         await chat.mutateSystemPrompt(prompt)
 
@@ -278,21 +274,5 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         }
 
         presenter.presentChatGPTConversation(fileURL: fileURL)
-    }
-}
-
-extension SuggestionCommandHandler {
-    @ServiceActor
-    func createChatServiceIfNeeded(filespace: Filespace) -> ChatService {
-        let chat: ChatService
-        if UserDefaults.shared.value(for: \.useGlobalChat) {
-            chat = WidgetDataSource.shared.globalChat
-                ?? ChatService(chatGPTService: ChatGPTService())
-            WidgetDataSource.shared.globalChat = chat
-        } else {
-            chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
-            filespace.chatService = chat
-        }
-        return chat
     }
 }
