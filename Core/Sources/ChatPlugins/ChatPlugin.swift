@@ -17,4 +17,5 @@ public protocol ChatPluginDelegate: AnyObject {
     func pluginDidEnd(_ plugin: ChatPlugin)
     func pluginDidStartResponding(_ plugin: ChatPlugin)
     func pluginDidEndResponding(_ plugin: ChatPlugin)
+    func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent: String)
 }

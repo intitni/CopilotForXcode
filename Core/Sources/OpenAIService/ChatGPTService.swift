@@ -172,6 +172,18 @@ public actor ChatGPTService: ChatGPTServiceType {
             }
         }
     }
+    
+    public func sendAndWait(
+        content: String,
+        summary: String? = nil
+    ) async throws -> String {
+        let stream = try await send(content: content, summary: summary)
+        var content = ""
+        for try await fragment in stream {
+            content.append(fragment)
+        }
+        return content
+    }
 
     public func stopReceivingMessage() {
         cancelTask?()

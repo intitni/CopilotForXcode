@@ -6,7 +6,8 @@ import OpenAIService
 public final class ChatService: ObservableObject {
     public let chatGPTService: any ChatGPTServiceType
     let plugins = registerPlugins(
-        TerminalChatPlugin.self
+        TerminalChatPlugin.self,
+        AITerminalChatPlugin.self
     )
     var runningPlugin: ChatPlugin?
     var cancellable = Set<AnyCancellable>()
@@ -27,8 +28,9 @@ public final class ChatService: ObservableObject {
         let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
         if let match = matches.first {
             let command = String(content[Range(match.range(at: 1), in: content)!])
-            if command == "/exit" {
+            if command == "exit" {
                 if let plugin = runningPlugin {
+                    runningPlugin = nil
                     _ = await chatGPTService.mutateHistory { history in
                         history.append(.init(
                             role: .user,
@@ -50,10 +52,16 @@ public final class ChatService: ObservableObject {
                         ))
                     }
                 }
+            } else if let runningPlugin {
+                await runningPlugin.send(content: content)
             } else if let pluginType = plugins[command] {
                 let plugin = pluginType.init(inside: chatGPTService, delegate: self)
                 await plugin.send(content: String(content.dropFirst(command.count + 1)))
+            } else {
+                _ = try await chatGPTService.send(content: content, summary: nil)
             }
+        } else if let runningPlugin {
+            await runningPlugin.send(content: content)
         } else {
             _ = try await chatGPTService.send(content: content, summary: nil)
         }
@@ -61,7 +69,7 @@ public final class ChatService: ObservableObject {
 
     public func stopReceivingMessage() async {
         if let runningPlugin {
-            await runningPlugin.cancel()
+            await runningPlugin.stopResponding()
         }
         await chatGPTService.stopReceivingMessage()
     }
@@ -97,6 +105,13 @@ extension ChatService: ChatPluginDelegate {
 
     public func pluginDidEnd(_: ChatPlugin) {
         runningPlugin = nil
+    }
+    
+    public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
+        let plugin = type.init(inside: chatGPTService, delegate: self)
+        Task {
+            await plugin.send(content: content)
+        }
     }
 }
 
