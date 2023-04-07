@@ -67,13 +67,11 @@ final class SuggestionPanelViewModel: ObservableObject {
         case .suggestion:
             if content != nil {
                 activeTab = .suggestion
-                isPanelDisplayed = true
                 return
             }
         case .chat:
             if chat != nil {
                 activeTab = .chat
-                isPanelDisplayed = true
                 return
             }
         }
@@ -88,7 +86,6 @@ final class SuggestionPanelViewModel: ObservableObject {
             return
         }
 
-        isPanelDisplayed = false
         activeTab = .suggestion
     }
 }

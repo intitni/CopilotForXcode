@@ -224,6 +224,7 @@ public extension SuggestionWidgetController {
         Task {
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
+                suggestionPanelViewModel.isPanelDisplayed = true
             }
         }
     }
@@ -241,6 +242,7 @@ public extension SuggestionWidgetController {
 
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
+        suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
     }
 
@@ -249,6 +251,7 @@ public extension SuggestionWidgetController {
         Task {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 suggestionPanelViewModel.chat = chat
+                suggestionPanelViewModel.isPanelDisplayed = true
 
                 Task { @MainActor in
                     // looks like we need a delay.
