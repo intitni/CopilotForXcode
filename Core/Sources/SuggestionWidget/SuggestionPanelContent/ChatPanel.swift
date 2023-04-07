@@ -2,7 +2,7 @@ import MarkdownUI
 import SwiftUI
 
 struct ChatPanel: View {
-    @ObservedObject var chat: ChatProvider
+    let chat: ChatProvider
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
 
@@ -21,7 +21,6 @@ struct ChatPanel: View {
                 typedMessage: $typedMessage
             )
         }
-        .animation(.linear(duration: 0.2), value: chat.isReceivingMessage)
         .background(.regularMaterial)
         .xcodeStyleFrame()
     }
@@ -140,7 +139,7 @@ struct ChatPanelMessages: View {
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
-                            .padding(.trailing, 4)
+                            .padding(.trailing, 8)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
@@ -164,7 +163,7 @@ struct ChatPanelMessages: View {
                                 RoundedCorners(tr: r, bl: r * 1.5, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
-                            .padding(.leading, 4)
+                            .padding(.leading, 8)
                             .padding(.trailing)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
