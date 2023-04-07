@@ -2,10 +2,10 @@ import XCTest
 @testable import OpenAIService
 
 final class ChatGPTServiceFieldTests: XCTestCase {
+    let skip = true
     func test_calling_the_api() async throws {
         let service = ChatGPTService()
-
-        let skip = true
+        
         if skip { return }
         
         do {
