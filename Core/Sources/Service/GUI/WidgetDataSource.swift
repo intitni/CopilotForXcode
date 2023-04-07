@@ -71,13 +71,20 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
     func chatForFile(at url: URL) async -> ChatProvider? {
         let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
         let buildChatProvider = { (service: ChatService) in
-            return ChatProvider(
+            ChatProvider(
                 service: service,
                 fileURL: url,
                 onCloseChat: { [weak self] in
-                    self?.globalChat = nil
+                    if UserDefaults.shared.value(for: \.useGlobalChat) {
+                        self?.globalChat = nil
+                    } else {
+                        self?.chats[url] = nil
+                    }
+                    let presenter = PresentInWindowSuggestionPresenter()
+                    presenter.closeChatRoom(fileURL: url)
                 },
                 onSwitchContext: { [weak self] in
+                    let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
                     UserDefaults.shared.set(!useGlobalChat, for: \.useGlobalChat)
                     self?.createChatIfNeeded(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()
@@ -85,15 +92,17 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                 }
             )
         }
-        
-        if useGlobalChat, let globalChat {
-            return buildChatProvider(globalChat)
+
+        if useGlobalChat {
+            if let globalChat {
+                return buildChatProvider(globalChat)
+            }
+        } else {
+            if let service = chats[url] {
+                return buildChatProvider(service)
+            }
         }
 
-        if let service = chats[url] {
-            return buildChatProvider(service)
-        }
-        
         return nil
     }
 }

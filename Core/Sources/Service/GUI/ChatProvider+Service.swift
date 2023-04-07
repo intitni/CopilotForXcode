@@ -52,7 +52,6 @@ extension ChatProvider {
         onClose = {
             Task {
                 await service.stopReceivingMessage()
-                PresentInWindowSuggestionPresenter().closeChatRoom(fileURL: fileURL)
                 onCloseChat()
             }
         }
