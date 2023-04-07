@@ -103,13 +103,13 @@ func convertToCodeLines(
         // remove leading spaces
         if commonLeadingSpaceCount > 0 {
             let leadingSpaces = String(repeating: " ", count: commonLeadingSpaceCount)
-            if isEmptyLine(mutable.string) {
-                mutable.mutableString.setString("")
-            } else if mutable.string.hasPrefix(leadingSpaces) {
+            if mutable.string.hasPrefix(leadingSpaces) {
                 mutable.replaceCharacters(
                     in: NSRange(location: 0, length: commonLeadingSpaceCount),
                     with: ""
                 )
+            } else if isEmptyLine(mutable.string) {
+                mutable.mutableString.setString("")
             }
         }
 
