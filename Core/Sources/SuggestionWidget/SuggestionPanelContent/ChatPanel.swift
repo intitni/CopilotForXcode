@@ -129,14 +129,14 @@ struct ChatPanelMessages: View {
                             .markdownCodeSyntaxHighlighter(
                                 ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
                             )
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(alignment: .trailing)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, tr: r, bl: r)
+                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
                                     .fill(Color.userChatContentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, tr: r, bl: r)
+                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
@@ -144,6 +144,7 @@ struct ChatPanelMessages: View {
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     } else {
                         Markdown(text)
                             .textSelection(.enabled)
@@ -153,14 +154,14 @@ struct ChatPanelMessages: View {
                             .markdownCodeSyntaxHighlighter(
                                 ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
                             )
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, tr: r, br: r)
+                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
                                     .fill(Color.contentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, tr: r, br: r)
+                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading, 4)
@@ -168,6 +169,7 @@ struct ChatPanelMessages: View {
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 
