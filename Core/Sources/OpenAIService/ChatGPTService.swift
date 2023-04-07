@@ -207,14 +207,16 @@ extension ChatGPTService {
     }
 
     func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {
-        if history.count > 5 {
-            return [.init(role: .system, content: systemPrompt)] +
-                history[history.endIndex - 5..<history.endIndex].map {
-                    .init(role: $0.role, content: $0.content)
-                }
+        var all: [CompletionRequestBody.Message] = []
+        var count = 0
+        for message in history.reversed() {
+            if count >= 5 { break }
+            if message.content.isEmpty { continue }
+            all.append(.init(role: message.role, content: message.content))
+            count += 1
         }
-        return [.init(role: .system, content: systemPrompt)] + history.map {
-            .init(role: $0.role, content: $0.content)
-        }
+        
+        all.append(.init(role: .system, content: systemPrompt))
+        return all.reversed()
     }
 }
