@@ -209,7 +209,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 \(code)
                 ```
                 """,
-                summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
+                summary: "Explain selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
             )
         }
 
@@ -267,7 +267,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     history.append(.init(
                         role: .user,
                         content: "",
-                        summary: "Chat about selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             }
