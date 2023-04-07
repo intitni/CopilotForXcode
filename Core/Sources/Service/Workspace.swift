@@ -39,8 +39,6 @@ final class Filespace {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
     }
 
-    var chatService: ChatService? = nil
-
     init(fileURL: URL) {
         self.fileURL = fileURL
     }

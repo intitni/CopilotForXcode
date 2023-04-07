@@ -48,7 +48,7 @@ struct PresentInWindowSuggestionPresenter {
         }
     }
 
-    func presentChatGPTConversation(fileURL: URL) {
+    func presentChatRoom(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.presentChatRoom(fileURL: fileURL)

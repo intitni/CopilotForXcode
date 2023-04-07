@@ -88,8 +88,8 @@ final class SuggestionPanelViewModel: ObservableObject {
             return
         }
 
-        activeTab = .suggestion
         isPanelDisplayed = false
+        activeTab = .suggestion
     }
 }
 
@@ -118,17 +118,15 @@ struct SuggestionPanelView: View {
                         .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                         .fixedSize(horizontal: false, vertical: true)
                         .allowsHitTesting(viewModel.isPanelDisplayed)
-                        .preferredColorScheme(viewModel.colorScheme)
                     }
                 }
 
                 if let chat = viewModel.chat {
                     if case .chat = viewModel.activeTab {
-                        ChatPanel(viewModel: viewModel, chat: chat)
+                        ChatPanel(chat: chat)
                             .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                             .fixedSize(horizontal: false, vertical: true)
                             .allowsHitTesting(viewModel.isPanelDisplayed)
-                            .preferredColorScheme(viewModel.colorScheme)
                     }
                 }
             }
@@ -140,13 +138,13 @@ struct SuggestionPanelView: View {
                     .allowsHitTesting(false)
             }
         }
+        .preferredColorScheme(viewModel.colorScheme)
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
             guard viewModel.content != nil || viewModel.chat != nil else { return 0 }
             return 1
         }())
         .animation(.easeInOut(duration: 0.2), value: viewModel.content?.contentHash)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.chat)
         .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
         .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
         .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)

@@ -3,7 +3,7 @@ import XCTest
 
 final class ChatGPTServiceFieldTests: XCTestCase {
     func test_calling_the_api() async throws {
-        let service = ChatGPTService(systemPrompt: "", apiKey: "Key")
+        let service = ChatGPTService()
 
         if (await service.apiKey) == "Key" {
             return

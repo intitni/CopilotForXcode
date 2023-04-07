@@ -2,8 +2,7 @@ import MarkdownUI
 import SwiftUI
 
 struct ChatPanel: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
-    @ObservedObject var chat: ChatProvider
+    let chat: ChatProvider
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
 
@@ -13,8 +12,7 @@ struct ChatPanel: View {
             Divider()
             ChatPanelMessages(
                 chat: chat,
-                inputAreaNamespace: inputAreaNamespace,
-                colorScheme: viewModel.colorScheme
+                inputAreaNamespace: inputAreaNamespace
             )
             Divider()
             ChatPanelInputArea(
@@ -23,17 +21,24 @@ struct ChatPanel: View {
                 typedMessage: $typedMessage
             )
         }
-        .animation(.linear(duration: 0.2), value: chat.isReceivingMessage)
         .background(.regularMaterial)
         .xcodeStyleFrame()
     }
 }
 
 struct ChatPanelToolbar: View {
-    let chat: ChatProvider
+    @ObservedObject var chat: ChatProvider
+    @AppStorage(\.useGlobalChat) var useGlobalChat
 
     var body: some View {
         HStack {
+            Toggle(isOn: .init(get: {
+                useGlobalChat
+            }, set: { _ in
+                chat.switchContext()
+            })) { EmptyView() }
+                .toggleStyle(GlobalChatSwitchToggleStyle())
+
             Spacer()
 
             Button(action: {
@@ -45,7 +50,8 @@ struct ChatPanelToolbar: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 4)
+        .padding(.leading, 8)
+        .padding(.trailing, 4)
         .padding(.vertical, 4)
         .background(.regularMaterial)
     }
@@ -54,7 +60,7 @@ struct ChatPanelToolbar: View {
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
     var inputAreaNamespace: Namespace.ID
-    var colorScheme: ColorScheme
+    @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
 
     @ViewBuilder
@@ -74,7 +80,7 @@ struct ChatPanelMessages: View {
         ScrollView {
             vstack {
                 let r = 6 as Double
-                
+
                 Spacer()
 
                 if chat.isReceivingMessage {
@@ -112,7 +118,6 @@ struct ChatPanelMessages: View {
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
                         .text
-                    
 
                     if message.isUser {
                         Markdown(text)
@@ -123,21 +128,22 @@ struct ChatPanelMessages: View {
                             .markdownCodeSyntaxHighlighter(
                                 ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
                             )
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(alignment: .trailing)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, tr: r, bl: r)
+                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
                                     .fill(Color.userChatContentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, tr: r, bl: r)
+                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
-                            .padding(.trailing, 4)
+                            .padding(.trailing, 8)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     } else {
                         Markdown(text)
                             .textSelection(.enabled)
@@ -147,21 +153,22 @@ struct ChatPanelMessages: View {
                             .markdownCodeSyntaxHighlighter(
                                 ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
                             )
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, tr: r, br: r)
+                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
                                     .fill(Color.contentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, tr: r, br: r)
+                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
-                            .padding(.leading, 4)
+                            .padding(.leading, 8)
                             .padding(.trailing)
                             .rotationEffect(Angle(degrees: 180))
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 
@@ -310,6 +317,42 @@ struct RoundedCorners: Shape {
     }
 }
 
+struct GlobalChatSwitchToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 10, style: .circular)
+                .foregroundColor(configuration.isOn ? Color.indigo : .gray.opacity(0.5))
+                .frame(width: 30, height: 20, alignment: .center)
+                .overlay(
+                    Circle()
+                        .fill(.regularMaterial)
+                        .padding(.all, 2)
+                        .overlay(
+                            Image(
+                                systemName: configuration
+                                    .isOn ? "globe" : "doc.circle"
+                            )
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 12, height: 12, alignment: .center)
+                            .foregroundStyle(.secondary)
+                        )
+                        .offset(x: configuration.isOn ? 5 : -5, y: 0)
+                        .animation(.linear(duration: 0.1), value: configuration.isOn)
+
+                )
+                .onTapGesture { configuration.isOn.toggle() }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .circular)
+                        .stroke(.black.opacity(0.2), lineWidth: 1)
+                }
+            
+            Text(configuration.isOn ? "Global Chat" : "File Chat")
+                .foregroundStyle(.tertiary)
+        }
+    }
+}
+
 // MARK: - Previews
 
 struct ChatPanel_Preview: PreviewProvider {
@@ -343,9 +386,7 @@ struct ChatPanel_Preview: PreviewProvider {
     ]
 
     static var previews: some View {
-        ChatPanel(viewModel: .init(
-            isPanelDisplayed: true
-        ), chat: .init(
+        ChatPanel(chat: .init(
             history: ChatPanel_Preview.history,
             isReceivingMessage: true
         ))
@@ -356,9 +397,7 @@ struct ChatPanel_Preview: PreviewProvider {
 
 struct ChatPanel_EmptyChat_Preview: PreviewProvider {
     static var previews: some View {
-        ChatPanel(viewModel: .init(
-            isPanelDisplayed: true
-        ), chat: .init(
+        ChatPanel(chat: .init(
             history: [],
             isReceivingMessage: false
         ))
@@ -388,9 +427,7 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
 
 struct ChatPanel_InputText_Preview: PreviewProvider {
     static var previews: some View {
-        ChatPanel(viewModel: .init(
-            isPanelDisplayed: true
-        ), chat: .init(
+        ChatPanel(chat: .init(
             history: ChatPanel_Preview.history,
             isReceivingMessage: false
         ))
@@ -403,9 +440,6 @@ struct ChatPanel_InputText_Preview: PreviewProvider {
 struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(
-            viewModel: .init(
-                isPanelDisplayed: true
-            ),
             chat: .init(
                 history: ChatPanel_Preview.history,
                 isReceivingMessage: false
@@ -420,10 +454,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
 
 struct ChatPanel_Light_Preview: PreviewProvider {
     static var previews: some View {
-        ChatPanel(viewModel: .init(
-            isPanelDisplayed: true,
-            colorScheme: .light
-        ), chat: .init(
+        ChatPanel(chat: .init(
             history: ChatPanel_Preview.history,
             isReceivingMessage: true
         ))

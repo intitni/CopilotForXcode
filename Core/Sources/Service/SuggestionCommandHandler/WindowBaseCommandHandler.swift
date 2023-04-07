@@ -188,14 +188,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (_, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
         guard let selection = editor.selections.last else { return }
 
-        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
-        filespace.chatService = chat
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
         await chat.mutateSystemPrompt(
             """
@@ -212,11 +209,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 \(code)
                 ```
                 """,
-                summary: "Explain selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
+                summary: "Explain selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
             )
         }
 
-        presenter.presentChatGPTConversation(fileURL: fileURL)
+        presenter.presentChatRoom(fileURL: fileURL)
     }
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
@@ -235,8 +232,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (_, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
@@ -262,8 +257,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             """
         }()
 
-        let chat = filespace.chatService ?? ChatService(chatGPTService: ChatGPTService())
-        filespace.chatService = chat
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
         await chat.mutateSystemPrompt(prompt)
 
@@ -273,12 +267,12 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     history.append(.init(
                         role: .user,
                         content: "",
-                        summary: "Chat about selected code from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             }
         }
 
-        presenter.presentChatGPTConversation(fileURL: fileURL)
+        presenter.presentChatRoom(fileURL: fileURL)
     }
 }

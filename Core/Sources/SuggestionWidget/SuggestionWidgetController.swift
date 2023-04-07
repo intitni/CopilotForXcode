@@ -97,7 +97,7 @@ public final class SuggestionWidgetController {
     private var colorScheme: ColorScheme = .light
 
     public var dataSource: SuggestionWidgetDataSource?
-   
+
     public nonisolated init() {
         #warning(
             "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
@@ -117,6 +117,7 @@ public final class SuggestionWidgetController {
                             windowChangeObservationTask = nil
                             self.observeXcodeWindowChangeIfNeeded(app)
                         }
+                        await self.updateContentForActiveEditor()
                         self.updateWindowLocation()
                     } else {
                         if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle
@@ -248,7 +249,7 @@ public extension SuggestionWidgetController {
         Task {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 suggestionPanelViewModel.chat = chat
-                
+
                 Task { @MainActor in
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
@@ -276,6 +277,7 @@ extension SuggestionWidgetController {
             let notifications = AXNotificationStream(
                 app: app,
                 notificationNames:
+                kAXApplicationActivatedNotification,
                 kAXMovedNotification,
                 kAXResizedNotification,
                 kAXMainWindowChangedNotification,
@@ -287,12 +289,11 @@ extension SuggestionWidgetController {
             for await notification in notifications {
                 guard let self else { return }
                 try Task.checkCancellation()
-                self.updateWindowLocation(animated: false)
-                panelWindow.orderFront(nil)
-                widgetWindow.orderFront(nil)
-                tabWindow.orderFront(nil)
 
-                if notification.name == kAXFocusedUIElementChangedNotification {
+                if [
+                    kAXFocusedUIElementChangedNotification,
+                    kAXApplicationActivatedNotification,
+                ].contains(notification.name) {
                     sourceEditorMonitorTask?.cancel()
                     sourceEditorMonitorTask = nil
                     observeEditorChangeIfNeeded(app)
@@ -309,6 +310,11 @@ extension SuggestionWidgetController {
                     currentFileURL = fileURL
                     await updateContentForActiveEditor(fileURL: fileURL)
                 }
+
+                self.updateWindowLocation(animated: false)
+                panelWindow.orderFront(nil)
+                widgetWindow.orderFront(nil)
+                tabWindow.orderFront(nil)
             }
         }
     }
@@ -428,16 +434,16 @@ extension SuggestionWidgetController {
             return
         }
 
-        if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
-            suggestionPanelViewModel.content = .suggestion(suggestion)
-        } else {
-            suggestionPanelViewModel.content = nil
-        }
-
         if let chat = await dataSource?.chatForFile(at: fileURL) {
             suggestionPanelViewModel.chat = chat
         } else {
             suggestionPanelViewModel.chat = nil
+        }
+
+        if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
+            suggestionPanelViewModel.content = .suggestion(suggestion)
+        } else {
+            suggestionPanelViewModel.content = nil
         }
     }
 }
