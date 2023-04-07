@@ -31,6 +31,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                     history.append(.init(role: .user, content: content))
                 }
                 delegate?.pluginDidStartResponding(self)
+                if isCancelled { return }
                 if try await checkConfirmation(content: content) {
                     delegate?.pluginDidEndResponding(self)
                     delegate?.pluginDidEnd(self)
@@ -52,6 +53,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 delegate?.pluginDidStartResponding(self)
                 let result = try await generateCommand(task: content)
                 command = result
+                if isCancelled { return }
                 await chatGPTService.mutateHistory { history in
                     history.append(.init(role: .assistant, content: """
                     Confirm to run?
@@ -73,6 +75,8 @@ public actor AITerminalChatPlugin: ChatPlugin {
 
     public func cancel() async {
         isCancelled = true
+        delegate?.pluginDidEndResponding(self)
+        delegate?.pluginDidEnd(self)
     }
 
     public func stopResponding() async {}

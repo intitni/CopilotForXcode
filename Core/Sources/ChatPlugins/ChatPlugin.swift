@@ -1,7 +1,7 @@
 import Foundation
 import OpenAIService
 
-public protocol ChatPlugin {
+public protocol ChatPlugin: AnyObject {
     /// Should be [a-zA-Z0-9]+
     static var command: String { get }
     var name: String { get }

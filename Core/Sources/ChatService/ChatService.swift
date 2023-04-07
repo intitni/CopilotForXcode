@@ -112,8 +112,10 @@ extension ChatService: ChatPluginDelegate {
         runningPlugin = plugin
     }
 
-    public func pluginDidEnd(_: ChatPlugin) {
-        runningPlugin = nil
+    public func pluginDidEnd(_ plugin: ChatPlugin) {
+        if runningPlugin === plugin {
+            runningPlugin = nil
+        }
     }
 
     public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
