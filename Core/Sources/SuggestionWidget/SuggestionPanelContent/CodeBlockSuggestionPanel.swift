@@ -5,7 +5,7 @@ struct CodeBlock: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack {
+        VStack(spacing: 4) {
             let code = suggestion.highlightedCode(colorScheme: colorScheme)
             ForEach(0..<code.endIndex, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline) {
@@ -18,6 +18,15 @@ struct CodeBlock: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(4)
+                        .overlay(alignment: .topLeading) {
+                            if index == 0 {
+                                Text("\(suggestion.commonPrecedingSpaceCount + 1)")
+                                    .padding(.top, -12)
+                                    .font(.footnote)
+                                    .foregroundStyle(colorScheme == .dark ? .white : .black)
+                                    .opacity(0.3)
+                            }
+                        }
                 }
             }
         }
@@ -171,7 +180,7 @@ struct CodeBlockSuggestionPanel_Dark_Objc_Preview: PreviewProvider {
 
 struct CodeBlockSuggestionPanel_Bright_Objc_Preview: PreviewProvider {
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion:SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
             code: """
             - (void)addSubview:(UIView *)view {
                 [self addSubview:view];

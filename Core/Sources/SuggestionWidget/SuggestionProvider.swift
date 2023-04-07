@@ -27,7 +27,9 @@ public final class SuggestionProvider: ObservableObject {
             droppingLeadingSpaces: true
         )
         highlightedCode = new
-        commonPrecedingSpaceCount = spaceCount
+        Task { @MainActor in
+            commonPrecedingSpaceCount = spaceCount
+        }
         return new
     }
     
