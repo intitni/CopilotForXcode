@@ -32,18 +32,39 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 }
                 delegate?.pluginDidStartResponding(self)
                 if isCancelled { return }
-                if try await checkConfirmation(content: content) {
+                switch try await checkConfirmation(content: content) {
+                case .confirmation:
                     delegate?.pluginDidEndResponding(self)
                     delegate?.pluginDidEnd(self)
                     delegate?.shouldStartAnotherPlugin(
                         TerminalChatPlugin.self,
                         withContent: command
                     )
-                } else {
+                case .cancellation:
                     delegate?.pluginDidEndResponding(self)
                     delegate?.pluginDidEnd(self)
                     await chatGPTService.mutateHistory { history in
                         history.append(.init(role: .assistant, content: "Cancelled"))
+                    }
+                case .modification:
+                    let result = try await modifyCommand(command: command, requirement: content)
+                    self.command = result
+                    delegate?.pluginDidEndResponding(self)
+                    await chatGPTService.mutateHistory { history in
+                        history.append(.init(role: .assistant, content: """
+                        Confirm to run?
+                        ```
+                        \(result)
+                        ```
+                        """))
+                    }
+                case .other:
+                    delegate?.pluginDidEndResponding(self)
+                    await chatGPTService.mutateHistory { history in
+                        history.append(.init(
+                            role: .assistant,
+                            content: "Should I run it? Or should I modify it?"
+                        ))
                     }
                 }
             } else {
@@ -81,53 +102,91 @@ public actor AITerminalChatPlugin: ChatPlugin {
 
     public func stopResponding() async {}
 
-    func callAIFunction(
-        function: String,
-        args: [Any?],
-        description: String
-    ) async throws -> String {
-        let args = args.map { arg -> String in
-            if let arg = arg {
-                return String(describing: arg)
-            } else {
-                return "None"
-            }
-        }
-        let argsString = args.joined(separator: ", ")
-        let service = ChatGPTService(
-            systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value."
-        )
-        return try await service.sendAndWait(content: argsString)
-    }
-
     func generateCommand(task: String) async throws -> String {
-        let f = "def generate_terminal_command(task: str) -> string:"
-        let d = """
+        let p = """
         Available environment variables:
         - $PROJECT_ROOT: the root path of the project
         - $FILE_PATH: the currently editing file
 
         Current directory path is the project root.
 
-        The return value should not be embedded in a markdown code block.
-
         Generate a terminal command to solve the given task on macOS. If one command is not enough, you can use && to concatenate multiple commands.
+
+        The reply should contains only the command and nothing else.
         """
 
-        return try await callAIFunction(function: f, args: [task], description: d)
-            .replacingOccurrences(of: "`", with: "")
-            .replacingOccurrences(of: "\n", with: "")
+        return extractCodeFromMarkdown(try await askChatGPT(
+            systemPrompt: p,
+            question: "the task is: \"\(task)\""
+        ))
     }
 
-    func checkConfirmation(content: String) async throws -> Bool {
-        let f = "def check_confirmation(content: str) -> bool:"
-        let d = """
-        Check if the given content is a phrase or sentence that considered a confirmation to run a command.
+    func modifyCommand(command: String, requirement: String) async throws -> String {
+        let p = """
+        Available environment variables:
+        - $PROJECT_ROOT: the root path of the project
+        - $FILE_PATH: the currently editing file
 
-        For example: "Yes", "Confirm", "True", "Run it". It can be in any language.
+        Current directory path is the project root.
+
+        Modify the terminal command `\(
+            command
+        )` in macOS with the given requirement. If one command is not enough, you can use && to concatenate multiple commands.
+
+        The reply should contains only the command and nothing else.
         """
 
-        let result = try await callAIFunction(function: f, args: [content], description: d)
-        return result.lowercased().contains("true")
+        return extractCodeFromMarkdown(try await askChatGPT(
+            systemPrompt: p,
+            question: "The requirement is: \"\(requirement)\""
+        ))
+    }
+
+    func checkConfirmation(content: String) async throws -> Tone {
+        let p = """
+        Check the tone of the content, reply with only the number representing the tone.
+
+        1: If the given content is a phrase or sentence that considered a confirmation to run a command.
+
+        For example: "Yes", "Confirm", "True", "Run it". It can be in any language.
+
+        2: If the given content is a phrase or sentence that considered a cancellation to run a command.
+
+        For example: "No", "Cancel", "False", "Don't run it", "Stop". It can be in any language.
+
+        3: If the given content is a modification request.
+
+        For example: "Use echo instead", "Remove the argument", "Change to path".
+
+        4: Everything else.
+        """
+
+        let result = try await askChatGPT(
+            systemPrompt: p,
+            question: "The content is: \"\(content)\""
+        )
+        return Tone(rawValue: Int(result) ?? 2) ?? .cancellation
+    }
+
+    enum Tone: Int {
+        case confirmation = 1
+        case cancellation = 2
+        case modification = 3
+        case other = 4
+    }
+
+    func extractCodeFromMarkdown(_ markdown: String) -> String {
+        let codeBlockRegex = try! NSRegularExpression(
+            pattern: "```[\n](.*?)[\n]```",
+            options: .dotMatchesLineSeparators
+        )
+        let range = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
+        guard let match = codeBlockRegex.firstMatch(in: markdown, options: [], range: range) else {
+            return markdown
+                .replacingOccurrences(of: "`", with: "")
+                .replacingOccurrences(of: "\n", with: "")
+        }
+        let codeBlockRange = Range(match.range(at: 1), in: markdown)!
+        return String(markdown[codeBlockRange])
     }
 }
