@@ -227,6 +227,7 @@ struct ChatPanelInputArea: View {
                 .textFieldStyle(.plain)
                 .padding(8)
                 .onSubmit {
+                    if chat.isReceivingMessage { return }
                     if typedMessage.isEmpty { return }
                     chat.send(typedMessage)
                     typedMessage = ""
