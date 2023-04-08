@@ -128,6 +128,10 @@ public actor ChatGPTService: ChatGPTServiceType {
                 Task {
                     do {
                         let (trunks, cancel) = try await api()
+                        guard isReceivingMessage else {
+                            continuation.finish()
+                            return
+                        }
                         cancelTask = cancel
                         for try await trunk in trunks {
                             guard let delta = trunk.choices.first?.delta else { continue }
