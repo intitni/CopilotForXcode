@@ -94,6 +94,7 @@ struct WidgetContextMenu: View {
     @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
     @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
+    @AppStorage(\.forceOrderWidgetToFront) var forceOrderWidgetToFront
 
     var body: some View {
         Group {
@@ -129,6 +130,15 @@ struct WidgetContextMenu: View {
             }, label: {
                 Text("Hide Common Preceding Spaces in Suggestion")
                 if hideCommonPrecedingSpacesInSuggestion {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Button(action: {
+                forceOrderWidgetToFront.toggle()
+            }, label: {
+                Text("Force Order Widget to Front")
+                if forceOrderWidgetToFront {
                     Image(systemName: "checkmark")
                 }
             })
