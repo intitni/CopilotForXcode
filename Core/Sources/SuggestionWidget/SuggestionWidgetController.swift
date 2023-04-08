@@ -444,7 +444,9 @@ extension SuggestionWidgetController {
         }
 
         if let chat = await dataSource?.chatForFile(at: fileURL) {
-            suggestionPanelViewModel.chat = chat
+            if suggestionPanelViewModel.chat?.id != chat.id {
+                suggestionPanelViewModel.chat = chat
+            }
         } else {
             suggestionPanelViewModel.chat = nil
         }
