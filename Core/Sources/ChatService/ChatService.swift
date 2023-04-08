@@ -1,18 +1,25 @@
 import ChatPlugins
+import Combine
 import Foundation
 import OpenAIService
 
 public final class ChatService: ObservableObject {
-    let chatGPTService: ChatGPTServiceType
+    public let chatGPTService: any ChatGPTServiceType
     let plugins = registerPlugins(
-        TerminalChatPlugin.self
+        TerminalChatPlugin.self,
+        AITerminalChatPlugin.self
     )
     var runningPlugin: ChatPlugin?
+    var cancellable = Set<AnyCancellable>()
 
-    public init(chatGPTService: ChatGPTServiceType) {
+    public init<T: ChatGPTServiceType>(chatGPTService: T) {
         self.chatGPTService = chatGPTService
+
+        chatGPTService.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &cancellable)
     }
-    
+
     public func send(content: String) async throws {
         // look for the prefix of content, see if there is something like /command.
         // If there is, then we need to find the plugin that can handle this command.
@@ -21,10 +28,49 @@ public final class ChatService: ObservableObject {
         let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
         if let match = matches.first {
             let command = String(content[Range(match.range(at: 1), in: content)!])
-            if let pluginType = plugins[command] {
+            if command == "exit" {
+                if let plugin = runningPlugin {
+                    runningPlugin = nil
+                    _ = await chatGPTService.mutateHistory { history in
+                        history.append(.init(
+                            role: .user,
+                            content: "",
+                            summary: "Exit plugin \(plugin.name)."
+                        ))
+                        history.append(.init(
+                            role: .system,
+                            content: "",
+                            summary: "Exited plugin \(plugin.name)."
+                        ))
+                    }
+                } else {
+                    _ = await chatGPTService.mutateHistory { history in
+                        history.append(.init(
+                            role: .system,
+                            content: "",
+                            summary: "No plugin running."
+                        ))
+                    }
+                }
+            } else if let runningPlugin {
+                await runningPlugin.send(content: content)
+            } else if let pluginType = plugins[command] {
                 let plugin = pluginType.init(inside: chatGPTService, delegate: self)
-                await plugin.send(content: String(content.dropFirst(command.count + 1)))
+                if #available(macOS 13.0, *) {
+                    await plugin.send(
+                        content: String(
+                            content.dropFirst(command.count + 1)
+                                .trimmingPrefix(while: { $0 == " " })
+                        )
+                    )
+                } else {
+                    await plugin.send(content: String(content.dropFirst(command.count + 1)))
+                }
+            } else {
+                _ = try await chatGPTService.send(content: content, summary: nil)
             }
+        } else if let runningPlugin {
+            await runningPlugin.send(content: content)
         } else {
             _ = try await chatGPTService.send(content: content, summary: nil)
         }
@@ -32,7 +78,7 @@ public final class ChatService: ObservableObject {
 
     public func stopReceivingMessage() async {
         if let runningPlugin {
-            await runningPlugin.cancel()
+            await runningPlugin.stopResponding()
         }
         await chatGPTService.stopReceivingMessage()
     }
@@ -43,27 +89,40 @@ public final class ChatService: ObservableObject {
         }
         await chatGPTService.clearHistory()
     }
+
+    public func mutateSystemPrompt(_ newPrompt: String) async {
+        await chatGPTService.mutateSystemPrompt(newPrompt)
+    }
 }
 
 extension ChatService: ChatPluginDelegate {
-    public func pluginDidStartResponding(_ plugin: ChatPlugins.ChatPlugin) {
+    public func pluginDidStartResponding(_: ChatPlugins.ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(true)
         }
     }
-    
-    public func pluginDidEndResponding(_ plugin: ChatPlugins.ChatPlugin) {
+
+    public func pluginDidEndResponding(_: ChatPlugins.ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(false)
         }
     }
-    
+
     public func pluginDidStart(_ plugin: ChatPlugin) {
         runningPlugin = plugin
     }
-    
+
     public func pluginDidEnd(_ plugin: ChatPlugin) {
-        runningPlugin = nil
+        if runningPlugin === plugin {
+            runningPlugin = nil
+        }
+    }
+
+    public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
+        let plugin = type.init(inside: chatGPTService, delegate: self)
+        Task {
+            await plugin.send(content: content)
+        }
     }
 }
 

@@ -2,10 +2,15 @@ import AppKit
 import Foundation
 import Highlightr
 import Splash
-import XPCShared
 import SwiftUI
+import XPCShared
 
-func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> NSAttributedString {
+func highlightedCodeBlock(
+    code: String,
+    language: String,
+    brightMode: Bool,
+    fontSize: Double
+) -> NSAttributedString {
     switch language {
     case "swift":
         let plainTextColor = brightMode
@@ -42,9 +47,33 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
             )
         let formatted = NSMutableAttributedString(attributedString: highlighter.highlight(code))
         formatted.addAttributes(
-            [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)],
+            [.font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)],
             range: NSRange(location: 0, length: formatted.length)
         )
+        func leadingSpacesInCode(_ code: String) -> Int {
+            var leadingSpaces = 0
+            for char in code {
+                if char == " " {
+                    leadingSpaces += 1
+                } else {
+                    break
+                }
+            }
+            return leadingSpaces
+        }
+        
+        // Workaround: Splash has a bug that will insert an extra space at the beginning.
+        let leadingSpaces = leadingSpacesInCode(code)
+        let leadingSpacesFormatted = leadingSpacesInCode(formatted.string)
+        let diff = leadingSpacesFormatted - leadingSpaces
+        if diff > 0 {
+            formatted.mutableString.replaceCharacters(
+                in: .init(location: 0, length: diff),
+                with: ""
+            )
+        }
+        // End of workaround.
+        
         return formatted
     default:
         var language = language
@@ -54,14 +83,17 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
         func unhighlightedCode() -> NSAttributedString {
             return NSAttributedString(
                 string: code,
-                attributes: [.foregroundColor: NSColor.white]
+                attributes: [
+                    .foregroundColor: brightMode ? NSColor.black : NSColor.white,
+                    .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+                ]
             )
         }
         guard let highlighter = Highlightr() else {
             return unhighlightedCode()
         }
         highlighter.setTheme(to: brightMode ? "xcode" : "atom-one-dark")
-        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: 13, weight: .regular))
+        highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: fontSize, weight: .regular))
         guard let formatted = highlighter.highlight(code, as: language) else {
             return unhighlightedCode()
         }
@@ -72,26 +104,82 @@ func highlightedCodeBlock(code: String, language: String, brightMode: Bool) -> N
     }
 }
 
-func highlighted(code: String, language: String, brightMode: Bool) -> [NSAttributedString] {
-    let formatted = highlightedCodeBlock(code: code, language: language, brightMode: brightMode)
+func highlighted(
+    code: String,
+    language: String,
+    brightMode: Bool,
+    droppingLeadingSpaces: Bool
+) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
+    let formatted = highlightedCodeBlock(
+        code: code,
+        language: language,
+        brightMode: brightMode,
+        fontSize: 13
+    )
     let middleDotColor = brightMode
         ? NSColor.black.withAlphaComponent(0.1)
         : NSColor.white.withAlphaComponent(0.1)
-    return convertToCodeLines(formatted, middleDotColor: middleDotColor)
+    return convertToCodeLines(
+        formatted,
+        middleDotColor: middleDotColor,
+        droppingLeadingSpaces: droppingLeadingSpaces
+    )
 }
 
-private func convertToCodeLines(
+func convertToCodeLines(
     _ formattedCode: NSAttributedString,
-    middleDotColor: NSColor
-) -> [NSAttributedString] {
+    middleDotColor: NSColor,
+    droppingLeadingSpaces: Bool
+) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let input = formattedCode.string
+    func isEmptyLine(_ line: String) -> Bool {
+        if line.isEmpty { return true }
+        guard let regex = try? NSRegularExpression(pattern: #"^\s*\n?$"#) else { return false }
+        if regex.firstMatch(
+            in: line,
+            options: [],
+            range: NSMakeRange(0, line.utf16.count)
+        ) != nil {
+            return true
+        }
+        return false
+    }
+
     let separatedInput = input.components(separatedBy: "\n")
+    let commonLeadingSpaceCount = {
+        if !droppingLeadingSpaces { return 0 }
+        let splitted = separatedInput
+        var result = 0
+        outerLoop: for i in [4, 8, 12, 16, 20, 24] {
+            for line in splitted {
+                if isEmptyLine(line) { continue }
+                if i >= line.count { break outerLoop }
+                if !line.hasPrefix(.init(repeating: " ", count: i)) { break outerLoop }
+            }
+            result = i
+        }
+        return result
+    }()
     var output = [NSAttributedString]()
     var start = 0
     for sub in separatedInput {
         let range = NSMakeRange(start, sub.utf16.count)
         let attributedString = formattedCode.attributedSubstring(from: range)
         let mutable = NSMutableAttributedString(attributedString: attributedString)
+
+        // remove leading spaces
+        if commonLeadingSpaceCount > 0 {
+            let leadingSpaces = String(repeating: " ", count: commonLeadingSpaceCount)
+            if mutable.string.hasPrefix(leadingSpaces) {
+                mutable.replaceCharacters(
+                    in: NSRange(location: 0, length: commonLeadingSpaceCount),
+                    with: ""
+                )
+            } else if isEmptyLine(mutable.string) {
+                mutable.mutableString.setString("")
+            }
+        }
+
         // use regex to replace all spaces to a middle dot
         do {
             let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
@@ -113,5 +201,5 @@ private func convertToCodeLines(
         output.append(mutable)
         start += range.length + 1
     }
-    return output
+    return (output, commonLeadingSpaceCount)
 }

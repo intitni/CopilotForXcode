@@ -7,7 +7,7 @@ import Logger
 import Preferences
 import XPCShared
 
-@globalActor enum ServiceActor {
+@globalActor public enum ServiceActor {
     public actor TheActor {}
     public static let shared = TheActor()
 }

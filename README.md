@@ -59,7 +59,7 @@ Or install it manually, by downloading the `Copilot for Xcode.app` from the late
 Then set it up with the following steps:
 
 1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
-2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from `/usr/bin:/usr/local/bin`. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.   
+2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.   
 
 ### Enable the Extension
 
@@ -143,9 +143,15 @@ The chat panel supports chat plugins that may not require an OpenAI API key. For
 /run echo hello
 ```
 
+If you need to end a plugin, you can just type 
+```
+/exit
+```
+
 | Command | Description |
 |:---:|---|
 | `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
+| `/airun` | Create a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
 
 ## Key Bindings
 

@@ -7,12 +7,12 @@ public actor TerminalChatPlugin: ChatPlugin {
     public static var command: String { "run" }
     public nonisolated var name: String { "Terminal" }
 
-    let chatGPTService: ChatGPTServiceType
+    let chatGPTService: any ChatGPTServiceType
     var terminal: TerminalType = Terminal()
     var isCancelled = false
     weak var delegate: ChatPluginDelegate?
 
-    public init(inside chatGPTService: ChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any ChatGPTServiceType, delegate: ChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }
@@ -43,9 +43,12 @@ public actor TerminalChatPlugin: ChatPlugin {
 
             if isCancelled { throw CancellationError() }
 
+            let env = ProcessInfo.processInfo.environment
+            let shell = env["SHELL"] ?? "/bin/bash"
+            
             let output = terminal.streamCommand(
-                "/bin/bash",
-                arguments: ["-c", content],
+                shell,
+                arguments: ["-l", "-c", content],
                 currentDirectoryPath: projectURL?.path ?? fileURL.path,
                 environment: [
                     "PROJECT_ROOT": projectURL?.path ?? fileURL.path,

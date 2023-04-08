@@ -15,7 +15,7 @@ extension NSError {
             case let .requestDispatchFailed(error):
                 message = "Request dispatch failed: \(error.localizedDescription)."
             case let .clientDataUnavailable(error):
-                message = "Client data unavalable: \(error.localizedDescription)."
+                message = "Client data unavailable: \(error.localizedDescription)."
             case .serverUnavailable:
                 message = "Server unavailable, please make sure you have installed Node."
             case .missingExpectedParameter:

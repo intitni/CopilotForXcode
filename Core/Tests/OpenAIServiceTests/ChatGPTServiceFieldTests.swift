@@ -2,12 +2,11 @@ import XCTest
 @testable import OpenAIService
 
 final class ChatGPTServiceFieldTests: XCTestCase {
+    let skip = true
     func test_calling_the_api() async throws {
-        let service = ChatGPTService(systemPrompt: "", apiKey: "Key")
-
-        if (await service.apiKey) == "Key" {
-            return
-        }
+        let service = ChatGPTService()
+        
+        if skip { return }
         
         do {
             let stream = try await service.send(content: "Hello")

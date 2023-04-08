@@ -109,6 +109,31 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    public struct UseGlobalChat: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "UseGlobalChat"
+    }
+
+    public var useGlobalChat: UseGlobalChat { .init() }
+
+    public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "HideCommonPrecedingSpacesInSuggestion"
+    }
+
+    public var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
+        .init()
+    }
+    
+    public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "ForceOrderWidgetToFront"
+    }
+
+    public var forceOrderWidgetToFront: HideCommonPrecedingSpacesInSuggestion {
+        .init()
+    }
+
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }
 

@@ -9,33 +9,7 @@ public final class GraphicalUserInterfaceController {
     nonisolated let suggestionWidget = SuggestionWidgetController()
     private nonisolated init() {
         Task { @MainActor in
-            suggestionWidget.onNextButtonTapped = {
-                Task { @ServiceActor in
-                    let handler = PseudoCommandHandler()
-                    await handler.presentNextSuggestion()
-                }
-            }
-
-            suggestionWidget.onPreviousButtonTapped = {
-                Task { @ServiceActor in
-                    let handler = PseudoCommandHandler()
-                    await handler.presentPreviousSuggestion()
-                }
-            }
-
-            suggestionWidget.onRejectButtonTapped = {
-                Task { @ServiceActor in
-                    let handler = PseudoCommandHandler()
-                    await handler.rejectSuggestions()
-                }
-            }
-
-            suggestionWidget.onAcceptButtonTapped = {
-                Task { @ServiceActor in
-                    let handler = PseudoCommandHandler()
-                    await handler.acceptSuggestion()
-                }
-            }
+            suggestionWidget.dataSource = WidgetDataSource.shared
         }
     }
 }

@@ -51,6 +51,10 @@ public class CopilotBaseService {
                 try? FileManager.default
                     .createDirectory(at: supportURL, withIntermediateDirectories: false)
             }
+            var userEnvPath = ProcessInfo.processInfo.userEnvironment["PATH"] ?? ""
+            if userEnvPath.isEmpty {
+                userEnvPath = "/usr/bin:/usr/local/bin" // fallback
+            }
             let executionParams = {
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 return Process.ExecutionParameters(
@@ -65,7 +69,7 @@ public class CopilotBaseService {
                         "--stdio",
                     ],
                     environment: [
-                        "PATH": "/usr/bin:/usr/local/bin",
+                        "PATH": userEnvPath,
                     ],
                     currentDirectoryURL: supportURL
                 )

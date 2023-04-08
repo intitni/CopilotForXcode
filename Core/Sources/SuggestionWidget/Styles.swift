@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum Style {
-    static let panelHeight: Double = 304
+    static let panelHeight: Double = 500
     static let panelWidth: Double = 454
     static let widgetHeight: Double = 30
     static var widgetWidth: Double { widgetHeight }

@@ -27,7 +27,7 @@ struct WidgetView: View {
                 let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
                 let empty = panelViewModel.content == nil && panelViewModel.chat == nil
-                
+
                 ZStack {
                     Circle()
                         .stroke(
@@ -66,11 +66,13 @@ struct WidgetView: View {
                 }
             }
             .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
-            .onChange(of: panelViewModel.content) { _ in refreshRing() }
+            .onChange(of: panelViewModel.content?.contentHash) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
                 }
+            }.contextMenu {
+                WidgetContextMenu()
             }
     }
 
@@ -82,6 +84,71 @@ struct WidgetView: View {
             } else {
                 let empty = panelViewModel.content == nil && panelViewModel.chat == nil
                 processingProgress = empty ? 0 : 1
+            }
+        }
+    }
+}
+
+struct WidgetContextMenu: View {
+    @AppStorage(\.useGlobalChat) var useGlobalChat
+    @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
+    @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
+    @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
+    @AppStorage(\.forceOrderWidgetToFront) var forceOrderWidgetToFront
+
+    var body: some View {
+        Group {
+            Button(action: {
+                useGlobalChat.toggle()
+            }) {
+                Text("Use Global Chat")
+                if useGlobalChat {
+                    Image(systemName: "checkmark")
+                }
+            }
+
+            Button(action: {
+                realtimeSuggestionToggle.toggle()
+            }) {
+                Text("Realtime Suggestion")
+                if realtimeSuggestionToggle {
+                    Image(systemName: "checkmark")
+                }
+            }
+            
+            Button(action: {
+                acceptSuggestionWithAccessibilityAPI.toggle()
+            }, label: {
+                Text("Accept Suggestion with Accessibility API")
+                if acceptSuggestionWithAccessibilityAPI {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Button(action: {
+                hideCommonPrecedingSpacesInSuggestion.toggle()
+            }, label: {
+                Text("Hide Common Preceding Spaces in Suggestion")
+                if hideCommonPrecedingSpacesInSuggestion {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Button(action: {
+                forceOrderWidgetToFront.toggle()
+            }, label: {
+                Text("Force Order Widget to Front")
+                if forceOrderWidgetToFront {
+                    Image(systemName: "checkmark")
+                }
+            })
+            
+            Divider()
+            
+            Button(action: {
+                exit(0)
+            }) {
+                Text("Quit")
             }
         }
     }
@@ -111,9 +178,9 @@ struct WidgetView_Preview: PreviewProvider {
             WidgetView(
                 viewModel: .init(isProcessing: false),
                 panelViewModel: .init(
-                    content: .suggestion(.init(
+                    content: .suggestion(SuggestionProvider(
+                        code: "Hello",
                         startLineIndex: 0,
-                        code: [.init(string: "Hello")],
                         suggestionCount: 0,
                         currentSuggestionIndex: 0
                     ))

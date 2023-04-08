@@ -34,8 +34,7 @@ struct MockCompletionStreamAPI_Success: CompletionStreamAPI {
 
 final class ChatGPTServiceTests: XCTestCase {
     func test_success() async throws {
-        let service = ChatGPTService(systemPrompt: "system", apiKey: "Key")
-        var apiKey = ""
+        let service = ChatGPTService()
         var idCounter = 0
         await service.changeUUIDGenerator {
             defer { idCounter += 1 }
@@ -43,7 +42,6 @@ final class ChatGPTServiceTests: XCTestCase {
         }
         var requestBody: CompletionRequestBody?
         await service.changeBuildCompletionStreamAPI { _apiKey, _, _requestBody in
-            apiKey = _apiKey
             requestBody = _requestBody
             return MockCompletionStreamAPI_Success()
         }
@@ -59,9 +57,8 @@ final class ChatGPTServiceTests: XCTestCase {
             )
         }
 
-        XCTAssertEqual(apiKey, "Key")
         XCTAssertEqual(requestBody?.messages, [
-            .init(role: .system, content: "system"),
+            .init(role: .system, content: ""),
             .init(role: .user, content: "Hello"),
         ], "System prompt is included")
         XCTAssertEqual(all, ["hello", "my", "friends"], "Text stream is correct")
