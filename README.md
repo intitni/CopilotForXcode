@@ -143,9 +143,15 @@ The chat panel supports chat plugins that may not require an OpenAI API key. For
 /run echo hello
 ```
 
+If you need to end a plugin, you can just type 
+```
+/exit
+```
+
 | Command | Description |
 |:---:|---|
 | `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
+| `/airun` | Create a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
 
 ## Key Bindings
 
