@@ -37,7 +37,7 @@ enum UpdateLocationStrategy {
                 )
             }
             return HorizontalMovable().framesForWindows(
-                y: activeScreen.frame.height - frame.maxY,
+                y: mainScreen.frame.height - frame.maxY,
                 alignPanelTopToAnchor: nil,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
@@ -58,7 +58,7 @@ enum UpdateLocationStrategy {
             alignPanelTopToAnchor: Bool
         ) {
             return HorizontalMovable().framesForWindows(
-                y: activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                y: mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
                 alignPanelTopToAnchor: false,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
@@ -82,13 +82,13 @@ enum UpdateLocationStrategy {
         ) {
             let maxY = max(
                 y,
-                activeScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
-                4 + mainScreen.frame.minY
+                mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                4 + activeScreen.frame.minY
             )
             let y = min(
                 maxY,
-                mainScreen.frame.maxY - 4,
-                activeScreen.frame.height - editorFrame.minY - Style.widgetHeight - Style
+                activeScreen.frame.maxY - 4,
+                mainScreen.frame.height - editorFrame.minY - Style.widgetHeight - Style
                     .widgetPadding
             )
 
@@ -101,7 +101,7 @@ enum UpdateLocationStrategy {
 
             let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
                 .widgetPadding * 2
-            let putPanelToTheRight = mainScreen.frame.maxX > proposedPanelX + Style.panelWidth
+            let putPanelToTheRight = activeScreen.frame.maxX > proposedPanelX + Style.panelWidth
             let alignPanelTopToAnchor = fixedAlignment ?? (y > activeScreen.frame.midY)
 
             if putPanelToTheRight {
@@ -132,7 +132,7 @@ enum UpdateLocationStrategy {
                 )
                 let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
                     .widgetPadding * 2 - Style.panelWidth
-                let putAnchorToTheLeft = proposedPanelX > mainScreen.frame.minX
+                let putAnchorToTheLeft = proposedPanelX > activeScreen.frame.minX
 
                 if putAnchorToTheLeft {
                     let anchorFrame = proposedAnchorFrameOnTheLeftSide
