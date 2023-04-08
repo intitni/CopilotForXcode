@@ -89,28 +89,34 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
             let error = try? decoder.decode(ChatGPTError.self, from: data)
             throw error ?? ChatGPTServiceError.responseInvalid
         }
+        
+        var receivingDataTask: Task<Void, Error>?
+        
+        let stream = AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
+            receivingDataTask = Task {
+                do {
+                    for try await line in result.lines {
+                        if Task.isCancelled { break }
+                        let prefix = "data: "
+                        guard line.hasPrefix(prefix),
+                              let content = line.dropFirst(prefix.count).data(using: .utf8),
+                              let trunk = try? JSONDecoder()
+                              .decode(CompletionStreamDataTrunk.self, from: content)
+                        else { continue }
+                        continuation.yield(trunk)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
 
         return (
-            AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
-                Task {
-                    do {
-                        for try await line in result.lines {
-                            let prefix = "data: "
-                            guard line.hasPrefix(prefix),
-                                  let content = line.dropFirst(prefix.count).data(using: .utf8),
-                                  let trunk = try? JSONDecoder()
-                                  .decode(CompletionStreamDataTrunk.self, from: content)
-                            else { continue }
-                            continuation.yield(trunk)
-                        }
-                        continuation.finish()
-                    } catch {
-                        continuation.finish(throwing: error)
-                    }
-                }
-            },
+            stream,
             Cancellable {
                 result.task.cancel()
+                receivingDataTask?.cancel()
             }
         )
     }

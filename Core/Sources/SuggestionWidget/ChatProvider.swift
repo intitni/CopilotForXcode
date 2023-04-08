@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 public final class ChatProvider: ObservableObject {
+    let id = UUID()
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
     public var onMessageSend: (String) -> Void

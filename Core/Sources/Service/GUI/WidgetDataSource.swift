@@ -8,6 +8,8 @@ final class WidgetDataSource {
 
     var globalChat: ChatService?
     var chats = [URL: ChatService]()
+    var globalChatProvider: ChatProvider?
+    var chatProviders = [URL: ChatProvider]()
 
     private init() {}
 
@@ -15,6 +17,7 @@ final class WidgetDataSource {
     func createChatIfNeeded(for url: URL) -> ChatService {
         let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
         let chat: ChatService
+        
         if useGlobalChat {
             chat = globalChat ?? ChatService(chatGPTService: ChatGPTService())
             globalChat = chat
@@ -77,8 +80,10 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                 onCloseChat: { [weak self] in
                     if UserDefaults.shared.value(for: \.useGlobalChat) {
                         self?.globalChat = nil
+                        self?.globalChatProvider = nil
                     } else {
                         self?.chats[url] = nil
+                        self?.chatProviders[url] = nil
                     }
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closeChatRoom(fileURL: url)
@@ -94,12 +99,20 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
         }
 
         if useGlobalChat {
-            if let globalChat {
-                return buildChatProvider(globalChat)
+            if let globalChatProvider {
+                return globalChatProvider
+            } else if let globalChat {
+                let new = buildChatProvider(globalChat)
+                self.globalChatProvider = new
+                return new
             }
         } else {
-            if let service = chats[url] {
-                return buildChatProvider(service)
+            if let provider = chatProviders[url] {
+                return provider
+            } else if let service = chats[url] {
+                let new = buildChatProvider(service)
+                self.chatProviders[url] = new
+                return new
             }
         }
 
