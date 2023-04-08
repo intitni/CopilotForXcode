@@ -10,7 +10,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
         """
         let (result, spaceCount) = highlighted(
             code: code,
-            language: "md",
+            language: "swift",
             brightMode: true,
             droppingLeadingSpaces: false
         )

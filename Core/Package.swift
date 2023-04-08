@@ -35,7 +35,7 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
-        .package(url: "https://github.com/JohnSundell/Splash", from: "0.1.0"),
+        .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
         .package(url: "https://github.com/intitni/swift-markdown-ui", branch: "main"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
