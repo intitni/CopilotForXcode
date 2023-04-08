@@ -315,9 +315,15 @@ extension SuggestionWidgetController {
                 }
 
                 self.updateWindowLocation(animated: false)
-                panelWindow.orderFront(nil)
-                widgetWindow.orderFront(nil)
-                tabWindow.orderFront(nil)
+
+                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
+                    || notification.name == kAXWindowMovedNotification
+                {
+                    // We need to bring them front when the app enters fullscreen.
+                    panelWindow.orderFront(nil)
+                    widgetWindow.orderFront(nil)
+                    tabWindow.orderFront(nil)
+                }
             }
         }
     }
@@ -389,8 +395,8 @@ extension SuggestionWidgetController {
                focusElement.description == "Source Editor",
                let parent = focusElement.parent,
                let frame = parent.rect,
-               let screen = NSScreen.main,
-               let firstScreen = NSScreen.screens.first
+               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+               let firstScreen = NSScreen.main
             {
                 let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                 switch mode {
