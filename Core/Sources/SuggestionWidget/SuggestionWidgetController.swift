@@ -315,7 +315,11 @@ extension SuggestionWidgetController {
                 }
 
                 self.updateWindowLocation(animated: false)
-                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront) {
+
+                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
+                    || notification.name == kAXWindowMovedNotification
+                {
+                    // We need to bring them front when the app enters fullscreen.
                     panelWindow.orderFront(nil)
                     widgetWindow.orderFront(nil)
                     tabWindow.orderFront(nil)

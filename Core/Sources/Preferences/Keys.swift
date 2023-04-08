@@ -126,7 +126,7 @@ public struct UserDefaultPreferenceKeys {
     }
     
     public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
-        public let defaultValue = false
+        public let defaultValue = true
         public let key = "ForceOrderWidgetToFront"
     }
 
