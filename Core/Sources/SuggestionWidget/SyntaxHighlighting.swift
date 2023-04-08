@@ -133,6 +133,7 @@ func convertToCodeLines(
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let input = formattedCode.string
     func isEmptyLine(_ line: String) -> Bool {
+        if line.isEmpty { return true }
         guard let regex = try? NSRegularExpression(pattern: #"^\s*\n?$"#) else { return false }
         if regex.firstMatch(
             in: line,
@@ -149,12 +150,11 @@ func convertToCodeLines(
         if !droppingLeadingSpaces { return 0 }
         let splitted = separatedInput
         var result = 0
-        outerLoop: for i in [4, 8, 12, 16, 20] {
+        outerLoop: for i in [4, 8, 12, 16, 20, 24] {
             for line in splitted {
                 if isEmptyLine(line) { continue }
                 if i >= line.count { break outerLoop }
-                let targetIndex = line.index(line.startIndex, offsetBy: i - 1)
-                if line[targetIndex] != " " { break outerLoop }
+                if !line.hasPrefix(.init(repeating: " ", count: i)) { break outerLoop }
             }
             result = i
         }
