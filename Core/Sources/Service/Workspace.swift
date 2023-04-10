@@ -54,6 +54,25 @@ final class Filespace {
 
 @ServiceActor
 final class Workspace {
+    class UserDefaultsObserver: NSObject {
+        var onChange: (() -> Void)?
+
+        override func observeValue(
+            forKeyPath keyPath: String?,
+            of object: Any?,
+            change: [NSKeyValueChangeKey: Any]?,
+            context: UnsafeMutableRawPointer?
+        ) {
+            onChange?()
+        }
+    }
+    
+    struct SuggestionFeatureDisabledError: Error, LocalizedError {
+        var errorDescription: String? {
+            "Suggestion feature is disabled for this project."
+        }
+    }
+
     let projectRootURL: URL
     var lastTriggerDate = Environment.now()
     var isExpired: Bool {
@@ -66,12 +85,56 @@ final class Workspace {
     }
 
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()
+    let userDefaultsObserver = UserDefaultsObserver()
 
-    private lazy var service: CopilotSuggestionServiceType = Environment
-        .createSuggestionService(projectRootURL)
+    private var _copilotSuggestionService: CopilotSuggestionServiceType?
 
-    init(projectRootURL: URL) {
+    private var copilotSuggestionService: CopilotSuggestionServiceType? {
+        // Check if the workspace is disabled.
+        let isSuggestionDisabledGlobally = UserDefaults.shared
+            .value(for: \.disableSuggestionFeatureGlobally)
+        if isSuggestionDisabledGlobally {
+            let enabledList = UserDefaults.shared.value(for: \.suggestionFeatureEnabledProjectList)
+            if !enabledList.contains(where: { path in projectRootURL.path.hasPrefix(path) }) {
+                // If it's disable, remove the service
+                _copilotSuggestionService = nil
+                return nil
+            }
+        }
+
+        if _copilotSuggestionService == nil {
+            _copilotSuggestionService = Environment.createSuggestionService(projectRootURL)
+        }
+        return _copilotSuggestionService
+    }
+    
+    var isSuggestionFeatureEnabled: Bool {
+        copilotSuggestionService != nil
+    }
+
+    private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
+        
+        Task {
+            userDefaultsObserver.onChange = { [weak self] in
+                guard let self else { return }
+                _ = self.copilotSuggestionService
+            }
+
+            UserDefaults.shared.addObserver(
+                userDefaultsObserver,
+                forKeyPath: UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
+                options: .new,
+                context: nil
+            )
+            
+            UserDefaults.shared.addObserver(
+                userDefaultsObserver,
+                forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
+                options: .new,
+                context: nil
+            )
+        }
     }
 
     func canAutoTriggerGetSuggestions(
@@ -132,7 +195,8 @@ extension Workspace {
 
         filespace.suggestionSourceSnapshot = snapshot
 
-        let completions = try await service.getCompletions(
+        guard let copilotSuggestionService else { throw SuggestionFeatureDisabledError() }
+        let completions = try await copilotSuggestionService.getCompletions(
             fileURL: fileURL,
             content: editor.lines.joined(separator: ""),
             cursorPosition: editor.cursorPosition,
@@ -183,7 +247,7 @@ extension Workspace {
             filespaces[fileURL]?.usesTabsForIndentation = editor.usesTabsForIndentation
         }
         Task {
-            await service.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
+            await copilotSuggestionService?.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }
         filespaces[fileURL]?.reset(resetSnapshot: false)
     }
@@ -208,8 +272,8 @@ extension Workspace {
         let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
 
         Task {
-            await service.notifyAccepted(suggestion)
-            await service.notifyRejected(allSuggestions)
+            await copilotSuggestionService?.notifyAccepted(suggestion)
+            await copilotSuggestionService?.notifyRejected(allSuggestions)
         }
 
         filespaces[fileURL]?.reset()
