@@ -101,7 +101,7 @@ struct SettingsView: View {
                     }
                     .toggleStyle(.switch)
 
-                    Button("Enabled List") {
+                    Button("Enabled Projects") {
                         isSuggestionFeatureEnabledListPickerOpen = true
                     }
                 }.sheet(isPresented: $isSuggestionFeatureEnabledListPickerOpen) {
