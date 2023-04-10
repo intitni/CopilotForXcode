@@ -183,7 +183,16 @@ public class RealtimeSuggestionController {
 
             guard UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
             else { return }
-
+            
+            if UserDefaults.shared.value(for: \.disableSuggestionFeatureGlobally),
+               let fileURL = try? await Environment.fetchCurrentFileURL(),
+               let (workspace, _) = try? await Workspace
+               .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            {
+                let isEnabled = workspace.isSuggestionFeatureEnabled
+                if !isEnabled { return }
+            }
+            
             if Task.isCancelled { return }
 
             Logger.service.info("Prefetch suggestions.")
