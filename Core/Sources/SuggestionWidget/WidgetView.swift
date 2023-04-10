@@ -1,8 +1,10 @@
+import Environment
 import SwiftUI
 
 @MainActor
 final class WidgetViewModel: ObservableObject {
     @Published var isProcessing: Bool
+    @Published var currentFileURL: URL?
 
     init(isProcessing: Bool = false) {
         self.isProcessing = isProcessing
@@ -72,7 +74,7 @@ struct WidgetView: View {
                     isHovering = yes
                 }
             }.contextMenu {
-                WidgetContextMenu()
+                WidgetContextMenu(widgetViewModel: viewModel)
             }
     }
 
@@ -95,6 +97,10 @@ struct WidgetContextMenu: View {
     @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
     @AppStorage(\.forceOrderWidgetToFront) var forceOrderWidgetToFront
+    @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
+    @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
+    @ObservedObject var widgetViewModel: WidgetViewModel
+    @State var projectPath: String?
 
     var body: some View {
         Group {
@@ -115,7 +121,7 @@ struct WidgetContextMenu: View {
                     Image(systemName: "checkmark")
                 }
             }
-            
+
             Button(action: {
                 acceptSuggestionWithAccessibilityAPI.toggle()
             }, label: {
@@ -124,7 +130,7 @@ struct WidgetContextMenu: View {
                     Image(systemName: "checkmark")
                 }
             })
-            
+
             Button(action: {
                 hideCommonPrecedingSpacesInSuggestion.toggle()
             }, label: {
@@ -133,7 +139,7 @@ struct WidgetContextMenu: View {
                     Image(systemName: "checkmark")
                 }
             })
-            
+
             Button(action: {
                 forceOrderWidgetToFront.toggle()
             }, label: {
@@ -142,13 +148,50 @@ struct WidgetContextMenu: View {
                     Image(systemName: "checkmark")
                 }
             })
-            
+
+            if let projectPath, disableSuggestionFeatureGlobally {
+                let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                    projectPath.hasPrefix(path)
+                }
+                Button(action: {
+                    if matchedPath != nil {
+                        suggestionFeatureEnabledProjectList
+                            .removeAll { path in path == matchedPath }
+                    } else {
+                        suggestionFeatureEnabledProjectList.append(projectPath)
+                    }
+                }) {
+                    if matchedPath == nil {
+                        Text("Add to Suggestion-Enabled Project List")
+                    } else {
+                        Text("Remove from Suggestion-Enabled Project List")
+                    }
+                }
+            }
+
             Divider()
-            
+
             Button(action: {
                 exit(0)
             }) {
                 Text("Quit")
+            }
+        }
+        .onAppear {
+            updateProjectPath(fileURL: widgetViewModel.currentFileURL)
+        }
+        .onChange(of: widgetViewModel.currentFileURL) { fileURL in
+            updateProjectPath(fileURL: fileURL)
+        }
+    }
+    
+    func updateProjectPath(fileURL: URL?) {
+        Task {
+            let projectURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
+            if let projectURL {
+                Task { @MainActor in
+                    self.projectPath = projectURL.path
+                }
             }
         }
     }
