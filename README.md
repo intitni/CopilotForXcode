@@ -190,6 +190,7 @@ fi
 - The first run of the extension will be slow. Be patient.
 - The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 - The suggestions are presented as C-style comments in comment mode, they may break your code if you are editing a JSON file or something.
+- When a real-time suggestion request is triggered, there is a chance that it may briefly block the editor. This can occur at most once for each file after each restart of the extension because the extension needs to initiate real-time suggestion by clicking an item from the menu bar. However, once a command has been executed and some information is cached, the extension will be able to trigger real-time suggestion using a different method.
 
 ## License 
 
