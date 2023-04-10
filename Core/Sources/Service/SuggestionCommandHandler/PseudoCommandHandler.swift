@@ -39,20 +39,28 @@ struct PseudoCommandHandler {
     }
 
     func generateRealtimeSuggestions() async {
+        // Can't use handler directly if content is not available.
         guard let editor = await getEditorContent() else {
             try? await Environment.triggerAction("Prefetch Suggestions")
             return
         }
+        
+        // If no cache is available, and completion panel is not displayed, try to get it with command.
+        if editor.uti.isEmpty, await Environment.frontmostXcodeWindowIsEditor() {
+            try? await Environment.triggerAction("Prefetch Suggestions")
+            return
+        }
+        
+        // Otherwise, get it from pseudo handler directly.
         let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
-        let handler: SuggestionCommandHandler = {
-            switch mode {
-            case .comment:
-                return CommentBaseCommandHandler()
-            case .floatingWidget:
-                return WindowBaseCommandHandler()
-            }
-        }()
-        _ = try? await handler.generateRealtimeSuggestions(editor: editor)
+        switch mode {
+        case .comment:
+            let handler = CommentBaseCommandHandler()
+            _ = try? await handler.generateRealtimeSuggestions(editor: editor)
+        case .floatingWidget:
+            let handler = WindowBaseCommandHandler()
+            _ = try? await handler.generateRealtimeSuggestions(editor: editor)
+        }
     }
 
     func rejectSuggestions() async {
