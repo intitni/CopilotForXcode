@@ -133,6 +133,24 @@ public struct UserDefaultPreferenceKeys {
     public var forceOrderWidgetToFront: HideCommonPrecedingSpacesInSuggestion {
         .init()
     }
+    
+    public struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "DisableSuggestionFeatureGlobally"
+    }
+    
+    public var disableSuggestionFeatureGlobally: DisableSuggestionFeatureGlobally {
+        .init()
+    }
+    
+    public struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
+        public let defaultValue: [String] = []
+        public let key = "SuggestionFeatureEnabledProjectList"
+    }
+    
+    public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
+        .init()
+    }
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
 }
