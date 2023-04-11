@@ -59,6 +59,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         self.apiKey = apiKey
         self.endpoint = endpoint
         self.requestBody = requestBody
+        self.requestBody.stream = true
     }
 
     func callAsFunction() async throws -> (

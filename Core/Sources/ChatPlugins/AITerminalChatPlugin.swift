@@ -52,7 +52,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                     delegate?.pluginDidEndResponding(self)
                     await chatGPTService.mutateHistory { history in
                         history.append(.init(role: .assistant, content: """
-                        Confirm to run?
+                        Should I run this command? You can instruct me to modify it again.
                         ```
                         \(result)
                         ```
@@ -63,7 +63,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                     await chatGPTService.mutateHistory { history in
                         history.append(.init(
                             role: .assistant,
-                            content: "Should I run it? Or should I modify it?"
+                            content: "Sorry, I don't understand. Do you want me to run it?"
                         ))
                     }
                 }
@@ -77,7 +77,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 if isCancelled { return }
                 await chatGPTService.mutateHistory { history in
                     history.append(.init(role: .assistant, content: """
-                    Confirm to run?
+                    Should I run this command? You can instruct me to modify it.
                     ```
                     \(result)
                     ```
@@ -118,7 +118,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
         return extractCodeFromMarkdown(try await askChatGPT(
             systemPrompt: p,
             question: "the task is: \"\(task)\""
-        ))
+        ) ?? "")
     }
 
     func modifyCommand(command: String, requirement: String) async throws -> String {
@@ -139,7 +139,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
         return extractCodeFromMarkdown(try await askChatGPT(
             systemPrompt: p,
             question: "The requirement is: \"\(requirement)\""
-        ))
+        ) ?? "")
     }
 
     func checkConfirmation(content: String) async throws -> Tone {
@@ -165,7 +165,8 @@ public actor AITerminalChatPlugin: ChatPlugin {
             systemPrompt: p,
             question: "The content is: \"\(content)\""
         )
-        return Tone(rawValue: Int(result) ?? 2) ?? .cancellation
+        let tone = result.flatMap(Int.init).flatMap(Tone.init(rawValue:)) ?? .other
+        return tone
     }
 
     enum Tone: Int {
