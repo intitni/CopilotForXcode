@@ -311,6 +311,7 @@ extension SuggestionWidgetController {
                     }
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
+                    widgetViewModel.currentFileURL = currentFileURL
                     await updateContentForActiveEditor(fileURL: fileURL)
                 }
 
