@@ -16,11 +16,11 @@ final class AcceptSuggestionTests: XCTestCase {
         """
         let suggestion = CopilotCompletion(
             text: text,
-            position: .init(line: 2, character: 19),
+            position: .init(line: 0, character: 1),
             uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
-                end: .init(line: 2, character: 18)
+                end: .init(line: 1, character: 0)
             ),
             displayText: ""
         )
@@ -52,16 +52,17 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """
         let text = """
+        struct Cat {
             var name: String
             var age: String
         """
         let suggestion = CopilotCompletion(
             text: text,
-            position: .init(line: 2, character: 19),
+            position: .init(line: 0, character: 12),
             uuid: "",
             range: .init(
-                start: .init(line: 1, character: 0),
-                end: .init(line: 2, character: 18)
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 12)
             ),
             displayText: ""
         )
@@ -100,11 +101,11 @@ final class AcceptSuggestionTests: XCTestCase {
         """
         let suggestion = CopilotCompletion(
             text: text,
-            position: .init(line: 2, character: 19),
+            position: .init(line: 1, character: 12),
             uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
-                end: .init(line: 2, character: 18)
+                end: .init(line: 1, character: 12)
             ),
             displayText: ""
         )
@@ -144,11 +145,11 @@ final class AcceptSuggestionTests: XCTestCase {
         """
         let suggestion = CopilotCompletion(
             text: text,
-            position: .init(line: 0, character: 0),
+            position: .init(line: 0, character: 18),
             uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
-                end: .init(line: 5, character: 15)
+                end: .init(line: 0, character: 20)
             ),
             displayText: ""
         )
@@ -191,11 +192,11 @@ final class AcceptSuggestionTests: XCTestCase {
         """
         let suggestion = CopilotCompletion(
             text: text,
-            position: .init(line: 0, character: 0),
+            position: .init(line: 0, character: 18),
             uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
-                end: .init(line: 5, character: 15)
+                end: .init(line: 1, character: 0)
             ),
             displayText: ""
         )
@@ -223,6 +224,107 @@ final class AcceptSuggestionTests: XCTestCase {
             print(array)
         }
 
+        """)
+    }
+    
+    func test_replacing_multiple_lines() async throws {
+        let content = """
+        struct Cat {
+            func speak() { print("meow") }
+        }
+        """
+        let text = """
+        struct Dog {
+            func speak() {
+                print("woof")
+            }
+        }
+        """
+        let suggestion = CopilotCompletion(
+            text: text,
+            position: .init(line: 0, character: 7),
+            uuid: "",
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 2, character: 1)
+            ),
+            displayText: ""
+        )
+        
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 0)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 4, character: 1))
+        XCTAssertEqual(lines.joined(separator: ""), text)
+    }
+    
+    func test_replacing_multiple_lines_in_the_middle() async throws {
+        let content = """
+        protocol Animal {
+            func speak()
+        }
+        
+        struct Cat: Animal {
+            func speak() { print("meow") }
+        }
+        
+        func foo() {}
+        """
+        let text = """
+        Dog {
+            func speak() {
+                print("woof")
+            }
+        """
+        let suggestion = CopilotCompletion(
+            text: text,
+            position: .init(line: 5, character: 34),
+            uuid: "",
+            range: .init(
+                start: .init(line: 4, character: 7),
+                end: .init(line: 5, character: 34)
+            ),
+            displayText: ""
+        )
+        
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 0)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 7, character: 5))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        protocol Animal {
+            func speak()
+        }
+        
+        struct Dog {
+            func speak() {
+                print("woof")
+            }
+        }
+        
+        func foo() {}
         """)
     }
 }

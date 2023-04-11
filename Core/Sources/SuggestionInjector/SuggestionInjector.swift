@@ -6,7 +6,6 @@ let suggestionEnd = "*///======== End of Copilot Suggestion"
 
 // NOTE: Every lines from Xcode Extension has a line break at its end, even the last line.
 // NOTE: Copilot's completion always start at character 0, no matter where the cursor is.
-// NOTE: range.end and position in Copilot's completion are useless, don't bother looking at them.
 
 public struct SuggestionInjector {
     public init() {}
@@ -139,40 +138,69 @@ public struct SuggestionInjector {
         extraInfo.didChangeCursorPosition = true
         extraInfo.suggestionRange = nil
         let start = completion.range.start
+        let end = completion.range.end
         let suggestionContent = completion.text
 
         let existedLine = start.line < content.endIndex ? content[start.line] : nil
         let commonPrefix = longestCommonPrefix(of: suggestionContent, and: existedLine ?? "")
 
-        if let existedLine, existedLine.count > 1, !commonPrefix.isEmpty {
-            extraInfo.modifications.append(.deleted(start.line...start.line))
-            content.remove(at: start.line)
-        } else if content.count > start.line,
-                  content[start.line].isEmpty || content[start.line] == "\n"
+        let firstRemovedLine = content[safe: start.line]
+        let lastRemovedLine = content[safe: end.line]
+        let startLine = max(0, start.line)
+        let endLine = max(start.line, min(end.line, content.endIndex - 1))
+        extraInfo.modifications.append(.deleted(startLine...endLine))
+        content.removeSubrange(startLine...endLine)
+
+        var toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
+
+        if let firstRemovedLine,
+           !firstRemovedLine.isEmptyOrNewLine,
+           start.character > 0,
+           start.character < firstRemovedLine.count,
+           !toBeInserted.isEmpty
         {
-            extraInfo.modifications.append(.deleted(start.line...start.line))
-            content.remove(at: start.line)
+            let leftoverRange = firstRemovedLine.startIndex..<(firstRemovedLine.index(
+                firstRemovedLine.startIndex,
+                offsetBy: start.character,
+                limitedBy: firstRemovedLine.endIndex
+            ) ?? firstRemovedLine.endIndex)
+            var leftover = firstRemovedLine[leftoverRange]
+            if leftover.hasSuffix("\n") {
+                leftover.removeLast(1)
+            }
+            toBeInserted[0].insert(
+                contentsOf: leftover,
+                at: toBeInserted[0].startIndex
+            )
         }
 
-        let toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
-        if content.endIndex < start.line {
-            extraInfo.modifications.append(.inserted(content.endIndex, toBeInserted))
-            content.append(contentsOf: toBeInserted)
-            cursorPosition = .init(
-                line: toBeInserted.endIndex,
-                character: (toBeInserted.last?.count ?? 1) - 1
-            )
-        } else {
-            extraInfo.modifications.append(.inserted(start.line, toBeInserted))
-            content.insert(
-                contentsOf: toBeInserted,
-                at: start.line
-            )
-            cursorPosition = .init(
-                line: start.line + toBeInserted.count - 1,
-                character: (toBeInserted.last?.count ?? 1) - 1
-            )
+        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
+        if let lastRemovedLine,
+           !lastRemovedLine.isEmptyOrNewLine,
+           end.character >= 0,
+           end.character - 1 < lastRemovedLine.count,
+           !toBeInserted.isEmpty
+        {
+            let leftoverRange = (lastRemovedLine.index(
+                lastRemovedLine.startIndex,
+                offsetBy: end.character,
+                limitedBy: lastRemovedLine.endIndex
+            ) ?? lastRemovedLine.endIndex)..<lastRemovedLine.endIndex
+            if toBeInserted[toBeInserted.endIndex - 1].hasSuffix("\n") {
+                toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
+            }
+            let leftover = lastRemovedLine[leftoverRange]
+            toBeInserted[toBeInserted.endIndex - 1]
+                .append(contentsOf: leftover)
         }
+
+        let insertingIndex = min(start.line, content.endIndex)
+        content.insert(contentsOf: toBeInserted, at: insertingIndex)
+        extraInfo.modifications.append(.inserted(insertingIndex, toBeInserted))
+        cursorPosition = .init(
+            line: startLine + toBeInserted.count - 1,
+            character: max(0, cursorCol)
+        )
     }
 }
 
@@ -224,4 +252,10 @@ func longestCommonPrefix(of a: String, and b: String) -> String {
     }
 
     return prefix
+}
+
+extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
 }
