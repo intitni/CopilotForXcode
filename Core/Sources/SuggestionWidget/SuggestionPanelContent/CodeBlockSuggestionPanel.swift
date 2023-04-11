@@ -1,26 +1,31 @@
 import SwiftUI
 
 struct CodeBlock: View {
-    @ObservedObject var suggestion: SuggestionProvider
     @Environment(\.colorScheme) var colorScheme
+
+    let code: String
+    let language: String
+    let startLineIndex: Int
+
+    @State var commonPrecedingSpaceCount: Int = 0
+    @State var highlightedCode: [NSAttributedString] = []
 
     var body: some View {
         VStack(spacing: 4) {
-            let code = suggestion.highlightedCode(colorScheme: colorScheme)
-            ForEach(0..<code.endIndex, id: \.self) { index in
+            ForEach(0..<highlightedCode.endIndex, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(index + suggestion.startLineIndex + 1)")
+                    Text("\(index + startLineIndex + 1)")
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(.secondary)
                         .frame(minWidth: 40)
-                    Text(AttributedString(code[index]))
+                    Text(AttributedString(highlightedCode[index]))
                         .foregroundColor(.white.opacity(0.1))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(4)
                         .overlay(alignment: .topLeading) {
-                            if index == 0, suggestion.commonPrecedingSpaceCount > 0 {
-                                Text("\(suggestion.commonPrecedingSpaceCount + 1)")
+                            if index == 0, commonPrecedingSpaceCount > 0 {
+                                Text("\(commonPrecedingSpaceCount + 1)")
                                     .padding(.top, -12)
                                     .font(.footnote)
                                     .foregroundStyle(colorScheme == .dark ? .white : .black)
@@ -34,6 +39,30 @@ struct CodeBlock: View {
         .font(.system(size: 12, design: .monospaced))
         .padding(.leading, 4)
         .padding([.trailing, .top, .bottom])
+        .onChange(of: code) { _ in
+            highlightCode()
+        }
+        .onChange(of: colorScheme) { _ in
+            highlightCode()
+        }
+        .onChange(of: language) { _ in
+            highlightCode()
+        }
+        .onAppear {
+            highlightCode()
+        }
+    }
+
+    func highlightCode() {
+        let (new, spaceCount) = highlighted(
+            code: code,
+            language: language,
+            brightMode: colorScheme != .dark,
+            droppingLeadingSpaces: UserDefaults.shared
+                .value(for: \.hideCommonPrecedingSpacesInSuggestion)
+        )
+        highlightedCode = new
+        commonPrecedingSpaceCount = spaceCount
     }
 }
 
@@ -85,8 +114,12 @@ struct CodeBlockSuggestionPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                CodeBlock(suggestion: suggestion)
-                    .frame(maxWidth: .infinity)
+                CodeBlock(
+                    code: suggestion.code,
+                    language: suggestion.language,
+                    startLineIndex: suggestion.startLineIndex
+                )
+                .frame(maxWidth: .infinity)
             }
             .background(Color.contentBackground)
 
