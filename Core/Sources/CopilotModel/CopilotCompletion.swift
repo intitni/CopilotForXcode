@@ -17,7 +17,7 @@ public struct CopilotCompletion: Codable, Equatable {
 
     /// The new code to be inserted and the original code on the first line.
     public var text: String
-    /// The position of the cursor after the completion.
+    /// The position of the cursor before generating the completion.
     public var position: CursorPosition
     /// An id.
     public var uuid: String
