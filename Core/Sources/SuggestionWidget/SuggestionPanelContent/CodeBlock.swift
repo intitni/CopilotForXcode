@@ -8,6 +8,8 @@ struct CodeBlock: View {
     let commonPrecedingSpaceCount: Int
     let highlightedCode: [NSAttributedString]
     let firstLinePrecedingSpaceCount: Int
+    
+    @AppStorage(\.disableLazyVStack) var disableLazyVStack
 
     init(
         code: String,
@@ -32,9 +34,22 @@ struct CodeBlock: View {
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
     }
+    
+    @ViewBuilder
+    func vstack(@ViewBuilder content: () -> some View) -> some View {
+        if disableLazyVStack {
+            VStack(spacing: 4) {
+                content()
+            }
+        } else {
+            LazyVStack(spacing: 4) {
+                content()
+            }
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 4) {
+        vstack {
             ForEach(0..<highlightedCode.endIndex, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(index + startLineIndex + 1)")
