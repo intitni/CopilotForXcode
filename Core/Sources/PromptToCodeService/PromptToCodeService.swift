@@ -41,7 +41,7 @@ public final class PromptToCodeService: ObservableObject {
         let api = promptToCodeAPI
         runningAPI = api
         isResponding = true
-        let toBemodified = code
+        let toBeModified = code
         oldDescription = description
         oldCode = code
         code = ""
@@ -49,7 +49,7 @@ public final class PromptToCodeService: ObservableObject {
         defer { isResponding = false }
         do {
             let stream = try await api.modifyCode(
-                code: toBemodified,
+                code: toBeModified,
                 language: language,
                 indentSize: indentSize,
                 usesTabsForIndentation: usesTabsForIndentation,
