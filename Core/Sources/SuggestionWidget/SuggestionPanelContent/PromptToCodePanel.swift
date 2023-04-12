@@ -75,9 +75,15 @@ struct PromptToCodePanel: View {
                         .buttonStyle(.plain)
                     } else {
                         HStack {
-                            Toggle("Continuous Mode", isOn: $provider.isContinuous)
-                                .toggleStyle(.checkbox)
-                            
+                            Toggle(
+                                "Continuous Mode",
+                                isOn: .init(
+                                    get: { provider.isContinuous },
+                                    set: { _ in provider.toggleContinuous() }
+                                )
+                            )
+                            .toggleStyle(.checkbox)
+
                             Button(action: {
                                 provider.cancel()
                             }) {
