@@ -5,6 +5,7 @@ import SwiftUI
 final class SuggestionPanelViewModel: ObservableObject {
     enum Content {
         case suggestion(SuggestionProvider)
+        case promptToCode(PromptToCodeProvider)
         case error(String)
 
         var contentHash: String {
@@ -13,6 +14,8 @@ final class SuggestionPanelViewModel: ObservableObject {
                 return "error: \(e)"
             case let .suggestion(provider):
                 return "suggestion: \(provider.code.hashValue)"
+            case let .promptToCode(provider):
+                return "provider: \(provider.id)"
             }
         }
     }
@@ -25,6 +28,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var content: Content? {
         didSet {
             adjustActiveTabAndShowHideIfNeeded(tab: .suggestion)
+            requetApplicationPolicyUpdate?(self)
         }
     }
 
@@ -36,7 +40,7 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     @Published var activeTab: ActiveTab {
         didSet {
-            onActiveTabChanged?(activeTab)
+            requetApplicationPolicyUpdate?(self)
         }
     }
 
@@ -44,7 +48,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
 
-    var onActiveTabChanged: ((ActiveTab) -> Void)?
+    var requetApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)?
 
     public init(
         content: Content? = nil,
@@ -52,14 +56,14 @@ final class SuggestionPanelViewModel: ObservableObject {
         isPanelDisplayed: Bool = false,
         activeTab: ActiveTab = .suggestion,
         colorScheme: ColorScheme = .dark,
-        onActiveTabChanged: ((ActiveTab) -> Void)? = nil
+        requetApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)? = nil
     ) {
         self.content = content
         self.chat = chat
         self.isPanelDisplayed = isPanelDisplayed
         self.activeTab = activeTab
         self.colorScheme = colorScheme
-        self.onActiveTabChanged = onActiveTabChanged
+        self.requetApplicationPolicyUpdate = requetApplicationPolicyUpdate
     }
 
     func adjustActiveTabAndShowHideIfNeeded(tab: ActiveTab) {
@@ -108,6 +112,8 @@ struct SuggestionPanelView: View {
                             switch content {
                             case let .suggestion(suggestion):
                                 CodeBlockSuggestionPanel(suggestion: suggestion)
+                            case let .promptToCode(provider):
+                                PromptToCodePanel(provider: provider)
                             case let .error(description):
                                 ErrorPanel(viewModel: viewModel, description: description)
                             }

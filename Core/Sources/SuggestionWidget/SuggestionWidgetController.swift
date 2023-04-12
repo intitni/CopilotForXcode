@@ -80,6 +80,7 @@ public final class SuggestionWidgetController {
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
             if case .chat = suggestionPanelViewModel.activeTab { return true }
+            if case .promptToCode = suggestionPanelViewModel.content { return true }
             return false
         }
         return it
@@ -191,14 +192,18 @@ public final class SuggestionWidgetController {
 
         Task { @MainActor in
             var switchTask: Task<Void, Error>?
-            suggestionPanelViewModel.onActiveTabChanged = { activeTab in
+            suggestionPanelViewModel.requetApplicationPolicyUpdate = { viewModel in
                 #warning("""
                 TODO: There should be a better way for that
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
                 But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
                 """)
-                switch activeTab {
-                case .suggestion:
+                switch (viewModel.activeTab, viewModel.content) {
+                case (.chat, _), (.suggestion, .promptToCode):
+                    guard NSApp.activationPolicy() != .accessory else { return }
+                    switchTask?.cancel()
+                    NSApp.setActivationPolicy(.accessory)
+                case (.suggestion, _):
                     guard NSApp.activationPolicy() != .prohibited else { return }
                     switchTask?.cancel()
                     switchTask = Task {
@@ -206,10 +211,6 @@ public final class SuggestionWidgetController {
                         try Task.checkCancellation()
                         NSApp.setActivationPolicy(.prohibited)
                     }
-                case .chat:
-                    guard NSApp.activationPolicy() != .accessory else { return }
-                    switchTask?.cancel()
-                    NSApp.setActivationPolicy(.accessory)
                 }
             }
         }
@@ -263,6 +264,29 @@ public extension SuggestionWidgetController {
     }
 
     func closeChatRoom(fileURL: URL) {
+        widgetViewModel.isProcessing = false
+        Task {
+            await updateContentForActiveEditor(fileURL: fileURL)
+        }
+    }
+    
+    func presentPromptToCode(fileURL: URL) {
+        widgetViewModel.isProcessing = false
+        Task {
+            if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+                suggestionPanelViewModel.content = .promptToCode(provider)
+                suggestionPanelViewModel.isPanelDisplayed = true
+                
+                Task { @MainActor in
+                    // looks like we need a delay.
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+    }
+    
+    func discardPromptToCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
             await updateContentForActiveEditor(fileURL: fileURL)
@@ -451,8 +475,10 @@ extension SuggestionWidgetController {
         } else {
             suggestionPanelViewModel.chat = nil
         }
-
-        if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
+        
+        if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+            suggestionPanelViewModel.content = .promptToCode(provider)
+        } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
             suggestionPanelViewModel.content = .suggestion(suggestion)
         } else {
             suggestionPanelViewModel.content = nil

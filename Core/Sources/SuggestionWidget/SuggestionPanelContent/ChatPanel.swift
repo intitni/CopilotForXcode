@@ -241,7 +241,7 @@ struct ChatPanelInputArea: View {
                     Image(systemName: "paperplane.fill")
                         .padding(8)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain) 
                 .disabled(chat.isReceivingMessage)
             }
             .frame(maxWidth: .infinity)
