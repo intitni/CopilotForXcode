@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CodeBlockSuggestionPanel: View {
     @ObservedObject var suggestion: SuggestionProvider
+    @Environment(\.colorScheme) var colorScheme
 
     struct ToolBar: View {
         @ObservedObject var suggestion: SuggestionProvider
@@ -51,7 +52,8 @@ struct CodeBlockSuggestionPanel: View {
                 CodeBlock(
                     code: suggestion.code,
                     language: suggestion.language,
-                    startLineIndex: suggestion.startLineIndex
+                    startLineIndex: suggestion.startLineIndex,
+                    colorScheme: colorScheme
                 )
                 .frame(maxWidth: .infinity)
             }
