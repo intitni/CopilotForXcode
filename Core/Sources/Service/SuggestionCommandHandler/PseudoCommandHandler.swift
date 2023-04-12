@@ -45,12 +45,6 @@ struct PseudoCommandHandler {
             return
         }
         
-        // If no cache is available, and completion panel is not displayed, try to get it with command.
-        if editor.uti.isEmpty, await Environment.frontmostXcodeWindowIsEditor() {
-            try? await Environment.triggerAction("Prefetch Suggestions")
-            return
-        }
-        
         // Otherwise, get it from pseudo handler directly.
         let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
         switch mode {
