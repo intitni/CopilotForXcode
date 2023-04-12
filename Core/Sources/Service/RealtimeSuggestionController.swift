@@ -25,6 +25,7 @@ public class RealtimeSuggestionController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var focusedUIElement: AXUIElement?
+    private var sourceEditor: AXUIElement?
 
     var isCommentMode: Bool {
         UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
@@ -108,8 +109,9 @@ public class RealtimeSuggestionController {
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
-        guard focusElementType == "Source Editor" else { return }
         focusedUIElement = focusElement
+        guard focusElementType == "Source Editor" else { return }
+        sourceEditor = focusElement
 
         editorObservationTask?.cancel()
         editorObservationTask = nil
@@ -131,6 +133,28 @@ public class RealtimeSuggestionController {
                     self.triggerPrefetchDebounced()
                 default:
                     continue
+                }
+            }
+        }
+
+        Task { // Get cache ready for real-time suggestions.
+            guard UserDefaults.shared.value(for: \.preCacheOnFileOpen) else { return }
+            guard
+                let fileURL = try? await Environment.fetchCurrentFileURL(),
+                let (_, filespace) = try? await Workspace
+                .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            else { return }
+
+            if filespace.uti == nil {
+                Logger.service.info("Generate cache for file.")
+                // avoid the command get called twice
+                filespace.uti = ""
+                do {
+                    try await Environment.triggerAction("Real-time Suggestions")
+                } catch {
+                    if filespace.uti?.isEmpty ?? true {
+                        filespace.uti = nil
+                    }
                 }
             }
         }
@@ -203,7 +227,7 @@ public class RealtimeSuggestionController {
             }
 
             // So the editor won't be blocked (after information are cached)!
-            await PseudoCommandHandler().generateRealtimeSuggestions()
+            await PseudoCommandHandler().generateRealtimeSuggestions(sourceEditor: sourceEditor)
         }
     }
 

@@ -153,11 +153,17 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
+    public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
 }
 
 public enum FeatureFlags {
     public struct DisableLazyVStack: UserDefaultPreferenceKey {
         public let defaultValue = false
         public let key = "FeatureFlag-DisableLazyVStack"
+    }
+    
+    public struct PreCacheOnFileOpen: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-PreCacheOnFileOpen"
     }
 }

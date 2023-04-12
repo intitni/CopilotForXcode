@@ -11,6 +11,10 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
+    
+    var doubleValue: Double {
+        (try? copyValue(key: kAXValueAttribute)) ?? 0.0
+    }
 
     var document: String? {
         try? copyValue(key: kAXDocumentAttribute)
@@ -18,6 +22,10 @@ public extension AXUIElement {
 
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
+    }
+    
+    var isSourceEditor: Bool {
+        description == "Source Editor"
     }
 
     var selectedTextRange: Range<Int>? {
