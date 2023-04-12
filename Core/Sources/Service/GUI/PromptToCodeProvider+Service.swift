@@ -17,6 +17,7 @@ extension PromptToCodeProvider {
         service.$code.sink(receiveValue: set(\.code)).store(in: &cancellables)
         service.$isResponding.sink(receiveValue: set(\.isResponding)).store(in: &cancellables)
         service.$description.sink(receiveValue: set(\.description)).store(in: &cancellables)
+        service.$isContinuous.sink(receiveValue: set(\.isContinuous)).store(in: &cancellables)
         service.$oldCode.map { $0 != nil }
             .sink(receiveValue: set(\.canRevert)).store(in: &cancellables)
 
@@ -51,6 +52,10 @@ extension PromptToCodeProvider {
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
             }
+        }
+        
+        onContinuousToggleClick = {
+            service.isContinuous.toggle()
         }
     }
 

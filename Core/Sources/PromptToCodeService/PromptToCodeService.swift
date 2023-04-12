@@ -15,13 +15,13 @@ public final class PromptToCodeService: ObservableObject {
     @Published public var code: String
     @Published public var isResponding: Bool = false
     @Published public var description: String = ""
+    @Published public var isContinuous = false
     public var oldDescription: String?
     public var canRevert: Bool { oldCode != nil }
     public var selectionRange: CursorRange
     public var language: CopilotLanguage
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
-    public var isContinuous = false
 
     public init(
         code: String,
