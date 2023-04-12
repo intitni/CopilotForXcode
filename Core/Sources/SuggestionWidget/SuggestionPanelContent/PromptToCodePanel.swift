@@ -132,7 +132,7 @@ struct PromptToCodePanelToolbar: View {
                 }
             }
             .buttonStyle(.plain)
-            .disabled(provider.isResponding)
+            .disabled(provider.isResponding || !provider.canRevert)
 
             HStack(spacing: 0) {
                 Group {
