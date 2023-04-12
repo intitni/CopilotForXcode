@@ -25,6 +25,7 @@ public class RealtimeSuggestionController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var focusedUIElement: AXUIElement?
+    private var sourceEditor: AXUIElement?
 
     var isCommentMode: Bool {
         UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
@@ -108,8 +109,9 @@ public class RealtimeSuggestionController {
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
-        guard focusElementType == "Source Editor" else { return }
         focusedUIElement = focusElement
+        guard focusElementType == "Source Editor" else { return }
+        sourceEditor = focusElement
 
         editorObservationTask?.cancel()
         editorObservationTask = nil
@@ -216,7 +218,7 @@ public class RealtimeSuggestionController {
             }
 
             // So the editor won't be blocked (after information are cached)!
-            await PseudoCommandHandler().generateRealtimeSuggestions()
+            await PseudoCommandHandler().generateRealtimeSuggestions(sourceEditor: sourceEditor)
         }
     }
 

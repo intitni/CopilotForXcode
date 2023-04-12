@@ -38,13 +38,10 @@ struct PseudoCommandHandler {
         ))
     }
 
-    func generateRealtimeSuggestions() async {
-        // Can't use handler directly if content is not available.
-        guard let editor = await getEditorContent() else {
-            try? await Environment.triggerAction("Prefetch Suggestions")
-            return
-        }
-        
+    func generateRealtimeSuggestions(sourceEditor: AXUIElement?) async {
+        // Can't use handler if content is not available.
+        guard let editor = await getEditorContent(sourceEditor: sourceEditor) else { return }
+
         // Otherwise, get it from pseudo handler directly.
         let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
         switch mode {
@@ -78,7 +75,8 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, cursorPosition) = await getFileContent() else {
+            guard let (content, lines, cursorPosition) = await getFileContent(sourceEditor: nil)
+            else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
                 return
@@ -147,13 +145,13 @@ struct PseudoCommandHandler {
 }
 
 private extension PseudoCommandHandler {
-    func getFileContent() async
+    func getFileContent(sourceEditor: AXUIElement?) async
         -> (content: String, lines: [String], cursorPosition: CursorPosition)?
     {
         guard let xcode = ActiveApplicationMonitor.activeXcode
             ?? ActiveApplicationMonitor.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
-        guard let focusElement = application.focusedElement,
+        guard let focusElement = sourceEditor ?? application.focusedElement,
               focusElement.description == "Source Editor"
         else { return nil }
         guard let selectionRange = focusElement.selectedTextRange else { return nil }
@@ -190,10 +188,10 @@ private extension PseudoCommandHandler {
     }
 
     @ServiceActor
-    func getEditorContent() async -> EditorContent? {
+    func getEditorContent(sourceEditor: AXUIElement?) async -> EditorContent? {
         guard
             let filespace = await getFilespace(),
-            let content = await getFileContent()
+            let content = await getFileContent(sourceEditor: sourceEditor)
         else { return nil }
         let uti = filespace.uti ?? ""
         let tabSize = filespace.tabSize ?? 4

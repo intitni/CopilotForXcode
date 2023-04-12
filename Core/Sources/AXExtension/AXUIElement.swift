@@ -19,6 +19,10 @@ public extension AXUIElement {
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
+    
+    var isSourceEditor: Bool {
+        description == "Source Editor"
+    }
 
     var selectedTextRange: Range<Int>? {
         guard let value: AXValue = try? copyValue(key: kAXSelectedTextRangeAttribute)
