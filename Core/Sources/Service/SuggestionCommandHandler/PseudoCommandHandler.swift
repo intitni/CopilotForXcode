@@ -70,7 +70,7 @@ struct PseudoCommandHandler {
 
     func acceptSuggestion() async {
         if UserDefaults.shared.value(for: \.acceptSuggestionWithAccessibilityAPI) {
-            guard let xcode = ActiveApplicationMonitor.activeXcode else { return }
+            guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor.latestXcode else { return }
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
@@ -108,9 +108,8 @@ struct PseudoCommandHandler {
                         .presentErrorMessage("Fail to set editor content.")
                 }
 
-                #warning("MUSTDO: handle range")
-                if let cursor = result.newSelection?.start {
-                    var range = convertCursorPositionToRange(cursor, in: result.content)
+                if let selection = result.newSelection {
+                    var range = convertCursorRangeToRange(selection, in: result.content)
                     if let value = AXValueCreate(.cfRange, &range) {
                         AXUIElementSetAttributeValue(
                             focusElement,
@@ -219,21 +218,28 @@ private extension PseudoCommandHandler {
         )
     }
 
-    // a function to convert CursorPosition(line:character:) into a Range(location:length) in given
-    // content
-    func convertCursorPositionToRange(
-        _ cursorPosition: CursorPosition,
+    func convertCursorRangeToRange(
+        _ cursorRange: CursorRange,
         in content: String
     ) -> CFRange {
         let lines = content.breakLines()
-        var count = 0
+        var countS = 0
+        var countE = 0
+        var range = CFRange(location: 0, length: 0)
         for (i, line) in lines.enumerated() {
-            if i == cursorPosition.line {
-                return CFRange(location: count + cursorPosition.character, length: 0)
+            if i == cursorRange.start.line {
+                countS = countS + cursorRange.start.character
+                range.location = countS
             }
-            count += line.count
+            if i == cursorRange.end.line {
+                countE = countE + cursorRange.end.character
+                range.length = max(countE - range.location, 0)
+                break
+            }
+            countS += line.count
+            countE += line.count
         }
-        return CFRange(location: count, length: 0)
+        return range
     }
 }
 
