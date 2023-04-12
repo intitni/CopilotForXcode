@@ -275,4 +275,43 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         presenter.presentChatRoom(fileURL: fileURL)
     }
+
+    func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _promptToCode(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    func _promptToCode(editor: EditorContent) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
+        let code = {
+            guard let selection = editor.selections.last,
+                  selection.start != selection.end else { return "" }
+            return editor.selectedCode(in: selection)
+        }()
+
+        _ = await WidgetDataSource.shared.createPromptToCode(
+            for: fileURL,
+            code: code,
+            selectionRange: editor.selections.last.map { .init(
+                start: $0.start,
+                end: $0.end
+            ) } ?? .init(
+                start: editor.cursorPosition,
+                end: editor.cursorPosition
+            ),
+            language: codeLanguage
+        )
+
+        presenter.presentPromptToCode(fileURL: fileURL)
+    }
 }

@@ -179,6 +179,10 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         throw NotSupportedInCommentMode()
     }
+    
+    func promptToCode(editor: XPCShared.EditorContent) async throws -> XPCShared.UpdatedContent? {
+        throw NotSupportedInCommentMode()
+    }
 }
 
 // MARK: - Unsupported
