@@ -353,8 +353,10 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             guard var selection = editor.selections.last,
                   selection.start != selection.end
             else { return ("", .cursor(editor.cursorPosition)) }
-            // always start from char 0 so that it can keep the indentation.
-            selection.start = .init(line: selection.start.line, character: 0)
+            if selection.start.line != selection.end.line {
+                // when there are multiple lines start from char 0 so that it can keep the indentation.
+                selection.start = .init(line: selection.start.line, character: 0)
+            }
             return (
                 editor.selectedCode(in: selection),
                 .init(
