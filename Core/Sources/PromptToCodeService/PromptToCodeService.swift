@@ -21,6 +21,7 @@ public final class PromptToCodeService: ObservableObject {
     public var language: CopilotLanguage
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
+    public var isContinuous = false
 
     public init(
         code: String,

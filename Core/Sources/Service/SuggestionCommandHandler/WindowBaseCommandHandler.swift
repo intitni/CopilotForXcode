@@ -202,7 +202,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 }
                 return .cursor(cursorPosition)
             }(),
-            modifications : extraInfo.modifications
+            modifications: extraInfo.modifications
         )
     }
 
@@ -347,24 +347,27 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
-        let code = {
-            guard let selection = editor.selections.last,
-                  selection.start != selection.end else { return "" }
-            return editor.selectedCode(in: selection)
-        }()
+        
+        let (code, selection) = {
+            guard var selection = editor.selections.last,
+                  selection.start != selection.end
+            else { return ("", .cursor(editor.cursorPosition)) }
+            // always start from char 0 so that it can keep the indentation.
+            selection.start = .init(line: selection.start.line, character: 0)
+            return (
+                editor.selectedCode(in: selection),
+                .init(
+                    start: .init(line: selection.start.line, character: selection.start.character),
+                    end: .init(line: selection.end.line, character: selection.end.character)
+                )
+            )
+        }() as (String, CursorRange)
 
         _ = await WidgetDataSource.shared.createPromptToCode(
             for: fileURL,
             code: code,
-            selectionRange: editor.selections.last.map { .init(
-                start: $0.start,
-                end: $0.end
-            ) } ?? .init(
-                start: editor.cursorPosition,
-                end: editor.cursorPosition
-            ),
+            selectionRange: selection,
             language: codeLanguage
         )
 
