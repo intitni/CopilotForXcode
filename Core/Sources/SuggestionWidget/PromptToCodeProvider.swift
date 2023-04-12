@@ -9,6 +9,7 @@ public final class PromptToCodeProvider: ObservableObject {
     @Published public var description: String
     @Published public var isResponding: Bool
     @Published public var startLineIndex: Int
+    @Published public var startLineColumn: Int
     @Published public var requirement: String
     @Published public var errorMessage: String
     @Published public var canRevert: Bool
@@ -25,6 +26,7 @@ public final class PromptToCodeProvider: ObservableObject {
         description: String = "",
         isResponding: Bool = false,
         startLineIndex: Int = 0,
+        startLineColumn: Int = 0,
         requirement: String = "",
         errorMessage: String = "",
         canRevert: Bool = false,
@@ -39,6 +41,7 @@ public final class PromptToCodeProvider: ObservableObject {
         self.description = description
         self.isResponding = isResponding
         self.startLineIndex = startLineIndex
+        self.startLineColumn = startLineColumn
         self.requirement = requirement
         self.errorMessage = errorMessage
         self.canRevert = canRevert

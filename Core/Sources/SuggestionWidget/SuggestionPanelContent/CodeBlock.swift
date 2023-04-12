@@ -7,19 +7,30 @@ struct CodeBlock: View {
     let colorScheme: ColorScheme
     let commonPrecedingSpaceCount: Int
     let highlightedCode: [NSAttributedString]
+    let firstLinePrecedingSpaceCount: Int
 
-    init(code: String, language: String, startLineIndex: Int, colorScheme: ColorScheme) {
+    init(
+        code: String,
+        language: String,
+        startLineIndex: Int,
+        colorScheme: ColorScheme,
+        firstLinePrecedingSpaceCount: Int = 0
+    ) {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
         self.colorScheme = colorScheme
+        self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
+        let padding = firstLinePrecedingSpaceCount > 0
+            ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
+            : ""
         let result = Self.highlight(
-            code: code,
+            code: padding + code,
             language: language,
             colorScheme: colorScheme
         )
-        self.commonPrecedingSpaceCount = result.commonLeadingSpaceCount
-        self.highlightedCode = result.code
+        commonPrecedingSpaceCount = result.commonLeadingSpaceCount
+        highlightedCode = result.code
     }
 
     var body: some View {

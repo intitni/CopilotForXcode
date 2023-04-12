@@ -24,7 +24,8 @@ struct PromptToCodePanel: View {
                             code: provider.code,
                             language: provider.language,
                             startLineIndex: provider.startLineIndex,
-                            colorScheme: colorScheme
+                            colorScheme: colorScheme,
+                            firstLinePrecedingSpaceCount: provider.startLineColumn
                         )
                         .frame(maxWidth: .infinity)
                     }

@@ -8,7 +8,8 @@ extension PromptToCodeProvider {
             code: service.code,
             language: service.language.rawValue,
             description: "",
-            startLineIndex: service.selectionRange.start.line
+            startLineIndex: service.selectionRange.start.line,
+            startLineColumn: service.selectionRange.start.character
         )
 
         var cancellables = Set<AnyCancellable>()
