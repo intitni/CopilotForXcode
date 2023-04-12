@@ -1,44 +1,8 @@
 import SwiftUI
 
-struct CodeBlock: View {
-    @ObservedObject var suggestion: SuggestionProvider
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            let code = suggestion.highlightedCode(colorScheme: colorScheme)
-            ForEach(0..<code.endIndex, id: \.self) { index in
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(index + suggestion.startLineIndex + 1)")
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(.secondary)
-                        .frame(minWidth: 40)
-                    Text(AttributedString(code[index]))
-                        .foregroundColor(.white.opacity(0.1))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(4)
-                        .overlay(alignment: .topLeading) {
-                            if index == 0, suggestion.commonPrecedingSpaceCount > 0 {
-                                Text("\(suggestion.commonPrecedingSpaceCount + 1)")
-                                    .padding(.top, -12)
-                                    .font(.footnote)
-                                    .foregroundStyle(colorScheme == .dark ? .white : .black)
-                                    .opacity(0.3)
-                            }
-                        }
-                }
-            }
-        }
-        .foregroundColor(.white)
-        .font(.system(size: 12, design: .monospaced))
-        .padding(.leading, 4)
-        .padding([.trailing, .top, .bottom])
-    }
-}
-
 struct CodeBlockSuggestionPanel: View {
     @ObservedObject var suggestion: SuggestionProvider
+    @Environment(\.colorScheme) var colorScheme
 
     struct ToolBar: View {
         @ObservedObject var suggestion: SuggestionProvider
@@ -85,8 +49,13 @@ struct CodeBlockSuggestionPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                CodeBlock(suggestion: suggestion)
-                    .frame(maxWidth: .infinity)
+                CodeBlock(
+                    code: suggestion.code,
+                    language: suggestion.language,
+                    startLineIndex: suggestion.startLineIndex,
+                    colorScheme: colorScheme
+                )
+                .frame(maxWidth: .infinity)
             }
             .background(Color.contentBackground)
 

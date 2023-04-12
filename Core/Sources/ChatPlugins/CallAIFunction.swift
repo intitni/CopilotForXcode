@@ -7,7 +7,7 @@ func callAIFunction(
     function: String,
     args: [Any?],
     description: String
-) async throws -> String {
+) async throws -> String? {
     let args = args.map { arg -> String in
         if let arg = arg {
             return String(describing: arg)

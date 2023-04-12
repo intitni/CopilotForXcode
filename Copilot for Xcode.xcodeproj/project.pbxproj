@@ -32,6 +32,7 @@
 		C841BB242994CAD400B0B336 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C841BB232994CAD400B0B336 /* SettingsView.swift */; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
 		C85AF32D29CF0C170031E18B /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85AF32C29CF0C170031E18B /* DebugView.swift */; };
+		C861A6A329E5503F005C41A3 /* PromptToCodeCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */; };
 		C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861E6102994F6070056CB02 /* AppDelegate.swift */; };
 		C861E6152994F6080056CB02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C861E6142994F6080056CB02 /* Assets.xcassets */; };
 		C861E61E2994F6150056CB02 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C861E61D2994F6150056CB02 /* Service */; };
@@ -180,6 +181,7 @@
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C85AF32C29CF0C170031E18B /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
+		C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptToCodeCommand.swift; sourceTree = "<group>"; };
 		C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CopilotForXcodeExtensionService.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C861E6102994F6070056CB02 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C861E6142994F6080056CB02 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
 				C8EE07A029CC9ED30043B6D9 /* ExplainSelectionCommand.swift */,
 				C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */,
+				C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
 			);
@@ -527,6 +530,7 @@
 			files = (
 				C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */,
 				C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */,
+				C861A6A329E5503F005C41A3 /* PromptToCodeCommand.swift in Sources */,
 				C8520301293C4D9000460097 /* Helpers.swift in Sources */,
 				C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */,
 				C87B03A5293B261200C77EAE /* AcceptSuggestionCommand.swift in Sources */,

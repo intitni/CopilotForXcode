@@ -110,9 +110,11 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         defer {
-            Task {
-                await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
-                    .endPrefetchAnimation()
+            if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] != "YES" {
+                Task {
+                    await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
+                        .endPrefetchAnimation()
+                }
             }
         }
 
@@ -165,6 +167,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
 
         // If there is a suggestion available, call another command to present it.
         guard !suggestions.isEmpty else { return nil }
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return nil }
         try await Environment.triggerAction("Real-time Suggestions")
         await GraphicalUserInterfaceController.shared.realtimeSuggestionIndicatorController
             .triggerPrefetchAnimation()
@@ -177,6 +180,10 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
     }
     
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
+        throw NotSupportedInCommentMode()
+    }
+    
+    func promptToCode(editor: XPCShared.EditorContent) async throws -> XPCShared.UpdatedContent? {
         throw NotSupportedInCommentMode()
     }
 }

@@ -87,6 +87,7 @@ let package = Package(
                 "AXExtension",
                 "Logger",
                 "ChatService",
+                "PromptToCodeService",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -154,5 +155,10 @@ let package = Package(
         .target(name: "ChatPlugins", dependencies: ["OpenAIService", "Environment", "Terminal"]),
         .target(name: "Terminal"),
         .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
+        .target(
+            name: "PromptToCodeService",
+            dependencies: ["OpenAIService", "Environment", "CopilotService", "CopilotModel"]
+        ),
+        .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
     ]
 )

@@ -88,6 +88,7 @@ public actor ChatGPTService: ChatGPTServiceType {
     var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
+    var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
 
     public init(
         systemPrompt: String = "",
@@ -121,72 +122,99 @@ public actor ChatGPTService: ChatGPTServiceType {
 
         isReceivingMessage = true
 
-        do {
-            let api = buildCompletionStreamAPI(apiKey, url, requestBody)
+        let api = buildCompletionStreamAPI(apiKey, url, requestBody)
 
-            return AsyncThrowingStream<String, Error> { continuation in
-                Task {
-                    do {
-                        let (trunks, cancel) = try await api()
-                        guard isReceivingMessage else {
-                            continuation.finish()
-                            return
-                        }
-                        cancelTask = cancel
-                        for try await trunk in trunks {
-                            guard let delta = trunk.choices.first?.delta else { continue }
-
-                            if history.last?.id == trunk.id {
-                                if let role = delta.role {
-                                    history[history.endIndex - 1].role = role
-                                }
-                                if let content = delta.content {
-                                    history[history.endIndex - 1].content.append(content)
-                                }
-                            } else {
-                                history.append(.init(
-                                    id: trunk.id,
-                                    role: delta.role ?? .assistant,
-                                    content: delta.content ?? ""
-                                ))
-                            }
-
-                            if let content = delta.content {
-                                continuation.yield(content)
-                            }
-                        }
-
+        return AsyncThrowingStream<String, Error> { continuation in
+            Task {
+                do {
+                    let (trunks, cancel) = try await api()
+                    guard isReceivingMessage else {
                         continuation.finish()
-                        isReceivingMessage = false
-                    } catch let error as CancellationError {
-                        isReceivingMessage = false
-                        continuation.finish(throwing: error)
-                    } catch let error as NSError where error.code == NSURLErrorCancelled {
-                        isReceivingMessage = false
-                        continuation.finish(throwing: error)
-                    } catch {
-                        history.append(.init(
-                            role: .assistant,
-                            content: error.localizedDescription
-                        ))
-                        isReceivingMessage = false
-                        continuation.finish(throwing: error)
+                        return
                     }
+                    cancelTask = cancel
+                    for try await trunk in trunks {
+                        guard let delta = trunk.choices.first?.delta else { continue }
+
+                        if history.last?.id == trunk.id {
+                            if let role = delta.role {
+                                history[history.endIndex - 1].role = role
+                            }
+                            if let content = delta.content {
+                                history[history.endIndex - 1].content.append(content)
+                            }
+                        } else {
+                            history.append(.init(
+                                id: trunk.id,
+                                role: delta.role ?? .assistant,
+                                content: delta.content ?? ""
+                            ))
+                        }
+
+                        if let content = delta.content {
+                            continuation.yield(content)
+                        }
+                    }
+
+                    continuation.finish()
+                    isReceivingMessage = false
+                } catch let error as CancellationError {
+                    isReceivingMessage = false
+                    continuation.finish(throwing: error)
+                } catch let error as NSError where error.code == NSURLErrorCancelled {
+                    isReceivingMessage = false
+                    continuation.finish(throwing: error)
+                } catch {
+                    history.append(.init(
+                        role: .assistant,
+                        content: error.localizedDescription
+                    ))
+                    isReceivingMessage = false
+                    continuation.finish(throwing: error)
                 }
             }
         }
     }
-    
+
     public func sendAndWait(
         content: String,
         summary: String? = nil
-    ) async throws -> String {
-        let stream = try await send(content: content, summary: summary)
-        var content = ""
-        for try await fragment in stream {
-            content.append(fragment)
+    ) async throws -> String? {
+        guard !isReceivingMessage else { throw CancellationError() }
+        guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
+        let newMessage = ChatMessage(
+            id: uuidGenerator(),
+            role: .user,
+            content: content,
+            summary: summary
+        )
+        history.append(newMessage)
+
+        let requestBody = CompletionRequestBody(
+            model: model,
+            messages: combineHistoryWithSystemPrompt(),
+            temperature: temperature,
+            stream: true,
+            max_tokens: maxToken
+        )
+
+        isReceivingMessage = true
+        defer { isReceivingMessage = false }
+
+        let api = buildCompletionAPI(apiKey, url, requestBody)
+        let response = try await api()
+
+        if let choice = response.choices.first {
+            history.append(.init(
+                id: response.id,
+                role: choice.message.role,
+                content: choice.message.content
+            ))
+            
+            return choice.message.content
         }
-        return content
+        
+        return nil
     }
 
     public func stopReceivingMessage() {
@@ -231,7 +259,7 @@ extension ChatGPTService {
             all.append(.init(role: message.role, content: message.content))
             count += 1
         }
-        
+
         all.append(.init(role: .system, content: systemPrompt))
         return all.reversed()
     }

@@ -15,9 +15,14 @@ public struct CopilotCompletion: Codable, Equatable {
         self.displayText = displayText
     }
 
+    /// The new code to be inserted and the original code on the first line.
     public var text: String
+    /// The position of the cursor before generating the completion.
     public var position: CursorPosition
+    /// An id.
     public var uuid: String
+    /// The range of the original code that should be replaced.
     public var range: CursorRange
+    /// The new code to be inserted.
     public var displayText: String
 }
