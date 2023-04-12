@@ -95,6 +95,7 @@ struct PseudoCommandHandler {
                 )) else { return }
 
                 let oldPosition = focusElement.selectedTextRange
+                let oldScrollPosition = focusElement.parent?.verticalScrollBar?.doubleValue
 
                 let error = AXUIElementSetAttributeValue(
                     focusElement,
@@ -128,6 +129,14 @@ struct PseudoCommandHandler {
                             value
                         )
                     }
+                }
+
+                if let oldScrollPosition, let scrollBar = focusElement.parent?.verticalScrollBar {
+                    AXUIElementSetAttributeValue(
+                        scrollBar,
+                        kAXValueAttribute as CFString,
+                        oldScrollPosition as CFTypeRef
+                    )
                 }
 
             } catch {

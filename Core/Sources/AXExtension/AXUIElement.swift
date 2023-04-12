@@ -11,6 +11,10 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
+    
+    var doubleValue: Double {
+        (try? copyValue(key: kAXValueAttribute)) ?? 0.0
+    }
 
     var document: String? {
         try? copyValue(key: kAXDocumentAttribute)
