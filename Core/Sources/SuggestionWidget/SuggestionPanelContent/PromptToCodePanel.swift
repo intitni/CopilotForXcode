@@ -88,8 +88,10 @@ struct PromptToCodePanel: View {
                                 Button(action: {
                                     provider.acceptSuggestion()
                                 }) {
-                                    Text("Accept")
-                                }.buttonStyle(CommandButtonStyle(color: .indigo))
+                                    Text("Accept(⌘ + ⏎)")
+                                }
+                                .buttonStyle(CommandButtonStyle(color: .indigo))
+                                .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                             }
                         }
                         .padding(8)
