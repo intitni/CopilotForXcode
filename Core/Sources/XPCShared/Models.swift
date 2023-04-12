@@ -47,14 +47,14 @@ public struct EditorContent: Codable {
 }
 
 public struct UpdatedContent: Codable {
-    public init(content: String, newCursor: CursorPosition? = nil, modifications: [Modification]) {
+    public init(content: String, newSelection: CursorRange? = nil, modifications: [Modification]) {
         self.content = content
-        self.newCursor = newCursor
+        self.newSelection = newSelection
         self.modifications = modifications
     }
 
     public var content: String
-    public var newCursor: CursorPosition?
+    public var newSelection: CursorRange?
     public var modifications: [Modification]
 }
 

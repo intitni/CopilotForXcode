@@ -136,47 +136,55 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        
+
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-        let result: (suggestion: CopilotCompletion, cleanup: () -> Void)? = {
+        let result: (
+            suggestion: CopilotCompletion,
+            cleanup: () -> Void,
+            startPosition: CursorPosition?
+        )? = {
             if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
-                return (CopilotCompletion(
-                    text: service.code,
-                    position: service.selectionRange.start,
-                    uuid: UUID().uuidString,
-                    range: service.selectionRange,
-                    displayText: service.code
-                ), {
-                    WidgetDataSource.shared.removePromptToCode(for: fileURL)
-                    presenter.closePromptToCode(fileURL: fileURL)
-                })
+                return (
+                    CopilotCompletion(
+                        text: service.code,
+                        position: service.selectionRange.start,
+                        uuid: UUID().uuidString,
+                        range: service.selectionRange,
+                        displayText: service.code
+                    ),
+                    {
+                        WidgetDataSource.shared.removePromptToCode(for: fileURL)
+                        presenter.closePromptToCode(fileURL: fileURL)
+                    },
+                    service.selectionRange.start
+                )
             }
-            
+
             if let acceptedSuggestion = workspace.acceptSuggestion(
                 forFileAt: fileURL,
                 editor: editor
             ) {
-                return (acceptedSuggestion, {
-                    presenter.discardSuggestion(fileURL: fileURL)
-                })
+                return (
+                    acceptedSuggestion,
+                    {
+                        presenter.discardSuggestion(fileURL: fileURL)
+                    },
+                    nil
+                )
             }
-            
+
             return nil
         }()
-        
+
         guard let result else { return nil }
-        
+
         let injector = SuggestionInjector()
         var lines = editor.lines
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
-        injector.rejectCurrentSuggestions(
-            from: &lines,
-            cursorPosition: &cursorPosition,
-            extraInfo: &extraInfo
-        )
+
         injector.acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursorPosition,
@@ -185,11 +193,16 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         )
 
         result.cleanup()
-        
+
         return .init(
             content: String(lines.joined(separator: "")),
-            newCursor: cursorPosition,
-            modifications: extraInfo.modifications
+            newSelection: {
+                if let startPosition = result.startPosition {
+                    return .init(start: startPosition, end: cursorPosition)
+                }
+                return .cursor(cursorPosition)
+            }(),
+            modifications : extraInfo.modifications
         )
     }
 

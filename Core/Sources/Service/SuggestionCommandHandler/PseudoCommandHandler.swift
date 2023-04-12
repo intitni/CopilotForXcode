@@ -108,7 +108,8 @@ struct PseudoCommandHandler {
                         .presentErrorMessage("Fail to set editor content.")
                 }
 
-                if let cursor = result.newCursor {
+                #warning("MUSTDO: handle range")
+                if let cursor = result.newSelection?.start {
                     var range = convertCursorPositionToRange(cursor, in: result.content)
                     if let value = AXValueCreate(.cfRange, &range) {
                         AXUIElementSetAttributeValue(
