@@ -68,10 +68,16 @@ func selectedCode(in selection: EditorContent.Selection, for lines: [String]) ->
     guard startPosition.line >= 0, startPosition.line < lines.count else { return "" }
     guard startPosition.character >= 0,
           startPosition.character < lines[startPosition.line].count else { return "" }
-    guard endPosition.line >= 0, endPosition.line < lines.count else { return "" }
+    guard endPosition.line >= 0,
+          endPosition.line < lines.count
+            || (endPosition.line == lines.count && endPosition.character == -1)
+    else { return "" }
     guard endPosition.line >= startPosition.line else { return "" }
-    guard endPosition.character >= 0,
-          endPosition.character < lines[endPosition.line].count else { return "" }
+    guard endPosition.character >= -1 else { return "" }
+    
+    if endPosition.line < lines.endIndex {
+        guard endPosition.character < lines[endPosition.line].count else { return "" }
+    }
 
     var code = ""
     if startPosition.line == endPosition.line {
@@ -94,9 +100,11 @@ func selectedCode(in selection: EditorContent.Selection, for lines: [String]) ->
             }
         }
 
-        let endLine = lines[endPosition.line]
-        let endIndex = endLine.index(endLine.startIndex, offsetBy: endPosition.character)
-        code += String(endLine[...endIndex])
+        if endPosition.character >= 0, endPosition.line < lines.endIndex {
+            let endLine = lines[endPosition.line]
+            let endIndex = endLine.index(endLine.startIndex, offsetBy: endPosition.character)
+            code += String(endLine[...endIndex])
+        }
     }
 
     return code
