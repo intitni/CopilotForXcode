@@ -35,6 +35,8 @@ extension PromptToCodeProvider {
             Task { [weak self] in
                 do {
                     try await service.modifyCode(prompt: requirement)
+                } catch is CancellationError {
+                    return
                 } catch {
                     Task { @MainActor [weak self] in
                         self?.errorMessage = error.localizedDescription
