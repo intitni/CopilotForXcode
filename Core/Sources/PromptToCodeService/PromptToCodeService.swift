@@ -15,6 +15,7 @@ public final class PromptToCodeService: ObservableObject {
     @Published public var code: String
     @Published public var isResponding: Bool = false
     @Published public var description: String = ""
+    @Published public var isContinuous = false
     public var oldDescription: String?
     public var canRevert: Bool { oldCode != nil }
     public var selectionRange: CursorRange
@@ -40,7 +41,7 @@ public final class PromptToCodeService: ObservableObject {
         let api = promptToCodeAPI
         runningAPI = api
         isResponding = true
-        let toBemodified = code
+        let toBeModified = code
         oldDescription = description
         oldCode = code
         code = ""
@@ -48,7 +49,7 @@ public final class PromptToCodeService: ObservableObject {
         defer { isResponding = false }
         do {
             let stream = try await api.modifyCode(
-                code: toBemodified,
+                code: toBeModified,
                 language: language,
                 indentSize: indentSize,
                 usesTabsForIndentation: usesTabsForIndentation,
@@ -60,7 +61,13 @@ public final class PromptToCodeService: ObservableObject {
                     description = fragment.description
                 }
             }
+        } catch is CancellationError {
+            return
         } catch {
+            if (error as NSError).code == NSURLErrorCancelled {
+                return
+            }
+
             if let oldCode {
                 code = oldCode
             }
@@ -80,7 +87,7 @@ public final class PromptToCodeService: ObservableObject {
             description = oldDescription
         }
         self.oldCode = nil
-        self.oldDescription = nil
+        oldDescription = nil
     }
 
     public func generateCompletion() -> CopilotCompletion {
@@ -127,6 +134,9 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         usesTabsForIndentation: Bool,
         requirement: String
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
+        let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        let textLanguage = userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
+
         let prompt = {
             let indentRule = usesTabsForIndentation ? "\(indentSize) tabs" : "\(indentSize) spaces"
             if code.isEmpty {
@@ -137,7 +147,9 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     indentRule
                 ).
 
-                Please reply to me start with the code block, followed by a short description in 1-3 sentences about what you did.
+                Please reply to me start with the code block, followed by a short description in 1-3 sentences about what you did \(
+                    textLanguage
+                ).
                 """
             } else {
                 return """
@@ -147,7 +159,9 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     indentRule
                 ).
 
-                Please reply to me start with the code block followed by a short description about what you did in 1-3 sentences.
+                Please reply to me start with the code block followed by a short description about what you did in 1-3 sentences \(
+                    textLanguage
+                ).
 
                 ```
                 \(code)

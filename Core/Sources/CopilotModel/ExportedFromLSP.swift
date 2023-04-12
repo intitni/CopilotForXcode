@@ -9,4 +9,7 @@ public extension CursorPosition {
 
 public extension CursorRange {
     static var outOfScope: CursorRange { .init(start: .outOfScope, end: .outOfScope) }
+    static func cursor(_ position: CursorPosition) -> CursorRange {
+        return .init(start: position, end: position)
+    }
 }

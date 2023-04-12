@@ -13,12 +13,14 @@ public final class PromptToCodeProvider: ObservableObject {
     @Published public var requirement: String
     @Published public var errorMessage: String
     @Published public var canRevert: Bool
+    @Published public var isContinuous: Bool
 
     public var onRevertTapped: () -> Void
     public var onStopRespondingTap: () -> Void
     public var onCancelTapped: () -> Void
     public var onAcceptSuggestionTapped: () -> Void
     public var onRequirementSent: (String) -> Void
+    public var onContinuousToggleClick: () -> Void
 
     public init(
         code: String = "",
@@ -30,11 +32,13 @@ public final class PromptToCodeProvider: ObservableObject {
         requirement: String = "",
         errorMessage: String = "",
         canRevert: Bool = false,
+        isContinuous: Bool = false,
         onRevertTapped: @escaping () -> Void = {},
         onStopRespondingTap: @escaping () -> Void = {},
         onCancelTapped: @escaping () -> Void = {},
         onAcceptSuggestionTapped: @escaping () -> Void = {},
-        onRequirementSent: @escaping (String) -> Void = { _ in }
+        onRequirementSent: @escaping (String) -> Void = { _ in },
+        onContinuousToggleClick: @escaping () -> Void = {}
     ) {
         self.code = code
         self.language = language
@@ -45,11 +49,13 @@ public final class PromptToCodeProvider: ObservableObject {
         self.requirement = requirement
         self.errorMessage = errorMessage
         self.canRevert = canRevert
+        self.isContinuous = isContinuous
         self.onRevertTapped = onRevertTapped
         self.onStopRespondingTap = onStopRespondingTap
         self.onCancelTapped = onCancelTapped
         self.onAcceptSuggestionTapped = onAcceptSuggestionTapped
         self.onRequirementSent = onRequirementSent
+        self.onContinuousToggleClick = onContinuousToggleClick
     }
 
     func revert() {
@@ -70,4 +76,6 @@ public final class PromptToCodeProvider: ObservableObject {
     }
 
     func acceptSuggestion() { onAcceptSuggestionTapped() }
+    
+    func toggleContinuous() { onContinuousToggleClick() }
 }

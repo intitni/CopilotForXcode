@@ -25,7 +25,7 @@ struct PresentInCommentSuggestionPresenter {
         guard let completion = await filespace.presentingSuggestion else {
             return .init(
                 content: originalContent,
-                newCursor: cursorPosition,
+                newSelection: .cursor(cursorPosition),
                 modifications: extraInfo.modifications
             )
         }
@@ -40,7 +40,7 @@ struct PresentInCommentSuggestionPresenter {
 
         return .init(
             content: String(lines.joined(separator: "")),
-            newCursor: cursorPosition,
+            newSelection: .cursor(cursorPosition),
             modifications: extraInfo.modifications
         )
     }
@@ -65,7 +65,7 @@ struct PresentInCommentSuggestionPresenter {
 
         return .init(
             content: String(lines.joined(separator: "")),
-            newCursor: cursorPosition,
+            newSelection: .cursor(cursorPosition),
             modifications: extraInfo.modifications
         )
     }

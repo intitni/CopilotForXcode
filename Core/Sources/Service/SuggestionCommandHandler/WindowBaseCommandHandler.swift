@@ -136,61 +136,68 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        
+
         let fileURL = try await Environment.fetchCurrentFileURL()
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-        let result: (suggestion: CopilotCompletion, cleanup: () -> Void)? = {
-            if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
-                return (CopilotCompletion(
-                    text: service.code,
-                    position: service.selectionRange.start,
-                    uuid: UUID().uuidString,
-                    range: service.selectionRange,
-                    displayText: service.code
-                ), {
-                    WidgetDataSource.shared.removePromptToCode(for: fileURL)
-                    presenter.closePromptToCode(fileURL: fileURL)
-                })
-            }
-            
-            if let acceptedSuggestion = workspace.acceptSuggestion(
-                forFileAt: fileURL,
-                editor: editor
-            ) {
-                return (acceptedSuggestion, {
-                    presenter.discardSuggestion(fileURL: fileURL)
-                })
-            }
-            
-            return nil
-        }()
-        
-        guard let result else { return nil }
-        
         let injector = SuggestionInjector()
         var lines = editor.lines
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
-        injector.rejectCurrentSuggestions(
-            from: &lines,
-            cursorPosition: &cursorPosition,
-            extraInfo: &extraInfo
-        )
-        injector.acceptSuggestion(
-            intoContentWithoutSuggestion: &lines,
-            cursorPosition: &cursorPosition,
-            completion: result.suggestion,
-            extraInfo: &extraInfo
-        )
 
-        result.cleanup()
-        
-        return .init(
-            content: String(lines.joined(separator: "")),
-            newCursor: cursorPosition,
-            modifications: extraInfo.modifications
-        )
+        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+            let suggestion = CopilotCompletion(
+                text: service.code,
+                position: service.selectionRange.start,
+                uuid: UUID().uuidString,
+                range: service.selectionRange,
+                displayText: service.code
+            )
+
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: suggestion,
+                extraInfo: &extraInfo
+            )
+
+            if service.isContinuous {
+                service.selectionRange = .init(
+                    start: service.selectionRange.start,
+                    end: cursorPosition
+                )
+                presenter.presentPromptToCode(fileURL: fileURL)
+            } else {
+                WidgetDataSource.shared.removePromptToCode(for: fileURL)
+                presenter.closePromptToCode(fileURL: fileURL)
+            }
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .init(start: service.selectionRange.start, end: cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        } else if let acceptedSuggestion = workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor
+        ) {
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: acceptedSuggestion,
+                extraInfo: &extraInfo
+            )
+
+            presenter.discardSuggestion(fileURL: fileURL)
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .cursor(cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        }
+
+        return nil
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
@@ -334,24 +341,30 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
-        let code = {
-            guard let selection = editor.selections.last,
-                  selection.start != selection.end else { return "" }
-            return editor.selectedCode(in: selection)
-        }()
+
+        let (code, selection) = {
+            guard var selection = editor.selections.last,
+                  selection.start != selection.end
+            else { return ("", .cursor(editor.cursorPosition)) }
+            if selection.start.line != selection.end.line {
+                // when there are multiple lines start from char 0 so that it can keep the
+                // indentation.
+                selection.start = .init(line: selection.start.line, character: 0)
+            }
+            return (
+                editor.selectedCode(in: selection),
+                .init(
+                    start: .init(line: selection.start.line, character: selection.start.character),
+                    end: .init(line: selection.end.line, character: selection.end.character)
+                )
+            )
+        }() as (String, CursorRange)
 
         _ = await WidgetDataSource.shared.createPromptToCode(
             for: fileURL,
             code: code,
-            selectionRange: editor.selections.last.map { .init(
-                start: $0.start,
-                end: $0.end
-            ) } ?? .init(
-                start: editor.cursorPosition,
-                end: editor.cursorPosition
-            ),
+            selectionRange: selection,
             language: codeLanguage
         )
 

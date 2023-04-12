@@ -75,6 +75,15 @@ struct PromptToCodePanel: View {
                         .buttonStyle(.plain)
                     } else {
                         HStack {
+                            Toggle(
+                                "Continuous Mode",
+                                isOn: .init(
+                                    get: { provider.isContinuous },
+                                    set: { _ in provider.toggleContinuous() }
+                                )
+                            )
+                            .toggleStyle(.checkbox)
+
                             Button(action: {
                                 provider.cancel()
                             }) {
@@ -85,8 +94,10 @@ struct PromptToCodePanel: View {
                                 Button(action: {
                                     provider.acceptSuggestion()
                                 }) {
-                                    Text("Accept")
-                                }.buttonStyle(CommandButtonStyle(color: .indigo))
+                                    Text("Accept(⌘ + ⏎)")
+                                }
+                                .buttonStyle(CommandButtonStyle(color: .indigo))
+                                .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                             }
                         }
                         .padding(8)

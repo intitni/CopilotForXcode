@@ -17,6 +17,7 @@ extension PromptToCodeProvider {
         service.$code.sink(receiveValue: set(\.code)).store(in: &cancellables)
         service.$isResponding.sink(receiveValue: set(\.isResponding)).store(in: &cancellables)
         service.$description.sink(receiveValue: set(\.description)).store(in: &cancellables)
+        service.$isContinuous.sink(receiveValue: set(\.isContinuous)).store(in: &cancellables)
         service.$oldCode.map { $0 != nil }
             .sink(receiveValue: set(\.canRevert)).store(in: &cancellables)
 
@@ -34,6 +35,8 @@ extension PromptToCodeProvider {
             Task { [weak self] in
                 do {
                     try await service.modifyCode(prompt: requirement)
+                } catch is CancellationError {
+                    return
                 } catch {
                     Task { @MainActor [weak self] in
                         self?.errorMessage = error.localizedDescription
@@ -51,6 +54,10 @@ extension PromptToCodeProvider {
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
             }
+        }
+        
+        onContinuousToggleClick = {
+            service.isContinuous.toggle()
         }
     }
 

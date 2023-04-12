@@ -19,15 +19,15 @@ extension XCSourceEditorCommandInvocation {
     }
 
     func accept(_ updatedContent: UpdatedContent) {
-        if let newCursor = updatedContent.newCursor {
+        if let newSelection = updatedContent.newSelection {
             mutateCompleteBuffer(
                 modifications: updatedContent.modifications,
                 restoringSelections: false
             )
             buffer.selections.removeAllObjects()
             buffer.selections.add(XCSourceTextRange(
-                start: .init(line: newCursor.line, column: newCursor.character),
-                end: .init(line: newCursor.line, column: newCursor.character)
+                start: .init(line: newSelection.start.line, column: newSelection.start.character),
+                end: .init(line: newSelection.end.line, column: newSelection.end.character)
             ))
         } else {
             mutateCompleteBuffer(

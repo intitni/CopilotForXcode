@@ -103,7 +103,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
 
         return .init(
             content: String(lines.joined(separator: "")),
-            newCursor: cursorPosition,
+            newSelection: .cursor(cursorPosition),
             modifications: extraInfo.modifications
         )
     }
