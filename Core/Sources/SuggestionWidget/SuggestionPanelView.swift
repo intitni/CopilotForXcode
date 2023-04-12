@@ -28,7 +28,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var content: Content? {
         didSet {
             adjustActiveTabAndShowHideIfNeeded(tab: .suggestion)
-            requetApplicationPolicyUpdate?(self)
+            requestApplicationPolicyUpdate?(self)
         }
     }
 
@@ -40,7 +40,7 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     @Published var activeTab: ActiveTab {
         didSet {
-            requetApplicationPolicyUpdate?(self)
+            requestApplicationPolicyUpdate?(self)
         }
     }
 
@@ -48,7 +48,7 @@ final class SuggestionPanelViewModel: ObservableObject {
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
 
-    var requetApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)?
+    var requestApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)?
 
     public init(
         content: Content? = nil,
@@ -56,14 +56,14 @@ final class SuggestionPanelViewModel: ObservableObject {
         isPanelDisplayed: Bool = false,
         activeTab: ActiveTab = .suggestion,
         colorScheme: ColorScheme = .dark,
-        requetApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)? = nil
+        requestApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)? = nil
     ) {
         self.content = content
         self.chat = chat
         self.isPanelDisplayed = isPanelDisplayed
         self.activeTab = activeTab
         self.colorScheme = colorScheme
-        self.requetApplicationPolicyUpdate = requetApplicationPolicyUpdate
+        self.requestApplicationPolicyUpdate = requestApplicationPolicyUpdate
     }
 
     func adjustActiveTabAndShowHideIfNeeded(tab: ActiveTab) {

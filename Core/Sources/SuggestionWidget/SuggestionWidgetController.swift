@@ -192,7 +192,7 @@ public final class SuggestionWidgetController {
 
         Task { @MainActor in
             var switchTask: Task<Void, Error>?
-            suggestionPanelViewModel.requetApplicationPolicyUpdate = { viewModel in
+            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
                 #warning("""
                 TODO: There should be a better way for that
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
