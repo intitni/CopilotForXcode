@@ -136,18 +136,61 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
+        
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
-        do {
-            let result = try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
-            Task {
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                presenter.discardSuggestion(fileURL: fileURL)
+        let result: (suggestion: CopilotCompletion, cleanup: () -> Void)? = {
+            if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+                return (CopilotCompletion(
+                    text: service.code,
+                    position: service.selectionRange.start,
+                    uuid: UUID().uuidString,
+                    range: service.selectionRange,
+                    displayText: service.code
+                ), {
+                    WidgetDataSource.shared.removePromptToCode(for: fileURL)
+                    presenter.closePromptToCode(fileURL: fileURL)
+                })
             }
-            return result
-        } catch {
-            presenter.presentError(error)
-            throw error
-        }
+            
+            if let acceptedSuggestion = workspace.acceptSuggestion(
+                forFileAt: fileURL,
+                editor: editor
+            ) {
+                return (acceptedSuggestion, {
+                    presenter.discardSuggestion(fileURL: fileURL)
+                })
+            }
+            
+            return nil
+        }()
+        
+        guard let result else { return nil }
+        
+        let injector = SuggestionInjector()
+        var lines = editor.lines
+        var cursorPosition = editor.cursorPosition
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        injector.rejectCurrentSuggestions(
+            from: &lines,
+            cursorPosition: &cursorPosition,
+            extraInfo: &extraInfo
+        )
+        injector.acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursorPosition,
+            completion: result.suggestion,
+            extraInfo: &extraInfo
+        )
+
+        result.cleanup()
+        
+        return .init(
+            content: String(lines.joined(separator: "")),
+            newCursor: cursorPosition,
+            modifications: extraInfo.modifications
+        )
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {

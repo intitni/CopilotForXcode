@@ -81,7 +81,7 @@ struct PseudoCommandHandler {
                     .presentErrorMessage("Unable to get file content.")
                 return
             }
-            let handler = CommentBaseCommandHandler()
+            let handler = WindowBaseCommandHandler()
             do {
                 guard let result = try await handler.acceptSuggestion(editor: .init(
                     content: content,
