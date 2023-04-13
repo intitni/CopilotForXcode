@@ -48,7 +48,7 @@ public actor TerminalChatPlugin: ChatPlugin {
             
             let output = terminal.streamCommand(
                 shell,
-                arguments: ["-l", "-c", content],
+                arguments: ["-i", "-l", "-c", content],
                 currentDirectoryPath: projectURL?.path ?? fileURL.path,
                 environment: [
                     "PROJECT_ROOT": projectURL?.path ?? fileURL.path,
