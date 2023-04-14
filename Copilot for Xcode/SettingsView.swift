@@ -26,6 +26,8 @@ struct SettingsView: View {
         var promptToCodeFeatureProvider: PromptToCodeFeatureProvider
         @AppStorage(\.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         var preferWidgetToStayInsideEditorWhenWidthGreaterThan: Double
+        @AppStorage(\.hideCommonPrecedingSpacesInSuggestion)
+        var hideCommonPrecedingSpacesInSuggestion: Bool
         init() {}
     }
 
@@ -94,50 +96,57 @@ struct SettingsView: View {
                     }
                 }
 
-                Toggle(isOn: $settings.realtimeSuggestionToggle) {
-                    Text("Real-time suggestion")
-                }
-                .toggleStyle(.switch)
-
-                HStack {
-                    Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
-                        Text("Disable suggestion feature globally")
+                Group {
+                    Toggle(isOn: $settings.realtimeSuggestionToggle) {
+                        Text("Real-time suggestion")
                     }
                     .toggleStyle(.switch)
 
-                    Button("Enabled Projects") {
-                        isSuggestionFeatureEnabledListPickerOpen = true
+                    HStack {
+                        Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
+                            Text("Disable suggestion feature globally")
+                        }
+                        .toggleStyle(.switch)
+
+                        Button("Enabled Projects") {
+                            isSuggestionFeatureEnabledListPickerOpen = true
+                        }
+                    }.sheet(isPresented: $isSuggestionFeatureEnabledListPickerOpen) {
+                        SuggestionFeatureEnabledProjectListView(
+                            isOpen: $isSuggestionFeatureEnabledListPickerOpen
+                        )
                     }
-                }.sheet(isPresented: $isSuggestionFeatureEnabledListPickerOpen) {
-                    SuggestionFeatureEnabledProjectListView(
-                        isOpen: $isSuggestionFeatureEnabledListPickerOpen
-                    )
-                }
 
-                HStack {
-                    Slider(value: $editingRealtimeSuggestionDebounce, in: 0...2, step: 0.1) {
-                        Text("Real-time suggestion fetch debounce")
-                    } onEditingChanged: { _ in
-                        settings.realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
+                    HStack {
+                        Slider(value: $editingRealtimeSuggestionDebounce, in: 0...2, step: 0.1) {
+                            Text("Real-time suggestion fetch debounce")
+                        } onEditingChanged: { _ in
+                            settings.realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
+                        }
+
+                        Text(
+                            "\(editingRealtimeSuggestionDebounce.formatted(.number.precision(.fractionLength(2))))s"
+                        )
+                        .font(.body)
+                        .monospacedDigit()
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color.white.opacity(0.2))
+                        )
                     }
 
-                    Text(
-                        "\(editingRealtimeSuggestionDebounce.formatted(.number.precision(.fractionLength(2))))s"
-                    )
-                    .font(.body)
-                    .monospacedDigit()
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.white.opacity(0.2))
-                    )
-                }
+                    Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
+                        Text("Hide Common Preceding Spaces in Suggestion")
+                    }
+                    .toggleStyle(.switch)
 
-                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
-                    Text("Use accessibility API to accept suggestion in widget")
+                    Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
+                        Text("Use accessibility API to accept suggestion in widget")
+                    }
+                    .toggleStyle(.switch)
                 }
-                .toggleStyle(.switch)
 
                 Picker(selection: $settings.promptToCodeFeatureProvider) {
                     ForEach(PromptToCodeFeatureProvider.allCases, id: \.rawValue) {
@@ -163,7 +172,7 @@ struct SettingsView: View {
                         Text("Prefer widget to be inside editor when width greater than")
                     }
                     .textFieldStyle(.roundedBorder)
-                    
+
                     Text("px")
                 }
             }
