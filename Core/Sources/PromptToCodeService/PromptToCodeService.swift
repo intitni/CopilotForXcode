@@ -6,7 +6,16 @@ import OpenAIService
 public final class PromptToCodeService: ObservableObject {
     var designatedPromptToCodeAPI: PromptToCodeAPI?
     var promptToCodeAPI: PromptToCodeAPI {
-        designatedPromptToCodeAPI ?? OpenAIPromptToCodeAPI()
+        if let designatedPromptToCodeAPI {
+            return designatedPromptToCodeAPI
+        }
+        
+        switch UserDefaults.shared.value(for: \.promptToCodeFeatureProvider) {
+        case .openAI:
+            return OpenAIPromptToCodeAPI()
+        case .githubCopilot:
+            return CopilotPromptToCodeAPI()
+        }
     }
 
     var runningAPI: PromptToCodeAPI?
