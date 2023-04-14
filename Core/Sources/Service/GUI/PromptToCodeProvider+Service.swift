@@ -18,7 +18,7 @@ extension PromptToCodeProvider {
         service.$isResponding.sink(receiveValue: set(\.isResponding)).store(in: &cancellables)
         service.$description.sink(receiveValue: set(\.description)).store(in: &cancellables)
         service.$isContinuous.sink(receiveValue: set(\.isContinuous)).store(in: &cancellables)
-        service.$oldCode.map { $0 != nil }
+        service.$history.map { $0 != .empty }
             .sink(receiveValue: set(\.canRevert)).store(in: &cancellables)
 
         onCancelTapped = { [cancellables] in

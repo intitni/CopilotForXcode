@@ -11,13 +11,32 @@ public final class PromptToCodeService: ObservableObject {
 
     var runningAPI: PromptToCodeAPI?
 
-    @Published public var oldCode: String?
+    public indirect enum HistoryNode: Equatable {
+        case empty
+        case node(code: String, description: String, previous: HistoryNode)
+
+        mutating func enqueue(code: String, description: String) {
+            let current = self
+            self = .node(code: code, description: description, previous: current)
+        }
+
+        mutating func pop() -> (code: String, description: String)? {
+            switch self {
+            case .empty:
+                return nil
+            case let .node(code, description, previous):
+                self = previous
+                return (code, description)
+            }
+        }
+    }
+
+    @Published public var history: HistoryNode
     @Published public var code: String
     @Published public var isResponding: Bool = false
     @Published public var description: String = ""
     @Published public var isContinuous = false
-    public var oldDescription: String?
-    public var canRevert: Bool { oldCode != nil }
+    public var canRevert: Bool { history != .empty }
     public var selectionRange: CursorRange
     public var language: CopilotLanguage
     public var indentSize: Int
@@ -31,7 +50,6 @@ public final class PromptToCodeService: ObservableObject {
         selectionRange: CursorRange,
         language: CopilotLanguage,
         identSize: Int,
-        usesTabsForIndentation: Bool
         usesTabsForIndentation: Bool,
         projectRootURL: URL,
         fileURL: URL,
@@ -45,6 +63,7 @@ public final class PromptToCodeService: ObservableObject {
         self.projectRootURL = projectRootURL
         self.fileURL = fileURL
         self.allCode = allCode
+        self.history = .empty
     }
 
     public func modifyCode(prompt: String) async throws {
@@ -52,8 +71,7 @@ public final class PromptToCodeService: ObservableObject {
         runningAPI = api
         isResponding = true
         let toBeModified = code
-        oldDescription = description
-        oldCode = code
+        history.enqueue(code: code, description: description)
         code = ""
         description = ""
         defer { isResponding = false }
@@ -63,13 +81,17 @@ public final class PromptToCodeService: ObservableObject {
                 language: language,
                 indentSize: indentSize,
                 usesTabsForIndentation: usesTabsForIndentation,
-                requirement: prompt
+                requirement: prompt,
+                projectRootURL: projectRootURL,
+                fileURL: fileURL,
+                allCode: allCode
             )
             for try await fragment in stream {
-                Task { @MainActor in
-                    code = fragment.code
-                    description = fragment.description
-                }
+                code = fragment.code
+                description = fragment.description
+            }
+            if code.isEmpty, description.isEmpty {
+                revert()
             }
         } catch is CancellationError {
             return
@@ -78,26 +100,15 @@ public final class PromptToCodeService: ObservableObject {
                 return
             }
 
-            if let oldCode {
-                code = oldCode
-            }
-            if let oldDescription {
-                description = oldDescription
-            }
-            oldCode = nil
-            oldDescription = nil
+            revert()
             throw error
         }
     }
 
     public func revert() {
-        guard let oldCode = oldCode else { return }
-        code = oldCode
-        if let oldDescription {
-            description = oldDescription
-        }
-        self.oldCode = nil
-        oldDescription = nil
+        guard let (code, description) = history.pop() else { return }
+        self.code = code
+        self.description = description
     }
 
     public func generateCompletion() -> CopilotCompletion {
