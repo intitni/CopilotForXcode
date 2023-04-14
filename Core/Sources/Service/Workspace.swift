@@ -109,7 +109,15 @@ final class Workspace {
     }
     
     var isSuggestionFeatureEnabled: Bool {
-        copilotSuggestionService != nil
+        let isSuggestionDisabledGlobally = UserDefaults.shared
+            .value(for: \.disableSuggestionFeatureGlobally)
+        if isSuggestionDisabledGlobally {
+            let enabledList = UserDefaults.shared.value(for: \.suggestionFeatureEnabledProjectList)
+            if !enabledList.contains(where: { path in projectRootURL.path.hasPrefix(path) }) {
+                return false
+            }
+        }
+        return true
     }
 
     private init(projectRootURL: URL) {

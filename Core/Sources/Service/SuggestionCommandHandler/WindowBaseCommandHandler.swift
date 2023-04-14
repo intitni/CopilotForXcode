@@ -348,7 +348,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
+        let (workspace, _) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        guard workspace.isSuggestionFeatureEnabled else {
+            presenter.presentErrorMessage("Prompt to code is disabled for this project")
+            return
+        }
+        
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let (code, selection) = {
@@ -371,7 +377,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         _ = await WidgetDataSource.shared.createPromptToCode(
             for: fileURL,
-            projectURL: projectURL ?? fileURL,
+            projectURL: workspace.projectRootURL,
             selectedCode: code,
             allCode: editor.content,
             selectionRange: selection,
