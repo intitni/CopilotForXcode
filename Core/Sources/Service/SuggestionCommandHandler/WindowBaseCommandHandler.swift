@@ -128,6 +128,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
+        
+        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+            WidgetDataSource.shared.removePromptToCode(for: fileURL)
+            presenter.closePromptToCode(fileURL: fileURL)
+            return
+        }
+        
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
@@ -341,6 +348,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
+        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let (code, selection) = {
@@ -363,7 +371,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         _ = await WidgetDataSource.shared.createPromptToCode(
             for: fileURL,
-            code: code,
+            projectURL: projectURL ?? fileURL,
+            selectedCode: code,
+            allCode: editor.content,
             selectionRange: selection,
             language: codeLanguage
         )

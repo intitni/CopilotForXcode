@@ -85,7 +85,9 @@ final class WidgetDataSource {
     @discardableResult
     func createPromptToCode(
         for url: URL,
-        code: String,
+        projectURL: URL,
+        selectedCode: String,
+        allCode: String,
         selectionRange: CursorRange,
         language: CopilotLanguage,
         identSize: Int = 4,
@@ -93,11 +95,14 @@ final class WidgetDataSource {
     ) async -> PromptToCodeService {
         let build = {
             let service = PromptToCodeService(
-                code: code,
+                code: selectedCode,
                 selectionRange: selectionRange,
                 language: language,
                 identSize: identSize,
-                usesTabsForIndentation: usesTabsForIndentation
+                usesTabsForIndentation: usesTabsForIndentation,
+                projectRootURL: projectURL,
+                fileURL: url,
+                allCode: allCode
             )
             let provider = PromptToCodeProvider(
                 service: service,

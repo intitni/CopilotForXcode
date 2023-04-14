@@ -151,6 +151,15 @@ public struct UserDefaultPreferenceKeys {
     public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
         .init()
     }
+    
+    public struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
+        public let defaultValue: PromptToCodeFeatureProvider = .openAI
+        public let key = "PromptToCodeFeatureProvider"
+    }
+    
+    public var promptToCodeFeatureProvider: PromptToCodeFeatureProviderKey {
+        .init()
+    }
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
     public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }

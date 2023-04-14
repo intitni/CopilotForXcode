@@ -22,6 +22,8 @@ struct SettingsView: View {
         var disableSuggestionFeatureGlobally: Bool
         @AppStorage(\.suggestionFeatureEnabledProjectList)
         var suggestionFeatureEnabledProjectList: [String]
+        @AppStorage(\.promptToCodeFeatureProvider)
+        var promptToCodeFeatureProvider: PromptToCodeFeatureProvider
         init() {}
     }
 
@@ -134,6 +136,19 @@ struct SettingsView: View {
                     Text("Use accessibility API to accept suggestion in widget")
                 }
                 .toggleStyle(.switch)
+                
+                Picker(selection: $settings.promptToCodeFeatureProvider) {
+                    ForEach(PromptToCodeFeatureProvider.allCases, id: \.rawValue) {
+                        switch $0 {
+                        case .openAI:
+                            Text("OpenAI").tag($0)
+                        case .githubCopilot:
+                            Text("GitHub Copilot (Less Accurate)").tag($0)
+                        }
+                    }
+                } label: {
+                    Text("Prompt to code with")
+                }
             }
         }.buttonStyle(.copilot)
     }
