@@ -17,7 +17,10 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         language: CopilotLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        requirement: String
+        requirement: String,
+        projectRootURL: URL,
+        fileURL: URL,
+        allCode: String
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let textLanguage = userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
