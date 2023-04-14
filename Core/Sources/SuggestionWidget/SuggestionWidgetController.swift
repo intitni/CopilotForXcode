@@ -403,9 +403,15 @@ extension SuggestionWidgetController {
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
         func hide() {
-            panelWindow.alphaValue = 0
-            widgetWindow.alphaValue = 0
-            tabWindow.alphaValue = 0
+            if panelWindow.alphaValue != 0 {
+                panelWindow.alphaValue = 0
+            }
+            if widgetWindow.alphaValue != 0 {
+                widgetWindow.alphaValue = 0
+            }
+            if tabWindow.alphaValue != 0 {
+                tabWindow.alphaValue = 0
+            }
         }
 
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
@@ -448,9 +454,15 @@ extension SuggestionWidgetController {
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
 
-                panelWindow.alphaValue = 1
-                widgetWindow.alphaValue = 1
-                tabWindow.alphaValue = 1
+                if panelWindow.alphaValue != 1 {
+                    panelWindow.alphaValue = 1
+                }
+                if widgetWindow.alphaValue != 1 {
+                    widgetWindow.alphaValue = 1
+                }
+                if tabWindow.alphaValue != 1 {
+                    tabWindow.alphaValue = 1
+                }
                 return
             }
         }
