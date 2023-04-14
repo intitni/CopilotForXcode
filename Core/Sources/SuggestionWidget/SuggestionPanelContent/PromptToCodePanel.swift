@@ -9,6 +9,15 @@ struct PromptToCodePanel: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
+                    if !provider.errorMessage.isEmpty {
+                        Text(provider.errorMessage)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.red)
+                    }
+                    
                     if provider.code.isEmpty {
                         Text(
                             provider.isResponding
@@ -38,15 +47,6 @@ struct PromptToCodePanel: View {
                             })
                             .padding()
                             .frame(maxWidth: .infinity)
-                    }
-
-                    if !provider.errorMessage.isEmpty {
-                        Text(provider.errorMessage)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.red)
                     }
 
                     Spacer(minLength: 50)
@@ -208,6 +208,27 @@ struct PromptToCodePanel_Bright_Preview: PreviewProvider {
             description: "Hello world",
             isResponding: false,
             startLineIndex: 8
+        ))
+        .preferredColorScheme(.light)
+        .frame(width: 450, height: 400)
+    }
+}
+
+struct PromptToCodePanel_Error_Bright_Preview: PreviewProvider {
+    static var previews: some View {
+        PromptToCodePanel(provider: PromptToCodeProvider(
+            code: """
+            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
+                Text(viewModel.suggestion[index])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+            }
+            """,
+            language: "swift",
+            description: "Hello world",
+            isResponding: false,
+            startLineIndex: 8,
+            errorMessage: "Error"
         ))
         .preferredColorScheme(.light)
         .frame(width: 450, height: 400)

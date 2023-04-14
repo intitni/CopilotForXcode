@@ -36,7 +36,10 @@ public final class SuggestionWidgetController {
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
-                panelViewModel: suggestionPanelViewModel
+                panelViewModel: suggestionPanelViewModel,
+                onOpenChatClicked: { [weak self] in
+                    self?.onOpenChatClicked()
+                }
             )
         )
         it.setIsVisible(true)
@@ -96,7 +99,8 @@ public final class SuggestionWidgetController {
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
-
+    
+    public var onOpenChatClicked: () -> Void = {}
     public var dataSource: SuggestionWidgetDataSource?
 
     public nonisolated init() {

@@ -16,6 +16,7 @@ struct WidgetView: View {
     @ObservedObject var panelViewModel: SuggestionPanelViewModel
     @State var isHovering: Bool = false
     @State var processingProgress: Double = 0
+    var onOpenChatClicked: () -> Void = {}
 
     var body: some View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
@@ -74,7 +75,11 @@ struct WidgetView: View {
                     isHovering = yes
                 }
             }.contextMenu {
-                WidgetContextMenu(widgetViewModel: viewModel)
+                WidgetContextMenu(
+                    widgetViewModel: viewModel,
+                    isChatOpen: panelViewModel.isPanelDisplayed && panelViewModel.chat != nil,
+                    onOpenChatClicked: onOpenChatClicked
+                )
             }
     }
 
@@ -101,9 +106,21 @@ struct WidgetContextMenu: View {
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
+    var isChatOpen: Bool
+    var onOpenChatClicked: () -> Void = {}
 
     var body: some View {
         Group {
+            if !isChatOpen {
+                Button(action: {
+                    onOpenChatClicked()
+                }) {
+                    Text("Open Chat")
+                }
+            }
+
+            Divider()
+
             Button(action: {
                 useGlobalChat.toggle()
             }) {
@@ -184,7 +201,7 @@ struct WidgetContextMenu: View {
             updateProjectPath(fileURL: fileURL)
         }
     }
-    
+
     func updateProjectPath(fileURL: URL?) {
         Task {
             let projectURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
