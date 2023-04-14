@@ -32,10 +32,14 @@ For development instruction, check [Development.md](DEVELOPMENT.md).
 
 ## Prerequisites
 
-- [Node](https://nodejs.org/) installed to run the Copilot LSP.
 - Public network connection.
-- Active GitHub Copilot subscription (to use suggestion features).
-- Valid OpenAI API key (to use chat features).  
+
+For suggestion features:
+- [Node](https://nodejs.org/) installed to run the Copilot LSP.
+- Active GitHub Copilot subscription.
+
+For chat and prompt to code features:
+- Valid OpenAI API key.  
 
 ## Permissions Required
 
@@ -152,6 +156,12 @@ If you need to end a plugin, you can just type
 |:---:|---|
 | `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
 | `/airun` | Create a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
+
+### Prompt to Code
+
+- Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
+
+Prompt to code commands are not available in comment mode.
 
 ## Key Bindings
 
