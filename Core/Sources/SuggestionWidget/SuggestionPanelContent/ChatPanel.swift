@@ -144,6 +144,12 @@ struct ChatPanelMessages: View {
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
                             .frame(maxWidth: .infinity, alignment: .trailing)
+                            .contextMenu {
+                                Button("Copy") {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(text, forType: .string)
+                                }
+                            }
                     } else {
                         Markdown(text)
                             .textSelection(.enabled)
@@ -169,6 +175,12 @@ struct ChatPanelMessages: View {
                             .scaleEffect(x: -1, y: 1, anchor: .center)
                             .shadow(color: .black.opacity(0.1), radius: 2)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .contextMenu {
+                                Button("Copy") {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(text, forType: .string)
+                                }
+                            }
                     }
                 }
 
