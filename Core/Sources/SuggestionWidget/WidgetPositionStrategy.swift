@@ -80,8 +80,9 @@ enum UpdateLocationStrategy {
             tabFrame: CGRect,
             alignPanelTopToAnchor: Bool
         ) {
-            let preferredInsideEditorMinWidth = 1400 as Double
-            
+            let preferredInsideEditorMinWidth = UserDefaults.shared
+                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
+
             let maxY = max(
                 y,
                 mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
