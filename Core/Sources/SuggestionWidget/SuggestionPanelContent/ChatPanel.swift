@@ -131,11 +131,11 @@ struct ChatPanelMessages: View {
                             .frame(alignment: .trailing)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
+                                RoundedCorners(tl: r, tr: r * 2, bl: r, br: 0)
                                     .fill(Color.userChatContentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
+                                RoundedCorners(tl: r, tr: r * 2, bl: r, br: 0)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
@@ -156,11 +156,11 @@ struct ChatPanelMessages: View {
                             .frame(alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
+                                RoundedCorners(tl: r * 2, tr: r, bl: 0, br: r)
                                     .fill(Color.contentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
+                                RoundedCorners(tl: r * 2, tr: r, bl: 0, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading, 8)
