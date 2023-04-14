@@ -79,7 +79,7 @@ struct ChatPanelMessages: View {
     var body: some View {
         ScrollView {
             vstack {
-                let r = 6 as Double
+                let r = 24 as Double
 
                 Spacer()
 
@@ -131,11 +131,11 @@ struct ChatPanelMessages: View {
                             .frame(alignment: .trailing)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r, tr: r * 2, bl: r, br: 0)
+                                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
                                     .fill(Color.userChatContentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r, tr: r * 2, bl: r, br: 0)
+                                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading)
@@ -162,11 +162,11 @@ struct ChatPanelMessages: View {
                             .frame(alignment: .leading)
                             .padding()
                             .background {
-                                RoundedCorners(tl: r * 2, tr: r, bl: 0, br: r)
+                                RoundedCorners(tl: r, tr: r, bl: 0, br: r)
                                     .fill(Color.contentBackground)
                             }
                             .overlay {
-                                RoundedCorners(tl: r * 2, tr: r, bl: 0, br: r)
+                                RoundedCorners(tl: r, tr: r, bl: 0, br: r)
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                             .padding(.leading, 8)
