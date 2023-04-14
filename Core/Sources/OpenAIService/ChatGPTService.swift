@@ -92,7 +92,7 @@ public actor ChatGPTService: ChatGPTServiceType {
 
     public init(
         systemPrompt: String = "",
-        temperature: Double = 1
+        temperature: Double = 0.7
     ) {
         self.systemPrompt = systemPrompt
         self.temperature = temperature
