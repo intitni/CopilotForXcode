@@ -24,6 +24,8 @@ struct SettingsView: View {
         var suggestionFeatureEnabledProjectList: [String]
         @AppStorage(\.promptToCodeFeatureProvider)
         var promptToCodeFeatureProvider: PromptToCodeFeatureProvider
+        @AppStorage(\.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
+        var preferWidgetToStayInsideEditorWhenWidthGreaterThan: Double
         init() {}
     }
 
@@ -136,7 +138,7 @@ struct SettingsView: View {
                     Text("Use accessibility API to accept suggestion in widget")
                 }
                 .toggleStyle(.switch)
-                
+
                 Picker(selection: $settings.promptToCodeFeatureProvider) {
                     ForEach(PromptToCodeFeatureProvider.allCases, id: \.rawValue) {
                         switch $0 {
@@ -148,6 +150,21 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text("Prompt to code with")
+                }
+
+                HStack {
+                    TextField(text: .init(get: {
+                        "\(Int(settings.preferWidgetToStayInsideEditorWhenWidthGreaterThan))"
+                    }, set: {
+                        settings
+                            .preferWidgetToStayInsideEditorWhenWidthGreaterThan =
+                            Double(Int($0) ?? 0)
+                    })) {
+                        Text("Prefer widget to be inside editor when width greater than")
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    
+                    Text("px")
                 }
             }
         }.buttonStyle(.copilot)
@@ -209,7 +226,7 @@ struct SuggestionFeatureEnabledProjectListView: View {
                                 }
                             }
                         Spacer()
-                        
+
                         Button(action: {
                             settings.suggestionFeatureEnabledProjectList.removeAll(
                                 where: { $0 == project }
@@ -247,7 +264,9 @@ struct SuggestionFeatureAddEnabledProjectView: View {
 
     var body: some View {
         VStack {
-            Text("Enter the root path of the project. Do not use `~` to replace /Users/yourUserName.")
+            Text(
+                "Enter the root path of the project. Do not use `~` to replace /Users/yourUserName."
+            )
             TextField("Root path", text: $rootPath)
             HStack {
                 Spacer()
