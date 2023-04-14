@@ -80,6 +80,8 @@ enum UpdateLocationStrategy {
             tabFrame: CGRect,
             alignPanelTopToAnchor: Bool
         ) {
+            let preferredInsideEditorMinWidth = 1400 as Double
+            
             let maxY = max(
                 y,
                 mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
@@ -101,7 +103,10 @@ enum UpdateLocationStrategy {
 
             let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
                 .widgetPadding * 2
-            let putPanelToTheRight = activeScreen.frame.maxX > proposedPanelX + Style.panelWidth
+            let putPanelToTheRight = {
+                if editorFrame.size.width >= preferredInsideEditorMinWidth { return false }
+                return activeScreen.frame.maxX > proposedPanelX + Style.panelWidth
+            }()
             let alignPanelTopToAnchor = fixedAlignment ?? (y > activeScreen.frame.midY)
 
             if putPanelToTheRight {
@@ -132,7 +137,14 @@ enum UpdateLocationStrategy {
                 )
                 let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
                     .widgetPadding * 2 - Style.panelWidth
-                let putAnchorToTheLeft = proposedPanelX > activeScreen.frame.minX
+                let putAnchorToTheLeft = {
+                    if editorFrame.size.width >= preferredInsideEditorMinWidth {
+                        if editorFrame.maxX <= activeScreen.frame.maxX {
+                            return false
+                        }
+                    }
+                    return proposedPanelX > activeScreen.frame.minX
+                }()
 
                 if putAnchorToTheLeft {
                     let anchorFrame = proposedAnchorFrameOnTheLeftSide
