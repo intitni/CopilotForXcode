@@ -172,6 +172,8 @@ public struct UserDefaultPreferenceKeys {
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
     public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
+    public var runNodeWithInteractiveLoggedInShell: FeatureFlags
+        .RunNodeWithInteractiveLoggedInShell { .init() }
 }
 
 public enum FeatureFlags {
@@ -183,5 +185,10 @@ public enum FeatureFlags {
     public struct PreCacheOnFileOpen: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "FeatureFlag-PreCacheOnFileOpen"
+    }
+
+    public struct RunNodeWithInteractiveLoggedInShell: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-RunNodeWithInteractiveLoggedInShell"
     }
 }
