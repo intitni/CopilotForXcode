@@ -80,7 +80,7 @@ struct ChatPanelMessages: View {
     var body: some View {
         ScrollView {
             vstack {
-                let r = 24 as Double
+                let r = 8 as Double
 
                 Spacer()
 
