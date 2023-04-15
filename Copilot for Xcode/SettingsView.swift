@@ -2,29 +2,40 @@ import LaunchAgentManager
 import Preferences
 import SwiftUI
 
-final class Settings: ObservableObject {
-    @AppStorage(\.quitXPCServiceOnXcodeAndAppQuit)
-    var quitXPCServiceOnXcodeAndAppQuit: Bool
-    @AppStorage(\.realtimeSuggestionToggle)
-    var realtimeSuggestionToggle: Bool
-    @AppStorage(\.realtimeSuggestionDebounce)
-    var realtimeSuggestionDebounce: Double
-    @AppStorage(\.suggestionPresentationMode)
-    var suggestionPresentationMode: Preferences.PresentationMode
-    @AppStorage(\.suggestionWidgetPositionMode)
-    var suggestionWidgetPositionMode: SuggestionWidgetPositionMode
-    @AppStorage(\.widgetColorScheme)
-    var widgetColorScheme: WidgetColorScheme
-    @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
-    var acceptSuggestionWithAccessibilityAPI: Bool
-    init() {}
-}
-
 struct SettingsView: View {
+    final class Settings: ObservableObject {
+        @AppStorage(\.quitXPCServiceOnXcodeAndAppQuit)
+        var quitXPCServiceOnXcodeAndAppQuit: Bool
+        @AppStorage(\.realtimeSuggestionToggle)
+        var realtimeSuggestionToggle: Bool
+        @AppStorage(\.realtimeSuggestionDebounce)
+        var realtimeSuggestionDebounce: Double
+        @AppStorage(\.suggestionPresentationMode)
+        var suggestionPresentationMode: Preferences.PresentationMode
+        @AppStorage(\.suggestionWidgetPositionMode)
+        var suggestionWidgetPositionMode: SuggestionWidgetPositionMode
+        @AppStorage(\.widgetColorScheme)
+        var widgetColorScheme: WidgetColorScheme
+        @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
+        var acceptSuggestionWithAccessibilityAPI: Bool
+        @AppStorage(\.disableSuggestionFeatureGlobally)
+        var disableSuggestionFeatureGlobally: Bool
+        @AppStorage(\.suggestionFeatureEnabledProjectList)
+        var suggestionFeatureEnabledProjectList: [String]
+        @AppStorage(\.promptToCodeFeatureProvider)
+        var promptToCodeFeatureProvider: PromptToCodeFeatureProvider
+        @AppStorage(\.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
+        var preferWidgetToStayInsideEditorWhenWidthGreaterThan: Double
+        @AppStorage(\.hideCommonPrecedingSpacesInSuggestion)
+        var hideCommonPrecedingSpacesInSuggestion: Bool
+        init() {}
+    }
+
     @StateObject var settings = Settings()
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(for: \.realtimeSuggestionDebounce)
     @Environment(\.updateChecker) var updateChecker
+    @State var isSuggestionFeatureEnabledListPickerOpen = false
 
     var body: some View {
         Section {
@@ -85,43 +96,222 @@ struct SettingsView: View {
                     }
                 }
 
-                Toggle(isOn: $settings.realtimeSuggestionToggle) {
-                    Text("Real-time suggestion")
-                }
-                .toggleStyle(.switch)
+                Group {
+                    Toggle(isOn: $settings.realtimeSuggestionToggle) {
+                        Text("Real-time suggestion")
+                    }
+                    .toggleStyle(.switch)
 
-                HStack {
-                    Slider(value: $editingRealtimeSuggestionDebounce, in: 0...2, step: 0.1) {
-                        Text("Real-time suggestion fetch debounce")
-                    } onEditingChanged: { _ in
-                        settings.realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
+                    HStack {
+                        Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
+                            Text("Disable suggestion feature globally")
+                        }
+                        .toggleStyle(.switch)
+
+                        Button("Enabled Projects") {
+                            isSuggestionFeatureEnabledListPickerOpen = true
+                        }
+                    }.sheet(isPresented: $isSuggestionFeatureEnabledListPickerOpen) {
+                        SuggestionFeatureEnabledProjectListView(
+                            isOpen: $isSuggestionFeatureEnabledListPickerOpen
+                        )
                     }
 
-                    Text(
-                        "\(editingRealtimeSuggestionDebounce.formatted(.number.precision(.fractionLength(2))))s"
-                    )
-                    .font(.body)
-                    .monospacedDigit()
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.white.opacity(0.2))
-                    )
+                    HStack {
+                        Slider(value: $editingRealtimeSuggestionDebounce, in: 0...2, step: 0.1) {
+                            Text("Real-time suggestion fetch debounce")
+                        } onEditingChanged: { _ in
+                            settings.realtimeSuggestionDebounce = editingRealtimeSuggestionDebounce
+                        }
+
+                        Text(
+                            "\(editingRealtimeSuggestionDebounce.formatted(.number.precision(.fractionLength(2))))s"
+                        )
+                        .font(.body)
+                        .monospacedDigit()
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color.white.opacity(0.2))
+                        )
+                    }
+
+                    Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
+                        Text("Hide Common Preceding Spaces in Suggestion")
+                    }
+                    .toggleStyle(.switch)
+
+                    Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
+                        Text("Use accessibility API to accept suggestion in widget")
+                    }
+                    .toggleStyle(.switch)
                 }
-                
-                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
-                    Text("Use accessibility API to accept suggestion in widget")
+
+                Picker(selection: $settings.promptToCodeFeatureProvider) {
+                    ForEach(PromptToCodeFeatureProvider.allCases, id: \.rawValue) {
+                        switch $0 {
+                        case .openAI:
+                            Text("OpenAI").tag($0)
+                        case .githubCopilot:
+                            Text("GitHub Copilot (Less Accurate)").tag($0)
+                        }
+                    }
+                } label: {
+                    Text("Prompt to code with")
                 }
-                .toggleStyle(.switch)
+
+                HStack {
+                    TextField(text: .init(get: {
+                        "\(Int(settings.preferWidgetToStayInsideEditorWhenWidthGreaterThan))"
+                    }, set: {
+                        settings
+                            .preferWidgetToStayInsideEditorWhenWidthGreaterThan =
+                            Double(Int($0) ?? 0)
+                    })) {
+                        Text("Prefer widget to be inside editor when width greater than")
+                    }
+                    .textFieldStyle(.roundedBorder)
+
+                    Text("px")
+                }
             }
         }.buttonStyle(.copilot)
     }
 }
 
+struct SuggestionFeatureEnabledProjectListView: View {
+    final class Settings: ObservableObject {
+        @AppStorage(\.suggestionFeatureEnabledProjectList)
+        var suggestionFeatureEnabledProjectList: [String]
+
+        init(suggestionFeatureEnabledProjectList: AppStorage<[String]>? = nil) {
+            if let list = suggestionFeatureEnabledProjectList {
+                _suggestionFeatureEnabledProjectList = list
+            }
+        }
+    }
+
+    var isOpen: Binding<Bool>
+    @State var isAddingNewProject = false
+    @StateObject var settings = Settings()
+
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: {
+                    self.isOpen.wrappedValue = false
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                }
+                .buttonStyle(.plain)
+                Text("Enabled Projects")
+                Spacer()
+                Button(action: {
+                    isAddingNewProject = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                }
+                .buttonStyle(.plain)
+            }
+            .background(.black.opacity(0.2))
+
+            List {
+                ForEach(
+                    settings.suggestionFeatureEnabledProjectList,
+                    id: \.self
+                ) { project in
+                    HStack {
+                        Text(project)
+                            .contextMenu {
+                                Button("Remove") {
+                                    settings.suggestionFeatureEnabledProjectList.removeAll(
+                                        where: { $0 == project }
+                                    )
+                                }
+                            }
+                        Spacer()
+
+                        Button(action: {
+                            settings.suggestionFeatureEnabledProjectList.removeAll(
+                                where: { $0 == project }
+                            )
+                        }) {
+                            Image(systemName: "trash.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .overlay {
+                if settings.suggestionFeatureEnabledProjectList.isEmpty {
+                    Text("""
+                    Empty
+                    Add project with "+" button
+                    Or right clicking the circular widget
+                    """)
+                    .multilineTextAlignment(.center)
+                }
+            }
+        }
+        .frame(width: 300, height: 400)
+        .sheet(isPresented: $isAddingNewProject) {
+            SuggestionFeatureAddEnabledProjectView(isOpen: $isAddingNewProject, settings: settings)
+        }
+    }
+}
+
+struct SuggestionFeatureAddEnabledProjectView: View {
+    var isOpen: Binding<Bool>
+    var settings: SuggestionFeatureEnabledProjectListView.Settings
+    @State var rootPath = ""
+
+    var body: some View {
+        VStack {
+            Text(
+                "Enter the root path of the project. Do not use `~` to replace /Users/yourUserName."
+            )
+            TextField("Root path", text: $rootPath)
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    isOpen.wrappedValue = false
+                }
+                Button("Add") {
+                    settings.suggestionFeatureEnabledProjectList.append(rootPath)
+                    isOpen.wrappedValue = false
+                }
+            }.buttonStyle(.copilot)
+        }
+        .padding()
+        .frame(minWidth: 500)
+    }
+}
+
+// MARK: - Previews
+
 struct SettingsView_Preview: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .background(.purple)
+    }
+}
+
+struct SuggestionFeatureEnabledProjectListView_Preview: PreviewProvider {
+    static var previews: some View {
+        SuggestionFeatureEnabledProjectListView(
+            isOpen: .constant(true),
+            settings: .init(suggestionFeatureEnabledProjectList: .init(wrappedValue: [
+                "hello/2",
+                "hello/3",
+                "hello/4",
+            ], "SuggestionFeatureEnabledProjectListView_Preview"))
+        )
+        .background(.purple)
     }
 }

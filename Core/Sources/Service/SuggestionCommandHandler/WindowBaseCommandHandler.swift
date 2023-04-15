@@ -128,6 +128,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
+        
+        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+            WidgetDataSource.shared.removePromptToCode(for: fileURL)
+            presenter.closePromptToCode(fileURL: fileURL)
+            return
+        }
+        
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
@@ -137,17 +144,67 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        do {
-            let result = try await CommentBaseCommandHandler().acceptSuggestion(editor: editor)
-            Task {
-                let fileURL = try await Environment.fetchCurrentFileURL()
-                presenter.discardSuggestion(fileURL: fileURL)
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+
+        let injector = SuggestionInjector()
+        var lines = editor.lines
+        var cursorPosition = editor.cursorPosition
+        var extraInfo = SuggestionInjector.ExtraInfo()
+
+        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+            let suggestion = CopilotCompletion(
+                text: service.code,
+                position: service.selectionRange.start,
+                uuid: UUID().uuidString,
+                range: service.selectionRange,
+                displayText: service.code
+            )
+
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: suggestion,
+                extraInfo: &extraInfo
+            )
+
+            if service.isContinuous {
+                service.selectionRange = .init(
+                    start: service.selectionRange.start,
+                    end: cursorPosition
+                )
+                presenter.presentPromptToCode(fileURL: fileURL)
+            } else {
+                WidgetDataSource.shared.removePromptToCode(for: fileURL)
+                presenter.closePromptToCode(fileURL: fileURL)
             }
-            return result
-        } catch {
-            presenter.presentError(error)
-            throw error
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .init(start: service.selectionRange.start, end: cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        } else if let acceptedSuggestion = workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor
+        ) {
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: acceptedSuggestion,
+                extraInfo: &extraInfo
+            )
+
+            presenter.discardSuggestion(fileURL: fileURL)
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .cursor(cursorPosition),
+                modifications: extraInfo.modifications
+            )
         }
+
+        return nil
     }
 
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
@@ -274,5 +331,59 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         }
 
         presenter.presentChatRoom(fileURL: fileURL)
+    }
+
+    func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _promptToCode(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    func _promptToCode(editor: EditorContent) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (workspace, _) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        guard workspace.isSuggestionFeatureEnabled else {
+            presenter.presentErrorMessage("Prompt to code is disabled for this project")
+            return
+        }
+        
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
+
+        let (code, selection) = {
+            guard var selection = editor.selections.last,
+                  selection.start != selection.end
+            else { return ("", .cursor(editor.cursorPosition)) }
+            if selection.start.line != selection.end.line {
+                // when there are multiple lines start from char 0 so that it can keep the
+                // indentation.
+                selection.start = .init(line: selection.start.line, character: 0)
+            }
+            return (
+                editor.selectedCode(in: selection),
+                .init(
+                    start: .init(line: selection.start.line, character: selection.start.character),
+                    end: .init(line: selection.end.line, character: selection.end.character)
+                )
+            )
+        }() as (String, CursorRange)
+
+        _ = await WidgetDataSource.shared.createPromptToCode(
+            for: fileURL,
+            projectURL: workspace.projectRootURL,
+            selectedCode: code,
+            allCode: editor.content,
+            selectionRange: selection,
+            language: codeLanguage
+        )
+
+        presenter.presentPromptToCode(fileURL: fileURL)
     }
 }

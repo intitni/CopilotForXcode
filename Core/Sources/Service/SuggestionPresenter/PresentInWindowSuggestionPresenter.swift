@@ -54,4 +54,18 @@ struct PresentInWindowSuggestionPresenter {
             controller.presentChatRoom(fileURL: fileURL)
         }
     }
+    
+    func presentPromptToCode(fileURL: URL) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
+            controller.presentPromptToCode(fileURL: fileURL)
+        }
+    }
+    
+    func closePromptToCode(fileURL: URL) {
+        Task { @MainActor in
+            let controller = GraphicalUserInterfaceController.shared.suggestionWidget
+            controller.discardPromptToCode(fileURL: fileURL)
+        }
+    }
 }

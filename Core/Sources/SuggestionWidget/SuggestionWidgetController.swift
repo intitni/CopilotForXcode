@@ -36,7 +36,10 @@ public final class SuggestionWidgetController {
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
-                panelViewModel: suggestionPanelViewModel
+                panelViewModel: suggestionPanelViewModel,
+                onOpenChatClicked: { [weak self] in
+                    self?.onOpenChatClicked()
+                }
             )
         )
         it.setIsVisible(true)
@@ -80,6 +83,7 @@ public final class SuggestionWidgetController {
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
             if case .chat = suggestionPanelViewModel.activeTab { return true }
+            if case .promptToCode = suggestionPanelViewModel.content { return true }
             return false
         }
         return it
@@ -95,7 +99,8 @@ public final class SuggestionWidgetController {
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
-
+    
+    public var onOpenChatClicked: () -> Void = {}
     public var dataSource: SuggestionWidgetDataSource?
 
     public nonisolated init() {
@@ -191,14 +196,18 @@ public final class SuggestionWidgetController {
 
         Task { @MainActor in
             var switchTask: Task<Void, Error>?
-            suggestionPanelViewModel.onActiveTabChanged = { activeTab in
+            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
                 #warning("""
                 TODO: There should be a better way for that
                 Currently, we have to make the app an accessory so that we can type things in the chat mode.
                 But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
                 """)
-                switch activeTab {
-                case .suggestion:
+                switch (viewModel.activeTab, viewModel.content) {
+                case (.chat, _), (.suggestion, .promptToCode):
+                    guard NSApp.activationPolicy() != .accessory else { return }
+                    switchTask?.cancel()
+                    NSApp.setActivationPolicy(.accessory)
+                case (.suggestion, _):
                     guard NSApp.activationPolicy() != .prohibited else { return }
                     switchTask?.cancel()
                     switchTask = Task {
@@ -206,10 +215,6 @@ public final class SuggestionWidgetController {
                         try Task.checkCancellation()
                         NSApp.setActivationPolicy(.prohibited)
                     }
-                case .chat:
-                    guard NSApp.activationPolicy() != .accessory else { return }
-                    switchTask?.cancel()
-                    NSApp.setActivationPolicy(.accessory)
                 }
             }
         }
@@ -268,6 +273,29 @@ public extension SuggestionWidgetController {
             await updateContentForActiveEditor(fileURL: fileURL)
         }
     }
+    
+    func presentPromptToCode(fileURL: URL) {
+        widgetViewModel.isProcessing = false
+        Task {
+            if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+                suggestionPanelViewModel.content = .promptToCode(provider)
+                suggestionPanelViewModel.isPanelDisplayed = true
+                
+                Task { @MainActor in
+                    // looks like we need a delay.
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+    }
+    
+    func discardPromptToCode(fileURL: URL) {
+        widgetViewModel.isProcessing = false
+        Task {
+            await updateContentForActiveEditor(fileURL: fileURL)
+        }
+    }
 }
 
 // MARK: - Private
@@ -311,6 +339,7 @@ extension SuggestionWidgetController {
                     }
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
+                    widgetViewModel.currentFileURL = currentFileURL
                     await updateContentForActiveEditor(fileURL: fileURL)
                 }
 
@@ -378,9 +407,15 @@ extension SuggestionWidgetController {
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
         func hide() {
-            panelWindow.alphaValue = 0
-            widgetWindow.alphaValue = 0
-            tabWindow.alphaValue = 0
+            if panelWindow.alphaValue != 0 {
+                panelWindow.alphaValue = 0
+            }
+            if widgetWindow.alphaValue != 0 {
+                widgetWindow.alphaValue = 0
+            }
+            if tabWindow.alphaValue != 0 {
+                tabWindow.alphaValue = 0
+            }
         }
 
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
@@ -423,9 +458,15 @@ extension SuggestionWidgetController {
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
 
-                panelWindow.alphaValue = 1
-                widgetWindow.alphaValue = 1
-                tabWindow.alphaValue = 1
+                if panelWindow.alphaValue != 1 {
+                    panelWindow.alphaValue = 1
+                }
+                if widgetWindow.alphaValue != 1 {
+                    widgetWindow.alphaValue = 1
+                }
+                if tabWindow.alphaValue != 1 {
+                    tabWindow.alphaValue = 1
+                }
                 return
             }
         }
@@ -450,8 +491,10 @@ extension SuggestionWidgetController {
         } else {
             suggestionPanelViewModel.chat = nil
         }
-
-        if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
+        
+        if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+            suggestionPanelViewModel.content = .promptToCode(provider)
+        } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
             suggestionPanelViewModel.content = .suggestion(suggestion)
         } else {
             suggestionPanelViewModel.content = nil

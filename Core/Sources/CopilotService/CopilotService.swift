@@ -2,8 +2,8 @@ import CopilotModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
-import XPCShared
 import Preferences
+import XPCShared
 
 public protocol CopilotAuthServiceType {
     func checkStatus() async throws -> CopilotStatus
@@ -55,25 +55,43 @@ public class CopilotBaseService {
             if userEnvPath.isEmpty {
                 userEnvPath = "/usr/bin:/usr/local/bin" // fallback
             }
-            let executionParams = {
+            let executionParams: Process.ExecutionParameters
+            if UserDefaults.shared.value(for: \.runNodeWithInteractiveLoggedInShell) {
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
-                return Process.ExecutionParameters(
-                    path: "/usr/bin/env",
-                    arguments: [
-                        nodePath.isEmpty ? "node" : nodePath,
-                        Bundle.main.url(
-                            forResource: "agent",
-                            withExtension: "js",
-                            subdirectory: "copilot/dist"
-                        )!.path,
-                        "--stdio",
-                    ],
-                    environment: [
-                        "PATH": userEnvPath,
-                    ],
-                    currentDirectoryURL: supportURL
-                )
-            }()
+                let command = [
+                    nodePath.isEmpty ? "node" : nodePath,
+                    "\"\(Bundle.main.url(forResource: "agent", withExtension: "js", subdirectory: "copilot/dist")!.path)\"",
+                    "--stdio",
+                ].joined(separator: " ")
+                executionParams = {
+                    Process.ExecutionParameters(
+                        path: "/bin/bash",
+                        arguments: ["-i", "-l", "-c", command],
+                        environment: [:],
+                        currentDirectoryURL: supportURL
+                    )
+                }()
+            } else {
+                executionParams = {
+                    let nodePath = UserDefaults.shared.value(for: \.nodePath)
+                    return Process.ExecutionParameters(
+                        path: "/usr/bin/env",
+                        arguments: [
+                            nodePath.isEmpty ? "node" : nodePath,
+                            Bundle.main.url(
+                                forResource: "agent",
+                                withExtension: "js",
+                                subdirectory: "copilot/dist"
+                            )!.path,
+                            "--stdio",
+                        ],
+                        environment: [
+                            "PATH": userEnvPath,
+                        ],
+                        currentDirectoryURL: supportURL
+                    )
+                }()
+            }
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
             localServer.logMessages = false
             localServer.notificationHandler = { _, respond in
@@ -161,7 +179,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CopilotCompletion] {
         let languageId = languageIdentifierFromFileURL(fileURL)
-        
+
         let relativePath = {
             let filePath = fileURL.path
             let rootPath = projectRootURL.path

@@ -14,8 +14,7 @@ public final class ScheduledCleaner {
                         let filespaces = workspace.filespaces
                         for (url, filespace) in filespaces {
                             if filespace.isExpired {
-                                WidgetDataSource.shared.chats[url] = nil
-                                WidgetDataSource.shared.chatProviders[url] = nil
+                                WidgetDataSource.shared.cleanup(for: url)
                             }
                         }
                         // cleanup workspace

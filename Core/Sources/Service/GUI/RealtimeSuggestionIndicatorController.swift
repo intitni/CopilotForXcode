@@ -125,6 +125,8 @@ final class RealtimeSuggestionIndicatorController {
     }()
 
     nonisolated init() {
+        if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
+        
         Task { @MainActor in
             observeEditorChangeIfNeeded()
             activeApplicationMonitorTask = Task { [weak self] in

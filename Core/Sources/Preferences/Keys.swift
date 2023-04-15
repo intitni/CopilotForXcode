@@ -124,7 +124,7 @@ public struct UserDefaultPreferenceKeys {
     public var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
         .init()
     }
-    
+
     public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "ForceOrderWidgetToFront"
@@ -134,8 +134,46 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    public struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "DisableSuggestionFeatureGlobally"
+    }
+
+    public var disableSuggestionFeatureGlobally: DisableSuggestionFeatureGlobally {
+        .init()
+    }
+
+    public struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
+        public let defaultValue: [String] = []
+        public let key = "SuggestionFeatureEnabledProjectList"
+    }
+
+    public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
+        .init()
+    }
+
+    public struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
+        public let defaultValue: PromptToCodeFeatureProvider = .openAI
+        public let key = "PromptToCodeFeatureProvider"
+    }
+
+    public var promptToCodeFeatureProvider: PromptToCodeFeatureProviderKey {
+        .init()
+    }
+
+    public struct PreferWidgetToStayInsideEditorWhenWidthGreaterThan: UserDefaultPreferenceKey {
+        public let defaultValue = 1400 as Double
+        public let key = "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
+    }
+
+    public var preferWidgetToStayInsideEditorWhenWidthGreaterThan: PreferWidgetToStayInsideEditorWhenWidthGreaterThan {
+        .init()
+    }
+
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
     public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
+    public var runNodeWithInteractiveLoggedInShell: FeatureFlags
+        .RunNodeWithInteractiveLoggedInShell { .init() }
 }
 
 public enum FeatureFlags {
@@ -143,9 +181,14 @@ public enum FeatureFlags {
         public let defaultValue = false
         public let key = "FeatureFlag-DisableLazyVStack"
     }
-    
+
     public struct PreCacheOnFileOpen: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "FeatureFlag-PreCacheOnFileOpen"
+    }
+
+    public struct RunNodeWithInteractiveLoggedInShell: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-RunNodeWithInteractiveLoggedInShell"
     }
 }
