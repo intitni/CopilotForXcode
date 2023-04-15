@@ -148,8 +148,10 @@ public struct SuggestionInjector {
         let lastRemovedLine = content[safe: end.line]
         let startLine = max(0, start.line)
         let endLine = max(start.line, min(end.line, content.endIndex - 1))
-        extraInfo.modifications.append(.deleted(startLine...endLine))
-        content.removeSubrange(startLine...endLine)
+        if startLine < content.endIndex {
+            extraInfo.modifications.append(.deleted(startLine...endLine))
+            content.removeSubrange(startLine...endLine)
+        }
 
         var toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
 
