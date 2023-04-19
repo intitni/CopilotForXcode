@@ -80,7 +80,7 @@ struct ChatPanelMessages: View {
             VStack(spacing: 0) {
                 vstack {
                     Spacer()
-                    
+
                     if chat.isReceivingMessage {
                         StopRespondingButton(chat: chat)
                     }
@@ -103,7 +103,7 @@ struct ChatPanelMessages: View {
                             BotMessage(text: text)
                         }
                     }
-                    
+
                     Spacer()
                 }
             }
@@ -145,9 +145,7 @@ private struct UserMessage: View {
     var body: some View {
         Markdown(text)
             .textSelection(.enabled)
-            .markdownTheme(.gitHub.text {
-                BackgroundColor(Color.clear)
-            })
+            .markdownTheme(.custom)
             .markdownCodeSyntaxHighlighter(
                 ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
             )
@@ -186,12 +184,10 @@ private struct BotMessage: View {
                 NSPasteboard.general.setString(text, forType: .string)
             }
             .scaleEffect(x: -1, y: -1, anchor: .center)
-            
+
             Markdown(text)
                 .textSelection(.enabled)
-                .markdownTheme(.gitHub.text {
-                    BackgroundColor(Color.clear)
-                })
+                .markdownTheme(.custom)
                 .markdownCodeSyntaxHighlighter(
                     ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
                 )
@@ -392,38 +388,6 @@ struct GlobalChatSwitchToggleStyle: ToggleStyle {
     }
 }
 
-struct CopyButton: View {
-    var copy: () -> Void
-    @State var isCopied = false
-    var body: some View {
-        Button(action: {
-            withAnimation(.linear(duration: 0.1)) {
-                isCopied = true
-            }
-            copy()
-            Task {
-                try await Task.sleep(nanoseconds: 1_000_000_000)
-                withAnimation(.linear(duration: 0.1)) {
-                    isCopied = false
-                }
-            }
-        }) {
-            Image(systemName: isCopied ? "checkmark.circle" : "doc.on.doc")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
-                .frame(width: 20, height: 20, alignment: .center)
-                .foregroundColor(.secondary)
-                .background(
-                    .regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 4, style: .circular)
-                )
-                .padding(4)
-        }
-        .buttonStyle(.borderless)
-    }
-}
-
 // MARK: - Previews
 
 struct ChatPanel_Preview: PreviewProvider {
@@ -436,7 +400,12 @@ struct ChatPanel_Preview: PreviewProvider {
         .init(
             id: "2",
             isUser: false,
-            text: "**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?"
+            text: """
+            ```swift
+            func foo() {}
+            ```
+            **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
+            """
         ),
         .init(id: "5", isUser: false, text: "Yooo"),
         .init(id: "4", isUser: true, text: "Yeeeehh"),
