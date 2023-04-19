@@ -78,7 +78,7 @@ struct ChatPanelMessages: View {
     }
 
     var body: some View {
-        ScrollView {
+        CustomScrollView {
             vstack {
                 let r = 8 as Double
 
@@ -103,7 +103,7 @@ struct ChatPanelMessages: View {
                                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .scaleEffect(x: -1, y: 1, anchor: .center)
                 }
 
@@ -403,7 +403,7 @@ struct CopyButton: View {
                 )
                 .padding(4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
     }
 }
 

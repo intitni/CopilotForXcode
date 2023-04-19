@@ -7,7 +7,7 @@ struct PromptToCodePanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
+            CustomScrollView {
                 VStack(spacing: 0) {
                     if !provider.errorMessage.isEmpty {
                         Text(provider.errorMessage)
