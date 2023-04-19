@@ -50,7 +50,6 @@ private struct ComputeHeight<Content: View>: NSViewRepresentable {
             rootView: contentView.frame(width: nsView.frame.width == 0 ? 200 : nsView.frame.width)
         )
         let size = hostingView.fittingSize
-        print(size)
 
         if height != size.height {
             Task { @MainActor in
