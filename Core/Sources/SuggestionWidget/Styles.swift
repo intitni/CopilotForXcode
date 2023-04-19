@@ -62,19 +62,21 @@ extension MarkdownUI.Theme {
         }
         .codeBlock { configuration in
             configuration.label
-                .padding()
-                .padding(.trailing)
-                .background {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color(nsColor: .textBackgroundColor).opacity(0.7))
+                .relativeLineSpacing(.em(0.225))
+                .markdownTextStyle {
+                    FontFamilyVariant(.monospaced)
+                    FontSize(.em(0.85))
                 }
+                .padding(16)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .topTrailing) {
                     CopyButton {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(configuration.content, forType: .string)
                     }
                 }
-                .padding(.bottom)
+                .markdownMargin(top: 0, bottom: 16)
         }
     }
 }
