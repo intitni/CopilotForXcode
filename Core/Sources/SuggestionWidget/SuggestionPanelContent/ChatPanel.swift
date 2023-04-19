@@ -61,55 +61,79 @@ struct ChatPanelToolbar: View {
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
-
-    @ViewBuilder
-    func vstack(@ViewBuilder content: () -> some View) -> some View {
-        if disableLazyVStack {
-            VStack(spacing: 4) {
-                content()
-            }
-        } else {
-            LazyVStack(spacing: 4) {
-                content()
-            }
+    @State var height: Double = 0
+    
+    struct HeightPreferenceKey: PreferenceKey {
+        static var defaultValue: Double = 0
+        static func reduce(value: inout Double, nextValue: () -> Double) {
+            value = nextValue() + value
         }
     }
-
-    var body: some View {
-        CustomScrollView {
-            VStack(spacing: 0) {
-                vstack {
-                    Spacer()
-
-                    if chat.isReceivingMessage {
-                        StopRespondingButton(chat: chat)
+    
+    struct UpdateHeightModifier: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .preference(key: HeightPreferenceKey.self, value: proxy.size.height)
                     }
-
-                    if chat.history.isEmpty {
-                        Text("New Chat")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .scaleEffect(x: -1, y: -1, anchor: .center)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    ForEach(chat.history.reversed(), id: \.id) { message in
-                        let text = message.text.isEmpty && !message.isUser ? "..." : message
-                            .text
-
-                        if message.isUser {
-                            UserMessage(text: text)
-                        } else {
-                            BotMessage(text: text)
-                        }
-                    }
-
-                    Spacer()
                 }
+        }
+    }
+    
+    var body: some View {
+        List {
+            Group {
+                Spacer()
+                    .modifier(UpdateHeightModifier())
+
+                if chat.isReceivingMessage {
+                    StopRespondingButton(chat: chat)
+                        .padding(.vertical, 4)
+                        .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                        .modifier(UpdateHeightModifier())
+                }
+
+                if chat.history.isEmpty {
+                    Text("New Chat")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical)
+                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                        .foregroundStyle(.secondary)
+                        .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                        .modifier(UpdateHeightModifier())
+                }
+
+                ForEach(chat.history.reversed(), id: \.id) { message in
+                    let text = message.text.isEmpty && !message.isUser ? "..." : message
+                        .text
+
+                    if message.isUser {
+                        UserMessage(text: text)
+                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                            .padding(.vertical, 4)
+                    } else {
+                        BotMessage(text: text)
+                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                            .padding(.vertical, 4)
+                    }
+                }
+                .listItemTint(.clear)
+                .modifier(UpdateHeightModifier())
+
+                Spacer()
+                    .modifier(UpdateHeightModifier())
             }
             .scaleEffect(x: -1, y: 1, anchor: .center)
         }
+        .id("\(chat.history.count), \(chat.isReceivingMessage)")
+        .listStyle(.plain)
+        .frame(idealHeight: max(50, height + 16))
         .scaleEffect(x: 1, y: -1, anchor: .center)
+        .onPreferenceChange(HeightPreferenceKey.self) { newHeight in
+            height = newHeight
+        }
     }
 }
 
@@ -136,6 +160,7 @@ private struct StopRespondingButton: View {
         }
         .buttonStyle(.borderless)
         .scaleEffect(x: -1, y: -1, anchor: .center)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
@@ -170,6 +195,7 @@ private struct UserMessage: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
                 }
+                .buttonStyle(.borderless)
             }
     }
 }
@@ -210,6 +236,7 @@ private struct BotMessage: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(text, forType: .string)
                     }
+                    .buttonStyle(.borderless)
                 }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
