@@ -52,6 +52,16 @@ struct PromptToCodePanel: View {
                     Spacer(minLength: 50)
                 }
             }
+            .overlay(alignment: .topTrailing) {
+                if !provider.code.isEmpty {
+                    CopyButton {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(provider.code, forType: .string)
+                    }
+                    .padding(.trailing, 2)
+                    .padding(.top, 2)
+                }
+            }
             .overlay(alignment: .bottom) {
                 Group {
                     if provider.isResponding {
