@@ -2,6 +2,8 @@ import AppKit
 import MarkdownUI
 import SwiftUI
 
+private let r: Double = 8
+
 struct ChatPanel: View {
     let chat: ChatProvider
     @Namespace var inputAreaNamespace
@@ -12,13 +14,11 @@ struct ChatPanel: View {
             ChatPanelToolbar(chat: chat)
             Divider()
             ChatPanelMessages(
-                chat: chat,
-                inputAreaNamespace: inputAreaNamespace
+                chat: chat
             )
             Divider()
             ChatPanelInputArea(
                 chat: chat,
-                inputAreaNamespace: inputAreaNamespace,
                 typedMessage: $typedMessage
             )
         }
@@ -60,60 +60,49 @@ struct ChatPanelToolbar: View {
 
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
-    var inputAreaNamespace: Namespace.ID
-    @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
-
-    @ViewBuilder
-    func vstack(@ViewBuilder content: () -> some View) -> some View {
-        if disableLazyVStack {
-            VStack(spacing: 4) {
-                content()
-            }
-        } else {
-            LazyVStack(spacing: 4) {
-                content()
-            }
+    @State var height: Double = 0
+    
+    struct HeightPreferenceKey: PreferenceKey {
+        static var defaultValue: Double = 0
+        static func reduce(value: inout Double, nextValue: () -> Double) {
+            value = nextValue() + value
         }
     }
-
+    
+    struct UpdateHeightModifier: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .preference(key: HeightPreferenceKey.self, value: proxy.size.height)
+                    }
+                }
+        }
+    }
+    
     var body: some View {
-        ScrollView {
-            vstack {
-                let r = 8 as Double
-
+        List {
+            Group {
                 Spacer()
+                    .modifier(UpdateHeightModifier())
 
                 if chat.isReceivingMessage {
-                    Button(action: {
-                        chat.stop()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "stop.fill")
-                            Text("Stop Responding")
-                        }
-                        .rotationEffect(Angle(degrees: 180))
-                        .padding(8)
-                        .background(
-                            .regularMaterial,
-                            in: RoundedRectangle(cornerRadius: r, style: .continuous)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: r, style: .continuous)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .scaleEffect(x: -1, y: 1, anchor: .center)
+                    StopRespondingButton(chat: chat)
+                        .padding(.vertical, 4)
+                        .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                        .modifier(UpdateHeightModifier())
                 }
 
                 if chat.history.isEmpty {
                     Text("New Chat")
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .rotationEffect(Angle(degrees: 180))
-                        .scaleEffect(x: -1, y: 1, anchor: .center)
+                        .padding(.vertical)
+                        .scaleEffect(x: -1, y: -1, anchor: .center)
                         .foregroundStyle(.secondary)
+                        .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                        .modifier(UpdateHeightModifier())
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
@@ -121,90 +110,142 @@ struct ChatPanelMessages: View {
                         .text
 
                     if message.isUser {
-                        Markdown(text)
-                            .textSelection(.enabled)
-                            .markdownTheme(.gitHub.text {
-                                BackgroundColor(Color.clear)
-                            })
-                            .markdownCodeSyntaxHighlighter(
-                                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
-                            )
-                            .frame(alignment: .trailing)
-                            .padding()
-                            .background {
-                                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
-                                    .fill(Color.userChatContentBackground)
-                            }
-                            .overlay {
-                                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                            }
-                            .padding(.leading)
-                            .padding(.trailing, 8)
-                            .rotationEffect(Angle(degrees: 180))
-                            .scaleEffect(x: -1, y: 1, anchor: .center)
-                            .shadow(color: .black.opacity(0.1), radius: 2)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .contextMenu {
-                                Button("Copy") {
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(text, forType: .string)
-                                }
-                            }
+                        UserMessage(text: text)
+                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                            .padding(.vertical, 4)
                     } else {
-                        HStack(alignment: .bottom, spacing: 2) {
-                            Markdown(text)
-                                .textSelection(.enabled)
-                                .markdownTheme(.gitHub.text {
-                                    BackgroundColor(Color.clear)
-                                })
-                                .markdownCodeSyntaxHighlighter(
-                                    ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
-                                )
-                                .frame(alignment: .leading)
-                                .padding()
-                                .background {
-                                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                                        .fill(Color.contentBackground)
-                                }
-                                .overlay {
-                                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                                }
-                                .padding(.leading, 8)
-                                .rotationEffect(Angle(degrees: 180))
-                                .scaleEffect(x: -1, y: 1, anchor: .center)
-                                .shadow(color: .black.opacity(0.1), radius: 2)
-                                .contextMenu {
-                                    Button("Copy") {
-                                        NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.setString(text, forType: .string)
-                                    }
-                                }
-
-                            CopyButton {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(text, forType: .string)
-                            }
-                            .rotationEffect(Angle(degrees: 180))
-                            .scaleEffect(x: -1, y: 1, anchor: .center)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.trailing, 2)
+                        BotMessage(text: text)
+                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
+                            .padding(.vertical, 4)
                     }
                 }
+                .listItemTint(.clear)
+                .modifier(UpdateHeightModifier())
 
                 Spacer()
+                    .modifier(UpdateHeightModifier())
+            }
+            .scaleEffect(x: -1, y: 1, anchor: .center)
+        }
+        .id("\(chat.history.count), \(chat.isReceivingMessage)")
+        .listStyle(.plain)
+        .frame(idealHeight: max(50, height + 16))
+        .scaleEffect(x: 1, y: -1, anchor: .center)
+        .onPreferenceChange(HeightPreferenceKey.self) { newHeight in
+            height = newHeight
+        }
+    }
+}
+
+private struct StopRespondingButton: View {
+    let chat: ChatProvider
+
+    var body: some View {
+        Button(action: {
+            chat.stop()
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: "stop.fill")
+                Text("Stop Responding")
+            }
+            .padding(8)
+            .background(
+                .regularMaterial,
+                in: RoundedRectangle(cornerRadius: r, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: r, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             }
         }
-        .rotationEffect(Angle(degrees: 180))
-        .scaleEffect(x: -1, y: 1, anchor: .center)
+        .buttonStyle(.borderless)
+        .scaleEffect(x: -1, y: -1, anchor: .center)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
+private struct UserMessage: View {
+    let text: String
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        Markdown(text)
+            .textSelection(.enabled)
+            .markdownTheme(.custom)
+            .markdownCodeSyntaxHighlighter(
+                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+            )
+            .frame(alignment: .leading)
+            .padding()
+            .background {
+                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
+                    .fill(Color.userChatContentBackground)
+            }
+            .overlay {
+                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+            .padding(.leading)
+            .padding(.trailing, 8)
+            .scaleEffect(x: -1, y: -1, anchor: .center)
+            .shadow(color: .black.opacity(0.1), radius: 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contextMenu {
+                Button("Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                }
+                .buttonStyle(.borderless)
+            }
+    }
+}
+
+private struct BotMessage: View {
+    let text: String
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            CopyButton {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
+            .scaleEffect(x: -1, y: -1, anchor: .center)
+
+            Markdown(text)
+                .textSelection(.enabled)
+                .markdownTheme(.custom)
+                .markdownCodeSyntaxHighlighter(
+                    ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+                )
+                .frame(alignment: .trailing)
+                .padding()
+                .background {
+                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
+                        .fill(Color.contentBackground)
+                }
+                .overlay {
+                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+                .padding(.leading, 8)
+                .scaleEffect(x: -1, y: -1, anchor: .center)
+                .shadow(color: .black.opacity(0.1), radius: 2)
+                .contextMenu {
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(text, forType: .string)
+                    }
+                    .buttonStyle(.borderless)
+                }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 2)
     }
 }
 
 struct ChatPanelInputArea: View {
     @ObservedObject var chat: ChatProvider
-    var inputAreaNamespace: Namespace.ID
     @Binding var typedMessage: String
     @FocusState var isInputAreaFocused: Bool
 
@@ -375,38 +416,6 @@ struct GlobalChatSwitchToggleStyle: ToggleStyle {
     }
 }
 
-struct CopyButton: View {
-    var copy: () -> Void
-    @State var isCopied = false
-    var body: some View {
-        Button(action: {
-            withAnimation(.linear(duration: 0.1)) {
-                isCopied = true
-            }
-            copy()
-            Task {
-                try await Task.sleep(nanoseconds: 1_000_000_000)
-                withAnimation(.linear(duration: 0.1)) {
-                    isCopied = false
-                }
-            }
-        }) {
-            Image(systemName: isCopied ? "checkmark.circle" : "doc.on.doc")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
-                .frame(width: 20, height: 20, alignment: .center)
-                .foregroundColor(.secondary)
-                .background(
-                    .regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 4, style: .circular)
-                )
-                .padding(4)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 // MARK: - Previews
 
 struct ChatPanel_Preview: PreviewProvider {
@@ -419,7 +428,12 @@ struct ChatPanel_Preview: PreviewProvider {
         .init(
             id: "2",
             isUser: false,
-            text: "**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?"
+            text: """
+            ```swift
+            func foo() {}
+            ```
+            **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
+            """
         ),
         .init(id: "5", isUser: false, text: "Yooo"),
         .init(id: "4", isUser: true, text: "Yeeeehh"),

@@ -174,6 +174,7 @@ public struct UserDefaultPreferenceKeys {
     public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
     public var runNodeWithInteractiveLoggedInShell: FeatureFlags
         .RunNodeWithInteractiveLoggedInShell { .init() }
+    public var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
 }
 
 public enum FeatureFlags {
@@ -190,5 +191,10 @@ public enum FeatureFlags {
     public struct RunNodeWithInteractiveLoggedInShell: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "FeatureFlag-RunNodeWithInteractiveLoggedInShell"
+    }
+    
+    public struct UseCustomScrollViewWorkaround: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
     }
 }

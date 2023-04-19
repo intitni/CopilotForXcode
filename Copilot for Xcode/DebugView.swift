@@ -9,6 +9,7 @@ final class DebugSettings: ObservableObject {
     var preCacheOnFileOpen: Bool
     @AppStorage(\.runNodeWithInteractiveLoggedInShell)
     var runNodeWithInteractiveLoggedInShell: Bool
+    @AppStorage(\.useCustomScrollViewWorkaround) var useCustomScrollViewWorkaround
     init() {}
 }
 
@@ -28,6 +29,10 @@ struct DebugSettingsView: View {
                 .toggleStyle(.switch)
                 Toggle(isOn: $settings.runNodeWithInteractiveLoggedInShell) {
                     Text("Run node with interactive logged-in bash")
+                }
+                .toggleStyle(.switch)
+                Toggle(isOn: $settings.useCustomScrollViewWorkaround) {
+                    Text("Use custom scroll view workaround for smooth scrolling")
                 }
                 .toggleStyle(.switch)
             }

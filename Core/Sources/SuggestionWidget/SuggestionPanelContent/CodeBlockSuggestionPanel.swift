@@ -48,7 +48,7 @@ struct CodeBlockSuggestionPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
+            CustomScrollView {
                 CodeBlock(
                     code: suggestion.code,
                     language: suggestion.language,

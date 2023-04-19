@@ -1,4 +1,5 @@
 import AppKit
+import MarkdownUI
 import SwiftUI
 
 enum Style {
@@ -51,5 +52,31 @@ extension View {
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )
+    }
+}
+
+extension MarkdownUI.Theme {
+    static var custom: MarkdownUI.Theme {
+        .gitHub.text {
+            BackgroundColor(Color.clear)
+        }
+        .codeBlock { configuration in
+            configuration.label
+                .relativeLineSpacing(.em(0.225))
+                .markdownTextStyle {
+                    FontFamilyVariant(.monospaced)
+                    FontSize(.em(0.85))
+                }
+                .padding(16)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(alignment: .topTrailing) {
+                    CopyButton {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(configuration.content, forType: .string)
+                    }
+                }
+                .markdownMargin(top: 0, bottom: 16)
+        }
     }
 }
