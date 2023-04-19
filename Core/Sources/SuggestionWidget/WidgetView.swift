@@ -39,7 +39,6 @@ struct WidgetView: View {
                         )
                         .padding(2)
 
-                    #warning("TODO: Tweak the animation")
                     // how do I stop the repeatForever animation without removing the view?
                     // I tried many solutions found on stackoverflow but non of them works.
                     if viewModel.isProcessing {

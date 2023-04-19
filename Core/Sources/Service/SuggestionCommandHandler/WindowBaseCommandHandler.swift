@@ -129,7 +129,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
         
-        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+        if WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService != nil {
             WidgetDataSource.shared.removePromptToCode(for: fileURL)
             presenter.closePromptToCode(fileURL: fileURL)
             return
