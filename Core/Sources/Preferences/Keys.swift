@@ -215,6 +215,7 @@ public extension UserDefaultPreferenceKeys {
             .init(
                 name: "Explain Selection",
                 feature: .chatWithSelection(
+                    extraSystemPrompt: nil,
                     prompt: "Explain the code concisely, do not interpret or translate it."
                 )
             ),

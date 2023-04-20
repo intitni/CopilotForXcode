@@ -66,7 +66,10 @@ struct CustomCommandView: View {
                 Button(action: {
                     editingCommand = .init(isNew: true, command: CustomCommand(
                         name: "New Command",
-                        feature: .chatWithSelection(prompt: "Tell me about the code.")
+                        feature: .chatWithSelection(
+                            extraSystemPrompt: nil,
+                            prompt: "Tell me about the code."
+                        )
                     ))
                 }) {
                     Image(systemName: "plus.circle.fill")
@@ -163,10 +166,10 @@ struct EditCustomCommandView: View {
         originalName = editingCommand.wrappedValue?.command.name ?? ""
         name = originalName
         switch editingCommand.wrappedValue?.command.feature {
-        case let .chatWithSelection(prompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt):
             commandType = .chatWithSelection
             self.prompt = prompt ?? ""
-            systemPrompt = ""
+            systemPrompt = extraSystemPrompt ?? ""
             continuousMode = false
         case let .customChat(systemPrompt, prompt):
             commandType = .customChat
@@ -208,12 +211,13 @@ struct EditCustomCommandView: View {
 
                 switch commandType {
                 case .chatWithSelection:
+                    systemPromptTextField(title: "Extra System Prompt")
                     promptTextField
                 case .promptToCode:
                     promptTextField
                     continuousModeToggle
                 case .customChat:
-                    systemPromptTextField
+                    systemPromptTextField()
                     promptTextField
                 }
             }
@@ -235,7 +239,10 @@ struct EditCustomCommandView: View {
                     feature: {
                         switch commandType {
                         case .chatWithSelection:
-                            return .chatWithSelection(prompt: prompt)
+                            return .chatWithSelection(
+                                extraSystemPrompt: systemPrompt,
+                                prompt: prompt
+                            )
                         case .promptToCode:
                             return .promptToCode(prompt: prompt, continuousMode: continuousMode)
                         case .customChat:
@@ -259,7 +266,6 @@ struct EditCustomCommandView: View {
                     }
                 } else {
                     Button("Update") {
-                        guard let command = editingCommand?.command else { return }
                         guard !settings.illegalNames.contains(newCommand.name)
                             || newCommand.name == originalName
                         else {
@@ -288,7 +294,7 @@ struct EditCustomCommandView: View {
             }
         }
         .padding()
-        .frame(minWidth: 500)
+        .frame(width: 600)
     }
 
     var promptTextField: some View {
@@ -301,9 +307,9 @@ struct EditCustomCommandView: View {
         }
     }
 
-    var systemPromptTextField: some View {
+    func systemPromptTextField(title: String? = nil) -> some View {
         if #available(macOS 13.0, *) {
-            return TextField("System Prompt", text: $systemPrompt, axis: .vertical)
+            return TextField(title ?? "System Prompt", text: $systemPrompt, axis: .vertical)
                 .multilineTextAlignment(.leading)
                 .lineLimit(4, reservesSpace: true)
         } else {
@@ -323,7 +329,10 @@ struct CustomCommandView_Preview: PreviewProvider {
         CustomCommandView(
             isOpen: .constant(true),
             settings: .init(customCommands: .init(wrappedValue: [
-                .init(name: "Explain Code", feature: .chatWithSelection(prompt: "Hello")),
+                .init(
+                    name: "Explain Code",
+                    feature: .chatWithSelection(extraSystemPrompt: nil, prompt: "Hello")
+                ),
                 .init(
                     name: "Refactor Code",
                     feature: .promptToCode(prompt: "Refactor", continuousMode: false)

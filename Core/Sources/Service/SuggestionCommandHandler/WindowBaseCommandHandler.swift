@@ -235,6 +235,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 try await startChatWithSelection(
                     editor: editor,
                     specifiedSystemPrompt: nil,
+                    extraSystemPrompt: nil,
                     sendingMessageImmediately: nil
                 )
             } catch {
@@ -278,16 +279,18 @@ extension WindowBaseCommandHandler {
         else { throw CommandNotFoundError() }
 
         switch command.feature {
-        case let .chatWithSelection(prompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt):
             try await startChatWithSelection(
                 editor: editor,
                 specifiedSystemPrompt: nil,
+                extraSystemPrompt: extraSystemPrompt,
                 sendingMessageImmediately: prompt
             )
         case let .customChat(systemPrompt, prompt):
             try await startChatWithSelection(
                 editor: editor,
                 specifiedSystemPrompt: systemPrompt,
+                extraSystemPrompt: nil,
                 sendingMessageImmediately: prompt
             )
         case let .promptToCode(prompt, continuousMode):
@@ -354,6 +357,7 @@ extension WindowBaseCommandHandler {
     private func startChatWithSelection(
         editor: EditorContent,
         specifiedSystemPrompt: String?,
+        extraSystemPrompt: String?,
         sendingMessageImmediately: String?
     ) async throws {
         presenter.markAsProcessing(true)
@@ -369,7 +373,7 @@ extension WindowBaseCommandHandler {
             return editor.selectedCode(in: selection)
         }()
 
-        let systemPrompt = specifiedSystemPrompt ?? {
+        var systemPrompt = specifiedSystemPrompt ?? {
             if code.isEmpty {
                 return """
                 \(language.isEmpty ? "" : "You must always reply in \(language)")
@@ -384,6 +388,10 @@ extension WindowBaseCommandHandler {
             ```
             """
         }()
+        
+        if let extraSystemPrompt {
+            systemPrompt += "\n\(extraSystemPrompt)"
+        }
 
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
