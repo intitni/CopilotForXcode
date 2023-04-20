@@ -3,9 +3,15 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class ExplainSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Explain Selection" }
-
+class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
+    let name: String
+    let identifer: String
+    
+    init(name: String, identifer: String) {
+        self.name = name
+        self.identifer = identifer
+    }
+    
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void

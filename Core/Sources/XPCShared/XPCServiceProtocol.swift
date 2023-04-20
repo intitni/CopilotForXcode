@@ -37,15 +37,16 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
-    func explainSelection(
-        editorContent: Data,
-        withReply reply: @escaping (Data?, Error?) -> Void
-    )
     func chatWithSelection(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
     func promptToCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    )
+    func customCommand(
+        name: String,
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )

@@ -21,11 +21,11 @@ var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
 
 public class XPCService: NSObject, XPCServiceProtocol {
     var boostQoS = [Any]()
-    
+
     public func boostQoS(withReply reply: @escaping () -> Void) {
         boostQoS.append(reply)
     }
-    
+
     // MARK: - Service
 
     public func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void) {
@@ -221,15 +221,6 @@ public class XPCService: NSObject, XPCServiceProtocol {
         Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
-    public func explainSelection(
-        editorContent: Data,
-        withReply reply: @escaping (Data?, Error?) -> Void
-    ) {
-        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
-            try await handler.explainSelection(editor: editor)
-        }
-    }
-    
     public func chatWithSelection(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
@@ -238,13 +229,23 @@ public class XPCService: NSObject, XPCServiceProtocol {
             try await handler.chatWithSelection(editor: editor)
         }
     }
-    
+
     public func promptToCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
             try await handler.promptToCode(editor: editor)
+        }
+    }
+
+    public func customCommand(
+        name: String,
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.customCommand(name: name, editor: editor)
         }
     }
 

@@ -14,9 +14,11 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
             ChatWithSelectionCommand(),
-            ExplainSelectionCommand(),
-            PromptToCodeCommand(),
+            
+            SeparatorCommand("# Custom Commands:"),
         ].map(makeCommandDefinition)
+        
+        + customCommands().map(makeCommandDefinition)
     }
 
     func extensionDidFinishLaunching() {
@@ -60,4 +62,8 @@ func makeCommandDefinition(_ commandType: CommandType)
     -> [XCSourceEditorCommandDefinitionKey: Any]
 {
     commandType.makeCommandDefinition()
+}
+
+func customCommands() -> [CustomCommand] {
+    return customCommands()
 }

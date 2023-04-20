@@ -128,13 +128,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        
+
         if WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService != nil {
             WidgetDataSource.shared.removePromptToCode(for: fileURL)
             presenter.closePromptToCode(fileURL: fileURL)
             return
         }
-        
+
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
@@ -229,114 +229,25 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return try await presentSuggestions(editor: editor)
     }
 
-    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _explainSelection(editor: editor)
-            } catch {
-                presenter.presentError(error)
-            }
-        }
-        return nil
-    }
-
-    private func _explainSelection(editor: EditorContent) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
-        guard let selection = editor.selections.last else { return }
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-
-        await chat.mutateSystemPrompt(
-            """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it.
-            """
-        )
-
-        let code = editor.selectedCode(in: selection)
-        Task {
-            try? await chat.chatGPTService.send(
-                content: """
-                ```\(codeLanguage.rawValue)
-                \(code)
-                ```
-                """,
-                summary: "Explain selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
-            )
-        }
-
-        presenter.presentChatRoom(fileURL: fileURL)
-    }
-
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await _chatWithSelection(editor: editor)
+                try await startChatWithSelection(
+                    editor: editor,
+                    specifiedSystemPrompt: nil,
+                    sendingMessageImmediately: nil
+                )
             } catch {
                 presenter.presentError(error)
             }
         }
         return nil
-    }
-
-    private func _chatWithSelection(editor: EditorContent) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
-
-        let code = {
-            guard let selection = editor.selections.last,
-                  selection.start != selection.end else { return "" }
-            return editor.selectedCode(in: selection)
-        }()
-
-        let prompt = {
-            if code.isEmpty {
-                return """
-                \(language.isEmpty ? "" : "You must always reply in \(language)")
-                You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-                """
-            }
-            return """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
-            ```\(codeLanguage.rawValue)
-            \(code)
-            ```
-            """
-        }()
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-
-        await chat.mutateSystemPrompt(prompt)
-
-        Task {
-            if !code.isEmpty, let selection = editor.selections.last {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .user,
-                        content: "",
-                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
-                    ))
-                }
-            }
-        }
-
-        presenter.presentChatRoom(fileURL: fileURL)
     }
 
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await _promptToCode(editor: editor)
+                try await presentPromptToCode(editor: editor, prompt: nil, isContinuous: false)
             } catch {
                 presenter.presentError(error)
             }
@@ -344,7 +255,55 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
-    func _promptToCode(editor: EditorContent) async throws {
+    func customCommand(name: String, editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await handleCustomCommand(name: name, editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+}
+
+extension WindowBaseCommandHandler {
+    func handleCustomCommand(name: String, editor: EditorContent) async throws {
+        struct CommandNotFoundError: Error, LocalizedError {
+            var errorDescription: String? { "Command not found" }
+        }
+
+        let availableCommands = UserDefaults.shared.value(for: \.customCommands)
+        guard let command = availableCommands.first(where: { $0.name == name })
+        else { throw CommandNotFoundError() }
+
+        switch command.feature {
+        case let .chatWithSelection(prompt):
+            try await startChatWithSelection(
+                editor: editor,
+                specifiedSystemPrompt: nil,
+                sendingMessageImmediately: prompt
+            )
+        case let .customChat(systemPrompt, prompt):
+            try await startChatWithSelection(
+                editor: editor,
+                specifiedSystemPrompt: systemPrompt,
+                sendingMessageImmediately: prompt
+            )
+        case let .promptToCode(prompt, continuousMode):
+            try await presentPromptToCode(
+                editor: editor,
+                prompt: prompt,
+                isContinuous: continuousMode
+            )
+        }
+    }
+
+    func presentPromptToCode(
+        editor: EditorContent,
+        prompt: String?,
+        isContinuous: Bool
+    ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
@@ -354,7 +313,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             presenter.presentErrorMessage("Prompt to code is disabled for this project")
             return
         }
-        
+
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let (code, selection) = {
@@ -375,7 +334,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             )
         }() as (String, CursorRange)
 
-        _ = await WidgetDataSource.shared.createPromptToCode(
+        let promptToCode = await WidgetDataSource.shared.createPromptToCode(
             for: fileURL,
             projectURL: workspace.projectRootURL,
             selectedCode: code,
@@ -384,6 +343,76 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             language: codeLanguage
         )
 
+        promptToCode.isContinuous = isContinuous
+        if let prompt {
+            Task { try await promptToCode.modifyCode(prompt: prompt) }
+        }
+
         presenter.presentPromptToCode(fileURL: fileURL)
+    }
+
+    private func startChatWithSelection(
+        editor: EditorContent,
+        specifiedSystemPrompt: String?,
+        sendingMessageImmediately: String?
+    ) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
+
+        let code = {
+            guard let selection = editor.selections.last,
+                  selection.start != selection.end else { return "" }
+            return editor.selectedCode(in: selection)
+        }()
+
+        let systemPrompt = specifiedSystemPrompt ?? {
+            if code.isEmpty {
+                return """
+                \(language.isEmpty ? "" : "You must always reply in \(language)")
+                You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
+                """
+            }
+            return """
+            \(language.isEmpty ? "" : "You must always reply in \(language)")
+            You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
+            ```\(codeLanguage.rawValue)
+            \(code)
+            ```
+            """
+        }()
+
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
+
+        await chat.mutateSystemPrompt(systemPrompt)
+
+        Task {
+            if let specifiedSystemPrompt {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "System prompt is updated: \n\(specifiedSystemPrompt)"
+                    ))
+                }
+            } else if !code.isEmpty, let selection = editor.selections.last {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                    ))
+                }
+            }
+
+            if let sendingMessageImmediately {
+                try await chat.send(content: sendingMessageImmediately)
+            }
+        }
+
+        presenter.presentChatRoom(fileURL: fileURL)
     }
 }
