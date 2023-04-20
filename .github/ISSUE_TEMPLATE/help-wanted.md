@@ -2,7 +2,7 @@
 name: Help wanted
 about: Ask for help from the developer and the community
 title: ''
-labels: ''
+labels: help wanted
 assignees: ''
 
 ---
