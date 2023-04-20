@@ -1,6 +1,7 @@
 import Client
 import Foundation
 import XcodeKit
+import Preferences
 
 class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
@@ -65,5 +66,7 @@ func makeCommandDefinition(_ commandType: CommandType)
 }
 
 func customCommands() -> [CustomCommand] {
-    return customCommands()
+    UserDefaults.shared.value(for: \.customCommands).map {
+        CustomCommand(name: $0.name)
+    }
 }
