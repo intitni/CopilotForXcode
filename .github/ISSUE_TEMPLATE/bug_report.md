@@ -7,8 +7,8 @@ assignees: intitni
 
 ---
 
-[ ] I have checked FAQ, and there is no solution to my problem
-[ ] I have searched the existing issues, and there is no existing issue for my problem 
+- [ ] I have checked FAQ, and there is no solution to my problem
+- [ ] I have searched the existing issues, and there is no existing issue for my problem 
 
 **Describe the bug and the expected behavior**
 A clear and concise description of what the bug is. And a clear and concise description of what you expected to happen.

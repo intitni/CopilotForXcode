@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 
-[ ] I have checked FAQ, and there is no solution to my problem
-[ ] I have searched the existing issues, and there is no existing issue for my problem
+- [ ] I have checked FAQ, and there is no solution to my problem
+- [ ] I have searched the existing issues, and there is no existing issue for my problem
 
 **Describe the problem**
 A clear and concise description of what the bug problem is.
