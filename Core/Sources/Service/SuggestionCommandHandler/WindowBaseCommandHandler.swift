@@ -403,7 +403,7 @@ extension WindowBaseCommandHandler {
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "Chating about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             }
