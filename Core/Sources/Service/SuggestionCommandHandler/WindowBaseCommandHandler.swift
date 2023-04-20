@@ -294,7 +294,7 @@ extension WindowBaseCommandHandler {
             try await presentPromptToCode(
                 editor: editor,
                 prompt: prompt,
-                isContinuous: continuousMode
+                isContinuous: continuousMode ?? false
             )
         }
     }
