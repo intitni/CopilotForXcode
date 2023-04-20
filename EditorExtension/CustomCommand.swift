@@ -5,11 +5,9 @@ import XcodeKit
 
 class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
     let name: String
-    let identifer: String
     
-    init(name: String, identifer: String) {
+    init(name: String) {
         self.name = name
-        self.identifer = identifer
     }
     
     func perform(
