@@ -80,25 +80,29 @@ struct CustomCommandView: View {
             List {
                 ForEach(settings.customCommands, id: \.name) { command in
                     HStack {
-                        Text(command.name)
+                        Image(systemName: "line.3.horizontal")
 
-                        Spacer()
+                        HStack {
+                            Text(command.name)
 
-                        Group {
-                            switch command.feature {
-                            case .chatWithSelection:
-                                Text("Chat with Selection")
-                            case .customChat:
-                                Text("Custom Chat")
-                            case .promptToCode:
-                                Text("Prompt to Code")
+                            Spacer()
+
+                            Group {
+                                switch command.feature {
+                                case .chatWithSelection:
+                                    Text("Chat with Selection")
+                                case .customChat:
+                                    Text("Custom Chat")
+                                case .promptToCode:
+                                    Text("Prompt to Code")
+                                }
                             }
+                            .foregroundStyle(.tertiary)
                         }
-                        .foregroundStyle(.tertiary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        editingCommand = .init(isNew: false, command: command)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            editingCommand = .init(isNew: false, command: command)
+                        }
                     }
                     .contextMenu {
                         Button("Remove") {
@@ -108,6 +112,9 @@ struct CustomCommandView: View {
                         }
                     }
                 }
+                .onMove(perform: { indices, newOffset in
+                    settings.customCommands.move(fromOffsets: indices, toOffset: newOffset)
+                })
             }
             .overlay {
                 if settings.customCommands.isEmpty {
@@ -159,23 +166,23 @@ struct EditCustomCommandView: View {
         case let .chatWithSelection(prompt):
             commandType = .chatWithSelection
             self.prompt = prompt ?? ""
-            self.systemPrompt = ""
-            self.continuousMode = false
+            systemPrompt = ""
+            continuousMode = false
         case let .customChat(systemPrompt, prompt):
             commandType = .customChat
             self.systemPrompt = systemPrompt ?? ""
             self.prompt = prompt ?? ""
-            self.continuousMode = false
+            continuousMode = false
         case let .promptToCode(prompt, continuousMode):
             commandType = .promptToCode
             self.prompt = prompt ?? ""
-            self.systemPrompt = ""
+            systemPrompt = ""
             self.continuousMode = continuousMode ?? false
         case .none:
             commandType = .chatWithSelection
-            self.prompt = ""
-            self.systemPrompt = ""
-            self.continuousMode = false
+            prompt = ""
+            systemPrompt = ""
+            continuousMode = false
         }
     }
 
@@ -210,7 +217,7 @@ struct EditCustomCommandView: View {
                     promptTextField
                 }
             }
-            
+
             Text(
                 "After renaming or adding a custom command, please restart Xcode to refresh the menu."
             )
@@ -285,13 +292,23 @@ struct EditCustomCommandView: View {
     }
 
     var promptTextField: some View {
-        TextField("Prompt", text: $prompt)
-            .lineLimit(0)
+        if #available(macOS 13.0, *) {
+            return TextField("Prompt", text: $prompt, axis: .vertical)
+                .multilineTextAlignment(.leading)
+                .lineLimit(4, reservesSpace: true)
+        } else {
+            return TextField("Prompt", text: $prompt)
+        }
     }
 
     var systemPromptTextField: some View {
-        TextField("System Prompt", text: $systemPrompt)
-            .lineLimit(0)
+        if #available(macOS 13.0, *) {
+            return TextField("System Prompt", text: $systemPrompt, axis: .vertical)
+                .multilineTextAlignment(.leading)
+                .lineLimit(4, reservesSpace: true)
+        } else {
+            return TextField("Prompt", text: $prompt)
+        }
     }
 
     var continuousModeToggle: some View {
