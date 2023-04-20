@@ -408,7 +408,7 @@ extension WindowBaseCommandHandler {
                 }
             }
 
-            if let sendingMessageImmediately {
+            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
                 try await chat.send(content: sendingMessageImmediately)
             }
         }

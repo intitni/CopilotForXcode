@@ -12,4 +12,9 @@ public struct CustomCommand: Codable {
 
     public var name: String
     public var feature: Feature
+    
+    public init(name: String, feature: Feature) {
+        self.name = name
+        self.feature = feature
+    }
 }

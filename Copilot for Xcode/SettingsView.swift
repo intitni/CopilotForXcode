@@ -36,9 +36,20 @@ struct SettingsView: View {
         .value(for: \.realtimeSuggestionDebounce)
     @Environment(\.updateChecker) var updateChecker
     @State var isSuggestionFeatureEnabledListPickerOpen = false
+    @State var isCustomCommandEditorOpen = false
 
     var body: some View {
         Section {
+            Button("Edit Custom Commands") {
+                isCustomCommandEditorOpen = true
+            }
+            .buttonStyle(.copilot)
+            .sheet(isPresented: $isCustomCommandEditorOpen) {
+                CustomCommandView(
+                    isOpen: $isCustomCommandEditorOpen
+                )
+            }
+            
             Form {
                 Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
                     Text("Quit service when Xcode and host app are terminated")
