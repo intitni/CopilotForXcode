@@ -207,6 +207,19 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTLanguage: ChatGPTLanguage { .init() }
 }
 
+// MARK: - Custom Commands
+
+public extension UserDefaultPreferenceKeys {
+    struct CustomCommandsKey: UserDefaultPreferenceKey {
+        public let defaultValue: [CustomCommand] = []
+        public let key = "CustomCommands"
+    }
+
+    var customCommands: CustomCommandsKey { .init() }
+}
+
+// MARK: - Feature Flags
+
 public enum FeatureFlags {
     public struct DisableLazyVStack: UserDefaultPreferenceKey {
         public let defaultValue = false
