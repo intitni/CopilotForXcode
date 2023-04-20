@@ -211,7 +211,21 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     struct CustomCommandsKey: UserDefaultPreferenceKey {
-        public let defaultValue: [CustomCommand] = []
+        public let defaultValue: [CustomCommand] = [
+            .init(
+                name: "Explain Selection",
+                feature: .chatWithSelection(
+                    prompt: "Explain the code concisely, do not interpret or translate it."
+                )
+            ),
+            .init(
+                name: "Add Documentation to Selection",
+                feature: .promptToCode(
+                    prompt: "Add documentation on top of the code.",
+                    continuousMode: false
+                )
+            )
+        ]
         public let key = "CustomCommands"
     }
 
