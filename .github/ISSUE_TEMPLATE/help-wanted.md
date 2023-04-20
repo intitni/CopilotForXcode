@@ -13,7 +13,7 @@ assignees: ''
 **Describe the problem**
 A clear and concise description of what the bug problem is.
 
-**Additional Information (Optional)**
+**Additional information (optional)**
 macOS version: 
 Copilot for Xcode version:
 Node version:

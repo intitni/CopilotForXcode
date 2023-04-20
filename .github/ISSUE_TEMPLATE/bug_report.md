@@ -13,11 +13,11 @@ assignees: intitni
 **Describe the bug and the expected behavior**
 A clear and concise description of what the bug is. And a clear and concise description of what you expected to happen.
 
-**To Reproduce**
+**To reproduce**
 Steps to reproduce the behavior:
 1.
 
-**Additional Information (Optional)**
+**Additional information (optional)**
 macOS version: 
 Copilot for Xcode version:
 Node version:
