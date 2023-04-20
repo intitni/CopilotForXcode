@@ -16,3 +16,8 @@ A clear and concise description of what the bug is. And a clear and concise desc
 **To Reproduce**
 Steps to reproduce the behavior:
 1.
+
+**Additional Information (Optional)**
+macOS version: 
+Copilot for Xcode version:
+Node version:
