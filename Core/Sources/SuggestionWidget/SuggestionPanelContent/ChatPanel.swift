@@ -110,11 +110,11 @@ struct ChatPanelMessages: View {
                         .text
 
                     if message.isUser {
-                        UserMessage(text: text)
+                        UserMessage(id: message.id, text: text, chat: chat)
                             .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                             .padding(.vertical, 4)
                     } else {
-                        BotMessage(text: text)
+                        BotMessage(id: message.id, text: text, chat: chat)
                             .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                             .padding(.vertical, 4)
                     }
@@ -165,7 +165,9 @@ private struct StopRespondingButton: View {
 }
 
 private struct UserMessage: View {
+    let id: String
     let text: String
+    let chat: ChatProvider
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -195,13 +197,24 @@ private struct UserMessage: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
                 }
-                .buttonStyle(.borderless)
+                
+                Button("Send Again") {
+                    chat.resendMessage(id: id)
+                }
+                
+                Divider()
+                
+                Button("Delete") {
+                    chat.deleteMessage(id: id)
+                }
             }
     }
 }
 
 private struct BotMessage: View {
+    let id: String
     let text: String
+    let chat: ChatProvider
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -236,7 +249,12 @@ private struct BotMessage: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(text, forType: .string)
                     }
-                    .buttonStyle(.borderless)
+                    
+                    Divider()
+                    
+                    Button("Delete") {
+                        chat.deleteMessage(id: id)
+                    }
                 }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
