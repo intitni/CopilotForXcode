@@ -55,9 +55,25 @@ extension ChatProvider {
                 onCloseChat()
             }
         }
-        
+
         self.onSwitchContext = {
             onSwitchContext()
+        }
+
+        onDeleteMessage = { id in
+            Task {
+                await service.deleteMessage(id: id)
+            }
+        }
+
+        onResendMessage = { id in
+            Task {
+                do {
+                    try await service.resendMessage(id: id)
+                } catch {
+                    PresentInWindowSuggestionPresenter().presentError(error)
+                }
+            }
         }
     }
 }

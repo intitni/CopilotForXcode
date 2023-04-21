@@ -89,6 +89,18 @@ public final class ChatService: ObservableObject {
         }
         await chatGPTService.clearHistory()
     }
+    
+    public func deleteMessage(id: String) async {
+        await chatGPTService.mutateHistory { messages in
+            messages.removeAll(where: { $0.id == id })
+        }
+    }
+    
+    public func resendMessage(id: String) async throws {
+        if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
+            try await send(content: message.content)
+        }
+    }
 
     public func mutateSystemPrompt(_ newPrompt: String) async {
         await chatGPTService.mutateSystemPrompt(newPrompt)
