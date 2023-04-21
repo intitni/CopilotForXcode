@@ -323,7 +323,21 @@ extension WindowBaseCommandHandler {
             guard var selection = editor.selections.last,
                   selection.start != selection.end
             else { return ("", .cursor(editor.cursorPosition)) }
-            if selection.start.line != selection.end.line {
+            
+            let isMultipleLine = selection.start.line != selection.end.line
+            let isSpaceOnlyBeforeStartPositionOnTheSameLine = {
+                guard selection.start.line >= 0, selection.start.line < editor.lines.count else {
+                    return false
+                }
+                let line = editor.lines[selection.start.line]
+                guard selection.start.character > 0, selection.start.character < line.count else {
+                    return false
+                }
+                let substring = line[line.startIndex..<line.index(line.startIndex, offsetBy: selection.start.character)]
+                return substring.allSatisfy({ $0.isWhitespace })
+            }()
+            
+            if isMultipleLine || isSpaceOnlyBeforeStartPositionOnTheSameLine {
                 // when there are multiple lines start from char 0 so that it can keep the
                 // indentation.
                 selection.start = .init(line: selection.start.line, character: 0)
