@@ -1,5 +1,6 @@
 import AsyncAlgorithms
 import Foundation
+import GPTEncoder
 import Preferences
 
 public protocol ChatGPTServiceType: ObservableObject {
@@ -112,12 +113,14 @@ public actor ChatGPTService: ChatGPTServiceType {
         )
         history.append(newMessage)
 
+        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        
         let requestBody = CompletionRequestBody(
             model: model,
-            messages: combineHistoryWithSystemPrompt(),
+            messages: messages,
             temperature: temperature,
             stream: true,
-            max_tokens: maxToken
+            max_tokens: remainingTokens
         )
 
         isReceivingMessage = true
@@ -190,12 +193,14 @@ public actor ChatGPTService: ChatGPTServiceType {
         )
         history.append(newMessage)
 
+        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        
         let requestBody = CompletionRequestBody(
             model: model,
-            messages: combineHistoryWithSystemPrompt(),
+            messages: messages,
             temperature: temperature,
             stream: true,
-            max_tokens: maxToken
+            max_tokens: remainingTokens
         )
 
         isReceivingMessage = true
@@ -210,10 +215,10 @@ public actor ChatGPTService: ChatGPTServiceType {
                 role: choice.message.role,
                 content: choice.message.content
             ))
-            
+
             return choice.message.content
         }
-        
+
         return nil
     }
 
@@ -250,17 +255,34 @@ extension ChatGPTService {
         uuidGenerator = generator
     }
 
-    func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {
+    func combineHistoryWithSystemPrompt(
+        minimumReplyTokens: Int = 200,
+        maxNumberOfMessages: Int = 5,
+        maxTokens: Int =  UserDefaults.shared.value(for: \.chatGPTMaxToken),
+        encoder: TokenEncoder = GPTEncoder()
+    )
+        -> (messages: [CompletionRequestBody.Message], remainingTokens: Int)
+    {
         var all: [CompletionRequestBody.Message] = []
-        var count = 0
+        var allTokensCount = encoder.encode(text: systemPrompt).count
         for message in history.reversed() {
-            if count >= 5 { break }
+            if all.count >= maxNumberOfMessages { break }
             if message.content.isEmpty { continue }
+            let tokensCount = encoder.encode(text: message.content).count
+            if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
+                break
+            }
+            allTokensCount += tokensCount
             all.append(.init(role: message.role, content: message.content))
-            count += 1
         }
 
         all.append(.init(role: .system, content: systemPrompt))
-        return all.reversed()
+        return (all.reversed(), max(minimumReplyTokens, maxTokens - allTokensCount))
     }
 }
+
+protocol TokenEncoder {
+    func encode(text: String) -> [Int]
+}
+
+extension GPTEncoder: TokenEncoder {}
