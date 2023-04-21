@@ -205,14 +205,14 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var chatGPTLanguage: ChatGPTLanguage { .init() }
-    
+
     struct ChatGPTMaxMessageCount: UserDefaultPreferenceKey {
         public let defaultValue = 5
         public let key = "ChatGPTMaxMessageCount"
     }
 
     var chatGPTMaxMessageCount: ChatGPTMaxMessageCount { .init() }
-    
+
     struct ChatGPTTemperature: UserDefaultPreferenceKey {
         public let defaultValue = 0.7
         public let key = "ChatGPTTemperature"
@@ -236,10 +236,10 @@ public extension UserDefaultPreferenceKeys {
             .init(
                 name: "Add Documentation to Selection",
                 feature: .promptToCode(
-                    prompt: "Add documentation on top of the code.",
+                    prompt: "Add documentation on top of the code. Use triple slash if the language supports it.",
                     continuousMode: false
                 )
-            )
+            ),
         ]
         public let key = "CustomCommands"
     }
