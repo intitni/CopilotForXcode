@@ -270,10 +270,11 @@ extension ChatGPTService {
     {
         var all: [CompletionRequestBody.Message] = []
         var allTokensCount = encoder.encode(text: systemPrompt).count
-        for message in history.reversed() {
+        for (index, message) in history.enumerated().reversed() {
             if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
             if message.content.isEmpty { continue }
-            let tokensCount = encoder.encode(text: message.content).count
+            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
+            history[index].tokensCount = tokensCount
             if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
                 break
             }

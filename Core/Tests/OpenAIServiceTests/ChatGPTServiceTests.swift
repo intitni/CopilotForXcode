@@ -62,7 +62,10 @@ final class ChatGPTServiceTests: XCTestCase {
             .init(role: .user, content: "Hello"),
         ], "System prompt is included")
         XCTAssertEqual(all, ["hello", "my", "friends"], "Text stream is correct")
-        let history = await service.history
+        var history = await service.history
+        for (i, _) in history.enumerated() {
+            history[i].tokensCount = nil
+        }
         XCTAssertEqual(history, [
             .init(id: "0", role: .user, content: "Hello"),
             .init(id: "1", role: .assistant, content: "hellomyfriends"),

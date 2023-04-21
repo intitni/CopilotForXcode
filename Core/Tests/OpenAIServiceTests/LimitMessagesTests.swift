@@ -23,10 +23,16 @@ final class LimitMessagesTests: XCTestCase {
             "hello",
             "world",
         ])
-        
+
         XCTAssertEqual(remainingTokens, 10000 - 12 - 6)
+        let history = await service.history
+        XCTAssertEqual(history.map(\.tokensCount), [
+            2,
+            5,
+            5,
+        ])
     }
-    
+
     func test_send_max_message_if_not_reached_token_limit() async {
         let service = await createService(systemPrompt: "system", messages: [
             "hi",
@@ -45,10 +51,10 @@ final class LimitMessagesTests: XCTestCase {
             "hello",
             "world",
         ], "Count from end to start.")
-        
+
         XCTAssertEqual(remainingTokens, 10000 - 10 - 6)
     }
-    
+
     func test_reached_token_limit() async {
         let service = await createService(systemPrompt: "system", messages: [
             "hi",
@@ -66,10 +72,10 @@ final class LimitMessagesTests: XCTestCase {
             "system",
             "world",
         ])
-        
+
         XCTAssertEqual(remainingTokens, 201)
     }
-    
+
     func test_minimum_reply_tokens_count() async {
         let service = await createService(systemPrompt: "system", messages: [
             "hi",
@@ -86,7 +92,7 @@ final class LimitMessagesTests: XCTestCase {
         XCTAssertEqual(messages, [
             "system",
         ])
-        
+
         XCTAssertEqual(remainingTokens, 200)
     }
 }
