@@ -193,7 +193,7 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTModel: ChatGPTModel { .init() }
 
     struct ChatGPTMaxToken: UserDefaultPreferenceKey {
-        public let defaultValue = 2048
+        public let defaultValue = 4000
         public let key = "ChatGPTMaxToken"
     }
 
@@ -205,6 +205,20 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var chatGPTLanguage: ChatGPTLanguage { .init() }
+    
+    struct ChatGPTMaxMessageCount: UserDefaultPreferenceKey {
+        public let defaultValue = 5
+        public let key = "ChatGPTMaxMessageCount"
+    }
+
+    var chatGPTMaxMessageCount: ChatGPTMaxMessageCount { .init() }
+    
+    struct ChatGPTTemperature: UserDefaultPreferenceKey {
+        public let defaultValue = 0.7
+        public let key = "ChatGPTTemperature"
+    }
+
+    var chatGPTTemperature: ChatGPTTemperature { .init() }
 }
 
 // MARK: - Custom Commands
