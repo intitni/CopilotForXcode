@@ -90,6 +90,9 @@ struct LaunchAgentView: View {
                     TextField("node", text: $nodePath)
                         .textFieldStyle(.copilot)
                 }
+                
+                Text("You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed.")
+                    .foregroundColor(.secondary)
 
                 HStack {
                     Button(action: {
