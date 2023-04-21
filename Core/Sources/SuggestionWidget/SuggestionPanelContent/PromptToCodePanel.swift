@@ -17,7 +17,7 @@ struct PromptToCodePanel: View {
                             .padding()
                             .background(Color.red)
                     }
-                    
+
                     if provider.code.isEmpty {
                         Text(
                             provider.isResponding
@@ -63,14 +63,14 @@ struct PromptToCodePanel: View {
                 }
             }
             .overlay(alignment: .bottom) {
-                Group {
+                HStack {
                     if provider.isResponding {
                         Button(action: {
                             provider.stopResponding()
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "stop.fill")
-                                Text("Stop Responding")
+                                Text("Stop")
                             }
                             .padding(8)
                             .background(
@@ -83,7 +83,13 @@ struct PromptToCodePanel: View {
                             }
                         }
                         .buttonStyle(.plain)
-                    } else {
+                    }
+
+                    let isRespondingButCodeIsReady = provider.isResponding
+                        && !provider.code.isEmpty
+                        && !provider.description.isEmpty
+
+                    if !provider.isResponding || isRespondingButCodeIsReady {
                         HStack {
                             Toggle(
                                 "Continuous Mode",
