@@ -175,15 +175,15 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
     
-    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        throw NotSupportedInCommentMode()
-    }
-    
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         throw NotSupportedInCommentMode()
     }
     
     func promptToCode(editor: XPCShared.EditorContent) async throws -> XPCShared.UpdatedContent? {
+        throw NotSupportedInCommentMode()
+    }
+    
+    func customCommand(name: String, editor: EditorContent) async throws -> UpdatedContent? {
         throw NotSupportedInCommentMode()
     }
 }

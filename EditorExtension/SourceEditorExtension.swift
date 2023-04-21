@@ -1,9 +1,10 @@
 import Client
 import Foundation
+import Preferences
 import XcodeKit
 
 class SourceEditorExtension: NSObject, XCSourceEditorExtension {
-    var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
+    var builtin: [[XCSourceEditorCommandDefinitionKey: Any]] {
         [
             GetSuggestionsCommand(),
             AcceptSuggestionCommand(),
@@ -14,9 +15,18 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
             ChatWithSelectionCommand(),
-            ExplainSelectionCommand(),
             PromptToCodeCommand(),
+
+            SeparatorCommand().named("------"),
         ].map(makeCommandDefinition)
+    }
+
+    var custom: [[XCSourceEditorCommandDefinitionKey: Any]] {
+        customCommands()
+    }
+
+    var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
+        return builtin + custom
     }
 
     func extensionDidFinishLaunching() {
@@ -35,7 +45,9 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     }
 }
 
-private let identifierPrefix: String = Bundle.main.bundleIdentifier ?? ""
+let identifierPrefix: String = Bundle.main.bundleIdentifier ?? ""
+
+var customCommandMap = [String: String]()
 
 protocol CommandType: AnyObject {
     var commandClassName: String { get }
@@ -60,4 +72,25 @@ func makeCommandDefinition(_ commandType: CommandType)
     -> [XCSourceEditorCommandDefinitionKey: Any]
 {
     commandType.makeCommandDefinition()
+}
+
+func customCommands() -> [[XCSourceEditorCommandDefinitionKey: Any]] {
+    let definitions = UserDefaults.shared.value(for: \.customCommands).map {
+        [
+            XCSourceEditorCommandDefinitionKey.classNameKey: CustomCommand.className(),
+            XCSourceEditorCommandDefinitionKey
+                .identifierKey: identifierPrefix + "CustomCommand\($0.name.hashValue)",
+            .nameKey: $0.name,
+        ]
+    }
+
+    for item in definitions {
+        let name = item[.nameKey]
+        let identifier = item[.identifierKey]
+        if let identifier {
+            customCommandMap[identifier] = name
+        }
+    }
+
+    return definitions
 }

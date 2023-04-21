@@ -9,12 +9,16 @@ public protocol UserDefaultPreferenceKey {
 public struct UserDefaultPreferenceKeys {
     public init() {}
 
+    // MARK: - Node Path
+
     public struct NodePath: UserDefaultPreferenceKey {
         public let defaultValue: String = ""
         public let key = "NodePath"
     }
 
     public var nodePath: NodePath { .init() }
+
+    // MARK: - Realtime Suggestion
 
     public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
         public let defaultValue: Bool = false
@@ -23,12 +27,16 @@ public struct UserDefaultPreferenceKeys {
 
     public var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
 
+    // MARK: - Realtime Suggestion Debounce
+
     public struct RealtimeSuggestionDebounce: UserDefaultPreferenceKey {
         public let defaultValue: Double = 1
         public let key = "RealtimeSuggestionDebounce"
     }
 
     public var realtimeSuggestionDebounce: RealtimeSuggestionDebounce { .init() }
+
+    // MARK: - Quit XPC Service On Xcode And App Quit
 
     public struct QuitXPCServiceOnXcodeAndAppQuit: UserDefaultPreferenceKey {
         public let defaultValue = true
@@ -37,12 +45,16 @@ public struct UserDefaultPreferenceKeys {
 
     public var quitXPCServiceOnXcodeAndAppQuit: QuitXPCServiceOnXcodeAndAppQuit { .init() }
 
+    // MARK: - Suggestion Presentation Mode
+
     public struct SuggestionPresentationMode: UserDefaultPreferenceKey {
         public let defaultValue = PresentationMode.floatingWidget
         public let key = "SuggestionPresentationMode"
     }
 
     public var suggestionPresentationMode: SuggestionPresentationMode { .init() }
+
+    // MARK: - Automatically Check For Update
 
     public struct AutomaticallyCheckForUpdate: UserDefaultPreferenceKey {
         public let defaultValue = false
@@ -51,12 +63,16 @@ public struct UserDefaultPreferenceKeys {
 
     public var automaticallyCheckForUpdate: AutomaticallyCheckForUpdate { .init() }
 
+    // MARK: - Suggestion Widget Position Mode
+
     public struct SuggestionWidgetPositionModeKey: UserDefaultPreferenceKey {
         public let defaultValue = SuggestionWidgetPositionMode.fixedToBottom
         public let key = "SuggestionWidgetPositionMode"
     }
 
     public var suggestionWidgetPositionMode: SuggestionWidgetPositionModeKey { .init() }
+
+    // MARK: - Widget Color Scheme
 
     public struct WidgetColorSchemeKey: UserDefaultPreferenceKey {
         public let defaultValue = WidgetColorScheme.dark
@@ -65,40 +81,7 @@ public struct UserDefaultPreferenceKeys {
 
     public var widgetColorScheme: WidgetColorSchemeKey { .init() }
 
-    public struct OpenAIAPIKey: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "OpenAIAPIKey"
-    }
-
-    public var openAIAPIKey: OpenAIAPIKey { .init() }
-
-    public struct ChatGPTEndpoint: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "ChatGPTEndpoint"
-    }
-
-    public var chatGPTEndpoint: ChatGPTEndpoint { .init() }
-
-    public struct ChatGPTModel: UserDefaultPreferenceKey {
-        public let defaultValue = Preferences.ChatGPTModel.gpt35Turbo.rawValue
-        public let key = "ChatGPTModel"
-    }
-
-    public var chatGPTModel: ChatGPTModel { .init() }
-
-    public struct ChatGPTMaxToken: UserDefaultPreferenceKey {
-        public let defaultValue = 2048
-        public let key = "ChatGPTMaxToken"
-    }
-
-    public var chatGPTMaxToken: ChatGPTMaxToken { .init() }
-
-    public struct ChatGPTLanguage: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "ChatGPTLanguage"
-    }
-
-    public var chatGPTLanguage: ChatGPTLanguage { .init() }
+    // MARK: - Accept Suggestion with Accessibility API
 
     public struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
         public let defaultValue = false
@@ -109,12 +92,16 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    // MARK: - Use Global Chat
+
     public struct UseGlobalChat: UserDefaultPreferenceKey {
         public let defaultValue = false
         public let key = "UseGlobalChat"
     }
 
     public var useGlobalChat: UseGlobalChat { .init() }
+
+    // MARK: - Hide Common Preceding Spaces in Suggestion
 
     public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
         public let defaultValue = false
@@ -125,6 +112,8 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    // MARK: - Force Order Widget to Front
+
     public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "ForceOrderWidgetToFront"
@@ -133,6 +122,8 @@ public struct UserDefaultPreferenceKeys {
     public var forceOrderWidgetToFront: HideCommonPrecedingSpacesInSuggestion {
         .init()
     }
+
+    // MARK: - Disable Suggestion Feature Globally
 
     public struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
         public let defaultValue = false
@@ -143,6 +134,8 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    // MARK: - Suggestion Feature Enabled Project List
+
     public struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
         public let defaultValue: [String] = []
         public let key = "SuggestionFeatureEnabledProjectList"
@@ -151,6 +144,8 @@ public struct UserDefaultPreferenceKeys {
     public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
         .init()
     }
+
+    // MARK: - Prompt to Code Feature Provider
 
     public struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
         public let defaultValue: PromptToCodeFeatureProvider = .openAI
@@ -161,6 +156,8 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
+    // MARK: - Prefer Widget to Stay Inside Editor When Width Greater Than
+
     public struct PreferWidgetToStayInsideEditorWhenWidthGreaterThan: UserDefaultPreferenceKey {
         public let defaultValue = 1400 as Double
         public let key = "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
@@ -169,13 +166,74 @@ public struct UserDefaultPreferenceKeys {
     public var preferWidgetToStayInsideEditorWhenWidthGreaterThan: PreferWidgetToStayInsideEditorWhenWidthGreaterThan {
         .init()
     }
-
-    public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
-    public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
-    public var runNodeWithInteractiveLoggedInShell: FeatureFlags
-        .RunNodeWithInteractiveLoggedInShell { .init() }
-    public var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
 }
+
+// MARK: - OpenAI Account Settings
+
+public extension UserDefaultPreferenceKeys {
+    struct OpenAIAPIKey: UserDefaultPreferenceKey {
+        public let defaultValue = ""
+        public let key = "OpenAIAPIKey"
+    }
+
+    var openAIAPIKey: OpenAIAPIKey { .init() }
+
+    struct ChatGPTEndpoint: UserDefaultPreferenceKey {
+        public let defaultValue = ""
+        public let key = "ChatGPTEndpoint"
+    }
+
+    var chatGPTEndpoint: ChatGPTEndpoint { .init() }
+
+    struct ChatGPTModel: UserDefaultPreferenceKey {
+        public let defaultValue = Preferences.ChatGPTModel.gpt35Turbo.rawValue
+        public let key = "ChatGPTModel"
+    }
+
+    var chatGPTModel: ChatGPTModel { .init() }
+
+    struct ChatGPTMaxToken: UserDefaultPreferenceKey {
+        public let defaultValue = 2048
+        public let key = "ChatGPTMaxToken"
+    }
+
+    var chatGPTMaxToken: ChatGPTMaxToken { .init() }
+
+    struct ChatGPTLanguage: UserDefaultPreferenceKey {
+        public let defaultValue = ""
+        public let key = "ChatGPTLanguage"
+    }
+
+    var chatGPTLanguage: ChatGPTLanguage { .init() }
+}
+
+// MARK: - Custom Commands
+
+public extension UserDefaultPreferenceKeys {
+    struct CustomCommandsKey: UserDefaultPreferenceKey {
+        public let defaultValue: [CustomCommand] = [
+            .init(
+                name: "Explain Selection",
+                feature: .chatWithSelection(
+                    extraSystemPrompt: nil,
+                    prompt: "Explain the code concisely, do not interpret or translate it."
+                )
+            ),
+            .init(
+                name: "Add Documentation to Selection",
+                feature: .promptToCode(
+                    prompt: "Add documentation on top of the code.",
+                    continuousMode: false
+                )
+            )
+        ]
+        public let key = "CustomCommands"
+    }
+
+    var customCommands: CustomCommandsKey { .init() }
+}
+
+// MARK: - Feature Flags
 
 public enum FeatureFlags {
     public struct DisableLazyVStack: UserDefaultPreferenceKey {
@@ -192,9 +250,17 @@ public enum FeatureFlags {
         public let defaultValue = true
         public let key = "FeatureFlag-RunNodeWithInteractiveLoggedInShell"
     }
-    
+
     public struct UseCustomScrollViewWorkaround: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
     }
+}
+
+public extension UserDefaultPreferenceKeys {
+    var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
+    var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
+    var runNodeWithInteractiveLoggedInShell: FeatureFlags
+        .RunNodeWithInteractiveLoggedInShell { .init() }
+    var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
 }

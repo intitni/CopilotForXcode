@@ -17,6 +17,7 @@ struct WidgetView: View {
     @State var isHovering: Bool = false
     @State var processingProgress: Double = 0
     var onOpenChatClicked: () -> Void = {}
+    var onCustomCommandClicked: (String) -> Void = { _ in }
 
     var body: some View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
@@ -77,7 +78,8 @@ struct WidgetView: View {
                 WidgetContextMenu(
                     widgetViewModel: viewModel,
                     isChatOpen: panelViewModel.isPanelDisplayed && panelViewModel.chat != nil,
-                    onOpenChatClicked: onOpenChatClicked
+                    onOpenChatClicked: onOpenChatClicked,
+                    onCustomCommandClicked: onCustomCommandClicked
                 )
             }
     }
@@ -103,84 +105,92 @@ struct WidgetContextMenu: View {
     @AppStorage(\.forceOrderWidgetToFront) var forceOrderWidgetToFront
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
+    @AppStorage(\.customCommands) var customCommands
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
     var isChatOpen: Bool
     var onOpenChatClicked: () -> Void = {}
+    var onCustomCommandClicked: (String) -> Void = { _ in }
 
     var body: some View {
         Group {
-            if !isChatOpen {
-                Button(action: {
-                    onOpenChatClicked()
-                }) {
-                    Text("Open Chat")
+            Group { // Commands
+                if !isChatOpen {
+                    Button(action: {
+                        onOpenChatClicked()
+                    }) {
+                        Text("Open Chat")
+                    }
                 }
+                
+                customCommandMenu()
             }
 
             Divider()
 
-            Button(action: {
-                useGlobalChat.toggle()
-            }) {
-                Text("Use Global Chat")
-                if useGlobalChat {
-                    Image(systemName: "checkmark")
-                }
-            }
-
-            Button(action: {
-                realtimeSuggestionToggle.toggle()
-            }) {
-                Text("Realtime Suggestion")
-                if realtimeSuggestionToggle {
-                    Image(systemName: "checkmark")
-                }
-            }
-
-            Button(action: {
-                acceptSuggestionWithAccessibilityAPI.toggle()
-            }, label: {
-                Text("Accept Suggestion with Accessibility API")
-                if acceptSuggestionWithAccessibilityAPI {
-                    Image(systemName: "checkmark")
-                }
-            })
-
-            Button(action: {
-                hideCommonPrecedingSpacesInSuggestion.toggle()
-            }, label: {
-                Text("Hide Common Preceding Spaces in Suggestion")
-                if hideCommonPrecedingSpacesInSuggestion {
-                    Image(systemName: "checkmark")
-                }
-            })
-
-            Button(action: {
-                forceOrderWidgetToFront.toggle()
-            }, label: {
-                Text("Force Order Widget to Front")
-                if forceOrderWidgetToFront {
-                    Image(systemName: "checkmark")
-                }
-            })
-
-            if let projectPath, disableSuggestionFeatureGlobally {
-                let matchedPath = suggestionFeatureEnabledProjectList.first { path in
-                    projectPath.hasPrefix(path)
-                }
+            Group { // Settings
                 Button(action: {
-                    if matchedPath != nil {
-                        suggestionFeatureEnabledProjectList
-                            .removeAll { path in path == matchedPath }
-                    } else {
-                        suggestionFeatureEnabledProjectList.append(projectPath)
-                    }
+                    useGlobalChat.toggle()
                 }) {
-                    if matchedPath == nil {
-                        Text("Add to Suggestion-Enabled Project List")
-                    } else {
-                        Text("Remove from Suggestion-Enabled Project List")
+                    Text("Use Global Chat")
+                    if useGlobalChat {
+                        Image(systemName: "checkmark")
+                    }
+                }
+                
+                Button(action: {
+                    realtimeSuggestionToggle.toggle()
+                }) {
+                    Text("Realtime Suggestion")
+                    if realtimeSuggestionToggle {
+                        Image(systemName: "checkmark")
+                    }
+                }
+                
+                Button(action: {
+                    acceptSuggestionWithAccessibilityAPI.toggle()
+                }, label: {
+                    Text("Accept Suggestion with Accessibility API")
+                    if acceptSuggestionWithAccessibilityAPI {
+                        Image(systemName: "checkmark")
+                    }
+                })
+                
+                Button(action: {
+                    hideCommonPrecedingSpacesInSuggestion.toggle()
+                }, label: {
+                    Text("Hide Common Preceding Spaces in Suggestion")
+                    if hideCommonPrecedingSpacesInSuggestion {
+                        Image(systemName: "checkmark")
+                    }
+                })
+                
+                Button(action: {
+                    forceOrderWidgetToFront.toggle()
+                }, label: {
+                    Text("Force Order Widget to Front")
+                    if forceOrderWidgetToFront {
+                        Image(systemName: "checkmark")
+                    }
+                })
+                
+                if let projectPath, disableSuggestionFeatureGlobally {
+                    let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                        projectPath.hasPrefix(path)
+                    }
+                    Button(action: {
+                        if matchedPath != nil {
+                            suggestionFeatureEnabledProjectList
+                                .removeAll { path in path == matchedPath }
+                        } else {
+                            suggestionFeatureEnabledProjectList.append(projectPath)
+                        }
+                    }) {
+                        if matchedPath == nil {
+                            Text("Add to Suggestion-Enabled Project List")
+                        } else {
+                            Text("Remove from Suggestion-Enabled Project List")
+                        }
                     }
                 }
             }
@@ -207,6 +217,18 @@ struct WidgetContextMenu: View {
             if let projectURL {
                 Task { @MainActor in
                     self.projectPath = projectURL.path
+                }
+            }
+        }
+    }
+    
+    func customCommandMenu() -> some View {
+        Menu("Custom Commands") {
+            ForEach(customCommands, id: \.name) { command in
+                Button(action: {
+                    onCustomCommandClicked(command.name)
+                }) {
+                    Text(command.name)
                 }
             }
         }

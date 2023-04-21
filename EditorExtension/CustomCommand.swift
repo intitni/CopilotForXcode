@@ -3,8 +3,8 @@ import CopilotModel
 import Foundation
 import XcodeKit
 
-class ExplainSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Explain Selection" }
+class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
+    var name: String = ""
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
@@ -13,7 +13,8 @@ class ExplainSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
         Task {
             do {
                 let service = try getService()
-                if let content = try await service.explainSelection(
+                if let content = try await service.customCommand(
+                    name: customCommandMap[invocation.commandIdentifier] ?? "",
                     editorContent: .init(invocation)
                 ) {
                     invocation.accept(content)
