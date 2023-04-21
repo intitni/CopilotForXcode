@@ -39,6 +39,7 @@ let package = Package(
         .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
+        .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
     ],
     targets: [
         .target(name: "CGEventObserver"),
@@ -144,6 +145,7 @@ let package = Package(
             dependencies: [
                 "Logger",
                 "Preferences",
+                "GPTEncoder",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
