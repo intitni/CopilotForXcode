@@ -55,7 +55,12 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
 public actor ChatGPTService: ChatGPTServiceType {
     public var systemPrompt: String
-    public var temperature: Double
+
+    public var defaultTemperature: Double {
+        min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
+    }
+    
+    var temperature: Double?
 
     public var model: String {
         let value = UserDefaults.shared.value(for: \.chatGPTModel)
@@ -93,7 +98,7 @@ public actor ChatGPTService: ChatGPTServiceType {
 
     public init(
         systemPrompt: String = "",
-        temperature: Double = 0.7
+        temperature: Double? = nil
     ) {
         self.systemPrompt = systemPrompt
         self.temperature = temperature
@@ -114,11 +119,11 @@ public actor ChatGPTService: ChatGPTServiceType {
         history.append(newMessage)
 
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
-        
+
         let requestBody = CompletionRequestBody(
             model: model,
             messages: messages,
-            temperature: temperature,
+            temperature: temperature ?? defaultTemperature,
             stream: true,
             max_tokens: remainingTokens
         )
@@ -194,11 +199,11 @@ public actor ChatGPTService: ChatGPTServiceType {
         history.append(newMessage)
 
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
-        
+
         let requestBody = CompletionRequestBody(
             model: model,
             messages: messages,
-            temperature: temperature,
+            temperature: temperature ?? defaultTemperature,
             stream: true,
             max_tokens: remainingTokens
         )
@@ -257,8 +262,8 @@ extension ChatGPTService {
 
     func combineHistoryWithSystemPrompt(
         minimumReplyTokens: Int = 200,
-        maxNumberOfMessages: Int = 5,
-        maxTokens: Int =  UserDefaults.shared.value(for: \.chatGPTMaxToken),
+        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
+        maxTokens: Int = UserDefaults.shared.value(for: \.chatGPTMaxToken),
         encoder: TokenEncoder = GPTEncoder()
     )
         -> (messages: [CompletionRequestBody.Message], remainingTokens: Int)
@@ -266,7 +271,7 @@ extension ChatGPTService {
         var all: [CompletionRequestBody.Message] = []
         var allTokensCount = encoder.encode(text: systemPrompt).count
         for message in history.reversed() {
-            if all.count >= maxNumberOfMessages { break }
+            if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
             if message.content.isEmpty { continue }
             let tokensCount = encoder.encode(text: message.content).count
             if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {

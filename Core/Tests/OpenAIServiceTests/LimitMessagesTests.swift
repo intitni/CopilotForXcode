@@ -14,7 +14,7 @@ final class LimitMessagesTests: XCTestCase {
         let (messages, remainingTokens) = await runService(
             service,
             minimumReplyTokens: 200,
-            maxNumberOfMessages: 100,
+            maxNumberOfMessages: 0, // smaller than 1 means no limit
             maxTokens: 10000
         )
         XCTAssertEqual(messages, [
