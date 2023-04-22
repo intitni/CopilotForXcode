@@ -142,7 +142,6 @@ public struct SuggestionInjector {
         let suggestionContent = completion.text
 
         let existedLine = start.line < content.endIndex ? content[start.line] : nil
-        let commonPrefix = longestCommonPrefix(of: suggestionContent, and: existedLine ?? "")
 
         let firstRemovedLine = content[safe: start.line]
         let lastRemovedLine = content[safe: end.line]

@@ -10,6 +10,7 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.automaticallyCheckForUpdate)
         shared.setupDefaultValue(for: \.suggestionPresentationMode)
         shared.setupDefaultValue(for: \.widgetColorScheme)
+        shared.setupDefaultValue(for: \.customCommands)
     }
 }
 

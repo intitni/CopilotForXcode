@@ -10,6 +10,8 @@ public final class ChatProvider: ObservableObject {
     public var onClear: () -> Void
     public var onClose: () -> Void
     public var onSwitchContext: () -> Void
+    public var onDeleteMessage: (String) -> Void
+    public var onResendMessage: (String) -> Void
 
     public init(
         history: [ChatMessage] = [],
@@ -18,7 +20,9 @@ public final class ChatProvider: ObservableObject {
         onStop: @escaping () -> Void = {},
         onClear: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {},
-        onSwitchContext: @escaping () -> Void = {}
+        onSwitchContext: @escaping () -> Void = {},
+        onDeleteMessage: @escaping (String) -> Void = { _ in },
+        onResendMessage: @escaping (String) -> Void = { _ in }
     ) {
         self.history = history
         self.isReceivingMessage = isReceivingMessage
@@ -27,6 +31,8 @@ public final class ChatProvider: ObservableObject {
         self.onClear = onClear
         self.onClose = onClose
         self.onSwitchContext = onSwitchContext
+        self.onDeleteMessage = onDeleteMessage
+        self.onResendMessage = onResendMessage
     }
 
     public func send(_ message: String) { onMessageSend(message) }
@@ -34,6 +40,8 @@ public final class ChatProvider: ObservableObject {
     public func clear() { onClear() }
     public func close() { onClose() }
     public func switchContext() { onSwitchContext() }
+    public func deleteMessage(id: String) { onDeleteMessage(id) }
+    public func resendMessage(id: String) { onResendMessage(id) }
 }
 
 public struct ChatMessage: Equatable {

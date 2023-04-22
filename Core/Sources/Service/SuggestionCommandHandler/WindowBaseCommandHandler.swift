@@ -128,13 +128,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        
-        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+
+        if WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService != nil {
             WidgetDataSource.shared.removePromptToCode(for: fileURL)
             presenter.closePromptToCode(fileURL: fileURL)
             return
         }
-        
+
         let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
@@ -229,54 +229,15 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return try await presentSuggestions(editor: editor)
     }
 
-    func explainSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _explainSelection(editor: editor)
-            } catch {
-                presenter.presentError(error)
-            }
-        }
-        return nil
-    }
-
-    private func _explainSelection(editor: EditorContent) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
-        guard let selection = editor.selections.last else { return }
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-
-        await chat.mutateSystemPrompt(
-            """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a code explanation engine, you can only explain the code concisely, do not interpret or translate it.
-            """
-        )
-
-        let code = editor.selectedCode(in: selection)
-        Task {
-            try? await chat.chatGPTService.send(
-                content: """
-                ```\(codeLanguage.rawValue)
-                \(code)
-                ```
-                """,
-                summary: "Explain selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character + 1)`."
-            )
-        }
-
-        presenter.presentChatRoom(fileURL: fileURL)
-    }
-
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await _chatWithSelection(editor: editor)
+                try await startChatWithSelection(
+                    editor: editor,
+                    specifiedSystemPrompt: nil,
+                    extraSystemPrompt: nil,
+                    sendingMessageImmediately: nil
+                )
             } catch {
                 presenter.presentError(error)
             }
@@ -284,7 +245,135 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
-    private func _chatWithSelection(editor: EditorContent) async throws {
+    func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await presentPromptToCode(editor: editor, prompt: nil, isContinuous: false)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+
+    func customCommand(name: String, editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await handleCustomCommand(name: name, editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
+}
+
+extension WindowBaseCommandHandler {
+    func handleCustomCommand(name: String, editor: EditorContent) async throws {
+        struct CommandNotFoundError: Error, LocalizedError {
+            var errorDescription: String? { "Command not found" }
+        }
+
+        let availableCommands = UserDefaults.shared.value(for: \.customCommands)
+        guard let command = availableCommands.first(where: { $0.name == name })
+        else { throw CommandNotFoundError() }
+
+        switch command.feature {
+        case let .chatWithSelection(extraSystemPrompt, prompt):
+            try await startChatWithSelection(
+                editor: editor,
+                specifiedSystemPrompt: nil,
+                extraSystemPrompt: extraSystemPrompt,
+                sendingMessageImmediately: prompt
+            )
+        case let .customChat(systemPrompt, prompt):
+            try await startChatWithSelection(
+                editor: editor,
+                specifiedSystemPrompt: systemPrompt,
+                extraSystemPrompt: nil,
+                sendingMessageImmediately: prompt
+            )
+        case let .promptToCode(prompt, continuousMode):
+            try await presentPromptToCode(
+                editor: editor,
+                prompt: prompt,
+                isContinuous: continuousMode ?? false
+            )
+        }
+    }
+
+    func presentPromptToCode(
+        editor: EditorContent,
+        prompt: String?,
+        isContinuous: Bool
+    ) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+        let fileURL = try await Environment.fetchCurrentFileURL()
+        let (workspace, _) = try await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        guard workspace.isSuggestionFeatureEnabled else {
+            presenter.presentErrorMessage("Prompt to code is disabled for this project")
+            return
+        }
+
+        let codeLanguage = languageIdentifierFromFileURL(fileURL)
+
+        let (code, selection) = {
+            guard var selection = editor.selections.last,
+                  selection.start != selection.end
+            else { return ("", .cursor(editor.cursorPosition)) }
+            
+            let isMultipleLine = selection.start.line != selection.end.line
+            let isSpaceOnlyBeforeStartPositionOnTheSameLine = {
+                guard selection.start.line >= 0, selection.start.line < editor.lines.count else {
+                    return false
+                }
+                let line = editor.lines[selection.start.line]
+                guard selection.start.character > 0, selection.start.character < line.count else {
+                    return false
+                }
+                let substring = line[line.startIndex..<line.index(line.startIndex, offsetBy: selection.start.character)]
+                return substring.allSatisfy({ $0.isWhitespace })
+            }()
+            
+            if isMultipleLine || isSpaceOnlyBeforeStartPositionOnTheSameLine {
+                // when there are multiple lines start from char 0 so that it can keep the
+                // indentation.
+                selection.start = .init(line: selection.start.line, character: 0)
+            }
+            return (
+                editor.selectedCode(in: selection),
+                .init(
+                    start: .init(line: selection.start.line, character: selection.start.character),
+                    end: .init(line: selection.end.line, character: selection.end.character)
+                )
+            )
+        }() as (String, CursorRange)
+
+        let promptToCode = await WidgetDataSource.shared.createPromptToCode(
+            for: fileURL,
+            projectURL: workspace.projectRootURL,
+            selectedCode: code,
+            allCode: editor.content,
+            selectionRange: selection,
+            language: codeLanguage
+        )
+
+        promptToCode.isContinuous = isContinuous
+        if let prompt {
+            Task { try await promptToCode.modifyCode(prompt: prompt) }
+        }
+
+        presenter.presentPromptToCode(fileURL: fileURL)
+    }
+
+    private func startChatWithSelection(
+        editor: EditorContent,
+        specifiedSystemPrompt: String?,
+        extraSystemPrompt: String?,
+        sendingMessageImmediately: String?
+    ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
@@ -298,7 +387,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             return editor.selectedCode(in: selection)
         }()
 
-        let prompt = {
+        var systemPrompt = specifiedSystemPrompt ?? {
             if code.isEmpty {
                 return """
                 \(language.isEmpty ? "" : "You must always reply in \(language)")
@@ -313,77 +402,39 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             ```
             """
         }()
+        
+        if let extraSystemPrompt {
+            systemPrompt += "\n\(extraSystemPrompt)"
+        }
 
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
 
-        await chat.mutateSystemPrompt(prompt)
+        await chat.mutateSystemPrompt(systemPrompt)
 
         Task {
-            if !code.isEmpty, let selection = editor.selections.last {
+            if let specifiedSystemPrompt {
                 await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
-                        role: .user,
+                        role: .assistant,
                         content: "",
-                        summary: "Chat about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "System prompt is updated: \n\(specifiedSystemPrompt)"
                     ))
                 }
+            } else if !code.isEmpty, let selection = editor.selections.last {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "Chating about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                    ))
+                }
+            }
+
+            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
+                try await chat.send(content: sendingMessageImmediately)
             }
         }
 
         presenter.presentChatRoom(fileURL: fileURL)
-    }
-
-    func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _promptToCode(editor: editor)
-            } catch {
-                presenter.presentError(error)
-            }
-        }
-        return nil
-    }
-
-    func _promptToCode(editor: EditorContent) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-        let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        guard workspace.isSuggestionFeatureEnabled else {
-            presenter.presentErrorMessage("Prompt to code is disabled for this project")
-            return
-        }
-        
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
-
-        let (code, selection) = {
-            guard var selection = editor.selections.last,
-                  selection.start != selection.end
-            else { return ("", .cursor(editor.cursorPosition)) }
-            if selection.start.line != selection.end.line {
-                // when there are multiple lines start from char 0 so that it can keep the
-                // indentation.
-                selection.start = .init(line: selection.start.line, character: 0)
-            }
-            return (
-                editor.selectedCode(in: selection),
-                .init(
-                    start: .init(line: selection.start.line, character: selection.start.character),
-                    end: .init(line: selection.end.line, character: selection.end.character)
-                )
-            )
-        }() as (String, CursorRange)
-
-        _ = await WidgetDataSource.shared.createPromptToCode(
-            for: fileURL,
-            projectURL: workspace.projectRootURL,
-            selectedCode: code,
-            allCode: editor.content,
-            selectionRange: selection,
-            language: codeLanguage
-        )
-
-        presenter.presentPromptToCode(fileURL: fileURL)
     }
 }

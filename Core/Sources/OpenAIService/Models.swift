@@ -15,9 +15,14 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     public var role: Role
-    public var content: String
+    public var content: String {
+        didSet {
+            tokensCount = nil
+        }
+    }
     public var summary: String?
     public var id: String
+    public var tokensCount: Int?
 
     public init(
         id: String = UUID().uuidString,

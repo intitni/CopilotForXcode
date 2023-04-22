@@ -39,6 +39,9 @@ public final class SuggestionWidgetController {
                 panelViewModel: suggestionPanelViewModel,
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
+                },
+                onCustomCommandClicked: { [weak self] name in
+                    self?.onCustomCommandClicked(name)
                 }
             )
         )
@@ -101,6 +104,7 @@ public final class SuggestionWidgetController {
     private var colorScheme: ColorScheme = .light
     
     public var onOpenChatClicked: () -> Void = {}
+    public var onCustomCommandClicked: (String) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
 
     public nonisolated init() {

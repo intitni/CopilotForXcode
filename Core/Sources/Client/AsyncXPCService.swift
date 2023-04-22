@@ -1,7 +1,7 @@
 import CopilotModel
 import Foundation
-import XPCShared
 import Logger
+import XPCShared
 
 public struct AsyncXPCService {
     public var connection: NSXPCConnection { service.connection }
@@ -181,14 +181,6 @@ public struct AsyncXPCService {
         }
     }
 
-    public func explainSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
-        try await suggestionRequest(
-            connection,
-            editorContent,
-            { $0.explainSelection }
-        )
-    }
-
     public func chatWithSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
@@ -202,6 +194,17 @@ public struct AsyncXPCService {
             connection,
             editorContent,
             { $0.promptToCode }
+        )
+    }
+
+    public func customCommand(
+        name: String,
+        editorContent: EditorContent
+    ) async throws -> UpdatedContent? {
+        try await suggestionRequest(
+            connection,
+            editorContent,
+            { service in { service.customCommand(name: name, editorContent: $0, withReply: $1) } }
         )
     }
 }

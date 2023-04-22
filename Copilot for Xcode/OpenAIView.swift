@@ -11,6 +11,8 @@ final class OpenAIViewSettings: ObservableObject {
     @AppStorage(\.chatGPTEndpoint) var chatGPTEndpoint: String
     @AppStorage(\.chatGPTLanguage) var chatGPTLanguage: String
     @AppStorage(\.chatGPTMaxToken) var chatGPTMaxToken: Int
+    @AppStorage(\.chatGPTTemperature) var chatGPTTemperature: Double
+    @AppStorage(\.chatGPTMaxMessageCount) var chatGPTMaxMessageCount: Int
     init() {}
 }
 
@@ -112,16 +114,34 @@ struct OpenAIView: View {
                             .textFieldStyle(.roundedBorder)
                         }
                     }
+
+                    HStack {
+                        Slider(value: $settings.chatGPTTemperature, in: 0...2, step: 0.1) {
+                            Text("Temperature")
+                        }
+
+                        Text(
+                            "\(settings.chatGPTTemperature.formatted(.number.precision(.fractionLength(1))))"
+                        )
+                        .monospacedDigit()
+                    }
+
+                    Picker("Max Message Count Sending to the Bot", selection: $settings.chatGPTMaxMessageCount) {
+                        Text("No Limit").tag(0)
+                        Text("3 Messages").tag(3)
+                        Text("5 Messages").tag(5)
+                        Text("7 Messages").tag(7)
+                    }
                 }
             }
         }
     }
-    
+
     var languagePicker: some View {
         Menu {
             if !settings.chatGPTLanguage.isEmpty,
                !OpenAIViewSettings.availableLocalizedLocales
-                .contains(settings.chatGPTLanguage)
+               .contains(settings.chatGPTLanguage)
             {
                 Button(
                     settings.chatGPTLanguage,
@@ -144,8 +164,8 @@ struct OpenAIView: View {
         } label: {
             Text(
                 settings.chatGPTLanguage.isEmpty
-                ? "Auto-detected by ChatGPT"
-                : settings.chatGPTLanguage
+                    ? "Auto-detected by ChatGPT"
+                    : settings.chatGPTLanguage
             )
         }
     }

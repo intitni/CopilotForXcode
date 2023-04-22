@@ -1,5 +1,6 @@
 import AsyncAlgorithms
 import Foundation
+import GPTEncoder
 import Preferences
 
 public protocol ChatGPTServiceType: ObservableObject {
@@ -54,7 +55,12 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
 public actor ChatGPTService: ChatGPTServiceType {
     public var systemPrompt: String
-    public var temperature: Double
+
+    public var defaultTemperature: Double {
+        min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
+    }
+    
+    var temperature: Double?
 
     public var model: String {
         let value = UserDefaults.shared.value(for: \.chatGPTModel)
@@ -92,7 +98,7 @@ public actor ChatGPTService: ChatGPTServiceType {
 
     public init(
         systemPrompt: String = "",
-        temperature: Double = 0.7
+        temperature: Double? = nil
     ) {
         self.systemPrompt = systemPrompt
         self.temperature = temperature
@@ -112,12 +118,14 @@ public actor ChatGPTService: ChatGPTServiceType {
         )
         history.append(newMessage)
 
+        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+
         let requestBody = CompletionRequestBody(
             model: model,
-            messages: combineHistoryWithSystemPrompt(),
-            temperature: temperature,
+            messages: messages,
+            temperature: temperature ?? defaultTemperature,
             stream: true,
-            max_tokens: maxToken
+            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
         isReceivingMessage = true
@@ -190,12 +198,14 @@ public actor ChatGPTService: ChatGPTServiceType {
         )
         history.append(newMessage)
 
+        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+
         let requestBody = CompletionRequestBody(
             model: model,
-            messages: combineHistoryWithSystemPrompt(),
-            temperature: temperature,
+            messages: messages,
+            temperature: temperature ?? defaultTemperature,
             stream: true,
-            max_tokens: maxToken
+            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
         isReceivingMessage = true
@@ -210,10 +220,10 @@ public actor ChatGPTService: ChatGPTServiceType {
                 role: choice.message.role,
                 content: choice.message.content
             ))
-            
+
             return choice.message.content
         }
-        
+
         return nil
     }
 
@@ -250,17 +260,40 @@ extension ChatGPTService {
         uuidGenerator = generator
     }
 
-    func combineHistoryWithSystemPrompt() -> [CompletionRequestBody.Message] {
+    func combineHistoryWithSystemPrompt(
+        minimumReplyTokens: Int = 300,
+        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
+        maxTokens: Int = UserDefaults.shared.value(for: \.chatGPTMaxToken),
+        encoder: TokenEncoder = GPTEncoder()
+    )
+        -> (messages: [CompletionRequestBody.Message], remainingTokens: Int)
+    {
         var all: [CompletionRequestBody.Message] = []
-        var count = 0
-        for message in history.reversed() {
-            if count >= 5 { break }
+        var allTokensCount = encoder.encode(text: systemPrompt).count
+        for (index, message) in history.enumerated().reversed() {
+            if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
             if message.content.isEmpty { continue }
+            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
+            history[index].tokensCount = tokensCount
+            if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
+                break
+            }
+            allTokensCount += tokensCount
             all.append(.init(role: message.role, content: message.content))
-            count += 1
         }
 
         all.append(.init(role: .system, content: systemPrompt))
-        return all.reversed()
+        return (all.reversed(), max(minimumReplyTokens, maxTokens - allTokensCount))
     }
+}
+
+protocol TokenEncoder {
+    func encode(text: String) -> [Int]
+}
+
+extension GPTEncoder: TokenEncoder {}
+
+func maxTokenForReply(model: String, remainingTokens: Int) -> Int {
+    guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
+    return min(model.maxToken / 2, remainingTokens)
 }

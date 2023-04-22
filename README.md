@@ -163,6 +163,10 @@ If you need to end a plugin, you can just type
 
 Prompt to code commands are not available in comment mode.
 
+### Custom Commands
+
+You can create custom commands that runs Chat and Prompt to Code with custom prompts. This commands can be accessed from the Xcode menu bar and the context menu of the circular widget.
+
 ## Key Bindings
 
 It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`. You can filter the list by typing `copilot` in the search bar.

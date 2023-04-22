@@ -61,7 +61,7 @@ func highlightedCodeBlock(
             }
             return leadingSpaces
         }
-        
+
         // Workaround: Splash has a bug that will insert an extra space at the beginning.
         let leadingSpaces = leadingSpacesInCode(code)
         let leadingSpacesFormatted = leadingSpacesInCode(formatted.string)
@@ -73,7 +73,7 @@ func highlightedCodeBlock(
             )
         }
         // End of workaround.
-        
+
         return formatted
     default:
         var language = language
@@ -148,15 +148,16 @@ func convertToCodeLines(
     let separatedInput = input.components(separatedBy: "\n")
     let commonLeadingSpaceCount = {
         if !droppingLeadingSpaces { return 0 }
-        let splitted = separatedInput
+        let split = separatedInput
         var result = 0
-        outerLoop: for i in [4, 8, 12, 16, 20, 24] {
-            for line in splitted {
+        outerLoop: for i in stride(from: 40, through: 4, by: -4) {
+            for line in split {
                 if isEmptyLine(line) { continue }
-                if i >= line.count { break outerLoop }
-                if !line.hasPrefix(.init(repeating: " ", count: i)) { break outerLoop }
+                if i >= line.count { continue outerLoop }
+                if !line.hasPrefix(.init(repeating: " ", count: i)) { continue outerLoop }
             }
             result = i
+            break
         }
         return result
     }()

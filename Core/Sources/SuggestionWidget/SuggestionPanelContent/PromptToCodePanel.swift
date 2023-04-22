@@ -3,64 +3,73 @@ import SwiftUI
 
 struct PromptToCodePanel: View {
     @ObservedObject var provider: PromptToCodeProvider
-    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    if !provider.errorMessage.isEmpty {
-                        Text(provider.errorMessage)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.red)
+            PromptToCodePanelContent(provider: provider)
+                .overlay(alignment: .topTrailing) {
+                    if !provider.code.isEmpty {
+                        CopyButton {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(provider.code, forType: .string)
+                        }
+                        .padding(.trailing, 2)
+                        .padding(.top, 2)
                     }
-                    
-                    if provider.code.isEmpty {
-                        Text(
-                            provider.isResponding
-                                ? "Thinking..."
-                                : "Enter your requirement to generate code."
-                        )
-                        .foregroundColor(.secondary)
-                        .padding()
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        CodeBlock(
-                            code: provider.code,
-                            language: provider.language,
-                            startLineIndex: provider.startLineIndex,
-                            colorScheme: colorScheme,
-                            firstLinePrecedingSpaceCount: provider.startLineColumn
-                        )
-                        .frame(maxWidth: .infinity)
-                    }
-
-                    if !provider.description.isEmpty {
-                        Markdown(provider.description)
-                            .textSelection(.enabled)
-                            .markdownTheme(.gitHub.text {
-                                BackgroundColor(Color.clear)
-                            })
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    Spacer(minLength: 50)
                 }
-            }
-            .overlay(alignment: .bottom) {
-                Group {
-                    if provider.isResponding {
-                        Button(action: {
-                            provider.stopResponding()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "stop.fill")
-                                Text("Stop Responding")
+                .overlay(alignment: .bottom) {
+                    HStack {
+                        if provider.isResponding {
+                            Button(action: {
+                                provider.stopResponding()
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "stop.fill")
+                                    Text("Stop")
+                                }
+                                .padding(8)
+                                .background(
+                                    .regularMaterial,
+                                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                )
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        let isRespondingButCodeIsReady = provider.isResponding
+                            && !provider.code.isEmpty
+                            && !provider.description.isEmpty
+
+                        if !provider.isResponding || isRespondingButCodeIsReady {
+                            HStack {
+                                Toggle(
+                                    "Continuous Mode",
+                                    isOn: .init(
+                                        get: { provider.isContinuous },
+                                        set: { _ in provider.toggleContinuous() }
+                                    )
+                                )
+                                .toggleStyle(.checkbox)
+
+                                Button(action: {
+                                    provider.cancel()
+                                }) {
+                                    Text("Cancel")
+                                }.buttonStyle(CommandButtonStyle(color: .gray))
+
+                                if !provider.code.isEmpty {
+                                    Button(action: {
+                                        provider.acceptSuggestion()
+                                    }) {
+                                        Text("Accept(⌘ + ⏎)")
+                                    }
+                                    .buttonStyle(CommandButtonStyle(color: .indigo))
+                                    .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
+                                }
                             }
                             .padding(8)
                             .background(
@@ -72,52 +81,76 @@ struct PromptToCodePanel: View {
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                         }
-                        .buttonStyle(.plain)
-                    } else {
-                        HStack {
-                            Toggle(
-                                "Continuous Mode",
-                                isOn: .init(
-                                    get: { provider.isContinuous },
-                                    set: { _ in provider.toggleContinuous() }
-                                )
-                            )
-                            .toggleStyle(.checkbox)
-
-                            Button(action: {
-                                provider.cancel()
-                            }) {
-                                Text("Cancel")
-                            }.buttonStyle(CommandButtonStyle(color: .gray))
-
-                            if !provider.code.isEmpty {
-                                Button(action: {
-                                    provider.acceptSuggestion()
-                                }) {
-                                    Text("Accept(⌘ + ⏎)")
-                                }
-                                .buttonStyle(CommandButtonStyle(color: .indigo))
-                                .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
-                            }
-                        }
-                        .padding(8)
-                        .background(
-                            .regularMaterial,
-                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                        }
                     }
+                    .padding(.bottom, 8)
                 }
-                .padding(.bottom, 8)
-            }
 
             PromptToCodePanelToolbar(provider: provider)
         }
         .background(Color.contentBackground)
         .xcodeStyleFrame()
+    }
+}
+
+struct PromptToCodePanelContent: View {
+    @ObservedObject var provider: PromptToCodeProvider
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        CustomScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 60)
+
+                if !provider.errorMessage.isEmpty {
+                    Text(provider.errorMessage)
+                        .multilineTextAlignment(.leading)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(
+                            Color.red,
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
+                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                }
+
+                if !provider.description.isEmpty {
+                    Markdown(provider.description)
+                        .textSelection(.enabled)
+                        .markdownTheme(.gitHub.text {
+                            BackgroundColor(Color.clear)
+                        })
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                }
+
+                if provider.code.isEmpty {
+                    Text(
+                        provider.isResponding
+                            ? "Thinking..."
+                            : "Enter your requirement to generate code."
+                    )
+                    .foregroundColor(.secondary)
+                    .padding()
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .scaleEffect(x: -1, y: -1, anchor: .center)
+                } else {
+                    CodeBlock(
+                        code: provider.code,
+                        language: provider.language,
+                        startLineIndex: provider.startLineIndex,
+                        colorScheme: colorScheme,
+                        firstLinePrecedingSpaceCount: provider.startLineColumn
+                    )
+                    .frame(maxWidth: .infinity)
+                    .scaleEffect(x: -1, y: -1, anchor: .center)
+                }
+            }
+            .scaleEffect(x: -1, y: 1, anchor: .center)
+        }
+        .scaleEffect(x: 1, y: -1, anchor: .center)
     }
 }
 

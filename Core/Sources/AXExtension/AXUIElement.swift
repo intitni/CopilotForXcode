@@ -11,7 +11,7 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
-    
+
     var doubleValue: Double {
         (try? copyValue(key: kAXValueAttribute)) ?? 0.0
     }
@@ -23,17 +23,17 @@ public extension AXUIElement {
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
-    
+
     var isSourceEditor: Bool {
         description == "Source Editor"
     }
 
-    var selectedTextRange: Range<Int>? {
+    var selectedTextRange: ClosedRange<Int>? {
         guard let value: AXValue = try? copyValue(key: kAXSelectedTextRangeAttribute)
         else { return nil }
         var range: CFRange = .init(location: 0, length: 0)
         if AXValueGetValue(value, .cfRange, &range) {
-            return Range(.init(location: range.location, length: range.length))
+            return range.location...(range.location + range.length)
         }
         return nil
     }

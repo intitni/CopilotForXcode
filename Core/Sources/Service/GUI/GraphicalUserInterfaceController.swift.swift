@@ -12,10 +12,23 @@ public final class GraphicalUserInterfaceController {
             suggestionWidget.dataSource = WidgetDataSource.shared
             suggestionWidget.onOpenChatClicked = {
                 Task {
-                    let fileURL = try await Environment.fetchCurrentFileURL()
-                    await WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-                    let presenter = PresentInWindowSuggestionPresenter()
-                    presenter.presentChatRoom(fileURL: fileURL)
+                    let commandHandler = WindowBaseCommandHandler()
+                    _ = try await commandHandler.chatWithSelection(editor: .init(
+                        content: "",
+                        lines: [],
+                        uti: "",
+                        cursorPosition: .outOfScope,
+                        selections: [],
+                        tabSize: 0,
+                        indentSize: 0,
+                        usesTabsForIndentation: false
+                    ))
+                }
+            }
+            suggestionWidget.onCustomCommandClicked = { name in
+                Task {
+                    let commandHandler = PseudoCommandHandler()
+                    await commandHandler.handleCustomDomain(name: name)
                 }
             }
         }
