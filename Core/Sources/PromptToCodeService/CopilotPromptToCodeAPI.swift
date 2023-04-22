@@ -18,7 +18,8 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
         requirement: String,
         projectRootURL: URL,
         fileURL: URL,
-        allCode: String
+        allCode: String,
+        extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let copilotService = CopilotSuggestionService(projectRootURL: projectRootURL)
         let relativePath = {
@@ -36,14 +37,25 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
             return filePath
         }()
         
+        func convertToComment(_ s: String) -> String {
+            s.split(separator: "\n").map { "// \($0)" }.joined(separator: "\n")
+        }
+        
         let comment = """
-        // update the following code, \(requirement.split(separator: "\n").joined(separator: " ")).
-        \(code.split(separator: "\n").map { "//\($0)" }.joined(separator: "\n"))
+        // A file to refactor the following code
+        //
+        // Code:
+        // ```
+        \(convertToComment(code))
+        // ```
+        //
+        // Requirements:
+        \(convertToComment((extraSystemPrompt ?? "\n") + requirement))
+        //
         
         
         
-        // Path: \(relativePath)
-        
+        // end of file
         """
         let lineCount = comment.breakLines().count
 
@@ -53,7 +65,7 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
                     let result = try await copilotService.getCompletions(
                         fileURL: fileURL,
                         content: comment,
-                        cursorPosition: .init(line: lineCount - 4, character: 0),
+                        cursorPosition: .init(line: lineCount - 3, character: 0),
                         tabSize: indentSize,
                         indentSize: indentSize,
                         usesTabsForIndentation: usesTabsForIndentation,

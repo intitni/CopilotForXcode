@@ -248,7 +248,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await presentPromptToCode(editor: editor, prompt: nil, isContinuous: false)
+                try await presentPromptToCode(
+                    editor: editor,
+                    extraSystemPrompt: nil,
+                    prompt: nil,
+                    isContinuous: false,
+                    name: nil
+                )
             } catch {
                 presenter.presentError(error)
             }
@@ -293,19 +299,23 @@ extension WindowBaseCommandHandler {
                 extraSystemPrompt: nil,
                 sendingMessageImmediately: prompt
             )
-        case let .promptToCode(prompt, continuousMode):
+        case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
             try await presentPromptToCode(
                 editor: editor,
+                extraSystemPrompt: extraSystemPrompt,
                 prompt: prompt,
-                isContinuous: continuousMode ?? false
+                isContinuous: continuousMode ?? false,
+                name: command.name
             )
         }
     }
 
     func presentPromptToCode(
         editor: EditorContent,
+        extraSystemPrompt: String?,
         prompt: String?,
-        isContinuous: Bool
+        isContinuous: Bool,
+        name: String?
     ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
@@ -323,7 +333,7 @@ extension WindowBaseCommandHandler {
             guard var selection = editor.selections.last,
                   selection.start != selection.end
             else { return ("", .cursor(editor.cursorPosition)) }
-            
+
             let isMultipleLine = selection.start.line != selection.end.line
             let isSpaceOnlyBeforeStartPositionOnTheSameLine = {
                 guard selection.start.line >= 0, selection.start.line < editor.lines.count else {
@@ -333,10 +343,12 @@ extension WindowBaseCommandHandler {
                 guard selection.start.character > 0, selection.start.character < line.count else {
                     return false
                 }
-                let substring = line[line.startIndex..<line.index(line.startIndex, offsetBy: selection.start.character)]
-                return substring.allSatisfy({ $0.isWhitespace })
+                let substring =
+                    line[line.startIndex..<line
+                        .index(line.startIndex, offsetBy: selection.start.character)]
+                return substring.allSatisfy { $0.isWhitespace }
             }()
-            
+
             if isMultipleLine || isSpaceOnlyBeforeStartPositionOnTheSameLine {
                 // when there are multiple lines start from char 0 so that it can keep the
                 // indentation.
@@ -357,11 +369,13 @@ extension WindowBaseCommandHandler {
             selectedCode: code,
             allCode: editor.content,
             selectionRange: selection,
-            language: codeLanguage
+            language: codeLanguage,
+            extraSystemPrompt: extraSystemPrompt,
+            name: name
         )
 
         promptToCode.isContinuous = isContinuous
-        if let prompt {
+        if let prompt, !prompt.isEmpty {
             Task { try await promptToCode.modifyCode(prompt: prompt) }
         }
 
@@ -402,7 +416,7 @@ extension WindowBaseCommandHandler {
             ```
             """
         }()
-        
+
         if let extraSystemPrompt {
             systemPrompt += "\n\(extraSystemPrompt)"
         }
