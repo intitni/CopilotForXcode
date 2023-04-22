@@ -31,6 +31,10 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             if code.isEmpty {
                 return """
                 You are a senior programer in writing code in \(language.rawValue).
+                
+                File url: \(fileURL)
+                
+                \(extraSystemPrompt ?? "")
 
                 Please write a piece of code that meets my requirements. The indentation should be \(
                     indentRule
@@ -39,22 +43,22 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 Please reply to me start with the code block, followed by a clear and concise description in 1-3 sentences about what you did \(
                     textLanguage
                 ).
-                
-                \(extraSystemPrompt ?? "")
                 """
             } else {
                 return """
                 # Description
                 
                 You are a senior programer in writing code in \(language.rawValue).
+                
+                File url: \(fileURL)
+                
+                \(extraSystemPrompt ?? "")
 
                 Please mutate the following code fragment with my requirements. Keep the original indentation. Do not add comments unless told to.
 
                 Please reply to me start with the code block followed by a clear and concise description about what you did in 1-3 sentences \(
                     textLanguage
                 ).
-                
-                \(extraSystemPrompt ?? "")
 
                 # Code
                 
