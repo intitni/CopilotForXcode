@@ -165,7 +165,7 @@ struct SettingsView: View {
                         case .openAI:
                             Text("OpenAI").tag($0)
                         case .githubCopilot:
-                            Text("GitHub Copilot (Less Accurate)").tag($0)
+                            Text("GitHub Copilot (Implement for experiment, barely works, don't use.)").tag($0)
                         }
                     }
                 } label: {

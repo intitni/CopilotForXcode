@@ -236,6 +236,7 @@ public extension UserDefaultPreferenceKeys {
             .init(
                 name: "Add Documentation to Selection",
                 feature: .promptToCode(
+                    extraSystemPrompt: nil,
                     prompt: "Add documentation on top of the code. Use triple slash if the language supports it.",
                     continuousMode: false
                 )

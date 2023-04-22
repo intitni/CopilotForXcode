@@ -3,6 +3,7 @@ import SwiftUI
 
 public final class PromptToCodeProvider: ObservableObject {
     let id = UUID()
+    let name: String?
     
     @Published public var code: String
     @Published public var language: String
@@ -33,6 +34,7 @@ public final class PromptToCodeProvider: ObservableObject {
         errorMessage: String = "",
         canRevert: Bool = false,
         isContinuous: Bool = false,
+        name: String? = nil,
         onRevertTapped: @escaping () -> Void = {},
         onStopRespondingTap: @escaping () -> Void = {},
         onCancelTapped: @escaping () -> Void = {},
@@ -50,6 +52,7 @@ public final class PromptToCodeProvider: ObservableObject {
         self.errorMessage = errorMessage
         self.canRevert = canRevert
         self.isContinuous = isContinuous
+        self.name = name
         self.onRevertTapped = onRevertTapped
         self.onStopRespondingTap = onStopRespondingTap
         self.onCancelTapped = onCancelTapped

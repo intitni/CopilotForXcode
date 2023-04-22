@@ -20,7 +20,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         requirement: String,
         projectRootURL: URL,
         fileURL: URL,
-        allCode: String
+        allCode: String,
+        extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let textLanguage = userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
@@ -30,6 +31,10 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             if code.isEmpty {
                 return """
                 You are a senior programer in writing code in \(language.rawValue).
+                
+                File url: \(fileURL)
+                
+                \(extraSystemPrompt ?? "")
 
                 Please write a piece of code that meets my requirements. The indentation should be \(
                     indentRule
@@ -41,7 +46,13 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 """
             } else {
                 return """
+                # Description
+                
                 You are a senior programer in writing code in \(language.rawValue).
+                
+                File url: \(fileURL)
+                
+                \(extraSystemPrompt ?? "")
 
                 Please mutate the following code fragment with my requirements. Keep the original indentation. Do not add comments unless told to.
 
@@ -49,6 +60,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     textLanguage
                 ).
 
+                # Code
+                
                 ```
                 \(code)
                 ```
@@ -56,7 +69,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             }
         }()
 
-        let chatGPTService = ChatGPTService(systemPrompt: prompt, temperature: 0.5)
+        let chatGPTService = ChatGPTService(systemPrompt: prompt, temperature: 0.3)
         service = chatGPTService
         let stream = try await chatGPTService.send(content: requirement)
         return .init { continuation in
