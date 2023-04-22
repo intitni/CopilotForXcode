@@ -125,7 +125,7 @@ public actor ChatGPTService: ChatGPTServiceType {
             messages: messages,
             temperature: temperature ?? defaultTemperature,
             stream: true,
-            max_tokens: remainingTokens
+            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
         isReceivingMessage = true
@@ -205,7 +205,7 @@ public actor ChatGPTService: ChatGPTServiceType {
             messages: messages,
             temperature: temperature ?? defaultTemperature,
             stream: true,
-            max_tokens: remainingTokens
+            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
         isReceivingMessage = true
@@ -261,7 +261,7 @@ extension ChatGPTService {
     }
 
     func combineHistoryWithSystemPrompt(
-        minimumReplyTokens: Int = 200,
+        minimumReplyTokens: Int = 300,
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         maxTokens: Int = UserDefaults.shared.value(for: \.chatGPTMaxToken),
         encoder: TokenEncoder = GPTEncoder()
@@ -270,10 +270,11 @@ extension ChatGPTService {
     {
         var all: [CompletionRequestBody.Message] = []
         var allTokensCount = encoder.encode(text: systemPrompt).count
-        for message in history.reversed() {
+        for (index, message) in history.enumerated().reversed() {
             if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
             if message.content.isEmpty { continue }
-            let tokensCount = encoder.encode(text: message.content).count
+            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
+            history[index].tokensCount = tokensCount
             if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
                 break
             }
@@ -291,3 +292,8 @@ protocol TokenEncoder {
 }
 
 extension GPTEncoder: TokenEncoder {}
+
+func maxTokenForReply(model: String, remainingTokens: Int) -> Int {
+    guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
+    return min(model.maxToken / 2, remainingTokens)
+}
