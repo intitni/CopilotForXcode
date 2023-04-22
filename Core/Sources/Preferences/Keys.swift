@@ -193,7 +193,7 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTModel: ChatGPTModel { .init() }
 
     struct ChatGPTMaxToken: UserDefaultPreferenceKey {
-        public let defaultValue = 3800
+        public let defaultValue = 4000
         public let key = "ChatGPTMaxToken"
     }
 
