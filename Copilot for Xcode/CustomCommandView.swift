@@ -302,24 +302,40 @@ struct EditCustomCommandView: View {
         .frame(width: 600)
     }
 
+    @ViewBuilder
     var promptTextField: some View {
-        if #available(macOS 13.0, *) {
-            return TextField("Prompt", text: $prompt, axis: .vertical)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Prompt")
+            TextEditor(text: $prompt)
+                .font(Font.system(.body, design: .monospaced))
+                .padding(2)
+                .frame(minHeight: 120)
                 .multilineTextAlignment(.leading)
-                .lineLimit(4, reservesSpace: true)
-        } else {
-            return TextField("Prompt", text: $prompt)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 1)
+                        .stroke(.black, lineWidth: 1 / 3)
+                        .opacity(0.3)
+                )
         }
+        .padding(.vertical, 4)
     }
 
+    @ViewBuilder
     func systemPromptTextField(title: String? = nil) -> some View {
-        if #available(macOS 13.0, *) {
-            return TextField(title ?? "System Prompt", text: $systemPrompt, axis: .vertical)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title ?? "System Prompt")
+            TextEditor(text: $systemPrompt)
+                .font(Font.system(.body, design: .monospaced))
+                .padding(2)
+                .frame(minHeight: 120)
                 .multilineTextAlignment(.leading)
-                .lineLimit(4, reservesSpace: true)
-        } else {
-            return TextField("Prompt", text: $prompt)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 1)
+                        .stroke(.black, lineWidth: 1 / 3)
+                        .opacity(0.3)
+                )
         }
+        .padding(.vertical, 4)
     }
 
     var continuousModeToggle: some View {
@@ -351,6 +367,26 @@ struct CustomCommandView_Preview: PreviewProvider {
                     feature: .customChat(systemPrompt: "Joke", prompt: "")
                 ),
             ], "CustomCommandView_Preview"))
+        )
+        .background(.purple)
+    }
+}
+
+struct EditCustomCommandView_Preview: PreviewProvider {
+    static var previews: some View {
+        EditCustomCommandView(
+            editingCommand: .constant(CustomCommandView.EditingCommand(
+                isNew: false,
+                command: .init(
+                    name: "Explain Code",
+                    feature: .promptToCode(
+                        extraSystemPrompt: nil,
+                        prompt: "Hello",
+                        continuousMode: false
+                    )
+                )
+            )),
+            settings: .init(customCommands: .init(wrappedValue: [], "CustomCommandView_Preview"))
         )
         .background(.purple)
     }
