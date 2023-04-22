@@ -109,6 +109,7 @@ final class WidgetDataSource {
             )
             let provider = PromptToCodeProvider(
                 service: service,
+                name: name,
                 onClosePromptToCode: { [weak self] in
                     self?.removePromptToCode(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()

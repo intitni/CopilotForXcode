@@ -252,7 +252,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     editor: editor,
                     extraSystemPrompt: nil,
                     prompt: nil,
-                    isContinuous: false
+                    isContinuous: false,
+                    name: nil
                 )
             } catch {
                 presenter.presentError(error)
@@ -303,7 +304,8 @@ extension WindowBaseCommandHandler {
                 editor: editor,
                 extraSystemPrompt: extraSystemPrompt,
                 prompt: prompt,
-                isContinuous: continuousMode ?? false
+                isContinuous: continuousMode ?? false,
+                name: command.name
             )
         }
     }
@@ -312,7 +314,8 @@ extension WindowBaseCommandHandler {
         editor: EditorContent,
         extraSystemPrompt: String?,
         prompt: String?,
-        isContinuous: Bool
+        isContinuous: Bool,
+        name: String?
     ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
@@ -368,7 +371,7 @@ extension WindowBaseCommandHandler {
             selectionRange: selection,
             language: codeLanguage,
             extraSystemPrompt: extraSystemPrompt,
-            name: nil
+            name: name
         )
 
         promptToCode.isContinuous = isContinuous

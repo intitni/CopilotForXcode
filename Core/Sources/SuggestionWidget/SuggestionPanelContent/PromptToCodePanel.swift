@@ -109,7 +109,7 @@ struct PromptToCodePanelContent: View {
                         .padding(.vertical, 2)
                         .background(
                             Color.red,
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                         )
                         .scaleEffect(x: -1, y: -1, anchor: .center)
                 }
@@ -146,6 +146,14 @@ struct PromptToCodePanelContent: View {
                     )
                     .frame(maxWidth: .infinity)
                     .scaleEffect(x: -1, y: -1, anchor: .center)
+                }
+                
+                if let name = provider.name {
+                    Text(name)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 12)
+                        .scaleEffect(x: -1, y: -1, anchor: .center)
                 }
             }
             .scaleEffect(x: -1, y: 1, anchor: .center)

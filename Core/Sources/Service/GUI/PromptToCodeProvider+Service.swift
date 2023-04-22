@@ -3,13 +3,18 @@ import PromptToCodeService
 import SuggestionWidget
 
 extension PromptToCodeProvider {
-    convenience init(service: PromptToCodeService, onClosePromptToCode: @escaping () -> Void) {
+    convenience init(
+        service: PromptToCodeService,
+        name: String?,
+        onClosePromptToCode: @escaping () -> Void
+    ) {
         self.init(
             code: service.code,
             language: service.language.rawValue,
             description: "",
             startLineIndex: service.selectionRange.start.line,
-            startLineColumn: service.selectionRange.start.character
+            startLineColumn: service.selectionRange.start.character,
+            name: name
         )
 
         var cancellables = Set<AnyCancellable>()
@@ -44,18 +49,18 @@ extension PromptToCodeProvider {
                 }
             }
         }
-        
+
         onStopRespondingTap = {
             service.stopResponding()
         }
-        
+
         onAcceptSuggestionTapped = {
             Task { @ServiceActor in
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
             }
         }
-        
+
         onContinuousToggleClick = {
             service.isContinuous.toggle()
         }
