@@ -236,7 +236,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     editor: editor,
                     specifiedSystemPrompt: nil,
                     extraSystemPrompt: nil,
-                    sendingMessageImmediately: nil
+                    sendingMessageImmediately: nil,
+                    name: nil
                 )
             } catch {
                 presenter.presentError(error)
@@ -290,14 +291,16 @@ extension WindowBaseCommandHandler {
                 editor: editor,
                 specifiedSystemPrompt: nil,
                 extraSystemPrompt: extraSystemPrompt,
-                sendingMessageImmediately: prompt
+                sendingMessageImmediately: prompt,
+                name: command.name
             )
         case let .customChat(systemPrompt, prompt):
             try await startChatWithSelection(
                 editor: editor,
                 specifiedSystemPrompt: systemPrompt,
                 extraSystemPrompt: nil,
-                sendingMessageImmediately: prompt
+                sendingMessageImmediately: prompt,
+                name: command.name
             )
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
             try await presentPromptToCode(
@@ -386,7 +389,8 @@ extension WindowBaseCommandHandler {
         editor: EditorContent,
         specifiedSystemPrompt: String?,
         extraSystemPrompt: String?,
-        sendingMessageImmediately: String?
+        sendingMessageImmediately: String?,
+        name: String?
     ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
@@ -426,12 +430,17 @@ extension WindowBaseCommandHandler {
         await chat.mutateSystemPrompt(systemPrompt)
 
         Task {
-            if let specifiedSystemPrompt {
+            let customCommandPrefix = {
+                if let name { return "[\(name)]" }
+                return ""
+            }()
+            
+            if specifiedSystemPrompt != nil {
                 await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "System prompt is updated: \n\(specifiedSystemPrompt)"
+                        summary: "\(customCommandPrefix) System prompt is updated."
                     ))
                 }
             } else if !code.isEmpty, let selection = editor.selections.last {
@@ -439,7 +448,7 @@ extension WindowBaseCommandHandler {
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "Chating about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "\(customCommandPrefix) Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             }
