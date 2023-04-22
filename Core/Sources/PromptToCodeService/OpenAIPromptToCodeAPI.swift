@@ -20,7 +20,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         requirement: String,
         projectRootURL: URL,
         fileURL: URL,
-        allCode: String
+        allCode: String,
+        extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let textLanguage = userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
@@ -38,9 +39,13 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 Please reply to me start with the code block, followed by a clear and concise description in 1-3 sentences about what you did \(
                     textLanguage
                 ).
+                
+                \(extraSystemPrompt ?? "")
                 """
             } else {
                 return """
+                # Description
+                
                 You are a senior programer in writing code in \(language.rawValue).
 
                 Please mutate the following code fragment with my requirements. Keep the original indentation. Do not add comments unless told to.
@@ -48,7 +53,11 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 Please reply to me start with the code block followed by a clear and concise description about what you did in 1-3 sentences \(
                     textLanguage
                 ).
+                
+                \(extraSystemPrompt ?? "")
 
+                # Code
+                
                 ```
                 \(code)
                 ```
@@ -56,7 +65,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             }
         }()
 
-        let chatGPTService = ChatGPTService(systemPrompt: prompt, temperature: 0.5)
+        let chatGPTService = ChatGPTService(systemPrompt: prompt, temperature: 0.3)
         service = chatGPTService
         let stream = try await chatGPTService.send(content: requirement)
         return .init { continuation in

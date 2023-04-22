@@ -91,7 +91,9 @@ final class WidgetDataSource {
         selectionRange: CursorRange,
         language: CopilotLanguage,
         identSize: Int = 4,
-        usesTabsForIndentation: Bool = false
+        usesTabsForIndentation: Bool = false,
+        extraSystemPrompt: String?,
+        name: String?
     ) async -> PromptToCodeService {
         let build = {
             let service = PromptToCodeService(
@@ -102,7 +104,8 @@ final class WidgetDataSource {
                 usesTabsForIndentation: usesTabsForIndentation,
                 projectRootURL: projectURL,
                 fileURL: url,
-                allCode: allCode
+                allCode: allCode,
+                extraSystemPrompt: extraSystemPrompt
             )
             let provider = PromptToCodeProvider(
                 service: service,
