@@ -176,10 +176,10 @@ struct EditCustomCommandView: View {
             self.systemPrompt = systemPrompt ?? ""
             self.prompt = prompt ?? ""
             continuousMode = false
-        case let .promptToCode(prompt, continuousMode):
+        case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
             commandType = .promptToCode
             self.prompt = prompt ?? ""
-            systemPrompt = ""
+            systemPrompt = extraSystemPrompt ?? ""
             self.continuousMode = continuousMode ?? false
         case .none:
             commandType = .chatWithSelection
@@ -214,6 +214,7 @@ struct EditCustomCommandView: View {
                     systemPromptTextField(title: "Extra System Prompt")
                     promptTextField
                 case .promptToCode:
+                    systemPromptTextField(title: "Extra System Prompt")
                     promptTextField
                     continuousModeToggle
                 case .customChat:
@@ -244,7 +245,11 @@ struct EditCustomCommandView: View {
                                 prompt: prompt
                             )
                         case .promptToCode:
-                            return .promptToCode(prompt: prompt, continuousMode: continuousMode)
+                            return .promptToCode(
+                                extraSystemPrompt: systemPrompt,
+                                prompt: prompt,
+                                continuousMode: continuousMode
+                            )
                         case .customChat:
                             return .customChat(systemPrompt: systemPrompt, prompt: prompt)
                         }
@@ -335,7 +340,11 @@ struct CustomCommandView_Preview: PreviewProvider {
                 ),
                 .init(
                     name: "Refactor Code",
-                    feature: .promptToCode(prompt: "Refactor", continuousMode: false)
+                    feature: .promptToCode(
+                        extraSystemPrompt: nil,
+                        prompt: "Refactor",
+                        continuousMode: false
+                    )
                 ),
                 .init(
                     name: "Tell Me A Joke",

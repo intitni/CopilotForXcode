@@ -293,7 +293,7 @@ extension WindowBaseCommandHandler {
                 extraSystemPrompt: nil,
                 sendingMessageImmediately: prompt
             )
-        case let .promptToCode(prompt, continuousMode):
+        case let .promptToCode(_, prompt, continuousMode):
             try await presentPromptToCode(
                 editor: editor,
                 prompt: prompt,
