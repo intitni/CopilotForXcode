@@ -79,7 +79,7 @@ func customCommands() -> [[XCSourceEditorCommandDefinitionKey: Any]] {
         [
             XCSourceEditorCommandDefinitionKey.classNameKey: CustomCommand.className(),
             XCSourceEditorCommandDefinitionKey
-                .identifierKey: identifierPrefix + "CustomCommand\($0.name.hashValue)",
+                .identifierKey: identifierPrefix + "CustomCommand\($0.name.sha1HexString)",
             .nameKey: $0.name,
         ]
     }
@@ -93,4 +93,22 @@ func customCommands() -> [[XCSourceEditorCommandDefinitionKey: Any]] {
     }
 
     return definitions
+}
+
+import CryptoKit
+
+// CryptoKit.Digest utils
+extension Digest {
+    var bytes: [UInt8] { Array(makeIterator()) }
+    var data: Data { Data(bytes) }
+
+    var hexStr: String {
+        bytes.map { String(format: "%02X", $0) }.joined()
+    }
+}
+
+extension String {
+    var sha1HexString: String {
+        Insecure.SHA1.hash(data: data(using: .utf8) ?? Data()).hexStr
+    }
 }
