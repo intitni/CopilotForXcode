@@ -16,8 +16,7 @@ struct CustomCommandView: View {
                 "Real-time Suggestions",
                 "Prefetch Suggestions",
                 "Chat with Selection",
-                "Prompt to Code",
-                "# Custom Commands:",
+                "Prompt to Code"
             ]
 
             return existed + builtin
@@ -65,6 +64,7 @@ struct CustomCommandView: View {
                 Spacer()
                 Button(action: {
                     editingCommand = .init(isNew: true, command: CustomCommand(
+                        commandId: UUID().uuidString,
                         name: "New Command",
                         feature: .chatWithSelection(
                             extraSystemPrompt: nil,
@@ -236,6 +236,7 @@ struct EditCustomCommandView: View {
                 }
 
                 lazy var newCommand = CustomCommand(
+                    commandId: editingCommand?.command.id ?? UUID().uuidString,
                     name: name,
                     feature: {
                         switch commandType {
@@ -283,7 +284,7 @@ struct EditCustomCommandView: View {
                         }
 
                         if let index = settings.customCommands.firstIndex(where: {
-                            $0.name == originalName
+                            $0.id == newCommand.id
                         }) {
                             settings.customCommands[index] = newCommand
                         } else {
@@ -351,10 +352,12 @@ struct CustomCommandView_Preview: PreviewProvider {
             isOpen: .constant(true),
             settings: .init(customCommands: .init(wrappedValue: [
                 .init(
+                    commandId: "1",
                     name: "Explain Code",
                     feature: .chatWithSelection(extraSystemPrompt: nil, prompt: "Hello")
                 ),
                 .init(
+                    commandId: "2",
                     name: "Refactor Code",
                     feature: .promptToCode(
                         extraSystemPrompt: nil,
@@ -363,6 +366,7 @@ struct CustomCommandView_Preview: PreviewProvider {
                     )
                 ),
                 .init(
+                    commandId: "3",
                     name: "Tell Me A Joke",
                     feature: .customChat(systemPrompt: "Joke", prompt: "")
                 ),
@@ -378,6 +382,7 @@ struct EditCustomCommandView_Preview: PreviewProvider {
             editingCommand: .constant(CustomCommandView.EditingCommand(
                 isNew: false,
                 command: .init(
+                    commandId: "4",
                     name: "Explain Code",
                     feature: .promptToCode(
                         extraSystemPrompt: nil,

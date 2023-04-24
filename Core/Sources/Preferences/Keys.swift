@@ -227,6 +227,7 @@ public extension UserDefaultPreferenceKeys {
     struct CustomCommandsKey: UserDefaultPreferenceKey {
         public let defaultValue: [CustomCommand] = [
             .init(
+                commandId: "BuiltInCustomCommandExplainSelection",
                 name: "Explain Selection",
                 feature: .chatWithSelection(
                     extraSystemPrompt: nil,
@@ -234,6 +235,7 @@ public extension UserDefaultPreferenceKeys {
                 )
             ),
             .init(
+                commandId: "BuiltInCustomCommandAddDocumentationToSelection",
                 name: "Add Documentation to Selection",
                 feature: .promptToCode(
                     extraSystemPrompt: nil,

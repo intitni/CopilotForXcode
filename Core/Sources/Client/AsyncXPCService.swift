@@ -198,13 +198,13 @@ public struct AsyncXPCService {
     }
 
     public func customCommand(
-        name: String,
+        id: String,
         editorContent: EditorContent
     ) async throws -> UpdatedContent? {
         try await suggestionRequest(
             connection,
             editorContent,
-            { service in { service.customCommand(name: name, editorContent: $0, withReply: $1) } }
+            { service in { service.customCommand(id: id, editorContent: $0, withReply: $1) } }
         )
     }
 }
