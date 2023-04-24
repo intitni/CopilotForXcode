@@ -56,7 +56,10 @@ public class CopilotBaseService {
                 userEnvPath = "/usr/bin:/usr/local/bin" // fallback
             }
             let executionParams: Process.ExecutionParameters
-            if UserDefaults.shared.value(for: \.runNodeWithInteractiveLoggedInShell) {
+            let runner = UserDefaults.shared.value(for: \.runNodeWith)
+            
+            switch runner {
+            case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
@@ -71,7 +74,23 @@ public class CopilotBaseService {
                         currentDirectoryURL: supportURL
                     )
                 }()
-            } else {
+            case .shell:
+                let shell = ProcessInfo.processInfo.userEnvironment["SHELL"] ?? "/bin/bash"
+                let nodePath = UserDefaults.shared.value(for: \.nodePath)
+                let command = [
+                    nodePath.isEmpty ? "node" : nodePath,
+                    "\"\(Bundle.main.url(forResource: "agent", withExtension: "js", subdirectory: "copilot/dist")!.path)\"",
+                    "--stdio",
+                ].joined(separator: " ")
+                executionParams = {
+                    Process.ExecutionParameters(
+                        path: shell,
+                        arguments: ["-i", "-l", "-c", command],
+                        environment: [:],
+                        currentDirectoryURL: supportURL
+                    )
+                }()
+            case .env:
                 executionParams = {
                     let nodePath = UserDefaults.shared.value(for: \.nodePath)
                     return Process.ExecutionParameters(

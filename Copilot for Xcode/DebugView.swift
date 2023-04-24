@@ -6,8 +6,6 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.disableLazyVStack)
     var disableLazyVStack: Bool
     @AppStorage(\.preCacheOnFileOpen)
-    var preCacheOnFileOpen: Bool
-    @AppStorage(\.runNodeWithInteractiveLoggedInShell)
     var runNodeWithInteractiveLoggedInShell: Bool
     @AppStorage(\.useCustomScrollViewWorkaround) var useCustomScrollViewWorkaround
     init() {}
@@ -25,10 +23,6 @@ struct DebugSettingsView: View {
                 .toggleStyle(.switch)
                 Toggle(isOn: $settings.preCacheOnFileOpen) {
                     Text("Cache editor information on file open")
-                }
-                .toggleStyle(.switch)
-                Toggle(isOn: $settings.runNodeWithInteractiveLoggedInShell) {
-                    Text("Run node with interactive logged-in bash")
                 }
                 .toggleStyle(.switch)
                 Toggle(isOn: $settings.useCustomScrollViewWorkaround) {

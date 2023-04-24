@@ -1,13 +1,20 @@
 import LaunchAgentManager
-import SwiftUI
 import Preferences
+import SwiftUI
 
 struct LaunchAgentView: View {
+    class Settings: ObservableObject {
+        @AppStorage(\.nodePath) var nodePath: String
+        @AppStorage(\.runNodeWith) var runNodeWith
+
+        init() {}
+    }
+
     @State var errorMessage: String?
     @State var isDidRemoveLaunchAgentAlertPresented = false
     @State var isDidSetupLaunchAgentAlertPresented = false
     @State var isDidRestartLaunchAgentAlertPresented = false
-    @AppStorage(\.nodePath) var nodePath: String
+    @StateObject var settings = Settings()
 
     var body: some View {
         Section {
@@ -85,14 +92,31 @@ struct LaunchAgentView: View {
                         }
                 }
 
-                HStack {
-                    Text("Path to Node: ")
-                    TextField("node", text: $nodePath)
-                        .textFieldStyle(.copilot)
+                Form {
+                    TextField(text: $settings.nodePath, prompt: Text("node")) {
+                        Text("Path to Node")
+                    }
+
+                    Picker(selection: $settings.runNodeWith) {
+                        ForEach(NodeRunner.allCases, id: \.rawValue) { runner in
+                            switch runner {
+                            case .env:
+                                Text("/usr/bin/env").tag(runner)
+                            case .bash:
+                                Text("/bin/bash -i -l").tag(runner)
+                            case .shell:
+                                Text("$SHELL -i -l").tag(runner)
+                            }
+                        }
+                    } label: {
+                        Text("Run Node with")
+                    }
                 }
-                
-                Text("You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed.")
-                    .foregroundColor(.secondary)
+
+                Text(
+                    "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
+                )
+                .foregroundColor(.secondary)
 
                 HStack {
                     Button(action: {
