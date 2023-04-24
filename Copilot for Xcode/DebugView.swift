@@ -6,7 +6,7 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.disableLazyVStack)
     var disableLazyVStack: Bool
     @AppStorage(\.preCacheOnFileOpen)
-    var runNodeWithInteractiveLoggedInShell: Bool
+    var preCacheOnFileOpen: Bool
     @AppStorage(\.useCustomScrollViewWorkaround) var useCustomScrollViewWorkaround
     init() {}
 }
@@ -20,17 +20,16 @@ struct DebugSettingsView: View {
                 Toggle(isOn: $settings.disableLazyVStack) {
                     Text("Disable LazyVStack")
                 }
-                .toggleStyle(.switch)
                 Toggle(isOn: $settings.preCacheOnFileOpen) {
                     Text("Cache editor information on file open")
                 }
-                .toggleStyle(.switch)
                 Toggle(isOn: $settings.useCustomScrollViewWorkaround) {
                     Text("Use custom scroll view workaround for smooth scrolling")
                 }
-                .toggleStyle(.switch)
             }
-        }.buttonStyle(.copilot)
+        }
+        .toggleStyle(.switch)
+        .buttonStyle(.copilot)
     }
 }
 
