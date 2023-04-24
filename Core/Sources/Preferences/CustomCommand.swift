@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 public struct CustomCommand: Codable {
     /// The custom command feature.
@@ -10,11 +11,33 @@ public struct CustomCommand: Codable {
         case customChat(systemPrompt: String?, prompt: String?)
     }
 
+    public var id: String { commandId ?? legacyId }
+    public var commandId: String?
     public var name: String
     public var feature: Feature
     
-    public init(name: String, feature: Feature) {
+    public init(commandId: String, name: String, feature: Feature) {
+        self.commandId = commandId
         self.name = name
         self.feature = feature
+    }
+    
+    var legacyId: String {
+        name.sha1HexString
+    }
+}
+
+private extension Digest {
+    var bytes: [UInt8] { Array(makeIterator()) }
+    var data: Data { Data(bytes) }
+
+    var hexStr: String {
+        bytes.map { String(format: "%02X", $0) }.joined()
+    }
+}
+
+private extension String {
+    var sha1HexString: String {
+        Insecure.SHA1.hash(data: data(using: .utf8) ?? Data()).hexStr
     }
 }

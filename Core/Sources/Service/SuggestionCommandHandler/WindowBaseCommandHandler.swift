@@ -263,10 +263,10 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
-    func customCommand(name: String, editor: EditorContent) async throws -> UpdatedContent? {
+    func customCommand(id: String, editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await handleCustomCommand(name: name, editor: editor)
+                try await handleCustomCommand(id: id, editor: editor)
             } catch {
                 presenter.presentError(error)
             }
@@ -276,13 +276,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 }
 
 extension WindowBaseCommandHandler {
-    func handleCustomCommand(name: String, editor: EditorContent) async throws {
+    func handleCustomCommand(id: String, editor: EditorContent) async throws {
         struct CommandNotFoundError: Error, LocalizedError {
             var errorDescription: String? { "Command not found" }
         }
 
         let availableCommands = UserDefaults.shared.value(for: \.customCommands)
-        guard let command = availableCommands.first(where: { $0.name == name })
+        guard let command = availableCommands.first(where: { $0.id == id })
         else { throw CommandNotFoundError() }
 
         switch command.feature {

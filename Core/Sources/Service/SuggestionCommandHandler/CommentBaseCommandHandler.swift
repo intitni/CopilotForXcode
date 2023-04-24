@@ -183,7 +183,7 @@ struct CommentBaseCommandHandler: SuggestionCommandHandler {
         throw NotSupportedInCommentMode()
     }
     
-    func customCommand(name: String, editor: EditorContent) async throws -> UpdatedContent? {
+    func customCommand(id: String, editor: EditorContent) async throws -> UpdatedContent? {
         throw NotSupportedInCommentMode()
     }
 }

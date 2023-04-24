@@ -1,4 +1,5 @@
 import Environment
+import Preferences
 import SwiftUI
 
 @MainActor
@@ -17,7 +18,7 @@ struct WidgetView: View {
     @State var isHovering: Bool = false
     @State var processingProgress: Double = 0
     var onOpenChatClicked: () -> Void = {}
-    var onCustomCommandClicked: (String) -> Void = { _ in }
+    var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
 
     var body: some View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
@@ -110,7 +111,7 @@ struct WidgetContextMenu: View {
     @State var projectPath: String?
     var isChatOpen: Bool
     var onOpenChatClicked: () -> Void = {}
-    var onCustomCommandClicked: (String) -> Void = { _ in }
+    var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
 
     var body: some View {
         Group {
@@ -122,7 +123,7 @@ struct WidgetContextMenu: View {
                         Text("Open Chat")
                     }
                 }
-                
+
                 customCommandMenu()
             }
 
@@ -137,7 +138,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 }
-                
+
                 Button(action: {
                     realtimeSuggestionToggle.toggle()
                 }) {
@@ -146,7 +147,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 }
-                
+
                 Button(action: {
                     acceptSuggestionWithAccessibilityAPI.toggle()
                 }, label: {
@@ -155,7 +156,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 })
-                
+
                 Button(action: {
                     hideCommonPrecedingSpacesInSuggestion.toggle()
                 }, label: {
@@ -164,7 +165,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 })
-                
+
                 Button(action: {
                     forceOrderWidgetToFront.toggle()
                 }, label: {
@@ -173,7 +174,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 })
-                
+
                 if let projectPath, disableSuggestionFeatureGlobally {
                     let matchedPath = suggestionFeatureEnabledProjectList.first { path in
                         projectPath.hasPrefix(path)
@@ -221,12 +222,12 @@ struct WidgetContextMenu: View {
             }
         }
     }
-    
+
     func customCommandMenu() -> some View {
         Menu("Custom Commands") {
             ForEach(customCommands, id: \.name) { command in
                 Button(action: {
-                    onCustomCommandClicked(command.name)
+                    onCustomCommandClicked(command)
                 }) {
                     Text(command.name)
                 }

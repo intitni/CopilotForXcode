@@ -25,10 +25,10 @@ public final class GraphicalUserInterfaceController {
                     ))
                 }
             }
-            suggestionWidget.onCustomCommandClicked = { name in
+            suggestionWidget.onCustomCommandClicked = { command in
                 Task {
                     let commandHandler = PseudoCommandHandler()
-                    await commandHandler.handleCustomDomain(name: name)
+                    await commandHandler.handleCustomCommand(command)
                 }
             }
         }

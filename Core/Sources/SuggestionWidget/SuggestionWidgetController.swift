@@ -40,8 +40,8 @@ public final class SuggestionWidgetController {
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
-                onCustomCommandClicked: { [weak self] name in
-                    self?.onCustomCommandClicked(name)
+                onCustomCommandClicked: { [weak self] command in
+                    self?.onCustomCommandClicked(command)
                 }
             )
         )
@@ -104,7 +104,7 @@ public final class SuggestionWidgetController {
     private var colorScheme: ColorScheme = .light
     
     public var onOpenChatClicked: () -> Void = {}
-    public var onCustomCommandClicked: (String) -> Void = { _ in }
+    public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
 
     public nonisolated init() {

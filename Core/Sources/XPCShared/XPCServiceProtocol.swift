@@ -46,7 +46,7 @@ public protocol XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     )
     func customCommand(
-        name: String,
+        id: String,
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
