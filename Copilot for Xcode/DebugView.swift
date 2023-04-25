@@ -20,15 +20,17 @@ struct DebugSettingsView: View {
                 Toggle(isOn: $settings.disableLazyVStack) {
                     Text("Disable LazyVStack")
                 }
+                .toggleStyle(.switch)
                 Toggle(isOn: $settings.preCacheOnFileOpen) {
                     Text("Cache editor information on file open")
                 }
+                .toggleStyle(.switch)
                 Toggle(isOn: $settings.useCustomScrollViewWorkaround) {
                     Text("Use custom scroll view workaround for smooth scrolling")
                 }
+                .toggleStyle(.switch)
             }
         }
-        .toggleStyle(.switch)
         .buttonStyle(.copilot)
     }
 }
