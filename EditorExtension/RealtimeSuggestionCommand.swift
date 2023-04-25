@@ -10,19 +10,28 @@ class RealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
     ) {
-        Task {
-            do {
-                let service = try getService()
-                if let content = try await service.getRealtimeSuggestedCode(
-                    editorContent: .init(invocation)
-                ) {
-                    invocation.accept(content)
+        switch UserDefaults.shared.value(for: \.suggestionPresentationMode) {
+        case .comment:
+            Task {
+                do {
+                    let service = try getService()
+                    if let content = try await service.getRealtimeSuggestedCode(
+                        editorContent: .init(invocation)
+                    ) {
+                        invocation.accept(content)
+                    }
+                    completionHandler(nil)
+                } catch is CancellationError {
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(error)
                 }
-                completionHandler(nil)
-            } catch is CancellationError {
-                completionHandler(nil)
-            } catch {
-                completionHandler(error)
+            }
+        case .floatingWidget:
+            completionHandler(nil)
+            Task {
+                let service = try getService()
+                _ = try await service.getRealtimeSuggestedCode(editorContent: .init(invocation))
             }
         }
     }
