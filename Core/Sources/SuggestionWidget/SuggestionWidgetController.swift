@@ -325,6 +325,17 @@ extension SuggestionWidgetController {
                 guard let self else { return }
                 try Task.checkCancellation()
 
+                self.updateWindowLocation(animated: false)
+
+                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
+                    || notification.name == kAXWindowMovedNotification
+                {
+                    // We need to bring them front when the app enters fullscreen.
+                    widgetWindow.orderFront(nil)
+                    tabWindow.orderFront(nil)
+                    panelWindow.orderFront(nil)
+                }
+
                 if [
                     kAXFocusedUIElementChangedNotification,
                     kAXApplicationActivatedNotification,
@@ -345,17 +356,6 @@ extension SuggestionWidgetController {
                     currentFileURL = fileURL
                     widgetViewModel.currentFileURL = currentFileURL
                     await updateContentForActiveEditor(fileURL: fileURL)
-                }
-
-                self.updateWindowLocation(animated: false)
-
-                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
-                    || notification.name == kAXWindowMovedNotification
-                {
-                    // We need to bring them front when the app enters fullscreen.
-                    panelWindow.orderFront(nil)
-                    widgetWindow.orderFront(nil)
-                    tabWindow.orderFront(nil)
                 }
             }
         }
