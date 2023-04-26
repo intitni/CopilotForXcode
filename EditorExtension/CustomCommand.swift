@@ -14,7 +14,7 @@ class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
             do {
                 let service = try getService()
                 if let content = try await service.customCommand(
-                    name: customCommandMap[invocation.commandIdentifier] ?? "",
+                    id: customCommandMap[invocation.commandIdentifier] ?? "",
                     editorContent: .init(invocation)
                 ) {
                     invocation.accept(content)

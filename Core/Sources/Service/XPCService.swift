@@ -240,12 +240,12 @@ public class XPCService: NSObject, XPCServiceProtocol {
     }
 
     public func customCommand(
-        name: String,
+        id: String,
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
-            try await handler.customCommand(name: name, editor: editor)
+            try await handler.customCommand(id: id, editor: editor)
         }
     }
 

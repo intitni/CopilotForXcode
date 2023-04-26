@@ -68,11 +68,11 @@ struct PseudoCommandHandler {
         ))
     }
 
-    func handleCustomDomain(name: String) async {
+    func handleCustomCommand(_ command: CustomCommand) async {
         guard let editor = await getEditorContent(sourceEditor: nil)
         else {
             do {
-                try await Environment.triggerAction(name)
+                try await Environment.triggerAction(command.name)
             } catch {
                 let presenter = PresentInWindowSuggestionPresenter()
                 presenter.presentError(error)
@@ -82,7 +82,7 @@ struct PseudoCommandHandler {
 
         let handler = WindowBaseCommandHandler()
         do {
-            try await handler.handleCustomCommand(name: name, editor: editor)
+            try await handler.handleCustomCommand(id: command.id, editor: editor)
         } catch {
             let presenter = PresentInWindowSuggestionPresenter()
             presenter.presentError(error)

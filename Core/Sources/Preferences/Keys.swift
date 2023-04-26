@@ -18,6 +18,15 @@ public struct UserDefaultPreferenceKeys {
 
     public var nodePath: NodePath { .init() }
 
+    // MARK: - Run Node With
+    
+    public struct RunNodeWithKey: UserDefaultPreferenceKey {
+        public let defaultValue = NodeRunner.bash
+        public let key = "RunNodeWith"
+    }
+    
+    public var runNodeWith: RunNodeWithKey { .init() }
+    
     // MARK: - Realtime Suggestion
 
     public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
@@ -227,6 +236,7 @@ public extension UserDefaultPreferenceKeys {
     struct CustomCommandsKey: UserDefaultPreferenceKey {
         public let defaultValue: [CustomCommand] = [
             .init(
+                commandId: "BuiltInCustomCommandExplainSelection",
                 name: "Explain Selection",
                 feature: .chatWithSelection(
                     extraSystemPrompt: nil,
@@ -234,6 +244,7 @@ public extension UserDefaultPreferenceKeys {
                 )
             ),
             .init(
+                commandId: "BuiltInCustomCommandAddDocumentationToSelection",
                 name: "Add Documentation to Selection",
                 feature: .promptToCode(
                     extraSystemPrompt: nil,

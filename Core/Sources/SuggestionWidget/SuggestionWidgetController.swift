@@ -40,8 +40,8 @@ public final class SuggestionWidgetController {
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
-                onCustomCommandClicked: { [weak self] name in
-                    self?.onCustomCommandClicked(name)
+                onCustomCommandClicked: { [weak self] command in
+                    self?.onCustomCommandClicked(command)
                 }
             )
         )
@@ -104,7 +104,7 @@ public final class SuggestionWidgetController {
     private var colorScheme: ColorScheme = .light
     
     public var onOpenChatClicked: () -> Void = {}
-    public var onCustomCommandClicked: (String) -> Void = { _ in }
+    public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
 
     public nonisolated init() {
@@ -325,6 +325,17 @@ extension SuggestionWidgetController {
                 guard let self else { return }
                 try Task.checkCancellation()
 
+                self.updateWindowLocation(animated: false)
+
+                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
+                    || notification.name == kAXWindowMovedNotification
+                {
+                    // We need to bring them front when the app enters fullscreen.
+                    widgetWindow.orderFront(nil)
+                    tabWindow.orderFront(nil)
+                    panelWindow.orderFront(nil)
+                }
+
                 if [
                     kAXFocusedUIElementChangedNotification,
                     kAXApplicationActivatedNotification,
@@ -345,17 +356,6 @@ extension SuggestionWidgetController {
                     currentFileURL = fileURL
                     widgetViewModel.currentFileURL = currentFileURL
                     await updateContentForActiveEditor(fileURL: fileURL)
-                }
-
-                self.updateWindowLocation(animated: false)
-
-                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
-                    || notification.name == kAXWindowMovedNotification
-                {
-                    // We need to bring them front when the app enters fullscreen.
-                    panelWindow.orderFront(nil)
-                    widgetWindow.orderFront(nil)
-                    tabWindow.orderFront(nil)
                 }
             }
         }

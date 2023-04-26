@@ -7,7 +7,7 @@ public protocol ChatPlugin: AnyObject {
     var name: String { get }
 
     init(inside chatGPTService: any ChatGPTServiceType, delegate: ChatPluginDelegate)
-    func send(content: String) async
+    func send(content: String, originalMessage: String) async
     func cancel() async
     func stopResponding() async
 }

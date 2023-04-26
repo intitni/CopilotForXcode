@@ -11,6 +11,12 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.suggestionPresentationMode)
         shared.setupDefaultValue(for: \.widgetColorScheme)
         shared.setupDefaultValue(for: \.customCommands)
+        shared.setupDefaultValue(
+            for: \.runNodeWith,
+            defaultValue: shared.value(for: \.runNodeWithInteractiveLoggedInShell)
+                ? .bash
+                : .env
+        )
     }
 }
 
@@ -45,7 +51,7 @@ extension Array: RawRepresentable where Element: Codable {
 
 public extension UserDefaults {
     // MARK: - Normal Types
-    
+
     func value<K: UserDefaultPreferenceKey>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
     ) -> K.Value where K.Value: UserDefaultsStorable {
@@ -69,7 +75,7 @@ public extension UserDefaults {
             set(key.defaultValue, forKey: key.key)
         }
     }
-    
+
     // MARK: - Raw Representable
 
     func value<K: UserDefaultPreferenceKey>(
@@ -109,20 +115,22 @@ public extension UserDefaults {
     }
 
     func setupDefaultValue<K: UserDefaultPreferenceKey>(
-        for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, K>,
+        defaultValue: K.Value? = nil
     ) where K.Value: RawRepresentable, K.Value.RawValue == String {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         if value(forKey: key.key) == nil {
-            set(key.defaultValue.rawValue, forKey: key.key)
+            set(defaultValue ?? key.defaultValue.rawValue, forKey: key.key)
         }
     }
 
     func setupDefaultValue<K: UserDefaultPreferenceKey>(
-        for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, K>,
+        defaultValue: K.Value? = nil
     ) where K.Value: RawRepresentable, K.Value.RawValue == Int {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         if value(forKey: key.key) == nil {
-            set(key.defaultValue.rawValue, forKey: key.key)
+            set(defaultValue ?? key.defaultValue.rawValue, forKey: key.key)
         }
     }
 }
