@@ -7,7 +7,7 @@ import Preferences
 import SwiftUI
 
 @MainActor
-public final class SuggestionWidgetController {
+public final class SuggestionWidgetController: NSObject {
     class UserDefaultsObserver: NSObject {
         var onChange: (() -> Void)?
 
@@ -22,7 +22,7 @@ public final class SuggestionWidgetController {
     }
 
     private lazy var widgetWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -37,6 +37,7 @@ public final class SuggestionWidgetController {
             rootView: WidgetView(
                 viewModel: widgetViewModel,
                 panelViewModel: suggestionPanelViewModel,
+                chatWindowViewModel: chatWindowViewModel,
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
@@ -46,11 +47,12 @@ public final class SuggestionWidgetController {
             )
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { false }
         return it
     }()
 
     private lazy var tabWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -62,9 +64,10 @@ public final class SuggestionWidgetController {
         it.level = .floating
         it.hasShadow = true
         it.contentView = NSHostingView(
-            rootView: TabView(panelViewModel: suggestionPanelViewModel)
+            rootView: TabView(chatWindowViewModel: chatWindowViewModel)
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { false }
         return it
     }()
 
@@ -85,7 +88,6 @@ public final class SuggestionWidgetController {
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .chat = suggestionPanelViewModel.activeTab { return true }
             if case .promptToCode = suggestionPanelViewModel.content { return true }
             return false
         }
@@ -93,7 +95,7 @@ public final class SuggestionWidgetController {
     }()
 
     private lazy var chatWindow = {
-        let it = CanBecomeKeyWindow(
+        let it = ChatWindow(
             contentRect: .zero,
             styleMask: [.borderless, .resizable],
             backing: .buffered,
@@ -108,7 +110,7 @@ public final class SuggestionWidgetController {
             rootView: ChatWindowView(viewModel: chatWindowViewModel)
         )
         it.setIsVisible(true)
-        it.canBecomeKeyChecker = { true }
+        it.delegate = self
         return it
     }()
 
@@ -118,6 +120,7 @@ public final class SuggestionWidgetController {
 
     private var presentationModeChangeObserver = UserDefaultsObserver()
     private var colorSchemeChangeObserver = UserDefaultsObserver()
+    private var detachChatPanelObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
@@ -128,7 +131,8 @@ public final class SuggestionWidgetController {
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
 
-    public nonisolated init() {
+    override public nonisolated init() {
+        super.init()
         #warning(
             "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
         )
@@ -156,6 +160,9 @@ public final class SuggestionWidgetController {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                             self.tabWindow.alphaValue = 0
+                            if !UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                                self.chatWindow.alphaValue = 0
+                            }
                         }
                     }
                 }
@@ -171,6 +178,19 @@ public final class SuggestionWidgetController {
             UserDefaults.shared.addObserver(
                 presentationModeChangeObserver,
                 forKeyPath: UserDefaultPreferenceKeys().suggestionPresentationMode.key,
+                options: .new,
+                context: nil
+            )
+        }
+
+        Task { @MainActor in
+            detachChatPanelObserver.onChange = { [weak self] in
+                guard let self else { return }
+                self.updateWindowLocation(animated: true)
+            }
+            UserDefaults.shared.addObserver(
+                detachChatPanelObserver,
+                forKeyPath: UserDefaultPreferenceKeys().chatPanelInASeparateWindow.key,
                 options: .new,
                 context: nil
             )
@@ -194,6 +214,7 @@ public final class SuggestionWidgetController {
                     }
                 }()
                 self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                self.chatWindowViewModel.colorScheme = self.colorScheme
                 Task {
                     await self.updateContentForActiveEditor()
                 }
@@ -218,33 +239,6 @@ public final class SuggestionWidgetController {
                 context: nil
             )
         }
-
-//        Task { @MainActor in
-//            var switchTask: Task<Void, Error>?
-//            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
-//                #warning("""
-//                TODO: There should be a better way for that
-//                Currently, we have to make the app an accessory so that we can type things in the
-//                chat mode.
-//                But in other modes, we want to keep it prohibited so the helper app won't take
-//                over the focus.
-//                """)
-//                switch (viewModel.activeTab, viewModel.content) {
-//                case (.chat, _), (.suggestion, .promptToCode):
-//                    guard NSApp.activationPolicy() != .accessory else { return }
-//                    switchTask?.cancel()
-//                    NSApp.setActivationPolicy(.accessory)
-//                case (.suggestion, _):
-//                    guard NSApp.activationPolicy() != .prohibited else { return }
-//                    switchTask?.cancel()
-//                    switchTask = Task {
-//                        try await Environment.makeXcodeActive()
-//                        try Task.checkCancellation()
-//                        NSApp.setActivationPolicy(.prohibited)
-//                    }
-//                }
-//            }
-//        }
     }
 }
 
@@ -256,6 +250,7 @@ public extension SuggestionWidgetController {
         Task {
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
+                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
             }
         }
@@ -274,6 +269,7 @@ public extension SuggestionWidgetController {
 
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
+        chatWindowViewModel.isPanelDisplayed = true
         suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
     }
@@ -283,8 +279,9 @@ public extension SuggestionWidgetController {
         Task {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 chatWindowViewModel.chat = chat
-                suggestionPanelViewModel.chat = chat
+                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
+                suggestionPanelViewModel.chat = chat
 
                 if UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
                     self.updateWindowLocation()
@@ -311,6 +308,7 @@ public extension SuggestionWidgetController {
         Task {
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .promptToCode(provider)
+                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
 
                 Task { @MainActor in
@@ -449,6 +447,11 @@ extension SuggestionWidgetController {
             if tabWindow.alphaValue != 0 {
                 tabWindow.alphaValue = 0
             }
+            if !UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                if chatWindow.alphaValue != 0 {
+                    chatWindow.alphaValue = 0
+                }
+            }
         }
 
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
@@ -456,7 +459,7 @@ extension SuggestionWidgetController {
             hide()
             return
         }
-        
+
         let detachChat = UserDefaults.shared.value(for: \.chatPanelInASeparateWindow)
 
         if detachChat {
@@ -498,9 +501,16 @@ extension SuggestionWidgetController {
                     tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
-                
-                if chatWindow.alphaValue == 0 {
+
+                if detachChat {
+                    if chatWindow.alphaValue == 0 {
+                        chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+                    }
+                } else {
                     chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+                    if chatWindow.alphaValue != 1 {
+                        chatWindow.alphaValue = 1
+                    }
                 }
 
                 if panelWindow.alphaValue != 1 {
@@ -552,8 +562,70 @@ extension SuggestionWidgetController {
     }
 }
 
+extension SuggestionWidgetController: NSWindowDelegate {
+    public func windowWillMove(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatWindow else { return }
+        Task { @MainActor in
+            await Task.yield()
+            guard chatWindow.isBeingDragged else { return }
+            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
+        }
+    }
+
+    public func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+        guard sender === chatWindow else { return frameSize }
+        Task { @MainActor in
+            await Task.yield()
+            guard chatWindow.isBeingDragged else { return }
+            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
+        }
+        return frameSize
+    }
+}
+
 class CanBecomeKeyWindow: NSWindow {
     var canBecomeKeyChecker: () -> Bool = { true }
     override var canBecomeKey: Bool { canBecomeKeyChecker() }
     override var canBecomeMain: Bool { canBecomeKeyChecker() }
+}
+
+class ChatWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+    var isBeingDragged: Bool = false
+    var dragStartLocation = NSPoint.zero
+
+    override func mouseDragged(with event: NSEvent) {
+        isBeingDragged = true
+        
+        guard dragStartLocation != .zero else { return }
+
+        let screenVisibleFrame = NSScreen.main?.visibleFrame
+        let windowFrame = frame
+        var newOrigin = windowFrame.origin
+
+        let currentLocation = event.locationInWindow
+        if dragStartLocation.y > windowFrame.size.height - 40 {
+            newOrigin.x += (currentLocation.x - dragStartLocation.x)
+            newOrigin.y += (currentLocation.y - dragStartLocation.y)
+
+            if (newOrigin.y + windowFrame.size.height) >
+                (screenVisibleFrame?.origin.y ?? 0) + (screenVisibleFrame?.size.height ?? 0)
+            {
+                newOrigin.y = screenVisibleFrame?.origin
+                    .y ?? 0 + (screenVisibleFrame?.size.height ?? 0 - windowFrame.size.height)
+            }
+            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
+            setFrameOrigin(newOrigin)
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        isBeingDragged = false
+        dragStartLocation = .zero
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        dragStartLocation = event.locationInWindow
+    }
 }
