@@ -15,6 +15,7 @@ final class WidgetViewModel: ObservableObject {
 struct WidgetView: View {
     @ObservedObject var viewModel: WidgetViewModel
     @ObservedObject var panelViewModel: SuggestionPanelViewModel
+    @ObservedObject var chatWindowViewModel: ChatWindowViewModel
     @State var isHovering: Bool = false
     @State var processingProgress: Double = 0
     var onOpenChatClicked: () -> Void = {}
@@ -25,6 +26,7 @@ struct WidgetView: View {
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     panelViewModel.isPanelDisplayed.toggle()
+                    chatWindowViewModel.isPanelDisplayed = panelViewModel.isPanelDisplayed
                 }
             }
             .overlay {
@@ -78,7 +80,8 @@ struct WidgetView: View {
             }.contextMenu {
                 WidgetContextMenu(
                     widgetViewModel: viewModel,
-                    isChatOpen: panelViewModel.isPanelDisplayed && panelViewModel.chat != nil,
+                    isChatOpen: chatWindowViewModel.isPanelDisplayed
+                        && chatWindowViewModel.chat != nil,
                     onOpenChatClicked: onOpenChatClicked,
                     onCustomCommandClicked: onCustomCommandClicked
                 )
@@ -139,7 +142,7 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 }
-                
+
                 Button(action: {
                     useGlobalChat.toggle()
                 }) {
@@ -252,18 +255,21 @@ struct WidgetView_Preview: PreviewProvider {
             WidgetView(
                 viewModel: .init(isProcessing: false),
                 panelViewModel: .init(),
+                chatWindowViewModel: .init(),
                 isHovering: false
             )
 
             WidgetView(
                 viewModel: .init(isProcessing: false),
                 panelViewModel: .init(),
+                chatWindowViewModel: .init(),
                 isHovering: true
             )
 
             WidgetView(
                 viewModel: .init(isProcessing: true),
                 panelViewModel: .init(),
+                chatWindowViewModel: .init(),
                 isHovering: false
             )
 
@@ -277,6 +283,7 @@ struct WidgetView_Preview: PreviewProvider {
                         currentSuggestionIndex: 0
                     ))
                 ),
+                chatWindowViewModel: .init(),
                 isHovering: false
             )
         }

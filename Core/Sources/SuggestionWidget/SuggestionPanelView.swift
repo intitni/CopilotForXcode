@@ -131,14 +131,14 @@ struct SuggestionPanelView: View {
                     }
                 }
 
-                if let chat = viewModel.chat {
-                    if case .chat = viewModel.activeTab {
-                        ChatPanel(chat: chat)
-                            .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .allowsHitTesting(viewModel.isPanelDisplayed)
-                    }
-                }
+//                if let chat = viewModel.chat {
+//                    if case .chat = viewModel.activeTab {
+//                        ChatPanel(chat: chat)
+//                            .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+//                            .fixedSize(horizontal: false, vertical: true)
+//                            .allowsHitTesting(viewModel.isPanelDisplayed)
+//                    }
+//                }
             }
             .frame(maxWidth: .infinity)
 
