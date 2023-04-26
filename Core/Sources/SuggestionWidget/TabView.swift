@@ -9,7 +9,8 @@ struct TabView: View {
             case .chat:
                 if panelViewModel.content != nil {
                     Button(action: {
-                        panelViewModel.activeTab = .suggestion
+                        
+                            panelViewModel.activeTab = .suggestion
                     }, label: {
                         Image(systemName: "lightbulb.fill")
                             .frame(width: Style.widgetWidth, height: Style.widgetHeight)
@@ -23,7 +24,12 @@ struct TabView: View {
             case .suggestion:
                 if panelViewModel.chat != nil {
                     Button(action: {
-                        panelViewModel.activeTab = .chat
+                        if panelViewModel.chatPanelInASeparateWindow {
+                            panelViewModel.chatPanelInASeparateWindow = false
+                            panelViewModel.activeTab = .chat
+                        } else {
+                            panelViewModel.activeTab = .chat
+                        }
                     }, label: {
                         Image(systemName: "ellipsis.bubble.fill")
                             .frame(width: Style.widgetWidth, height: Style.widgetHeight)
