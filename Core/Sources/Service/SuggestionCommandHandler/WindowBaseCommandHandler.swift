@@ -410,6 +410,8 @@ extension WindowBaseCommandHandler {
                 return """
                 \(language.isEmpty ? "" : "You must always reply in \(language)")
                 You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
+                
+                You don't have any code in advance, ask me to provide it when needed.
                 """
             }
             return """
@@ -449,6 +451,14 @@ extension WindowBaseCommandHandler {
                         role: .assistant,
                         content: "",
                         summary: "\(customCommandPrefix) Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                    ))
+                }
+            } else if !customCommandPrefix.isEmpty {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "\(customCommandPrefix) System prompt is updated."
                     ))
                 }
             }

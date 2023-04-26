@@ -19,7 +19,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
         self.delegate = delegate
     }
 
-    public func send(content: String) async {
+    public func send(content: String, originalMessage: String) async {
         if !isStarted {
             isStarted = true
             delegate?.pluginDidStart(self)
@@ -69,7 +69,11 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 }
             } else {
                 await chatGPTService.mutateHistory { history in
-                    history.append(.init(role: .user, content: "Run a command to \(content)"))
+                    history.append(.init(
+                        role: .user,
+                        content: originalMessage,
+                        summary: "Run a command to \(content)")
+                    )
                 }
                 delegate?.pluginDidStartResponding(self)
                 let result = try await generateCommand(task: content)

@@ -17,7 +17,7 @@ public actor TerminalChatPlugin: ChatPlugin {
         self.delegate = delegate
     }
 
-    public func send(content: String) async {
+    public func send(content: String, originalMessage: String) async {
         delegate?.pluginDidStart(self)
         delegate?.pluginDidStartResponding(self)
 
@@ -38,7 +38,11 @@ public actor TerminalChatPlugin: ChatPlugin {
             let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
 
             await chatGPTService.mutateHistory { history in
-                history.append(.init(role: .user, content: "Run command: \(content)"))
+                history.append(.init(
+                    role: .user,
+                    content: originalMessage,
+                    summary: "Run command: \(content)")
+                )
             }
 
             if isCancelled { throw CancellationError() }

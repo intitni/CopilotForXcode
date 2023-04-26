@@ -53,7 +53,7 @@ public final class ChatService: ObservableObject {
                     }
                 }
             } else if let runningPlugin {
-                await runningPlugin.send(content: content)
+                await runningPlugin.send(content: content, originalMessage: content)
             } else if let pluginType = plugins[command] {
                 let plugin = pluginType.init(inside: chatGPTService, delegate: self)
                 if #available(macOS 13.0, *) {
@@ -61,16 +61,20 @@ public final class ChatService: ObservableObject {
                         content: String(
                             content.dropFirst(command.count + 1)
                                 .trimmingPrefix(while: { $0 == " " })
-                        )
+                        ),
+                        originalMessage: content
                     )
                 } else {
-                    await plugin.send(content: String(content.dropFirst(command.count + 1)))
+                    await plugin.send(
+                        content: String(content.dropFirst(command.count + 1)),
+                        originalMessage: content
+                    )
                 }
             } else {
                 _ = try await chatGPTService.send(content: content, summary: nil)
             }
         } else if let runningPlugin {
-            await runningPlugin.send(content: content)
+            await runningPlugin.send(content: content, originalMessage: content)
         } else {
             _ = try await chatGPTService.send(content: content, summary: nil)
         }
@@ -89,13 +93,13 @@ public final class ChatService: ObservableObject {
         }
         await chatGPTService.clearHistory()
     }
-    
+
     public func deleteMessage(id: String) async {
         await chatGPTService.mutateHistory { messages in
             messages.removeAll(where: { $0.id == id })
         }
     }
-    
+
     public func resendMessage(id: String) async throws {
         if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
             try await send(content: message.content)
@@ -133,7 +137,7 @@ extension ChatService: ChatPluginDelegate {
     public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
         let plugin = type.init(inside: chatGPTService, delegate: self)
         Task {
-            await plugin.send(content: content)
+            await plugin.send(content: content, originalMessage: content)
         }
     }
 }

@@ -8,6 +8,13 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
+## Features
+
+- Code Suggestions (powered by GitHub Copilot).
+- Chat (powered by OpenAI ChatGPT).
+- Prompt to Code (powered by OpenAI ChatGPT).
+- Custom Commands to extend Chat and Prompt to Code.
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -63,7 +70,7 @@ Or install it manually, by downloading the `Copilot for Xcode.app` from the late
 Then set it up with the following steps:
 
 1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
-2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.   
+2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.
 
 ### Enable the Extension
 

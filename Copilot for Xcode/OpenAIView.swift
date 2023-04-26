@@ -62,11 +62,6 @@ struct OpenAIView: View {
                             Image(systemName: "questionmark.circle.fill")
                         }.buttonStyle(.plain)
                     }
-                    .onChange(of: settings.chatGPTModel) { newValue in
-                        if let model = ChatGPTModel(rawValue: newValue) {
-                            settings.chatGPTEndpoint = model.endpoint
-                        }
-                    }
 
                     TextField(
                         text: $settings.chatGPTEndpoint,
