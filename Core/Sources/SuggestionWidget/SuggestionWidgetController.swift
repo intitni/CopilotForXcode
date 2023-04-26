@@ -361,6 +361,7 @@ extension SuggestionWidgetController {
                     // We need to bring them front when the app enters fullscreen.
                     widgetWindow.orderFront(nil)
                     tabWindow.orderFront(nil)
+                    chatWindow.orderFront(nil)
                     panelWindow.orderFront(nil)
                 }
 
