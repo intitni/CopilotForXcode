@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TabView: View {
     @ObservedObject var chatWindowViewModel: ChatWindowViewModel
+    @AppStorage(\.chatPanelInASeparateWindow) var chatPanelInASeparateWindow
 
     var body: some View {
         Button(action: {
@@ -15,7 +16,7 @@ struct TabView: View {
                 )
         })
         .buttonStyle(.plain)
-        .opacity(chatWindowViewModel.chatPanelInASeparateWindow ? 1 : 0)
+        .opacity(chatPanelInASeparateWindow ? 1 : 0)
         .preferredColorScheme(chatWindowViewModel.colorScheme)
         .frame(maxWidth: Style.widgetWidth, maxHeight: Style.widgetHeight)
     }
