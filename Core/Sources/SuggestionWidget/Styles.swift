@@ -68,13 +68,21 @@ extension MarkdownUI.Theme {
                     FontSize(.em(0.85))
                 }
                 .padding(16)
-                .padding(.trailing, 10)
+                .padding(.top, 14)
                 .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(alignment: .topTrailing) {
-                    CopyButton {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(configuration.content, forType: .string)
+                .overlay(alignment: .top) {
+                    HStack(alignment: .center) {
+                        Text(configuration.language ?? "code")
+                            .foregroundStyle(.tertiary)
+                            .font(.callout)
+                            .padding(.leading, 8)
+                            .lineLimit(1)
+                        Spacer()
+                        CopyButton {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(configuration.content, forType: .string)
+                        }
                     }
                 }
                 .markdownMargin(top: 0, bottom: 16)
