@@ -68,6 +68,7 @@ extension MarkdownUI.Theme {
                     FontSize(.em(0.85))
                 }
                 .padding(16)
+                .padding(.trailing, 10)
                 .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(alignment: .topTrailing) {
