@@ -24,6 +24,8 @@ final class SuggestionPanelViewModel: ObservableObject {
         case suggestion
         case chat
     }
+    
+    @AppStorage(\.chatPanelInASeparateWindow) var chatPanelInASeparateWindow
 
     @Published var content: Content? {
         didSet {
@@ -67,6 +69,11 @@ final class SuggestionPanelViewModel: ObservableObject {
     }
 
     func adjustActiveTabAndShowHideIfNeeded(tab: ActiveTab) {
+        if chatPanelInASeparateWindow {
+            activeTab = .suggestion
+            return
+        }
+        
         switch tab {
         case .suggestion:
             if content != nil {
