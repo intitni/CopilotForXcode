@@ -107,6 +107,7 @@ struct WidgetContextMenu: View {
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @AppStorage(\.customCommands) var customCommands
+    @AppStorage(\.chatPanelInASeparateWindow) var chatPanelInASeparateWindow
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
     var isChatOpen: Bool
@@ -130,6 +131,15 @@ struct WidgetContextMenu: View {
             Divider()
 
             Group { // Settings
+                Button(action: {
+                    chatPanelInASeparateWindow.toggle()
+                }) {
+                    Text("Detach Chat Panel")
+                    if chatPanelInASeparateWindow {
+                        Image(systemName: "checkmark")
+                    }
+                }
+                
                 Button(action: {
                     useGlobalChat.toggle()
                 }) {

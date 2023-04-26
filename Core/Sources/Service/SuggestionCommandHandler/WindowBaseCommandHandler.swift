@@ -53,6 +53,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             forFileAt: fileURL,
             editor: editor
         )
+        
+        try Task.checkCancellation()
 
         if filespace.presentingSuggestion != nil {
             presenter.presentSuggestion(fileURL: fileURL)
