@@ -92,8 +92,29 @@ public final class SuggestionWidgetController {
         return it
     }()
 
+    private lazy var chatWindow = {
+        let it = CanBecomeKeyWindow(
+            contentRect: .zero,
+            styleMask: [.borderless, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.level = .floating
+        it.hasShadow = true
+        it.contentView = NSHostingView(
+            rootView: ChatWindowView(viewModel: chatWindowViewModel)
+        )
+        it.setIsVisible(true)
+        it.canBecomeKeyChecker = { true }
+        return it
+    }()
+
     let widgetViewModel = WidgetViewModel()
     let suggestionPanelViewModel = SuggestionPanelViewModel()
+    let chatWindowViewModel = ChatWindowViewModel()
 
     private var presentationModeChangeObserver = UserDefaultsObserver()
     private var colorSchemeChangeObserver = UserDefaultsObserver()
@@ -102,7 +123,7 @@ public final class SuggestionWidgetController {
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
-    
+
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
@@ -198,30 +219,32 @@ public final class SuggestionWidgetController {
             )
         }
 
-        Task { @MainActor in
-            var switchTask: Task<Void, Error>?
-            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
-                #warning("""
-                TODO: There should be a better way for that
-                Currently, we have to make the app an accessory so that we can type things in the chat mode.
-                But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
-                """)
-                switch (viewModel.activeTab, viewModel.content) {
-                case (.chat, _), (.suggestion, .promptToCode):
-                    guard NSApp.activationPolicy() != .accessory else { return }
-                    switchTask?.cancel()
-                    NSApp.setActivationPolicy(.accessory)
-                case (.suggestion, _):
-                    guard NSApp.activationPolicy() != .prohibited else { return }
-                    switchTask?.cancel()
-                    switchTask = Task {
-                        try await Environment.makeXcodeActive()
-                        try Task.checkCancellation()
-                        NSApp.setActivationPolicy(.prohibited)
-                    }
-                }
-            }
-        }
+//        Task { @MainActor in
+//            var switchTask: Task<Void, Error>?
+//            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
+//                #warning("""
+//                TODO: There should be a better way for that
+//                Currently, we have to make the app an accessory so that we can type things in the
+//                chat mode.
+//                But in other modes, we want to keep it prohibited so the helper app won't take
+//                over the focus.
+//                """)
+//                switch (viewModel.activeTab, viewModel.content) {
+//                case (.chat, _), (.suggestion, .promptToCode):
+//                    guard NSApp.activationPolicy() != .accessory else { return }
+//                    switchTask?.cancel()
+//                    NSApp.setActivationPolicy(.accessory)
+//                case (.suggestion, _):
+//                    guard NSApp.activationPolicy() != .prohibited else { return }
+//                    switchTask?.cancel()
+//                    switchTask = Task {
+//                        try await Environment.makeXcodeActive()
+//                        try Task.checkCancellation()
+//                        NSApp.setActivationPolicy(.prohibited)
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
@@ -259,8 +282,13 @@ public extension SuggestionWidgetController {
         widgetViewModel.isProcessing = false
         Task {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
+                chatWindowViewModel.chat = chat
                 suggestionPanelViewModel.chat = chat
                 suggestionPanelViewModel.isPanelDisplayed = true
+
+                if UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                    self.updateWindowLocation()
+                }
 
                 Task { @MainActor in
                     // looks like we need a delay.
@@ -277,14 +305,14 @@ public extension SuggestionWidgetController {
             await updateContentForActiveEditor(fileURL: fileURL)
         }
     }
-    
+
     func presentPromptToCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .promptToCode(provider)
                 suggestionPanelViewModel.isPanelDisplayed = true
-                
+
                 Task { @MainActor in
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
@@ -293,7 +321,7 @@ public extension SuggestionWidgetController {
             }
         }
     }
-    
+
     func discardPromptToCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
@@ -427,6 +455,14 @@ extension SuggestionWidgetController {
             hide()
             return
         }
+        
+        let detachChat = UserDefaults.shared.value(for: \.chatPanelInASeparateWindow)
+
+        if detachChat {
+            chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
+        } else {
+            chatWindow.alphaValue = 0
+        }
 
         if let xcode = ActiveApplicationMonitor.activeXcode {
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
@@ -461,6 +497,10 @@ extension SuggestionWidgetController {
                     tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
                     suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
+                
+                if chatWindow.alphaValue == 0 {
+                    chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+                }
 
                 if panelWindow.alphaValue != 1 {
                     panelWindow.alphaValue = 1
@@ -484,6 +524,7 @@ extension SuggestionWidgetController {
             return try? await Environment.fetchCurrentFileURL()
         }() else {
             suggestionPanelViewModel.content = nil
+            chatWindowViewModel.chat = nil
             suggestionPanelViewModel.chat = nil
             return
         }
@@ -492,10 +533,14 @@ extension SuggestionWidgetController {
             if suggestionPanelViewModel.chat?.id != chat.id {
                 suggestionPanelViewModel.chat = chat
             }
+            if chatWindowViewModel.chat?.id != chat.id {
+                chatWindowViewModel.chat = chat
+            }
         } else {
             suggestionPanelViewModel.chat = nil
+            chatWindowViewModel.chat = nil
         }
-        
+
         if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
             suggestionPanelViewModel.content = .promptToCode(provider)
         } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
