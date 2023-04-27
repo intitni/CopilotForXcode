@@ -97,7 +97,7 @@ public final class SuggestionWidgetController: NSObject {
     private lazy var chatWindow = {
         let it = ChatWindow(
             contentRect: .zero,
-            styleMask: [.borderless, .resizable],
+            styleMask: [.resizable],
             backing: .buffered,
             defer: false
         )
@@ -574,6 +574,26 @@ extension SuggestionWidgetController: NSWindowDelegate {
             UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
         }
     }
+
+    public func windowDidBecomeKey(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatWindow else { return }
+        let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?.frame ?? .zero
+        var mouseLocation = NSEvent.mouseLocation
+        let windowFrame = chatWindow.frame
+        if mouseLocation.y > windowFrame.maxY - 40 {
+            mouseLocation.y = screenFrame.size.height - mouseLocation.y
+            if let cgEvent = CGEvent(
+                mouseEventSource: nil,
+                mouseType: .leftMouseDown,
+                mouseCursorPosition: mouseLocation,
+                mouseButton: .left
+            ),
+                let event = NSEvent(cgEvent: cgEvent)
+            {
+                chatWindow.performDrag(with: event)
+            }
+        }
+    }
 }
 
 class CanBecomeKeyWindow: NSWindow {
@@ -585,34 +605,12 @@ class CanBecomeKeyWindow: NSWindow {
 class ChatWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
-    var dragStartLocation = NSPoint.zero
-
-    override func mouseDragged(with event: NSEvent) {
-        let screenVisibleFrame = NSScreen.main?.visibleFrame
-        let windowFrame = frame
-        var newOrigin = windowFrame.origin
-
-        let currentLocation = event.locationInWindow
-        if dragStartLocation.y > windowFrame.size.height - 40 {
-            newOrigin.x += (currentLocation.x - dragStartLocation.x)
-            newOrigin.y += (currentLocation.y - dragStartLocation.y)
-
-            if (newOrigin.y + windowFrame.size.height) >
-                (screenVisibleFrame?.origin.y ?? 0) + (screenVisibleFrame?.size.height ?? 0)
-            {
-                newOrigin.y = screenVisibleFrame?.origin
-                    .y ?? 0 + (screenVisibleFrame?.size.height ?? 0 - windowFrame.size.height)
-            }
-            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
-            setFrameOrigin(newOrigin)
-        }
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        dragStartLocation = .zero
-    }
 
     override func mouseDown(with event: NSEvent) {
-        dragStartLocation = event.locationInWindow
+        let windowFrame = frame
+        let currentLocation = event.locationInWindow
+        if currentLocation.y > windowFrame.size.height - 40 {
+            performDrag(with: event)
+        }
     }
 }
