@@ -10,20 +10,10 @@ class PromptToCodeCommand: NSObject, XCSourceEditorCommand, CommandType {
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
     ) {
+        completionHandler(nil)
         Task {
-            do {
-                let service = try getService()
-                if let content = try await service.promptToCode(
-                    editorContent: .init(invocation)
-                ) {
-                    invocation.accept(content)
-                }
-                completionHandler(nil)
-            } catch is CancellationError {
-                completionHandler(nil)
-            } catch {
-                completionHandler(error)
-            }
+            let service = try getService()
+            _ = try await service.promptToCode(editorContent: .init(invocation))
         }
     }
 }

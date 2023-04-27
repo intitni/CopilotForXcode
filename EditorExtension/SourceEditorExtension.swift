@@ -39,7 +39,6 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             try await Task.sleep(nanoseconds: 1_000_000_000)
             let service = try getService()
             _ = try await service.checkStatus()
-            await service.boostQoS()
         }
         #endif
     }
