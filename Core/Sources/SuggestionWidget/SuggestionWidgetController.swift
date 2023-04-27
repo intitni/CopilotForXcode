@@ -571,7 +571,6 @@ extension SuggestionWidgetController: NSWindowDelegate {
         guard (notification.object as? NSWindow) === chatWindow else { return }
         Task { @MainActor in
             await Task.yield()
-            guard chatWindow.isBeingDragged else { return }
             UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
         }
     }
@@ -586,14 +585,9 @@ class CanBecomeKeyWindow: NSWindow {
 class ChatWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
-    var isBeingDragged: Bool = false
     var dragStartLocation = NSPoint.zero
 
     override func mouseDragged(with event: NSEvent) {
-        isBeingDragged = true
-        
-        guard dragStartLocation != .zero else { return }
-
         let screenVisibleFrame = NSScreen.main?.visibleFrame
         let windowFrame = frame
         var newOrigin = windowFrame.origin
@@ -615,7 +609,6 @@ class ChatWindow: NSWindow {
     }
 
     override func mouseUp(with event: NSEvent) {
-        isBeingDragged = false
         dragStartLocation = .zero
     }
 
