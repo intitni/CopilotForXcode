@@ -575,16 +575,6 @@ extension SuggestionWidgetController: NSWindowDelegate {
             UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
         }
     }
-
-    public func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        guard sender === chatWindow else { return frameSize }
-        Task { @MainActor in
-            await Task.yield()
-            guard chatWindow.isBeingDragged else { return }
-            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
-        }
-        return frameSize
-    }
 }
 
 class CanBecomeKeyWindow: NSWindow {
