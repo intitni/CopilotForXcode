@@ -8,6 +8,7 @@ import ServiceManagement
 import SwiftUI
 import UpdateChecker
 import UserNotifications
+import Environment
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -27,10 +28,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-
+        Task { try await Environment.triggerAction("") }
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
-        UserDefaults.setupDefaultSettings()
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()

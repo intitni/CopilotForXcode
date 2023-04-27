@@ -12,6 +12,10 @@ public extension AXUIElement {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
 
+    var title: String {
+        (try? copyValue(key: kAXTitleAttribute)) ?? ""
+    }
+
     var doubleValue: Double {
         (try? copyValue(key: kAXValueAttribute)) ?? 0.0
     }
@@ -115,14 +119,32 @@ public extension AXUIElement {
         (try? copyValue(key: kAXChildrenAttribute)) ?? []
     }
 
+    var menuBar: AXUIElement? {
+        try? copyValue(key: kAXMenuBarAttribute)
+    }
+
     var visibleChildren: [AXUIElement] {
         (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
     }
 
-    func child(identifier: String) -> AXUIElement? {
+    func child(
+        identifier: String? = nil,
+        title: String? = nil,
+        description: String? = nil
+    ) -> AXUIElement? {
         for child in children {
-            if child.identifier == identifier { return child }
-            if let target = child.child(identifier: identifier) { return target }
+            let match = {
+                if let identifier, child.identifier != identifier { return false }
+                if let title, child.title != title { return false }
+                if let description, child.description != description { return false }
+                return true
+            }()
+            if match { return child }
+            if let target = child.child(
+                identifier: identifier,
+                title: title,
+                description: description
+            ) { return target }
         }
         return nil
     }

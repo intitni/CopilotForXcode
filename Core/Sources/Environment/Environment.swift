@@ -121,26 +121,39 @@ public enum Environment {
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
 
-        /// check if menu is open, if not, click the menu item.
-        let appleScript = """
-        tell application "System Events"
-            set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
-            repeat with proc in theprocs
-            set the frontmost of proc to true
-                tell proc
-                    repeat with theMenu in menus of menu bar 1
-                        set theValue to value of attribute "AXVisibleChildren" of theMenu
-                        if theValue is not {} then
-                            return
-                        end if
-                    end repeat
-                    click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
-                end tell
-            end repeat
-        end tell
-        """
-
-        try await runAppleScript(appleScript)
+        let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
+        if let editorMenu = app.menuBar?.child(title: "Editor"),
+           let commandMenu = editorMenu.child(title: bundleName),
+           let button = commandMenu.child(title: name, description: "menu bar item")
+        {
+            AXUIElementPerformAction(button, "press" as CFString)
+        } else if let commandMenu = app.menuBar?.child(title: bundleName),
+                  let button = commandMenu.child(title: name, description: "menu bar item")
+        {
+            AXUIElementPerformAction(button, "press" as CFString)
+        }
+        
+//        /// check if menu is open, if not, click the menu item.
+//        let appleScript = """
+//        tell application "System Events"
+//            set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
+//            repeat with proc in theprocs
+//            set the frontmost of proc to true
+//                tell proc
+//                    repeat with theMenu in menus of menu bar 1
+//                        set theValue to value of attribute "AXVisibleChildren" of theMenu
+//                        if theValue is not {} then
+//                            return
+//                        end if
+//                    end repeat
+//                    click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of
+//                    menu bar item "Editor" of menu bar 1
+//                end tell
+//            end repeat
+//        end tell
+//        """
+//
+//        try await runAppleScript(appleScript)
     }
 
     public static var makeXcodeActive: () async throws -> Void = {
