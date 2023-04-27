@@ -11,15 +11,6 @@ public struct AsyncXPCService {
         self.service = service
     }
 
-    public func boostQoS() async {
-        let service = connection.remoteObjectProxyWithErrorHandler {
-            Logger.client.error($0)
-        } as! XPCServiceProtocol
-        service.boostQoS {
-            // never reply
-        }
-    }
-
     public func checkStatus() async throws -> CopilotStatus {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in

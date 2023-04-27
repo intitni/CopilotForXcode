@@ -12,10 +12,6 @@ struct CopilotForXcodeApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear {
                     UserDefaults.setupDefaultSettings()
-                    Task {
-                        let service = try getService()
-                        await service.boostQoS()
-                    }
                 }
                 .environment(\.updateChecker, UpdateChecker(hostBundle: Bundle.main))
         }

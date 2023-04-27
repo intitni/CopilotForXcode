@@ -3,7 +3,6 @@ import Foundation
 
 @objc(XPCServiceProtocol)
 public protocol XPCServiceProtocol {
-    func boostQoS(withReply reply: @escaping () -> Void)
     func checkStatus(withReply reply: @escaping (String?, Error?) -> Void)
     func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void)
     func signInConfirm(
