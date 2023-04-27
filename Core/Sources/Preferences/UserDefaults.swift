@@ -11,12 +11,10 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.suggestionPresentationMode)
         shared.setupDefaultValue(for: \.widgetColorScheme)
         shared.setupDefaultValue(for: \.customCommands)
-        shared.setupDefaultValue(
-            for: \.runNodeWith,
-            defaultValue: shared.value(for: \.runNodeWithInteractiveLoggedInShell)
-                ? .bash
-                : .env
-        )
+        let runNodeWith: NodeRunner = shared.value(for: \.runNodeWithInteractiveLoggedInShell)
+            ? .bash
+            : .env
+        shared.setupDefaultValue(for: \.runNodeWith, defaultValue: runNodeWith)
     }
 }
 
@@ -120,7 +118,7 @@ public extension UserDefaults {
     ) where K.Value: RawRepresentable, K.Value.RawValue == String {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         if value(forKey: key.key) == nil {
-            set(defaultValue ?? key.defaultValue.rawValue, forKey: key.key)
+            set(defaultValue?.rawValue ?? key.defaultValue.rawValue, forKey: key.key)
         }
     }
 
@@ -130,7 +128,7 @@ public extension UserDefaults {
     ) where K.Value: RawRepresentable, K.Value.RawValue == Int {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         if value(forKey: key.key) == nil {
-            set(defaultValue ?? key.defaultValue.rawValue, forKey: key.key)
+            set(defaultValue?.rawValue ?? key.defaultValue.rawValue, forKey: key.key)
         }
     }
 }
