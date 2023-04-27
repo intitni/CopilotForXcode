@@ -281,6 +281,11 @@ public enum FeatureFlags {
         public let defaultValue = true
         public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
     }
+    
+    public struct TriggerActionWithAccessibilityAPI: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-TriggerActionWithAccessibilityAPI"
+    }
 }
 
 public extension UserDefaultPreferenceKeys {
@@ -289,4 +294,5 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWithInteractiveLoggedInShell: FeatureFlags
         .RunNodeWithInteractiveLoggedInShell { .init() }
     var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
+    var triggerActionWithAccessibilityAPI: FeatureFlags.TriggerActionWithAccessibilityAPI { .init() }
 }

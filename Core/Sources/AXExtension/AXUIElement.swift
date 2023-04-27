@@ -15,6 +15,10 @@ public extension AXUIElement {
     var title: String {
         (try? copyValue(key: kAXTitleAttribute)) ?? ""
     }
+    
+    var role: String {
+        (try? copyValue(key: kAXRoleAttribute)) ?? ""
+    }
 
     var doubleValue: Double {
         (try? copyValue(key: kAXValueAttribute)) ?? 0.0
@@ -130,20 +134,22 @@ public extension AXUIElement {
     func child(
         identifier: String? = nil,
         title: String? = nil,
-        description: String? = nil
+        role: String? = nil
     ) -> AXUIElement? {
         for child in children {
             let match = {
                 if let identifier, child.identifier != identifier { return false }
                 if let title, child.title != title { return false }
-                if let description, child.description != description { return false }
+                if let role, child.role != role { return false }
                 return true
             }()
             if match { return child }
+        }
+        for child in children {
             if let target = child.child(
                 identifier: identifier,
                 title: title,
-                description: description
+                role: role
             ) { return target }
         }
         return nil

@@ -28,7 +28,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        Task { try await Environment.triggerAction("") }
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
         setupQuitOnUpdate()

@@ -3,6 +3,7 @@ import AppKit
 import AXExtension
 import CopilotService
 import Foundation
+import Logger
 
 public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     public var errorDescription: String? {
@@ -120,40 +121,62 @@ public enum Environment {
         else { return }
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-
-        let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-        if let editorMenu = app.menuBar?.child(title: "Editor"),
-           let commandMenu = editorMenu.child(title: bundleName),
-           let button = commandMenu.child(title: name, description: "menu bar item")
-        {
-            AXUIElementPerformAction(button, "press" as CFString)
-        } else if let commandMenu = app.menuBar?.child(title: bundleName),
-                  let button = commandMenu.child(title: name, description: "menu bar item")
-        {
-            AXUIElementPerformAction(button, "press" as CFString)
-        }
         
-//        /// check if menu is open, if not, click the menu item.
-//        let appleScript = """
-//        tell application "System Events"
-//            set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
-//            repeat with proc in theprocs
-//            set the frontmost of proc to true
-//                tell proc
-//                    repeat with theMenu in menus of menu bar 1
-//                        set theValue to value of attribute "AXVisibleChildren" of theMenu
-//                        if theValue is not {} then
-//                            return
-//                        end if
-//                    end repeat
-//                    click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of
-//                    menu bar item "Editor" of menu bar 1
-//                end tell
-//            end repeat
-//        end tell
-//        """
-//
-//        try await runAppleScript(appleScript)
+        await Task.yield()
+
+        if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
+            if !activeXcode.isActive { activeXcode.activate() }
+            let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
+
+            if let editorMenu = app.menuBar?.child(title: "Editor"),
+               let commandMenu = editorMenu.child(title: bundleName)
+            {
+                if let button = commandMenu.child(title: name, role: "AXMenuItem") {
+                    let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
+                    if error != AXError.success {
+                        Logger.service
+                            .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                        throw error
+                    }
+                }
+            } else if let commandMenu = app.menuBar?.child(title: bundleName),
+                      let button = commandMenu.child(title: name, role: "AXMenuItem")
+            {
+                let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
+                if error != AXError.success {
+                    Logger.service
+                        .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                    throw error
+                }
+            }
+        } else {
+            /// check if menu is open, if not, click the menu item.
+            let appleScript = """
+            tell application "System Events"
+                set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
+                repeat with proc in theprocs
+                set the frontmost of proc to true
+                    tell proc
+                        repeat with theMenu in menus of menu bar 1
+                            set theValue to value of attribute "AXVisibleChildren" of theMenu
+                            if theValue is not {} then
+                                return
+                            end if
+                        end repeat
+                        click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
+                    end tell
+                end repeat
+            end tell
+            """
+
+            do {
+                try await runAppleScript(appleScript)
+            } catch {
+                Logger.service
+                    .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                throw error
+            }
+        }
     }
 
     public static var makeXcodeActive: () async throws -> Void = {
