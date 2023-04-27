@@ -252,6 +252,7 @@ public extension SuggestionWidgetController {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
                 chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
+                panelWindow.orderFront(nil)
             }
         }
     }
@@ -272,6 +273,7 @@ public extension SuggestionWidgetController {
         chatWindowViewModel.isPanelDisplayed = true
         suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
+        panelWindow.orderFront(nil)
     }
 
     func presentChatRoom(fileURL: URL) {
@@ -291,6 +293,7 @@ public extension SuggestionWidgetController {
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    panelWindow.orderFront(nil)
                 }
             }
         }
@@ -315,6 +318,7 @@ public extension SuggestionWidgetController {
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    panelWindow.orderFront(nil)
                 }
             }
         }
