@@ -5,7 +5,7 @@ public final class ScheduledCleaner {
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
-                try await Task.sleep(nanoseconds: 8 * 60 * 60 * 1_000_000_000)
+                try await Task.sleep(nanoseconds: 2 * 60 * 60 * 1_000_000_000)
                 for (url, workspace) in workspaces {
                     if workspace.isExpired {
                         workspaces[url] = nil
