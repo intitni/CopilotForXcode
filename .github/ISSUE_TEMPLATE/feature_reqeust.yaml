@@ -1,0 +1,28 @@
+name: Feature Request
+description: Request a feature
+title: "[Enhancement]: "
+labels: ["enhancement"]
+assignees:
+  - intitni
+body: 
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request! 
+  - type: checkboxes
+    id: before-reporting
+    attributes:
+      label: Before Requesting
+      description: Before requesting the feature, we suggestion that you first search for existing issues to avoid duplication.
+      options:
+        - label: I have searched the existing issues, and there is no existing issue for my feature request
+          required: true
+  - type: textarea
+    id: what-feature
+    attributes:
+      label: What feature do you want?
+      description: Please describe the feature you want.
+      placeholder: Tell us what you want!
+      value: "I want a feature!"
+    validations:
+      required: true
