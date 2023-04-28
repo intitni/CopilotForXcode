@@ -349,7 +349,9 @@ extension SuggestionWidgetController {
                 kAXFocusedWindowChangedNotification,
                 kAXFocusedUIElementChangedNotification,
                 kAXWindowMovedNotification,
-                kAXWindowResizedNotification
+                kAXWindowResizedNotification,
+                kAXWindowMiniaturizedNotification,
+                kAXWindowDeminiaturizedNotification
             )
             for await notification in notifications {
                 guard let self else { return }
