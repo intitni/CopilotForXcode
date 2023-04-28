@@ -2,9 +2,9 @@ import CopilotModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
+import Logger
 import Preferences
 import XPCShared
-import Logger
 
 public protocol CopilotAuthServiceType {
     func checkStatus() async throws -> CopilotStatus
@@ -275,34 +275,34 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
             )
         )
     }
-    
+
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
-        let languageId = languageIdentifierFromFileURL(fileURL)
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Change \(uri)")
         try await server.sendNotification(
-            .didOpenTextDocument(
-                DidOpenTextDocumentParams(
-                    textDocument: .init(
-                        uri: uri,
-                        languageId: languageId.rawValue,
-                        version: 0,
+            .didChangeTextDocument(
+                DidChangeTextDocumentParams(
+                    uri: uri,
+                    version: 0,
+                    contentChange: .init(
+                        range: nil,
+                        rangeLength: nil,
                         text: content
                     )
                 )
             )
         )
     }
-    
+
     public func notifySaveTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
-        Logger.service.debug("Save \(uri)")
+//        Logger.service.debug("Save \(uri)")
         try await server.sendNotification(.didSaveTextDocument(.init(uri: uri)))
     }
-    
+
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
-        Logger.service.debug("Close \(uri)")
+//        Logger.service.debug("Close \(uri)")
         try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
     }
 }
@@ -312,4 +312,3 @@ extension InitializingServer: CopilotLSP {
         try await sendRequest(endpoint.request)
     }
 }
-
