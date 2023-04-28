@@ -31,7 +31,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -61,7 +61,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: TabView(chatWindowViewModel: chatWindowViewModel)
@@ -81,7 +81,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
@@ -318,7 +318,7 @@ public extension SuggestionWidgetController {
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
-                    panelWindow.orderFront(nil)
+                    panelWindow.makeKey()
                 }
             }
         }
