@@ -198,7 +198,7 @@ struct SettingsView: View {
                         TextField(text: .init(get: {
                             "\(Int(settings.chatFontSize))"
                         }, set: {
-                            settings.chatFontSize = Double(Int($0) ?? 1)
+                            settings.chatFontSize = Double(Int($0) ?? 0)
                         })) {
                             Text("Font size of chat message")
                         }
@@ -211,7 +211,7 @@ struct SettingsView: View {
                         TextField(text: .init(get: {
                             "\(Int(settings.chatCodeFontSize))"
                         }, set: {
-                            settings.chatCodeFontSize = Double(Int($0) ?? 1)
+                            settings.chatCodeFontSize = Double(Int($0) ?? 0)
                         })) {
                             Text("Font size of code block in chat")
                         }
@@ -224,7 +224,7 @@ struct SettingsView: View {
                         TextField(text: .init(get: {
                             "\(Int(settings.suggestionCodeFontSize))"
                         }, set: {
-                            settings.suggestionCodeFontSize = Double(Int($0) ?? 1)
+                            settings.suggestionCodeFontSize = Double(Int($0) ?? 0)
                         })) {
                             Text("Font size of suggestion code")
                         }
