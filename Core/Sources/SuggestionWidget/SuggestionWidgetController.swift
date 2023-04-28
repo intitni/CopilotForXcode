@@ -443,96 +443,80 @@ extension SuggestionWidgetController {
     /// - note: It's possible to get the scroll view's position by getting position on the focus
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
-        func hide() {
-            if panelWindow.alphaValue != 0 {
-                panelWindow.alphaValue = 0
-            }
-            if widgetWindow.alphaValue != 0 {
-                widgetWindow.alphaValue = 0
-            }
-            if tabWindow.alphaValue != 0 {
-                tabWindow.alphaValue = 0
-            }
-            if !UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
-                if chatWindow.alphaValue != 0 {
-                    chatWindow.alphaValue = 0
-                }
-            }
-        }
-
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
         else {
-            hide()
+            panelWindow.alphaValue = 0
+            widgetWindow.alphaValue = 0
+            tabWindow.alphaValue = 0
+            chatWindow.alphaValue = 0
             return
         }
 
         let detachChat = UserDefaults.shared.value(for: \.chatPanelInASeparateWindow)
 
-        if detachChat {
-            chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
-        } else {
-            chatWindow.alphaValue = 0
-        }
-
-        if let xcode = ActiveApplicationMonitor.activeXcode {
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            if let focusElement = application.focusedElement,
-               focusElement.description == "Source Editor",
-               let parent = focusElement.parent,
-               let frame = parent.rect,
-               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-               let firstScreen = NSScreen.main
-            {
-                let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
-                switch mode {
-                case .fixedToBottom:
-                    let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen
-                    )
-                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
-                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
-                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
-                case .alignToTextCursor:
-                    let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen,
-                        editor: focusElement
-                    )
-                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
-                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
-                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
-                }
-
-                if detachChat {
-                    if chatWindow.alphaValue == 0 {
-                        chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+        if let widgetFrames = {
+            if let xcode = ActiveApplicationMonitor.latestXcode {
+                let application = AXUIElementCreateApplication(xcode.processIdentifier)
+                if let focusElement = application.focusedElement,
+                   focusElement.description == "Source Editor",
+                   let parent = focusElement.parent,
+                   let frame = parent.rect,
+                   let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                   let firstScreen = NSScreen.main
+                {
+                    let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
+                    switch mode {
+                    case .fixedToBottom:
+                        return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                            editorFrame: frame,
+                            mainScreen: screen,
+                            activeScreen: firstScreen
+                        )
+                    case .alignToTextCursor:
+                        return UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                            editorFrame: frame,
+                            mainScreen: screen,
+                            activeScreen: firstScreen,
+                            editor: focusElement
+                        )
                     }
-                } else {
+                }
+            }
+            return nil
+        }() {
+            widgetWindow.setFrame(widgetFrames.widgetFrame, display: false, animate: animated)
+            panelWindow.setFrame(widgetFrames.panelFrame, display: false, animate: animated)
+            tabWindow.setFrame(widgetFrames.tabFrame, display: false, animate: animated)
+            suggestionPanelViewModel.alignTopToAnchor = widgetFrames.alignPanelTopToAnchor
+            if detachChat {
+                if chatWindow.alphaValue == 0 {
                     chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
-                    if chatWindow.alphaValue != 1 {
-                        chatWindow.alphaValue = 1
-                    }
                 }
-
-                if panelWindow.alphaValue != 1 {
-                    panelWindow.alphaValue = 1
-                }
-                if widgetWindow.alphaValue != 1 {
-                    widgetWindow.alphaValue = 1
-                }
-                if tabWindow.alphaValue != 1 {
-                    tabWindow.alphaValue = 1
-                }
-                return
+            } else {
+                chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
             }
         }
 
-        hide()
+        if let app = ActiveApplicationMonitor.activeApplication, app.isXcode {
+            let application = AXUIElementCreateApplication(app.processIdentifier)
+            let noFocus = application.focusedWindow == nil
+            panelWindow.alphaValue = noFocus ? 0 : 1
+            widgetWindow.alphaValue = noFocus ? 0 : 1
+            tabWindow.alphaValue = noFocus ? 0 : 1
+
+            if detachChat {
+                chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
+            } else {
+                chatWindow.alphaValue = noFocus ? 0 : 1
+            }
+        } else {
+            panelWindow.alphaValue = 0
+            widgetWindow.alphaValue = 0
+            tabWindow.alphaValue = 0
+            if !detachChat {
+                chatWindow.alphaValue = 0
+            }
+        }
     }
 
     private func updateContentForActiveEditor(fileURL: URL? = nil) async {
@@ -579,7 +563,8 @@ extension SuggestionWidgetController: NSWindowDelegate {
 
     public func windowDidBecomeKey(_ notification: Notification) {
         guard (notification.object as? NSWindow) === chatWindow else { return }
-        let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?.frame ?? .zero
+        let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?
+            .frame ?? .zero
         var mouseLocation = NSEvent.mouseLocation
         let windowFrame = chatWindow.frame
         if mouseLocation.y > windowFrame.maxY - 40 {
