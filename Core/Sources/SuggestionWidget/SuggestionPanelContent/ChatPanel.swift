@@ -60,39 +60,16 @@ struct ChatPanelToolbar: View {
 
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
-    @AppStorage(\.disableLazyVStack) var disableLazyVStack
-    @State var height: Double = 0
-
-    struct HeightPreferenceKey: PreferenceKey {
-        static var defaultValue: Double = 0
-        static func reduce(value: inout Double, nextValue: () -> Double) {
-            value = nextValue() + value
-        }
-    }
-
-    struct UpdateHeightModifier: ViewModifier {
-        func body(content: Content) -> some View {
-            content
-                .background {
-                    GeometryReader { proxy in
-                        Color.clear
-                            .preference(key: HeightPreferenceKey.self, value: proxy.size.height)
-                    }
-                }
-        }
-    }
-
+    
     var body: some View {
         List {
             Group {
                 Spacer()
-                    .modifier(UpdateHeightModifier())
 
                 if chat.isReceivingMessage {
                     StopRespondingButton(chat: chat)
                         .padding(.vertical, 4)
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                        .modifier(UpdateHeightModifier())
                 }
 
                 if chat.history.isEmpty {
@@ -102,7 +79,6 @@ struct ChatPanelMessages: View {
                         .scaleEffect(x: -1, y: -1, anchor: .center)
                         .foregroundStyle(.secondary)
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                        .modifier(UpdateHeightModifier())
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
@@ -120,20 +96,14 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .listItemTint(.clear)
-                .modifier(UpdateHeightModifier())
 
                 Spacer()
-                    .modifier(UpdateHeightModifier())
             }
             .scaleEffect(x: -1, y: 1, anchor: .center)
         }
         .id("\(chat.history.count), \(chat.isReceivingMessage)")
         .listStyle(.plain)
-        .frame(idealHeight: max(50, height + 16))
         .scaleEffect(x: 1, y: -1, anchor: .center)
-        .onPreferenceChange(HeightPreferenceKey.self) { newHeight in
-            height = newHeight
-        }
     }
 }
 
