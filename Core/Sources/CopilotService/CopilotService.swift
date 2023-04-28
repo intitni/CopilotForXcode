@@ -4,6 +4,7 @@ import LanguageClient
 import LanguageServerProtocol
 import Preferences
 import XPCShared
+import Logger
 
 public protocol CopilotAuthServiceType {
     func checkStatus() async throws -> CopilotStatus
@@ -25,10 +26,12 @@ public protocol CopilotSuggestionServiceType {
     ) async throws -> [CopilotCompletion]
     func notifyAccepted(_ completion: CopilotCompletion) async
     func notifyRejected(_ completions: [CopilotCompletion]) async
+    func openTextDocument(fileURL: URL, content: String) async throws
 }
 
 protocol CopilotLSP {
     func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response
+    func sendNotification(_ notif: ClientNotification) async throws
 }
 
 public class CopilotBaseService {
@@ -57,7 +60,7 @@ public class CopilotBaseService {
             }
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-            
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
@@ -246,6 +249,27 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     public func notifyRejected(_ completions: [CopilotCompletion]) async {
         _ = try? await server.sendRequest(
             CopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
+        )
+    }
+
+    public func openTextDocument(
+        fileURL: URL,
+        content: String
+    ) async throws {
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        let uri = "file://\(fileURL.path)"
+        Logger.service.debug(uri)
+        try await server.sendNotification(
+            .didOpenTextDocument(
+                DidOpenTextDocumentParams(
+                    textDocument: .init(
+                        uri: uri,
+                        languageId: languageId.rawValue,
+                        version: 0,
+                        text: content
+                    )
+                )
+            )
         )
     }
 }

@@ -6,6 +6,7 @@ import Foundation
 import Preferences
 import SuggestionInjector
 import XPCShared
+import Logger
 
 @ServiceActor
 final class Filespace {
@@ -39,7 +40,7 @@ final class Filespace {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
     }
 
-    init(fileURL: URL) {
+    fileprivate init(fileURL: URL) {
         self.fileURL = fileURL
     }
 
@@ -170,11 +171,15 @@ final class Workspace {
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-        let filespace = workspace.filespaces[fileURL] ?? .init(fileURL: fileURL)
+        let existedFilespace = workspace.filespaces[fileURL]
+        let filespace = existedFilespace ?? .init(fileURL: fileURL)
         if workspace.filespaces[fileURL] == nil {
             workspace.filespaces[fileURL] = filespace
         }
         workspaces[workspaceURL] = workspace
+        if existedFilespace == nil {
+            workspace.notifyOpenFile(filespace: filespace)
+        }
         return (workspace, filespace)
     }
 }
@@ -294,6 +299,15 @@ extension Workspace {
         filespaces[fileURL]?.reset()
 
         return suggestion
+    }
+    
+    func notifyOpenFile(filespace: Filespace) {
+        Task {
+            try await copilotSuggestionService?.openTextDocument(
+                fileURL: filespace.fileURL,
+                content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
+            )
+        }
     }
 }
 
