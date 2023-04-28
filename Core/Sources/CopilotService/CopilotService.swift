@@ -261,7 +261,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     ) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
         let uri = "file://\(fileURL.path)"
-        Logger.service.debug("Open \(uri)")
+//        Logger.service.debug("Open \(uri)")
         try await server.sendNotification(
             .didOpenTextDocument(
                 DidOpenTextDocumentParams(
@@ -279,7 +279,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
         let uri = "file://\(fileURL.path)"
-        Logger.service.debug("Change \(uri)")
+//        Logger.service.debug("Change \(uri)")
         try await server.sendNotification(
             .didOpenTextDocument(
                 DidOpenTextDocumentParams(
@@ -312,3 +312,4 @@ extension InitializingServer: CopilotLSP {
         try await sendRequest(endpoint.request)
     }
 }
+
