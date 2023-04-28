@@ -199,15 +199,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             presenter.discardSuggestion(fileURL: fileURL)
 
-            let result = UpdatedContent(
+            return .init(
                 content: String(lines.joined(separator: "")),
                 newSelection: .cursor(cursorPosition),
                 modifications: extraInfo.modifications
             )
-            
-            workspace.notifyUpdateFile(filespace: filespace, content: result.content)
-            
-            return result
         }
 
         return nil

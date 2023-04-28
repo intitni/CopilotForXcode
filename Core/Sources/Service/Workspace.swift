@@ -18,7 +18,7 @@ final class Filespace {
     let fileURL: URL
     private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
     var suggestions: [CopilotCompletion] = [] {
-        didSet { lastSuggestionUpdateTime = Environment.now() }
+        didSet { refreshUpdateTime() }
     }
 
     // stored for pseudo command handler
@@ -50,6 +50,10 @@ final class Filespace {
         if resetSnapshot {
             suggestionSourceSnapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
         }
+    }
+    
+    func refreshUpdateTime() {
+        lastSuggestionUpdateTime = Environment.now()
     }
 }
 
@@ -179,6 +183,8 @@ final class Workspace {
         workspaces[workspaceURL] = workspace
         if existedFilespace == nil {
             workspace.notifyOpenFile(filespace: filespace)
+        } else {
+            filespace.refreshUpdateTime()
         }
         return (workspace, filespace)
     }
