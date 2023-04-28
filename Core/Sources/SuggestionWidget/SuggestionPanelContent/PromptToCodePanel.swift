@@ -95,6 +95,7 @@ struct PromptToCodePanel: View {
 struct PromptToCodePanelContent: View {
     @ObservedObject var provider: PromptToCodeProvider
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(\.suggestionCodeFontSize) var fontSize
 
     var body: some View {
         CustomScrollView {
@@ -142,7 +143,8 @@ struct PromptToCodePanelContent: View {
                         language: provider.language,
                         startLineIndex: provider.startLineIndex,
                         colorScheme: colorScheme,
-                        firstLinePrecedingSpaceCount: provider.startLineColumn
+                        firstLinePrecedingSpaceCount: provider.startLineColumn,
+                        fontSize: fontSize
                     )
                     .frame(maxWidth: .infinity)
                     .scaleEffect(x: -1, y: -1, anchor: .center)

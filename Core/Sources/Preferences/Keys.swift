@@ -241,6 +241,31 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTTemperature: ChatGPTTemperature { .init() }
 }
 
+// MARK: - UI
+
+public extension UserDefaultPreferenceKeys {
+    struct SuggestionCodeFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 13 as Double
+        public let key = "SuggestionCodeFontSize"
+    }
+
+    var suggestionCodeFontSize: SuggestionCodeFontSize { .init() }
+    
+    struct ChatFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 12 as Double
+        public let key = "ChatFontSize"
+    }
+
+    var chatFontSize: ChatFontSize { .init() }
+    
+    struct ChatCodeFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 12 as Double
+        public let key = "ChatCodeFontSize"
+    }
+
+    var chatCodeFontSize: ChatCodeFontSize { .init() }
+}
+
 // MARK: - Custom Commands
 
 public extension UserDefaultPreferenceKeys {
