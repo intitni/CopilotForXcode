@@ -26,7 +26,10 @@ public protocol CopilotSuggestionServiceType {
     ) async throws -> [CopilotCompletion]
     func notifyAccepted(_ completion: CopilotCompletion) async
     func notifyRejected(_ completions: [CopilotCompletion]) async
-    func openTextDocument(fileURL: URL, content: String) async throws
+    func notifyOpenTextDocument(fileURL: URL, content: String) async throws
+    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
+    func notifyCloseTextDocument(fileURL: URL) async throws
+    func notifySaveTextDocument(fileURL: URL) async throws
 }
 
 protocol CopilotLSP {
@@ -252,13 +255,13 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         )
     }
 
-    public func openTextDocument(
+    public func notifyOpenTextDocument(
         fileURL: URL,
         content: String
     ) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
         let uri = "file://\(fileURL.path)"
-        Logger.service.debug(uri)
+        Logger.service.debug("Open \(uri)")
         try await server.sendNotification(
             .didOpenTextDocument(
                 DidOpenTextDocumentParams(
@@ -271,6 +274,36 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
                 )
             )
         )
+    }
+    
+    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        let uri = "file://\(fileURL.path)"
+        Logger.service.debug("Change \(uri)")
+        try await server.sendNotification(
+            .didOpenTextDocument(
+                DidOpenTextDocumentParams(
+                    textDocument: .init(
+                        uri: uri,
+                        languageId: languageId.rawValue,
+                        version: 0,
+                        text: content
+                    )
+                )
+            )
+        )
+    }
+    
+    public func notifySaveTextDocument(fileURL: URL) async throws {
+        let uri = "file://\(fileURL.path)"
+        Logger.service.debug("Save \(uri)")
+        try await server.sendNotification(.didSaveTextDocument(.init(uri: uri)))
+    }
+    
+    public func notifyCloseTextDocument(fileURL: URL) async throws {
+        let uri = "file://\(fileURL.path)"
+        Logger.service.debug("Close \(uri)")
+        try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
     }
 }
 

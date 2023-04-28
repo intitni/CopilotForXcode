@@ -303,9 +303,18 @@ extension Workspace {
     
     func notifyOpenFile(filespace: Filespace) {
         Task {
-            try await copilotSuggestionService?.openTextDocument(
+            try await copilotSuggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
                 content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
+            )
+        }
+    }
+    
+    func notifyUpdateFile(filespace: Filespace, content: String) {
+        Task {
+            try await copilotSuggestionService?.notifyChangeTextDocument(
+                fileURL: filespace.fileURL,
+                content: content
             )
         }
     }
@@ -315,6 +324,9 @@ extension Workspace {
     func cleanUp() {
         for (fileURL, filespace) in filespaces {
             if filespace.isExpired {
+                Task {
+                    try await copilotSuggestionService?.notifyCloseTextDocument(fileURL: fileURL)
+                }
                 filespaces[fileURL] = nil
             }
         }

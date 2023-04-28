@@ -145,7 +145,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
         let injector = SuggestionInjector()
         var lines = editor.lines
@@ -197,11 +197,15 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             presenter.discardSuggestion(fileURL: fileURL)
 
-            return .init(
+            let result = UpdatedContent(
                 content: String(lines.joined(separator: "")),
                 newSelection: .cursor(cursorPosition),
                 modifications: extraInfo.modifications
             )
+            
+            workspace.notifyUpdateFile(filespace: filespace, content: result.content)
+            
+            return result
         }
 
         return nil
