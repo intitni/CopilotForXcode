@@ -480,6 +480,19 @@ extension SuggestionWidgetController {
                             editor: focusElement
                         )
                     }
+                } else if let window = application.focusedWindow,
+                          !["open_quickly"].contains(window.identifier),
+                          let frame = application.focusedWindow?.rect,
+                          frame.size.height > 200,
+                          let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                          let firstScreen = NSScreen.main
+                {
+                    return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen,
+                        preferredInsideEditorMinWidth: 9_999_999_999
+                    )
                 }
             }
             return nil
