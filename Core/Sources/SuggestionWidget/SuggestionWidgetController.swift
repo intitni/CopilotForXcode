@@ -489,6 +489,9 @@ extension SuggestionWidgetController {
                 {
                     if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
                         frame.size.height -= 40
+                    } else {
+                        frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
+                        frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
                     }
                     
                     return UpdateLocationStrategy.FixedToBottom().framesForWindows(
