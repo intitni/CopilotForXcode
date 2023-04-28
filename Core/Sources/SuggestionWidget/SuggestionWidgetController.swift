@@ -482,11 +482,15 @@ extension SuggestionWidgetController {
                     }
                 } else if let window = application.focusedWindow,
                           !["open_quickly"].contains(window.identifier),
-                          let frame = application.focusedWindow?.rect,
+                          var frame = application.focusedWindow?.rect,
                           frame.size.height > 200,
                           let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                           let firstScreen = NSScreen.main
                 {
+                    if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
+                        frame.size.height -= 40
+                    }
+                    
                     return UpdateLocationStrategy.FixedToBottom().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
