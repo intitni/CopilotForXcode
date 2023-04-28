@@ -12,7 +12,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "swift",
             brightMode: true,
-            droppingLeadingSpaces: false
+            droppingLeadingSpaces: false,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -32,7 +33,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -51,7 +53,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 4)
@@ -70,7 +73,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 8)
@@ -90,7 +94,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 4)
@@ -111,7 +116,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -132,7 +138,8 @@ final class ConvertToCodeLinesTests: XCTestCase {
             code: code,
             language: "md",
             brightMode: true,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            fontSize: 14
         )
 
         XCTAssertEqual(spaceCount, 4)
