@@ -2,6 +2,7 @@ import CopilotModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
+import Logger
 import Preferences
 import XPCShared
 
@@ -25,10 +26,15 @@ public protocol CopilotSuggestionServiceType {
     ) async throws -> [CopilotCompletion]
     func notifyAccepted(_ completion: CopilotCompletion) async
     func notifyRejected(_ completions: [CopilotCompletion]) async
+    func notifyOpenTextDocument(fileURL: URL, content: String) async throws
+    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
+    func notifyCloseTextDocument(fileURL: URL) async throws
+    func notifySaveTextDocument(fileURL: URL) async throws
 }
 
 protocol CopilotLSP {
     func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response
+    func sendNotification(_ notif: ClientNotification) async throws
 }
 
 public class CopilotBaseService {
@@ -57,7 +63,7 @@ public class CopilotBaseService {
             }
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-            
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
@@ -247,6 +253,57 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         _ = try? await server.sendRequest(
             CopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
         )
+    }
+
+    public func notifyOpenTextDocument(
+        fileURL: URL,
+        content: String
+    ) async throws {
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        let uri = "file://\(fileURL.path)"
+//        Logger.service.debug("Open \(uri)")
+        try await server.sendNotification(
+            .didOpenTextDocument(
+                DidOpenTextDocumentParams(
+                    textDocument: .init(
+                        uri: uri,
+                        languageId: languageId.rawValue,
+                        version: 0,
+                        text: content
+                    )
+                )
+            )
+        )
+    }
+
+    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        let uri = "file://\(fileURL.path)"
+//        Logger.service.debug("Change \(uri)")
+        try await server.sendNotification(
+            .didChangeTextDocument(
+                DidChangeTextDocumentParams(
+                    uri: uri,
+                    version: 0,
+                    contentChange: .init(
+                        range: nil,
+                        rangeLength: nil,
+                        text: content
+                    )
+                )
+            )
+        )
+    }
+
+    public func notifySaveTextDocument(fileURL: URL) async throws {
+        let uri = "file://\(fileURL.path)"
+//        Logger.service.debug("Save \(uri)")
+        try await server.sendNotification(.didSaveTextDocument(.init(uri: uri)))
+    }
+
+    public func notifyCloseTextDocument(fileURL: URL) async throws {
+        let uri = "file://\(fileURL.path)"
+//        Logger.service.debug("Close \(uri)")
+        try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
     }
 }
 

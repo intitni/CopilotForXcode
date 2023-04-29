@@ -131,6 +131,7 @@ public class RealtimeSuggestionController {
                 switch notification.name {
                 case kAXValueChangedNotification:
                     self.triggerPrefetchDebounced()
+                    await self.notifyEditingFileChange(editor: focusElement)
                 default:
                     continue
                 }
@@ -207,7 +208,7 @@ public class RealtimeSuggestionController {
 
             guard UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
             else { return }
-            
+
             if UserDefaults.shared.value(for: \.disableSuggestionFeatureGlobally),
                let fileURL = try? await Environment.fetchCurrentFileURL(),
                let (workspace, _) = try? await Workspace
@@ -216,7 +217,7 @@ public class RealtimeSuggestionController {
                 let isEnabled = workspace.isSuggestionFeatureEnabled
                 if !isEnabled { return }
             }
-            
+
             if Task.isCancelled { return }
 
             Logger.service.info("Prefetch suggestions.")
@@ -263,5 +264,13 @@ public class RealtimeSuggestionController {
         guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
+    }
+
+    func notifyEditingFileChange(editor: AXUIElement) async {
+        guard let fileURL = try? await Environment.fetchCurrentFileURL(),
+            let (workspace, filespace) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        else { return }
+        workspace.notifyUpdateFile(filespace: filespace, content: editor.value)
     }
 }
