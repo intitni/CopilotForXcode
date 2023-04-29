@@ -104,7 +104,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Use Global Chat
 
     public struct UseGlobalChat: UserDefaultPreferenceKey {
-        public let defaultValue = false
+        public let defaultValue = true
         public let key = "UseGlobalChat"
     }
 
