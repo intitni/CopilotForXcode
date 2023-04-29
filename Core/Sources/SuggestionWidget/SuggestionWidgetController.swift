@@ -373,14 +373,25 @@ extension SuggestionWidgetController {
                     sourceEditorMonitorTask = nil
                     observeEditorChangeIfNeeded(app)
 
-                    guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        // if it's switching to a ui component that is not a text area.
-                        if ActiveApplicationMonitor.activeApplication?.isXcode ?? false {
-                            suggestionPanelViewModel.content = nil
-                            suggestionPanelViewModel.chat = nil
+                    guard let fileURL = await {
+                        // if it's not editor, use the window id as url.
+                        if let activeNonEditorWindow = {
+                            let application = AXUIElementCreateApplication(app.processIdentifier)
+                            let focusedElement = application.focusedElement
+                            if focusedElement?.description != "Source Editor" {
+                                return application.focusedWindow
+                            }
+                            return nil
+                        }() {
+                            let id = activeNonEditorWindow.identifier.hashValue
+                            return URL(fileURLWithPath: "/xcode-focused-element/\(id)")
                         }
+
+                        return try? await Environment.fetchCurrentFileURL()
+                    }() else {
                         continue
                     }
+
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
                     widgetViewModel.currentFileURL = currentFileURL
@@ -478,6 +489,7 @@ extension SuggestionWidgetController {
                     }
                 } else if var window = application.focusedWindow,
                           var frame = application.focusedWindow?.rect,
+                          !["menu bar", "menu bar item"].contains(window.description),
                           frame.size.height > 300,
                           let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                           let firstScreen = NSScreen.main
@@ -591,6 +603,8 @@ extension SuggestionWidgetController {
         }
 
         if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+            if case let .promptToCode(currentProvider) = suggestionPanelViewModel.content,
+               currentProvider.id == provider.id { return }
             suggestionPanelViewModel.content = .promptToCode(provider)
         } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
             suggestionPanelViewModel.content = .suggestion(suggestion)
