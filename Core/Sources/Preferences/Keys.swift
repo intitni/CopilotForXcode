@@ -113,7 +113,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Hide Common Preceding Spaces in Suggestion
 
     public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
-        public let defaultValue = false
+        public let defaultValue = true
         public let key = "HideCommonPrecedingSpacesInSuggestion"
     }
 
