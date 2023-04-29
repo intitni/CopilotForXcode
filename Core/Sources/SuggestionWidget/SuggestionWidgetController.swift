@@ -373,9 +373,7 @@ extension SuggestionWidgetController {
                     sourceEditorMonitorTask = nil
                     observeEditorChangeIfNeeded(app)
 
-                    guard let fileURL = await {
-                        return try? await Environment.fetchFocusedElementURI()
-                    }() else {
+                    guard let fileURL = await try? await Environment.fetchFocusedElementURI() else {
                         continue
                     }
 
@@ -616,7 +614,10 @@ extension SuggestionWidgetController: NSWindowDelegate {
             .frame ?? .zero
         var mouseLocation = NSEvent.mouseLocation
         let windowFrame = chatWindow.frame
-        if mouseLocation.y > windowFrame.maxY - 40 {
+        if mouseLocation.y > windowFrame.maxY - 40,
+           mouseLocation.x > windowFrame.minX,
+           mouseLocation.x < windowFrame.maxX
+        {
             mouseLocation.y = screenFrame.size.height - mouseLocation.y
             if let cgEvent = CGEvent(
                 mouseEventSource: nil,
@@ -645,8 +646,12 @@ class ChatWindow: NSWindow {
     override func mouseDown(with event: NSEvent) {
         let windowFrame = frame
         let currentLocation = event.locationInWindow
-        if currentLocation.y > windowFrame.size.height - 40 {
+        if currentLocation.y > windowFrame.size.height - 40,
+           currentLocation.x > windowFrame.minX,
+           currentLocation.x < windowFrame.maxX
+        {
             performDrag(with: event)
         }
     }
 }
+
