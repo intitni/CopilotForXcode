@@ -8,7 +8,8 @@ struct CodeBlock: View {
     let commonPrecedingSpaceCount: Int
     let highlightedCode: [NSAttributedString]
     let firstLinePrecedingSpaceCount: Int
-    
+    let fontSize: Double
+
     @AppStorage(\.disableLazyVStack) var disableLazyVStack
 
     init(
@@ -16,25 +17,28 @@ struct CodeBlock: View {
         language: String,
         startLineIndex: Int,
         colorScheme: ColorScheme,
-        firstLinePrecedingSpaceCount: Int = 0
+        firstLinePrecedingSpaceCount: Int = 0,
+        fontSize: Double
     ) {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
         self.colorScheme = colorScheme
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
+        self.fontSize = fontSize
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
             : ""
         let result = Self.highlight(
             code: padding + code,
             language: language,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            fontSize: fontSize
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
     }
-    
+
     @ViewBuilder
     func vstack(@ViewBuilder content: () -> some View) -> some View {
         if disableLazyVStack {
@@ -82,14 +86,16 @@ struct CodeBlock: View {
     static func highlight(
         code: String,
         language: String,
-        colorScheme: ColorScheme
+        colorScheme: ColorScheme,
+        fontSize: Double
     ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
         return highlighted(
             code: code,
             language: language,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: UserDefaults.shared
-                .value(for: \.hideCommonPrecedingSpacesInSuggestion)
+                .value(for: \.hideCommonPrecedingSpacesInSuggestion),
+            fontSize: fontSize
         )
     }
 }

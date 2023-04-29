@@ -19,7 +19,7 @@ func highlightedCodeBlock(
         let highlighter =
             SyntaxHighlighter(
                 format: AttributedStringOutputFormat(theme: .init(
-                    font: .init(size: 14),
+                    font: .init(size: fontSize),
                     plainTextColor: plainTextColor,
                     tokenColors: brightMode
                         ? [
@@ -108,13 +108,14 @@ func highlighted(
     code: String,
     language: String,
     brightMode: Bool,
-    droppingLeadingSpaces: Bool
+    droppingLeadingSpaces: Bool,
+    fontSize: Double
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let formatted = highlightedCodeBlock(
         code: code,
         language: language,
         brightMode: brightMode,
-        fontSize: 13
+        fontSize: fontSize
     )
     let middleDotColor = brightMode
         ? NSColor.black.withAlphaComponent(0.1)

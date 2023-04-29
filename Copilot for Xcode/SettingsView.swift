@@ -28,6 +28,9 @@ struct SettingsView: View {
         var preferWidgetToStayInsideEditorWhenWidthGreaterThan: Double
         @AppStorage(\.hideCommonPrecedingSpacesInSuggestion)
         var hideCommonPrecedingSpacesInSuggestion: Bool
+        @AppStorage(\.suggestionCodeFontSize) var suggestionCodeFontSize
+        @AppStorage(\.chatFontSize) var chatFontSize
+        @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
         init() {}
     }
 
@@ -49,7 +52,7 @@ struct SettingsView: View {
                     isOpen: $isCustomCommandEditorOpen
                 )
             }
-            
+
             Form {
                 Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
                     Text("Quit service when Xcode and host app are terminated")
@@ -165,7 +168,10 @@ struct SettingsView: View {
                         case .openAI:
                             Text("OpenAI").tag($0)
                         case .githubCopilot:
-                            Text("GitHub Copilot (Implement for experiment, barely works, don't use.)").tag($0)
+                            Text(
+                                "GitHub Copilot (Implement for experiment, barely works, don't use.)"
+                            )
+                            .tag($0)
                         }
                     }
                 } label: {
@@ -184,7 +190,48 @@ struct SettingsView: View {
                     }
                     .textFieldStyle(.roundedBorder)
 
-                    Text("px")
+                    Text("pt")
+                }
+
+                Group { // UI
+                    HStack {
+                        TextField(text: .init(get: {
+                            "\(Int(settings.chatFontSize))"
+                        }, set: {
+                            settings.chatFontSize = Double(Int($0) ?? 0)
+                        })) {
+                            Text("Font size of chat message")
+                        }
+                        .textFieldStyle(.roundedBorder)
+
+                        Text("pt")
+                    }
+                    
+                    HStack {
+                        TextField(text: .init(get: {
+                            "\(Int(settings.chatCodeFontSize))"
+                        }, set: {
+                            settings.chatCodeFontSize = Double(Int($0) ?? 0)
+                        })) {
+                            Text("Font size of code block in chat")
+                        }
+                        .textFieldStyle(.roundedBorder)
+
+                        Text("pt")
+                    }
+                    
+                    HStack {
+                        TextField(text: .init(get: {
+                            "\(Int(settings.suggestionCodeFontSize))"
+                        }, set: {
+                            settings.suggestionCodeFontSize = Double(Int($0) ?? 0)
+                        })) {
+                            Text("Font size of suggestion code")
+                        }
+                        .textFieldStyle(.roundedBorder)
+
+                        Text("pt")
+                    }
                 }
             }
         }.buttonStyle(.copilot)
