@@ -8,7 +8,7 @@ final class ChatWindowViewModel: ObservableObject {
     @Published var chat: ChatProvider?
     @Published var colorScheme: ColorScheme
     @Published var isPanelDisplayed = false
-    @AppStorage(\.chatPanelInASeparateWindow) var chatPanelInASeparateWindow
+    @Published var chatPanelInASeparateWindow = false
     
     public init(chat: ChatProvider? = nil, colorScheme: ColorScheme = .dark) {
         self.chat = chat

@@ -175,17 +175,6 @@ public struct UserDefaultPreferenceKeys {
     public var preferWidgetToStayInsideEditorWhenWidthGreaterThan: PreferWidgetToStayInsideEditorWhenWidthGreaterThan {
         .init()
     }
-    
-    // MARK: - Chat Panel in a Separate Window
-
-    public struct ChatPanelInASeparateWindow: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "ChatPanelInASeparateWindow"
-    }
-
-    public var chatPanelInASeparateWindow: ChatPanelInASeparateWindow {
-        .init()
-    }
 }
 
 // MARK: - OpenAI Account Settings

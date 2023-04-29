@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
 import AXNotificationStream
+import Combine
 import Environment
 import Preferences
 import SwiftUI
@@ -120,12 +121,12 @@ public final class SuggestionWidgetController: NSObject {
 
     private var presentationModeChangeObserver = UserDefaultsObserver()
     private var colorSchemeChangeObserver = UserDefaultsObserver()
-    private var detachChatPanelObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
+    private var cancellable = Set<AnyCancellable>()
 
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
@@ -160,7 +161,7 @@ public final class SuggestionWidgetController: NSObject {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                             self.tabWindow.alphaValue = 0
-                            if !UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                            if !chatWindowViewModel.chatPanelInASeparateWindow {
                                 self.chatWindow.alphaValue = 0
                             }
                         }
@@ -184,16 +185,13 @@ public final class SuggestionWidgetController: NSObject {
         }
 
         Task { @MainActor in
-            detachChatPanelObserver.onChange = { [weak self] in
-                guard let self else { return }
-                self.updateWindowLocation(animated: true)
-            }
-            UserDefaults.shared.addObserver(
-                detachChatPanelObserver,
-                forKeyPath: UserDefaultPreferenceKeys().chatPanelInASeparateWindow.key,
-                options: .new,
-                context: nil
-            )
+            chatWindowViewModel.$chatPanelInASeparateWindow.dropFirst().removeDuplicates()
+                .sink { [weak self] _ in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        self.updateWindowLocation(animated: true)
+                    }
+                }.store(in: &cancellable)
         }
 
         Task { @MainActor in
@@ -280,9 +278,8 @@ public extension SuggestionWidgetController {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 chatWindowViewModel.chat = chat
                 chatWindowViewModel.isPanelDisplayed = true
-                suggestionPanelViewModel.chat = chat
 
-                if UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                if chatWindowViewModel.chatPanelInASeparateWindow {
                     self.updateWindowLocation()
                 }
 
@@ -444,7 +441,7 @@ extension SuggestionWidgetController {
             return
         }
 
-        let detachChat = UserDefaults.shared.value(for: \.chatPanelInASeparateWindow)
+        let detachChat = chatWindowViewModel.chatPanelInASeparateWindow
 
         if let widgetFrames = {
             if let xcode = ActiveApplicationMonitor.latestXcode {
@@ -571,19 +568,14 @@ extension SuggestionWidgetController {
         }() else {
             suggestionPanelViewModel.content = nil
             chatWindowViewModel.chat = nil
-            suggestionPanelViewModel.chat = nil
             return
         }
 
         if let chat = await dataSource?.chatForFile(at: fileURL) {
-            if suggestionPanelViewModel.chat?.id != chat.id {
-                suggestionPanelViewModel.chat = chat
-            }
             if chatWindowViewModel.chat?.id != chat.id {
                 chatWindowViewModel.chat = chat
             }
         } else {
-            suggestionPanelViewModel.chat = nil
             chatWindowViewModel.chat = nil
         }
 
@@ -604,7 +596,7 @@ extension SuggestionWidgetController: NSWindowDelegate {
         guard (notification.object as? NSWindow) === chatWindow else { return }
         Task { @MainActor in
             await Task.yield()
-            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
+            chatWindowViewModel.chatPanelInASeparateWindow = true
         }
     }
 

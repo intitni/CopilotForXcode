@@ -35,7 +35,7 @@ struct WidgetView: View {
                 let minimumLineWidth: Double = 4
                 let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
-                let empty = panelViewModel.content == nil && panelViewModel.chat == nil
+                let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
 
                 ZStack {
                     Circle()
@@ -81,6 +81,7 @@ struct WidgetView: View {
                 }
             }.contextMenu {
                 WidgetContextMenu(
+                    chatWindowViewModel: chatWindowViewModel,
                     widgetViewModel: viewModel,
                     isChatOpen: chatWindowViewModel.isPanelDisplayed
                         && chatWindowViewModel.chat != nil,
@@ -96,7 +97,7 @@ struct WidgetView: View {
             if viewModel.isProcessing {
                 processingProgress = 1 - processingProgress
             } else {
-                let empty = panelViewModel.content == nil && panelViewModel.chat == nil
+                let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
                 processingProgress = empty ? 0 : 1
             }
         }
@@ -112,7 +113,7 @@ struct WidgetContextMenu: View {
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @AppStorage(\.customCommands) var customCommands
-    @AppStorage(\.chatPanelInASeparateWindow) var chatPanelInASeparateWindow
+    @ObservedObject var chatWindowViewModel: ChatWindowViewModel
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
     var isChatOpen: Bool
@@ -137,10 +138,10 @@ struct WidgetContextMenu: View {
 
             Group { // Settings
                 Button(action: {
-                    chatPanelInASeparateWindow.toggle()
+                    chatWindowViewModel.chatPanelInASeparateWindow.toggle()
                 }) {
                     Text("Detach Chat Panel")
-                    if chatPanelInASeparateWindow {
+                    if chatWindowViewModel.chatPanelInASeparateWindow {
                         Image(systemName: "checkmark")
                     }
                 }
