@@ -478,11 +478,13 @@ extension SuggestionWidgetController {
                     }
                 } else if var window = application.focusedWindow,
                           var frame = application.focusedWindow?.rect,
-                          frame.size.height > 200,
+                          frame.size.height > 300,
                           let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                           let firstScreen = NSScreen.main
                 {
-                    if ["open_quickly"].contains(window.identifier) {
+                    if ["open_quickly"].contains(window.identifier)
+                        || ["alert"].contains(window.label)
+                    {
                         // fallback to use workspace window
                         guard let workspaceWindow = application.windows
                             .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),

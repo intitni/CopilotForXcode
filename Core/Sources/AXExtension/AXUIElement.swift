@@ -31,6 +31,10 @@ public extension AXUIElement {
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
+    
+    var label: String {
+        (try? copyValue(key: kAXLabelValueAttribute)) ?? ""
+    }
 
     var isSourceEditor: Bool {
         description == "Source Editor"
