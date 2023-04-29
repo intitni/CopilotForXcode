@@ -2,6 +2,17 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>Copilot for Xcode</title>
+    <item>
+      <title>0.14.0</title>
+      <pubDate>Sun, 30 Apr 2023 02:05:16 +0800</pubDate>
+      <sparkle:version>130</sparkle:version>
+      <sparkle:shortVersionString>0.14.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.14.0
+      </sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.14.0/Copilot.for.Xcode.app.zip" length="20171851" type="application/octet-stream" sparkle:edSignature="oc+g72wOMaSaxzQTDfjlD1ACiVwsM+E5AnrxIUMxlWnn28s4CY69pubOKiGrFEPSt3jB8bPHSZVx4yId/tgeBg=="/>
+    </item>
 
     <item>
       <title>0.13.4</title>
