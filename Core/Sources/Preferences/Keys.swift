@@ -30,7 +30,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Realtime Suggestion
 
     public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
-        public let defaultValue: Bool = false
+        public let defaultValue: Bool = true
         public let key = "RealtimeSuggestionToggle"
     }
 
