@@ -25,8 +25,10 @@ struct WidgetView: View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    panelViewModel.isPanelDisplayed.toggle()
-                    chatWindowViewModel.isPanelDisplayed = panelViewModel.isPanelDisplayed
+                    let isDisplayed = panelViewModel.isPanelDisplayed
+                        || chatWindowViewModel.isPanelDisplayed
+                    panelViewModel.isPanelDisplayed = !isDisplayed
+                    chatWindowViewModel.isPanelDisplayed = !isDisplayed
                 }
             }
             .overlay {

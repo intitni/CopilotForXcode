@@ -250,7 +250,6 @@ public extension SuggestionWidgetController {
         Task {
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
-                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
                 panelWindow.orderFront(nil)
             }
@@ -270,7 +269,6 @@ public extension SuggestionWidgetController {
 
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
-        chatWindowViewModel.isPanelDisplayed = true
         suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
         panelWindow.orderFront(nil)
@@ -282,7 +280,6 @@ public extension SuggestionWidgetController {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 chatWindowViewModel.chat = chat
                 chatWindowViewModel.isPanelDisplayed = true
-                suggestionPanelViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.chat = chat
 
                 if UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
@@ -311,7 +308,6 @@ public extension SuggestionWidgetController {
         Task {
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .promptToCode(provider)
-                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.isPanelDisplayed = true
 
                 Task { @MainActor in
