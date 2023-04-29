@@ -105,6 +105,24 @@ public enum Environment {
         }
         throw FailedToFetchFileURLError()
     }
+    
+    public static var fetchFocusedElementURI: () async throws -> URL = {
+        guard let xcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode
+        else {
+            throw FailedToFetchFileURLError()
+        }
+        
+        let application = AXUIElementCreateApplication(xcode.processIdentifier)
+        let focusedElement = application.focusedElement
+        if focusedElement?.description != "Source Editor" {
+            let window = application.focusedWindow
+            let id = window?.identifier.hashValue
+            return URL(fileURLWithPath: "/xcode-focused-element/\(id ?? 0)")
+        }
+        
+        return try await fetchCurrentFileURL()
+    }
 
     public static var createAuthService: () -> CopilotAuthServiceType = {
         CopilotAuthService()
@@ -148,6 +166,15 @@ public enum Environment {
                         .error("Trigger action \(name) failed: \(error.localizedDescription)")
                     throw error
                 }
+            } else {
+                struct CantRunCommand: Error, LocalizedError {
+                    let name: String
+                    var errorDescription: String? {
+                        "Can't run command \(name)."
+                    }
+                }
+                
+                throw CantRunCommand(name: name)
             }
         } else {
             /// check if menu is open, if not, click the menu item.

@@ -69,8 +69,26 @@ struct PseudoCommandHandler {
     }
 
     func handleCustomCommand(_ command: CustomCommand) async {
-        guard let editor = await getEditorContent(sourceEditor: nil)
-        else {
+        guard let editor = await {
+            if let it = await getEditorContent(sourceEditor: nil) {
+                return it
+            }
+            switch command.feature {
+            case .customChat:
+                return .init(
+                    content: "",
+                    lines: [],
+                    uti: "",
+                    cursorPosition: .outOfScope,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )
+            case .chatWithSelection, .promptToCode:
+                return nil
+            }
+        }() else {
             do {
                 try await Environment.triggerAction(command.name)
             } catch {

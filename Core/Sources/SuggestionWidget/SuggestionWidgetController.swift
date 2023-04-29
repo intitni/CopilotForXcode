@@ -374,20 +374,7 @@ extension SuggestionWidgetController {
                     observeEditorChangeIfNeeded(app)
 
                     guard let fileURL = await {
-                        // if it's not editor, use the window id as url.
-                        if let activeNonEditorWindow = {
-                            let application = AXUIElementCreateApplication(app.processIdentifier)
-                            let focusedElement = application.focusedElement
-                            if focusedElement?.description != "Source Editor" {
-                                return application.focusedWindow
-                            }
-                            return nil
-                        }() {
-                            let id = activeNonEditorWindow.identifier.hashValue
-                            return URL(fileURLWithPath: "/xcode-focused-element/\(id)")
-                        }
-
-                        return try? await Environment.fetchCurrentFileURL()
+                        return try? await Environment.fetchFocusedElementURI()
                     }() else {
                         continue
                     }
