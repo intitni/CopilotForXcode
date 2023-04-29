@@ -647,8 +647,8 @@ class ChatWindow: NSWindow {
         let windowFrame = frame
         let currentLocation = event.locationInWindow
         if currentLocation.y > windowFrame.size.height - 40,
-           currentLocation.x > windowFrame.minX,
-           currentLocation.x < windowFrame.maxX
+           currentLocation.x > 0,
+           currentLocation.x < windowFrame.width
         {
             performDrag(with: event)
         }
