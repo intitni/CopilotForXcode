@@ -476,25 +476,37 @@ extension SuggestionWidgetController {
                             editor: focusElement
                         )
                     }
-                } else if let window = application.focusedWindow,
-                          !["open_quickly"].contains(window.identifier),
+                } else if var window = application.focusedWindow,
                           var frame = application.focusedWindow?.rect,
                           frame.size.height > 200,
                           let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                           let firstScreen = NSScreen.main
                 {
+                    if ["open_quickly"].contains(window.identifier) {
+                        // fallback to use workspace window
+                        guard let workspaceWindow = application.windows
+                            .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
+                            let rect = workspaceWindow.rect
+                        else { return (.zero, .zero, .zero, false) }
+
+                        window = workspaceWindow
+                        frame = rect
+                    }
+
                     if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
+                        // extra padding to bottom so buttons won't be covered
                         frame.size.height -= 40
                     } else {
+                        // move a bit away from the window so buttons won't be covered
                         frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
                         frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
                     }
-                    
+
                     return UpdateLocationStrategy.FixedToBottom().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
                         activeScreen: firstScreen,
-                        preferredInsideEditorMinWidth: 9_999_999_999
+                        preferredInsideEditorMinWidth: 9_999_999_999 // never
                     )
                 }
             }
@@ -506,10 +518,10 @@ extension SuggestionWidgetController {
             suggestionPanelViewModel.alignTopToAnchor = widgetFrames.alignPanelTopToAnchor
             if detachChat {
                 if chatWindow.alphaValue == 0 {
-                    chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+                    chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
                 }
             } else {
-                chatWindow.setFrame(panelWindow.frame, display: false, animate: false)
+                chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
             }
         }
 
@@ -524,6 +536,24 @@ extension SuggestionWidgetController {
                 chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
             } else {
                 chatWindow.alphaValue = noFocus ? 0 : 1
+            }
+        } else if let app = ActiveApplicationMonitor.activeApplication,
+                  app.bundleIdentifier == Bundle.main.bundleIdentifier
+        {
+            let noFocus = {
+                guard let xcode = ActiveApplicationMonitor.latestXcode else { return true }
+                let application = AXUIElementCreateApplication(app.processIdentifier)
+                return application
+                    .focusedWindow == nil || (application.focusedWindow?.role == "AXWindow")
+            }()
+
+            panelWindow.alphaValue = noFocus ? 0 : 1
+            widgetWindow.alphaValue = noFocus ? 0 : 1
+            tabWindow.alphaValue = noFocus ? 0 : 1
+            if detachChat {
+                chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
+            } else {
+                chatWindow.alphaValue = noFocus && !chatWindow.isKeyWindow ? 0 : 1
             }
         } else {
             panelWindow.alphaValue = 0
