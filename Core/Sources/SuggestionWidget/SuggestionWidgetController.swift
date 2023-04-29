@@ -7,7 +7,7 @@ import Preferences
 import SwiftUI
 
 @MainActor
-public final class SuggestionWidgetController {
+public final class SuggestionWidgetController: NSObject {
     class UserDefaultsObserver: NSObject {
         var onChange: (() -> Void)?
 
@@ -22,7 +22,7 @@ public final class SuggestionWidgetController {
     }
 
     private lazy var widgetWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -31,12 +31,13 @@ public final class SuggestionWidgetController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
                 panelViewModel: suggestionPanelViewModel,
+                chatWindowViewModel: chatWindowViewModel,
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
@@ -46,11 +47,12 @@ public final class SuggestionWidgetController {
             )
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { false }
         return it
     }()
 
     private lazy var tabWindow = {
-        let it = NSWindow(
+        let it = CanBecomeKeyWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -59,12 +61,13 @@ public final class SuggestionWidgetController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
-            rootView: TabView(panelViewModel: suggestionPanelViewModel)
+            rootView: TabView(chatWindowViewModel: chatWindowViewModel)
         )
         it.setIsVisible(true)
+        it.canBecomeKeyChecker = { false }
         return it
     }()
 
@@ -78,36 +81,58 @@ public final class SuggestionWidgetController {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .chat = suggestionPanelViewModel.activeTab { return true }
             if case .promptToCode = suggestionPanelViewModel.content { return true }
             return false
         }
         return it
     }()
 
+    private lazy var chatWindow = {
+        let it = ChatWindow(
+            contentRect: .zero,
+            styleMask: [.resizable],
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.level = .floating
+        it.hasShadow = true
+        it.contentView = NSHostingView(
+            rootView: ChatWindowView(viewModel: chatWindowViewModel)
+        )
+        it.setIsVisible(true)
+        it.delegate = self
+        return it
+    }()
+
     let widgetViewModel = WidgetViewModel()
     let suggestionPanelViewModel = SuggestionPanelViewModel()
+    let chatWindowViewModel = ChatWindowViewModel()
 
     private var presentationModeChangeObserver = UserDefaultsObserver()
     private var colorSchemeChangeObserver = UserDefaultsObserver()
+    private var detachChatPanelObserver = UserDefaultsObserver()
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
-    
+
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
     public var dataSource: SuggestionWidgetDataSource?
 
-    public nonisolated init() {
+    override public nonisolated init() {
+        super.init()
         #warning(
             "TODO: A test is initializing this class for unknown reasons, try a better way to avoid this."
         )
@@ -135,6 +160,9 @@ public final class SuggestionWidgetController {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                             self.tabWindow.alphaValue = 0
+                            if !UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                                self.chatWindow.alphaValue = 0
+                            }
                         }
                     }
                 }
@@ -150,6 +178,19 @@ public final class SuggestionWidgetController {
             UserDefaults.shared.addObserver(
                 presentationModeChangeObserver,
                 forKeyPath: UserDefaultPreferenceKeys().suggestionPresentationMode.key,
+                options: .new,
+                context: nil
+            )
+        }
+
+        Task { @MainActor in
+            detachChatPanelObserver.onChange = { [weak self] in
+                guard let self else { return }
+                self.updateWindowLocation(animated: true)
+            }
+            UserDefaults.shared.addObserver(
+                detachChatPanelObserver,
+                forKeyPath: UserDefaultPreferenceKeys().chatPanelInASeparateWindow.key,
                 options: .new,
                 context: nil
             )
@@ -173,6 +214,7 @@ public final class SuggestionWidgetController {
                     }
                 }()
                 self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                self.chatWindowViewModel.colorScheme = self.colorScheme
                 Task {
                     await self.updateContentForActiveEditor()
                 }
@@ -197,31 +239,6 @@ public final class SuggestionWidgetController {
                 context: nil
             )
         }
-
-        Task { @MainActor in
-            var switchTask: Task<Void, Error>?
-            suggestionPanelViewModel.requestApplicationPolicyUpdate = { viewModel in
-                #warning("""
-                TODO: There should be a better way for that
-                Currently, we have to make the app an accessory so that we can type things in the chat mode.
-                But in other modes, we want to keep it prohibited so the helper app won't take over the focus.
-                """)
-                switch (viewModel.activeTab, viewModel.content) {
-                case (.chat, _), (.suggestion, .promptToCode):
-                    guard NSApp.activationPolicy() != .accessory else { return }
-                    switchTask?.cancel()
-                    NSApp.setActivationPolicy(.accessory)
-                case (.suggestion, _):
-                    guard NSApp.activationPolicy() != .prohibited else { return }
-                    switchTask?.cancel()
-                    switchTask = Task {
-                        try await Environment.makeXcodeActive()
-                        try Task.checkCancellation()
-                        NSApp.setActivationPolicy(.prohibited)
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -234,6 +251,7 @@ public extension SuggestionWidgetController {
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
                 suggestionPanelViewModel.isPanelDisplayed = true
+                panelWindow.orderFront(nil)
             }
         }
     }
@@ -253,19 +271,26 @@ public extension SuggestionWidgetController {
         suggestionPanelViewModel.content = .error(errorDescription)
         suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
+        panelWindow.orderFront(nil)
     }
 
     func presentChatRoom(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
             if let chat = await dataSource?.chatForFile(at: fileURL) {
+                chatWindowViewModel.chat = chat
+                chatWindowViewModel.isPanelDisplayed = true
                 suggestionPanelViewModel.chat = chat
-                suggestionPanelViewModel.isPanelDisplayed = true
+
+                if UserDefaults.shared.value(for: \.chatPanelInASeparateWindow) {
+                    self.updateWindowLocation()
+                }
 
                 Task { @MainActor in
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    panelWindow.orderFront(nil)
                 }
             }
         }
@@ -277,23 +302,24 @@ public extension SuggestionWidgetController {
             await updateContentForActiveEditor(fileURL: fileURL)
         }
     }
-    
+
     func presentPromptToCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .promptToCode(provider)
                 suggestionPanelViewModel.isPanelDisplayed = true
-                
+
                 Task { @MainActor in
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    panelWindow.makeKey()
                 }
             }
         }
     }
-    
+
     func discardPromptToCode(fileURL: URL) {
         widgetViewModel.isProcessing = false
         Task {
@@ -319,7 +345,9 @@ extension SuggestionWidgetController {
                 kAXFocusedWindowChangedNotification,
                 kAXFocusedUIElementChangedNotification,
                 kAXWindowMovedNotification,
-                kAXWindowResizedNotification
+                kAXWindowResizedNotification,
+                kAXWindowMiniaturizedNotification,
+                kAXWindowDeminiaturizedNotification
             )
             for await notification in notifications {
                 guard let self else { return }
@@ -333,6 +361,7 @@ extension SuggestionWidgetController {
                     // We need to bring them front when the app enters fullscreen.
                     widgetWindow.orderFront(nil)
                     tabWindow.orderFront(nil)
+                    chatWindow.orderFront(nil)
                     panelWindow.orderFront(nil)
                 }
 
@@ -344,14 +373,12 @@ extension SuggestionWidgetController {
                     sourceEditorMonitorTask = nil
                     observeEditorChangeIfNeeded(app)
 
-                    guard let fileURL = try? await Environment.fetchCurrentFileURL() else {
-                        // if it's switching to a ui component that is not a text area.
-                        if ActiveApplicationMonitor.activeApplication?.isXcode ?? false {
-                            suggestionPanelViewModel.content = nil
-                            suggestionPanelViewModel.chat = nil
-                        }
+                    guard let fileURL = await {
+                        return try? await Environment.fetchFocusedElementURI()
+                    }() else {
                         continue
                     }
+
                     guard fileURL != currentFileURL else { continue }
                     currentFileURL = fileURL
                     widgetViewModel.currentFileURL = currentFileURL
@@ -410,72 +437,133 @@ extension SuggestionWidgetController {
     /// - note: It's possible to get the scroll view's position by getting position on the focus
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
-        func hide() {
-            if panelWindow.alphaValue != 0 {
-                panelWindow.alphaValue = 0
-            }
-            if widgetWindow.alphaValue != 0 {
-                widgetWindow.alphaValue = 0
-            }
-            if tabWindow.alphaValue != 0 {
-                tabWindow.alphaValue = 0
-            }
-        }
-
         guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
         else {
-            hide()
+            panelWindow.alphaValue = 0
+            widgetWindow.alphaValue = 0
+            tabWindow.alphaValue = 0
+            chatWindow.alphaValue = 0
             return
         }
 
-        if let xcode = ActiveApplicationMonitor.activeXcode {
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            if let focusElement = application.focusedElement,
-               focusElement.description == "Source Editor",
-               let parent = focusElement.parent,
-               let frame = parent.rect,
-               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-               let firstScreen = NSScreen.main
-            {
-                let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
-                switch mode {
-                case .fixedToBottom:
-                    let result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen
-                    )
-                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
-                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
-                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
-                case .alignToTextCursor:
-                    let result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+        let detachChat = UserDefaults.shared.value(for: \.chatPanelInASeparateWindow)
+
+        if let widgetFrames = {
+            if let xcode = ActiveApplicationMonitor.latestXcode {
+                let application = AXUIElementCreateApplication(xcode.processIdentifier)
+                if let focusElement = application.focusedElement,
+                   focusElement.description == "Source Editor",
+                   let parent = focusElement.parent,
+                   let frame = parent.rect,
+                   let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                   let firstScreen = NSScreen.main
+                {
+                    let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
+                    switch mode {
+                    case .fixedToBottom:
+                        return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                            editorFrame: frame,
+                            mainScreen: screen,
+                            activeScreen: firstScreen
+                        )
+                    case .alignToTextCursor:
+                        return UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                            editorFrame: frame,
+                            mainScreen: screen,
+                            activeScreen: firstScreen,
+                            editor: focusElement
+                        )
+                    }
+                } else if var window = application.focusedWindow,
+                          var frame = application.focusedWindow?.rect,
+                          !["menu bar", "menu bar item"].contains(window.description),
+                          frame.size.height > 300,
+                          let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                          let firstScreen = NSScreen.main
+                {
+                    if ["open_quickly"].contains(window.identifier)
+                        || ["alert"].contains(window.label)
+                    {
+                        // fallback to use workspace window
+                        guard let workspaceWindow = application.windows
+                            .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
+                            let rect = workspaceWindow.rect
+                        else { return (.zero, .zero, .zero, false) }
+
+                        window = workspaceWindow
+                        frame = rect
+                    }
+
+                    if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
+                        // extra padding to bottom so buttons won't be covered
+                        frame.size.height -= 40
+                    } else {
+                        // move a bit away from the window so buttons won't be covered
+                        frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
+                        frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                    }
+
+                    return UpdateLocationStrategy.FixedToBottom().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
                         activeScreen: firstScreen,
-                        editor: focusElement
+                        preferredInsideEditorMinWidth: 9_999_999_999 // never
                     )
-                    widgetWindow.setFrame(result.widgetFrame, display: false, animate: animated)
-                    panelWindow.setFrame(result.panelFrame, display: false, animate: animated)
-                    tabWindow.setFrame(result.tabFrame, display: false, animate: animated)
-                    suggestionPanelViewModel.alignTopToAnchor = result.alignPanelTopToAnchor
                 }
-
-                if panelWindow.alphaValue != 1 {
-                    panelWindow.alphaValue = 1
+            }
+            return nil
+        }() {
+            widgetWindow.setFrame(widgetFrames.widgetFrame, display: false, animate: animated)
+            panelWindow.setFrame(widgetFrames.panelFrame, display: false, animate: animated)
+            tabWindow.setFrame(widgetFrames.tabFrame, display: false, animate: animated)
+            suggestionPanelViewModel.alignTopToAnchor = widgetFrames.alignPanelTopToAnchor
+            if detachChat {
+                if chatWindow.alphaValue == 0 {
+                    chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
                 }
-                if widgetWindow.alphaValue != 1 {
-                    widgetWindow.alphaValue = 1
-                }
-                if tabWindow.alphaValue != 1 {
-                    tabWindow.alphaValue = 1
-                }
-                return
+            } else {
+                chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
             }
         }
 
-        hide()
+        if let app = ActiveApplicationMonitor.activeApplication, app.isXcode {
+            let application = AXUIElementCreateApplication(app.processIdentifier)
+            let noFocus = application.focusedWindow == nil
+            panelWindow.alphaValue = noFocus ? 0 : 1
+            widgetWindow.alphaValue = noFocus ? 0 : 1
+            tabWindow.alphaValue = noFocus ? 0 : 1
+
+            if detachChat {
+                chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
+            } else {
+                chatWindow.alphaValue = noFocus ? 0 : 1
+            }
+        } else if let app = ActiveApplicationMonitor.activeApplication,
+                  app.bundleIdentifier == Bundle.main.bundleIdentifier
+        {
+            let noFocus = {
+                guard let xcode = ActiveApplicationMonitor.latestXcode else { return true }
+                let application = AXUIElementCreateApplication(app.processIdentifier)
+                return application
+                    .focusedWindow == nil || (application.focusedWindow?.role == "AXWindow")
+            }()
+
+            panelWindow.alphaValue = noFocus ? 0 : 1
+            widgetWindow.alphaValue = noFocus ? 0 : 1
+            tabWindow.alphaValue = noFocus ? 0 : 1
+            if detachChat {
+                chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
+            } else {
+                chatWindow.alphaValue = noFocus && !chatWindow.isKeyWindow ? 0 : 1
+            }
+        } else {
+            panelWindow.alphaValue = 0
+            widgetWindow.alphaValue = 0
+            tabWindow.alphaValue = 0
+            if !detachChat {
+                chatWindow.alphaValue = 0
+            }
+        }
     }
 
     private func updateContentForActiveEditor(fileURL: URL? = nil) async {
@@ -484,6 +572,7 @@ extension SuggestionWidgetController {
             return try? await Environment.fetchCurrentFileURL()
         }() else {
             suggestionPanelViewModel.content = nil
+            chatWindowViewModel.chat = nil
             suggestionPanelViewModel.chat = nil
             return
         }
@@ -492,11 +581,17 @@ extension SuggestionWidgetController {
             if suggestionPanelViewModel.chat?.id != chat.id {
                 suggestionPanelViewModel.chat = chat
             }
+            if chatWindowViewModel.chat?.id != chat.id {
+                chatWindowViewModel.chat = chat
+            }
         } else {
             suggestionPanelViewModel.chat = nil
+            chatWindowViewModel.chat = nil
         }
-        
+
         if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
+            if case let .promptToCode(currentProvider) = suggestionPanelViewModel.content,
+               currentProvider.id == provider.id { return }
             suggestionPanelViewModel.content = .promptToCode(provider)
         } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
             suggestionPanelViewModel.content = .suggestion(suggestion)
@@ -506,8 +601,52 @@ extension SuggestionWidgetController {
     }
 }
 
+extension SuggestionWidgetController: NSWindowDelegate {
+    public func windowWillMove(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatWindow else { return }
+        Task { @MainActor in
+            await Task.yield()
+            UserDefaults.shared.set(true, for: \.chatPanelInASeparateWindow)
+        }
+    }
+
+    public func windowDidBecomeKey(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatWindow else { return }
+        let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?
+            .frame ?? .zero
+        var mouseLocation = NSEvent.mouseLocation
+        let windowFrame = chatWindow.frame
+        if mouseLocation.y > windowFrame.maxY - 40 {
+            mouseLocation.y = screenFrame.size.height - mouseLocation.y
+            if let cgEvent = CGEvent(
+                mouseEventSource: nil,
+                mouseType: .leftMouseDown,
+                mouseCursorPosition: mouseLocation,
+                mouseButton: .left
+            ),
+                let event = NSEvent(cgEvent: cgEvent)
+            {
+                chatWindow.performDrag(with: event)
+            }
+        }
+    }
+}
+
 class CanBecomeKeyWindow: NSWindow {
     var canBecomeKeyChecker: () -> Bool = { true }
     override var canBecomeKey: Bool { canBecomeKeyChecker() }
     override var canBecomeMain: Bool { canBecomeKeyChecker() }
+}
+
+class ChatWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        let windowFrame = frame
+        let currentLocation = event.locationInWindow
+        if currentLocation.y > windowFrame.size.height - 40 {
+            performDrag(with: event)
+        }
+    }
 }

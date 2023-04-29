@@ -34,7 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
         Logger.service.info("XPC Service started.")
-        NSApp.setActivationPolicy(.prohibited)
+        NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
     }
 
