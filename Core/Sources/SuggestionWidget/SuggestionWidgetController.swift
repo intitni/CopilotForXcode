@@ -373,7 +373,7 @@ extension SuggestionWidgetController {
                     sourceEditorMonitorTask = nil
                     observeEditorChangeIfNeeded(app)
 
-                    guard let fileURL = await try? await Environment.fetchFocusedElementURI() else {
+                    guard let fileURL = try? await Environment.fetchFocusedElementURI() else {
                         continue
                     }
 
@@ -541,7 +541,7 @@ extension SuggestionWidgetController {
         {
             let noFocus = {
                 guard let xcode = ActiveApplicationMonitor.latestXcode else { return true }
-                let application = AXUIElementCreateApplication(app.processIdentifier)
+                let application = AXUIElementCreateApplication(xcode.processIdentifier)
                 return application
                     .focusedWindow == nil || (application.focusedWindow?.role == "AXWindow")
             }()
