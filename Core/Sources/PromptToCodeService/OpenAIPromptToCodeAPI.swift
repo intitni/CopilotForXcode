@@ -62,7 +62,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
 
                 # Code
                 
-                ```
+                ```\(language.rawValue)
                 \(code)
                 ```
                 """
@@ -75,10 +75,16 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         return .init { continuation in
             Task {
                 var content = ""
+                var extracted = extractCodeAndDescription(from: content)
                 do {
                     for try await fragment in stream {
                         content.append(fragment)
-                        continuation.yield(extractCodeAndDescription(from: content))
+                        extracted = extractCodeAndDescription(from: content)
+                        if !content.isEmpty, extracted.code.isEmpty {
+                            continuation.yield((code: content, description: ""))
+                        } else {
+                            continuation.yield(extracted)
+                        }
                     }
                     continuation.finish()
                 } catch {
@@ -134,3 +140,4 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         return (code, description)
     }
 }
+
