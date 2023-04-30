@@ -325,6 +325,7 @@ extension Workspace {
     }
 
     func notifyOpenFile(filespace: Filespace) {
+        lastTriggerDate = Environment.now()
         Task {
             try await copilotSuggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
@@ -334,6 +335,8 @@ extension Workspace {
     }
 
     func notifyUpdateFile(filespace: Filespace, content: String) {
+        filespace.refreshUpdateTime()
+        lastTriggerDate = Environment.now()
         Task {
             try await copilotSuggestionService?.notifyChangeTextDocument(
                 fileURL: filespace.fileURL,
@@ -343,6 +346,8 @@ extension Workspace {
     }
 
     func notifySaveFile(filespace: Filespace) {
+        filespace.refreshUpdateTime()
+        lastTriggerDate = Environment.now()
         Task {
             try await copilotSuggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
@@ -350,15 +355,22 @@ extension Workspace {
 }
 
 extension Workspace {
-    func cleanUp() {
-        for (fileURL, filespace) in filespaces {
-            if filespace.isExpired {
+    func cleanUp(availableTabs: Set<String>) {
+        for (fileURL, _) in filespaces {
+            if isFilespaceExpired(fileURL: fileURL, availableTabs: availableTabs) {
                 Task {
                     try await copilotSuggestionService?.notifyCloseTextDocument(fileURL: fileURL)
                 }
                 filespaces[fileURL] = nil
             }
         }
+    }
+    
+    func isFilespaceExpired(fileURL: URL, availableTabs: Set<String>) -> Bool {
+        let filename = fileURL.lastPathComponent
+        if availableTabs.contains(filename) { return false }
+        guard let filespace = filespaces[fileURL] else { return true }
+        return filespace.isExpired
     }
 
     func cancelInFlightRealtimeSuggestionRequests() {
