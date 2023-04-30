@@ -56,9 +56,10 @@ extension View {
 }
 
 extension MarkdownUI.Theme {
-    static var custom: MarkdownUI.Theme {
+    static func custom(fontSize: Double) -> MarkdownUI.Theme {
         .gitHub.text {
             BackgroundColor(Color.clear)
+            FontSize(fontSize)
         }
         .codeBlock { configuration in
             configuration.label

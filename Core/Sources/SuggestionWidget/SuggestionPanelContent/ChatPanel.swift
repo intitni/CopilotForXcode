@@ -60,39 +60,16 @@ struct ChatPanelToolbar: View {
 
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
-    @AppStorage(\.disableLazyVStack) var disableLazyVStack
-    @State var height: Double = 0
-    
-    struct HeightPreferenceKey: PreferenceKey {
-        static var defaultValue: Double = 0
-        static func reduce(value: inout Double, nextValue: () -> Double) {
-            value = nextValue() + value
-        }
-    }
-    
-    struct UpdateHeightModifier: ViewModifier {
-        func body(content: Content) -> some View {
-            content
-                .background {
-                    GeometryReader { proxy in
-                        Color.clear
-                            .preference(key: HeightPreferenceKey.self, value: proxy.size.height)
-                    }
-                }
-        }
-    }
     
     var body: some View {
         List {
             Group {
                 Spacer()
-                    .modifier(UpdateHeightModifier())
 
                 if chat.isReceivingMessage {
                     StopRespondingButton(chat: chat)
                         .padding(.vertical, 4)
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                        .modifier(UpdateHeightModifier())
                 }
 
                 if chat.history.isEmpty {
@@ -102,7 +79,6 @@ struct ChatPanelMessages: View {
                         .scaleEffect(x: -1, y: -1, anchor: .center)
                         .foregroundStyle(.secondary)
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                        .modifier(UpdateHeightModifier())
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
@@ -120,20 +96,14 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .listItemTint(.clear)
-                .modifier(UpdateHeightModifier())
 
                 Spacer()
-                    .modifier(UpdateHeightModifier())
             }
             .scaleEffect(x: -1, y: 1, anchor: .center)
         }
         .id("\(chat.history.count), \(chat.isReceivingMessage)")
         .listStyle(.plain)
-        .frame(idealHeight: max(50, height + 16))
         .scaleEffect(x: 1, y: -1, anchor: .center)
-        .onPreferenceChange(HeightPreferenceKey.self) { newHeight in
-            height = newHeight
-        }
     }
 }
 
@@ -169,13 +139,18 @@ private struct UserMessage: View {
     let text: String
     let chat: ChatProvider
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(\.chatFontSize) var chatFontSize
+    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
 
     var body: some View {
         Markdown(text)
             .textSelection(.enabled)
-            .markdownTheme(.custom)
+            .markdownTheme(.custom(fontSize: chatFontSize))
             .markdownCodeSyntaxHighlighter(
-                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+                ChatCodeSyntaxHighlighter(
+                    brightMode: colorScheme != .dark,
+                    fontSize: chatCodeFontSize
+                )
             )
             .frame(alignment: .leading)
             .padding()
@@ -197,13 +172,13 @@ private struct UserMessage: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
                 }
-                
+
                 Button("Send Again") {
                     chat.resendMessage(id: id)
                 }
-                
+
                 Divider()
-                
+
                 Button("Delete") {
                     chat.deleteMessage(id: id)
                 }
@@ -216,6 +191,8 @@ private struct BotMessage: View {
     let text: String
     let chat: ChatProvider
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(\.chatFontSize) var chatFontSize
+    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 2) {
@@ -227,9 +204,12 @@ private struct BotMessage: View {
 
             Markdown(text)
                 .textSelection(.enabled)
-                .markdownTheme(.custom)
+                .markdownTheme(.custom(fontSize: chatFontSize))
                 .markdownCodeSyntaxHighlighter(
-                    ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+                    ChatCodeSyntaxHighlighter(
+                        brightMode: colorScheme != .dark,
+                        fontSize: chatCodeFontSize
+                    )
                 )
                 .frame(alignment: .trailing)
                 .padding()
@@ -249,9 +229,9 @@ private struct BotMessage: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(text, forType: .string)
                     }
-                    
+
                     Divider()
-                    
+
                     Button("Delete") {
                         chat.deleteMessage(id: id)
                     }
@@ -499,9 +479,11 @@ struct ChatPanel_EmptyChat_Preview: PreviewProvider {
 
 struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
     let brightMode: Bool
+    let fontSize: Double
 
-    init(brightMode: Bool) {
+    init(brightMode: Bool, fontSize: Double) {
         self.brightMode = brightMode
+        self.fontSize = fontSize
     }
 
     func highlightCode(_ content: String, language: String?) -> Text {
@@ -509,7 +491,7 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
             code: content,
             language: language ?? "",
             brightMode: brightMode,
-            fontSize: 12
+            fontSize: fontSize
         )
         return Text(AttributedString(content))
     }

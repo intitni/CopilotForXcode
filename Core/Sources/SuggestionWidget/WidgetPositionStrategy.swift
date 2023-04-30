@@ -7,7 +7,9 @@ enum UpdateLocationStrategy {
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen,
-            editor: AXUIElement
+            editor: AXUIElement,
+            preferredInsideEditorMinWidth: Double = UserDefaults.shared
+                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         ) -> (
             widgetFrame: CGRect,
             panelFrame: CGRect,
@@ -41,7 +43,8 @@ enum UpdateLocationStrategy {
                 alignPanelTopToAnchor: nil,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
-                activeScreen: activeScreen
+                activeScreen: activeScreen,
+                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth
             )
         }
     }
@@ -50,7 +53,9 @@ enum UpdateLocationStrategy {
         func framesForWindows(
             editorFrame: CGRect,
             mainScreen: NSScreen,
-            activeScreen: NSScreen
+            activeScreen: NSScreen,
+            preferredInsideEditorMinWidth: Double = UserDefaults.shared
+                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         ) -> (
             widgetFrame: CGRect,
             panelFrame: CGRect,
@@ -62,7 +67,8 @@ enum UpdateLocationStrategy {
                 alignPanelTopToAnchor: false,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
-                activeScreen: activeScreen
+                activeScreen: activeScreen,
+                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth
             )
         }
     }
@@ -73,16 +79,14 @@ enum UpdateLocationStrategy {
             alignPanelTopToAnchor fixedAlignment: Bool?,
             editorFrame: CGRect,
             mainScreen: NSScreen,
-            activeScreen: NSScreen
+            activeScreen: NSScreen,
+            preferredInsideEditorMinWidth: Double
         ) -> (
             widgetFrame: CGRect,
             panelFrame: CGRect,
             tabFrame: CGRect,
             alignPanelTopToAnchor: Bool
         ) {
-            let preferredInsideEditorMinWidth = UserDefaults.shared
-                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
-
             let maxY = max(
                 y,
                 mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,

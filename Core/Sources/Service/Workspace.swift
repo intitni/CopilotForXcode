@@ -3,6 +3,7 @@ import CopilotModel
 import CopilotService
 import Environment
 import Foundation
+import Logger
 import Preferences
 import SuggestionInjector
 import XPCShared
@@ -17,7 +18,7 @@ final class Filespace {
     let fileURL: URL
     private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
     var suggestions: [CopilotCompletion] = [] {
-        didSet { lastSuggestionUpdateTime = Environment.now() }
+        didSet { refreshUpdateTime() }
     }
 
     // stored for pseudo command handler
@@ -39,8 +40,15 @@ final class Filespace {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
     }
 
-    init(fileURL: URL) {
+    let fileSaveWatcher: FileSaveWatcher
+
+    fileprivate init(fileURL: URL, onSave: @escaping (Filespace) -> Void) {
         self.fileURL = fileURL
+        fileSaveWatcher = .init(fileURL: fileURL)
+        fileSaveWatcher.changeHandler = { [weak self] in
+            guard let self else { return }
+            onSave(self)
+        }
     }
 
     func reset(resetSnapshot: Bool = true) {
@@ -49,6 +57,10 @@ final class Filespace {
         if resetSnapshot {
             suggestionSourceSnapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
         }
+    }
+
+    func refreshUpdateTime() {
+        lastSuggestionUpdateTime = Environment.now()
     }
 }
 
@@ -66,7 +78,7 @@ final class Workspace {
             onChange?()
         }
     }
-    
+
     struct SuggestionFeatureDisabledError: Error, LocalizedError {
         var errorDescription: String? {
             "Suggestion feature is disabled for this project."
@@ -107,7 +119,7 @@ final class Workspace {
         }
         return _copilotSuggestionService
     }
-    
+
     var isSuggestionFeatureEnabled: Bool {
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
@@ -122,7 +134,7 @@ final class Workspace {
 
     private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
-        
+
         Task {
             userDefaultsObserver.onChange = { [weak self] in
                 guard let self else { return }
@@ -135,7 +147,7 @@ final class Workspace {
                 options: .new,
                 context: nil
             )
-            
+
             UserDefaults.shared.addObserver(
                 userDefaultsObserver,
                 forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
@@ -166,16 +178,31 @@ final class Workspace {
                 return (workspace, filespace)
             }
         }
-        
+
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
-        let filespace = workspace.filespaces[fileURL] ?? .init(fileURL: fileURL)
-        if workspace.filespaces[fileURL] == nil {
-            workspace.filespaces[fileURL] = filespace
-        }
+        let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
         workspaces[workspaceURL] = workspace
         return (workspace, filespace)
+    }
+
+    func createFilespaceIfNeeded(fileURL: URL) -> Filespace {
+        let existedFilespace = filespaces[fileURL]
+        let filespace = existedFilespace ?? .init(fileURL: fileURL, onSave: { [weak self]
+            filespace in
+                guard let self else { return }
+                notifySaveFile(filespace: filespace)
+        })
+        if filespaces[fileURL] == nil {
+            filespaces[fileURL] = filespace
+        }
+        if existedFilespace == nil {
+            notifyOpenFile(filespace: filespace)
+        } else {
+            filespace.refreshUpdateTime()
+        }
+        return filespace
     }
 }
 
@@ -191,7 +218,8 @@ extension Workspace {
         }
         lastTriggerDate = Environment.now()
 
-        let filespace = filespaces[fileURL] ?? .init(fileURL: fileURL)
+        let filespace = createFilespaceIfNeeded(fileURL: fileURL)
+
         if filespaces[fileURL] == nil {
             filespaces[fileURL] = filespace
         }
@@ -295,12 +323,39 @@ extension Workspace {
 
         return suggestion
     }
+
+    func notifyOpenFile(filespace: Filespace) {
+        Task {
+            try await copilotSuggestionService?.notifyOpenTextDocument(
+                fileURL: filespace.fileURL,
+                content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
+            )
+        }
+    }
+
+    func notifyUpdateFile(filespace: Filespace, content: String) {
+        Task {
+            try await copilotSuggestionService?.notifyChangeTextDocument(
+                fileURL: filespace.fileURL,
+                content: content
+            )
+        }
+    }
+
+    func notifySaveFile(filespace: Filespace) {
+        Task {
+            try await copilotSuggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
+        }
+    }
 }
 
 extension Workspace {
     func cleanUp() {
         for (fileURL, filespace) in filespaces {
             if filespace.isExpired {
+                Task {
+                    try await copilotSuggestionService?.notifyCloseTextDocument(fileURL: fileURL)
+                }
                 filespaces[fileURL] = nil
             }
         }
@@ -311,5 +366,43 @@ extension Workspace {
             task.cancel()
         }
         realtimeSuggestionRequests = []
+    }
+}
+
+final class FileSaveWatcher {
+    let url: URL
+    var fileHandle: FileHandle?
+    var source: DispatchSourceFileSystemObject?
+    var changeHandler: () -> Void = {}
+    
+    init(fileURL: URL) {
+        url = fileURL
+        startup()
+    }
+    
+    deinit {
+        source?.cancel()
+    }
+    
+    func startup() {
+        if let source = source {
+            source.cancel()
+        }
+        
+        fileHandle = try? FileHandle(forReadingFrom: url)
+        if let fileHandle {
+            source = DispatchSource.makeFileSystemObjectSource(
+                fileDescriptor: fileHandle.fileDescriptor,
+                eventMask: .link,
+                queue: .main
+            )
+
+            source?.setEventHandler { [weak self] in
+                self?.changeHandler()
+                self?.startup()
+            }
+            
+            source?.resume()
+        }
     }
 }

@@ -22,19 +22,11 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     enum ActiveTab {
         case suggestion
-        case chat
     }
 
     @Published var content: Content? {
         didSet {
-            adjustActiveTabAndShowHideIfNeeded(tab: .suggestion)
             requestApplicationPolicyUpdate?(self)
-        }
-    }
-
-    @Published var chat: ChatProvider? {
-        didSet {
-            adjustActiveTabAndShowHideIfNeeded(tab: .chat)
         }
     }
 
@@ -52,45 +44,16 @@ final class SuggestionPanelViewModel: ObservableObject {
 
     public init(
         content: Content? = nil,
-        chat: ChatProvider? = nil,
         isPanelDisplayed: Bool = false,
         activeTab: ActiveTab = .suggestion,
         colorScheme: ColorScheme = .dark,
         requestApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)? = nil
     ) {
         self.content = content
-        self.chat = chat
         self.isPanelDisplayed = isPanelDisplayed
         self.activeTab = activeTab
         self.colorScheme = colorScheme
         self.requestApplicationPolicyUpdate = requestApplicationPolicyUpdate
-    }
-
-    func adjustActiveTabAndShowHideIfNeeded(tab: ActiveTab) {
-        switch tab {
-        case .suggestion:
-            if content != nil {
-                activeTab = .suggestion
-                return
-            }
-        case .chat:
-            if chat != nil {
-                activeTab = .chat
-                return
-            }
-        }
-
-        if content != nil {
-            activeTab = .suggestion
-            return
-        }
-
-        if chat != nil {
-            activeTab = .chat
-            return
-        }
-
-        activeTab = .suggestion
     }
 }
 
@@ -123,15 +86,6 @@ struct SuggestionPanelView: View {
                         .allowsHitTesting(viewModel.isPanelDisplayed)
                     }
                 }
-
-                if let chat = viewModel.chat {
-                    if case .chat = viewModel.activeTab {
-                        ChatPanel(chat: chat)
-                            .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .allowsHitTesting(viewModel.isPanelDisplayed)
-                    }
-                }
             }
             .frame(maxWidth: .infinity)
 
@@ -144,7 +98,7 @@ struct SuggestionPanelView: View {
         .preferredColorScheme(viewModel.colorScheme)
         .opacity({
             guard viewModel.isPanelDisplayed else { return 0 }
-            guard viewModel.content != nil || viewModel.chat != nil else { return 0 }
+            guard viewModel.content != nil else { return 0 }
             return 1
         }())
         .animation(.easeInOut(duration: 0.2), value: viewModel.content?.contentHash)
@@ -186,59 +140,6 @@ struct SuggestionPanelView_Error_Preview: PreviewProvider {
     }
 }
 
-struct SuggestionPanelView_Chat_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            chat: .init(
-                history: [
-                    .init(id: "1", isUser: true, text: "Hello"),
-                    .init(id: "2", isUser: false, text: "Hi"),
-                    .init(id: "3", isUser: true, text: "What's up?"),
-                ]
-            ),
-            isPanelDisplayed: true,
-            activeTab: .chat
-        ))
-        .frame(width: 450, height: 300)
-    }
-}
-
-struct SuggestionPanelView_Both_DisplayingChat_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(SuggestionProvider(
-                code: """
-                - (void)addSubview:(UIView *)view {
-                    [self addSubview:view];
-                }
-                """,
-                language: "objective-c",
-                startLineIndex: 8,
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            chat: .init(
-                history: [
-                    .init(id: "1", isUser: true, text: "Hello"),
-                    .init(id: "2", isUser: false, text: "Hi"),
-                    .init(id: "3", isUser: true, text: "What's up?"),
-                ]
-            ),
-            isPanelDisplayed: true,
-            activeTab: .chat,
-            colorScheme: .light
-        ))
-        .frame(width: 450, height: 500)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
 struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
     static var previews: some View {
         SuggestionPanelView(viewModel: .init(
@@ -253,13 +154,6 @@ struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                 suggestionCount: 2,
                 currentSuggestionIndex: 0
             )),
-            chat: .init(
-                history: [
-                    .init(id: "1", isUser: true, text: "Hello"),
-                    .init(id: "2", isUser: false, text: "Hi"),
-                    .init(id: "3", isUser: true, text: "What's up?"),
-                ]
-            ),
             isPanelDisplayed: true,
             activeTab: .suggestion,
             colorScheme: .dark
@@ -274,3 +168,4 @@ struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
         }
     }
 }
+

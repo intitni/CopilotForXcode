@@ -3,6 +3,7 @@ import SwiftUI
 struct CodeBlockSuggestionPanel: View {
     @ObservedObject var suggestion: SuggestionProvider
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(\.suggestionCodeFontSize) var fontSize
 
     struct ToolBar: View {
         @ObservedObject var suggestion: SuggestionProvider
@@ -53,7 +54,8 @@ struct CodeBlockSuggestionPanel: View {
                     code: suggestion.code,
                     language: suggestion.language,
                     startLineIndex: suggestion.startLineIndex,
-                    colorScheme: colorScheme
+                    colorScheme: colorScheme,
+                    fontSize: fontSize
                 )
                 .frame(maxWidth: .infinity)
             }

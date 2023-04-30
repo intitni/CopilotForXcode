@@ -2,9 +2,7 @@
 
 ![Screenshot](/Screenshot.png)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides Github Copilot and ChatGPT support for Xcode. It uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
-
-Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
+Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copilot and ChatGPT support for Xcode. 
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
@@ -27,7 +25,7 @@ Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing t
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
-- [Commands](#commands)
+- [Feature](#feature)
 - [Key Bindings](#key-bindings)
 - [Prevent Suggestions Being Committed](#prevent-suggestions-being-committed)
 - [Limitations](#limitations)
@@ -123,9 +121,19 @@ If you are upgrading from a version lower than **0.7.0**, please run `Copilot fo
 
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
-## Commands
+## Feature
 
 ### Suggestion
+
+GitHub Copilot can provide real-time code suggestions based on the files you have opened. It utilizes its knowledge of your codebase to generate helpful suggestions. 
+
+If you're working on a company project and don't want the suggestion feature to be triggered, you can globally disable it and choose to enable it only for specific projects. 
+
+Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
+
+*: If a file is already open before the helper app launches, you will need to switch to those files in order to send the open file notification. 
+
+#### Commands
 
 - Get Suggestions: Get suggestions for the editing file at the current cursor position.
 - Next Suggestion: If there is more than one suggestion, switch to the next one.
@@ -136,11 +144,15 @@ If you find that some of the features are no longer working, please first try re
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
-**About real-time suggestions**
-
-Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
-
 ### Chat
+
+This feature is powered by ChatGPT. Please ensure that you have set up your OpenAI account before using it.
+
+There are currently two tabs in the chat panel: one is available globally across Xcode, and the other is only available in the current file.
+
+You can detach the chat panel by simply dragging it away. Once detached, the chat panel will remain visible even if Xcode is inactive. To re-attach it to the widget, click the message bubble button located next to the circular widget.
+
+#### Commands
 
 - Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
 - Explain Selection: Open a chat window and explain the selected code.
@@ -166,13 +178,15 @@ If you need to end a plugin, you can just type
 
 ### Prompt to Code
 
-- Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
+Refactor selected code or write new code using natural language. 
 
-Prompt to code commands are not available in comment mode.
+#### Commands
+
+- Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
 
 ### Custom Commands
 
-You can create custom commands that runs Chat and Prompt to Code with custom prompts. This commands can be accessed from the Xcode menu bar and the context menu of the circular widget.
+You can create custom commands that run Chat and Prompt to Code with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. 
 
 ## Key Bindings
 
@@ -217,3 +231,10 @@ fi
 ## License 
 
 MIT.
+
+## What's More
+
+The app uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
+
+Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with GitHub Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
+

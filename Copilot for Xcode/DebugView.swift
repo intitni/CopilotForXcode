@@ -8,6 +8,7 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.preCacheOnFileOpen)
     var preCacheOnFileOpen: Bool
     @AppStorage(\.useCustomScrollViewWorkaround) var useCustomScrollViewWorkaround
+    @AppStorage(\.triggerActionWithAccessibilityAPI) var triggerActionWithAccessibilityAPI
     init() {}
 }
 
@@ -27,6 +28,10 @@ struct DebugSettingsView: View {
                 .toggleStyle(.switch)
                 Toggle(isOn: $settings.useCustomScrollViewWorkaround) {
                     Text("Use custom scroll view workaround for smooth scrolling")
+                }
+                .toggleStyle(.switch)
+                Toggle(isOn: $settings.triggerActionWithAccessibilityAPI) {
+                    Text("Trigger action with AccessibilityAPI")
                 }
                 .toggleStyle(.switch)
             }

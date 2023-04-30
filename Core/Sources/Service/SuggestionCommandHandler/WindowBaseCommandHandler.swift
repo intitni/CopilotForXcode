@@ -53,6 +53,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             forFileAt: fileURL,
             editor: editor
         )
+        
+        try Task.checkCancellation()
 
         if filespace.presentingSuggestion != nil {
             presenter.presentSuggestion(fileURL: fileURL)
@@ -145,7 +147,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
         let injector = SuggestionInjector()
         var lines = editor.lines
@@ -295,8 +297,7 @@ extension WindowBaseCommandHandler {
                 name: command.name
             )
         case let .customChat(systemPrompt, prompt):
-            try await startChatWithSelection(
-                editor: editor,
+            try await startChat(
                 specifiedSystemPrompt: systemPrompt,
                 extraSystemPrompt: nil,
                 sendingMessageImmediately: prompt,
@@ -433,7 +434,7 @@ extension WindowBaseCommandHandler {
 
         Task {
             let customCommandPrefix = {
-                if let name { return "[\(name)]" }
+                if let name { return "[\(name)] " }
                 return ""
             }()
             
@@ -442,7 +443,7 @@ extension WindowBaseCommandHandler {
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "\(customCommandPrefix) System prompt is updated."
+                        summary: "\(customCommandPrefix)System prompt is updated."
                     ))
                 }
             } else if !code.isEmpty, let selection = editor.selections.last {
@@ -450,7 +451,7 @@ extension WindowBaseCommandHandler {
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "\(customCommandPrefix) Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
+                        summary: "\(customCommandPrefix)Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
                     ))
                 }
             } else if !customCommandPrefix.isEmpty {
@@ -458,7 +459,7 @@ extension WindowBaseCommandHandler {
                     history.append(.init(
                         role: .assistant,
                         content: "",
-                        summary: "\(customCommandPrefix) System prompt is updated."
+                        summary: "\(customCommandPrefix)System prompt is updated."
                     ))
                 }
             }
@@ -469,5 +470,64 @@ extension WindowBaseCommandHandler {
         }
 
         presenter.presentChatRoom(fileURL: fileURL)
+    }
+    
+    private func startChat(
+        specifiedSystemPrompt: String?,
+        extraSystemPrompt: String?,
+        sendingMessageImmediately: String?,
+        name: String?
+    ) async throws {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let focusedElementURI = try await Environment.fetchFocusedElementURI()
+        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+
+        var systemPrompt = specifiedSystemPrompt ?? """
+        \(language.isEmpty ? "" : "You must always reply in \(language)")
+        You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
+        
+        You don't have any code in advance, ask me to provide it when needed.
+        """
+
+        if let extraSystemPrompt {
+            systemPrompt += "\n\(extraSystemPrompt)"
+        }
+
+        let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
+
+        await chat.mutateSystemPrompt(systemPrompt)
+
+        Task {
+            let customCommandPrefix = {
+                if let name { return "[\(name)] " }
+                return ""
+            }()
+            
+            if specifiedSystemPrompt != nil {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "\(customCommandPrefix)System prompt is updated."
+                    ))
+                }
+            } else if !customCommandPrefix.isEmpty {
+                await chat.chatGPTService.mutateHistory { history in
+                    history.append(.init(
+                        role: .assistant,
+                        content: "",
+                        summary: "\(customCommandPrefix)System prompt is updated."
+                    ))
+                }
+            }
+
+            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
+                try await chat.send(content: sendingMessageImmediately)
+            }
+        }
+
+        presenter.presentChatRoom(fileURL: focusedElementURI)
     }
 }

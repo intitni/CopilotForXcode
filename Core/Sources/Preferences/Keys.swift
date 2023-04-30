@@ -30,7 +30,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Realtime Suggestion
 
     public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
-        public let defaultValue: Bool = false
+        public let defaultValue: Bool = true
         public let key = "RealtimeSuggestionToggle"
     }
 
@@ -104,7 +104,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Use Global Chat
 
     public struct UseGlobalChat: UserDefaultPreferenceKey {
-        public let defaultValue = false
+        public let defaultValue = true
         public let key = "UseGlobalChat"
     }
 
@@ -113,7 +113,7 @@ public struct UserDefaultPreferenceKeys {
     // MARK: - Hide Common Preceding Spaces in Suggestion
 
     public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
-        public let defaultValue = false
+        public let defaultValue = true
         public let key = "HideCommonPrecedingSpacesInSuggestion"
     }
 
@@ -230,6 +230,31 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTTemperature: ChatGPTTemperature { .init() }
 }
 
+// MARK: - UI
+
+public extension UserDefaultPreferenceKeys {
+    struct SuggestionCodeFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 13 as Double
+        public let key = "SuggestionCodeFontSize"
+    }
+
+    var suggestionCodeFontSize: SuggestionCodeFontSize { .init() }
+    
+    struct ChatFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 12 as Double
+        public let key = "ChatFontSize"
+    }
+
+    var chatFontSize: ChatFontSize { .init() }
+    
+    struct ChatCodeFontSize: UserDefaultPreferenceKey {
+        public let defaultValue = 12 as Double
+        public let key = "ChatCodeFontSize"
+    }
+
+    var chatCodeFontSize: ChatCodeFontSize { .init() }
+}
+
 // MARK: - Custom Commands
 
 public extension UserDefaultPreferenceKeys {
@@ -281,6 +306,11 @@ public enum FeatureFlags {
         public let defaultValue = true
         public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
     }
+    
+    public struct TriggerActionWithAccessibilityAPI: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "FeatureFlag-TriggerActionWithAccessibilityAPI"
+    }
 }
 
 public extension UserDefaultPreferenceKeys {
@@ -289,4 +319,5 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWithInteractiveLoggedInShell: FeatureFlags
         .RunNodeWithInteractiveLoggedInShell { .init() }
     var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
+    var triggerActionWithAccessibilityAPI: FeatureFlags.TriggerActionWithAccessibilityAPI { .init() }
 }

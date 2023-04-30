@@ -12,6 +12,14 @@ public extension AXUIElement {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
 
+    var title: String {
+        (try? copyValue(key: kAXTitleAttribute)) ?? ""
+    }
+    
+    var role: String {
+        (try? copyValue(key: kAXRoleAttribute)) ?? ""
+    }
+
     var doubleValue: Double {
         (try? copyValue(key: kAXValueAttribute)) ?? 0.0
     }
@@ -22,6 +30,10 @@ public extension AXUIElement {
 
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
+    }
+    
+    var label: String {
+        (try? copyValue(key: kAXLabelValueAttribute)) ?? ""
     }
 
     var isSourceEditor: Bool {
@@ -115,14 +127,34 @@ public extension AXUIElement {
         (try? copyValue(key: kAXChildrenAttribute)) ?? []
     }
 
+    var menuBar: AXUIElement? {
+        try? copyValue(key: kAXMenuBarAttribute)
+    }
+
     var visibleChildren: [AXUIElement] {
         (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
     }
 
-    func child(identifier: String) -> AXUIElement? {
+    func child(
+        identifier: String? = nil,
+        title: String? = nil,
+        role: String? = nil
+    ) -> AXUIElement? {
         for child in children {
-            if child.identifier == identifier { return child }
-            if let target = child.child(identifier: identifier) { return target }
+            let match = {
+                if let identifier, child.identifier != identifier { return false }
+                if let title, child.title != title { return false }
+                if let role, child.role != role { return false }
+                return true
+            }()
+            if match { return child }
+        }
+        for child in children {
+            if let target = child.child(
+                identifier: identifier,
+                title: title,
+                role: role
+            ) { return target }
         }
         return nil
     }
