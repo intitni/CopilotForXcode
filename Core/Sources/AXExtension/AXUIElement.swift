@@ -28,8 +28,14 @@ public extension AXUIElement {
         try? copyValue(key: kAXDocumentAttribute)
     }
 
+    /// Label in Accessibility Inspector.
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
+    }
+    
+    /// Type in Accessibility Inspector.
+    var roleDescription: String {
+        (try? copyValue(key: kAXRoleDescriptionAttribute)) ?? ""
     }
     
     var label: String {
@@ -155,6 +161,29 @@ public extension AXUIElement {
                 title: title,
                 role: role
             ) { return target }
+        }
+        return nil
+    }
+    
+    func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
+        var all = [AXUIElement]()
+        for child in children {
+            if match(child) { all.append(child) }
+        }
+        for child in children {
+            all.append(contentsOf: child.children(where: match))
+        }
+        return all
+    }
+    
+    func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
+        for child in children {
+            if match(child) { return child }
+        }
+        for child in children {
+            if let target = child.firstChild(where: match) {
+                return target
+            }
         }
         return nil
     }
