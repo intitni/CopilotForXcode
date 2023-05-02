@@ -33,15 +33,6 @@ struct ChatPanelToolbar: View {
 
     var body: some View {
         HStack {
-            Toggle(isOn: .init(get: {
-                useGlobalChat
-            }, set: { _ in
-                chat.switchContext()
-            })) { EmptyView() }
-                .toggleStyle(GlobalChatSwitchToggleStyle())
-
-            Spacer()
-
             Button(action: {
                 chat.close()
             }) {
@@ -50,9 +41,19 @@ struct ChatPanelToolbar: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .keyboardShortcut("w", modifiers: [.command])
+
+            Spacer()
+
+            Toggle(isOn: .init(get: {
+                useGlobalChat
+            }, set: { _ in
+                chat.switchContext()
+            })) { EmptyView() }
+                .toggleStyle(GlobalChatSwitchToggleStyle())
         }
-        .padding(.leading, 8)
-        .padding(.trailing, 4)
+        .padding(.leading, 4)
+        .padding(.trailing, 8)
         .padding(.vertical, 4)
         .background(.regularMaterial)
     }
