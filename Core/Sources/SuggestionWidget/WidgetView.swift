@@ -25,8 +25,11 @@ struct WidgetView: View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    let isDisplayed = panelViewModel.isPanelDisplayed
-                        || chatWindowViewModel.isPanelDisplayed
+                    let isDisplayed = {
+                        if panelViewModel.isPanelDisplayed && panelViewModel.content != nil { return true }
+                        if chatWindowViewModel.isPanelDisplayed && chatWindowViewModel.chat != nil { return true }
+                        return false
+                    }()
                     panelViewModel.isPanelDisplayed = !isDisplayed
                     chatWindowViewModel.isPanelDisplayed = !isDisplayed
                 }
@@ -75,6 +78,7 @@ struct WidgetView: View {
             }
             .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
             .onChange(of: panelViewModel.content?.contentHash) { _ in refreshRing() }
+            .onChange(of: chatWindowViewModel.chat?.id) { _ in refreshRing() }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
