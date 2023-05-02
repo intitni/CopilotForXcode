@@ -33,15 +33,6 @@ struct ChatPanelToolbar: View {
 
     var body: some View {
         HStack {
-            Toggle(isOn: .init(get: {
-                useGlobalChat
-            }, set: { _ in
-                chat.switchContext()
-            })) { EmptyView() }
-                .toggleStyle(GlobalChatSwitchToggleStyle())
-
-            Spacer()
-
             Button(action: {
                 chat.close()
             }) {
@@ -50,9 +41,19 @@ struct ChatPanelToolbar: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .keyboardShortcut("w", modifiers: [.command])
+
+            Spacer()
+
+            Toggle(isOn: .init(get: {
+                useGlobalChat
+            }, set: { _ in
+                chat.switchContext()
+            })) { EmptyView() }
+                .toggleStyle(GlobalChatSwitchToggleStyle())
         }
-        .padding(.leading, 8)
-        .padding(.trailing, 4)
+        .padding(.leading, 4)
+        .padding(.trailing, 8)
         .padding(.vertical, 4)
         .background(.regularMaterial)
     }
@@ -60,7 +61,7 @@ struct ChatPanelToolbar: View {
 
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
-    
+
     var body: some View {
         List {
             Group {
@@ -287,12 +288,6 @@ struct ChatPanelInputArea: View {
                 .multilineTextAlignment(.leading)
                 .textFieldStyle(.plain)
                 .padding(8)
-                .onSubmit {
-                    if chat.isReceivingMessage { return }
-                    if typedMessage.isEmpty { return }
-                    chat.send(typedMessage)
-                    typedMessage = ""
-                }
 
                 Button(action: {
                     if typedMessage.isEmpty { return }
@@ -304,6 +299,7 @@ struct ChatPanelInputArea: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(chat.isReceivingMessage)
+                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
             }
             .frame(maxWidth: .infinity)
             .background {
@@ -313,6 +309,14 @@ struct ChatPanelInputArea: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+            }
+            .background {
+                Button(action: {
+                    typedMessage += "\n"
+                }) {
+                    EmptyView()
+                }
+                .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
             }
         }
         .onAppear {
@@ -535,3 +539,4 @@ struct ChatPanel_Light_Preview: PreviewProvider {
         .colorScheme(.light)
     }
 }
+

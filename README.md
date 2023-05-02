@@ -144,6 +144,14 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
+#### Keyboard Shortcuts
+
+| Shortcut | Description |
+|:---:|---|
+| `⌘W` | Cancel. |
+| `⌘↩︎` | Accept suggestion. |
+| `⇧↩︎` | Add new line. |
+
 ### Chat
 
 This feature is powered by ChatGPT. Please ensure that you have set up your OpenAI account before using it.
@@ -157,7 +165,13 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 - Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
 - Explain Selection: Open a chat window and explain the selected code.
 
-Chat commands are not available in comment mode.
+#### Keyboard Shortcuts
+
+| Shortcut | Description |
+|:---:|---|
+| `⌘W` | Close the chat. |
+| `⌘M` | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
+| `⇧↩︎` | Add new line. |
 
 #### Chat Plugins
 

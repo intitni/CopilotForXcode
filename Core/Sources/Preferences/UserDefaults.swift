@@ -11,10 +11,7 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.suggestionPresentationMode)
         shared.setupDefaultValue(for: \.widgetColorScheme)
         shared.setupDefaultValue(for: \.customCommands)
-        let runNodeWith: NodeRunner = shared.value(for: \.runNodeWithInteractiveLoggedInShell)
-            ? .bash
-            : .env
-        shared.setupDefaultValue(for: \.runNodeWith, defaultValue: runNodeWith)
+        shared.setupDefaultValue(for: \.runNodeWith, defaultValue: .env)
     }
 }
 

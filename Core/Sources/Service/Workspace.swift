@@ -66,19 +66,6 @@ final class Filespace {
 
 @ServiceActor
 final class Workspace {
-    class UserDefaultsObserver: NSObject {
-        var onChange: (() -> Void)?
-
-        override func observeValue(
-            forKeyPath keyPath: String?,
-            of object: Any?,
-            change: [NSKeyValueChangeKey: Any]?,
-            context: UnsafeMutableRawPointer?
-        ) {
-            onChange?()
-        }
-    }
-
     struct SuggestionFeatureDisabledError: Error, LocalizedError {
         var errorDescription: String? {
             "Suggestion feature is disabled for this project."
@@ -86,9 +73,9 @@ final class Workspace {
     }
 
     let projectRootURL: URL
-    var lastTriggerDate = Environment.now()
+    var lastSuggestionUpdateTime = Environment.now()
     var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastTriggerDate) > 60 * 60 * 8
+        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
     }
 
     private(set) var filespaces = [URL: Filespace]()
@@ -97,7 +84,12 @@ final class Workspace {
     }
 
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()
-    let userDefaultsObserver = UserDefaultsObserver()
+    let userDefaultsObserver = UserDefaultsObserver(
+        object: UserDefaults.shared, forKeyPaths: [
+            UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
+            UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
+        ], context: nil
+    )
 
     private var _copilotSuggestionService: CopilotSuggestionServiceType?
 
@@ -135,26 +127,14 @@ final class Workspace {
     private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
 
-        Task {
-            userDefaultsObserver.onChange = { [weak self] in
-                guard let self else { return }
-                _ = self.copilotSuggestionService
-            }
-
-            UserDefaults.shared.addObserver(
-                userDefaultsObserver,
-                forKeyPath: UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
-                options: .new,
-                context: nil
-            )
-
-            UserDefaults.shared.addObserver(
-                userDefaultsObserver,
-                forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
-                options: .new,
-                context: nil
-            )
+        userDefaultsObserver.onChange = { [weak self] in
+            guard let self else { return }
+            _ = self.copilotSuggestionService
         }
+    }
+    
+    func refreshUpdateTime() {
+        lastSuggestionUpdateTime = Environment.now()
     }
 
     func canAutoTriggerGetSuggestions(
@@ -184,6 +164,7 @@ final class Workspace {
         let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
         workspaces[workspaceURL] = workspace
+        workspace.refreshUpdateTime()
         return (workspace, filespace)
     }
 
@@ -216,7 +197,7 @@ extension Workspace {
         if shouldcancelInFlightRealtimeSuggestionRequests {
             cancelInFlightRealtimeSuggestionRequests()
         }
-        lastTriggerDate = Environment.now()
+        refreshUpdateTime()
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
 
@@ -257,7 +238,7 @@ extension Workspace {
 
     func selectNextSuggestion(forFileAt fileURL: URL) {
         cancelInFlightRealtimeSuggestionRequests()
-        lastTriggerDate = Environment.now()
+        refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
         else { return }
@@ -269,7 +250,7 @@ extension Workspace {
 
     func selectPreviousSuggestion(forFileAt fileURL: URL) {
         cancelInFlightRealtimeSuggestionRequests()
-        lastTriggerDate = Environment.now()
+        refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
         else { return }
@@ -281,7 +262,7 @@ extension Workspace {
 
     func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
         cancelInFlightRealtimeSuggestionRequests()
-        lastTriggerDate = Environment.now()
+        refreshUpdateTime()
 
         if let editor, !editor.uti.isEmpty {
             filespaces[fileURL]?.uti = editor.uti
@@ -297,7 +278,7 @@ extension Workspace {
 
     func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CopilotCompletion? {
         cancelInFlightRealtimeSuggestionRequests()
-        lastTriggerDate = Environment.now()
+        refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               !filespace.suggestions.isEmpty,
               filespace.suggestionIndex >= 0,
@@ -325,6 +306,7 @@ extension Workspace {
     }
 
     func notifyOpenFile(filespace: Filespace) {
+        refreshUpdateTime()
         Task {
             try await copilotSuggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
@@ -334,6 +316,8 @@ extension Workspace {
     }
 
     func notifyUpdateFile(filespace: Filespace, content: String) {
+        filespace.refreshUpdateTime()
+        refreshUpdateTime()
         Task {
             try await copilotSuggestionService?.notifyChangeTextDocument(
                 fileURL: filespace.fileURL,
@@ -343,6 +327,8 @@ extension Workspace {
     }
 
     func notifySaveFile(filespace: Filespace) {
+        filespace.refreshUpdateTime()
+        refreshUpdateTime()
         Task {
             try await copilotSuggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
@@ -350,15 +336,22 @@ extension Workspace {
 }
 
 extension Workspace {
-    func cleanUp() {
-        for (fileURL, filespace) in filespaces {
-            if filespace.isExpired {
+    func cleanUp(availableTabs: Set<String>) {
+        for (fileURL, _) in filespaces {
+            if isFilespaceExpired(fileURL: fileURL, availableTabs: availableTabs) {
                 Task {
                     try await copilotSuggestionService?.notifyCloseTextDocument(fileURL: fileURL)
                 }
                 filespaces[fileURL] = nil
             }
         }
+    }
+
+    func isFilespaceExpired(fileURL: URL, availableTabs: Set<String>) -> Bool {
+        let filename = fileURL.lastPathComponent
+        if availableTabs.contains(filename) { return false }
+        guard let filespace = filespaces[fileURL] else { return true }
+        return filespace.isExpired
     }
 
     func cancelInFlightRealtimeSuggestionRequests() {
@@ -374,21 +367,21 @@ final class FileSaveWatcher {
     var fileHandle: FileHandle?
     var source: DispatchSourceFileSystemObject?
     var changeHandler: () -> Void = {}
-    
+
     init(fileURL: URL) {
         url = fileURL
         startup()
     }
-    
+
     deinit {
         source?.cancel()
     }
-    
+
     func startup() {
         if let source = source {
             source.cancel()
         }
-        
+
         fileHandle = try? FileHandle(forReadingFrom: url)
         if let fileHandle {
             source = DispatchSource.makeFileSystemObjectSource(
@@ -401,8 +394,9 @@ final class FileSaveWatcher {
                 self?.changeHandler()
                 self?.startup()
             }
-            
+
             source?.resume()
         }
     }
 }
+

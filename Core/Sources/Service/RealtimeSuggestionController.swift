@@ -110,6 +110,13 @@ public class RealtimeSuggestionController {
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
         focusedUIElement = focusElement
+
+        Task { // Notify suggestion service for open file.
+            try await Task.sleep(nanoseconds: 500_000_000)
+            let fileURL = try await Environment.fetchCurrentFileURL()
+            _ = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        }
+
         guard focusElementType == "Source Editor" else { return }
         sourceEditor = focusElement
 
@@ -140,11 +147,9 @@ public class RealtimeSuggestionController {
 
         Task { // Get cache ready for real-time suggestions.
             guard UserDefaults.shared.value(for: \.preCacheOnFileOpen) else { return }
-            guard
-                let fileURL = try? await Environment.fetchCurrentFileURL(),
-                let (_, filespace) = try? await Workspace
+            let fileURL = try await Environment.fetchCurrentFileURL()
+            let (_, filespace) = try await Workspace
                 .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-            else { return }
 
             if filespace.uti == nil {
                 Logger.service.info("Generate cache for file.")
@@ -268,9 +273,10 @@ public class RealtimeSuggestionController {
 
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-            let (workspace, filespace) = try? await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+              let (workspace, filespace) = try? await Workspace
+              .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         else { return }
         workspace.notifyUpdateFile(filespace: filespace, content: editor.value)
     }
 }
+

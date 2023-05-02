@@ -59,7 +59,9 @@ struct PromptToCodePanel: View {
                                     provider.cancel()
                                 }) {
                                     Text("Cancel")
-                                }.buttonStyle(CommandButtonStyle(color: .gray))
+                                }
+                                .buttonStyle(CommandButtonStyle(color: .gray))
+                                .keyboardShortcut("w", modifiers: [.command])
 
                                 if !provider.code.isEmpty {
                                     Button(action: {
@@ -149,7 +151,7 @@ struct PromptToCodePanelContent: View {
                     .frame(maxWidth: .infinity)
                     .scaleEffect(x: -1, y: -1, anchor: .center)
                 }
-                
+
                 if let name = provider.name {
                     Text(name)
                         .font(.footnote)
@@ -204,9 +206,6 @@ struct PromptToCodePanelToolbar: View {
                 .multilineTextAlignment(.leading)
                 .textFieldStyle(.plain)
                 .padding(8)
-                .onSubmit {
-                    provider.sendRequirement()
-                }
 
                 Button(action: {
                     provider.sendRequirement()
@@ -216,6 +215,7 @@ struct PromptToCodePanelToolbar: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(provider.isResponding)
+                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
             }
             .frame(maxWidth: .infinity)
             .background {
@@ -225,6 +225,14 @@ struct PromptToCodePanelToolbar: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+            }
+            .background {
+                Button(action: {
+                    provider.requirement += "\n"
+                }) {
+                    EmptyView()
+                }
+                .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
             }
         }
         .onAppear {
@@ -277,3 +285,4 @@ struct PromptToCodePanel_Error_Bright_Preview: PreviewProvider {
         .frame(width: 450, height: 400)
     }
 }
+
