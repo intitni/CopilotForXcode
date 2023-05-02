@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import AXExtension
 import Foundation
+import Logger
 
 public final class ScheduledCleaner {
     public init() {
@@ -12,6 +13,11 @@ public final class ScheduledCleaner {
                 let availableTabs = findAvailableOpenedTabs()
                 for (url, workspace) in workspaces {
                     if workspace.isExpired {
+                        Logger.service.info("Remove idle workspace")
+                        for url in workspace.filespaces.keys {
+                            WidgetDataSource.shared.cleanup(for: url)
+                        }
+                        workspace.cleanUp(availableTabs: availableTabs)
                         workspaces[url] = nil
                     } else {
                         // cleanup chats for unused files
@@ -21,6 +27,7 @@ public final class ScheduledCleaner {
                                 fileURL: url,
                                 availableTabs: availableTabs
                             ) {
+                                Logger.service.info("Remove idle filespace")
                                 WidgetDataSource.shared.cleanup(for: url)
                             }
                         }
