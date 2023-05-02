@@ -132,6 +132,18 @@ final class Workspace {
         return true
     }
 
+    deinit {
+        UserDefaults.shared.removeObserver(
+            userDefaultsObserver,
+            forKeyPath: UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key
+        )
+        
+        UserDefaults.shared.removeObserver(
+            userDefaultsObserver,
+            forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key
+        )
+    }
+
     private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
 
@@ -386,21 +398,21 @@ final class FileSaveWatcher {
     var fileHandle: FileHandle?
     var source: DispatchSourceFileSystemObject?
     var changeHandler: () -> Void = {}
-    
+
     init(fileURL: URL) {
         url = fileURL
         startup()
     }
-    
+
     deinit {
         source?.cancel()
     }
-    
+
     func startup() {
         if let source = source {
             source.cancel()
         }
-        
+
         fileHandle = try? FileHandle(forReadingFrom: url)
         if let fileHandle {
             source = DispatchSource.makeFileSystemObjectSource(
@@ -413,8 +425,9 @@ final class FileSaveWatcher {
                 self?.changeHandler()
                 self?.startup()
             }
-            
+
             source?.resume()
         }
     }
 }
+
