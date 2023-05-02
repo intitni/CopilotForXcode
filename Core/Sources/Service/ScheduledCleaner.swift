@@ -9,7 +9,7 @@ public final class ScheduledCleaner {
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
-                try await Task.sleep(nanoseconds: 2 * 60 * 60 * 1_000_000_000)
+                try await Task.sleep(nanoseconds: 4 * 60 * 60 * 1_000_000_000)
                 let availableTabs = findAvailableOpenedTabs()
                 for (url, workspace) in workspaces {
                     if workspace.isExpired {
