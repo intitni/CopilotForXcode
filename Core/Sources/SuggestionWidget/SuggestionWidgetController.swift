@@ -9,19 +9,6 @@ import SwiftUI
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
-    class UserDefaultsObserver: NSObject {
-        var onChange: (() -> Void)?
-
-        override func observeValue(
-            forKeyPath keyPath: String?,
-            of object: Any?,
-            change: [NSKeyValueChangeKey: Any]?,
-            context: UnsafeMutableRawPointer?
-        ) {
-            onChange?()
-        }
-    }
-
     private lazy var widgetWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -119,8 +106,20 @@ public final class SuggestionWidgetController: NSObject {
     let suggestionPanelViewModel = SuggestionPanelViewModel()
     let chatWindowViewModel = ChatWindowViewModel()
 
-    private var presentationModeChangeObserver = UserDefaultsObserver()
-    private var colorSchemeChangeObserver = UserDefaultsObserver()
+    private var presentationModeChangeObserver = UserDefaultsObserver(
+        object: UserDefaults.shared,
+        forKeyPaths: [
+            UserDefaultPreferenceKeys().suggestionPresentationMode.key,
+        ], context: nil
+    )
+    private var colorSchemeChangeObserver = UserDefaultsObserver(
+        object: UserDefaults.shared, forKeyPaths: [
+            UserDefaultPreferenceKeys().widgetColorScheme.key,
+        ], context: nil
+    )
+    private var systemColorSchemeChangeObserver = UserDefaultsObserver(
+        object: UserDefaults.standard, forKeyPaths: ["AppleInterfaceStyle"], context: nil
+    )
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
@@ -175,13 +174,6 @@ public final class SuggestionWidgetController: NSObject {
                 guard let self else { return }
                 self.updateWindowLocation()
             }
-
-            UserDefaults.shared.addObserver(
-                presentationModeChangeObserver,
-                forKeyPath: UserDefaultPreferenceKeys().suggestionPresentationMode.key,
-                options: .new,
-                context: nil
-            )
         }
 
         Task { @MainActor in
@@ -222,20 +214,9 @@ public final class SuggestionWidgetController: NSObject {
             colorSchemeChangeObserver.onChange = {
                 updateColorScheme()
             }
-
-            UserDefaults.shared.addObserver(
-                colorSchemeChangeObserver,
-                forKeyPath: UserDefaultPreferenceKeys().widgetColorScheme.key,
-                options: .new,
-                context: nil
-            )
-
-            UserDefaults.standard.addObserver(
-                colorSchemeChangeObserver,
-                forKeyPath: "AppleInterfaceStyle",
-                options: .new,
-                context: nil
-            )
+            systemColorSchemeChangeObserver.onChange = {
+                updateColorScheme()
+            }
         }
     }
 }

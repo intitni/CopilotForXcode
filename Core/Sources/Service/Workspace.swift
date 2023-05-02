@@ -66,19 +66,6 @@ final class Filespace {
 
 @ServiceActor
 final class Workspace {
-    class UserDefaultsObserver: NSObject {
-        var onChange: (() -> Void)?
-
-        override func observeValue(
-            forKeyPath keyPath: String?,
-            of object: Any?,
-            change: [NSKeyValueChangeKey: Any]?,
-            context: UnsafeMutableRawPointer?
-        ) {
-            onChange?()
-        }
-    }
-
     struct SuggestionFeatureDisabledError: Error, LocalizedError {
         var errorDescription: String? {
             "Suggestion feature is disabled for this project."
@@ -97,7 +84,12 @@ final class Workspace {
     }
 
     var realtimeSuggestionRequests = Set<Task<Void, Error>>()
-    let userDefaultsObserver = UserDefaultsObserver()
+    let userDefaultsObserver = UserDefaultsObserver(
+        object: UserDefaults.shared, forKeyPaths: [
+            UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
+            UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
+        ], context: nil
+    )
 
     private var _copilotSuggestionService: CopilotSuggestionServiceType?
 
@@ -132,40 +124,12 @@ final class Workspace {
         return true
     }
 
-    deinit {
-        UserDefaults.shared.removeObserver(
-            userDefaultsObserver,
-            forKeyPath: UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key
-        )
-        
-        UserDefaults.shared.removeObserver(
-            userDefaultsObserver,
-            forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key
-        )
-    }
-
     private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
 
-        Task {
-            userDefaultsObserver.onChange = { [weak self] in
-                guard let self else { return }
-                _ = self.copilotSuggestionService
-            }
-
-            UserDefaults.shared.addObserver(
-                userDefaultsObserver,
-                forKeyPath: UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
-                options: .new,
-                context: nil
-            )
-
-            UserDefaults.shared.addObserver(
-                userDefaultsObserver,
-                forKeyPath: UserDefaultPreferenceKeys().disableSuggestionFeatureGlobally.key,
-                options: .new,
-                context: nil
-            )
+        userDefaultsObserver.onChange = { [weak self] in
+            guard let self else { return }
+            _ = self.copilotSuggestionService
         }
     }
 
@@ -377,7 +341,7 @@ extension Workspace {
             }
         }
     }
-    
+
     func isFilespaceExpired(fileURL: URL, availableTabs: Set<String>) -> Bool {
         let filename = fileURL.lastPathComponent
         if availableTabs.contains(filename) { return false }

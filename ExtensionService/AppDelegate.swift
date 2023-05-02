@@ -219,13 +219,17 @@ private class UserDefaultsObserver: NSObject {
     ) {
         onChange?(keyPath)
     }
+    
+    deinit {
+        removeObserver(self, forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
+    }
 
     override init() {
         super.init()
         observe(keyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
     }
 
-    func observe(keyPath: String) {
+    private func observe(keyPath: String) {
         UserDefaults.shared.addObserver(self, forKeyPath: keyPath, options: .new, context: nil)
     }
 }

@@ -79,21 +79,12 @@ final class RealtimeSuggestionIndicatorController {
         }
     }
 
-    class UserDefaultsObserver: NSObject {
-        var onChange: (() -> Void)?
-
-        override func observeValue(
-            forKeyPath keyPath: String?,
-            of object: Any?,
-            change: [NSKeyValueChangeKey: Any]?,
-            context: UnsafeMutableRawPointer?
-        ) {
-            onChange?()
-        }
-    }
-
     private let viewModel = IndicatorContentViewModel()
-    private var userDefaultsObserver = UserDefaultsObserver()
+    private var userDefaultsObserver = UserDefaultsObserver(
+        object: UserDefaults.shared,
+        forKeyPaths: [UserDefaultPreferenceKeys().realtimeSuggestionToggle.key],
+        context: nil
+    )
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
@@ -126,7 +117,7 @@ final class RealtimeSuggestionIndicatorController {
 
     nonisolated init() {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        
+
         Task { @MainActor in
             observeEditorChangeIfNeeded()
             activeApplicationMonitorTask = Task { [weak self] in
@@ -152,17 +143,11 @@ final class RealtimeSuggestionIndicatorController {
 
         Task { @MainActor in
             userDefaultsObserver.onChange = { [weak self] in
-                Task { [weak self] in
+                Task { @MainActor [weak self] in
                     await self?.updateIndicatorVisibility()
                     self?.updateIndicatorLocation()
                 }
             }
-            UserDefaults.shared.addObserver(
-                userDefaultsObserver,
-                forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key,
-                options: .new,
-                context: nil
-            )
         }
     }
 
@@ -297,3 +282,4 @@ final class RealtimeSuggestionIndicatorController {
         viewModel.endPrefetch()
     }
 }
+
