@@ -23,6 +23,14 @@ struct ChatWindowView: View {
         Group {
             if let chat = viewModel.chat {
                 ChatPanel(chat: chat)
+                    .background {
+                        Button(action: {
+                            viewModel.isPanelDisplayed = false
+                        }) {
+                            EmptyView()
+                        }
+                        .keyboardShortcut("M", modifiers: [.command])
+                    }
             }
         }
         .opacity(viewModel.isPanelDisplayed ? 1 : 0)
