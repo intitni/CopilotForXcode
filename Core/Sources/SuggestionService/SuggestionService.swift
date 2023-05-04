@@ -2,7 +2,7 @@ import Foundation
 import SuggestionModel
 import GitHubCopilotService
 
-protocol SuggestionServiceType {
+public protocol SuggestionServiceType {
     func getSuggestions(
         fileURL: URL,
         content: String,
@@ -23,31 +23,54 @@ protocol SuggestionServiceType {
 }
 
 public final class SuggestionService: SuggestionServiceType {
-    func getSuggestions(fileURL: URL, content: String, cursorPosition: SuggestionModel.CursorPosition, tabSize: Int, indentSize: Int, usesTabsForIndentation: Bool, ignoreSpaceOnlySuggestions: Bool, referenceFileURL: [URL]) async throws -> [SuggestionModel.CodeSuggestion] {
-        fatalError()
+    let gitHubCopilotService: GitHubCopilotSuggestionServiceType
+    
+    public init(projectRootURL: URL) {
+        gitHubCopilotService = GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
     }
     
-    func notifyAccepted(_ suggestion: SuggestionModel.CodeSuggestion) async {
-        fatalError()
+    public func getSuggestions(
+        fileURL: URL,
+        content: String,
+        cursorPosition: SuggestionModel.CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        ignoreSpaceOnlySuggestions: Bool,
+        referenceFileURL: [URL]
+    ) async throws -> [SuggestionModel.CodeSuggestion] {
+        try await gitHubCopilotService.getCompletions(
+            fileURL: fileURL,
+            content: content,
+            cursorPosition: cursorPosition,
+            tabSize: tabSize,
+            indentSize: indentSize,
+            usesTabsForIndentation: usesTabsForIndentation,
+            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
+        )
     }
     
-    func notifyRejected(_ suggestions: [SuggestionModel.CodeSuggestion]) async {
-        fatalError()
+    public func notifyAccepted(_ suggestion: SuggestionModel.CodeSuggestion) async {
+        await gitHubCopilotService.notifyAccepted(suggestion)
     }
     
-    func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
-        fatalError()
+    public func notifyRejected(_ suggestions: [SuggestionModel.CodeSuggestion]) async {
+        await gitHubCopilotService.notifyRejected(suggestions)
     }
     
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
-        fatalError()
+    public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
+        try await gitHubCopilotService.notifyOpenTextDocument(fileURL: fileURL, content: content)
     }
     
-    func notifyCloseTextDocument(fileURL: URL) async throws {
-        fatalError()
+    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        try await gitHubCopilotService.notifyChangeTextDocument(fileURL: fileURL, content: content)
     }
     
-    func notifySaveTextDocument(fileURL: URL) async throws {
-        fatalError()
+    public func notifyCloseTextDocument(fileURL: URL) async throws {
+        try await gitHubCopilotService.notifyCloseTextDocument(fileURL: fileURL)
+    }
+    
+    public func notifySaveTextDocument(fileURL: URL) async throws {
+        try await gitHubCopilotService.notifySaveTextDocument(fileURL: fileURL)
     }
 }

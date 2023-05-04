@@ -32,12 +32,12 @@ public class XPCService: NSObject, XPCServiceProtocol {
     // MARK: - Copilot Auth
 
     @ServiceActor
-    lazy var authService: GitHubCopilotAuthServiceType = Environment.createAuthService()
+    lazy var gitHubCopilotAuthService: GitHubCopilotAuthServiceType = GitHubCopilotAuthService()
 
     public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
-                let status = try await authService.checkStatus()
+                let status = try await gitHubCopilotAuthService.checkStatus()
                 reply(status.rawValue, nil)
             } catch {
                 reply(nil, NSError.from(error))
@@ -48,7 +48,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     public func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
-                let (verificationLink, userCode) = try await authService.signInInitiate()
+                let (verificationLink, userCode) = try await gitHubCopilotAuthService.signInInitiate()
                 reply(verificationLink, userCode, nil)
             } catch {
                 reply(nil, nil, NSError.from(error))
@@ -62,7 +62,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         Task { @ServiceActor in
             do {
-                let (username, status) = try await authService.signInConfirm(userCode: userCode)
+                let (username, status) = try await gitHubCopilotAuthService.signInConfirm(userCode: userCode)
                 reply(username, status.rawValue, nil)
             } catch {
                 reply(nil, nil, NSError.from(error))
@@ -73,7 +73,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     public func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
-                let version = try await authService.version()
+                let version = try await gitHubCopilotAuthService.version()
                 reply(version, nil)
             } catch {
                 reply(nil, NSError.from(error))
@@ -84,7 +84,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     public func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
-                let status = try await authService.signOut()
+                let status = try await gitHubCopilotAuthService.signOut()
                 reply(status.rawValue, nil)
             } catch {
                 reply(nil, NSError.from(error))

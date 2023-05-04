@@ -22,10 +22,6 @@ import XPCShared
         URL(fileURLWithPath: "/path/to/project/file.swift")
     }
 
-    Environment.createAuthService = {
-        fatalError("")
-    }
-
     Environment.createSuggestionService = {
         _ in fatalError("")
     }

@@ -52,6 +52,7 @@ let package = Package(
             name: "Service",
             dependencies: [
                 "SuggestionModel",
+                "SuggestionService",
                 "GitHubCopilotService",
                 "OpenAIService",
                 "Preferences",
