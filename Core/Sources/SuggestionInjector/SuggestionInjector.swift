@@ -1,4 +1,4 @@
-import CopilotModel
+import SuggestionModel
 import Foundation
 
 let suggestionStart = "/*========== Copilot Suggestion"

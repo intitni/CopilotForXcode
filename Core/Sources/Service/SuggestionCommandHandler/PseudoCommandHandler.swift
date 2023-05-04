@@ -1,6 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
-import CopilotModel
+import SuggestionModel
 import Environment
 import Preferences
 import SuggestionInjector

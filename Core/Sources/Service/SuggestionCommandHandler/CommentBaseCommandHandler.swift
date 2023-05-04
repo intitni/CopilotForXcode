@@ -1,4 +1,4 @@
-import CopilotModel
+import SuggestionModel
 import Environment
 import Foundation
 import SuggestionInjector

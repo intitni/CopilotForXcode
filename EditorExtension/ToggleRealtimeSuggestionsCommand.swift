@@ -1,5 +1,5 @@
 import Client
-import CopilotModel
+import SuggestionModel
 import Foundation
 import XcodeKit
 

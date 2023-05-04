@@ -1,6 +1,6 @@
 import AppKit
 import Client
-import CopilotModel
+import SuggestionModel
 import GitHubCopilotService
 import Environment
 import Foundation
@@ -65,12 +65,12 @@ class MockSuggestionService: CopilotSuggestionServiceType {
     func getCompletions(
         fileURL: URL,
         content: String,
-        cursorPosition: CopilotModel.CursorPosition,
+        cursorPosition: SuggestionModel.CursorPosition,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotModel.CodeSuggestion] {
+    ) async throws -> [SuggestionModel.CodeSuggestion] {
         completions
     }
 

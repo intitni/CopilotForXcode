@@ -1,6 +1,6 @@
 import AppKit
 import Client
-import CopilotModel
+import SuggestionModel
 import SwiftUI
 
 struct AccountView: View {

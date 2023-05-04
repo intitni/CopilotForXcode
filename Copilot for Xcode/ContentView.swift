@@ -1,5 +1,5 @@
 import AppKit
-import CopilotModel
+import SuggestionModel
 import SwiftUI
 
 struct ContentView: View {

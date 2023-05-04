@@ -21,7 +21,7 @@ let package = Package(
         .library(
             name: "Client",
             targets: [
-                "CopilotModel",
+                "SuggestionModel",
                 "Client",
                 "XPCShared",
                 "Preferences",
@@ -45,23 +45,23 @@ let package = Package(
         .target(name: "CGEventObserver"),
         .target(
             name: "GitHubCopilotService",
-            dependencies: ["LanguageClient", "CopilotModel", "XPCShared", "Preferences"]
+            dependencies: ["LanguageClient", "SuggestionModel", "XPCShared", "Preferences"]
         ),
         .testTarget(
             name: "GitHubCopilotServiceTests",
             dependencies: ["GitHubCopilotService"]
         ),
         .target(
-            name: "CopilotModel",
+            name: "SuggestionModel",
             dependencies: ["LanguageClient"]
         ),
         .testTarget(
-            name: "CopilotModelTests",
-            dependencies: ["CopilotModel"]
+            name: "SuggestionModelTests",
+            dependencies: ["SuggestionModel"]
         ),
         .target(
             name: "SuggestionInjector",
-            dependencies: ["CopilotModel"]
+            dependencies: ["SuggestionModel"]
         ),
         .testTarget(
             name: "SuggestionInjectorTests",
@@ -69,12 +69,12 @@ let package = Package(
         ),
         .target(
             name: "Client",
-            dependencies: ["CopilotModel", "Preferences", "XPCShared", "Logger"]
+            dependencies: ["SuggestionModel", "Preferences", "XPCShared", "Logger"]
         ),
         .target(
             name: "Service",
             dependencies: [
-                "CopilotModel",
+                "SuggestionModel",
                 "GitHubCopilotService",
                 "OpenAIService",
                 "Preferences",
@@ -94,7 +94,7 @@ let package = Package(
         ),
         .target(
             name: "XPCShared",
-            dependencies: ["CopilotModel"]
+            dependencies: ["SuggestionModel"]
         ),
         .testTarget(
             name: "ServiceTests",
@@ -159,7 +159,7 @@ let package = Package(
         .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
         .target(
             name: "PromptToCodeService",
-            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService", "CopilotModel"]
+            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService", "SuggestionModel"]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
         .target(name: "SuggestionService", dependencies: [
