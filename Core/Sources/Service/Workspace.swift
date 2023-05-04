@@ -91,9 +91,9 @@ final class Workspace {
         ], context: nil
     )
 
-    private var _copilotSuggestionService: CopilotSuggestionServiceType?
+    private var _copilotSuggestionService: GitHubCopilotSuggestionServiceType?
 
-    private var copilotSuggestionService: CopilotSuggestionServiceType? {
+    private var copilotSuggestionService: GitHubCopilotSuggestionServiceType? {
         // Check if the workspace is disabled.
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)

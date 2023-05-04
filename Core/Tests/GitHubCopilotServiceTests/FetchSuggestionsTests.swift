@@ -5,13 +5,13 @@ import XCTest
 
 final class FetchSuggestionTests: XCTestCase {
     func test_process_sugestions_from_server() async throws {
-        struct TestServer: CopilotLSP {
+        struct TestServer: GitHubCopilotLSP {
             func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
                 fatalError()
             }
             
-            func sendRequest<E>(_: E) async throws -> E.Response where E: CopilotRequestType {
-                return CopilotRequest.GetCompletionsCycling.Response(completions: [
+            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
                         text: "Hello World\n",
                         position: .init((0, 0)),
@@ -36,7 +36,7 @@ final class FetchSuggestionTests: XCTestCase {
                 ]) as! E.Response
             }
         }
-        let service = CopilotSuggestionService(designatedServer: TestServer())
+        let service = GitHubCopilotSuggestionService(designatedServer: TestServer())
         let completions = try await service.getCompletions(
             fileURL: .init(fileURLWithPath: "/file.swift"),
             content: "",
@@ -50,13 +50,13 @@ final class FetchSuggestionTests: XCTestCase {
     }
 
     func test_ignore_empty_suggestions() async throws {
-        struct TestServer: CopilotLSP {
+        struct TestServer: GitHubCopilotLSP {
             func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
                 fatalError()
             }
             
-            func sendRequest<E>(_: E) async throws -> E.Response where E: CopilotRequestType {
-                return CopilotRequest.GetCompletionsCycling.Response(completions: [
+            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
                         text: "Hello World\n",
                         position: .init((0, 0)),
@@ -81,7 +81,7 @@ final class FetchSuggestionTests: XCTestCase {
                 ]) as! E.Response
             }
         }
-        let service = CopilotSuggestionService(designatedServer: TestServer())
+        let service = GitHubCopilotSuggestionService(designatedServer: TestServer())
         let completions = try await service.getCompletions(
             fileURL: .init(fileURLWithPath: "/file.swift"),
             content: "",
@@ -102,9 +102,9 @@ final class FetchSuggestionTests: XCTestCase {
             }
         }
 
-        class TestServer: CopilotLSP {
-            func sendRequest<E>(_ r: E) async throws -> E.Response where E: CopilotRequestType {
-                return CopilotRequest.GetCompletionsCycling.Response(completions: [
+        class TestServer: GitHubCopilotLSP {
+            func sendRequest<E>(_ r: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
                         text: "Hello World\n",
                         position: .init((0, 0)),
@@ -116,7 +116,7 @@ final class FetchSuggestionTests: XCTestCase {
             }
         }
         let testServer = TestServer()
-        let service = CopilotSuggestionService(designatedServer: testServer)
+        let service = GitHubCopilotSuggestionService(designatedServer: testServer)
         let completions = try await service.getCompletions(
             fileURL: .init(fileURLWithPath: "/"),
             content: "",

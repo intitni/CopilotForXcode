@@ -32,7 +32,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
     // MARK: - Copilot Auth
 
     @ServiceActor
-    lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
+    lazy var authService: GitHubCopilotAuthServiceType = Environment.createAuthService()
 
     public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
         Task { @ServiceActor in

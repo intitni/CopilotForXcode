@@ -3,7 +3,7 @@ import Foundation
 import JSONRPC
 import LanguageServerProtocol
 
-struct CopilotDoc: Codable {
+struct GitHubCopilotDoc: Codable {
     var source: String
     var tabSize: Int
     var indentSize: Int
@@ -17,13 +17,13 @@ struct CopilotDoc: Codable {
     var version: Int = 0
 }
 
-protocol CopilotRequestType {
+protocol GitHubCopilotRequestType {
     associatedtype Response: Codable
     var request: ClientRequest { get }
 }
 
-enum CopilotRequest {
-    struct SetEditorInfo: CopilotRequestType {
+enum GitHubCopilotRequest {
+    struct SetEditorInfo: GitHubCopilotRequestType {
         struct Response: Codable {}
 
         var request: ClientRequest {
@@ -40,7 +40,7 @@ enum CopilotRequest {
         }
     }
 
-    struct GetVersion: CopilotRequestType {
+    struct GetVersion: GitHubCopilotRequestType {
         struct Response: Codable {
             var version: String
         }
@@ -50,7 +50,7 @@ enum CopilotRequest {
         }
     }
 
-    struct CheckStatus: CopilotRequestType {
+    struct CheckStatus: GitHubCopilotRequestType {
         struct Response: Codable {
             var status: GitHubCopilotAccountStatus
         }
@@ -60,7 +60,7 @@ enum CopilotRequest {
         }
     }
 
-    struct SignInInitiate: CopilotRequestType {
+    struct SignInInitiate: GitHubCopilotRequestType {
         struct Response: Codable {
             var verificationUri: String
             var status: String
@@ -74,7 +74,7 @@ enum CopilotRequest {
         }
     }
 
-    struct SignInConfirm: CopilotRequestType {
+    struct SignInConfirm: GitHubCopilotRequestType {
         struct Response: Codable {
             var status: GitHubCopilotAccountStatus
             var user: String
@@ -89,7 +89,7 @@ enum CopilotRequest {
         }
     }
 
-    struct SignOut: CopilotRequestType {
+    struct SignOut: GitHubCopilotRequestType {
         struct Response: Codable {
             var status: GitHubCopilotAccountStatus
         }
@@ -99,12 +99,12 @@ enum CopilotRequest {
         }
     }
 
-    struct GetCompletions: CopilotRequestType {
+    struct GetCompletions: GitHubCopilotRequestType {
         struct Response: Codable {
             var completions: [CodeSuggestion]
         }
 
-        var doc: CopilotDoc
+        var doc: GitHubCopilotDoc
 
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(doc)) ?? Data()
@@ -115,12 +115,12 @@ enum CopilotRequest {
         }
     }
 
-    struct GetCompletionsCycling: CopilotRequestType {
+    struct GetCompletionsCycling: GitHubCopilotRequestType {
         struct Response: Codable {
             var completions: [CodeSuggestion]
         }
 
-        var doc: CopilotDoc
+        var doc: GitHubCopilotDoc
 
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(doc)) ?? Data()
@@ -131,12 +131,12 @@ enum CopilotRequest {
         }
     }
 
-    struct GetPanelCompletions: CopilotRequestType {
+    struct GetPanelCompletions: GitHubCopilotRequestType {
         struct Response: Codable {
             var completions: [CodeSuggestion]
         }
 
-        var doc: CopilotDoc
+        var doc: GitHubCopilotDoc
 
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(doc)) ?? Data()
@@ -147,7 +147,7 @@ enum CopilotRequest {
         }
     }
 
-    struct NotifyAccepted: CopilotRequestType {
+    struct NotifyAccepted: GitHubCopilotRequestType {
         struct Response: Codable {}
 
         var completionUUID: String
@@ -159,7 +159,7 @@ enum CopilotRequest {
         }
     }
 
-    struct NotifyRejected: CopilotRequestType {
+    struct NotifyRejected: GitHubCopilotRequestType {
         struct Response: Codable {}
 
         var completionUUIDs: [String]

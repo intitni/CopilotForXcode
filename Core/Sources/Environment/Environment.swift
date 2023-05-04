@@ -124,13 +124,13 @@ public enum Environment {
         return try await fetchCurrentFileURL()
     }
 
-    public static var createAuthService: () -> CopilotAuthServiceType = {
-        CopilotAuthService()
+    public static var createAuthService: () -> GitHubCopilotAuthServiceType = {
+        GitHubCopilotAuthService()
     }
 
     public static var createSuggestionService: (_ projectRootURL: URL)
-        -> CopilotSuggestionServiceType = { projectRootURL in
-            CopilotSuggestionService(projectRootURL: projectRootURL)
+        -> GitHubCopilotSuggestionServiceType = { projectRootURL in
+            GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
         }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
