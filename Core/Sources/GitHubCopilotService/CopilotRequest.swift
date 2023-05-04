@@ -52,7 +52,7 @@ enum CopilotRequest {
 
     struct CheckStatus: CopilotRequestType {
         struct Response: Codable {
-            var status: CopilotStatus
+            var status: GitHubCopilotAccountStatus
         }
 
         var request: ClientRequest {
@@ -76,7 +76,7 @@ enum CopilotRequest {
 
     struct SignInConfirm: CopilotRequestType {
         struct Response: Codable {
-            var status: CopilotStatus
+            var status: GitHubCopilotAccountStatus
             var user: String
         }
 
@@ -91,7 +91,7 @@ enum CopilotRequest {
 
     struct SignOut: CopilotRequestType {
         struct Response: Codable {
-            var status: CopilotStatus
+            var status: GitHubCopilotAccountStatus
         }
 
         var request: ClientRequest {

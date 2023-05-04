@@ -7,10 +7,10 @@ import Preferences
 import XPCShared
 
 public protocol CopilotAuthServiceType {
-    func checkStatus() async throws -> CopilotStatus
+    func checkStatus() async throws -> GitHubCopilotAccountStatus
     func signInInitiate() async throws -> (verificationUri: String, userCode: String)
-    func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus)
-    func signOut() async throws -> CopilotStatus
+    func signInConfirm(userCode: String) async throws -> (username: String, status: GitHubCopilotAccountStatus)
+    func signOut() async throws -> GitHubCopilotAccountStatus
     func version() async throws -> String
 }
 
@@ -160,7 +160,7 @@ public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceTyp
         }
     }
 
-    public func checkStatus() async throws -> CopilotStatus {
+    public func checkStatus() async throws -> GitHubCopilotAccountStatus {
         try await server.sendRequest(CopilotRequest.CheckStatus()).status
     }
 
@@ -170,13 +170,13 @@ public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceTyp
     }
 
     public func signInConfirm(userCode: String) async throws
-        -> (username: String, status: CopilotStatus)
+        -> (username: String, status: GitHubCopilotAccountStatus)
     {
         let result = try await server.sendRequest(CopilotRequest.SignInConfirm(userCode: userCode))
         return (result.user, result.status)
     }
 
-    public func signOut() async throws -> CopilotStatus {
+    public func signOut() async throws -> GitHubCopilotAccountStatus {
         try await server.sendRequest(CopilotRequest.SignOut()).status
     }
 
