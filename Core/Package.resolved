@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "gptencoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alfianlosari/GPTEncoder",
+      "state" : {
+        "revision" : "a86968867ab4380e36b904a14c42215f71efe8b4",
+        "version" : "1.0.4"
+      }
+    },
+    {
       "identity" : "highlightr",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/raspu/Highlightr",
@@ -95,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/JohnSundell/Splash",
       "state" : {
-        "revision" : "7f4df436eb78fe64fe2c32c58006e9949fa28ad8",
-        "version" : "0.16.0"
+        "branch" : "master",
+        "revision" : "2e3f17c2d09689c8bf175c4a84ff7f2ad3353301"
       }
     },
     {
@@ -122,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gonzalezreal/swift-markdown-ui",
       "state" : {
-        "revision" : "4392c3cefd08db10f13ffb019d7c7a4a622824f5",
-        "version" : "2.0.2"
+        "revision" : "12b351a75201a8124c2f2e1f9fc6ef5cd812c0b9",
+        "version" : "2.1.0"
       }
     }
   ],
