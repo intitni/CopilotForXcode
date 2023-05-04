@@ -2,7 +2,7 @@ import Foundation
 import JSONRPC
 import LanguageClient
 import LanguageServerProtocol
-
+import Logger
 import ProcessEnv
 
 /// A clone of the `LocalProcessServer`.
@@ -167,10 +167,25 @@ extension CustomJSONRPCLanguageServer {
     ) -> Bool {
         let methodName = anyNotification.method
         switch methodName {
+        case "window/logMessage":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+            }
+            block(nil)
+            return true
         case "LogMessage":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+            }
             block(nil)
             return true
         case "statusNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+            }
             block(nil)
             return true
         default:

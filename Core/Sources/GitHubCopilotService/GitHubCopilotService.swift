@@ -261,7 +261,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService, Git
     ) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
         let uri = "file://\(fileURL.path)"
-//        Logger.service.debug("Open \(uri)")
+//        Logger.service.debug("Open \(uri), \(content.count)")
         try await server.sendNotification(
             .didOpenTextDocument(
                 DidOpenTextDocumentParams(
@@ -278,7 +278,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService, Git
 
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let uri = "file://\(fileURL.path)"
-//        Logger.service.debug("Change \(uri)")
+//        Logger.service.debug("Change \(uri), \(content.count)")
         try await server.sendNotification(
             .didChangeTextDocument(
                 DidChangeTextDocumentParams(
