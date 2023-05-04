@@ -6,6 +6,10 @@ import XCTest
 final class FetchSuggestionTests: XCTestCase {
     func test_process_sugestions_from_server() async throws {
         struct TestServer: CopilotLSP {
+            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+                fatalError()
+            }
+            
             func sendRequest<E>(_: E) async throws -> E.Response where E: CopilotRequestType {
                 return CopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
@@ -47,6 +51,10 @@ final class FetchSuggestionTests: XCTestCase {
 
     func test_ignore_empty_suggestions() async throws {
         struct TestServer: CopilotLSP {
+            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+                fatalError()
+            }
+            
             func sendRequest<E>(_: E) async throws -> E.Response where E: CopilotRequestType {
                 return CopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
