@@ -12,7 +12,7 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
 
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,

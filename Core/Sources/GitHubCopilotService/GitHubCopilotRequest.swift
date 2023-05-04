@@ -11,7 +11,7 @@ struct GitHubCopilotDoc: Codable {
     var path: String
     var uri: String
     var relativePath: String
-    var languageId: CopilotLanguage
+    var languageId: CodeLanguage
     var position: Position
     /// Buffer version. Not sure what this is for, not sure how to get it
     var version: Int = 0

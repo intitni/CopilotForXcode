@@ -89,7 +89,7 @@ final class WidgetDataSource {
         selectedCode: String,
         allCode: String,
         selectionRange: CursorRange,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         identSize: Int = 4,
         usesTabsForIndentation: Bool = false,
         extraSystemPrompt: String?,

@@ -14,7 +14,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
 
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,
