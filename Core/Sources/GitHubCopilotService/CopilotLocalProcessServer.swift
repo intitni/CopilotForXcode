@@ -7,11 +7,11 @@ import ProcessEnv
 
 /// A clone of the `LocalProcessServer`.
 /// We need it because the original one does not allow us to handle custom notifications.
-public class CopilotLocalProcessServer {
+class CopilotLocalProcessServer {
     private let transport: StdioDataTransport
     private let process: Process
     private var wrappedServer: CustomJSONRPCLanguageServer?
-    public var terminationHandler: (() -> Void)?
+    var terminationHandler: (() -> Void)?
 
     public convenience init(
         path: String,
@@ -27,7 +27,7 @@ public class CopilotLocalProcessServer {
         self.init(executionParameters: params)
     }
 
-    public init(executionParameters parameters: Process.ExecutionParameters) {
+    init(executionParameters parameters: Process.ExecutionParameters) {
         transport = StdioDataTransport()
         wrappedServer = CustomJSONRPCLanguageServer(dataTransport: transport)
 
@@ -61,7 +61,7 @@ public class CopilotLocalProcessServer {
         terminationHandler?()
     }
 
-    public var logMessages: Bool {
+    var logMessages: Bool {
         get { return wrappedServer?.logMessages ?? false }
         set { wrappedServer?.logMessages = newValue }
     }

@@ -1,5 +1,5 @@
-import CopilotModel
-import CopilotService
+import SuggestionModel
+import GitHubCopilotService
 import Foundation
 import OpenAIService
 
@@ -14,7 +14,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
 
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,

@@ -1,6 +1,7 @@
-import CopilotModel
 import Foundation
+import GitHubCopilotService
 import Logger
+import SuggestionModel
 import XPCShared
 
 public struct AsyncXPCService {
@@ -11,7 +12,7 @@ public struct AsyncXPCService {
         self.service = service
     }
 
-    public func checkStatus() async throws -> CopilotStatus {
+    public func checkStatus() async throws -> GitHubCopilotAccountStatus {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.checkStatus { status, error in
@@ -20,8 +21,8 @@ public struct AsyncXPCService {
                     return
                 }
                 continuation.resume(
-                    status.flatMap(CopilotStatus.init(rawValue:))
-                        ?? CopilotStatus.notAuthorized
+                    status.flatMap(GitHubCopilotAccountStatus.init(rawValue:))
+                        ?? GitHubCopilotAccountStatus.notAuthorized
                 )
             }
         }
@@ -63,7 +64,7 @@ public struct AsyncXPCService {
     }
 
     public func signInConfirm(userCode: String) async throws
-        -> (username: String, status: CopilotStatus)
+        -> (username: String, status: GitHubCopilotAccountStatus)
     {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
@@ -74,13 +75,13 @@ public struct AsyncXPCService {
                 }
                 continuation.resume((
                     username ?? "",
-                    status.flatMap(CopilotStatus.init(rawValue:)) ?? .alreadySignedIn
+                    status.flatMap(GitHubCopilotAccountStatus.init(rawValue:)) ?? .alreadySignedIn
                 ))
             }
         }
     }
 
-    public func signOut() async throws -> CopilotStatus {
+    public func signOut() async throws -> GitHubCopilotAccountStatus {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
             service.signOut { finishstatus, error in
@@ -89,7 +90,10 @@ public struct AsyncXPCService {
                     return
                 }
                 continuation
-                    .resume(finishstatus.flatMap(CopilotStatus.init(rawValue:)) ?? .notSignedIn)
+                    .resume(
+                        finishstatus
+                            .flatMap(GitHubCopilotAccountStatus.init(rawValue:)) ?? .notSignedIn
+                    )
             }
         }
     }
@@ -257,3 +261,4 @@ func suggestionRequest(
         }
     }
 }
+

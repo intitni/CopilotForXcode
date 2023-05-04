@@ -1,6 +1,6 @@
 import Foundation
 
-public enum CopilotStatus: String, Codable, CustomStringConvertible {
+public enum GitHubCopilotAccountStatus: String, Codable, CustomStringConvertible {
     case alreadySignedIn = "AlreadySignedIn"
     case maybeOk = "MaybeOk"
     case notAuthorized = "NotAuthorized"

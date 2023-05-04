@@ -1,5 +1,5 @@
 import ChatService
-import CopilotModel
+import SuggestionModel
 import Foundation
 import OpenAIService
 import SuggestionWidget

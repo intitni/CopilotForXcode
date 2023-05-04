@@ -1,4 +1,4 @@
-import CopilotModel
+import SuggestionModel
 import XCTest
 
 @testable import SuggestionInjector
@@ -14,7 +14,7 @@ final class ProposeSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 2, character: 19),
             uuid: "",
@@ -61,7 +61,7 @@ final class ProposeSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 1, character: 0),
             uuid: "",
@@ -104,7 +104,7 @@ final class ProposeSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 1, character: 0),
             uuid: "",
@@ -148,7 +148,7 @@ final class ProposeSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 1, character: 0),
             uuid: "",
@@ -196,7 +196,7 @@ final class ProposeSuggestionTests: XCTestCase {
             quickSort(&array, left, right)
             print(array)
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 1, character: 0),
             uuid: "",
@@ -246,7 +246,7 @@ final class ProposeSuggestionTests: XCTestCase {
             print(array)
         }
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 0),
             uuid: "",
@@ -293,7 +293,7 @@ final class ProposeSuggestionTests: XCTestCase {
         }
         """
         let text = "} else {\n"
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 2, character: 0),
             uuid: "",

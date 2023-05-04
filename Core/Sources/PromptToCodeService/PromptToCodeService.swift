@@ -1,5 +1,5 @@
-import CopilotModel
-import CopilotService
+import SuggestionModel
+import GitHubCopilotService
 import Foundation
 import OpenAIService
 
@@ -47,7 +47,7 @@ public final class PromptToCodeService: ObservableObject {
     @Published public var isContinuous = false
     public var canRevert: Bool { history != .empty }
     public var selectionRange: CursorRange
-    public var language: CopilotLanguage
+    public var language: CodeLanguage
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
     public var projectRootURL: URL
@@ -58,7 +58,7 @@ public final class PromptToCodeService: ObservableObject {
     public init(
         code: String,
         selectionRange: CursorRange,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         identSize: Int,
         usesTabsForIndentation: Bool,
         projectRootURL: URL,
@@ -124,7 +124,7 @@ public final class PromptToCodeService: ObservableObject {
         self.description = description
     }
 
-    public func generateCompletion() -> CopilotCompletion {
+    public func generateCompletion() -> CodeSuggestion {
         .init(
             text: code,
             position: selectionRange.start,
@@ -143,7 +143,7 @@ public final class PromptToCodeService: ObservableObject {
 protocol PromptToCodeAPI {
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,

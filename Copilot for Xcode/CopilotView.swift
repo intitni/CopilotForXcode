@@ -1,12 +1,13 @@
 import AppKit
 import Client
-import CopilotModel
+import GitHubCopilotService
+import SuggestionModel
 import SwiftUI
 
 struct CopilotView: View {
     @Environment(\.openURL) var openURL
     @AppStorage("username") var username: String = ""
-    @State var copilotStatus: CopilotStatus?
+    @State var copilotStatus: GitHubCopilotAccountStatus?
     @State var message: String?
     @State var userCode: String?
     @State var version: String?
@@ -183,3 +184,4 @@ struct CopilotView_Previews: PreviewProvider {
         .background(Color.black)
     }
 }
+

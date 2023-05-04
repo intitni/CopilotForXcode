@@ -1,9 +1,10 @@
 import ActiveApplicationMonitor
 import AppKit
 import AXExtension
-import CopilotService
 import Foundation
+import GitHubCopilotService
 import Logger
+import SuggestionService
 
 public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     public var errorDescription: String? {
@@ -105,14 +106,14 @@ public enum Environment {
         }
         throw FailedToFetchFileURLError()
     }
-    
+
     public static var fetchFocusedElementURI: () async throws -> URL = {
         guard let xcode = ActiveApplicationMonitor.activeXcode
             ?? ActiveApplicationMonitor.latestXcode
         else {
             throw FailedToFetchFileURLError()
         }
-        
+
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         let focusedElement = application.focusedElement
         if focusedElement?.description != "Source Editor" {
@@ -120,17 +121,13 @@ public enum Environment {
             let id = window?.identifier.hashValue
             return URL(fileURLWithPath: "/xcode-focused-element/\(id ?? 0)")
         }
-        
+
         return try await fetchCurrentFileURL()
     }
 
-    public static var createAuthService: () -> CopilotAuthServiceType = {
-        CopilotAuthService()
-    }
-
     public static var createSuggestionService: (_ projectRootURL: URL)
-        -> CopilotSuggestionServiceType = { projectRootURL in
-            CopilotSuggestionService(projectRootURL: projectRootURL)
+        -> SuggestionServiceType = { projectRootURL in
+            SuggestionService(projectRootURL: projectRootURL)
         }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
@@ -139,7 +136,7 @@ public enum Environment {
         else { return }
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-        
+
         await Task.yield()
 
         if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
@@ -173,7 +170,7 @@ public enum Environment {
                         "Can't run command \(name)."
                     }
                 }
-                
+
                 throw CantRunCommand(name: name)
             }
         } else {
@@ -254,3 +251,4 @@ extension FileManager {
         return isDirectory.boolValue && exists
     }
 }
+

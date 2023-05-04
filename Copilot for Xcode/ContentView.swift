@@ -1,11 +1,12 @@
 import AppKit
-import CopilotModel
+import GitHubCopilotService
+import SuggestionModel
 import SwiftUI
 
 struct ContentView: View {
     @Environment(\.openURL) var openURL
     @AppStorage("username") var username: String = ""
-    @State var copilotStatus: CopilotStatus?
+    @State var copilotStatus: GitHubCopilotAccountStatus?
     @State var message: String?
     @State var userCode: String?
 
@@ -45,3 +46,4 @@ struct ContentView_Previews: PreviewProvider {
             .frame(height: 1200)
     }
 }
+

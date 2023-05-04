@@ -1,7 +1,7 @@
 import LanguageServerProtocol
 import XCTest
 
-@testable import CopilotService
+@testable import GitHubCopilotService
 
 final class FileExtensionToLanguageIdentifierTests: XCTestCase {
     func test_no_conflicts_in_map() {

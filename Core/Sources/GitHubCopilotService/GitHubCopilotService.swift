@@ -1,4 +1,4 @@
-import CopilotModel
+import SuggestionModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
@@ -6,15 +6,15 @@ import Logger
 import Preferences
 import XPCShared
 
-public protocol CopilotAuthServiceType {
-    func checkStatus() async throws -> CopilotStatus
+public protocol GitHubCopilotAuthServiceType {
+    func checkStatus() async throws -> GitHubCopilotAccountStatus
     func signInInitiate() async throws -> (verificationUri: String, userCode: String)
-    func signInConfirm(userCode: String) async throws -> (username: String, status: CopilotStatus)
-    func signOut() async throws -> CopilotStatus
+    func signInConfirm(userCode: String) async throws -> (username: String, status: GitHubCopilotAccountStatus)
+    func signOut() async throws -> GitHubCopilotAccountStatus
     func version() async throws -> String
 }
 
-public protocol CopilotSuggestionServiceType {
+public protocol GitHubCopilotSuggestionServiceType {
     func getCompletions(
         fileURL: URL,
         content: String,
@@ -23,25 +23,25 @@ public protocol CopilotSuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotCompletion]
-    func notifyAccepted(_ completion: CopilotCompletion) async
-    func notifyRejected(_ completions: [CopilotCompletion]) async
+    ) async throws -> [CodeSuggestion]
+    func notifyAccepted(_ completion: CodeSuggestion) async
+    func notifyRejected(_ completions: [CodeSuggestion]) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
 }
 
-protocol CopilotLSP {
-    func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response
+protocol GitHubCopilotLSP {
+    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response
     func sendNotification(_ notif: ClientNotification) async throws
 }
 
-public class CopilotBaseService {
+public class GitHubCopilotBaseService {
     let projectRootURL: URL
-    var server: CopilotLSP
+    var server: GitHubCopilotLSP
 
-    init(designatedServer: CopilotLSP) {
+    init(designatedServer: GitHubCopilotLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
         server = designatedServer
     }
@@ -151,46 +151,46 @@ public class CopilotBaseService {
     }
 }
 
-public final class CopilotAuthService: CopilotBaseService, CopilotAuthServiceType {
+public final class GitHubCopilotAuthService: GitHubCopilotBaseService, GitHubCopilotAuthServiceType {
     public init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
         super.init(projectRootURL: home)
         Task {
-            try? await server.sendRequest(CopilotRequest.SetEditorInfo())
+            try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
         }
     }
 
-    public func checkStatus() async throws -> CopilotStatus {
-        try await server.sendRequest(CopilotRequest.CheckStatus()).status
+    public func checkStatus() async throws -> GitHubCopilotAccountStatus {
+        try await server.sendRequest(GitHubCopilotRequest.CheckStatus()).status
     }
 
     public func signInInitiate() async throws -> (verificationUri: String, userCode: String) {
-        let result = try await server.sendRequest(CopilotRequest.SignInInitiate())
+        let result = try await server.sendRequest(GitHubCopilotRequest.SignInInitiate())
         return (result.verificationUri, result.userCode)
     }
 
     public func signInConfirm(userCode: String) async throws
-        -> (username: String, status: CopilotStatus)
+        -> (username: String, status: GitHubCopilotAccountStatus)
     {
-        let result = try await server.sendRequest(CopilotRequest.SignInConfirm(userCode: userCode))
+        let result = try await server.sendRequest(GitHubCopilotRequest.SignInConfirm(userCode: userCode))
         return (result.user, result.status)
     }
 
-    public func signOut() async throws -> CopilotStatus {
-        try await server.sendRequest(CopilotRequest.SignOut()).status
+    public func signOut() async throws -> GitHubCopilotAccountStatus {
+        try await server.sendRequest(GitHubCopilotRequest.SignOut()).status
     }
 
     public func version() async throws -> String {
-        try await server.sendRequest(CopilotRequest.GetVersion()).version
+        try await server.sendRequest(GitHubCopilotRequest.GetVersion()).version
     }
 }
 
-public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggestionServiceType {
+public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService, GitHubCopilotSuggestionServiceType {
     override public init(projectRootURL: URL = URL(fileURLWithPath: "/")) {
         super.init(projectRootURL: projectRootURL)
     }
 
-    override init(designatedServer: CopilotLSP) {
+    override init(designatedServer: GitHubCopilotLSP) {
         super.init(designatedServer: designatedServer)
     }
 
@@ -202,7 +202,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotCompletion] {
+    ) async throws -> [CodeSuggestion] {
         let languageId = languageIdentifierFromFileURL(fileURL)
 
         let relativePath = {
@@ -221,7 +221,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         }()
 
         let completions = try await server
-            .sendRequest(CopilotRequest.GetCompletionsCycling(doc: .init(
+            .sendRequest(GitHubCopilotRequest.GetCompletionsCycling(doc: .init(
                 source: content,
                 tabSize: tabSize,
                 indentSize: indentSize,
@@ -243,15 +243,15 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         return completions
     }
 
-    public func notifyAccepted(_ completion: CopilotCompletion) async {
+    public func notifyAccepted(_ completion: CodeSuggestion) async {
         _ = try? await server.sendRequest(
-            CopilotRequest.NotifyAccepted(completionUUID: completion.uuid)
+            GitHubCopilotRequest.NotifyAccepted(completionUUID: completion.uuid)
         )
     }
 
-    public func notifyRejected(_ completions: [CopilotCompletion]) async {
+    public func notifyRejected(_ completions: [CodeSuggestion]) async {
         _ = try? await server.sendRequest(
-            CopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
+            GitHubCopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
         )
     }
 
@@ -307,8 +307,8 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
     }
 }
 
-extension InitializingServer: CopilotLSP {
-    func sendRequest<E: CopilotRequestType>(_ endpoint: E) async throws -> E.Response {
+extension InitializingServer: GitHubCopilotLSP {
+    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response {
         try await sendRequest(endpoint.request)
     }
 }

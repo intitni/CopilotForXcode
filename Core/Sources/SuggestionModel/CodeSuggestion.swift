@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CopilotCompletion: Codable, Equatable {
+public struct CodeSuggestion: Codable, Equatable {
     public init(
         text: String,
         position: CursorPosition,

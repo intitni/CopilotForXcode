@@ -1,7 +1,7 @@
 import Foundation
 import LanguageServerProtocol
 
-public enum CopilotLanguage: RawRepresentable, Codable {
+public enum CodeLanguage: RawRepresentable, Codable {
     case builtIn(LanguageIdentifier)
     case plaintext
     case other(String)
@@ -246,7 +246,7 @@ let fileExtensionToLanguageId = {
     return dict
 }()
 
-public func languageIdentifierFromFileURL(_ fileURL: URL) -> CopilotLanguage {
+public func languageIdentifierFromFileURL(_ fileURL: URL) -> CodeLanguage {
     let fileExtension = fileURL.pathExtension
     if let builtIn = fileExtensionToLanguageId[fileExtension] {
         return .builtIn(builtIn)
