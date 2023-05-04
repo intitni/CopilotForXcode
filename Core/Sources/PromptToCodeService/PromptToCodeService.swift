@@ -124,7 +124,7 @@ public final class PromptToCodeService: ObservableObject {
         self.description = description
     }
 
-    public func generateCompletion() -> CopilotCompletion {
+    public func generateCompletion() -> CodeSuggestion {
         .init(
             text: code,
             position: selectionRange.start,

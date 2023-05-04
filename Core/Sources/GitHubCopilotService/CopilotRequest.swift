@@ -101,7 +101,7 @@ enum CopilotRequest {
 
     struct GetCompletions: CopilotRequestType {
         struct Response: Codable {
-            var completions: [CopilotCompletion]
+            var completions: [CodeSuggestion]
         }
 
         var doc: CopilotDoc
@@ -117,7 +117,7 @@ enum CopilotRequest {
 
     struct GetCompletionsCycling: CopilotRequestType {
         struct Response: Codable {
-            var completions: [CopilotCompletion]
+            var completions: [CodeSuggestion]
         }
 
         var doc: CopilotDoc
@@ -133,7 +133,7 @@ enum CopilotRequest {
 
     struct GetPanelCompletions: CopilotRequestType {
         struct Response: Codable {
-            var completions: [CopilotCompletion]
+            var completions: [CodeSuggestion]
         }
 
         var doc: CopilotDoc

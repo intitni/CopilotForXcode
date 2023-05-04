@@ -155,7 +155,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var extraInfo = SuggestionInjector.ExtraInfo()
 
         if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
-            let suggestion = CopilotCompletion(
+            let suggestion = CodeSuggestion(
                 text: service.code,
                 position: service.selectionRange.start,
                 uuid: UUID().uuidString,

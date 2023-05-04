@@ -23,9 +23,9 @@ public protocol CopilotSuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotCompletion]
-    func notifyAccepted(_ completion: CopilotCompletion) async
-    func notifyRejected(_ completions: [CopilotCompletion]) async
+    ) async throws -> [CodeSuggestion]
+    func notifyAccepted(_ completion: CodeSuggestion) async
+    func notifyRejected(_ completions: [CodeSuggestion]) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
@@ -202,7 +202,7 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotCompletion] {
+    ) async throws -> [CodeSuggestion] {
         let languageId = languageIdentifierFromFileURL(fileURL)
 
         let relativePath = {
@@ -243,13 +243,13 @@ public final class CopilotSuggestionService: CopilotBaseService, CopilotSuggesti
         return completions
     }
 
-    public func notifyAccepted(_ completion: CopilotCompletion) async {
+    public func notifyAccepted(_ completion: CodeSuggestion) async {
         _ = try? await server.sendRequest(
             CopilotRequest.NotifyAccepted(completionUUID: completion.uuid)
         )
     }
 
-    public func notifyRejected(_ completions: [CopilotCompletion]) async {
+    public func notifyRejected(_ completions: [CodeSuggestion]) async {
         _ = try? await server.sendRequest(
             CopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
         )

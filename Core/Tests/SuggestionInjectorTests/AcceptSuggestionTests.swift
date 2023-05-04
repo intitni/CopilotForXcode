@@ -14,7 +14,7 @@ final class AcceptSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 1),
             uuid: "",
@@ -56,7 +56,7 @@ final class AcceptSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 12),
             uuid: "",
@@ -99,7 +99,7 @@ final class AcceptSuggestionTests: XCTestCase {
             var name: String
             var age: String
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 1, character: 12),
             uuid: "",
@@ -143,7 +143,7 @@ final class AcceptSuggestionTests: XCTestCase {
             print(array)
         }
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 18),
             uuid: "",
@@ -190,7 +190,7 @@ final class AcceptSuggestionTests: XCTestCase {
             print(array)
         }
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 18),
             uuid: "",
@@ -240,7 +240,7 @@ final class AcceptSuggestionTests: XCTestCase {
             }
         }
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 0, character: 7),
             uuid: "",
@@ -287,7 +287,7 @@ final class AcceptSuggestionTests: XCTestCase {
                 print("woof")
             }
         """
-        let suggestion = CopilotCompletion(
+        let suggestion = CodeSuggestion(
             text: text,
             position: .init(line: 5, character: 34),
             uuid: "",

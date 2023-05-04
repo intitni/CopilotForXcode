@@ -33,7 +33,7 @@ import XPCShared
     Environment.triggerAction = { _ in }
 }
 
-func completion(text: String, range: CursorRange, uuid: String = "") -> CopilotCompletion {
+func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSuggestion {
     .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
 }
 
@@ -54,11 +54,11 @@ class MockSuggestionService: CopilotSuggestionServiceType {
         fatalError()
     }
     
-    var completions = [CopilotCompletion]()
+    var completions = [CodeSuggestion]()
     var accepted: String?
     var rejected: [String] = []
 
-    init(completions: [CopilotCompletion]) {
+    init(completions: [CodeSuggestion]) {
         self.completions = completions
     }
 
@@ -70,15 +70,15 @@ class MockSuggestionService: CopilotSuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotModel.CopilotCompletion] {
+    ) async throws -> [CopilotModel.CodeSuggestion] {
         completions
     }
 
-    func notifyAccepted(_ completion: CopilotCompletion) async {
+    func notifyAccepted(_ completion: CodeSuggestion) async {
         accepted = completion.uuid
     }
 
-    func notifyRejected(_ completions: [CopilotCompletion]) async {
+    func notifyRejected(_ completions: [CodeSuggestion]) async {
         rejected = completions.map(\.uuid)
     }
 }

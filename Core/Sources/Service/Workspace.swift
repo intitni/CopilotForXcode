@@ -17,7 +17,7 @@ final class Filespace {
 
     let fileURL: URL
     private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
-    var suggestions: [CopilotCompletion] = [] {
+    var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }
     }
 
@@ -30,7 +30,7 @@ final class Filespace {
 
     var suggestionIndex: Int = 0
     var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
-    var presentingSuggestion: CopilotCompletion? {
+    var presentingSuggestion: CodeSuggestion? {
         guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
         return suggestions[suggestionIndex]
     }
@@ -193,7 +193,7 @@ extension Workspace {
         forFileAt fileURL: URL,
         editor: EditorContent,
         shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
-    ) async throws -> [CopilotCompletion] {
+    ) async throws -> [CodeSuggestion] {
         if shouldcancelInFlightRealtimeSuggestionRequests {
             cancelInFlightRealtimeSuggestionRequests()
         }
@@ -276,7 +276,7 @@ extension Workspace {
         filespaces[fileURL]?.reset(resetSnapshot: false)
     }
 
-    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CopilotCompletion? {
+    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CodeSuggestion? {
         cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
