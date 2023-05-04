@@ -1,7 +1,7 @@
 import LanguageServerProtocol
 import XCTest
 
-@testable import CopilotService
+@testable import GitHubCopilotService
 
 final class FetchSuggestionTests: XCTestCase {
     func test_process_sugestions_from_server() async throws {

@@ -1,5 +1,5 @@
 import AppKit
-import CopilotService
+import GitHubCopilotService
 import Environment
 import Foundation
 import LanguageServerProtocol

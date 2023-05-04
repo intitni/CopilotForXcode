@@ -44,12 +44,12 @@ let package = Package(
     targets: [
         .target(name: "CGEventObserver"),
         .target(
-            name: "CopilotService",
+            name: "GitHubCopilotService",
             dependencies: ["LanguageClient", "CopilotModel", "XPCShared", "Preferences"]
         ),
         .testTarget(
-            name: "CopilotServiceTests",
-            dependencies: ["CopilotService"]
+            name: "GitHubCopilotServiceTests",
+            dependencies: ["GitHubCopilotService"]
         ),
         .target(
             name: "CopilotModel",
@@ -75,7 +75,7 @@ let package = Package(
             name: "Service",
             dependencies: [
                 "CopilotModel",
-                "CopilotService",
+                "GitHubCopilotService",
                 "OpenAIService",
                 "Preferences",
                 "XPCShared",
@@ -101,7 +101,7 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "CopilotService",
+                "GitHubCopilotService",
                 "SuggestionInjector",
                 "Preferences",
                 "XPCShared",
@@ -115,7 +115,7 @@ let package = Package(
         .target(name: "AXNotificationStream"),
         .target(
             name: "Environment",
-            dependencies: ["ActiveApplicationMonitor", "CopilotService", "AXExtension"]
+            dependencies: ["ActiveApplicationMonitor", "GitHubCopilotService", "AXExtension"]
         ),
         .target(
             name: "SuggestionWidget",
@@ -159,8 +159,11 @@ let package = Package(
         .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
         .target(
             name: "PromptToCodeService",
-            dependencies: ["OpenAIService", "Environment", "CopilotService", "CopilotModel"]
+            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService", "CopilotModel"]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
+        .target(name: "SuggestionService", dependencies: [
+            "GitHubCopilotService",
+        ])
     ]
 )

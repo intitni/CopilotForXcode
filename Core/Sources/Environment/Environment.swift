@@ -1,7 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import AXExtension
-import CopilotService
+import GitHubCopilotService
 import Foundation
 import Logger
 

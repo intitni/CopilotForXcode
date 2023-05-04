@@ -1,6 +1,6 @@
 import ChatService
 import CopilotModel
-import CopilotService
+import GitHubCopilotService
 import Environment
 import Foundation
 import LanguageServerProtocol
