@@ -162,7 +162,20 @@ final class Workspace {
 
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
-        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+        
+        let workspace = {
+            if let existed = workspaces[workspaceURL] {
+                return existed
+            }
+            // Reuse existed workspace if possible
+            for (_, workspace) in workspaces {
+                if fileURL.path.hasPrefix(workspace.projectRootURL.path) {
+                    return workspace
+                }
+            }
+            return Workspace(projectRootURL: workspaceURL)
+        }()
+        
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
         workspaces[workspaceURL] = workspace
         workspace.refreshUpdateTime()
