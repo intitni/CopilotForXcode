@@ -42,31 +42,8 @@ let package = Package(
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
     ],
     targets: [
-        .target(name: "CGEventObserver"),
-        .target(
-            name: "GitHubCopilotService",
-            dependencies: ["LanguageClient", "SuggestionModel", "XPCShared", "Preferences"]
-        ),
-        .testTarget(
-            name: "GitHubCopilotServiceTests",
-            dependencies: ["GitHubCopilotService"]
-        ),
-        .target(
-            name: "SuggestionModel",
-            dependencies: ["LanguageClient"]
-        ),
-        .testTarget(
-            name: "SuggestionModelTests",
-            dependencies: ["SuggestionModel"]
-        ),
-        .target(
-            name: "SuggestionInjector",
-            dependencies: ["SuggestionModel"]
-        ),
-        .testTarget(
-            name: "SuggestionInjectorTests",
-            dependencies: ["SuggestionInjector"]
-        ),
+        // MARK: - Main
+
         .target(
             name: "Client",
             dependencies: ["SuggestionModel", "Preferences", "XPCShared", "Logger"]
@@ -92,10 +69,6 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
-        .target(
-            name: "XPCShared",
-            dependencies: ["SuggestionModel"]
-        ),
         .testTarget(
             name: "ServiceTests",
             dependencies: [
@@ -108,15 +81,63 @@ let package = Package(
                 "Environment",
             ]
         ),
-        .target(name: "FileChangeChecker"),
-        .target(name: "LaunchAgentManager"),
-        .target(name: "DisplayLink"),
-        .target(name: "ActiveApplicationMonitor"),
-        .target(name: "AXNotificationStream"),
         .target(
             name: "Environment",
             dependencies: ["ActiveApplicationMonitor", "GitHubCopilotService", "AXExtension"]
         ),
+        .target(name: "Preferences"),
+
+        // MARK: - XPC Related
+
+        .target(
+            name: "XPCShared",
+            dependencies: ["SuggestionModel"]
+        ),
+
+        // MARK: - Suggestion Service
+
+        .target(
+            name: "SuggestionModel",
+            dependencies: ["LanguageClient"]
+        ),
+        .testTarget(
+            name: "SuggestionModelTests",
+            dependencies: ["SuggestionModel"]
+        ),
+        .target(
+            name: "SuggestionInjector",
+            dependencies: ["SuggestionModel"]
+        ),
+        .testTarget(
+            name: "SuggestionInjectorTests",
+            dependencies: ["SuggestionInjector"]
+        ),
+        .target(name: "SuggestionService", dependencies: [
+            "GitHubCopilotService",
+        ]),
+
+        // MARK: - Prompt To Code
+
+        .target(
+            name: "PromptToCodeService",
+            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService",
+                           "SuggestionModel"]
+        ),
+        .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
+
+        // MARK: - Chat
+
+        .target(
+            name: "ChatService",
+            dependencies: ["OpenAIService", "ChatPlugins", "Environment"]
+        ),
+        .target(
+            name: "ChatPlugins",
+            dependencies: ["OpenAIService", "Environment", "Terminal"]
+        ),
+
+        // MARK: - UI
+
         .target(
             name: "SuggestionWidget",
             dependencies: [
@@ -130,6 +151,17 @@ let package = Package(
             ]
         ),
         .testTarget(name: "SuggestionWidgetTests", dependencies: ["SuggestionWidget"]),
+
+        // MARK: - Helpers
+
+        .target(name: "CGEventObserver"),
+        .target(name: "Logger"),
+        .target(name: "FileChangeChecker"),
+        .target(name: "LaunchAgentManager"),
+        .target(name: "DisplayLink"),
+        .target(name: "ActiveApplicationMonitor"),
+        .target(name: "AXNotificationStream"),
+        .target(name: "Terminal"),
         .target(
             name: "UpdateChecker",
             dependencies: [
@@ -139,7 +171,20 @@ let package = Package(
             ]
         ),
         .target(name: "AXExtension"),
-        .target(name: "Logger"),
+
+        // MARK: - GitHub Copilot
+
+        .target(
+            name: "GitHubCopilotService",
+            dependencies: ["LanguageClient", "SuggestionModel", "XPCShared", "Preferences"]
+        ),
+        .testTarget(
+            name: "GitHubCopilotServiceTests",
+            dependencies: ["GitHubCopilotService"]
+        ),
+
+        // MARK: - OpenAI
+
         .target(
             name: "OpenAIService",
             dependencies: [
@@ -153,17 +198,6 @@ let package = Package(
             name: "OpenAIServiceTests",
             dependencies: ["OpenAIService"]
         ),
-        .target(name: "Preferences"),
-        .target(name: "ChatPlugins", dependencies: ["OpenAIService", "Environment", "Terminal"]),
-        .target(name: "Terminal"),
-        .target(name: "ChatService", dependencies: ["OpenAIService", "ChatPlugins", "Environment"]),
-        .target(
-            name: "PromptToCodeService",
-            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService", "SuggestionModel"]
-        ),
-        .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
-        .target(name: "SuggestionService", dependencies: [
-            "GitHubCopilotService",
-        ])
     ]
 )
+
