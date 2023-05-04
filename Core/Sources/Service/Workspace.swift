@@ -92,7 +92,17 @@ final class Workspace {
         ], context: nil
     )
 
-    private var _suggestionService: SuggestionServiceType?
+    private var _suggestionService: SuggestionServiceType? {
+        didSet {
+            guard _suggestionService != nil else { return }
+            Task {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                for (_, filespace) in filespaces {
+                    notifyOpenFile(filespace: filespace)
+                }
+            }
+        }
+    }
 
     private var suggestionService: SuggestionServiceType? {
         // Check if the workspace is disabled.
