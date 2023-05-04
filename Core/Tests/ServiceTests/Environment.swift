@@ -38,6 +38,22 @@ func completion(text: String, range: CursorRange, uuid: String = "") -> CopilotC
 }
 
 class MockSuggestionService: CopilotSuggestionServiceType {
+    func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
+        fatalError()
+    }
+    
+    func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        fatalError()
+    }
+    
+    func notifyCloseTextDocument(fileURL: URL) async throws {
+        fatalError()
+    }
+    
+    func notifySaveTextDocument(fileURL: URL) async throws {
+        fatalError()
+    }
+    
     var completions = [CopilotCompletion]()
     var accepted: String?
     var rejected: [String] = []
