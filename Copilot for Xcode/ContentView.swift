@@ -1,4 +1,5 @@
 import AppKit
+import GitHubCopilotService
 import SuggestionModel
 import SwiftUI
 
@@ -45,3 +46,4 @@ struct ContentView_Previews: PreviewProvider {
             .frame(height: 1200)
     }
 }
+

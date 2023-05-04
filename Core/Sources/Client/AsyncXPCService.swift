@@ -1,6 +1,7 @@
-import SuggestionModel
 import Foundation
+import GitHubCopilotService
 import Logger
+import SuggestionModel
 import XPCShared
 
 public struct AsyncXPCService {
@@ -89,7 +90,10 @@ public struct AsyncXPCService {
                     return
                 }
                 continuation
-                    .resume(finishstatus.flatMap(GitHubCopilotAccountStatus.init(rawValue:)) ?? .notSignedIn)
+                    .resume(
+                        finishstatus
+                            .flatMap(GitHubCopilotAccountStatus.init(rawValue:)) ?? .notSignedIn
+                    )
             }
         }
     }
@@ -257,3 +261,4 @@ func suggestionRequest(
         }
     }
 }
+

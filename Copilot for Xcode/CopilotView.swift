@@ -1,5 +1,6 @@
 import AppKit
 import Client
+import GitHubCopilotService
 import SuggestionModel
 import SwiftUI
 
@@ -183,3 +184,4 @@ struct CopilotView_Previews: PreviewProvider {
         .background(Color.black)
     }
 }
+

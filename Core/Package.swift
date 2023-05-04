@@ -22,6 +22,7 @@ let package = Package(
             name: "Client",
             targets: [
                 "SuggestionModel",
+                "GitHubCopilotService",
                 "Client",
                 "XPCShared",
                 "Preferences",

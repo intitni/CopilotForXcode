@@ -1,7 +1,7 @@
 import AppKit
-import GitHubCopilotService
 import Environment
 import Foundation
+import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import Preferences
@@ -48,7 +48,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
     public func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
         Task { @ServiceActor in
             do {
-                let (verificationLink, userCode) = try await gitHubCopilotAuthService.signInInitiate()
+                let (verificationLink, userCode) = try await gitHubCopilotAuthService
+                    .signInInitiate()
                 reply(verificationLink, userCode, nil)
             } catch {
                 reply(nil, nil, NSError.from(error))
@@ -62,7 +63,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
     ) {
         Task { @ServiceActor in
             do {
-                let (username, status) = try await gitHubCopilotAuthService.signInConfirm(userCode: userCode)
+                let (username, status) = try await gitHubCopilotAuthService
+                    .signInConfirm(userCode: userCode)
                 reply(username, status.rawValue, nil)
             } catch {
                 reply(nil, nil, NSError.from(error))
@@ -260,3 +262,4 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 }
+
