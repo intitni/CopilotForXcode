@@ -11,7 +11,7 @@ public protocol SuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool,
-        referenceFileURL: [URL]
+        referenceFileURLs: [URL]
     ) async throws -> [CodeSuggestion]
 
     func notifyAccepted(_ suggestion: CodeSuggestion) async
@@ -37,7 +37,7 @@ public final class SuggestionService: SuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool,
-        referenceFileURL: [URL]
+        referenceFileURLs: [URL]
     ) async throws -> [SuggestionModel.CodeSuggestion] {
         try await gitHubCopilotService.getCompletions(
             fileURL: fileURL,

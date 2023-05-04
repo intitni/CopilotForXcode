@@ -229,7 +229,7 @@ extension Workspace {
             indentSize: editor.indentSize,
             usesTabsForIndentation: editor.usesTabsForIndentation,
             ignoreSpaceOnlySuggestions: true,
-            referenceFileURL: filespaces.values.map(\.fileURL)
+            referenceFileURLs: filespaces.values.map(\.fileURL)
         )
 
         filespace.suggestions = completions
