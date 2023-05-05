@@ -125,10 +125,12 @@ public enum Environment {
         return try await fetchCurrentFileURL()
     }
 
-    public static var createSuggestionService: (_ projectRootURL: URL)
-        -> SuggestionServiceType = { projectRootURL in
-            SuggestionService(projectRootURL: projectRootURL)
-        }
+    public static var createSuggestionService: (
+        _ projectRootURL: URL,
+        _ onServiceLaunched: @escaping (SuggestionServiceType) -> Void
+    ) -> SuggestionServiceType = { projectRootURL, onServiceLaunched in
+        SuggestionService(projectRootURL: projectRootURL, onServiceLaunched: onServiceLaunched)
+    }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
         guard let activeXcode = ActiveApplicationMonitor.activeXcode

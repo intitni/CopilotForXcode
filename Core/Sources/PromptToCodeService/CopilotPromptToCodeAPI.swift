@@ -21,7 +21,7 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
         allCode: String,
         extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
-        let copilotService = GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
+        let copilotService = try GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
         let relativePath = {
             let filePath = fileURL.path
             let rootPath = projectRootURL.path

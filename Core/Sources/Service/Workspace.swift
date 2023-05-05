@@ -118,7 +118,13 @@ final class Workspace {
         }
 
         if _suggestionService == nil {
-            _suggestionService = Environment.createSuggestionService(projectRootURL)
+            _suggestionService = Environment.createSuggestionService(projectRootURL) {
+                [weak self] service in
+                guard let self else { return }
+                for (_, filespace) in filespaces {
+                    notifyOpenFile(filespace: filespace)
+                }
+            }
         }
         return _suggestionService
     }

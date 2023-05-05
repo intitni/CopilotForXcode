@@ -1,14 +1,15 @@
 import AppKit
+import Environment
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
 import Preferences
 import Service
 import ServiceManagement
+import ServiceUpdateMigration
 import SwiftUI
 import UpdateChecker
 import UserNotifications
-import Environment
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -36,6 +37,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
+        Task {
+            do {
+                try await ServiceUpdateMigrator().migrate()
+            } catch {
+                Logger.service.error(error.localizedDescription)
+            }
+        }
     }
 
     @objc private func buildStatusBarMenu() {
@@ -64,7 +72,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             keyEquivalent: ""
         )
         #endif
-        
+
         let checkForUpdate = NSMenuItem(
             title: "Check for Updates",
             action: #selector(checkForUpdate),
@@ -219,7 +227,7 @@ private class UserDefaultsObserver: NSObject {
     ) {
         onChange?(keyPath)
     }
-    
+
     deinit {
         removeObserver(self, forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
     }
@@ -256,3 +264,4 @@ func locateHostBundleURL(url: URL) -> URL? {
         .appendingPathComponent("Copilot for Xcode Dev.app")
     return devAppURL
 }
+

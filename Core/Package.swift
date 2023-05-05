@@ -68,6 +68,7 @@ let package = Package(
                 "Logger",
                 "ChatService",
                 "PromptToCodeService",
+                "ServiceUpdateMigration",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -173,6 +174,10 @@ let package = Package(
             ]
         ),
         .target(name: "AXExtension"),
+        .target(
+            name: "ServiceUpdateMigration",
+            dependencies: ["Preferences", "GitHubCopilotService"]
+        ),
 
         // MARK: - GitHub Copilot
 

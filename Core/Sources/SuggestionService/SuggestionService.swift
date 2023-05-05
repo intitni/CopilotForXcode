@@ -23,13 +23,29 @@ public protocol SuggestionServiceType {
 }
 
 public final class SuggestionService: SuggestionServiceType {
-    let gitHubCopilotService: GitHubCopilotSuggestionServiceType
+    let projectRootURL: URL
+    let onServiceLaunched: (SuggestionServiceType) -> Void
+    var gitHubCopilotService: GitHubCopilotSuggestionServiceType?
 
-    public init(projectRootURL: URL) {
-        gitHubCopilotService = GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
+    public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
+        self.projectRootURL = projectRootURL
+        self.onServiceLaunched = onServiceLaunched
     }
 
-    public func getSuggestions(
+    func createGitHubCopilotServiceIfNeeded() throws -> GitHubCopilotSuggestionServiceType {
+        if let gitHubCopilotService { return gitHubCopilotService }
+        let newService = try GitHubCopilotSuggestionService()
+        gitHubCopilotService = newService
+        Task {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            onServiceLaunched(self)
+        }
+        return newService
+    }
+}
+
+public extension SuggestionService {
+    func getSuggestions(
         fileURL: URL,
         content: String,
         cursorPosition: SuggestionModel.CursorPosition,
@@ -39,7 +55,7 @@ public final class SuggestionService: SuggestionServiceType {
         ignoreSpaceOnlySuggestions: Bool,
         referenceFileURLs: [URL]
     ) async throws -> [SuggestionModel.CodeSuggestion] {
-        try await gitHubCopilotService.getCompletions(
+        try await (try createGitHubCopilotServiceIfNeeded()).getCompletions(
             fileURL: fileURL,
             content: content,
             cursorPosition: cursorPosition,
@@ -50,28 +66,32 @@ public final class SuggestionService: SuggestionServiceType {
         )
     }
 
-    public func notifyAccepted(_ suggestion: SuggestionModel.CodeSuggestion) async {
-        await gitHubCopilotService.notifyAccepted(suggestion)
+    func notifyAccepted(_ suggestion: SuggestionModel.CodeSuggestion) async {
+        await (try? createGitHubCopilotServiceIfNeeded())?.notifyAccepted(suggestion)
     }
 
-    public func notifyRejected(_ suggestions: [SuggestionModel.CodeSuggestion]) async {
-        await gitHubCopilotService.notifyRejected(suggestions)
+    func notifyRejected(_ suggestions: [SuggestionModel.CodeSuggestion]) async {
+        await (try? createGitHubCopilotServiceIfNeeded())?.notifyRejected(suggestions)
     }
 
-    public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
-        try await gitHubCopilotService.notifyOpenTextDocument(fileURL: fileURL, content: content)
+    func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
+        try await (try? createGitHubCopilotServiceIfNeeded())?
+            .notifyOpenTextDocument(fileURL: fileURL, content: content)
     }
 
-    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
-        try await gitHubCopilotService.notifyChangeTextDocument(fileURL: fileURL, content: content)
+    func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        try await (try? createGitHubCopilotServiceIfNeeded())?
+            .notifyChangeTextDocument(fileURL: fileURL, content: content)
     }
 
-    public func notifyCloseTextDocument(fileURL: URL) async throws {
-        try await gitHubCopilotService.notifyCloseTextDocument(fileURL: fileURL)
+    func notifyCloseTextDocument(fileURL: URL) async throws {
+        try await (try? createGitHubCopilotServiceIfNeeded())?
+            .notifyCloseTextDocument(fileURL: fileURL)
     }
 
-    public func notifySaveTextDocument(fileURL: URL) async throws {
-        try await gitHubCopilotService.notifySaveTextDocument(fileURL: fileURL)
+    func notifySaveTextDocument(fileURL: URL) async throws {
+        try await (try? createGitHubCopilotServiceIfNeeded())?
+            .notifySaveTextDocument(fileURL: fileURL)
     }
 }
 
