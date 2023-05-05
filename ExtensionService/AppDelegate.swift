@@ -70,6 +70,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             action: #selector(checkForUpdate),
             keyEquivalent: ""
         )
+        
+        let openCopilotForXcode = NSMenuItem(
+            title: "Open Copilot for Xcode",
+            action: #selector(openCopilotForXcode),
+            keyEquivalent: ""
+        )
 
         let toggleRealtimeSuggestions = NSMenuItem(
             title: "Real-time Suggestions",
@@ -90,6 +96,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBarMenu.addItem(copilotName)
         statusBarMenu.addItem(checkForUpdate)
         statusBarMenu.addItem(.separator())
+        statusBarMenu.addItem(openCopilotForXcode)
+        statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(toggleRealtimeSuggestions)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(quitItem)
@@ -107,6 +115,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func quit() {
         exit(0)
+    }
+    
+    @objc func openCopilotForXcode() {
+        let task = Process()
+        if let appPath = locateHostBundleURL(url: Bundle.main.bundleURL)?.absoluteString {
+            task.launchPath = "/usr/bin/open"
+            task.arguments = [appPath]
+            task.launch()
+            task.waitUntilExit()
+        }
     }
 
     @objc func toggleRealtimeSuggestions() {
