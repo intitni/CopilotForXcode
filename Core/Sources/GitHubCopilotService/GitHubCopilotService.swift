@@ -1,15 +1,16 @@
-import SuggestionModel
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
 import Logger
 import Preferences
+import SuggestionModel
 import XPCShared
 
 public protocol GitHubCopilotAuthServiceType {
     func checkStatus() async throws -> GitHubCopilotAccountStatus
     func signInInitiate() async throws -> (verificationUri: String, userCode: String)
-    func signInConfirm(userCode: String) async throws -> (username: String, status: GitHubCopilotAccountStatus)
+    func signInConfirm(userCode: String) async throws
+        -> (username: String, status: GitHubCopilotAccountStatus)
     func signOut() async throws -> GitHubCopilotAccountStatus
     func version() async throws -> String
 }
@@ -37,6 +38,17 @@ protocol GitHubCopilotLSP {
     func sendNotification(_ notif: ClientNotification) async throws
 }
 
+enum GitHubCopilotError: Error, LocalizedError {
+    case languageServerNotInstalled
+    
+    var errorDescription: String? {
+        switch self {
+        case .languageServerNotInstalled:
+            return "Language server is not installed."
+        }
+    }
+}
+
 public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
@@ -46,30 +58,28 @@ public class GitHubCopilotBaseService {
         server = designatedServer
     }
 
-    init(projectRootURL: URL) {
+    init(projectRootURL: URL) throws {
         self.projectRootURL = projectRootURL
-        server = {
-            let supportURL = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first!.appendingPathComponent("com.intii.CopilotForXcode")
-            if !FileManager.default.fileExists(atPath: supportURL.path) {
-                try? FileManager.default
-                    .createDirectory(at: supportURL, withIntermediateDirectories: false)
-            }
+        server = try {
+            let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             var userEnvPath = ProcessInfo.processInfo.userEnvironment["PATH"] ?? ""
             if userEnvPath.isEmpty {
                 userEnvPath = "/usr/bin:/usr/local/bin" // fallback
             }
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
+            
+            let agentJSURL = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
+            guard FileManager.default.fileExists(atPath: agentJSURL.path) else {
+                throw GitHubCopilotError.languageServerNotInstalled
+            }
 
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(Bundle.main.url(forResource: "agent", withExtension: "js", subdirectory: "copilot/dist")!.path)\"",
+                    "\"\(agentJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = {
@@ -77,7 +87,7 @@ public class GitHubCopilotBaseService {
                         path: "/bin/bash",
                         arguments: ["-i", "-l", "-c", command],
                         environment: [:],
-                        currentDirectoryURL: supportURL
+                        currentDirectoryURL: urls.supportURL
                     )
                 }()
             case .shell:
@@ -85,7 +95,7 @@ public class GitHubCopilotBaseService {
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(Bundle.main.url(forResource: "agent", withExtension: "js", subdirectory: "copilot/dist")!.path)\"",
+                    "\"\(agentJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = {
@@ -93,7 +103,7 @@ public class GitHubCopilotBaseService {
                         path: shell,
                         arguments: ["-i", "-l", "-c", command],
                         environment: [:],
-                        currentDirectoryURL: supportURL
+                        currentDirectoryURL: urls.supportURL
                     )
                 }()
             case .env:
@@ -103,17 +113,13 @@ public class GitHubCopilotBaseService {
                         path: "/usr/bin/env",
                         arguments: [
                             nodePath.isEmpty ? "node" : nodePath,
-                            Bundle.main.url(
-                                forResource: "agent",
-                                withExtension: "js",
-                                subdirectory: "copilot/dist"
-                            )!.path,
+                            agentJSURL.path,
                             "--stdio",
                         ],
                         environment: [
                             "PATH": userEnvPath,
                         ],
-                        currentDirectoryURL: supportURL
+                        currentDirectoryURL: urls.supportURL
                     )
                 }()
             }
@@ -149,12 +155,51 @@ public class GitHubCopilotBaseService {
             return server
         }()
     }
+
+    public static func createFoldersIfNeeded() throws -> (
+        applicationSupportURL: URL,
+        gitHubCopilotURL: URL,
+        executableURL: URL,
+        supportURL: URL
+    ) {
+        let supportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!.appendingPathComponent(
+            Bundle.main
+                .object(forInfoDictionaryKey: "APPLICATION_SUPPORT_FOLDER") as! String
+        )
+
+        if !FileManager.default.fileExists(atPath: supportURL.path) {
+            try? FileManager.default
+                .createDirectory(at: supportURL, withIntermediateDirectories: false)
+        }
+        let gitHubCopilotFolderURL = supportURL.appendingPathComponent("GitHub Copilot")
+        if !FileManager.default.fileExists(atPath: gitHubCopilotFolderURL.path) {
+            try? FileManager.default
+                .createDirectory(at: gitHubCopilotFolderURL, withIntermediateDirectories: false)
+        }
+        let supportFolderURL = gitHubCopilotFolderURL.appendingPathComponent("support")
+        if !FileManager.default.fileExists(atPath: supportFolderURL.path) {
+            try? FileManager.default
+                .createDirectory(at: supportFolderURL, withIntermediateDirectories: false)
+        }
+        let executableFolderURL = gitHubCopilotFolderURL.appendingPathComponent("executable")
+        if !FileManager.default.fileExists(atPath: executableFolderURL.path) {
+            try? FileManager.default
+                .createDirectory(at: executableFolderURL, withIntermediateDirectories: false)
+        }
+
+        return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
+    }
 }
 
-public final class GitHubCopilotAuthService: GitHubCopilotBaseService, GitHubCopilotAuthServiceType {
-    public init() {
+public final class GitHubCopilotAuthService: GitHubCopilotBaseService,
+    GitHubCopilotAuthServiceType
+{
+    public init() throws {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        super.init(projectRootURL: home)
+        try super.init(projectRootURL: home)
         Task {
             try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
         }
@@ -172,7 +217,8 @@ public final class GitHubCopilotAuthService: GitHubCopilotBaseService, GitHubCop
     public func signInConfirm(userCode: String) async throws
         -> (username: String, status: GitHubCopilotAccountStatus)
     {
-        let result = try await server.sendRequest(GitHubCopilotRequest.SignInConfirm(userCode: userCode))
+        let result = try await server
+            .sendRequest(GitHubCopilotRequest.SignInConfirm(userCode: userCode))
         return (result.user, result.status)
     }
 
@@ -185,9 +231,11 @@ public final class GitHubCopilotAuthService: GitHubCopilotBaseService, GitHubCop
     }
 }
 
-public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService, GitHubCopilotSuggestionServiceType {
-    override public init(projectRootURL: URL = URL(fileURLWithPath: "/")) {
-        super.init(projectRootURL: projectRootURL)
+public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
+    GitHubCopilotSuggestionServiceType
+{
+    override public init(projectRootURL: URL = URL(fileURLWithPath: "/")) throws {
+        try super.init(projectRootURL: projectRootURL)
     }
 
     override init(designatedServer: GitHubCopilotLSP) {
@@ -312,3 +360,4 @@ extension InitializingServer: GitHubCopilotLSP {
         try await sendRequest(endpoint.request)
     }
 }
+
