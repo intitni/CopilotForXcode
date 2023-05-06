@@ -31,6 +31,7 @@ struct SettingsView: View {
         @AppStorage(\.suggestionCodeFontSize) var suggestionCodeFontSize
         @AppStorage(\.chatFontSize) var chatFontSize
         @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
+        @AppStorage(\.suggestionFeatureProvider) var suggestionFeatureProvider
         init() {}
     }
 
@@ -78,6 +79,19 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text("Present suggestions in")
+                }
+                
+                Picker(selection: $settings.suggestionFeatureProvider) {
+                    ForEach(SuggestionFeatureProvider.allCases, id: \.rawValue) {
+                        switch $0 {
+                        case .gitHubCopilot:
+                            Text("GitHub Copilot").tag($0)
+                        case .codeium:
+                            Text("Codeium").tag($0)
+                        }
+                    }
+                } label: {
+                    Text("Generate suggestion with")
                 }
 
                 if settings.suggestionPresentationMode == PresentationMode.floatingWidget {
