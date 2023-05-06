@@ -49,7 +49,6 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
             .appendingPathComponent(UUID().uuidString)
-        print(languageServerURL, managerDirectoryURL) //
         if !FileManager.default.fileExists(atPath: managerDirectoryURL.path) {
             try FileManager.default.createDirectory(
                 at: managerDirectoryURL,
@@ -122,8 +121,6 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
         let result = try await server.sendRequest(request)
 
-        print(result.state)
-
         return result.completionItems?.filter { item in
             if ignoreSpaceOnlySuggestions {
                 return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
@@ -132,9 +129,18 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         }.map { item in
             CodeSuggestion(
                 text: item.completion.text,
-                position: .outOfScope,
+                position: cursorPosition,
                 uuid: item.completion.completionId,
-                range: .outOfScope,
+                range: CursorRange(
+                    start: .init(
+                        line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
+                        character: item.range.startPosition?.col.flatMap(Int.init) ?? 0
+                    ),
+                    end: .init(
+                        line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
+                        character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
+                    )
+                ),
                 displayText: item.completion.text
             )
         } ?? []
@@ -177,5 +183,4 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
     }
 }
-
 

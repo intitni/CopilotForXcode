@@ -2,6 +2,7 @@ import Foundation
 import JSONRPC
 import LanguageClient
 import LanguageServerProtocol
+import Logger
 
 protocol CodeiumLSP {
     func sendRequest<E: CodeiumRequestType>(_ endpoint: E) async throws -> E.Response
@@ -88,14 +89,18 @@ class CodeiumLanguageServer: CodeiumLSP {
                     try await Task.sleep(nanoseconds: 1_000_000_000)
                     waited += 1
                     port = findPort()
-                    if port != nil { break }
+                    if port != nil {
+                        Logger.codeium.info("Language server started.")
+                        launchHandler?()
+                        return
+                    }
                     if waited >= 60 {
                         process.terminate()
                     }
                 }
             }
         } catch {
-            print("start: ", error)
+            Logger.codeium.error(error.localizedDescription)
             processTerminated(process)
         }
     }
@@ -111,25 +116,6 @@ class CodeiumLanguageServer: CodeiumLSP {
         terminationHandler?()
     }
 
-    func handleFileEvent(_ event: FileEvent) {
-        switch event.type {
-        case .created:
-            let fileURL = URL(fileURLWithPath: event.uri)
-            var isDirectory: ObjCBool = false
-            if FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory),
-               !isDirectory.boolValue
-            {
-                let portName = fileURL.lastPathComponent
-                print("set port", portName)
-                if port == nil {
-                    port = portName
-                }
-            }
-        default:
-            break
-        }
-    }
-
     func sendRequest<E>(_ request: E) async throws -> E.Response where E: CodeiumRequestType {
         guard let port else { throw CancellationError() }
 
@@ -140,7 +126,7 @@ class CodeiumLanguageServer: CodeiumLSP {
                 let response = try JSONDecoder().decode(E.Response.self, from: data)
                 return response
             } catch {
-                dump(error)
+                Logger.codeium.error(error.localizedDescription)
                 throw error
             }
         } else {
@@ -148,7 +134,7 @@ class CodeiumLanguageServer: CodeiumLSP {
                 let error = try JSONDecoder().decode(CodeiumResponseError.self, from: data)
                 throw error
             } catch {
-                print(String(data: data, encoding: .utf8))
+                Logger.codeium.error(error.localizedDescription)
                 throw error
             }
         }
