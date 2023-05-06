@@ -48,7 +48,13 @@ let package = Package(
 
         .target(
             name: "Client",
-            dependencies: ["SuggestionModel", "Preferences", "XPCShared", "Logger"]
+            dependencies: [
+                "SuggestionModel",
+                "Preferences",
+                "XPCShared",
+                "Logger",
+                "GitHubCopilotService",
+            ]
         ),
         .target(
             name: "Service",
