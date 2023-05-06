@@ -9,24 +9,6 @@ public protocol UserDefaultPreferenceKey {
 public struct UserDefaultPreferenceKeys {
     public init() {}
 
-    // MARK: - Node Path
-
-    public struct NodePath: UserDefaultPreferenceKey {
-        public let defaultValue: String = ""
-        public let key = "NodePath"
-    }
-
-    public var nodePath: NodePath { .init() }
-
-    // MARK: - Run Node With
-    
-    public struct RunNodeWithKey: UserDefaultPreferenceKey {
-        public let defaultValue = NodeRunner.bash
-        public let key = "RunNodeWith"
-    }
-    
-    public var runNodeWith: RunNodeWithKey { .init() }
-    
     // MARK: - Realtime Suggestion
 
     public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
@@ -35,6 +17,15 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
+    
+    // MARK: - Suggestion Feature Provider
+    
+    public struct SuggestionFeatureProviderKey: UserDefaultPreferenceKey {
+        public let defaultValue: SuggestionFeatureProvider = .gitHubCopilot
+        public let key = "SuggestionFeatureProvider"
+    }
+    
+    public var suggestionFeatureProvider: SuggestionFeatureProviderKey { .init() }
 
     // MARK: - Realtime Suggestion Debounce
 
@@ -239,6 +230,24 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var gitHubCopilotVerboseLog: GitHubCopilotVerboseLog { .init() }
+
+    // MARK: - Node Path
+
+    struct NodePath: UserDefaultPreferenceKey {
+        public let defaultValue: String = ""
+        public let key = "NodePath"
+    }
+
+    var nodePath: NodePath { .init() }
+
+    // MARK: - Run Node With
+
+    struct RunNodeWithKey: UserDefaultPreferenceKey {
+        public let defaultValue = NodeRunner.bash
+        public let key = "RunNodeWith"
+    }
+
+    var runNodeWith: RunNodeWithKey { .init() }
 }
 
 // MARK: - UI
@@ -250,14 +259,14 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var suggestionCodeFontSize: SuggestionCodeFontSize { .init() }
-    
+
     struct ChatFontSize: UserDefaultPreferenceKey {
         public let defaultValue = 12 as Double
         public let key = "ChatFontSize"
     }
 
     var chatFontSize: ChatFontSize { .init() }
-    
+
     struct ChatCodeFontSize: UserDefaultPreferenceKey {
         public let defaultValue = 12 as Double
         public let key = "ChatCodeFontSize"
@@ -317,7 +326,7 @@ public enum FeatureFlags {
         public let defaultValue = true
         public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
     }
-    
+
     public struct TriggerActionWithAccessibilityAPI: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "FeatureFlag-TriggerActionWithAccessibilityAPI"
@@ -330,5 +339,7 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWithInteractiveLoggedInShell: FeatureFlags
         .RunNodeWithInteractiveLoggedInShell { .init() }
     var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
-    var triggerActionWithAccessibilityAPI: FeatureFlags.TriggerActionWithAccessibilityAPI { .init() }
+    var triggerActionWithAccessibilityAPI: FeatureFlags
+        .TriggerActionWithAccessibilityAPI { .init() }
 }
+

@@ -32,7 +32,9 @@ public final class SuggestionService: SuggestionServiceType {
 
     var codeiumService: CodeiumSuggestionServiceType?
 
-    var serviceType: SuggestionFeatureProvider { .codeium }
+    var serviceType: SuggestionFeatureProvider {
+        UserDefaults.shared.value(for: \.suggestionFeatureProvider)
+    }
 
     public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
         self.projectRootURL = projectRootURL
