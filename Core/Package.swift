@@ -94,7 +94,11 @@ let package = Package(
         ),
         .target(
             name: "Environment",
-            dependencies: ["ActiveApplicationMonitor", "GitHubCopilotService", "AXExtension"]
+            dependencies: [
+                "ActiveApplicationMonitor",
+                "AXExtension",
+                "SuggestionService",
+            ]
         ),
         .target(name: "Preferences"),
 
