@@ -8,6 +8,18 @@ protocol CodeiumRequestType {
     func makeURLRequest(server: String) -> URLRequest
 }
 
+extension CodeiumRequestType {
+    func assembleURLRequest(server: String, method: String, body: Data?) -> URLRequest {
+        var request = URLRequest(url: .init(
+            string: "\(server)/exa.language_server_pb.LanguageServerService/\(method)"
+        )!)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = "POST"
+        request.httpBody = body
+        return request
+    }
+}
+
 struct CodeiumResponseError: Codable, Error, LocalizedError {
     var code: String
     var message: String
@@ -21,26 +33,53 @@ enum CodeiumRequest {
             var completionItems: [CodeiumCompletionItem]?
         }
 
-        struct Request: Codable {
+        struct RequestBody: Codable {
             var metadata: Metadata
             var document: CodeiumDocument
             var editor_options: CodeiumEditorOptions
             var other_documents: [CodeiumDocument]
         }
 
-        var requestBody: Request
+        var requestBody: RequestBody
 
         func makeURLRequest(server: String) -> URLRequest {
-            var request = URLRequest(url: .init(string: "\(server)/exa.language_server_pb.LanguageServerService/GetCompletions")!)
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let data = (try? JSONEncoder().encode(requestBody)) ?? Data() //
-            
-            request.httpMethod = "POST"
-            request.httpBody = data
-            
-            return request
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            return assembleURLRequest(server: server, method: "GetCompletions", body: data)
+        }
+    }
+    
+    struct AcceptCompletion: CodeiumRequestType {
+        struct Response: Codable {
+            var state: State
+            var completionItems: [CodeiumCompletionItem]?
         }
 
+        struct RequestBody: Codable {
+            var metadata: Metadata
+            var completion_id: String
+        }
+
+        var requestBody: RequestBody
+
+        func makeURLRequest(server: String) -> URLRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            return assembleURLRequest(server: server, method: "AcceptCompletion", body: data)
+        }
+    }
+    
+    struct Heartbeat: CodeiumRequestType {
+        struct Response: Codable {}
+
+        struct RequestBody: Codable {
+            var metadata: Metadata
+        }
+
+        var requestBody: RequestBody
+
+        func makeURLRequest(server: String) -> URLRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            return assembleURLRequest(server: server, method: "Heartbeat", body: data)
+        }
     }
 }
 

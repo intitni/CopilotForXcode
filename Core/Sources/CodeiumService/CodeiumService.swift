@@ -1,6 +1,7 @@
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
+import Logger
 import SuggestionModel
 
 public protocol CodeiumSuggestionServiceType {
@@ -26,11 +27,13 @@ enum CodeiumError: Error, LocalizedError {
     }
 }
 
-let token = ""
 
 public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
+    static let sessionId = UUID().uuidString
     let projectRootURL: URL
     var server: CodeiumLSP
+    var heartbeatTask: Task<Void, Error>?
+    var requestCounter: UInt64 = 0
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -62,11 +65,22 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         )
 
         self.server = server
-        server.terminationHandler = {
-            print("terminated")
+        server.terminationHandler = { [weak self] in
+            Logger.codeium.info("Language server is terminated")
+            guard let self else { return }
         }
-        server.launchHandler = {
-            print("launched")
+        server.launchHandler = { [weak self] in
+            guard let self else { return }
+            let metadata = self.getMetadata()
+            self.heartbeatTask = Task { [weak self] in
+                while true {
+                    try Task.checkCancellation()
+                    _ = try? await self?.server.sendRequest(
+                        CodeiumRequest.Heartbeat(requestBody: .init(metadata: metadata))
+                    )
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                }
+            }
         }
         server.start()
     }
@@ -80,6 +94,7 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CodeSuggestion] {
+        requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
 
         let relativePath = {
@@ -98,12 +113,7 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         }()
 
         let request = CodeiumRequest.GetCompletion(requestBody: .init(
-            metadata: .init(
-                ide_name: "jetbrains", ide_version: "14.3", extension_name: "Copilot for Xcode",
-                extension_version: "14.0.0",
-                api_key: token,
-                session_id: UUID().uuidString, request_id: 100
-            ),
+            metadata: getMetadata(),
             document: .init(
                 absolute_path: fileURL.path,
                 relative_path: relativePath,
@@ -181,6 +191,20 @@ public class CodeiumSuggestionService: CodeiumSuggestionServiceType {
         }
 
         return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
+    }
+}
+
+extension CodeiumSuggestionService {
+    func getMetadata() -> Metadata {
+        Metadata(
+            ide_name: "jetbrains",
+            ide_version: "14.3",
+            extension_name: "Copilot for Xcode",
+            extension_version: "14.0.0",
+            api_key: token,
+            session_id: CodeiumSuggestionService.sessionId,
+            request_id: requestCounter
+        )
     }
 }
 

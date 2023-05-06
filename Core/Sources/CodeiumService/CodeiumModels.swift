@@ -21,7 +21,7 @@ struct CodeiumCompletionItem: Codable {
     var suffix: Suffix?
     var range: Range
     var source: CompletionSource
-    var completionParts: [CompletionPart]
+    var completionParts: [CompletionPart]?
 }
 
 struct Suffix: Codable {
@@ -29,7 +29,7 @@ struct Suffix: Codable {
     var text: String
     /// Cursor position delta (as signed offset) from the end of the inserted
     /// completion (including the suffix).
-    var deltaCursorOffset: Int
+    var deltaCursorOffset: String
 }
 
 struct Range: Codable {

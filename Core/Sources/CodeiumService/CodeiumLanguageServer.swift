@@ -8,7 +8,7 @@ protocol CodeiumLSP {
     func sendRequest<E: CodeiumRequestType>(_ endpoint: E) async throws -> E.Response
 }
 
-class CodeiumLanguageServer: CodeiumLSP {
+final class CodeiumLanguageServer {
     let languageServerExecutableURL: URL
     let managerDirectoryURL: URL
     let supportURL: URL
@@ -17,6 +17,7 @@ class CodeiumLanguageServer: CodeiumLSP {
     var terminationHandler: (() -> Void)?
     var launchHandler: (() -> Void)?
     var port: String?
+    var heartbeatTask: Task<Void, Error>?
 
     init(
         languageServerExecutableURL: URL,
@@ -88,10 +89,8 @@ class CodeiumLanguageServer: CodeiumLSP {
                 while true {
                     try await Task.sleep(nanoseconds: 1_000_000_000)
                     waited += 1
-                    port = findPort()
-                    if port != nil {
-                        Logger.codeium.info("Language server started.")
-                        launchHandler?()
+                    if let port = findPort() {
+                        finishStarting(port: port)
                         return
                     }
                     if waited >= 60 {
@@ -116,6 +115,14 @@ class CodeiumLanguageServer: CodeiumLSP {
         terminationHandler?()
     }
 
+    private func finishStarting(port: String) {
+        Logger.codeium.info("Language server started.")
+        self.port = port
+        launchHandler?()
+    }
+}
+
+extension CodeiumLanguageServer: CodeiumLSP {
     func sendRequest<E>(_ request: E) async throws -> E.Response where E: CodeiumRequestType {
         guard let port else { throw CancellationError() }
 
@@ -126,6 +133,7 @@ class CodeiumLanguageServer: CodeiumLSP {
                 let response = try JSONDecoder().decode(E.Response.self, from: data)
                 return response
             } catch {
+                dump(error)
                 Logger.codeium.error(error.localizedDescription)
                 throw error
             }
