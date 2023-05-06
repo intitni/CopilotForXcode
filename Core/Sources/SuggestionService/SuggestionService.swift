@@ -34,7 +34,7 @@ public final class SuggestionService: SuggestionServiceType {
 
     func createGitHubCopilotServiceIfNeeded() throws -> GitHubCopilotSuggestionServiceType {
         if let gitHubCopilotService { return gitHubCopilotService }
-        let newService = try GitHubCopilotSuggestionService()
+        let newService = try GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
         gitHubCopilotService = newService
         Task {
             try await Task.sleep(nanoseconds: 1_000_000_000)
