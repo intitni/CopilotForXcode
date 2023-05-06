@@ -13,7 +13,7 @@ class CodeiumLanguageServer: CodeiumLSP {
     let managerDirectoryURL: URL
     let supportURL: URL
     let process: Process
-    let transport: StdioDataTransport
+    let transport: IOTransport
     var terminationHandler: (() -> Void)?
     var launchHandler: (() -> Void)?
     var port: String?
@@ -31,7 +31,7 @@ class CodeiumLanguageServer: CodeiumLSP {
         self.terminationHandler = terminationHandler
         self.launchHandler = launchHandler
         process = Process()
-        transport = StdioDataTransport()
+        transport = IOTransport()
 
         process.standardInput = transport.stdinPipe
         process.standardOutput = transport.stdoutPipe
@@ -136,6 +136,99 @@ class CodeiumLanguageServer: CodeiumLSP {
             } catch {
                 Logger.codeium.error(error.localizedDescription)
                 throw error
+            }
+        }
+    }
+}
+
+final class IOTransport {
+    public let stdinPipe: Pipe
+    public let stdoutPipe: Pipe
+    public let stderrPipe: Pipe
+    private var closed: Bool
+    private var queue: DispatchQueue
+
+    public init() {
+        stdinPipe = Pipe()
+        stdoutPipe = Pipe()
+        stderrPipe = Pipe()
+        closed = false
+        queue = DispatchQueue(label: "com.intii.CopilotForXcode.IOTransport")
+
+        setupFileHandleHandlers()
+    }
+
+    public func write(_ data: Data) {
+        if closed {
+            return
+        }
+
+        let fileHandle = stdinPipe.fileHandleForWriting
+
+        queue.async {
+            fileHandle.write(data)
+        }
+    }
+
+    public func close() {
+        queue.sync {
+            if self.closed {
+                return
+            }
+
+            self.closed = true
+
+            [stdoutPipe, stderrPipe, stdinPipe].forEach { pipe in
+                pipe.fileHandleForWriting.closeFile()
+                pipe.fileHandleForReading.closeFile()
+            }
+        }
+    }
+
+    private func setupFileHandleHandlers() {
+        stdoutPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+            let data = handle.availableData
+
+            guard !data.isEmpty else {
+                return
+            }
+
+            #if DEBUG
+            self.forwardDataToHandler(data)
+            #endif
+        }
+
+        stderrPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+            let data = handle.availableData
+
+            guard !data.isEmpty else {
+                return
+            }
+
+            #if DEBUG
+            self.forwardErrorDataToHandler(data)
+            #endif
+        }
+    }
+
+    private func forwardDataToHandler(_ data: Data) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+
+            if self.closed {
+                return
+            }
+
+            if let string = String(bytes: data, encoding: .utf8) {
+                Logger.codeium.info("stdout: \(string)")
+            }
+        }
+    }
+
+    private func forwardErrorDataToHandler(_ data: Data) {
+        queue.async {
+            if let string = String(bytes: data, encoding: .utf8) {
+                Logger.codeium.error("stderr: \(string)")
             }
         }
     }
