@@ -6,6 +6,7 @@ import Combine
 import Environment
 import Preferences
 import SwiftUI
+import UserDefaultsObserver
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {

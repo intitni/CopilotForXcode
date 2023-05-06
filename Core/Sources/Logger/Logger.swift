@@ -16,6 +16,10 @@ public final class Logger {
     public static let client = Logger(category: "Client")
     public static let updateChecker = Logger(category: "UpdateChecker")
     public static let gitHubCopilot = Logger(category: "GitHubCopilot")
+    public static let codeium = Logger(category: "Codeium")
+    #if DEBUG
+    public static let temp = Logger(category: "Temp")
+    #endif
 
     public init(subsystem: String = "com.intii.CopilotForXcode", category: String) {
         self.subsystem = subsystem

@@ -7,6 +7,7 @@ import Preferences
 import SuggestionInjector
 import SuggestionModel
 import SuggestionService
+import UserDefaultsObserver
 import XPCShared
 
 @ServiceActor
@@ -119,7 +120,7 @@ final class Workspace {
 
         if _suggestionService == nil {
             _suggestionService = Environment.createSuggestionService(projectRootURL) {
-                [weak self] service in
+                [weak self] _ in
                 guard let self else { return }
                 for (_, filespace) in filespaces {
                     notifyOpenFile(filespace: filespace)
@@ -178,7 +179,7 @@ final class Workspace {
 
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
-        
+
         let workspace = {
             if let existed = workspaces[workspaceURL] {
                 return existed
@@ -191,7 +192,7 @@ final class Workspace {
             }
             return Workspace(projectRootURL: workspaceURL)
         }()
-        
+
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
         workspaces[workspaceURL] = workspace
         workspace.refreshUpdateTime()
@@ -257,8 +258,7 @@ extension Workspace {
             tabSize: editor.tabSize,
             indentSize: editor.indentSize,
             usesTabsForIndentation: editor.usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: true,
-            referenceFileURLs: filespaces.values.map(\.fileURL)
+            ignoreSpaceOnlySuggestions: true
         )
 
         filespace.suggestions = completions

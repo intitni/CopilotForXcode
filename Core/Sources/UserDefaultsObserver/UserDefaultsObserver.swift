@@ -1,11 +1,15 @@
 import Foundation
 
-final class UserDefaultsObserver: NSObject {
-    var onChange: (() -> Void)?
+public final class UserDefaultsObserver: NSObject {
+    public var onChange: (() -> Void)?
     private weak var object: NSObject?
     private let keyPaths: [String]
-    
-    init(object: NSObject, forKeyPaths keyPaths: [String], context: UnsafeMutableRawPointer?) {
+
+    public init(
+        object: NSObject,
+        forKeyPaths keyPaths: [String],
+        context: UnsafeMutableRawPointer?
+    ) {
         self.object = object
         self.keyPaths = keyPaths
         super.init()
@@ -19,8 +23,8 @@ final class UserDefaultsObserver: NSObject {
             object?.removeObserver(self, forKeyPath: keyPath)
         }
     }
-    
-    override func observeValue(
+
+    public override func observeValue(
         forKeyPath keyPath: String?,
         of object: Any?,
         change: [NSKeyValueChangeKey: Any]?,
@@ -29,3 +33,4 @@ final class UserDefaultsObserver: NSObject {
         onChange?()
     }
 }
+

@@ -9,6 +9,7 @@ import ServiceManagement
 import ServiceUpdateMigration
 import SwiftUI
 import UpdateChecker
+import UserDefaultsObserver
 import UserNotifications
 
 let bundleIdentifierBase = Bundle.main
@@ -18,7 +19,11 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let scheduledCleaner = ScheduledCleaner()
-    private let userDefaultsObserver = UserDefaultsObserver()
+    private let userDefaultsObserver = UserDefaultsObserver(
+        object: UserDefaults.shared,
+        forKeyPaths: [UserDefaultPreferenceKeys().realtimeSuggestionToggle.key],
+        context: nil
+    )
     private var statusBarItem: NSStatusItem!
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
     private let updateChecker =
@@ -78,7 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             action: #selector(checkForUpdate),
             keyEquivalent: ""
         )
-        
+
         let openCopilotForXcode = NSMenuItem(
             title: "Open Copilot for Xcode",
             action: #selector(openCopilotForXcode),
@@ -110,21 +115,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(quitItem)
 
-        userDefaultsObserver.onChange = { key in
-            switch key {
-            case UserDefaultPreferenceKeys().realtimeSuggestionToggle.key:
-                toggleRealtimeSuggestions.state = UserDefaults.shared
-                    .value(for: \.realtimeSuggestionToggle) ? .on : .off
-            default:
-                break
-            }
+        userDefaultsObserver.onChange = {
+            toggleRealtimeSuggestions.state = UserDefaults.shared
+                .value(for: \.realtimeSuggestionToggle) ? .on : .off
         }
     }
 
     @objc func quit() {
         exit(0)
     }
-    
+
     @objc func openCopilotForXcode() {
         let task = Process()
         if let appPath = locateHostBundleURL(url: Bundle.main.bundleURL)?.absoluteString {
@@ -231,32 +231,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func checkForUpdate() {
         updateChecker.checkForUpdates()
-    }
-}
-
-private class UserDefaultsObserver: NSObject {
-    var onChange: ((String?) -> Void)?
-
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        onChange?(keyPath)
-    }
-
-    deinit {
-        removeObserver(self, forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
-    }
-
-    override init() {
-        super.init()
-        observe(keyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
-    }
-
-    private func observe(keyPath: String) {
-        UserDefaults.shared.addObserver(self, forKeyPath: keyPath, options: .new, context: nil)
     }
 }
 
