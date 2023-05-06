@@ -35,24 +35,38 @@ enum CodeiumError: Error, LocalizedError {
 public class CodeiumSuggestionService {
     static let sessionId = UUID().uuidString
     let projectRootURL: URL
-    var server: CodeiumLSP
+    var server: CodeiumLSP?
     var heartbeatTask: Task<Void, Error>?
     var requestCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
+    let onServiceLaunched: () -> Void
+
+    let languageServerURL: URL
+    let supportURL: URL
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
         server = designatedServer
+        onServiceLaunched = {}
+        languageServerURL = URL(fileURLWithPath: "/")
+        supportURL = URL(fileURLWithPath: "/")
     }
 
     public init(projectRootURL: URL, onServiceLaunched: @escaping () -> Void) throws {
         self.projectRootURL = projectRootURL
-
+        self.onServiceLaunched = onServiceLaunched
         let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
-        let languageServerURL = urls.executableURL.appendingPathComponent("language_server")
+        languageServerURL = urls.executableURL.appendingPathComponent("language_server")
+        supportURL = urls.supportURL
         guard FileManager.default.fileExists(atPath: languageServerURL.path) else {
             throw CodeiumError.languageServerNotInstalled
         }
+        try setupServerIfNeeded()
+    }
+
+    @discardableResult
+    func setupServerIfNeeded() throws -> CodeiumLSP {
+        if let server { return server }
         let tempFolderURL = FileManager.default.temporaryDirectory
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
@@ -63,32 +77,38 @@ public class CodeiumSuggestionService {
                 withIntermediateDirectories: true
             )
         }
+
         let server = CodeiumLanguageServer(
             languageServerExecutableURL: languageServerURL,
             managerDirectoryURL: managerDirectoryURL,
-            supportURL: urls.supportURL
+            supportURL: supportURL
         )
 
-        self.server = server
         server.terminationHandler = { [weak self] in
-            Logger.codeium.info("Language server is terminated")
-            guard let self else { return }
+            self?.server = nil
+            self?.heartbeatTask?.cancel()
+            self?.requestCounter = 0
+            Logger.codeium.info("Language server is terminated, will be restarted when needed.")
         }
+
         server.launchHandler = { [weak self] in
             guard let self else { return }
             let metadata = self.getMetadata()
-            onServiceLaunched()
+            self.onServiceLaunched()
             self.heartbeatTask = Task { [weak self] in
                 while true {
                     try Task.checkCancellation()
-                    _ = try? await self?.server.sendRequest(
+                    _ = try? await self?.server?.sendRequest(
                         CodeiumRequest.Heartbeat(requestBody: .init(metadata: metadata))
                     )
                     try await Task.sleep(nanoseconds: 5_000_000_000)
                 }
             }
         }
+
         server.start()
+        self.server = server
+        return server
     }
 
     public static func createFoldersIfNeeded() throws -> (
@@ -200,7 +220,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                 }
         ))
 
-        let result = try await server.sendRequest(request)
+        let result = try await (try setupServerIfNeeded()).sendRequest(request)
 
         return result.completionItems?.filter { item in
             if ignoreSpaceOnlySuggestions {
@@ -228,10 +248,11 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     }
 
     public func notifyAccepted(_ suggestion: CodeSuggestion) async {
-        _ = try? await server.sendRequest(CodeiumRequest.AcceptCompletion(requestBody: .init(
-            metadata: getMetadata(),
-            completion_id: suggestion.uuid
-        )))
+        _ = try? await (try setupServerIfNeeded())
+            .sendRequest(CodeiumRequest.AcceptCompletion(requestBody: .init(
+                metadata: getMetadata(),
+                completion_id: suggestion.uuid
+            )))
     }
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
