@@ -32,7 +32,7 @@ public final class SuggestionService: SuggestionServiceType {
 
     var codeiumService: CodeiumSuggestionServiceType?
 
-    var serviceType: SuggestionServiceProviderType { .gitHubCopilot }
+    var serviceType: SuggestionFeatureProvider { .codeium }
 
     public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
         self.projectRootURL = projectRootURL

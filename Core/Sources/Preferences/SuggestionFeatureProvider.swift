@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SuggestionServiceProviderType: Int {
+public enum SuggestionFeatureProvider: Int {
     case gitHubCopilot
     case codeium
 }
