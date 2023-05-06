@@ -117,6 +117,7 @@ let package = Package(
         ),
         .target(name: "SuggestionService", dependencies: [
             "GitHubCopilotService",
+            "CodeiumService",
         ]),
 
         // MARK: - Prompt To Code
@@ -204,6 +205,13 @@ let package = Package(
         .testTarget(
             name: "OpenAIServiceTests",
             dependencies: ["OpenAIService"]
+        ),
+
+        // MARK: - Codeium
+
+        .target(
+            name: "CodeiumService",
+            dependencies: ["LanguageClient", "SuggestionModel", "Preferences"]
         ),
     ]
 )
