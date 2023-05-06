@@ -23,7 +23,7 @@ import XPCShared
     }
 
     Environment.createSuggestionService = {
-        _ in fatalError("")
+        _, _ in fatalError("")
     }
 
     Environment.triggerAction = { _ in }

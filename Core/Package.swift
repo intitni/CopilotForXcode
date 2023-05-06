@@ -164,6 +164,7 @@ let package = Package(
                 "Highlightr",
                 "Splash",
                 "UserDefaultsObserver",
+                "Logger",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]

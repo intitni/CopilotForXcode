@@ -31,6 +31,7 @@ enum CodeiumError: Error, LocalizedError {
     }
 }
 
+let token = ""
 
 public class CodeiumSuggestionService {
     static let sessionId = UUID().uuidString
