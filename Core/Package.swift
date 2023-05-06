@@ -16,6 +16,7 @@ let package = Package(
                 "LaunchAgentManager",
                 "UpdateChecker",
                 "Logger",
+                "UserDefaultsObserver",
             ]
         ),
         .library(
@@ -69,6 +70,7 @@ let package = Package(
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
+                "UserDefaultsObserver",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -118,6 +120,7 @@ let package = Package(
         .target(name: "SuggestionService", dependencies: [
             "GitHubCopilotService",
             "CodeiumService",
+            "UserDefaultsObserver",
         ]),
 
         // MARK: - Prompt To Code
@@ -150,6 +153,7 @@ let package = Package(
                 "Environment",
                 "Highlightr",
                 "Splash",
+                "UserDefaultsObserver",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
@@ -179,6 +183,7 @@ let package = Package(
             name: "ServiceUpdateMigration",
             dependencies: ["Preferences", "GitHubCopilotService"]
         ),
+        .target(name: "UserDefaultsObserver"),
 
         // MARK: - GitHub Copilot
 

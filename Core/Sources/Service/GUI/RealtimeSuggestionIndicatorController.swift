@@ -7,6 +7,7 @@ import Environment
 import Preferences
 import QuartzCore
 import SwiftUI
+import UserDefaultsObserver
 
 /// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
 @MainActor

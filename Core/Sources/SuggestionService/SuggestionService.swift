@@ -1,6 +1,5 @@
-import CodeiumService
 import Foundation
-import GitHubCopilotService
+import UserDefaultsObserver
 import Preferences
 import SuggestionModel
 
@@ -28,9 +27,13 @@ protocol SuggestionServiceProvider: SuggestionServiceType {}
 public final class SuggestionService: SuggestionServiceType {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
-    lazy var suggestionProvider: SuggestionServiceProvider = buildService()
+    let providerChangeObserver = UserDefaultsObserver(
+        object: UserDefaults.shared,
+        forKeyPaths: [UserDefaultPreferenceKeys().suggestionFeatureProvider.key],
+        context: nil
+    )
 
-    var codeiumService: CodeiumSuggestionServiceType?
+    lazy var suggestionProvider: SuggestionServiceProvider = buildService()
 
     var serviceType: SuggestionFeatureProvider {
         UserDefaults.shared.value(for: \.suggestionFeatureProvider)
@@ -39,6 +42,11 @@ public final class SuggestionService: SuggestionServiceType {
     public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
+        
+        providerChangeObserver.onChange = { [weak self] in
+            guard let self else { return }
+            suggestionProvider = buildService()
+        }
     }
 
     func buildService() -> SuggestionServiceProvider {
