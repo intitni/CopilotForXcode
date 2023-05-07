@@ -6,9 +6,7 @@ enum Tab: Int, CaseIterable, Equatable {
     case account
     case feature
     case customCommand
-//    case app
     case debug
-    case about
 }
 
 struct TabContainer: View {
@@ -28,16 +26,11 @@ struct TabContainer: View {
                 case .account:
                     AccountView()
                 case .feature:
-                    EmptyView()
+                    FeatureSettingsView()
                 case .customCommand:
-                    EmptyView()
-//                    CustomCommandView()
-//                case .app:
-//                    EmptyView()
+                    CustomCommandView()
                 case .debug:
                     DebugSettingsView()
-                case .about:
-                    EmptyView()
                 }
             }
             .frame(minHeight: 400)
@@ -72,22 +65,12 @@ struct TabBar: View {
                 case .customCommand:
                     TabBarButton(
                         currentTab: $tab,
-
                         title: "Custom Command",
                         image: "puzzlepiece.extension",
                         tab: tab
                     )
-//                case .app:
-//                    TabBarButton(currentTab: $tab, title: "App", image: "app", tab: tab)
                 case .debug:
                     TabBarButton(currentTab: $tab, title: "Advanced", image: "gearshape.2", tab: tab)
-                case .about:
-                    TabBarButton(
-                        currentTab: $tab,
-                        title: "About",
-                        image: "info.circle",
-                        tab: tab
-                    )
                 }
             }
         }

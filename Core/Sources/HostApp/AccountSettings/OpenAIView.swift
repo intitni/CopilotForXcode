@@ -112,7 +112,14 @@ struct OpenAIView: View {
                 Text(
                     "\(settings.chatGPTTemperature.formatted(.number.precision(.fractionLength(1))))"
                 )
+                .font(.body)
                 .monospacedDigit()
+                .padding(.vertical, 2)
+                .padding(.horizontal, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.primary.opacity(0.1))
+                )
             }
 
             Picker(

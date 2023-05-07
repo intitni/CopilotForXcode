@@ -50,16 +50,18 @@ struct SidebarTabView<Content: View>: View {
                                     Image(systemName: image)
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(height: 20)
+                                        .frame(width: 20, height: 20)
                                 }
-                                VStack(alignment: .leading) {
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text(item.title)
                                         .foregroundStyle(.primary)
                                     if let subtitle = item.subtitle {
                                         Text(subtitle)
+                                            .lineSpacing(0)
                                             .font(.caption)
                                             .foregroundStyle(.tertiary)
                                             .opacity(0.5)
+                                            .multilineTextAlignment(.leading)
                                     }
                                 }
                             }
@@ -99,7 +101,7 @@ struct SidebarTabView_Previews: PreviewProvider {
                 tag: 0,
                 currentTag: tag,
                 title: "Hello",
-                subtitle: "Meow",
+                subtitle: "Meow\nMeow",
                 image: "person.circle.fill"
             )
             Color.blue.sidebarItem(
