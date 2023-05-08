@@ -1,30 +1,31 @@
 import Foundation
 import SwiftUI
+import UpdateChecker
 
 enum Tab: Int, CaseIterable, Equatable {
     case general
-    case account
+    case service
     case feature
     case customCommand
     case debug
 }
 
 struct TabContainer: View {
-    @State var tab = Tab.customCommand
+    @State var tab = Tab.general
 
     var body: some View {
         VStack(spacing: 0) {
             TabBar(tab: $tab)
                 .padding(.bottom, 8)
-            
+
             Divider()
 
             Group {
                 switch tab {
                 case .general:
                     GeneralView()
-                case .account:
-                    AccountView()
+                case .service:
+                    ServiceView()
                 case .feature:
                     FeatureSettingsView()
                 case .customCommand:
@@ -35,6 +36,7 @@ struct TabContainer: View {
             }
             .frame(minHeight: 400)
         }
+        .focusable(false)
         .padding(.top, 8)
     }
 }
@@ -53,8 +55,8 @@ struct TabBar: View {
                         image: "app.gift",
                         tab: tab
                     )
-                case .account:
-                    TabBarButton(currentTab: $tab, title: "Account", image: "person", tab: tab)
+                case .service:
+                    TabBarButton(currentTab: $tab, title: "Service", image: "globe", tab: tab)
                 case .feature:
                     TabBarButton(
                         currentTab: $tab,
@@ -70,7 +72,12 @@ struct TabBar: View {
                         tab: tab
                     )
                 case .debug:
-                    TabBarButton(currentTab: $tab, title: "Advanced", image: "gearshape.2", tab: tab)
+                    TabBarButton(
+                        currentTab: $tab,
+                        title: "Advanced",
+                        image: "gearshape.2",
+                        tab: tab
+                    )
                 }
             }
         }
@@ -123,6 +130,17 @@ struct TabContainer_Previews: PreviewProvider {
     static var previews: some View {
         TabContainer()
             .frame(width: 800)
+    }
+}
+
+struct UpdateCheckerKey: EnvironmentKey {
+    static var defaultValue: UpdateChecker = .init(hostBundle: nil)
+}
+
+extension EnvironmentValues {
+    var updateChecker: UpdateChecker {
+        get { self[UpdateCheckerKey.self] }
+        set { self[UpdateCheckerKey.self] = newValue }
     }
 }
 

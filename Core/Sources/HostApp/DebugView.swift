@@ -13,7 +13,7 @@ struct DebugSettingsView: View {
     @StateObject var settings = DebugSettings()
 
     var body: some View {
-        Section {
+        ScrollView {
             Form {
                 Toggle(isOn: $settings.disableLazyVStack) {
                     Text("Disable LazyVStack")
@@ -28,6 +28,7 @@ struct DebugSettingsView: View {
                     Text("Trigger action with AccessibilityAPI")
                 }
             }
+            .padding()
         }
     }
 }

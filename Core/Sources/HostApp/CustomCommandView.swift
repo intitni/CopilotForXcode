@@ -58,6 +58,7 @@ struct CustomCommandView: View {
 
                         VStack(alignment: .leading) {
                             Text(command.name)
+                                .foregroundStyle(.primary)
 
                             Group {
                                 switch command.feature {

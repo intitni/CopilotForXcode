@@ -15,28 +15,56 @@ struct SidebarItemPreferenceKey: PreferenceKey {
     }
 }
 
+struct SidebarTabTagKey: EnvironmentKey {
+    static var defaultValue: Int = 0
+}
+
+extension EnvironmentValues {
+    var sidebarTabTag: Int {
+        get { self[SidebarTabTagKey.self] }
+        set { self[SidebarTabTagKey.self] = newValue }
+    }
+}
+
+struct SidebarTabViewWrapper<Content: View>: View {
+    @Environment(\.sidebarTabTag) var sidebarTabTag
+    var tag: Int
+    var title: String
+    var subtitle: String? = nil
+    var image: String? = nil
+    var content: () -> Content
+
+    var body: some View {
+        content()
+            .opacity(tag != sidebarTabTag ? 0 : 1)
+            .preference(
+                key: SidebarItemPreferenceKey.self,
+                value: [.init(tag: tag, title: title, subtitle: subtitle, image: image)]
+            )
+    }
+}
+
 extension View {
     func sidebarItem(
         tag: Int,
-        currentTag: Int,
         title: String,
         subtitle: String? = nil,
         image: String? = nil
     ) -> some View {
-        return opacity(tag != currentTag ? 0 : 1)
-            .background(GeometryReader { _ in
-                Color.clear.preference(
-                    key: SidebarItemPreferenceKey.self,
-                    value: [.init(tag: tag, title: title, subtitle: subtitle, image: image)]
-                )
-            })
+        SidebarTabViewWrapper(
+            tag: tag,
+            title: title,
+            subtitle: subtitle,
+            image: image,
+            content: { self }
+        )
     }
 }
 
 struct SidebarTabView<Content: View>: View {
     @State var sidebarItems = [SidebarItem]()
     @Binding var tag: Int
-    @ViewBuilder var views: (_ tag: Int) -> Content
+    @ViewBuilder var views: () -> Content
     var body: some View {
         HStack(spacing: 0) {
             ScrollView {
@@ -81,13 +109,14 @@ struct SidebarTabView<Content: View>: View {
                 .padding(.vertical, 8)
             }
             .background(Color.primary.opacity(0.05))
-            
+
             Divider()
 
             ZStack(alignment: .topLeading) {
-                views(tag)
+                views()
             }
         }
+        .environment(\.sidebarTabTag, tag)
         .onPreferenceChange(SidebarItemPreferenceKey.self) { items in
             sidebarItems = items
         }
@@ -96,23 +125,20 @@ struct SidebarTabView<Content: View>: View {
 
 struct SidebarTabView_Previews: PreviewProvider {
     static var previews: some View {
-        SidebarTabView(tag: .constant(0)) { tag in
+        SidebarTabView(tag: .constant(0)) {
             Color.red.sidebarItem(
                 tag: 0,
-                currentTag: tag,
                 title: "Hello",
                 subtitle: "Meow\nMeow",
                 image: "person.circle.fill"
             )
             Color.blue.sidebarItem(
                 tag: 1,
-                currentTag: tag,
                 title: "World",
                 image: "person.circle.fill"
             )
             Color.blue.sidebarItem(
                 tag: 3,
-                currentTag: tag,
                 title: "Pikachu",
                 image: "person.circle.fill"
             )

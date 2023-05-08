@@ -207,6 +207,7 @@ struct SuggestionFeatureEnabledProjectListView: View {
                 }
             }
         }
+        .focusable(false)
         .frame(width: 300, height: 400)
         .sheet(isPresented: $isAddingNewProject) {
             SuggestionFeatureAddEnabledProjectView(isOpen: $isAddingNewProject, settings: settings)

@@ -125,6 +125,7 @@ let package = Package(
                 "Client",
                 "GitHubCopilotService",
                 "SuggestionModel",
+                "LaunchAgentManager"
             ]
         ),
 
