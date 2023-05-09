@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SidebarItem: Identifiable, Equatable {
+private struct SidebarItem: Identifiable, Equatable {
     var id: Int { tag }
     var tag: Int
     var title: String
@@ -8,25 +8,25 @@ struct SidebarItem: Identifiable, Equatable {
     var image: String? = nil
 }
 
-struct SidebarItemPreferenceKey: PreferenceKey {
+private struct SidebarItemPreferenceKey: PreferenceKey {
     static var defaultValue: [SidebarItem] = []
     static func reduce(value: inout [SidebarItem], nextValue: () -> [SidebarItem]) {
         value.append(contentsOf: nextValue())
     }
 }
 
-struct SidebarTabTagKey: EnvironmentKey {
+private struct SidebarTabTagKey: EnvironmentKey {
     static var defaultValue: Int = 0
 }
 
-extension EnvironmentValues {
+private extension EnvironmentValues {
     var sidebarTabTag: Int {
         get { self[SidebarTabTagKey.self] }
         set { self[SidebarTabTagKey.self] = newValue }
     }
 }
 
-struct SidebarTabViewWrapper<Content: View>: View {
+private struct SidebarTabViewWrapper<Content: View>: View {
     @Environment(\.sidebarTabTag) var sidebarTabTag
     var tag: Int
     var title: String
@@ -35,12 +35,17 @@ struct SidebarTabViewWrapper<Content: View>: View {
     var content: () -> Content
 
     var body: some View {
-        content()
-            .opacity(tag != sidebarTabTag ? 0 : 1)
-            .preference(
-                key: SidebarItemPreferenceKey.self,
-                value: [.init(tag: tag, title: title, subtitle: subtitle, image: image)]
-            )
+        Group {
+            if tag == sidebarTabTag {
+                content()
+            } else {
+                Color.clear
+            }
+        }
+        .preference(
+            key: SidebarItemPreferenceKey.self,
+            value: [.init(tag: tag, title: title, subtitle: subtitle, image: image)]
+        )
     }
 }
 
@@ -62,7 +67,7 @@ extension View {
 }
 
 struct SidebarTabView<Content: View>: View {
-    @State var sidebarItems = [SidebarItem]()
+    @State private var sidebarItems = [SidebarItem]()
     @Binding var tag: Int
     @ViewBuilder var views: () -> Content
     var body: some View {
@@ -87,7 +92,7 @@ struct SidebarTabView<Content: View>: View {
                                         Text(subtitle)
                                             .lineSpacing(0)
                                             .font(.caption)
-                                            .foregroundStyle(.tertiary)
+                                            .foregroundStyle(.secondary)
                                             .opacity(0.5)
                                             .multilineTextAlignment(.leading)
                                     }
@@ -101,8 +106,9 @@ struct SidebarTabView<Content: View>: View {
                                 in: RoundedRectangle(cornerRadius: 4)
                             )
                             .padding(.horizontal, 8)
+                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.plain)
                     }
                 }
                 .frame(width: 200)

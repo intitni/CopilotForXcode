@@ -74,9 +74,6 @@ struct SuggestionSettingsView: View {
                     )
                 }
                 
-                Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
-                    Text("Hide Common Preceding Spaces")
-                }
                 HStack {
                     Slider(value: $settings.realtimeSuggestionDebounce, in: 0...2, step: 0.1) {
                         Text("Real-time Suggestion Debounce")
@@ -99,6 +96,10 @@ struct SuggestionSettingsView: View {
             }
 
             Group {
+                Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
+                    Text("Hide Common Preceding Spaces")
+                }
+                
                 HStack {
                     TextField(text: .init(get: {
                         "\(Int(settings.suggestionCodeFontSize))"

@@ -15,7 +15,7 @@ struct PromptToCodeSettingsView: View {
 
     var body: some View {
         VStack(alignment: .center) {
-            Text("Mirroring Settings of Suggestions")
+            Text("Mirroring Settings of Suggestion Feature")
                 .foregroundColor(.white)
                 .padding(.vertical, 2)
                 .padding(.horizontal, 8)
@@ -23,6 +23,7 @@ struct PromptToCodeSettingsView: View {
                     Color.accentColor,
                     in: RoundedRectangle(cornerRadius: 20)
                 )
+                .shadow(radius: 5)
 
             Form {
                 Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
@@ -41,6 +42,8 @@ struct PromptToCodeSettingsView: View {
 
                     Text("pt")
                 }.disabled(true)
+                
+                Divider()
 
                 Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
                     Text("Use accessibility API to accept suggestion in widget")

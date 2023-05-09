@@ -68,7 +68,7 @@ struct TabBar: View {
                     TabBarButton(
                         currentTab: $tab,
                         title: "Custom Command",
-                        image: "puzzlepiece.extension",
+                        image: "command.square",
                         tab: tab
                     )
                 case .debug:
