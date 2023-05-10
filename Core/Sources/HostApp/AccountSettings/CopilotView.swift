@@ -119,7 +119,7 @@ struct CopilotView: View {
                 version = try await service.version()
                 isRunningAction = false
 
-                if status != .ok {
+                if status != .ok && status != .notSignedIn {
                     toast(
                         Text(
                             "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription."
