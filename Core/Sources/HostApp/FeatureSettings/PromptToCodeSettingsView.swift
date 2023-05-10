@@ -23,7 +23,6 @@ struct PromptToCodeSettingsView: View {
                     Color.accentColor,
                     in: RoundedRectangle(cornerRadius: 20)
                 )
-                .shadow(radius: 5)
 
             Form {
                 Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {

@@ -228,6 +228,19 @@ struct GeneralSettingsView: View {
             )) {
                 Text("Automatically Check for Update")
             }
+            
+            Picker(selection: $settings.suggestionWidgetPositionMode) {
+                ForEach(SuggestionWidgetPositionMode.allCases, id: \.rawValue) {
+                    switch $0 {
+                    case .fixedToBottom:
+                        Text("Fixed to Bottom").tag($0)
+                    case .alignToTextCursor:
+                        Text("Follow Text Cursor").tag($0)
+                    }
+                }
+            } label: {
+                Text("Widget position")
+            }
 
             Picker(selection: $settings.widgetColorScheme) {
                 ForEach(WidgetColorScheme.allCases, id: \.rawValue) {

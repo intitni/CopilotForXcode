@@ -17,7 +17,7 @@ struct ChatSettingsView: View {
                 }, set: {
                     settings.chatFontSize = Double(Int($0) ?? 0)
                 })) {
-                    Text("Font size of chat message")
+                    Text("Font size of message")
                 }
                 .textFieldStyle(.roundedBorder)
 
@@ -30,7 +30,7 @@ struct ChatSettingsView: View {
                 }, set: {
                     settings.chatCodeFontSize = Double(Int($0) ?? 0)
                 })) {
-                    Text("Font size of code block in chat")
+                    Text("Font size of code block")
                 }
                 .textFieldStyle(.roundedBorder)
 

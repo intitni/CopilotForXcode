@@ -73,12 +73,12 @@ struct CustomCommandView: View {
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             editingCommand = .init(isNew: false, command: command)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4)
                     .background(
                         editingCommand?.command.id == command.id

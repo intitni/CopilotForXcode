@@ -210,6 +210,7 @@ struct SuggestionFeatureEnabledProjectListView: View {
         }
         .focusable(false)
         .frame(width: 300, height: 400)
+        .background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $isAddingNewProject) {
             SuggestionFeatureAddEnabledProjectView(isOpen: $isAddingNewProject, settings: settings)
         }
@@ -240,6 +241,7 @@ struct SuggestionFeatureAddEnabledProjectView: View {
         }
         .padding()
         .frame(minWidth: 500)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
