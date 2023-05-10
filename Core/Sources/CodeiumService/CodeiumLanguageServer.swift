@@ -140,7 +140,7 @@ extension CodeiumLanguageServer: CodeiumLSP {
         } else {
             do {
                 let error = try JSONDecoder().decode(CodeiumResponseError.self, from: data)
-                throw error
+                Logger.codeium.error(error.message)
             } catch {
                 Logger.codeium.error(error.localizedDescription)
                 throw error

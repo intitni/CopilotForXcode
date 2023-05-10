@@ -5,7 +5,7 @@ public final class CodeiumAuthService {
     public init() {}
     let codeiumKeyKey = "codeiumKey"
     let keychain: Keychain = {
-        let info = Bundle.main.infoDictionary 
+        let info = Bundle.main.infoDictionary
         return Keychain(
             service: info?["BUNDLE_IDENTIFIER_BASE"] as! String,
             accessGroup: "\(info?["APP_ID_PREFIX"] as! String)\(info?["BUNDLE_IDENTIFIER_BASE"] as! String).Shared"
