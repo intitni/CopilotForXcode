@@ -89,8 +89,11 @@ struct CustomCommandView: View {
                     .contextMenu {
                         Button("Remove") {
                             settings.customCommands.removeAll(
-                                where: { $0.name == command.name }
+                                where: { $0.id == command.id }
                             )
+                            if let editingCommand, editingCommand.command.id == command.id {
+                                self.editingCommand = nil
+                            }
                         }
                     }
                 }
@@ -154,6 +157,7 @@ struct EditCustomCommandView: View {
     @State var prompt: String
     @State var systemPrompt: String
     @State var continuousMode: Bool
+    @State var editingContentInFullScreen: Binding<String>?
 
     enum CommandType: Int, CaseIterable {
         case chatWithSelection
@@ -218,9 +222,9 @@ struct EditCustomCommandView: View {
                     systemPromptTextField(title: "Extra System Prompt")
                     promptTextField
                 case .promptToCode:
+                    continuousModeToggle
                     systemPromptTextField(title: "Extra System Prompt")
                     promptTextField
-                    continuousModeToggle
                 case .customChat:
                     systemPromptTextField()
                     promptTextField
@@ -238,7 +242,7 @@ struct EditCustomCommandView: View {
 
                     HStack {
                         Spacer()
-                        Button("Cancel") {
+                        Button("Close") {
                             editingCommand = nil
                         }
 
@@ -275,10 +279,13 @@ struct EditCustomCommandView: View {
                                     return
                                 }
                                 settings.customCommands.append(newCommand)
-                                editingCommand = nil
+                                editingCommand?.isNew = false
+                                editingCommand?.command = newCommand
+
+                                toast(Text("The command is created."), .info)
                             }
                         } else {
-                            Button("Update") {
+                            Button("Save") {
                                 guard !settings.illegalNames.contains(newCommand.name)
                                     || newCommand.name == originalName
                                 else {
@@ -297,7 +304,8 @@ struct EditCustomCommandView: View {
                                 } else {
                                     settings.customCommands.append(newCommand)
                                 }
-                                editingCommand = nil
+
+                                toast(Text("The command is updated."), .info)
                             }
                         }
                     }
@@ -306,6 +314,34 @@ struct EditCustomCommandView: View {
             }
             .padding(.bottom)
             .background(.regularMaterial)
+            .sheet(isPresented: .init(get: { editingContentInFullScreen != nil }, set: {
+                if $0 == false {
+                    editingContentInFullScreen = nil
+                }
+            }), content: {
+                VStack {
+                    if let editingContentInFullScreen {
+                        TextEditor(text: editingContentInFullScreen)
+                            .font(Font.system(.body, design: .monospaced))
+                            .padding(4)
+                            .frame(minHeight: 120)
+                            .multilineTextAlignment(.leading)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            )
+                    }
+
+                    Button(action: {
+                        editingContentInFullScreen = nil
+                    }) {
+                        Text("Done")
+                    }
+                }
+                .padding()
+                .frame(width: 600, height: 500)
+                .background(Color(nsColor: .windowBackgroundColor))
+            })
         }
     }
 
@@ -313,16 +349,7 @@ struct EditCustomCommandView: View {
     var promptTextField: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Prompt")
-            TextEditor(text: $prompt)
-                .font(Font.system(.body, design: .monospaced))
-                .padding(2)
-                .frame(minHeight: 120)
-                .multilineTextAlignment(.leading)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 1)
-                        .stroke(.black, lineWidth: 1 / 3)
-                        .opacity(0.3)
-                )
+            editableText($prompt)
         }
         .padding(.vertical, 4)
     }
@@ -331,22 +358,45 @@ struct EditCustomCommandView: View {
     func systemPromptTextField(title: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title ?? "System Prompt")
-            TextEditor(text: $systemPrompt)
-                .font(Font.system(.body, design: .monospaced))
-                .padding(2)
-                .frame(minHeight: 120)
-                .multilineTextAlignment(.leading)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 1)
-                        .stroke(.black, lineWidth: 1 / 3)
-                        .opacity(0.3)
-                )
+            editableText($systemPrompt)
         }
         .padding(.vertical, 4)
     }
 
     var continuousModeToggle: some View {
         Toggle("Continuous Mode", isOn: $continuousMode)
+    }
+
+    func editableText(_ binding: Binding<String>) -> some View {
+        Button(action: {
+            editingContentInFullScreen = binding
+        }) {
+            HStack(alignment: .top) {
+                Text(binding.wrappedValue)
+                    .font(Font.system(.body, design: .monospaced))
+                    .padding(4)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color(nsColor: .textBackgroundColor))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+                    }
+                Image(systemName: "square.and.pencil")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14)
+                    .padding(4)
+                    .background(
+                        Color.primary.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: 4)
+                    )
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
