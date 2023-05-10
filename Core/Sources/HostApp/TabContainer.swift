@@ -206,6 +206,7 @@ class ToastController: ObservableObject {
         Task { @MainActor in
             withAnimation(.easeInOut(duration: 0.2)) {
                 messages.append(message)
+                messages = messages.suffix(3)
             }
             try await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation(.easeInOut(duration: 0.2)) {
