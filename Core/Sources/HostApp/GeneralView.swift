@@ -4,27 +4,16 @@ import Preferences
 import SwiftUI
 
 struct GeneralView: View {
-    @State var errorMessage: String?
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 AppInfoView()
                 Divider()
-                ExtensionServiceView(errorMessage: $errorMessage)
+                ExtensionServiceView()
                 Divider()
-                LaunchAgentView(errorMessage: $errorMessage)
+                LaunchAgentView()
                 Divider()
                 GeneralSettingsView()
-            }
-        }.safeAreaInset(edge: .bottom) {
-            if let errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.red, in: RoundedRectangle(cornerRadius: 8))
-                    .padding()
-                    .shadow(radius: 10)
             }
         }
     }
@@ -81,7 +70,7 @@ struct AppInfoView: View {
 }
 
 struct ExtensionServiceView: View {
-    @Binding var errorMessage: String?
+    @Environment(\.toast) var toast
     @State var xpcServiceVersion: String?
     @State var accessibilityPermissionGranted: Bool?
     @State var isRunningAction = false
@@ -131,14 +120,14 @@ struct ExtensionServiceView: View {
                 let service = try getService()
                 xpcServiceVersion = try await service.getXPCServiceVersion().version
             } catch {
-                errorMessage = error.localizedDescription
+                toast(Text(error.localizedDescription), .error)
             }
         }
     }
 }
 
 struct LaunchAgentView: View {
-    @Binding var errorMessage: String?
+    @Environment(\.toast) var toast
     @State var isDidRemoveLaunchAgentAlertPresented = false
     @State var isDidSetupLaunchAgentAlertPresented = false
     @State var isDidRestartLaunchAgentAlertPresented = false
@@ -152,7 +141,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().setupLaunchAgent()
                             isDidSetupLaunchAgentAlertPresented = true
                         } catch {
-                            errorMessage = error.localizedDescription
+                            toast(Text(error.localizedDescription), .error)
                         }
                     }
                 }) {
@@ -174,7 +163,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().removeLaunchAgent()
                             isDidRemoveLaunchAgentAlertPresented = true
                         } catch {
-                            errorMessage = error.localizedDescription
+                            toast(Text(error.localizedDescription), .error)
                         }
                     }
                 }) {
@@ -193,7 +182,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().reloadLaunchAgent()
                             isDidRestartLaunchAgentAlertPresented = true
                         } catch {
-                            errorMessage = error.localizedDescription
+                            toast(Text(error.localizedDescription), .error)
                         }
                     }
                 }) {
@@ -275,12 +264,6 @@ struct GeneralSettingsView: View {
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {
         GeneralView()
-    }
-}
-
-struct GeneralView_ErrorMessage_Previews: PreviewProvider {
-    static var previews: some View {
-        GeneralView(errorMessage: "Error Message")
     }
 }
 

@@ -128,6 +128,7 @@ struct CustomCommandView: View {
 }
 
 struct EditCustomCommandView: View {
+    @Environment(\.toast) var toast
     @Binding var editingCommand: CustomCommandView.EditingCommand?
     var settings: CustomCommandView.Settings
     let originalName: String
@@ -137,7 +138,6 @@ struct EditCustomCommandView: View {
     @State var prompt: String
     @State var systemPrompt: String
     @State var continuousMode: Bool
-    @State var errorMessage: String?
 
     enum CommandType: Int, CaseIterable {
         case chatWithSelection
@@ -220,10 +220,6 @@ struct EditCustomCommandView: View {
                     )
                     .foregroundStyle(.secondary)
 
-                    if let errorMessage {
-                        Text(errorMessage).foregroundColor(.red)
-                    }
-
                     HStack {
                         Spacer()
                         Button("Cancel") {
@@ -255,11 +251,11 @@ struct EditCustomCommandView: View {
                         if editingCommand?.isNew ?? true {
                             Button("Add") {
                                 guard !settings.illegalNames.contains(newCommand.name) else {
-                                    errorMessage = "Command name is illegal."
+                                    toast(Text("Command name is illegal."), .error)
                                     return
                                 }
                                 guard !newCommand.name.isEmpty else {
-                                    errorMessage = "Command name cannot be empty."
+                                    toast(Text("Command name cannot be empty."), .error)
                                     return
                                 }
                                 settings.customCommands.append(newCommand)
@@ -270,11 +266,11 @@ struct EditCustomCommandView: View {
                                 guard !settings.illegalNames.contains(newCommand.name)
                                     || newCommand.name == originalName
                                 else {
-                                    errorMessage = "Command name is illegal."
+                                    toast(Text("Command name is illegal."), .error)
                                     return
                                 }
                                 guard !newCommand.name.isEmpty else {
-                                    errorMessage = "Command name cannot be empty."
+                                    toast(Text("Command name cannot be empty."), .error)
                                     return
                                 }
 

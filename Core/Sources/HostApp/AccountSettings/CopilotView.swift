@@ -15,10 +15,10 @@ struct CopilotView: View {
     }
 
     @Environment(\.openURL) var openURL
+    @Environment(\.toast) var toast
     @StateObject var settings = Settings()
 
     @State var copilotStatus: GitHubCopilotAccountStatus?
-    @State var message: String?
     @State var userCode: String?
     @State var version: String?
     @State var isRunningAction: Bool = false
@@ -47,16 +47,18 @@ struct CopilotView: View {
                         Text("Run Node with")
                     }
 
-                    Text(
-                        "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
-                    )
-                    .foregroundColor(.secondary)
+                    VStack { // workaround a layout issue of SwiftUI
+                        Text(
+                            "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
+                        )
+                        .foregroundColor(.secondary)
+                    }
                 }
 
                 VStack(alignment: .leading) {
                     Text("Copilot Version: \(version ?? "Loading..")")
                     Text("Status: \(copilotStatus?.description ?? "Loading..")")
-                    
+
                     HStack(alignment: .center) {
                         Button("Refresh") { checkStatus() }
                         if copilotStatus == .notSignedIn {
@@ -92,17 +94,6 @@ struct CopilotView: View {
                 }
             }
             Spacer()
-        }.overlay(alignment: .topTrailing) {
-            if let message {
-                Text(message)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.red)
-                    )
-                    .frame(maxWidth: 200, alignment: .topTrailing)
-            }
         }.onAppear {
             if isPreview { return }
             checkStatus()
@@ -118,8 +109,17 @@ struct CopilotView: View {
                 copilotStatus = try await service.checkStatus()
                 version = try await service.getVersion()
                 isRunningAction = false
+
+                if copilotStatus != .ok {
+                    toast(
+                        Text(
+                            "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription."
+                        ),
+                        .error
+                    )
+                }
             } catch {
-                message = error.localizedDescription
+                toast(Text(error.localizedDescription), .error)
             }
         }
     }
@@ -133,17 +133,17 @@ struct CopilotView: View {
                 let (uri, userCode) = try await service.signInInitiate()
                 self.userCode = userCode
                 guard let url = URL(string: uri) else {
-                    message = "Verification URI is incorrect."
+                    toast(Text("Verification URI is incorrect."), .error)
                     return
                 }
                 let pasteboard = NSPasteboard.general
                 pasteboard.declareTypes([NSPasteboard.PasteboardType.string], owner: nil)
                 pasteboard.setString(userCode, forType: NSPasteboard.PasteboardType.string)
-                message = "Usercode \(userCode) already copied!"
+                toast(Text("Usercode \(userCode) already copied!"), .info)
                 openURL(url)
                 isUserCodeCopiedAlertPresented = true
             } catch {
-                message = error.localizedDescription
+                toast(Text(error.localizedDescription), .error)
             }
         }
     }
@@ -155,14 +155,14 @@ struct CopilotView: View {
             do {
                 let service = try getService()
                 guard let userCode else {
-                    message = "Usercode is empty."
+                    toast(Text("Usercode is empty."), .error)
                     return
                 }
                 let (username, status) = try await service.signInConfirm(userCode: userCode)
                 self.settings.username = username
                 copilotStatus = status
             } catch {
-                message = error.localizedDescription
+                toast(Text(error.localizedDescription), .error)
             }
         }
     }
@@ -175,7 +175,7 @@ struct CopilotView: View {
                 let service = try getService()
                 copilotStatus = try await service.signOut()
             } catch {
-                message = error.localizedDescription
+                toast(Text(error.localizedDescription), .error)
             }
         }
     }
@@ -200,12 +200,6 @@ struct CopilotView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(alignment: .leading, spacing: 8) {
             CopilotView(copilotStatus: .notSignedIn, version: "1.0.0")
-
-            CopilotView(
-                copilotStatus: .alreadySignedIn,
-                message: "Error"
-            )
-
             CopilotView(copilotStatus: .alreadySignedIn, isRunningAction: true)
         }
         .frame(height: 800)
