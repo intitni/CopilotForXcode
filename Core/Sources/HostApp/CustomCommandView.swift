@@ -112,6 +112,22 @@ struct CustomCommandView: View {
                     .multilineTextAlignment(.center)
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                Button(action: {
+                    editingCommand = .init(isNew: true, command: CustomCommand(
+                        commandId: UUID().uuidString,
+                        name: "New Command",
+                        feature: .chatWithSelection(
+                            extraSystemPrompt: nil,
+                            prompt: "Tell me about the code."
+                        )
+                    ))
+                }) {
+                    Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+                }
+                .buttonStyle(.plain)
+                .padding()
+            }
 
             Divider()
 
