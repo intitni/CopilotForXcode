@@ -79,14 +79,14 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
-                xpcServiceVersion = try await service.getXPCServiceVersion().version
-                copilotStatus = try await service.checkStatus()
-                version = try await service.getVersion()
-                message = shouldRestartXPCService
-                    ? "Please restart XPC Service to update it to the latest version."
-                    : nil
-                isRunningAction = false
+//                let service = try getService()
+//                xpcServiceVersion = try await service.getXPCServiceVersion().version
+//                copilotStatus = try await service.checkStatus()
+//                version = try await service.getVersion()
+//                message = shouldRestartXPCService
+//                    ? "Please restart XPC Service to update it to the latest version."
+//                    : nil
+//                isRunningAction = false
             } catch {
                 message = error.localizedDescription
             }
@@ -98,19 +98,19 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
-                let (uri, userCode) = try await service.signInInitiate()
-                self.userCode = userCode
-                guard let url = URL(string: uri) else {
-                    message = "Verification URI is incorrect."
-                    return
-                }
-                let pasteboard = NSPasteboard.general
-                pasteboard.declareTypes([NSPasteboard.PasteboardType.string], owner: nil)
-                pasteboard.setString(userCode, forType: NSPasteboard.PasteboardType.string)
-                message = "Usercode \(userCode) already copied!"
-                openURL(url)
-                isUserCodeCopiedAlertPresented = true
+//                let service = try getService()
+//                let (uri, userCode) = try await service.signInInitiate()
+//                self.userCode = userCode
+//                guard let url = URL(string: uri) else {
+//                    message = "Verification URI is incorrect."
+//                    return
+//                }
+//                let pasteboard = NSPasteboard.general
+//                pasteboard.declareTypes([NSPasteboard.PasteboardType.string], owner: nil)
+//                pasteboard.setString(userCode, forType: NSPasteboard.PasteboardType.string)
+//                message = "Usercode \(userCode) already copied!"
+//                openURL(url)
+//                isUserCodeCopiedAlertPresented = true
             } catch {
                 message = error.localizedDescription
             }
@@ -122,14 +122,14 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
-                guard let userCode else {
-                    message = "Usercode is empty."
-                    return
-                }
-                let (username, status) = try await service.signInConfirm(userCode: userCode)
-                self.username = username
-                copilotStatus = status
+//                let service = try getService()
+//                guard let userCode else {
+//                    message = "Usercode is empty."
+//                    return
+//                }
+//                let (username, status) = try await service.signInConfirm(userCode: userCode)
+//                self.username = username
+//                copilotStatus = status
             } catch {
                 message = error.localizedDescription
             }
@@ -138,14 +138,14 @@ struct CopilotView: View {
 
     func signOut() {
         Task {
-            isRunningAction = true
-            defer { isRunningAction = false }
-            do {
-                let service = try getService()
-                copilotStatus = try await service.signOut()
-            } catch {
-                message = error.localizedDescription
-            }
+//            isRunningAction = true
+//            defer { isRunningAction = false }
+//            do {
+//                let service = try getService()
+//                copilotStatus = try await service.signOut()
+//            } catch {
+//                message = error.localizedDescription
+//            }
         }
     }
 }

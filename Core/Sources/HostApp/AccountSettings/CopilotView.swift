@@ -6,6 +6,8 @@ import SuggestionModel
 import SwiftUI
 
 struct CopilotView: View {
+    static var copilotAuthService: GitHubCopilotAuthServiceType?
+    
     class Settings: ObservableObject {
         @AppStorage(\.nodePath) var nodePath: String
         @AppStorage(\.runNodeWith) var runNodeWith
@@ -18,11 +20,18 @@ struct CopilotView: View {
     @Environment(\.toast) var toast
     @StateObject var settings = Settings()
 
-    @State var copilotStatus: GitHubCopilotAccountStatus?
+    @State var status: GitHubCopilotAccountStatus?
     @State var userCode: String?
     @State var version: String?
     @State var isRunningAction: Bool = false
     @State var isUserCodeCopiedAlertPresented = false
+    
+    func getGitHubCopilotAuthService() throws -> GitHubCopilotAuthServiceType {
+        if let service = Self.copilotAuthService { return service }
+        let service = try GitHubCopilotAuthService()
+        Self.copilotAuthService = service
+        return service
+    }
 
     var body: some View {
         HStack {
@@ -56,12 +65,12 @@ struct CopilotView: View {
                 }
 
                 VStack(alignment: .leading) {
-                    Text("Copilot Version: \(version ?? "Loading..")")
-                    Text("Status: \(copilotStatus?.description ?? "Loading..")")
+                    Text("Language Server Version: \(version ?? "Loading..")")
+                    Text("Status: \(status?.description ?? "Loading..")")
 
                     HStack(alignment: .center) {
                         Button("Refresh") { checkStatus() }
-                        if copilotStatus == .notSignedIn {
+                        if status == .notSignedIn {
                             Button("Sign In") { signIn() }
                                 .alert(isPresented: $isUserCodeCopiedAlertPresented) {
                                     Alert(
@@ -74,8 +83,8 @@ struct CopilotView: View {
                                 }
                             Button("Confirm Sign-in") { confirmSignIn() }
                         }
-                        if copilotStatus == .ok || copilotStatus == .alreadySignedIn ||
-                            copilotStatus == .notAuthorized
+                        if status == .ok || status == .alreadySignedIn ||
+                            status == .notAuthorized
                         {
                             Button("Sign Out") { signOut() }
                         }
@@ -105,12 +114,12 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
-                copilotStatus = try await service.checkStatus()
-                version = try await service.getVersion()
+                let service = try getGitHubCopilotAuthService()
+                status = try await service.checkStatus()
+                version = try await service.version()
                 isRunningAction = false
 
-                if copilotStatus != .ok {
+                if status != .ok {
                     toast(
                         Text(
                             "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription."
@@ -129,7 +138,7 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
+                let service = try getGitHubCopilotAuthService()
                 let (uri, userCode) = try await service.signInInitiate()
                 self.userCode = userCode
                 guard let url = URL(string: uri) else {
@@ -153,14 +162,14 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
+                let service = try getGitHubCopilotAuthService()
                 guard let userCode else {
                     toast(Text("Usercode is empty."), .error)
                     return
                 }
                 let (username, status) = try await service.signInConfirm(userCode: userCode)
                 self.settings.username = username
-                copilotStatus = status
+                self.status = status
             } catch {
                 toast(Text(error.localizedDescription), .error)
             }
@@ -172,8 +181,8 @@ struct CopilotView: View {
             isRunningAction = true
             defer { isRunningAction = false }
             do {
-                let service = try getService()
-                copilotStatus = try await service.signOut()
+                let service = try getGitHubCopilotAuthService()
+                status = try await service.signOut()
             } catch {
                 toast(Text(error.localizedDescription), .error)
             }
@@ -199,8 +208,8 @@ struct ActivityIndicatorView: NSViewRepresentable {
 struct CopilotView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CopilotView(copilotStatus: .notSignedIn, version: "1.0.0")
-            CopilotView(copilotStatus: .alreadySignedIn, isRunningAction: true)
+            CopilotView(status: .notSignedIn, version: "1.0.0")
+            CopilotView(status: .alreadySignedIn, isRunningAction: true)
         }
         .frame(height: 800)
         .padding(.all, 8)
