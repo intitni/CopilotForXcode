@@ -15,7 +15,6 @@ struct CopilotForXcodeApp: App {
                 }
                 .environment(\.updateChecker, UpdateChecker(hostBundle: Bundle.main))
         }
-        .windowStyle(.hiddenTitleBar)
     }
 }
 
