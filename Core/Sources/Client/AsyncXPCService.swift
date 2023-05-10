@@ -20,6 +20,15 @@ public struct AsyncXPCService {
             }
         }
     }
+    
+    public func getXPCServiceAccessibilityPermission() async throws -> Bool {
+        try await withXPCServiceConnected(connection: connection) {
+            service, continuation in
+            service.getXPCServiceAccessibilityPermission { isGranted in
+                continuation.resume(isGranted)
+            }
+        }
+    }
 
     public func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(

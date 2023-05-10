@@ -72,15 +72,15 @@ struct AppInfoView: View {
 struct ExtensionServiceView: View {
     @Environment(\.toast) var toast
     @State var xpcServiceVersion: String?
-    @State var accessibilityPermissionGranted: Bool?
+    @State var isAccessibilityPermissionGranted: Bool?
     @State var isRunningAction = false
 
     var body: some View {
         VStack(alignment: .leading) {
             Text("Extension Service Version: \(xpcServiceVersion ?? "Loading..")")
             let grantedStatus: String = {
-                guard let accessibilityPermissionGranted else { return "Loading.." }
-                return accessibilityPermissionGranted ? "Granted" : "Not Granted"
+                guard let isAccessibilityPermissionGranted else { return "Loading.." }
+                return isAccessibilityPermissionGranted ? "Granted" : "Not Granted"
             }()
             Text("Accessibility Permission: \(grantedStatus)")
 
@@ -119,6 +119,8 @@ struct ExtensionServiceView: View {
             do {
                 let service = try getService()
                 xpcServiceVersion = try await service.getXPCServiceVersion().version
+                isAccessibilityPermissionGranted = try await service
+                    .getXPCServiceAccessibilityPermission()
             } catch {
                 toast(Text(error.localizedDescription), .error)
             }

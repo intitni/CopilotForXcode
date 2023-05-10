@@ -29,6 +29,10 @@ public class XPCService: NSObject, XPCServiceProtocol {
         )
     }
 
+    public func getXPCServiceAccessibilityPermission(withReply reply: @escaping (Bool) -> Void) {
+        reply(AXIsProcessTrusted())
+    }
+
     // MARK: - Suggestion
 
     @discardableResult
