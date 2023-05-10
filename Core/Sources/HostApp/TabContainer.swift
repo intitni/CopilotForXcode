@@ -202,11 +202,11 @@ class ToastController: ObservableObject {
     func toast(content: Text, type: ToastType) {
         let id = UUID()
         let message = Message(id: id, type: type, content: content)
-        withAnimation(.easeInOut(duration: 0.2)) {
-            messages.append(message)
-        }
 
         Task { @MainActor in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                messages.append(message)
+            }
             try await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation(.easeInOut(duration: 0.2)) {
                 messages.removeAll { $0.id == id }
