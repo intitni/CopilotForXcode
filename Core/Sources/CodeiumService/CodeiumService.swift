@@ -31,8 +31,6 @@ enum CodeiumError: Error, LocalizedError {
     }
 }
 
-let token = ""
-
 public class CodeiumSuggestionService {
     static let sessionId = UUID().uuidString
     let projectRootURL: URL
@@ -44,6 +42,10 @@ public class CodeiumSuggestionService {
 
     let languageServerURL: URL
     let supportURL: URL
+
+    let authService = CodeiumAuthService()
+    
+    var xcodeVersion = "14.0"
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -62,12 +64,16 @@ public class CodeiumSuggestionService {
         guard FileManager.default.fileExists(atPath: languageServerURL.path) else {
             throw CodeiumError.languageServerNotInstalled
         }
-        try setupServerIfNeeded()
+        Task {
+            try await setupServerIfNeeded()
+        }
     }
 
     @discardableResult
-    func setupServerIfNeeded() throws -> CodeiumLSP {
+    func setupServerIfNeeded() async throws -> CodeiumLSP {
         if let server { return server }
+        let metadata = try getMetadata()
+        xcodeVersion = (try? await getXcodeVersion()) ?? xcodeVersion
         let tempFolderURL = FileManager.default.temporaryDirectory
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
@@ -94,9 +100,8 @@ public class CodeiumSuggestionService {
 
         server.launchHandler = { [weak self] in
             guard let self else { return }
-            let metadata = self.getMetadata()
             self.onServiceLaunched()
-            self.heartbeatTask = Task { [weak self] in
+            self.heartbeatTask = Task { [weak self, metadata] in
                 while true {
                     try Task.checkCancellation()
                     _ = try? await self?.server?.sendRequest(
@@ -151,13 +156,18 @@ public class CodeiumSuggestionService {
 }
 
 extension CodeiumSuggestionService {
-    func getMetadata() -> Metadata {
-        Metadata(
-            ide_name: "jetbrains",
-            ide_version: "14.3",
-            extension_name: "Copilot for Xcode",
+    func getMetadata() throws -> Metadata {
+        guard let key = authService.key else {
+            struct E: Error, LocalizedError {
+                var errorDescription: String? { "Codeium not signed in." }
+            }
+            throw E()
+        }
+        return Metadata(
+            ide_name: "xcode",
+            ide_version: xcodeVersion,
             extension_version: "14.0.0",
-            api_key: token,
+            api_key: key,
             session_id: CodeiumSuggestionService.sessionId,
             request_id: requestCounter
         )
@@ -195,7 +205,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         let relativePath = getRelativePath(of: fileURL)
 
         let request = CodeiumRequest.GetCompletion(requestBody: .init(
-            metadata: getMetadata(),
+            metadata: try getMetadata(),
             document: .init(
                 absolute_path: fileURL.path,
                 relative_path: relativePath,
@@ -221,7 +231,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                 }
         ))
 
-        let result = try await (try setupServerIfNeeded()).sendRequest(request)
+        let result = try await (try await setupServerIfNeeded()).sendRequest(request)
 
         return result.completionItems?.filter { item in
             if ignoreSpaceOnlySuggestions {
@@ -279,3 +289,36 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     }
 }
 
+func getXcodeVersion() async throws -> String {
+    let task = Process()
+    task.launchPath = "/usr/bin/xcodebuild"
+    task.arguments = ["-version"]
+    let outpipe = Pipe()
+    task.standardOutput = outpipe
+    task.standardError = Pipe()
+    return try await withUnsafeThrowingContinuation { continuation in
+        do {
+            task.terminationHandler = { _ in
+                do {
+                    if let data = try outpipe.fileHandleForReading.readToEnd(),
+                       let content = String(data: data, encoding: .utf8)
+                    {
+                        let firstLine = content.split(separator: "\n").first ?? ""
+                        var version = firstLine.replacingOccurrences(of: "Xcode ", with: "")
+                        if version.isEmpty {
+                            version = "14.0"
+                        }
+                        continuation.resume(returning: version)
+                        return
+                    }
+                    continuation.resume(returning: "")
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+            try task.run()
+        } catch {
+            continuation.resume(throwing: error)
+        }
+    }
+}
