@@ -32,6 +32,20 @@ let package = Package(
                 "UpdateChecker",
             ]
         ),
+        .library(
+            name: "HostApp",
+            targets: [
+                "HostApp",
+                "SuggestionModel",
+                "GitHubCopilotService",
+                "Client",
+                "XPCShared",
+                "Preferences",
+                "LaunchAgentManager",
+                "Logger",
+                "UpdateChecker",
+            ]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
@@ -101,6 +115,19 @@ let package = Package(
             ]
         ),
         .target(name: "Preferences"),
+
+        // MARK: - Host App
+
+        .target(
+            name: "HostApp",
+            dependencies: [
+                "Preferences",
+                "Client",
+                "GitHubCopilotService",
+                "SuggestionModel",
+                "LaunchAgentManager"
+            ]
+        ),
 
         // MARK: - XPC Related
 
