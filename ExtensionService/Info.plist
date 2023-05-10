@@ -4,20 +4,16 @@
 <dict>
 	<key>APPLICATION_SUPPORT_FOLDER</key>
 	<string>$(APPLICATION_SUPPORT_FOLDER)</string>
+	<key>APP_ID_PREFIX</key>
+	<string>$(AppIdentifierPrefix)</string>
 	<key>BUNDLE_IDENTIFIER_BASE</key>
 	<string>$(BUNDLE_IDENTIFIER_BASE)</string>
 	<key>EXTENSION_BUNDLE_NAME</key>
 	<string>$(EXTENSION_BUNDLE_NAME)</string>
-	<key>GROUP_ID</key>
-	<string>$(GROUP_ID)</string>
 	<key>HOST_APP_NAME</key>
 	<string>$(HOST_APP_NAME)</string>
-	<key>KEYCHAIN_GROUP</key>
-	<string>$(KEYCHAIN_GROUP)</string>
-	<key>KEYCHAIN_SERVICE</key>
-	<string>$(KEYCHAIN_SERVICE)</string>
-	<key>USER_DEFAULT_SUITE_NAME</key>
-	<string>$(USER_DEFAULT_SUITE_NAME)</string>
+	<key>TEAM_ID_PREFIX</key>
+	<string>$(TeamIdentifierPrefix)</string>
 	<key>XPCService</key>
 	<dict>
 		<key>ServiceType</key>

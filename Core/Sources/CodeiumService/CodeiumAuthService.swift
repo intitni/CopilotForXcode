@@ -3,13 +3,12 @@ import KeychainAccess
 
 public final class CodeiumAuthService {
     public init() {}
-
     let codeiumKeyKey = "codeiumKey"
     let keychain: Keychain = {
-        let info = Bundle.main.infoDictionary
+        let info = Bundle.main.infoDictionary 
         return Keychain(
-            service: info?["KEYCHAIN_SERVICE"] as! String,
-            accessGroup: info?["KEYCHAIN_GROUP"] as! String
+            service: info?["BUNDLE_IDENTIFIER_BASE"] as! String,
+            accessGroup: "\(info?["APP_ID_PREFIX"] as! String)\(info?["BUNDLE_IDENTIFIER_BASE"] as! String).Shared"
         )
     }()
 
@@ -21,8 +20,8 @@ public final class CodeiumAuthService {
         let key = try await generate(token: token)
         let info = Bundle.main.infoDictionary
         let keychain = Keychain(
-            service: info?["KEYCHAIN_SERVICE"] as! String,
-            accessGroup: info?["KEYCHAIN_GROUP"] as! String
+            service: info?["BUNDLE_IDENTIFIER_BASE"] as! String,
+            accessGroup: "\(info?["APP_ID_PREFIX"] as! String)\(info?["BUNDLE_IDENTIFIER_BASE"] as! String).Shared"
         )
         try keychain.set(key, key: codeiumKeyKey)
     }

@@ -24,14 +24,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>GROUP_ID</key>
-	<string>GROUP_ID</string>
 	<key>HOST_APP_NAME</key>
 	<string>$(HOST_APP_NAME)</string>
-	<key>KEYCHAIN_GROUP</key>
-	<string>$(KEYCHAIN_GROUP)</string>
-	<key>KEYCHAIN_SERVICE</key>
-	<string>$(KEYCHAIN_SERVICE)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -46,7 +40,7 @@
 	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
-	<key>USER_DEFAULT_SUITE_NAME</key>
-	<string>$(USER_DEFAULT_SUITE_NAME)</string>
+	<key>TEAM_ID_PREFIX</key>
+	<string>$(TeamIdentifierPrefix)</string>
 </dict>
 </plist>
