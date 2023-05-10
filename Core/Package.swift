@@ -56,6 +56,7 @@ let package = Package(
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
+        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
     ],
     targets: [
         // MARK: - Main
@@ -124,6 +125,7 @@ let package = Package(
                 "Preferences",
                 "Client",
                 "GitHubCopilotService",
+                "CodeiumService",
                 "SuggestionModel",
                 "LaunchAgentManager"
             ]
@@ -254,7 +256,7 @@ let package = Package(
 
         .target(
             name: "CodeiumService",
-            dependencies: ["LanguageClient", "SuggestionModel", "Preferences"]
+            dependencies: ["LanguageClient", "SuggestionModel", "Preferences", "KeychainAccess"]
         ),
     ]
 )
