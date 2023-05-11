@@ -3,6 +3,7 @@ import JSONRPC
 import LanguageClient
 import LanguageServerProtocol
 import Logger
+import Preferences
 
 protocol CodeiumLSP {
     func sendRequest<E: CodeiumRequestType>(_ endpoint: E) async throws -> E.Response
@@ -135,17 +136,23 @@ extension CodeiumLanguageServer: CodeiumLSP {
                 let response = try JSONDecoder().decode(E.Response.self, from: data)
                 return response
             } catch {
-                dump(error)
-                Logger.codeium.error(error.localizedDescription)
+                if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
+                    dump(error)
+                    Logger.codeium.error(error.localizedDescription)
+                }
                 throw error
             }
         } else {
             do {
                 let error = try JSONDecoder().decode(CodeiumResponseError.self, from: data)
-                Logger.codeium.error(error.message)
+                if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
+                    Logger.codeium.error(error.message)
+                }
                 throw CancellationError()
             } catch {
-                Logger.codeium.error(error.localizedDescription)
+                if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
+                    Logger.codeium.error(error.localizedDescription)
+                }
                 throw error
             }
         }
@@ -204,9 +211,9 @@ final class IOTransport {
                 return
             }
 
-            #if DEBUG
-            self.forwardDataToHandler(data)
-            #endif
+            if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
+                self.forwardDataToHandler(data)
+            }
         }
 
         stderrPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
@@ -216,9 +223,9 @@ final class IOTransport {
                 return
             }
 
-            #if DEBUG
-            self.forwardErrorDataToHandler(data)
-            #endif
+            if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
+                self.forwardErrorDataToHandler(data)
+            }
         }
     }
 

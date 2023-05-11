@@ -221,7 +221,7 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTTemperature: ChatGPTTemperature { .init() }
 }
 
-// MARK: - GitHubCopilot Account Settings
+// MARK: - GitHub Copilot Settings
 
 public extension UserDefaultPreferenceKeys {
     struct GitHubCopilotVerboseLog: UserDefaultPreferenceKey {
@@ -248,6 +248,17 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var runNodeWith: RunNodeWithKey { .init() }
+}
+
+// MARK: - Codeium Settings
+
+public extension UserDefaultPreferenceKeys {
+    struct CodeiumVerboseLog: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "CodeiumVerboseLog"
+    }
+
+    var codeiumVerboseLog: CodeiumVerboseLog { .init() }
 }
 
 // MARK: - UI

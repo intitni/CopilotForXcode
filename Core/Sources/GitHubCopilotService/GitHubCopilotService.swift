@@ -124,7 +124,7 @@ public class GitHubCopilotBaseService {
                 }()
             }
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
-            localServer.logMessages = false
+            localServer.logMessages = UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
             localServer.notificationHandler = { _, respond in
                 respond(.timeout)
             }

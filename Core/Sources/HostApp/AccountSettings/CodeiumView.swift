@@ -9,6 +9,7 @@ struct CodeiumView: View {
         @Published var isSignedIn: Bool
         @Published var installationStatus: CodeiumInstallationManager.InstallationStatus
         @Published var installationStep: CodeiumInstallationManager.InstallationStep?
+        @AppStorage(\.codeiumVerboseLog) var codeiumVerboseLog
 
         init() {
             isSignedIn = codeiumAuthService.isSignedIn
@@ -123,77 +124,85 @@ struct CodeiumView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            switch viewModel.installationStatus {
-            case .notInstalled:
-                HStack {
-                    Text("Language Server Version: Not Installed")
-                    installButton
+            VStack(alignment: .leading) {
+                switch viewModel.installationStatus {
+                case .notInstalled:
+                    HStack {
+                        Text("Language Server Version: Not Installed")
+                        installButton
+                    }
+                case let .installed(version):
+                    HStack {
+                        Text("Language Server Version: \(version)")
+                        uninstallButton
+                    }
+                case let .outdated(current: current, latest: latest):
+                    HStack {
+                        Text("Language Server Version: \(current) (Update Available: \(latest))")
+                        uninstallButton
+                        updateButton
+                    }
+                case let .unsupported(current: current, latest: latest):
+                    HStack {
+                        Text("Language Server Version: \(current) (Supported Version: \(latest))")
+                        uninstallButton
+                        updateButton
+                    }
                 }
-            case let .installed(version):
-                HStack {
-                    Text("Language Server Version: \(version)")
-                    uninstallButton
-                }
-            case let .outdated(current: current, latest: latest):
-                HStack {
-                    Text("Language Server Version: \(current) (Update Available: \(latest))")
-                    uninstallButton
-                    updateButton
-                }
-            case let .unsupported(current: current, latest: latest):
-                HStack {
-                    Text("Language Server Version: \(current) (Supported Version: \(latest))")
-                    uninstallButton
-                    updateButton
+                
+                if viewModel.isSignedIn {
+                    Text("Status: Signed In")
+                    
+                    Button(action: {
+                        viewModel.isSignedIn = false
+                    }) {
+                        Text("Sign Out")
+                    }
+                    
+                    Text(
+                        "The key is stored in the keychain. The helper app may request permission to access the key, please click \"Always Allow\" to grant this access."
+                    )
+                    .lineLimit(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundColor(.secondary)
+                } else {
+                    Text("Status: Not Signed In")
+                    
+                    Button(action: {
+                        isSignInPanelPresented = true
+                    }) {
+                        Text("Sign In")
+                    }
                 }
             }
-
-            if viewModel.isSignedIn {
-                Text("Status: Signed In")
-
-                Button(action: {
-                    viewModel.isSignedIn = false
-                }) {
-                    Text("Sign Out")
-                }
-
-                Text(
-                    "The key is stored in the keychain. The helper app may request permission to access the key, please click \"Always Allow\" to grant this access."
-                )
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundColor(.secondary)
-            } else {
-                Text("Status: Not Signed In")
-
-                Button(action: {
-                    isSignInPanelPresented = true
-                }) {
-                    Text("Sign In")
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+            }
+            .sheet(isPresented: $isSignInPanelPresented) {
+                CodeiumSignInView(viewModel: viewModel, isPresented: $isSignInPanelPresented)
+            }
+            .onChange(of: viewModel.installationStep) { newValue in
+                if let step = newValue {
+                    switch step {
+                    case .downloading:
+                        toast(Text("Downloading.."), .info)
+                    case .uninstalling:
+                        toast(Text("Uninstalling old version.."), .info)
+                    case .decompressing:
+                        toast(Text("Decompressing.."), .info)
+                    case .done:
+                        toast(Text("Done!"), .info)
+                    }
                 }
             }
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
-        }
-        .sheet(isPresented: $isSignInPanelPresented) {
-            CodeiumSignInView(viewModel: viewModel, isPresented: $isSignInPanelPresented)
-        }
-        .onChange(of: viewModel.installationStep) { newValue in
-            if let step = newValue {
-                switch step {
-                case .downloading:
-                    toast(Text("Downloading.."), .info)
-                case .uninstalling:
-                    toast(Text("Uninstalling old version.."), .info)
-                case .decompressing:
-                    toast(Text("Decompressing.."), .info)
-                case .done:
-                    toast(Text("Done!"), .info)
-                }
+            
+            Divider()
+            
+            Form {
+                Toggle("Verbose Log", isOn: $viewModel.codeiumVerboseLog)
             }
         }
     }
