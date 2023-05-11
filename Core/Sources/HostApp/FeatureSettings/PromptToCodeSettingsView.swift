@@ -8,6 +8,10 @@ struct PromptToCodeSettingsView: View {
         var suggestionCodeFontSize
         @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
         var acceptSuggestionWithAccessibilityAPI
+        @AppStorage(\.promptToCodeGenerateDescription)
+        var promptToCodeGenerateDescription
+        @AppStorage(\.promptToCodeGenerateDescriptionInUserPreferredLanguage)
+        var promptToCodeGenerateDescriptionInUserPreferredLanguage
         init() {}
     }
 
@@ -15,6 +19,18 @@ struct PromptToCodeSettingsView: View {
 
     var body: some View {
         VStack(alignment: .center) {
+            Form {
+                Toggle(isOn: $settings.promptToCodeGenerateDescription) {
+                    Text("Generate Description")
+                }
+
+                Toggle(isOn: $settings.promptToCodeGenerateDescriptionInUserPreferredLanguage) {
+                    Text("Generate Description in user preferred language")
+                }
+            }
+
+            Divider()
+
             Text("Mirroring Settings of Suggestion Feature")
                 .foregroundColor(.white)
                 .padding(.vertical, 2)
@@ -41,7 +57,7 @@ struct PromptToCodeSettingsView: View {
 
                     Text("pt")
                 }.disabled(true)
-                
+
                 Divider()
 
                 Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {

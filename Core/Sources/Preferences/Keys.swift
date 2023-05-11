@@ -17,14 +17,14 @@ public struct UserDefaultPreferenceKeys {
     }
 
     public var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
-    
+
     // MARK: - Suggestion Feature Provider
-    
+
     public struct SuggestionFeatureProviderKey: UserDefaultPreferenceKey {
         public let defaultValue: SuggestionFeatureProvider = .gitHubCopilot
         public let key = "SuggestionFeatureProvider"
     }
-    
+
     public var suggestionFeatureProvider: SuggestionFeatureProviderKey { .init() }
 
     // MARK: - Realtime Suggestion Debounce
@@ -259,6 +259,24 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var codeiumVerboseLog: CodeiumVerboseLog { .init() }
+}
+
+public extension UserDefaultPreferenceKeys {
+    struct PromptToCodeGenerateDescription: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "PromptToCodeGenerateDescription"
+    }
+
+    var promptToCodeGenerateDescription: PromptToCodeGenerateDescription { .init() }
+
+    struct PromptToCodeGenerateDescriptionInUserPreferredLanguage: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "PromptToCodeGenerateDescriptionInUserPreferredLanguage"
+    }
+
+    var promptToCodeGenerateDescriptionInUserPreferredLanguage: PromptToCodeGenerateDescriptionInUserPreferredLanguage {
+        .init()
+    }
 }
 
 // MARK: - UI
