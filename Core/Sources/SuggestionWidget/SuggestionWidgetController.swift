@@ -20,7 +20,8 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.level = .init(19)
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -50,7 +51,8 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.level = .init(19)
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: TabView(chatWindowViewModel: chatWindowViewModel)
@@ -71,6 +73,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
@@ -94,6 +97,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: ChatWindowView(viewModel: chatWindowViewModel)
@@ -231,7 +235,6 @@ public extension SuggestionWidgetController {
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
                 suggestionPanelViewModel.isPanelDisplayed = true
-                panelWindow.orderFront(nil)
             }
         }
     }
@@ -251,7 +254,6 @@ public extension SuggestionWidgetController {
         suggestionPanelViewModel.content = .error(errorDescription)
         suggestionPanelViewModel.isPanelDisplayed = true
         widgetViewModel.isProcessing = false
-        panelWindow.orderFront(nil)
     }
 
     func presentChatRoom(fileURL: URL) {
@@ -269,7 +271,6 @@ public extension SuggestionWidgetController {
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
-                    panelWindow.orderFront(nil)
                 }
             }
         }
@@ -333,16 +334,6 @@ extension SuggestionWidgetController {
                 try Task.checkCancellation()
 
                 self.updateWindowLocation(animated: false)
-
-                if UserDefaults.shared.value(for: \.forceOrderWidgetToFront)
-                    || notification.name == kAXWindowMovedNotification
-                {
-                    // We need to bring them front when the app enters fullscreen.
-                    widgetWindow.orderFront(nil)
-                    tabWindow.orderFront(nil)
-                    chatWindow.orderFront(nil)
-                    panelWindow.orderFront(nil)
-                }
 
                 if [
                     kAXFocusedUIElementChangedNotification,
