@@ -51,7 +51,7 @@ public class CodeiumSuggestionService {
 
     let authService = CodeiumAuthService()
 
-    var xcodeVersion = "14.0"
+    var xcodeVersion = "14.0.0"
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -89,6 +89,12 @@ public class CodeiumSuggestionService {
         
         let metadata = try getMetadata()
         xcodeVersion = (try? await getXcodeVersion()) ?? xcodeVersion
+        let versionNumberSegmentCount = xcodeVersion.split(separator: ".").count
+        if versionNumberSegmentCount == 2 {
+            xcodeVersion += ".0"
+        } else if versionNumberSegmentCount == 1 {
+            xcodeVersion += ".0.0"
+        }
         let tempFolderURL = FileManager.default.temporaryDirectory
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
@@ -181,7 +187,7 @@ extension CodeiumSuggestionService {
         return Metadata(
             ide_name: "xcode",
             ide_version: xcodeVersion,
-            extension_version: "14.0.0",
+            extension_version: xcodeVersion,
             api_key: key,
             session_id: CodeiumSuggestionService.sessionId,
             request_id: requestCounter
