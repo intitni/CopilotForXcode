@@ -250,80 +250,99 @@ struct ChatPanelInputArea: View {
 
     var body: some View {
         HStack {
-            // clear button
-            Button(action: {
-                chat.clear()
-            }) {
-                Group {
-                    if #available(macOS 13.0, *) {
-                        Image(systemName: "eraser.line.dashed.fill")
-                    } else {
-                        Image(systemName: "trash.fill")
-                    }
-                }
-                .padding(6)
-                .background {
-                    Circle().fill(Color(nsColor: .controlBackgroundColor))
-                }
-                .overlay {
-                    Circle()
-                        .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-                }
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 0) {
-                Group {
-                    if #available(macOS 13.0, *) {
-                        TextField("Type a message", text: $typedMessage, axis: .vertical)
-                    } else {
-                        TextEditor(text: $typedMessage)
-                            .frame(height: 42, alignment: .leading)
-                            .font(.body)
-                            .background(Color.clear)
-                    }
-                }
-                .focused($isInputAreaFocused)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-                .textFieldStyle(.plain)
-                .padding(8)
-
-                Button(action: {
-                    if typedMessage.isEmpty { return }
-                    chat.send(typedMessage)
-                    typedMessage = ""
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .padding(8)
-                }
-                .buttonStyle(.plain)
-                .disabled(chat.isReceivingMessage)
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
-            }
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-            }
-            .background {
-                Button(action: {
-                    typedMessage += "\n"
-                }) {
-                    EmptyView()
-                }
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
-            }
+            clearButton
+            textEditor
         }
         .onAppear {
             isInputAreaFocused = true
         }
         .padding(8)
         .background(.ultraThickMaterial)
+    }
+
+    var clearButton: some View {
+        Button(action: {
+            chat.clear()
+        }) {
+            Group {
+                if #available(macOS 13.0, *) {
+                    Image(systemName: "eraser.line.dashed.fill")
+                } else {
+                    Image(systemName: "trash.fill")
+                }
+            }
+            .padding(6)
+            .background {
+                Circle().fill(Color(nsColor: .controlBackgroundColor))
+            }
+            .overlay {
+                Circle()
+                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    var textEditor: some View {
+        HStack(spacing: 0) {
+            ZStack(alignment: .center) {
+                // a hack to support dynamic height of TextEditor
+                Text(typedMessage.isEmpty ? "Hi" : typedMessage).opacity(0)
+                    .font(.system(size: 14))
+                    .frame(maxWidth: .infinity, maxHeight: 400)
+                    .overlay(alignment: .leadingFirstTextBaseline) {
+                        Text("Write something..")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 14))
+                            .opacity(typedMessage.isEmpty ? 1 : 0)
+                    }
+                    .padding(.top, 0)
+                    .padding(.bottom, 3)
+                    .padding(.horizontal, 4)
+                
+                CustomTextEditor(
+                    text: $typedMessage,
+                    font: .systemFont(ofSize: 14),
+                    onSubmit: { submitText() }
+                )
+            }
+            .focused($isInputAreaFocused)
+            .padding(8)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: {
+                submitText()
+            }) {
+                Image(systemName: "paperplane.fill")
+                    .padding(8)
+            }
+            .buttonStyle(.plain)
+            .disabled(chat.isReceivingMessage)
+            .keyboardShortcut(KeyEquivalent.return, modifiers: [])
+        }
+        .frame(maxWidth: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+        }
+        .background {
+            Button(action: {
+                typedMessage += "\n"
+            }) {
+                EmptyView()
+            }
+            .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
+        }
+    }
+
+    func submitText() {
+        if typedMessage.isEmpty { return }
+        chat.send(typedMessage)
+        typedMessage = ""
     }
 }
 
