@@ -12,6 +12,7 @@ struct CopilotView: View {
         @AppStorage(\.nodePath) var nodePath: String
         @AppStorage(\.runNodeWith) var runNodeWith
         @AppStorage("username") var username: String = ""
+        @AppStorage(\.gitHubCopilotVerboseLog) var gitHubCopilotVerboseLog
 
         init() {}
     }
@@ -100,6 +101,12 @@ struct CopilotView: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+                }
+                
+                Divider()
+                
+                Form {
+                    Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
                 }
             }
             Spacer()
@@ -211,7 +218,6 @@ struct CopilotView_Previews: PreviewProvider {
             CopilotView(status: .notSignedIn, version: "1.0.0")
             CopilotView(status: .alreadySignedIn, isRunningAction: true)
         }
-        .frame(height: 800)
         .padding(.all, 8)
     }
 }

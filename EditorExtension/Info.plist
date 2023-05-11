@@ -24,6 +24,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>HOST_APP_NAME</key>
+	<string>$(HOST_APP_NAME)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -38,5 +40,7 @@
 	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
+	<key>TEAM_ID_PREFIX</key>
+	<string>$(TeamIdentifierPrefix)</string>
 </dict>
 </plist>

@@ -4,15 +4,21 @@
 <dict>
 	<key>APPLICATION_SUPPORT_FOLDER</key>
 	<string>$(APPLICATION_SUPPORT_FOLDER)</string>
+	<key>APP_ID_PREFIX</key>
+	<string>$(AppIdentifierPrefix)</string>
 	<key>BUNDLE_IDENTIFIER_BASE</key>
 	<string>$(BUNDLE_IDENTIFIER_BASE)</string>
 	<key>EXTENSION_BUNDLE_NAME</key>
 	<string>$(EXTENSION_BUNDLE_NAME)</string>
+	<key>HOST_APP_NAME</key>
+	<string>$(HOST_APP_NAME)</string>
 	<key>SUEnableJavaScript</key>
 	<string>YES</string>
 	<key>SUFeedURL</key>
 	<string>$(SPARKLE_FEED_URL)</string>
 	<key>SUPublicEDKey</key>
 	<string>$(SPARKLE_PUBLIC_KEY)</string>
+	<key>TEAM_ID_PREFIX</key>
+	<string>$(TeamIdentifierPrefix)</string>
 </dict>
 </plist>

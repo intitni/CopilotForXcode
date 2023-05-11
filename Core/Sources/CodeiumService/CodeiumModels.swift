@@ -110,7 +110,7 @@ struct CodeiumEditorOptions: Codable {
 struct Metadata: Codable {
     var ide_name: String
     var ide_version: String
-    var extension_name: String
+//    var extension_name: String
     var extension_version: String
     var api_key: String
 

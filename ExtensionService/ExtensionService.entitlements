@@ -6,5 +6,9 @@
 	<array>
 		<string>$(TeamIdentifierPrefix)group.$(BUNDLE_IDENTIFIER_BASE)</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(BUNDLE_IDENTIFIER_BASE).Shared</string>
+	</array>
 </dict>
 </plist>
