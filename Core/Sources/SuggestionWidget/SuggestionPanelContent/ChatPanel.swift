@@ -299,7 +299,7 @@ struct ChatPanelInputArea: View {
                     .padding(.top, 0)
                     .padding(.bottom, 3)
                     .padding(.horizontal, 4)
-                
+
                 CustomTextEditor(
                     text: $typedMessage,
                     font: .systemFont(ofSize: 14),
@@ -405,6 +405,9 @@ struct RoundedCorners: Shape {
 struct GlobalChatSwitchToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
+            Text(configuration.isOn ? "Shared Conversation" : "Local Conversation")
+                .foregroundStyle(.tertiary)
+            
             RoundedRectangle(cornerRadius: 10, style: .circular)
                 .foregroundColor(configuration.isOn ? Color.indigo : .gray.opacity(0.5))
                 .frame(width: 30, height: 20, alignment: .center)
@@ -430,9 +433,6 @@ struct GlobalChatSwitchToggleStyle: ToggleStyle {
                     RoundedRectangle(cornerRadius: 10, style: .circular)
                         .stroke(.black.opacity(0.2), lineWidth: 1)
                 }
-
-            Text(configuration.isOn ? "Global Chat" : "File Chat")
-                .foregroundStyle(.tertiary)
         }
     }
 }
