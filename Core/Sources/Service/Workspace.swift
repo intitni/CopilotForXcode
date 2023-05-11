@@ -39,7 +39,7 @@ final class Filespace {
 
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
     var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
+        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 3
     }
 
     let fileSaveWatcher: FileSaveWatcher
