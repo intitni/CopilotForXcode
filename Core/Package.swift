@@ -127,7 +127,7 @@ let package = Package(
                 "GitHubCopilotService",
                 "CodeiumService",
                 "SuggestionModel",
-                "LaunchAgentManager"
+                "LaunchAgentManager",
             ]
         ),
 
@@ -256,7 +256,13 @@ let package = Package(
 
         .target(
             name: "CodeiumService",
-            dependencies: ["LanguageClient", "SuggestionModel", "Preferences", "KeychainAccess"]
+            dependencies: [
+                "LanguageClient",
+                "SuggestionModel",
+                "Preferences",
+                "KeychainAccess",
+                "Terminal"
+            ]
         ),
     ]
 )

@@ -106,7 +106,9 @@ final class CodeiumLanguageServer {
 
     deinit {
         process.terminationHandler = nil
-        process.terminate()
+        if process.isRunning {
+            process.terminate()
+        }
         transport.close()
     }
 
@@ -141,6 +143,7 @@ extension CodeiumLanguageServer: CodeiumLSP {
             do {
                 let error = try JSONDecoder().decode(CodeiumResponseError.self, from: data)
                 Logger.codeium.error(error.message)
+                throw CancellationError()
             } catch {
                 Logger.codeium.error(error.localizedDescription)
                 throw error

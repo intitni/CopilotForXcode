@@ -7,8 +7,8 @@ public final class CodeiumAuthService {
     let keychain: Keychain = {
         let info = Bundle.main.infoDictionary
         return Keychain(
-            service: info?["BUNDLE_IDENTIFIER_BASE"] as! String,
-            accessGroup: "\(info?["APP_ID_PREFIX"] as! String)\(info?["BUNDLE_IDENTIFIER_BASE"] as! String).Shared"
+            service: info?["BUNDLE_IDENTIFIER_BASE"] as? String ?? "",
+            accessGroup: "\(info?["APP_ID_PREFIX"] as? String ?? "")\(info?["BUNDLE_IDENTIFIER_BASE"] as? String ?? "").Shared"
         )
     }()
 
@@ -19,10 +19,6 @@ public final class CodeiumAuthService {
     public func signIn(token: String) async throws {
         let key = try await generate(token: token)
         let info = Bundle.main.infoDictionary
-        let keychain = Keychain(
-            service: info?["BUNDLE_IDENTIFIER_BASE"] as! String,
-            accessGroup: "\(info?["APP_ID_PREFIX"] as! String)\(info?["BUNDLE_IDENTIFIER_BASE"] as! String).Shared"
-        )
         try keychain.set(key, key: codeiumKeyKey)
     }
 

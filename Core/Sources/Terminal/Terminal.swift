@@ -25,7 +25,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
     var process: Process?
     var outputPipe: Pipe?
     var inputPipe: Pipe?
-    
+
     public var isRunning: Bool { process?.isRunning ?? false }
 
     public struct TerminationError: Error {
@@ -131,17 +131,56 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         currentDirectoryPath: String = "/",
         environment: [String: String]
     ) async throws -> String {
-        let stream = streamCommand(
-            command,
-            arguments: arguments,
-            currentDirectoryPath: currentDirectoryPath,
-            environment: environment
-        )
-        var result = ""
-        for try await output in stream {
-            result += output
+        let process = Process()
+        process.launchPath = command
+        process.currentDirectoryPath = currentDirectoryPath
+        process.arguments = arguments
+        process.environment = getEnvironmentVariables()
+            .merging(environment, uniquingKeysWith: { $1 })
+
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = outputPipe
+        self.outputPipe = outputPipe
+
+        let inputPipe = Pipe()
+        process.standardInput = inputPipe
+        self.inputPipe = inputPipe
+
+        return try await withUnsafeThrowingContinuation { continuation in
+            do {
+                process.terminationHandler = { process in
+                    do {
+                        if let data = try outputPipe.fileHandleForReading.readToEnd(),
+                           let content = String(data: data, encoding: .utf8)
+                        {
+                            if process.terminationStatus == 0 {
+                                continuation.resume(returning: content)
+                            } else {
+                                struct LocalizedTerminationError: Error, LocalizedError {
+                                    let terminationError: TerminationError
+                                    let errorDescription: String?
+                                }
+                                continuation.resume(throwing: LocalizedTerminationError(
+                                    terminationError: .init(
+                                        reason: process.terminationReason,
+                                        status: process.terminationStatus
+                                    ),
+                                    errorDescription: content
+                                ))
+                            }
+                            return
+                        }
+                        continuation.resume(returning: "")
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
-        return result
     }
 
     public func writeInput(_ input: String) {
@@ -158,3 +197,4 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         process = nil
     }
 }
+

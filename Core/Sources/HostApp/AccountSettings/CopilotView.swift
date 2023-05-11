@@ -211,7 +211,6 @@ struct CopilotView_Previews: PreviewProvider {
             CopilotView(status: .notSignedIn, version: "1.0.0")
             CopilotView(status: .alreadySignedIn, isRunningAction: true)
         }
-        .frame(height: 800)
         .padding(.all, 8)
     }
 }

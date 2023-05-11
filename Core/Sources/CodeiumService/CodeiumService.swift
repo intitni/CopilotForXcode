@@ -22,11 +22,17 @@ public protocol CodeiumSuggestionServiceType {
 
 enum CodeiumError: Error, LocalizedError {
     case languageServerNotInstalled
+    case languageServerOutdated
+    case languageServiceIsInstalling
 
     var errorDescription: String? {
         switch self {
         case .languageServerNotInstalled:
-            return "Language server is not installed."
+            return "Language server is not installed. Please install it in the host app."
+        case .languageServerOutdated:
+            return "Language server is outdated. Please update it in the host app."
+        case .languageServiceIsInstalling:
+            return "Language service is installing. Please wait."
         }
     }
 }
@@ -44,7 +50,7 @@ public class CodeiumSuggestionService {
     let supportURL: URL
 
     let authService = CodeiumAuthService()
-    
+
     var xcodeVersion = "14.0"
 
     init(designatedServer: CodeiumLSP) {
@@ -61,9 +67,6 @@ public class CodeiumSuggestionService {
         let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
         languageServerURL = urls.executableURL.appendingPathComponent("language_server")
         supportURL = urls.supportURL
-        guard FileManager.default.fileExists(atPath: languageServerURL.path) else {
-            throw CodeiumError.languageServerNotInstalled
-        }
         Task {
             try await setupServerIfNeeded()
         }
@@ -72,6 +75,18 @@ public class CodeiumSuggestionService {
     @discardableResult
     func setupServerIfNeeded() async throws -> CodeiumLSP {
         if let server { return server }
+        
+        let binaryManager = CodeiumInstallationManager()
+        let installationStatus = binaryManager.checkInstallation()
+        switch installationStatus {
+        case .installed, .unsupported:
+            break
+        case .notInstalled:
+            throw CodeiumError.languageServerNotInstalled
+        case .outdated:
+            throw CodeiumError.languageServerOutdated
+        }
+        
         let metadata = try getMetadata()
         xcodeVersion = (try? await getXcodeVersion()) ?? xcodeVersion
         let tempFolderURL = FileManager.default.temporaryDirectory
@@ -112,8 +127,8 @@ public class CodeiumSuggestionService {
             }
         }
 
-        server.start()
         self.server = server
+        server.start()
         return server
     }
 
@@ -322,3 +337,4 @@ func getXcodeVersion() async throws -> String {
         }
     }
 }
+
