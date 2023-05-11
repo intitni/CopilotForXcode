@@ -10,12 +10,7 @@ public final class PromptToCodeService: ObservableObject {
             return designatedPromptToCodeAPI
         }
         
-        switch UserDefaults.shared.value(for: \.promptToCodeFeatureProvider) {
-        case .openAI:
-            return OpenAIPromptToCodeAPI()
-        case .githubCopilot:
-            return CopilotPromptToCodeAPI()
-        }
+        return OpenAIPromptToCodeAPI()
     }
 
     var runningAPI: PromptToCodeAPI?
