@@ -1,5 +1,6 @@
 import Environment
 import Preferences
+import SuggestionModel
 import SwiftUI
 
 @MainActor
@@ -26,8 +27,10 @@ struct WidgetView: View {
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     let isDisplayed = {
-                        if panelViewModel.isPanelDisplayed && panelViewModel.content != nil { return true }
-                        if chatWindowViewModel.isPanelDisplayed && chatWindowViewModel.chat != nil { return true }
+                        if panelViewModel.isPanelDisplayed,
+                           panelViewModel.content != nil { return true }
+                        if chatWindowViewModel.isPanelDisplayed,
+                           chatWindowViewModel.chat != nil { return true }
                         return false
                     }()
                     panelViewModel.isPanelDisplayed = !isDisplayed
@@ -115,10 +118,12 @@ struct WidgetContextMenu: View {
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
+    @AppStorage(\.suggestionFeatureDisabledLanguageList) var suggestionFeatureDisabledLanguageList
     @AppStorage(\.customCommands) var customCommands
     @ObservedObject var chatWindowViewModel: ChatWindowViewModel
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
+    @State var fileURL: URL?
     var isChatOpen: Bool
     var onOpenChatClicked: () -> Void = {}
     var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
@@ -135,6 +140,14 @@ struct WidgetContextMenu: View {
                 }
 
                 customCommandMenu()
+            }
+
+            Divider()
+
+            Group {
+                enableSuggestionForProject
+
+                disableSuggestionForLanguage
             }
 
             Divider()
@@ -184,26 +197,6 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 })
-
-                if let projectPath, disableSuggestionFeatureGlobally {
-                    let matchedPath = suggestionFeatureEnabledProjectList.first { path in
-                        projectPath.hasPrefix(path)
-                    }
-                    Button(action: {
-                        if matchedPath != nil {
-                            suggestionFeatureEnabledProjectList
-                                .removeAll { path in path == matchedPath }
-                        } else {
-                            suggestionFeatureEnabledProjectList.append(projectPath)
-                        }
-                    }) {
-                        if matchedPath == nil {
-                            Text("Add to Suggestion-Enabled Project List")
-                        } else {
-                            Text("Remove from Suggestion-Enabled Project List")
-                        }
-                    }
-                }
             }
 
             Divider()
@@ -227,6 +220,7 @@ struct WidgetContextMenu: View {
             let projectURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
             if let projectURL {
                 Task { @MainActor in
+                    self.fileURL = fileURL
                     self.projectPath = projectURL.path
                 }
             }
@@ -240,6 +234,54 @@ struct WidgetContextMenu: View {
                     onCustomCommandClicked(command)
                 }) {
                     Text(command.name)
+                }
+            }
+        }
+    }
+}
+
+extension WidgetContextMenu {
+    @ViewBuilder
+    var enableSuggestionForProject: some View {
+        if let projectPath, disableSuggestionFeatureGlobally {
+            let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                projectPath.hasPrefix(path)
+            }
+            Button(action: {
+                if matchedPath != nil {
+                    suggestionFeatureEnabledProjectList
+                        .removeAll { path in path == matchedPath }
+                } else {
+                    suggestionFeatureEnabledProjectList.append(projectPath)
+                }
+            }) {
+                if matchedPath == nil {
+                    Text("Add to Suggestion-Enabled Project List")
+                } else {
+                    Text("Remove from Suggestion-Enabled Project List")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var disableSuggestionForLanguage: some View {
+        if let fileURL {
+            let fileLanguage = languageIdentifierFromFileURL(fileURL)
+            let matched = suggestionFeatureDisabledLanguageList.first { rawValue in
+                fileLanguage.rawValue == rawValue
+            }
+            Button(action: {
+                if let matched {
+                    suggestionFeatureDisabledLanguageList.removeAll { $0 == matched }
+                } else {
+                    suggestionFeatureDisabledLanguageList.append(fileLanguage.rawValue)
+                }
+            }) {
+                if matched == nil {
+                    Text("Disable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
+                } else {
+                    Text("Enable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
                 }
             }
         }
@@ -288,3 +330,4 @@ struct WidgetView_Preview: PreviewProvider {
         .background(Color.black)
     }
 }
+

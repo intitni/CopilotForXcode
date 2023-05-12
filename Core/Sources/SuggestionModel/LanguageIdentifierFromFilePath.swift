@@ -1,7 +1,7 @@
 import Foundation
 import LanguageServerProtocol
 
-public enum CodeLanguage: RawRepresentable, Codable {
+public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
     case builtIn(LanguageIdentifier)
     case plaintext
     case other(String)
@@ -16,6 +16,10 @@ public enum CodeLanguage: RawRepresentable, Codable {
             return language
         }
     }
+    
+    public var hashValue: Int {
+        rawValue.hashValue
+    }
 
     public init?(rawValue: String) {
         if let language = LanguageIdentifier(rawValue: rawValue) {
@@ -25,6 +29,12 @@ public enum CodeLanguage: RawRepresentable, Codable {
         } else {
             self = .other(rawValue)
         }
+    }
+    
+    public static var allCases: [CodeLanguage] {
+        var all = LanguageIdentifier.allCases.map(CodeLanguage.builtIn)
+        all.append(.plaintext)
+        return all
     }
 }
 

@@ -1,7 +1,7 @@
 import Foundation
-import UserDefaultsObserver
 import Preferences
 import SuggestionModel
+import UserDefaultsObserver
 
 public protocol SuggestionServiceType {
     func getSuggestions(
@@ -42,7 +42,7 @@ public final class SuggestionService: SuggestionServiceType {
     public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
-        
+
         providerChangeObserver.onChange = { [weak self] in
             guard let self else { return }
             suggestionProvider = buildService()
@@ -75,7 +75,14 @@ public extension SuggestionService {
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [SuggestionModel.CodeSuggestion] {
-        try await suggestionProvider.getSuggestions(
+        let language = languageIdentifierFromFileURL(fileURL)
+        if UserDefaults.shared.value(for: \.suggestionFeatureDisabledLanguageList)
+            .contains(where: { $0 == language.rawValue })
+        {
+            return []
+        }
+
+        return try await suggestionProvider.getSuggestions(
             fileURL: fileURL,
             content: content,
             cursorPosition: cursorPosition,
