@@ -40,7 +40,7 @@ protocol GitHubCopilotLSP {
 
 enum GitHubCopilotError: Error, LocalizedError {
     case languageServerNotInstalled
-    
+
     var errorDescription: String? {
         switch self {
         case .languageServerNotInstalled:
@@ -68,7 +68,7 @@ public class GitHubCopilotBaseService {
             }
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-            
+
             let agentJSURL = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
             guard FileManager.default.fileExists(atPath: agentJSURL.path) else {
                 throw GitHubCopilotError.languageServerNotInstalled
@@ -141,7 +141,11 @@ public class GitHubCopilotBaseService {
 
                 return InitializeParams(
                     processId: Int(ProcessInfo.processInfo.processIdentifier),
-                    clientInfo: .init(name: "Copilot for Xcode"),
+                    clientInfo: .init(
+                        name: Bundle.main
+                            .object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
+                            ?? "Copilot for Xcode"
+                    ),
                     locale: nil,
                     rootPath: projectRootURL.path,
                     rootUri: projectRootURL.path,

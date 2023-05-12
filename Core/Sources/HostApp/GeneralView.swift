@@ -26,8 +26,12 @@ struct AppInfoView: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack(alignment: .top) {
-                Text("Copilot For Xcode")
-                    .font(.title)
+                Text(
+                    Bundle.main
+                        .object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
+                        ?? "Copilot for Xcode"
+                )
+                .font(.title)
                 Text(appVersion ?? "")
                     .font(.footnote)
                     .foregroundColor(.secondary)
@@ -228,7 +232,7 @@ struct GeneralSettingsView: View {
             )) {
                 Text("Automatically Check for Update")
             }
-            
+
             Picker(selection: $settings.suggestionWidgetPositionMode) {
                 ForEach(SuggestionWidgetPositionMode.allCases, id: \.rawValue) {
                     switch $0 {

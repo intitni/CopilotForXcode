@@ -1,3 +1,4 @@
+import Configs
 import Foundation
 import KeychainAccess
 
@@ -6,10 +7,7 @@ public final class CodeiumAuthService {
     let codeiumKeyKey = "codeiumKey"
     let keychain: Keychain = {
         let info = Bundle.main.infoDictionary
-        return Keychain(
-            service: info?["BUNDLE_IDENTIFIER_BASE"] as? String ?? "",
-            accessGroup: "\(info?["APP_ID_PREFIX"] as? String ?? "")\(info?["BUNDLE_IDENTIFIER_BASE"] as? String ?? "").Shared"
-        )
+        return Keychain(service: keychainService, accessGroup: keychainAccessGroup)
     }()
 
     var key: String? { try? keychain.getString(codeiumKeyKey) }

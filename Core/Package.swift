@@ -115,7 +115,7 @@ let package = Package(
                 "SuggestionService",
             ]
         ),
-        .target(name: "Preferences"),
+        .target(name: "Preferences", dependencies: ["Configs"]),
 
         // MARK: - Host App
 
@@ -202,6 +202,7 @@ let package = Package(
 
         // MARK: - Helpers
 
+        .target(name: "Configs"),
         .target(name: "CGEventObserver"),
         .target(name: "Logger"),
         .target(name: "FileChangeChecker"),
@@ -261,7 +262,8 @@ let package = Package(
                 "SuggestionModel",
                 "Preferences",
                 "KeychainAccess",
-                "Terminal"
+                "Terminal",
+                "Configs",
             ]
         ),
     ]
