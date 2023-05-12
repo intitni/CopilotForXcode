@@ -144,6 +144,17 @@ public struct UserDefaultPreferenceKeys {
     public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
         .init()
     }
+    
+    // MARK: - Suggestion Feature Disabled Language List
+
+    public struct SuggestionFeatureDisabledLanguageList: UserDefaultPreferenceKey {
+        public let defaultValue: [String] = []
+        public let key = "SuggestionFeatureDisabledLanguageList"
+    }
+
+    public var suggestionFeatureDisabledLanguageList: SuggestionFeatureDisabledLanguageList {
+        .init()
+    }
 
     // MARK: - Prompt to Code Feature Provider
 
