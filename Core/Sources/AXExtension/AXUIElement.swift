@@ -15,7 +15,7 @@ public extension AXUIElement {
     var title: String {
         (try? copyValue(key: kAXTitleAttribute)) ?? ""
     }
-    
+
     var role: String {
         (try? copyValue(key: kAXRoleAttribute)) ?? ""
     }
@@ -32,12 +32,12 @@ public extension AXUIElement {
     var description: String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
-    
+
     /// Type in Accessibility Inspector.
     var roleDescription: String {
         (try? copyValue(key: kAXRoleDescriptionAttribute)) ?? ""
     }
-    
+
     var label: String {
         (try? copyValue(key: kAXLabelValueAttribute)) ?? ""
     }
@@ -113,6 +113,10 @@ public extension AXUIElement {
         (try? copyValue(key: kAXWindowsAttribute)) ?? []
     }
 
+    var isFullScreen: Bool {
+        (try? copyValue(key: "AXFullScreen")) ?? false
+    }
+
     var focusedWindow: AXUIElement? {
         try? copyValue(key: kAXFocusedWindowAttribute)
     }
@@ -164,7 +168,7 @@ public extension AXUIElement {
         }
         return nil
     }
-    
+
     func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
         var all = [AXUIElement]()
         for child in children {
@@ -175,7 +179,7 @@ public extension AXUIElement {
         }
         return all
     }
-    
+
     func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
         for child in children {
             if match(child) { return child }
@@ -233,3 +237,4 @@ public extension AXUIElement {
 }
 
 extension AXError: Error {}
+
