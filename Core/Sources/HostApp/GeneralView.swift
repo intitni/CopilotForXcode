@@ -109,10 +109,7 @@ struct ExtensionServiceView: View {
         }
         .padding()
         .onAppear {
-            Task {
-                let service = try getService()
-                xpcServiceVersion = try await service.getXPCServiceVersion().version
-            }
+            checkStatus()
         }
     }
 
