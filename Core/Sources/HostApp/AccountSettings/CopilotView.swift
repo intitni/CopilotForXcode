@@ -61,6 +61,8 @@ struct CopilotView: View {
                         Text(
                             "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
                         )
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundColor(.secondary)
                     }
                 }
