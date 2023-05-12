@@ -152,7 +152,7 @@ public enum Environment {
                     let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
                     if error != AXError.success {
                         Logger.service
-                            .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                            .error("Trigger command \(name) failed: \(error.localizedDescription)")
                         throw error
                     }
                 }
@@ -162,7 +162,7 @@ public enum Environment {
                 let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
                 if error != AXError.success {
                     Logger.service
-                        .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                        .error("Trigger command \(name) failed: \(error.localizedDescription)")
                     throw error
                 }
             } else {
@@ -199,7 +199,7 @@ public enum Environment {
                 try await runAppleScript(appleScript)
             } catch {
                 Logger.service
-                    .error("Trigger action \(name) failed: \(error.localizedDescription)")
+                    .error("Trigger command \(name) failed: \(error.localizedDescription)")
                 throw error
             }
         }

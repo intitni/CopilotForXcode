@@ -25,7 +25,7 @@ struct DebugSettingsView: View {
                     Text("Use custom scroll view workaround for smooth scrolling")
                 }
                 Toggle(isOn: $settings.triggerActionWithAccessibilityAPI) {
-                    Text("Trigger action with AccessibilityAPI")
+                    Text("Trigger command with AccessibilityAPI")
                 }
             }
             .padding()
