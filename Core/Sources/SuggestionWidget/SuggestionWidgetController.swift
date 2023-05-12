@@ -584,6 +584,7 @@ extension SuggestionWidgetController: NSWindowDelegate {
         var mouseLocation = NSEvent.mouseLocation
         let windowFrame = chatWindow.frame
         if mouseLocation.y > windowFrame.maxY - 40,
+           mouseLocation.y < windowFrame.maxY,
            mouseLocation.x > windowFrame.minX,
            mouseLocation.x < windowFrame.maxX
         {
@@ -616,6 +617,7 @@ class ChatWindow: NSWindow {
         let windowFrame = frame
         let currentLocation = event.locationInWindow
         if currentLocation.y > windowFrame.size.height - 40,
+           currentLocation.y < windowFrame.size.height,
            currentLocation.x > 0,
            currentLocation.x < windowFrame.width
         {
