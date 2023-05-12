@@ -290,14 +290,8 @@ struct ChatPanelInputArea: View {
                 Text(typedMessage.isEmpty ? "Hi" : typedMessage).opacity(0)
                     .font(.system(size: 14))
                     .frame(maxWidth: .infinity, maxHeight: 400)
-                    .overlay(alignment: .leadingFirstTextBaseline) {
-                        Text("Write something..")
-                            .foregroundColor(.secondary)
-                            .font(.system(size: 14))
-                            .opacity(typedMessage.isEmpty ? 1 : 0)
-                    }
-                    .padding(.top, 0)
-                    .padding(.bottom, 3)
+                    .padding(.top, 1)
+                    .padding(.bottom, 2)
                     .padding(.horizontal, 4)
 
                 CustomTextEditor(
@@ -305,6 +299,8 @@ struct ChatPanelInputArea: View {
                     font: .systemFont(ofSize: 14),
                     onSubmit: { submitText() }
                 )
+                .padding(.top, 1)
+                .padding(.bottom, -1)
             }
             .focused($isInputAreaFocused)
             .padding(8)

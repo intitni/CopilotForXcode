@@ -38,8 +38,9 @@ struct WidgetView: View {
                 }
             }
             .overlay {
-                let minimumLineWidth: Double = 4
-                let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
+                let minimumLineWidth: Double = 3
+                let lineWidth = (1 - processingProgress) *
+                    (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
                 let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
 
@@ -49,7 +50,7 @@ struct WidgetView: View {
                             Color(nsColor: .darkGray),
                             style: .init(lineWidth: minimumLineWidth)
                         )
-                        .padding(2)
+                        .padding(minimumLineWidth / 2)
 
                     // how do I stop the repeatForever animation without removing the view?
                     // I tried many solutions found on stackoverflow but non of them works.
@@ -59,7 +60,7 @@ struct WidgetView: View {
                                 Color.accentColor,
                                 style: .init(lineWidth: lineWidth)
                             )
-                            .padding(2)
+                            .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(
@@ -72,7 +73,7 @@ struct WidgetView: View {
                                 Color.accentColor,
                                 style: .init(lineWidth: lineWidth)
                             )
-                            .padding(2)
+                            .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(.easeInOut(duration: 1), value: processingProgress)
