@@ -152,7 +152,7 @@ struct WidgetContextMenu: View {
                 Button(action: {
                     useGlobalChat.toggle()
                 }) {
-                    Text("Use Global Chat")
+                    Text("Use Shared Conversation")
                     if useGlobalChat {
                         Image(systemName: "checkmark")
                     }

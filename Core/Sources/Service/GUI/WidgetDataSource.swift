@@ -1,9 +1,10 @@
+import ActiveApplicationMonitor
 import ChatService
-import SuggestionModel
-import GitHubCopilotService
 import Foundation
+import GitHubCopilotService
 import OpenAIService
 import PromptToCodeService
+import SuggestionModel
 import SuggestionWidget
 
 @ServiceActor
@@ -52,6 +53,9 @@ final class WidgetDataSource {
                     }
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closeChatRoom(fileURL: url)
+                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                        app.activate()
+                    }
                 },
                 onSwitchContext: { [weak self] in
                     let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
@@ -114,6 +118,9 @@ final class WidgetDataSource {
                     self?.removePromptToCode(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
+                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                        app.activate()
+                    }
                 }
             )
             return PromptToCode(promptToCodeService: service, provider: provider)
@@ -199,3 +206,4 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
         return promptToCodes[url]?.provider
     }
 }
+

@@ -19,11 +19,6 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let scheduledCleaner = ScheduledCleaner()
-    private let userDefaultsObserver = UserDefaultsObserver(
-        object: UserDefaults.shared,
-        forKeyPaths: [UserDefaultPreferenceKeys().realtimeSuggestionToggle.key],
-        context: nil
-    )
     private var statusBarItem: NSStatusItem!
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
     private let updateChecker =
@@ -64,19 +59,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let statusBarMenu = NSMenu(title: "Status Bar Menu")
         statusBarItem.menu = statusBarMenu
 
-        #if DEBUG
+        let hostAppName = Bundle.main.object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
+            ?? "Copilot for Xcode"
+
         let copilotName = NSMenuItem(
-            title: "Copilot for Xcode - DEBUG",
+            title: hostAppName,
             action: nil,
             keyEquivalent: ""
         )
-        #else
-        let copilotName = NSMenuItem(
-            title: "Copilot for Xcode",
-            action: nil,
-            keyEquivalent: ""
-        )
-        #endif
 
         let checkForUpdate = NSMenuItem(
             title: "Check for Updates",
@@ -85,19 +75,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
 
         let openCopilotForXcode = NSMenuItem(
-            title: "Open Copilot for Xcode",
+            title: "Open \(hostAppName)",
             action: #selector(openCopilotForXcode),
             keyEquivalent: ""
         )
 
-        let toggleRealtimeSuggestions = NSMenuItem(
-            title: "Real-time Suggestions",
-            action: #selector(toggleRealtimeSuggestions),
+        let openGlobalChat = NSMenuItem(
+            title: "Open Chat",
+            action: #selector(openGlobalChat),
             keyEquivalent: ""
         )
-        toggleRealtimeSuggestions.state = UserDefaults.shared
-            .value(for: \.realtimeSuggestionToggle) ? .on : .off
-        toggleRealtimeSuggestions.target = self
 
         let quitItem = NSMenuItem(
             title: "Quit",
@@ -107,18 +94,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         quitItem.target = self
 
         statusBarMenu.addItem(copilotName)
+        statusBarMenu.addItem(openCopilotForXcode)
         statusBarMenu.addItem(checkForUpdate)
         statusBarMenu.addItem(.separator())
-        statusBarMenu.addItem(openCopilotForXcode)
-        statusBarMenu.addItem(.separator())
-        statusBarMenu.addItem(toggleRealtimeSuggestions)
+        statusBarMenu.addItem(openGlobalChat)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(quitItem)
-
-        userDefaultsObserver.onChange = {
-            toggleRealtimeSuggestions.state = UserDefaults.shared
-                .value(for: \.realtimeSuggestionToggle) ? .on : .off
-        }
     }
 
     @objc func quit() {
@@ -135,32 +116,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    @objc func toggleRealtimeSuggestions() {
-        let isOn = !UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
-        if isOn {
-            if !AXIsProcessTrusted() {
-                let alert = NSAlert()
-                let image = NSImage(
-                    systemSymbolName: "exclamationmark.triangle.fill",
-                    accessibilityDescription: nil
-                )
-                var config = NSImage.SymbolConfiguration(
-                    textStyle: .body,
-                    scale: .large
-                )
-                config = config.applying(.init(hierarchicalColor: .systemYellow))
-                alert.icon = image?.withSymbolConfiguration(config)
-                alert.messageText = "Accessibility API Permission Required"
-                alert.informativeText =
-                    "Permission not granted to use Accessibility API. Please turn in on in System Settings.app."
-                alert.addButton(withTitle: "OK")
-                alert.addButton(withTitle: "Cancel")
-                alert.alertStyle = .warning
-                alert.runModal()
-                return
-            }
+    @objc func openGlobalChat() {
+        Task { @MainActor in
+            let serviceGUI = GraphicalUserInterfaceController.shared
+            serviceGUI.openGlobalChat()
         }
-        UserDefaults.shared.set(isOn, for: \.realtimeSuggestionToggle)
     }
 
     func setupQuitOnUpdate() {

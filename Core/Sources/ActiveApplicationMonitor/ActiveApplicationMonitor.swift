@@ -4,11 +4,13 @@ public final class ActiveApplicationMonitor {
     static let shared = ActiveApplicationMonitor()
     var latestXcode: NSRunningApplication? = NSWorkspace.shared.runningApplications
         .first(where: \.isXcode)
+    var previousApp: NSRunningApplication?
     var activeApplication = NSWorkspace.shared.runningApplications.first(where: \.isActive) {
         didSet {
             if activeApplication?.isXcode ?? false {
                 latestXcode = activeApplication
             }
+            previousApp = oldValue
         }
     }
 
@@ -35,6 +37,8 @@ public final class ActiveApplicationMonitor {
     }
 
     public static var activeApplication: NSRunningApplication? { shared.activeApplication }
+    
+    public static var previousActiveApplication: NSRunningApplication? { shared.previousApp }
 
     public static var activeXcode: NSRunningApplication? {
         if activeApplication?.isXcode ?? false {
@@ -77,3 +81,4 @@ public final class ActiveApplicationMonitor {
 public extension NSRunningApplication {
     var isXcode: Bool { bundleIdentifier == "com.apple.dt.Xcode" }
 }
+
