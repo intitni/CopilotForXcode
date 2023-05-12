@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import Environment
 import Preferences
 import SuggestionModel
@@ -26,15 +27,24 @@ struct WidgetView: View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    let isDisplayed = {
+                    let wasDisplayed = {
                         if panelViewModel.isPanelDisplayed,
                            panelViewModel.content != nil { return true }
                         if chatWindowViewModel.isPanelDisplayed,
                            chatWindowViewModel.chat != nil { return true }
                         return false
                     }()
-                    panelViewModel.isPanelDisplayed = !isDisplayed
-                    chatWindowViewModel.isPanelDisplayed = !isDisplayed
+                    panelViewModel.isPanelDisplayed = !wasDisplayed
+                    chatWindowViewModel.isPanelDisplayed = !wasDisplayed
+                    let isDisplayed = !wasDisplayed
+
+                    if !isDisplayed {
+                        if let app = ActiveApplicationMonitor.previousActiveApplication,
+                           app.isXcode
+                        {
+                            app.activate()
+                        }
+                    }
                 }
             }
             .overlay {

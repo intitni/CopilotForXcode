@@ -173,12 +173,22 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task { @ServiceActor in
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
+                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                               app.isXcode
+                            {
+                                app.activate()
+                            }
                         }
                     },
                     onAcceptSuggestionTapped: {
                         Task { @ServiceActor in
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
+                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                               app.isXcode
+                            {
+                                app.activate()
+                            }
                         }
                     }
                 )
