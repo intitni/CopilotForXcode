@@ -224,6 +224,10 @@ public final class SuggestionWidgetController: NSObject {
             }
         }
     }
+    
+    public func detachChat() {
+        chatWindowViewModel.chatPanelInASeparateWindow = true
+    }
 }
 
 // MARK: - Handle Events

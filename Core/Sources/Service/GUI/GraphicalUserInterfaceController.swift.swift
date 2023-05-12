@@ -36,6 +36,7 @@ public final class GraphicalUserInterfaceController {
     
     public func openGlobalChat() {
         UserDefaults.shared.set(true, for: \.useGlobalChat)
+        suggestionWidget.detachChat()
         let dataSource = WidgetDataSource.shared
         let fakeFileURL = URL(fileURLWithPath: "/")
         Task {
