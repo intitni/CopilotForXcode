@@ -7,7 +7,7 @@ import SwiftUI
 
 struct CopilotView: View {
     static var copilotAuthService: GitHubCopilotAuthServiceType?
-    
+
     class Settings: ObservableObject {
         @AppStorage(\.nodePath) var nodePath: String
         @AppStorage(\.runNodeWith) var runNodeWith
@@ -26,7 +26,7 @@ struct CopilotView: View {
     @State var version: String?
     @State var isRunningAction: Bool = false
     @State var isUserCodeCopiedAlertPresented = false
-    
+
     func getGitHubCopilotAuthService() throws -> GitHubCopilotAuthServiceType {
         if let service = Self.copilotAuthService { return service }
         let service = try GitHubCopilotAuthService()
@@ -56,16 +56,14 @@ struct CopilotView: View {
                     } label: {
                         Text("Run Node with")
                     }
-
-                    VStack { // workaround a layout issue of SwiftUI
-                        Text(
-                            "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
-                        )
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .foregroundColor(.secondary)
-                    }
                 }
+
+                Text(
+                    "You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a steer wheel, it will automatically restart as needed."
+                )
+                .lineLimit(6)
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundColor(.secondary)
 
                 VStack(alignment: .leading) {
                     Text("Language Server Version: \(version ?? "Loading..")")
@@ -104,9 +102,9 @@ struct CopilotView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
                 }
-                
+
                 Divider()
-                
+
                 Form {
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
                 }
@@ -128,7 +126,7 @@ struct CopilotView: View {
                 version = try await service.version()
                 isRunningAction = false
 
-                if status != .ok && status != .notSignedIn {
+                if status != .ok, status != .notSignedIn {
                     toast(
                         Text(
                             "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription."

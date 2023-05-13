@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import Combine
 import PromptToCodeService
 import SuggestionWidget
@@ -58,6 +59,9 @@ extension PromptToCodeProvider {
             Task { @ServiceActor in
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
+                if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                    app.activate()
+                }
             }
         }
 
@@ -74,3 +78,4 @@ extension PromptToCodeProvider {
         }
     }
 }
+

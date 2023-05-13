@@ -10,6 +10,23 @@ import UserDefaultsObserver
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
+    private lazy var fullscreenDetector = {
+        let it = CanBecomeKeyWindow(
+            contentRect: .zero,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.hasShadow = false
+        it.setIsVisible(true)
+        it.canBecomeKeyChecker = { false }
+        return it
+    }()
+    
     private lazy var widgetWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -21,7 +38,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -52,7 +69,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: TabView(chatWindowViewModel: chatWindowViewModel)
@@ -64,7 +81,7 @@ public final class SuggestionWidgetController: NSObject {
 
     private lazy var panelWindow = {
         let it = CanBecomeKeyWindow(
-            contentRect: .zero,
+            contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: .borderless,
             backing: .buffered,
             defer: false
@@ -73,16 +90,13 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
-        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .promptToCode = suggestionPanelViewModel.content { return true }
-            return false
-        }
+        it.canBecomeKeyChecker = { true }
         return it
     }()
 
@@ -97,7 +111,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: ChatWindowView(viewModel: chatWindowViewModel)
@@ -128,6 +142,7 @@ public final class SuggestionWidgetController: NSObject {
     private var windowChangeObservationTask: Task<Void, Error>?
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var sourceEditorMonitorTask: Task<Void, Error>?
+    private var fullscreenDetectingTask: Task<Void, Error>?
     private var currentFileURL: URL?
     private var colorScheme: ColorScheme = .light
     private var cancellable = Set<AnyCancellable>()
@@ -169,6 +184,27 @@ public final class SuggestionWidgetController: NSObject {
                                 self.chatWindow.alphaValue = 0
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        Task { @MainActor in
+            fullscreenDetectingTask = Task { [weak self] in
+                let sequence = NSWorkspace.shared.notificationCenter
+                    .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
+                _ = self?.fullscreenDetector
+                for await _ in sequence {
+                    try Task.checkCancellation()
+                    guard let self else { return }
+                    guard let activeXcode = ActiveApplicationMonitor.activeXcode else { continue }
+                    guard fullscreenDetector.isOnActiveSpace else { continue }
+                    let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
+                    if let window = app.focusedWindow, window.isFullScreen {
+                        widgetWindow.orderFrontRegardless()
+                        tabWindow.orderFrontRegardless()
+                        panelWindow.orderFrontRegardless()
+                        chatWindow.orderFrontRegardless()
                     }
                 }
             }
@@ -224,7 +260,7 @@ public final class SuggestionWidgetController: NSObject {
             }
         }
     }
-    
+
     public func detachChat() {
         chatWindowViewModel.chatPanelInASeparateWindow = true
     }
@@ -499,16 +535,14 @@ extension SuggestionWidgetController {
         }
 
         if let app = ActiveApplicationMonitor.activeApplication, app.isXcode {
-            let application = AXUIElementCreateApplication(app.processIdentifier)
-            let noFocus = application.focusedWindow == nil
-            panelWindow.alphaValue = noFocus ? 0 : 1
-            widgetWindow.alphaValue = noFocus ? 0 : 1
-            tabWindow.alphaValue = noFocus ? 0 : 1
+            panelWindow.alphaValue = 1
+            widgetWindow.alphaValue = 1
+            tabWindow.alphaValue = 1
 
             if detachChat {
                 chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
             } else {
-                chatWindow.alphaValue = noFocus ? 0 : 1
+                chatWindow.alphaValue = 1
             }
         } else if let app = ActiveApplicationMonitor.activeApplication,
                   app.bundleIdentifier == Bundle.main.bundleIdentifier
@@ -584,6 +618,7 @@ extension SuggestionWidgetController: NSWindowDelegate {
         var mouseLocation = NSEvent.mouseLocation
         let windowFrame = chatWindow.frame
         if mouseLocation.y > windowFrame.maxY - 40,
+           mouseLocation.y < windowFrame.maxY,
            mouseLocation.x > windowFrame.minX,
            mouseLocation.x < windowFrame.maxX
         {
@@ -616,6 +651,7 @@ class ChatWindow: NSWindow {
         let windowFrame = frame
         let currentLocation = event.locationInWindow
         if currentLocation.y > windowFrame.size.height - 40,
+           currentLocation.y < windowFrame.size.height,
            currentLocation.x > 0,
            currentLocation.x < windowFrame.width
         {
