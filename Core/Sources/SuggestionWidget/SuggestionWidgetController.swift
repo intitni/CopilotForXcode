@@ -96,7 +96,10 @@ public final class SuggestionWidgetController: NSObject {
             rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
         )
         it.setIsVisible(true)
-        it.canBecomeKeyChecker = { true }
+        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
+            if case .promptToCode = suggestionPanelViewModel.content { return true }
+            return false
+        }
         return it
     }()
 
