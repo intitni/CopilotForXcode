@@ -30,9 +30,9 @@ enum CodeiumError: Error, LocalizedError {
         case .languageServerNotInstalled:
             return "Language server is not installed. Please install it in the host app."
         case .languageServerOutdated:
-            return "Language server is outdated. Please update it in the host app."
+            return "Language server is outdated. Please update it in the host app or update the extension."
         case .languageServiceIsInstalling:
-            return "Language service is installing. Please wait."
+            return "Language service is installing, please try again later."
         }
     }
 }
@@ -52,6 +52,7 @@ public class CodeiumSuggestionService {
     let authService = CodeiumAuthService()
 
     var xcodeVersion = "14.0.0"
+    var languageServerVersion = CodeiumInstallationManager.latestSupportedVersion
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -75,18 +76,19 @@ public class CodeiumSuggestionService {
     @discardableResult
     func setupServerIfNeeded() async throws -> CodeiumLSP {
         if let server { return server }
-        
+
         let binaryManager = CodeiumInstallationManager()
         let installationStatus = binaryManager.checkInstallation()
         switch installationStatus {
-        case .installed, .unsupported:
-            break
+        case let .installed(version), let .unsupported(version, _):
+            languageServerVersion = version
         case .notInstalled:
             throw CodeiumError.languageServerNotInstalled
-        case .outdated:
+        case let .outdated(version, _):
+            languageServerVersion = version
             throw CodeiumError.languageServerOutdated
         }
-        
+
         let metadata = try getMetadata()
         xcodeVersion = (try? await getXcodeVersion()) ?? xcodeVersion
         let versionNumberSegmentCount = xcodeVersion.split(separator: ".").count
@@ -187,7 +189,7 @@ extension CodeiumSuggestionService {
         return Metadata(
             ide_name: "xcode",
             ide_version: xcodeVersion,
-            extension_version: xcodeVersion,
+            extension_version: languageServerVersion,
             api_key: key,
             session_id: CodeiumSuggestionService.sessionId,
             request_id: requestCounter
