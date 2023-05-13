@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    let latestSupportedVersion: String = "1.2.9"
+    static let latestSupportedVersion: String = "1.2.17"
 
     public init() {}
 
@@ -29,17 +29,17 @@ public struct CodeiumInstallationManager {
            let versionData = try? Data(contentsOf: versionFileURL),
            let version = String(data: versionData, encoding: .utf8)
         {
-            switch version.compare(latestSupportedVersion) {
+            switch version.compare(Self.latestSupportedVersion) {
             case .orderedAscending:
-                return .outdated(current: version, latest: latestSupportedVersion)
+                return .outdated(current: version, latest: Self.latestSupportedVersion)
             case .orderedSame:
                 return .installed(version)
             case .orderedDescending:
-                return .unsupported(current: version, latest: latestSupportedVersion)
+                return .unsupported(current: version, latest: Self.latestSupportedVersion)
             }
         }
 
-        return .outdated(current: "Unknown", latest: latestSupportedVersion)
+        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
     }
 
     public enum InstallationStep {
@@ -62,7 +62,7 @@ public struct CodeiumInstallationManager {
                     continuation.yield(.downloading)
                     let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
                     let urlString =
-                        "https://github.com/Exafunction/codeium/releases/download/language-server-v\(latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
                     guard let url = URL(string: urlString) else { return }
 
                     // download
@@ -91,7 +91,7 @@ public struct CodeiumInstallationManager {
                     )
 
                     // create version file
-                    let data = latestSupportedVersion.data(using: .utf8)
+                    let data = Self.latestSupportedVersion.data(using: .utf8)
                     FileManager.default.createFile(
                         atPath: urls.executableURL.appendingPathComponent("version").path,
                         contents: data

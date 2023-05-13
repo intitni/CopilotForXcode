@@ -42,10 +42,8 @@ final class CodeiumLanguageServer {
         process.executableURL = languageServerExecutableURL
 
         process.arguments = [
-            "--api_server_host",
-            "server.codeium.com",
-            "--api_server_port",
-            "443",
+            "--api_server_url",
+            "https://server.codeium.com",
             "--manager_dir",
             managerDirectoryURL.path,
         ]
@@ -145,8 +143,11 @@ extension CodeiumLanguageServer: CodeiumLSP {
         } else {
             do {
                 let error = try JSONDecoder().decode(CodeiumResponseError.self, from: data)
-                if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
-                    Logger.codeium.error(error.message)
+                if error.code == "aborted" {
+                    if error.message.contains("is too old") {
+                        throw CodeiumError.languageServerOutdated
+                    }
+                    throw error
                 }
                 throw CancellationError()
             } catch {
