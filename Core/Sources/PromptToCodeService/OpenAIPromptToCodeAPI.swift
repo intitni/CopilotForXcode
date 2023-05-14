@@ -33,63 +33,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             }
             return userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
         }()
-
-        let systemPrompt = {
-            switch language {
-            case .builtIn(.markdown), .plaintext:
-                if code.isEmpty {
-                    return """
-                    You are good at writing in \(language.rawValue).
-                    You are editing file: \(fileURL.lastPathComponent).
-                    \(extraSystemPrompt ?? "")
-                    """
-                } else {
-                    return """
-                    You are good at writing in \(language.rawValue).
-                    You are editing file: \(fileURL.lastPathComponent).
-                    \(extraSystemPrompt ?? "")
-                    """
-                }
-            default:
-                if code.isEmpty {
-                    return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    You are editing file: \(fileURL.lastPathComponent).
-                    \(extraSystemPrompt ?? "")
-                    """
-                } else {
-                    return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    You are editing file: \(fileURL.lastPathComponent).
-                    \(extraSystemPrompt ?? "")
-                    """
-                }
-            }
-        }()
-
-        let firstMessage: String? = {
-            if code.isEmpty { return nil }
-            switch language {
-            case .builtIn(.markdown), .plaintext:
-                return """
-                Content:\"""
-                \(code)
-                \"""
-                """
-            default:
-                return """
-                Code:```
-                \(code)
-                ```
-                """
-            }
-        }()
-
-        let formattedRequirement = requirement.split(separator: "\n")
-            .map { "    \($0)" }
-            .joined(separator: "\n")
-
-        let secondMessage: String = {
+        
+        let rule: String = {
             func generateDescription(index: Int) -> String {
                 return UserDefaults.shared.value(for: \.promptToCodeGenerateDescription)
                     ? """
@@ -104,42 +49,28 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 if code.isEmpty {
                     return """
                     1. Write the content that meets my requirements.
-                        Requirements:\"""
-                        Write the content;
-                    \(formattedRequirement)
-                        \"""
                     2. Embed the new content in a markdown code block.
                     \(generateDescription(index: 3))
                     """
                 } else {
                     return """
-                    1. Update the content to meet my requirements.
-                        Requirements:\"""
-                    \(formattedRequirement)
-                        \"""
+                    1. Do what I required.
                     2. Format the updated content to use the original indentation. Especially the first line.
                     3. Embed the updated content in a markdown code block.
-                    \(generateDescription(index: 4))
+                    4. You MUST never translate the content in the code block if it's not requested in the requirements.
+                    \(generateDescription(index: 5))
                     """
                 }
             default:
                 if code.isEmpty {
                     return """
                     1. Write the code that meets my requirements.
-                        Requirements:\"""
-                        Write the code in \(language.rawValue);
-                    \(formattedRequirement)
-                        \"""
                     2. Embed the code in a markdown code block.
                     \(generateDescription(index: 3))
                     """
                 } else {
                     return """
-                    1. Update the code to meet my requirements.
-                        Requirements:\"""
-                        Update the code;
-                    \(formattedRequirement)
-                        \"""
+                    1. Do what I required.
                     2. Format the updated code to use the original indentation. Especially the first line.
                     3. Embed the updated code in a markdown code block.
                     \(generateDescription(index: 4))
@@ -147,6 +78,71 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                 }
             }
         }()
+
+        let systemPrompt = {
+            switch language {
+            case .builtIn(.markdown), .plaintext:
+                if code.isEmpty {
+                    return """
+                    You are good at writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                    
+                    \(rule)
+                    """
+                } else {
+                    return """
+                    You are good at writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                }
+            default:
+                if code.isEmpty {
+                    return """
+                    You are a senior programer in writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                } else {
+                    return """
+                    You are a senior programer in writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                }
+            }
+        }()
+
+        let firstMessage: String? = {
+            if code.isEmpty { return nil }
+            switch language {
+            case .builtIn(.markdown), .plaintext:
+                return """
+                ```
+                \(code)
+                ```
+                """
+            default:
+                return """
+                ```
+                \(code)
+                ```
+                """
+            }
+        }()
+
+        let secondMessage: String = """
+        Requirements:###
+        \(requirement)
+        ###
+        """
 
         let chatGPTService = ChatGPTService(systemPrompt: systemPrompt, temperature: 0.3)
         service = chatGPTService
