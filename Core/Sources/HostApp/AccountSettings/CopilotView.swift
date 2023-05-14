@@ -113,6 +113,10 @@ struct CopilotView: View {
         }.onAppear {
             if isPreview { return }
             checkStatus()
+        }.onChange(of: settings.runNodeWith) { _ in
+            Self.copilotAuthService = nil
+        }.onChange(of: settings.nodePath) { _ in
+            Self.copilotAuthService = nil
         }
     }
 
