@@ -263,10 +263,6 @@ public final class SuggestionWidgetController: NSObject {
             }
         }
     }
-
-    public func detachChat() {
-        chatWindowViewModel.chatPanelInASeparateWindow = true
-    }
 }
 
 // MARK: - Handle Events
@@ -311,6 +307,27 @@ public extension SuggestionWidgetController {
                 }
 
                 Task { @MainActor in
+                    // looks like we need a delay.
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+    }
+    
+    func presentDetachedGlobalChat() {
+        chatWindowViewModel.chatPanelInASeparateWindow = true
+        Task {
+            if let chat = await dataSource?.chatForFile(at: URL(fileURLWithPath: "/")) {
+                chatWindowViewModel.chat = chat
+                chatWindowViewModel.isPanelDisplayed = true
+
+                if chatWindowViewModel.chatPanelInASeparateWindow {
+                    self.updateWindowLocation()
+                }
+
+                Task { @MainActor in
+                    chatWindow.alphaValue = 1
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     NSApplication.shared.activate(ignoringOtherApps: true)
