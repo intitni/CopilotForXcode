@@ -154,7 +154,13 @@ struct CodeiumView: View {
                     Text("Status: Signed In")
                     
                     Button(action: {
-                        viewModel.isSignedIn = false
+                        Task {
+                            do {
+                                try await viewModel.signOut()
+                            } catch {
+                                toast(Text(error.localizedDescription), .error)
+                            }
+                        }
                     }) {
                         Text("Sign Out")
                     }
@@ -232,21 +238,31 @@ struct CodeiumSignInView: View {
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
 
-            Button(action: {
-                isGeneratingKey = true
-                Task {
-                    do {
-                        try await viewModel.signIn(token: token)
-                        isGeneratingKey = false
-                        isPresented = false
-                    } catch {
-                        isGeneratingKey = false
-                        toast(Text(error.localizedDescription), .error)
-                    }
+            HStack {
+                Spacer()
+                
+                Button(action: {
+                    isPresented = false
+                }) {
+                    Text("Cancel")
                 }
-            }) {
-                Text(isGeneratingKey ? "Signing In.." : "Sign In")
-            }.disabled(isGeneratingKey)
+                
+                Button(action: {
+                    isGeneratingKey = true
+                    Task {
+                        do {
+                            try await viewModel.signIn(token: token)
+                            isGeneratingKey = false
+                            isPresented = false
+                        } catch {
+                            isGeneratingKey = false
+                            toast(Text(error.localizedDescription), .error)
+                        }
+                    }
+                }) {
+                    Text(isGeneratingKey ? "Signing In.." : "Sign In")
+                }.disabled(isGeneratingKey)
+            }
         }
         .padding()
         .onAppear {
