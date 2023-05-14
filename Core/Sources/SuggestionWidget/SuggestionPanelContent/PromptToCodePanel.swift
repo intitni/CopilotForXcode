@@ -191,21 +191,26 @@ struct PromptToCodePanelToolbar: View {
             .disabled(provider.isResponding || !provider.canRevert)
 
             HStack(spacing: 0) {
-                Group {
-                    if #available(macOS 13.0, *) {
-                        TextField("Requriement", text: $provider.requirement, axis: .vertical)
-                    } else {
-                        TextEditor(text: $provider.requirement)
-                            .frame(height: 42, alignment: .leading)
-                            .font(.body)
-                            .background(Color.clear)
-                    }
+                ZStack(alignment: .center) {
+                    // a hack to support dynamic height of TextEditor
+                    Text(provider.requirement.isEmpty ? "Hi" : provider.requirement).opacity(0)
+                        .font(.system(size: 14))
+                        .frame(maxWidth: .infinity, maxHeight: 400)
+                        .padding(.top, 1)
+                        .padding(.bottom, 2)
+                        .padding(.horizontal, 4)
+
+                    CustomTextEditor(
+                        text: $provider.requirement,
+                        font: .systemFont(ofSize: 14),
+                        onSubmit: { provider.sendRequirement() }
+                    )
+                    .padding(.top, 1)
+                    .padding(.bottom, -1)
                 }
                 .focused($isInputAreaFocused)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-                .textFieldStyle(.plain)
                 .padding(8)
+                .fixedSize(horizontal: false, vertical: true)
 
                 Button(action: {
                     provider.sendRequirement()
