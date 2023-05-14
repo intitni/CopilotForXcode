@@ -81,7 +81,7 @@ If you are using macOS Monterey, enter the `Extensions` menu in `System Preferen
 
 ### Setting Up GitHub Copilot
  
-1. In the host app, switch to the service tab and click GitHub Copilot to enter the GitHub Copilot account settings.
+1. In the host app, switch to the service tab and click on GitHub Copilot to access your GitHub Copilot account settings.
 2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path. 
 3. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
 4. After signing in, go back to the app and click "Confirm Sign-in" to finish.
@@ -91,12 +91,12 @@ The installed language server is located at `~/Library/Application Support/com.i
 
 ### Setting Up Codeium
 
-1. In the host app, switch to the service tab and click Codeium to enter the Codeium account settings. 
+1. In the host app, switch to the service tab and click Codeium to access the Codeium account settings.
 2. Click "Install" to install the language server.
 3. Click "Sign In", and you will be directed to codeium.com. After signing in, a token will be presented. You will need to paste the token back to the app to finish signing in.
 4. Go to "Feature - Suggestion" and update the feature provider to "Codeium".
 
-> The key is stored in keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password access the keychain for the key. Please select "Always Allow" to let the helper app access the key.
+> The key is stored in the keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password to access the keychain. Please select "Always Allow" to let the helper app access the key.
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
 
@@ -208,7 +208,7 @@ If you need to end a plugin, you can just type
 
 ### Prompt to Code
 
-Refactor selected code or write new code using natural language. 
+Refactor selected code or write new code using natural language.
 
 #### Commands
 
