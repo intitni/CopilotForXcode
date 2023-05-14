@@ -51,10 +51,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBarItem = statusBar.statusItem(
             withLength: NSStatusItem.squareLength
         )
-        statusBarItem.button?.image = NSImage(
-            systemSymbolName: "steeringwheel",
-            accessibilityDescription: nil
-        )
+        statusBarItem.button?.image = NSImage(named: "MenuBarIcon")
 
         let statusBarMenu = NSMenu(title: "Status Bar Menu")
         statusBarItem.menu = statusBarMenu
