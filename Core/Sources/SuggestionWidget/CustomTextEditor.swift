@@ -22,6 +22,7 @@ struct CustomTextEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         let textView = (context.coordinator.theTextView.documentView as! NSTextView)
+        guard textView.string != text else { return }
         textView.string = text
     }
 }
