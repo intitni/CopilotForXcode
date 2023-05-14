@@ -141,7 +141,7 @@ public struct SuggestionInjector {
         let end = completion.range.end
         let suggestionContent = completion.text
 
-        let existedLine = start.line < content.endIndex ? content[start.line] : nil
+        let _ = start.line < content.endIndex ? content[start.line] : nil
 
         let firstRemovedLine = content[safe: start.line]
         let lastRemovedLine = content[safe: end.line]

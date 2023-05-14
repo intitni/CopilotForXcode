@@ -16,7 +16,6 @@ public final class CodeiumAuthService {
 
     public func signIn(token: String) async throws {
         let key = try await generate(token: token)
-        let info = Bundle.main.infoDictionary
         try keychain.set(key, key: codeiumKeyKey)
     }
 
