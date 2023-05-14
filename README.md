@@ -2,13 +2,13 @@
 
 ![Screenshot](/Screenshot.png)
 
-Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copilot and ChatGPT support for Xcode. 
+Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copilot, Codeium and ChatGPT support for Xcode. 
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ## Features
 
-- Code Suggestions (powered by GitHub Copilot).
+- Code Suggestions (powered by GitHub Copilot and Codeium).
 - Chat (powered by OpenAI ChatGPT).
 - Prompt to Code (powered by OpenAI ChatGPT).
 - Custom Commands to extend Chat and Prompt to Code.
@@ -20,7 +20,8 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - [Installation and Setup](#installation-and-setup)
   - [Install](#install)
   - [Enable the Extension](#enable-the-extension)
-  - [Sign In GitHub Copilot](#sign-in-github-copilot)
+  - [Setting Up GitHub Copilot](#setting-up-github-copilot)
+  - [Setting Up Codeium](#setting-up-codeium)
   - [Setting Up OpenAI API Key](#setting-up-openai-api-key)
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
@@ -40,8 +41,11 @@ For development instruction, check [Development.md](DEVELOPMENT.md).
 - Public network connection.
 
 For suggestion features:
-- [Node](https://nodejs.org/) installed to run the Copilot LSP.
-- Active GitHub Copilot subscription.
+- For GitHub Copilot users: 
+  - [Node](https://nodejs.org/) installed to run the Copilot LSP.
+  - Active GitHub Copilot subscription.
+- For Codeium users:
+  - Active Codeium account.
 
 For chat and prompt to code features:
 - Valid OpenAI API key.  
@@ -65,10 +69,7 @@ brew install --cask copilot-for-xcode
 
 Or install it manually, by downloading the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
 
-Then set it up with the following steps:
-
-1. Open the app, the app will create a launch agent to setup a background running Service that does the real job.
-2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.
+Open the app, the app will create a launch agent to setup a background running Service that does the real job.
 
 ### Enable the Extension
 
@@ -78,11 +79,26 @@ From the Apple menu located in the top-left corner of your screen click `System 
     
 If you are using macOS Monterey, enter the `Extensions` menu in `System Preferences.app` with its dedicated icon.
 
-### Sign In GitHub Copilot
+### Setting Up GitHub Copilot
  
-1. In the host app, click GitHub Copilot to enter the GitHub Copilot account settings. 
-2. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
-3. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+1. In the host app, switch to the service tab and click on GitHub Copilot to access your GitHub Copilot account settings.
+2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path. 
+3. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
+4. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+5. Go to "Feature - Suggestion" and update the feature provider to "GitHub Copilot".
+
+The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/GitHub Copilot/executable/`.
+
+### Setting Up Codeium
+
+1. In the host app, switch to the service tab and click Codeium to access the Codeium account settings.
+2. Click "Install" to install the language server.
+3. Click "Sign In", and you will be directed to codeium.com. After signing in, a token will be presented. You will need to paste the token back to the app to finish signing in.
+4. Go to "Feature - Suggestion" and update the feature provider to "Codeium".
+
+> The key is stored in the keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password to access the keychain. Please select "Always Allow" to let the helper app access the key.
+
+The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
 
 ### Setting Up OpenAI API Key
 
@@ -125,7 +141,7 @@ If you find that some of the features are no longer working, please first try re
 
 ### Suggestion
 
-GitHub Copilot can provide real-time code suggestions based on the files you have opened. It utilizes its knowledge of your codebase to generate helpful suggestions. 
+The app can provide real-time code suggestions based on the files you have opened. It's powered by GitHub Copilot and Codeium. 
 
 If you're working on a company project and don't want the suggestion feature to be triggered, you can globally disable it and choose to enable it only for specific projects. 
 
@@ -156,7 +172,7 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 
 This feature is powered by ChatGPT. Please ensure that you have set up your OpenAI account before using it.
 
-There are currently two tabs in the chat panel: one is available globally across Xcode, and the other is only available in the current file.
+There are currently two tabs in the chat panel: one is available shared across Xcode, and the other is only available in the current file.
 
 You can detach the chat panel by simply dragging it away. Once detached, the chat panel will remain visible even if Xcode is inactive. To re-attach it to the widget, click the message bubble button located next to the circular widget.
 
@@ -192,7 +208,7 @@ If you need to end a plugin, you can just type
 
 ### Prompt to Code
 
-Refactor selected code or write new code using natural language. 
+Refactor selected code or write new code using natural language.
 
 #### Commands
 
@@ -246,7 +262,7 @@ fi
 
 MIT.
 
-## What's More
+## Credits
 
 The app uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
 

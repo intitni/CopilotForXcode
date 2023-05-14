@@ -1,7 +1,8 @@
 import Foundation
+import Configs
 
 public extension UserDefaults {
-    static var shared = UserDefaults(suiteName: "5YKZ4Y3DAW.group.com.intii.CopilotForXcode")!
+    static var shared = UserDefaults(suiteName: userDefaultSuiteName)!
 
     static func setupDefaultSettings() {
         shared.setupDefaultValue(for: \.quitXPCServiceOnXcodeAndAppQuit)

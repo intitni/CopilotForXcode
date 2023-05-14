@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import SwiftUI
 
@@ -9,7 +10,7 @@ final class ChatWindowViewModel: ObservableObject {
     @Published var colorScheme: ColorScheme
     @Published var isPanelDisplayed = false
     @Published var chatPanelInASeparateWindow = false
-    
+
     public init(chat: ChatProvider? = nil, colorScheme: ColorScheme = .dark) {
         self.chat = chat
         self.colorScheme = colorScheme
@@ -26,6 +27,11 @@ struct ChatWindowView: View {
                     .background {
                         Button(action: {
                             viewModel.isPanelDisplayed = false
+                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                               app.isXcode
+                            {
+                                app.activate()
+                            }
                         }) {
                             EmptyView()
                         }
@@ -38,3 +44,4 @@ struct ChatWindowView: View {
         .preferredColorScheme(viewModel.colorScheme)
     }
 }
+

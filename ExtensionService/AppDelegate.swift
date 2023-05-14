@@ -1,14 +1,16 @@
 import AppKit
+import Environment
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
 import Preferences
 import Service
 import ServiceManagement
+import ServiceUpdateMigration
 import SwiftUI
 import UpdateChecker
+import UserDefaultsObserver
 import UserNotifications
-import Environment
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -17,7 +19,6 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let scheduledCleaner = ScheduledCleaner()
-    private let userDefaultsObserver = UserDefaultsObserver()
     private var statusBarItem: NSStatusItem!
     private var xpcListener: (NSXPCListener, ServiceDelegate)?
     private let updateChecker =
@@ -36,6 +37,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
+        Task {
+            do {
+                try await ServiceUpdateMigrator().migrate()
+            } catch {
+                Logger.service.error(error.localizedDescription)
+            }
+        }
     }
 
     @objc private func buildStatusBarMenu() {
@@ -43,42 +51,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusBarItem = statusBar.statusItem(
             withLength: NSStatusItem.squareLength
         )
-        statusBarItem.button?.image = NSImage(
-            systemSymbolName: "steeringwheel",
-            accessibilityDescription: nil
-        )
+        statusBarItem.button?.image = NSImage(named: "MenuBarIcon")
 
         let statusBarMenu = NSMenu(title: "Status Bar Menu")
         statusBarItem.menu = statusBarMenu
 
-        #if DEBUG
+        let hostAppName = Bundle.main.object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
+            ?? "Copilot for Xcode"
+
         let copilotName = NSMenuItem(
-            title: "Copilot for Xcode - DEBUG",
+            title: hostAppName,
             action: nil,
             keyEquivalent: ""
         )
-        #else
-        let copilotName = NSMenuItem(
-            title: "Copilot for Xcode",
-            action: nil,
-            keyEquivalent: ""
-        )
-        #endif
-        
+
         let checkForUpdate = NSMenuItem(
             title: "Check for Updates",
             action: #selector(checkForUpdate),
             keyEquivalent: ""
         )
 
-        let toggleRealtimeSuggestions = NSMenuItem(
-            title: "Real-time Suggestions",
-            action: #selector(toggleRealtimeSuggestions),
+        let openCopilotForXcode = NSMenuItem(
+            title: "Open \(hostAppName)",
+            action: #selector(openCopilotForXcode),
             keyEquivalent: ""
         )
-        toggleRealtimeSuggestions.state = UserDefaults.shared
-            .value(for: \.realtimeSuggestionToggle) ? .on : .off
-        toggleRealtimeSuggestions.target = self
+
+        let openGlobalChat = NSMenuItem(
+            title: "Open Chat",
+            action: #selector(openGlobalChat),
+            keyEquivalent: ""
+        )
 
         let quitItem = NSMenuItem(
             title: "Quit",
@@ -88,53 +91,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         quitItem.target = self
 
         statusBarMenu.addItem(copilotName)
+        statusBarMenu.addItem(openCopilotForXcode)
         statusBarMenu.addItem(checkForUpdate)
         statusBarMenu.addItem(.separator())
-        statusBarMenu.addItem(toggleRealtimeSuggestions)
+        statusBarMenu.addItem(openGlobalChat)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(quitItem)
-
-        userDefaultsObserver.onChange = { key in
-            switch key {
-            case UserDefaultPreferenceKeys().realtimeSuggestionToggle.key:
-                toggleRealtimeSuggestions.state = UserDefaults.shared
-                    .value(for: \.realtimeSuggestionToggle) ? .on : .off
-            default:
-                break
-            }
-        }
     }
 
     @objc func quit() {
         exit(0)
     }
 
-    @objc func toggleRealtimeSuggestions() {
-        let isOn = !UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
-        if isOn {
-            if !AXIsProcessTrusted() {
-                let alert = NSAlert()
-                let image = NSImage(
-                    systemSymbolName: "exclamationmark.triangle.fill",
-                    accessibilityDescription: nil
-                )
-                var config = NSImage.SymbolConfiguration(
-                    textStyle: .body,
-                    scale: .large
-                )
-                config = config.applying(.init(hierarchicalColor: .systemYellow))
-                alert.icon = image?.withSymbolConfiguration(config)
-                alert.messageText = "Accessibility API Permission Required"
-                alert.informativeText =
-                    "Permission not granted to use Accessibility API. Please turn in on in System Settings.app."
-                alert.addButton(withTitle: "OK")
-                alert.addButton(withTitle: "Cancel")
-                alert.alertStyle = .warning
-                alert.runModal()
-                return
-            }
+    @objc func openCopilotForXcode() {
+        let task = Process()
+        if let appPath = locateHostBundleURL(url: Bundle.main.bundleURL)?.absoluteString {
+            task.launchPath = "/usr/bin/open"
+            task.arguments = [appPath]
+            task.launch()
+            task.waitUntilExit()
         }
-        UserDefaults.shared.set(isOn, for: \.realtimeSuggestionToggle)
+    }
+
+    @objc func openGlobalChat() {
+        Task { @MainActor in
+            let serviceGUI = GraphicalUserInterfaceController.shared
+            serviceGUI.openGlobalChat()
+        }
     }
 
     func setupQuitOnUpdate() {
@@ -208,32 +191,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 }
 
-private class UserDefaultsObserver: NSObject {
-    var onChange: ((String?) -> Void)?
-
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        onChange?(keyPath)
-    }
-    
-    deinit {
-        removeObserver(self, forKeyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
-    }
-
-    override init() {
-        super.init()
-        observe(keyPath: UserDefaultPreferenceKeys().realtimeSuggestionToggle.key)
-    }
-
-    private func observe(keyPath: String) {
-        UserDefaults.shared.addObserver(self, forKeyPath: keyPath, options: .new, context: nil)
-    }
-}
-
 extension NSRunningApplication {
     var isUserOfService: Bool {
         [
@@ -256,3 +213,4 @@ func locateHostBundleURL(url: URL) -> URL? {
         .appendingPathComponent("Copilot for Xcode Dev.app")
     return devAppURL
 }
+

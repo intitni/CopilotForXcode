@@ -1,6 +1,7 @@
-import CopilotModel
 import Foundation
+import GitHubCopilotService
 import Logger
+import SuggestionModel
 import XPCShared
 
 public struct AsyncXPCService {
@@ -11,22 +12,6 @@ public struct AsyncXPCService {
         self.service = service
     }
 
-    public func checkStatus() async throws -> CopilotStatus {
-        try await withXPCServiceConnected(connection: connection) {
-            service, continuation in
-            service.checkStatus { status, error in
-                if let error {
-                    continuation.reject(error)
-                    return
-                }
-                continuation.resume(
-                    status.flatMap(CopilotStatus.init(rawValue:))
-                        ?? CopilotStatus.notAuthorized
-                )
-            }
-        }
-    }
-
     public func getXPCServiceVersion() async throws -> (version: String, build: String) {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
@@ -35,61 +20,12 @@ public struct AsyncXPCService {
             }
         }
     }
-
-    public func getVersion() async throws -> String {
+    
+    public func getXPCServiceAccessibilityPermission() async throws -> Bool {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
-            service.getVersion { version, error in
-                if let error {
-                    continuation.reject(error)
-                    return
-                }
-                continuation.resume(version ?? "--")
-            }
-        }
-    }
-
-    public func signInInitiate() async throws -> (verificationUri: String, userCode: String) {
-        try await withXPCServiceConnected(connection: connection) {
-            service, continuation in
-            service.signInInitiate { verificationUri, userCode, error in
-                if let error {
-                    continuation.reject(error)
-                    return
-                }
-                continuation.resume((verificationUri ?? "", userCode ?? ""))
-            }
-        }
-    }
-
-    public func signInConfirm(userCode: String) async throws
-        -> (username: String, status: CopilotStatus)
-    {
-        try await withXPCServiceConnected(connection: connection) {
-            service, continuation in
-            service.signInConfirm(userCode: userCode) { username, status, error in
-                if let error {
-                    continuation.reject(error)
-                    return
-                }
-                continuation.resume((
-                    username ?? "",
-                    status.flatMap(CopilotStatus.init(rawValue:)) ?? .alreadySignedIn
-                ))
-            }
-        }
-    }
-
-    public func signOut() async throws -> CopilotStatus {
-        try await withXPCServiceConnected(connection: connection) {
-            service, continuation in
-            service.signOut { finishstatus, error in
-                if let error {
-                    continuation.reject(error)
-                    return
-                }
-                continuation
-                    .resume(finishstatus.flatMap(CopilotStatus.init(rawValue:)) ?? .notSignedIn)
+            service.getXPCServiceAccessibilityPermission { isGranted in
+                continuation.resume(isGranted)
             }
         }
     }
@@ -257,3 +193,4 @@ func suggestionRequest(
         }
     }
 }
+

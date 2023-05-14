@@ -1,7 +1,7 @@
-import CopilotModel
-import CopilotService
 import Foundation
+import GitHubCopilotService
 import OpenAIService
+import SuggestionModel
 
 final class CopilotPromptToCodeAPI: PromptToCodeAPI {
     var task: Task<Void, Never>?
@@ -12,7 +12,7 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
 
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,
@@ -21,8 +21,8 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
         allCode: String,
         extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
-        let copilotService = CopilotSuggestionService(projectRootURL: projectRootURL)
-        let relativePath = {
+        let copilotService = try GitHubCopilotSuggestionService(projectRootURL: projectRootURL)
+        let _ = {
             let filePath = fileURL.path
             let rootPath = projectRootURL.path
             if let range = filePath.range(of: rootPath),
@@ -36,11 +36,11 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
             }
             return filePath
         }()
-        
+
         func convertToComment(_ s: String) -> String {
             s.split(separator: "\n").map { "// \($0)" }.joined(separator: "\n")
         }
-        
+
         let comment = """
         // A file to refactor the following code
         //
@@ -52,9 +52,9 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
         // Requirements:
         \(convertToComment((extraSystemPrompt ?? "\n") + requirement))
         //
-        
-        
-        
+
+
+
         // end of file
         """
         let lineCount = comment.breakLines().count
@@ -98,3 +98,4 @@ extension String {
         return all
     }
 }
+

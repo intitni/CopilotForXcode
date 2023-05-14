@@ -1,7 +1,8 @@
-import CopilotModel
-import CopilotService
 import Foundation
+import GitHubCopilotService
 import OpenAIService
+import Preferences
+import SuggestionModel
 
 final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
     var service: (any ChatGPTServiceType)?
@@ -14,7 +15,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
 
     func modifyCode(
         code: String,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         requirement: String,
@@ -24,54 +25,133 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         extraSystemPrompt: String?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let textLanguage = userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
+        let textLanguage = {
+            if !UserDefaults.shared
+                .value(for: \.promptToCodeGenerateDescriptionInUserPreferredLanguage)
+            {
+                return ""
+            }
+            return userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
+        }()
+        
+        let rule: String = {
+            func generateDescription(index: Int) -> String {
+                return UserDefaults.shared.value(for: \.promptToCodeGenerateDescription)
+                    ? """
+                    \(index). After the code block, write a clear and concise description \
+                    in 1-3 sentences about what you did in step 1\(textLanguage).
+                    \(index + 1). Reply with the result.
+                    """
+                    : "\(index). Reply with the result."
+            }
+            switch language {
+            case .builtIn(.markdown), .plaintext:
+                if code.isEmpty {
+                    return """
+                    1. Write the content that meets my requirements.
+                    2. Embed the new content in a markdown code block.
+                    \(generateDescription(index: 3))
+                    """
+                } else {
+                    return """
+                    1. Do what I required.
+                    2. Format the updated content to use the original indentation. Especially the first line.
+                    3. Embed the updated content in a markdown code block.
+                    4. You MUST never translate the content in the code block if it's not requested in the requirements.
+                    \(generateDescription(index: 5))
+                    """
+                }
+            default:
+                if code.isEmpty {
+                    return """
+                    1. Write the code that meets my requirements.
+                    2. Embed the code in a markdown code block.
+                    \(generateDescription(index: 3))
+                    """
+                } else {
+                    return """
+                    1. Do what I required.
+                    2. Format the updated code to use the original indentation. Especially the first line.
+                    3. Embed the updated code in a markdown code block.
+                    \(generateDescription(index: 4))
+                    """
+                }
+            }
+        }()
 
-        let prompt = {
-            let indentRule = usesTabsForIndentation ? "\(indentSize) tabs" : "\(indentSize) spaces"
-            if code.isEmpty {
+        let systemPrompt = {
+            switch language {
+            case .builtIn(.markdown), .plaintext:
+                if code.isEmpty {
+                    return """
+                    You are good at writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                    
+                    \(rule)
+                    """
+                } else {
+                    return """
+                    You are good at writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                }
+            default:
+                if code.isEmpty {
+                    return """
+                    You are a senior programer in writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                } else {
+                    return """
+                    You are a senior programer in writing in \(language.rawValue).
+                    The active file is: \(fileURL.lastPathComponent).
+                    \(extraSystemPrompt ?? "")
+                                        
+                    \(rule)
+                    """
+                }
+            }
+        }()
+
+        let firstMessage: String? = {
+            if code.isEmpty { return nil }
+            switch language {
+            case .builtIn(.markdown), .plaintext:
                 return """
-                You are a senior programer in writing code in \(language.rawValue).
-                
-                File url: \(fileURL)
-                
-                \(extraSystemPrompt ?? "")
-
-                Please write a piece of code that meets my requirements. The indentation should be \(
-                    indentRule
-                ).
-
-                Please reply to me start with the code block, followed by a clear and concise description in 1-3 sentences about what you did \(
-                    textLanguage
-                ).
+                ```
+                \(code)
+                ```
                 """
-            } else {
+            default:
                 return """
-                # Description
-                
-                You are a senior programer in writing code in \(language.rawValue).
-                
-                File url: \(fileURL)
-                
-                \(extraSystemPrompt ?? "")
-
-                Please mutate the following code fragment with my requirements. Keep the original indentation. Do not add comments unless told to.
-
-                Please reply to me start with the code block followed by a clear and concise description about what you did in 1-3 sentences \(
-                    textLanguage
-                ).
-
-                # Code
-                
-                ```\(language.rawValue)
+                ```
                 \(code)
                 ```
                 """
             }
         }()
 
-        let chatGPTService = ChatGPTService(systemPrompt: prompt, temperature: 0.3)
+        let secondMessage: String = """
+        Requirements:###
+        \(requirement)
+        ###
+        """
+
+        let chatGPTService = ChatGPTService(systemPrompt: systemPrompt, temperature: 0.3)
         service = chatGPTService
-        let stream = try await chatGPTService.send(content: requirement)
+        if let firstMessage {
+            await chatGPTService.mutateHistory { history in
+                history.append(.init(role: .user, content: firstMessage))
+            }
+        }
+        let stream = try await chatGPTService.send(content: secondMessage)
         return .init { continuation in
             Task {
                 var content = ""

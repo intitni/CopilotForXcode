@@ -9,32 +9,47 @@ public final class ScheduledCleaner {
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
-                try await Task.sleep(nanoseconds: 4 * 60 * 60 * 1_000_000_000)
-                let availableTabs = findAvailableOpenedTabs()
-                for (url, workspace) in workspaces {
-                    if workspace.isExpired {
-                        Logger.service.info("Remove idle workspace")
-                        for url in workspace.filespaces.keys {
-                            WidgetDataSource.shared.cleanup(for: url)
-                        }
-                        workspace.cleanUp(availableTabs: availableTabs)
-                        workspaces[url] = nil
-                    } else {
-                        // cleanup chats for unused files
-                        let filespaces = workspace.filespaces
-                        for (url, _) in filespaces {
-                            if workspace.isFilespaceExpired(
-                                fileURL: url,
-                                availableTabs: availableTabs
-                            ) {
-                                Logger.service.info("Remove idle filespace")
-                                WidgetDataSource.shared.cleanup(for: url)
-                            }
-                        }
-                        // cleanup workspace
-                        workspace.cleanUp(availableTabs: availableTabs)
+                try await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
+                cleanUp()
+            }
+        }
+
+        // cleanup when Xcode becomes inactive
+        Task { @ServiceActor in
+            for await app in ActiveApplicationMonitor.createStream() {
+                try Task.checkCancellation()
+                if let app, !app.isXcode {
+                    cleanUp() 
+                }
+            }
+        }
+    }
+
+    @ServiceActor
+    func cleanUp() {
+        let availableTabs = findAvailableOpenedTabs()
+        for (url, workspace) in workspaces {
+            if workspace.isExpired {
+                Logger.service.info("Remove idle workspace")
+                for url in workspace.filespaces.keys {
+                    WidgetDataSource.shared.cleanup(for: url)
+                }
+                workspace.cleanUp(availableTabs: availableTabs)
+                workspaces[url] = nil
+            } else {
+                // cleanup chats for unused files
+                let filespaces = workspace.filespaces
+                for (url, _) in filespaces {
+                    if workspace.isFilespaceExpired(
+                        fileURL: url,
+                        availableTabs: availableTabs
+                    ) {
+                        Logger.service.info("Remove idle filespace")
+                        WidgetDataSource.shared.cleanup(for: url)
                     }
                 }
+                // cleanup workspace
+                workspace.cleanUp(availableTabs: availableTabs)
             }
         }
     }

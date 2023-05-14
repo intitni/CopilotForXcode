@@ -1,7 +1,13 @@
 #include "Version.xcconfig"
 SLASH = /
 
+HOST_APP_NAME = Copilot for Xcode
 BUNDLE_IDENTIFIER_BASE = com.intii.CopilotForXcode
-EXTENSION_BUNDLE_NAME = Copilot
 SPARKLE_FEED_URL = https:$(SLASH)$(SLASH)raw.githubusercontent.com/intitni/CopilotForXcode/main/appcast.xml
 SPARKLE_PUBLIC_KEY = WDzm5GHnc6c8kjeJEgX5GuGiPpW6Lc/ovGjLnrrZvPY=
+APPLICATION_SUPPORT_FOLDER = com.intii.CopilotForXcode
+EXTENSION_BUNDLE_NAME = Copilot
+EXTENSION_BUNDLE_DISPLAY_NAME = Copilot
+EXTENSION_SERVICE_NAME = CopilotForXcodeExtensionService
+
+// see also target Configs

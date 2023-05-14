@@ -1,0 +1,173 @@
+import SuggestionModel
+import Foundation
+import JSONRPC
+import LanguageServerProtocol
+
+struct GitHubCopilotDoc: Codable {
+    var source: String
+    var tabSize: Int
+    var indentSize: Int
+    var insertSpaces: Bool
+    var path: String
+    var uri: String
+    var relativePath: String
+    var languageId: CodeLanguage
+    var position: Position
+    /// Buffer version. Not sure what this is for, not sure how to get it
+    var version: Int = 0
+}
+
+protocol GitHubCopilotRequestType {
+    associatedtype Response: Codable
+    var request: ClientRequest { get }
+}
+
+enum GitHubCopilotRequest {
+    struct SetEditorInfo: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        var request: ClientRequest {
+            .custom("setEditorInfo", .hash([
+                "editorInfo": .hash([
+                    "name": "Xcode",
+                    "version": "",
+                ]),
+                "editorPluginInfo": .hash([
+                    "name": "Copilot for Xcode",
+                    "version": "",
+                ]),
+            ]))
+        }
+    }
+
+    struct GetVersion: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var version: String
+        }
+
+        var request: ClientRequest {
+            .custom("getVersion", .hash([:]))
+        }
+    }
+
+    struct CheckStatus: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var status: GitHubCopilotAccountStatus
+        }
+
+        var request: ClientRequest {
+            .custom("checkStatus", .hash([:]))
+        }
+    }
+
+    struct SignInInitiate: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var verificationUri: String
+            var status: String
+            var userCode: String
+            var expiresIn: Int
+            var interval: Int
+        }
+
+        var request: ClientRequest {
+            .custom("signInInitiate", .hash([:]))
+        }
+    }
+
+    struct SignInConfirm: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var status: GitHubCopilotAccountStatus
+            var user: String
+        }
+
+        var userCode: String
+
+        var request: ClientRequest {
+            .custom("signInConfirm", .hash([
+                "userCode": .string(userCode),
+            ]))
+        }
+    }
+
+    struct SignOut: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var status: GitHubCopilotAccountStatus
+        }
+
+        var request: ClientRequest {
+            .custom("signOut", .hash([:]))
+        }
+    }
+
+    struct GetCompletions: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var completions: [CodeSuggestion]
+        }
+
+        var doc: GitHubCopilotDoc
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(doc)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("getCompletions", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+
+    struct GetCompletionsCycling: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var completions: [CodeSuggestion]
+        }
+
+        var doc: GitHubCopilotDoc
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(doc)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("getCompletionsCycling", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+
+    struct GetPanelCompletions: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var completions: [CodeSuggestion]
+        }
+
+        var doc: GitHubCopilotDoc
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(doc)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("getPanelCompletions", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+
+    struct NotifyAccepted: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        var completionUUID: String
+
+        var request: ClientRequest {
+            .custom("notifyAccepted", .hash([
+                "uuid": .string(completionUUID),
+            ]))
+        }
+    }
+
+    struct NotifyRejected: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        var completionUUIDs: [String]
+
+        var request: ClientRequest {
+            .custom("notifyRejected", .hash([
+                "uuids": .array(completionUUIDs.map(JSONValue.string)),
+            ]))
+        }
+    }
+}

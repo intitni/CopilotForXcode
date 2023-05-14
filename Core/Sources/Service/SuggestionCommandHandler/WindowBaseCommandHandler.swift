@@ -1,6 +1,6 @@
 import ChatService
-import CopilotModel
-import CopilotService
+import SuggestionModel
+import GitHubCopilotService
 import Environment
 import Foundation
 import LanguageServerProtocol
@@ -147,7 +147,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
 
         let injector = SuggestionInjector()
         var lines = editor.lines
@@ -155,7 +155,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var extraInfo = SuggestionInjector.ExtraInfo()
 
         if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
-            let suggestion = CopilotCompletion(
+            let suggestion = CodeSuggestion(
                 text: service.code,
                 position: service.selectionRange.start,
                 uuid: UUID().uuidString,

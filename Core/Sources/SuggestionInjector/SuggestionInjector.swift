@@ -1,4 +1,4 @@
-import CopilotModel
+import SuggestionModel
 import Foundation
 
 let suggestionStart = "/*========== Copilot Suggestion"
@@ -61,7 +61,7 @@ public struct SuggestionInjector {
 
     public func proposeSuggestion(
         intoContentWithoutSuggestion content: inout [String],
-        completion: CopilotCompletion,
+        completion: CodeSuggestion,
         index: Int,
         count: Int,
         extraInfo: inout ExtraInfo
@@ -131,7 +131,7 @@ public struct SuggestionInjector {
     public func acceptSuggestion(
         intoContentWithoutSuggestion content: inout [String],
         cursorPosition: inout CursorPosition,
-        completion: CopilotCompletion,
+        completion: CodeSuggestion,
         extraInfo: inout ExtraInfo
     ) {
         extraInfo.didChangeContent = true
@@ -141,7 +141,7 @@ public struct SuggestionInjector {
         let end = completion.range.end
         let suggestionContent = completion.text
 
-        let existedLine = start.line < content.endIndex ? content[start.line] : nil
+        let _ = start.line < content.endIndex ? content[start.line] : nil
 
         let firstRemovedLine = content[safe: start.line]
         let lastRemovedLine = content[safe: end.line]

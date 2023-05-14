@@ -1,5 +1,7 @@
+import ActiveApplicationMonitor
 import Environment
 import Preferences
+import SuggestionModel
 import SwiftUI
 
 @MainActor
@@ -25,18 +27,30 @@ struct WidgetView: View {
         Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    let isDisplayed = {
-                        if panelViewModel.isPanelDisplayed && panelViewModel.content != nil { return true }
-                        if chatWindowViewModel.isPanelDisplayed && chatWindowViewModel.chat != nil { return true }
+                    let wasDisplayed = {
+                        if panelViewModel.isPanelDisplayed,
+                           panelViewModel.content != nil { return true }
+                        if chatWindowViewModel.isPanelDisplayed,
+                           chatWindowViewModel.chat != nil { return true }
                         return false
                     }()
-                    panelViewModel.isPanelDisplayed = !isDisplayed
-                    chatWindowViewModel.isPanelDisplayed = !isDisplayed
+                    panelViewModel.isPanelDisplayed = !wasDisplayed
+                    chatWindowViewModel.isPanelDisplayed = !wasDisplayed
+                    let isDisplayed = !wasDisplayed
+
+                    if !isDisplayed {
+                        if let app = ActiveApplicationMonitor.previousActiveApplication,
+                           app.isXcode
+                        {
+                            app.activate()
+                        }
+                    }
                 }
             }
             .overlay {
-                let minimumLineWidth: Double = 4
-                let lineWidth = (1 - processingProgress) * 28 + minimumLineWidth
+                let minimumLineWidth: Double = 3
+                let lineWidth = (1 - processingProgress) *
+                    (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
                 let scale = max(processingProgress * 1, 0.0001)
                 let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
 
@@ -46,7 +60,7 @@ struct WidgetView: View {
                             Color(nsColor: .darkGray),
                             style: .init(lineWidth: minimumLineWidth)
                         )
-                        .padding(2)
+                        .padding(minimumLineWidth / 2)
 
                     // how do I stop the repeatForever animation without removing the view?
                     // I tried many solutions found on stackoverflow but non of them works.
@@ -56,7 +70,7 @@ struct WidgetView: View {
                                 Color.accentColor,
                                 style: .init(lineWidth: lineWidth)
                             )
-                            .padding(2)
+                            .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(
@@ -69,7 +83,7 @@ struct WidgetView: View {
                                 Color.accentColor,
                                 style: .init(lineWidth: lineWidth)
                             )
-                            .padding(2)
+                            .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(.easeInOut(duration: 1), value: processingProgress)
@@ -113,13 +127,14 @@ struct WidgetContextMenu: View {
     @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
     @AppStorage(\.acceptSuggestionWithAccessibilityAPI) var acceptSuggestionWithAccessibilityAPI
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
-    @AppStorage(\.forceOrderWidgetToFront) var forceOrderWidgetToFront
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
+    @AppStorage(\.suggestionFeatureDisabledLanguageList) var suggestionFeatureDisabledLanguageList
     @AppStorage(\.customCommands) var customCommands
     @ObservedObject var chatWindowViewModel: ChatWindowViewModel
     @ObservedObject var widgetViewModel: WidgetViewModel
     @State var projectPath: String?
+    @State var fileURL: URL?
     var isChatOpen: Bool
     var onOpenChatClicked: () -> Void = {}
     var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
@@ -140,6 +155,14 @@ struct WidgetContextMenu: View {
 
             Divider()
 
+            Group {
+                enableSuggestionForProject
+
+                disableSuggestionForLanguage
+            }
+
+            Divider()
+
             Group { // Settings
                 Button(action: {
                     chatWindowViewModel.chatPanelInASeparateWindow.toggle()
@@ -153,7 +176,7 @@ struct WidgetContextMenu: View {
                 Button(action: {
                     useGlobalChat.toggle()
                 }) {
-                    Text("Use Global Chat")
+                    Text("Use Shared Conversation")
                     if useGlobalChat {
                         Image(systemName: "checkmark")
                     }
@@ -185,35 +208,6 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 })
-
-                Button(action: {
-                    forceOrderWidgetToFront.toggle()
-                }, label: {
-                    Text("Force Order Widget to Front")
-                    if forceOrderWidgetToFront {
-                        Image(systemName: "checkmark")
-                    }
-                })
-
-                if let projectPath, disableSuggestionFeatureGlobally {
-                    let matchedPath = suggestionFeatureEnabledProjectList.first { path in
-                        projectPath.hasPrefix(path)
-                    }
-                    Button(action: {
-                        if matchedPath != nil {
-                            suggestionFeatureEnabledProjectList
-                                .removeAll { path in path == matchedPath }
-                        } else {
-                            suggestionFeatureEnabledProjectList.append(projectPath)
-                        }
-                    }) {
-                        if matchedPath == nil {
-                            Text("Add to Suggestion-Enabled Project List")
-                        } else {
-                            Text("Remove from Suggestion-Enabled Project List")
-                        }
-                    }
-                }
             }
 
             Divider()
@@ -237,6 +231,7 @@ struct WidgetContextMenu: View {
             let projectURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
             if let projectURL {
                 Task { @MainActor in
+                    self.fileURL = fileURL
                     self.projectPath = projectURL.path
                 }
             }
@@ -250,6 +245,54 @@ struct WidgetContextMenu: View {
                     onCustomCommandClicked(command)
                 }) {
                     Text(command.name)
+                }
+            }
+        }
+    }
+}
+
+extension WidgetContextMenu {
+    @ViewBuilder
+    var enableSuggestionForProject: some View {
+        if let projectPath, disableSuggestionFeatureGlobally {
+            let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                projectPath.hasPrefix(path)
+            }
+            Button(action: {
+                if matchedPath != nil {
+                    suggestionFeatureEnabledProjectList
+                        .removeAll { path in path == matchedPath }
+                } else {
+                    suggestionFeatureEnabledProjectList.append(projectPath)
+                }
+            }) {
+                if matchedPath == nil {
+                    Text("Add to Suggestion-Enabled Project List")
+                } else {
+                    Text("Remove from Suggestion-Enabled Project List")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var disableSuggestionForLanguage: some View {
+        if let fileURL {
+            let fileLanguage = languageIdentifierFromFileURL(fileURL)
+            let matched = suggestionFeatureDisabledLanguageList.first { rawValue in
+                fileLanguage.rawValue == rawValue
+            }
+            Button(action: {
+                if let matched {
+                    suggestionFeatureDisabledLanguageList.removeAll { $0 == matched }
+                } else {
+                    suggestionFeatureDisabledLanguageList.append(fileLanguage.rawValue)
+                }
+            }) {
+                if matched == nil {
+                    Text("Disable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
+                } else {
+                    Text("Enable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
                 }
             }
         }
@@ -298,3 +341,4 @@ struct WidgetView_Preview: PreviewProvider {
         .background(Color.black)
     }
 }
+

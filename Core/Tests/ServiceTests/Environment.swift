@@ -1,7 +1,7 @@
 import AppKit
 import Client
-import CopilotModel
-import CopilotService
+import SuggestionModel
+import GitHubCopilotService
 import Environment
 import Foundation
 import XCTest
@@ -22,47 +22,59 @@ import XPCShared
         URL(fileURLWithPath: "/path/to/project/file.swift")
     }
 
-    Environment.createAuthService = {
-        fatalError("")
-    }
-
     Environment.createSuggestionService = {
-        _ in fatalError("")
+        _, _ in fatalError("")
     }
 
     Environment.triggerAction = { _ in }
 }
 
-func completion(text: String, range: CursorRange, uuid: String = "") -> CopilotCompletion {
+func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSuggestion {
     .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
 }
 
-class MockSuggestionService: CopilotSuggestionServiceType {
-    var completions = [CopilotCompletion]()
+class MockSuggestionService: GitHubCopilotSuggestionServiceType {
+    func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
+        fatalError()
+    }
+    
+    func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+        fatalError()
+    }
+    
+    func notifyCloseTextDocument(fileURL: URL) async throws {
+        fatalError()
+    }
+    
+    func notifySaveTextDocument(fileURL: URL) async throws {
+        fatalError()
+    }
+    
+    var completions = [CodeSuggestion]()
     var accepted: String?
     var rejected: [String] = []
 
-    init(completions: [CopilotCompletion]) {
+    init(completions: [CodeSuggestion]) {
         self.completions = completions
     }
 
     func getCompletions(
         fileURL: URL,
         content: String,
-        cursorPosition: CopilotModel.CursorPosition,
+        cursorPosition: SuggestionModel.CursorPosition,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CopilotModel.CopilotCompletion] {
+    ) async throws -> [SuggestionModel.CodeSuggestion] {
         completions
     }
 
-    func notifyAccepted(_ completion: CopilotCompletion) async {
+    func notifyAccepted(_ completion: CodeSuggestion) async {
         accepted = completion.uuid
     }
 
-    func notifyRejected(_ completions: [CopilotCompletion]) async {
+    func notifyRejected(_ completions: [CodeSuggestion]) async {
         rejected = completions.map(\.uuid)
     }
 }

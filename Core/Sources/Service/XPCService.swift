@@ -1,7 +1,7 @@
 import AppKit
-import CopilotService
 import Environment
 import Foundation
+import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import Preferences
@@ -29,67 +29,8 @@ public class XPCService: NSObject, XPCServiceProtocol {
         )
     }
 
-    // MARK: - Copilot Auth
-
-    @ServiceActor
-    lazy var authService: CopilotAuthServiceType = Environment.createAuthService()
-
-    public func checkStatus(withReply reply: @escaping (String?, Error?) -> Void) {
-        Task { @ServiceActor in
-            do {
-                let status = try await authService.checkStatus()
-                reply(status.rawValue, nil)
-            } catch {
-                reply(nil, NSError.from(error))
-            }
-        }
-    }
-
-    public func signInInitiate(withReply reply: @escaping (String?, String?, Error?) -> Void) {
-        Task { @ServiceActor in
-            do {
-                let (verificationLink, userCode) = try await authService.signInInitiate()
-                reply(verificationLink, userCode, nil)
-            } catch {
-                reply(nil, nil, NSError.from(error))
-            }
-        }
-    }
-
-    public func signInConfirm(
-        userCode: String,
-        withReply reply: @escaping (String?, String?, Error?) -> Void
-    ) {
-        Task { @ServiceActor in
-            do {
-                let (username, status) = try await authService.signInConfirm(userCode: userCode)
-                reply(username, status.rawValue, nil)
-            } catch {
-                reply(nil, nil, NSError.from(error))
-            }
-        }
-    }
-
-    public func getVersion(withReply reply: @escaping (String?, Error?) -> Void) {
-        Task { @ServiceActor in
-            do {
-                let version = try await authService.version()
-                reply(version, nil)
-            } catch {
-                reply(nil, NSError.from(error))
-            }
-        }
-    }
-
-    public func signOut(withReply reply: @escaping (String?, Error?) -> Void) {
-        Task { @ServiceActor in
-            do {
-                let status = try await authService.signOut()
-                reply(status.rawValue, nil)
-            } catch {
-                reply(nil, NSError.from(error))
-            }
-        }
+    public func getXPCServiceAccessibilityPermission(withReply reply: @escaping (Bool) -> Void) {
+        reply(AXIsProcessTrusted())
     }
 
     // MARK: - Suggestion
@@ -260,3 +201,4 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 }
+

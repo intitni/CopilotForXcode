@@ -1,11 +1,13 @@
 import ChatService
-import CopilotModel
-import CopilotService
 import Environment
 import Foundation
+import GitHubCopilotService
 import Logger
 import Preferences
 import SuggestionInjector
+import SuggestionModel
+import SuggestionService
+import UserDefaultsObserver
 import XPCShared
 
 @ServiceActor
@@ -17,7 +19,7 @@ final class Filespace {
 
     let fileURL: URL
     private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
-    var suggestions: [CopilotCompletion] = [] {
+    var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }
     }
 
@@ -30,14 +32,14 @@ final class Filespace {
 
     var suggestionIndex: Int = 0
     var suggestionSourceSnapshot: Snapshot = .init(linesHash: -1, cursorPosition: .outOfScope)
-    var presentingSuggestion: CopilotCompletion? {
+    var presentingSuggestion: CodeSuggestion? {
         guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
         return suggestions[suggestionIndex]
     }
 
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
     var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
+        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 3
     }
 
     let fileSaveWatcher: FileSaveWatcher
@@ -91,9 +93,19 @@ final class Workspace {
         ], context: nil
     )
 
-    private var _copilotSuggestionService: CopilotSuggestionServiceType?
+    private var _suggestionService: SuggestionServiceType? {
+        didSet {
+            guard _suggestionService != nil else { return }
+            Task {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                for (_, filespace) in filespaces {
+                    notifyOpenFile(filespace: filespace)
+                }
+            }
+        }
+    }
 
-    private var copilotSuggestionService: CopilotSuggestionServiceType? {
+    private var suggestionService: SuggestionServiceType? {
         // Check if the workspace is disabled.
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
@@ -101,15 +113,21 @@ final class Workspace {
             let enabledList = UserDefaults.shared.value(for: \.suggestionFeatureEnabledProjectList)
             if !enabledList.contains(where: { path in projectRootURL.path.hasPrefix(path) }) {
                 // If it's disable, remove the service
-                _copilotSuggestionService = nil
+                _suggestionService = nil
                 return nil
             }
         }
 
-        if _copilotSuggestionService == nil {
-            _copilotSuggestionService = Environment.createSuggestionService(projectRootURL)
+        if _suggestionService == nil {
+            _suggestionService = Environment.createSuggestionService(projectRootURL) {
+                [weak self] _ in
+                guard let self else { return }
+                for (_, filespace) in filespaces {
+                    notifyOpenFile(filespace: filespace)
+                }
+            }
         }
-        return _copilotSuggestionService
+        return _suggestionService
     }
 
     var isSuggestionFeatureEnabled: Bool {
@@ -129,10 +147,10 @@ final class Workspace {
 
         userDefaultsObserver.onChange = { [weak self] in
             guard let self else { return }
-            _ = self.copilotSuggestionService
+            _ = self.suggestionService
         }
     }
-    
+
     func refreshUpdateTime() {
         lastSuggestionUpdateTime = Environment.now()
     }
@@ -161,7 +179,20 @@ final class Workspace {
 
         let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
         let workspaceURL = projectURL ?? fileURL
-        let workspace = workspaces[workspaceURL] ?? Workspace(projectRootURL: workspaceURL)
+
+        let workspace = {
+            if let existed = workspaces[workspaceURL] {
+                return existed
+            }
+            // Reuse existed workspace if possible
+            for (_, workspace) in workspaces {
+                if fileURL.path.hasPrefix(workspace.projectRootURL.path) {
+                    return workspace
+                }
+            }
+            return Workspace(projectRootURL: workspaceURL)
+        }()
+
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
         workspaces[workspaceURL] = workspace
         workspace.refreshUpdateTime()
@@ -193,7 +224,7 @@ extension Workspace {
         forFileAt fileURL: URL,
         editor: EditorContent,
         shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
-    ) async throws -> [CopilotCompletion] {
+    ) async throws -> [CodeSuggestion] {
         if shouldcancelInFlightRealtimeSuggestionRequests {
             cancelInFlightRealtimeSuggestionRequests()
         }
@@ -219,8 +250,8 @@ extension Workspace {
 
         filespace.suggestionSourceSnapshot = snapshot
 
-        guard let copilotSuggestionService else { throw SuggestionFeatureDisabledError() }
-        let completions = try await copilotSuggestionService.getCompletions(
+        guard let suggestionService else { throw SuggestionFeatureDisabledError() }
+        let completions = try await suggestionService.getSuggestions(
             fileURL: fileURL,
             content: editor.lines.joined(separator: ""),
             cursorPosition: editor.cursorPosition,
@@ -271,12 +302,12 @@ extension Workspace {
             filespaces[fileURL]?.usesTabsForIndentation = editor.usesTabsForIndentation
         }
         Task {
-            await copilotSuggestionService?.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
+            await suggestionService?.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }
         filespaces[fileURL]?.reset(resetSnapshot: false)
     }
 
-    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CopilotCompletion? {
+    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CodeSuggestion? {
         cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
@@ -296,8 +327,8 @@ extension Workspace {
         let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
 
         Task {
-            await copilotSuggestionService?.notifyAccepted(suggestion)
-            await copilotSuggestionService?.notifyRejected(allSuggestions)
+            await suggestionService?.notifyAccepted(suggestion)
+            await suggestionService?.notifyRejected(allSuggestions)
         }
 
         filespaces[fileURL]?.reset()
@@ -308,7 +339,7 @@ extension Workspace {
     func notifyOpenFile(filespace: Filespace) {
         refreshUpdateTime()
         Task {
-            try await copilotSuggestionService?.notifyOpenTextDocument(
+            try await suggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
                 content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
             )
@@ -319,7 +350,7 @@ extension Workspace {
         filespace.refreshUpdateTime()
         refreshUpdateTime()
         Task {
-            try await copilotSuggestionService?.notifyChangeTextDocument(
+            try await suggestionService?.notifyChangeTextDocument(
                 fileURL: filespace.fileURL,
                 content: content
             )
@@ -330,7 +361,7 @@ extension Workspace {
         filespace.refreshUpdateTime()
         refreshUpdateTime()
         Task {
-            try await copilotSuggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
+            try await suggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
     }
 }
@@ -340,7 +371,7 @@ extension Workspace {
         for (fileURL, _) in filespaces {
             if isFilespaceExpired(fileURL: fileURL, availableTabs: availableTabs) {
                 Task {
-                    try await copilotSuggestionService?.notifyCloseTextDocument(fileURL: fileURL)
+                    try await suggestionService?.notifyCloseTextDocument(fileURL: fileURL)
                 }
                 filespaces[fileURL] = nil
             }

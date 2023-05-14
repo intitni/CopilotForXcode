@@ -1,9 +1,10 @@
+import ActiveApplicationMonitor
 import ChatService
-import CopilotModel
-import CopilotService
 import Foundation
+import GitHubCopilotService
 import OpenAIService
 import PromptToCodeService
+import SuggestionModel
 import SuggestionWidget
 
 @ServiceActor
@@ -52,6 +53,9 @@ final class WidgetDataSource {
                     }
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closeChatRoom(fileURL: url)
+                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                        app.activate()
+                    }
                 },
                 onSwitchContext: { [weak self] in
                     let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
@@ -89,7 +93,7 @@ final class WidgetDataSource {
         selectedCode: String,
         allCode: String,
         selectionRange: CursorRange,
-        language: CopilotLanguage,
+        language: CodeLanguage,
         identSize: Int = 4,
         usesTabsForIndentation: Bool = false,
         extraSystemPrompt: String?,
@@ -114,6 +118,9 @@ final class WidgetDataSource {
                     self?.removePromptToCode(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
+                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                        app.activate()
+                    }
                 }
             )
             return PromptToCode(promptToCodeService: service, provider: provider)
@@ -166,12 +173,22 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task { @ServiceActor in
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
+                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                               app.isXcode
+                            {
+                                app.activate()
+                            }
                         }
                     },
                     onAcceptSuggestionTapped: {
                         Task { @ServiceActor in
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
+                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                               app.isXcode
+                            {
+                                app.activate()
+                            }
                         }
                     }
                 )
@@ -199,3 +216,4 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
         return promptToCodes[url]?.provider
     }
 }
+

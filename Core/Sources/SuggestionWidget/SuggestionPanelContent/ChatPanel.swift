@@ -250,80 +250,95 @@ struct ChatPanelInputArea: View {
 
     var body: some View {
         HStack {
-            // clear button
-            Button(action: {
-                chat.clear()
-            }) {
-                Group {
-                    if #available(macOS 13.0, *) {
-                        Image(systemName: "eraser.line.dashed.fill")
-                    } else {
-                        Image(systemName: "trash.fill")
-                    }
-                }
-                .padding(6)
-                .background {
-                    Circle().fill(Color(nsColor: .controlBackgroundColor))
-                }
-                .overlay {
-                    Circle()
-                        .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-                }
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 0) {
-                Group {
-                    if #available(macOS 13.0, *) {
-                        TextField("Type a message", text: $typedMessage, axis: .vertical)
-                    } else {
-                        TextEditor(text: $typedMessage)
-                            .frame(height: 42, alignment: .leading)
-                            .font(.body)
-                            .background(Color.clear)
-                    }
-                }
-                .focused($isInputAreaFocused)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-                .textFieldStyle(.plain)
-                .padding(8)
-
-                Button(action: {
-                    if typedMessage.isEmpty { return }
-                    chat.send(typedMessage)
-                    typedMessage = ""
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .padding(8)
-                }
-                .buttonStyle(.plain)
-                .disabled(chat.isReceivingMessage)
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
-            }
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-            }
-            .background {
-                Button(action: {
-                    typedMessage += "\n"
-                }) {
-                    EmptyView()
-                }
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
-            }
+            clearButton
+            textEditor
         }
         .onAppear {
             isInputAreaFocused = true
         }
         .padding(8)
         .background(.ultraThickMaterial)
+    }
+
+    var clearButton: some View {
+        Button(action: {
+            chat.clear()
+        }) {
+            Group {
+                if #available(macOS 13.0, *) {
+                    Image(systemName: "eraser.line.dashed.fill")
+                } else {
+                    Image(systemName: "trash.fill")
+                }
+            }
+            .padding(6)
+            .background {
+                Circle().fill(Color(nsColor: .controlBackgroundColor))
+            }
+            .overlay {
+                Circle()
+                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    var textEditor: some View {
+        HStack(spacing: 0) {
+            ZStack(alignment: .center) {
+                // a hack to support dynamic height of TextEditor
+                Text(typedMessage.isEmpty ? "Hi" : typedMessage).opacity(0)
+                    .font(.system(size: 14))
+                    .frame(maxWidth: .infinity, maxHeight: 400)
+                    .padding(.top, 1)
+                    .padding(.bottom, 2)
+                    .padding(.horizontal, 4)
+
+                CustomTextEditor(
+                    text: $typedMessage,
+                    font: .systemFont(ofSize: 14),
+                    onSubmit: { submitText() }
+                )
+                .padding(.top, 1)
+                .padding(.bottom, -1)
+            }
+            .focused($isInputAreaFocused)
+            .padding(8)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: {
+                submitText()
+            }) {
+                Image(systemName: "paperplane.fill")
+                    .padding(8)
+            }
+            .buttonStyle(.plain)
+            .disabled(chat.isReceivingMessage)
+            .keyboardShortcut(KeyEquivalent.return, modifiers: [])
+        }
+        .frame(maxWidth: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+        }
+        .background {
+            Button(action: {
+                typedMessage += "\n"
+            }) {
+                EmptyView()
+            }
+            .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
+        }
+    }
+
+    func submitText() {
+        if typedMessage.isEmpty { return }
+        chat.send(typedMessage)
+        typedMessage = ""
     }
 }
 
@@ -386,6 +401,9 @@ struct RoundedCorners: Shape {
 struct GlobalChatSwitchToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
+            Text(configuration.isOn ? "Shared Conversation" : "Local Conversation")
+                .foregroundStyle(.tertiary)
+            
             RoundedRectangle(cornerRadius: 10, style: .circular)
                 .foregroundColor(configuration.isOn ? Color.indigo : .gray.opacity(0.5))
                 .frame(width: 30, height: 20, alignment: .center)
@@ -411,9 +429,6 @@ struct GlobalChatSwitchToggleStyle: ToggleStyle {
                     RoundedRectangle(cornerRadius: 10, style: .circular)
                         .stroke(.black.opacity(0.2), lineWidth: 1)
                 }
-
-            Text(configuration.isOn ? "Global Chat" : "File Chat")
-                .foregroundStyle(.tertiary)
         }
     }
 }
