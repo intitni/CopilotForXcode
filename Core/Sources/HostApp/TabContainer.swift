@@ -90,7 +90,7 @@ struct TabBar: View {
                     TabBarButton(
                         currentTab: $tab,
                         title: "Feature",
-                        image: "star.square.on.square",
+                        image: "star.square",
                         tab: tab
                     )
                 case .customCommand:

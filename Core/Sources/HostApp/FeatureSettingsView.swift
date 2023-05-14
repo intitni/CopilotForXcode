@@ -13,7 +13,7 @@ struct FeatureSettingsView: View {
                 tag: 0,
                 title: "Suggestion",
                 subtitle: "Generate suggestions for your code",
-                image: "lightbulb.circle.fill"
+                image: "lightbulb"
             )
 
             ScrollView {
@@ -24,7 +24,7 @@ struct FeatureSettingsView: View {
                 tag: 1,
                 title: "Chat",
                 subtitle: "Chat about your code",
-                image: "bubble.right.circle.fill"
+                image: "character.bubble"
             )
 
             ScrollView {
@@ -35,7 +35,7 @@ struct FeatureSettingsView: View {
                 tag: 2,
                 title: "Prompt to Code",
                 subtitle: "Write code with natural language",
-                image: "square.and.pencil.circle.fill"
+                image: "paintbrush"
             )
         }
     }
