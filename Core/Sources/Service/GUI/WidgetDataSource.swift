@@ -41,7 +41,14 @@ final class WidgetDataSource {
     @discardableResult
     func createChatIfNeeded(for url: URL) -> ChatService {
         let build = {
-            let service = ChatService(chatGPTService: ChatGPTService())
+            let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+            let systemPrompt = """
+            \(language.isEmpty ? "" : "You must always reply in \(language)")
+            You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
+            
+            You don't have any code in advance, ask me to provide it when needed.
+            """
+            let service = ChatService(chatGPTService: ChatGPTService(systemPrompt: systemPrompt))
             let provider = ChatProvider(
                 service: service,
                 fileURL: url,
