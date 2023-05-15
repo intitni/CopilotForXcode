@@ -116,13 +116,20 @@ public enum Environment {
 
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         let focusedElement = application.focusedElement
-        if focusedElement?.description != "Source Editor" {
+        var windowElement: URL {
             let window = application.focusedWindow
             let id = window?.identifier.hashValue
             return URL(fileURLWithPath: "/xcode-focused-element/\(id ?? 0)")
         }
+        if focusedElement?.description != "Source Editor" {
+            return windowElement
+        }
 
-        return try await fetchCurrentFileURL()
+        do {
+            return try await fetchCurrentFileURL()
+        } catch {
+            return windowElement
+        }
     }
 
     public static var createSuggestionService: (
