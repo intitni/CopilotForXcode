@@ -1,4 +1,5 @@
 import Foundation
+import LaunchAgentManager
 import SwiftUI
 import UpdateChecker
 
@@ -76,7 +77,7 @@ public struct TabContainer: View {
                     try await LaunchAgentManager()
                         .setupLaunchAgentForTheFirstTimeIfNeeded()
                 } catch {
-                    toastController.toast(content: error.localizedDescription, type: .error)
+                    toastController.toast(content: Text(error.localizedDescription), type: .error)
                 }
             }
             #endif
