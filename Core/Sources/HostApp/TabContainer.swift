@@ -67,6 +67,20 @@ public struct TabContainer: View {
         .environment(\.toast) { [toastController] content, type in
             toastController.toast(content: content, type: type)
         }
+        .onAppear {
+            #if DEBUG
+            // do not auto install on debug build
+            #else
+            Task {
+                do {
+                    try await LaunchAgentManager()
+                        .setupLaunchAgentForTheFirstTimeIfNeeded()
+                } catch {
+                    toastController.toast(content: error.localizedDescription, type: .error)
+                }
+            }
+            #endif
+        }
     }
 }
 
