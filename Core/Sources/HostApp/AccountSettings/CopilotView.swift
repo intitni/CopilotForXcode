@@ -16,10 +16,69 @@ struct CopilotView: View {
 
         init() {}
     }
+    
+    class ViewModel: ObservableObject {
+        let installationManager = GitHubCopilotInstallationManager()
+        
+        @Published var installationStatus: GitHubCopilotInstallationManager.InstallationStatus
+        @Published var installationStep: GitHubCopilotInstallationManager.InstallationStep?
+        
+        init() {
+            installationStatus = installationManager.checkInstallation()
+        }
+        
+        init(
+            installationStatus: GitHubCopilotInstallationManager.InstallationStatus,
+            installationStep: GitHubCopilotInstallationManager.InstallationStep?
+        ) {
+            assert(isPreview)
+            self.installationStatus = installationStatus
+            self.installationStep = installationStep
+        }
+        
+        func refreshInstallationStatus() {
+            Task { @MainActor in
+                installationStatus = installationManager.checkInstallation()
+            }
+        }
+        
+        func install() async throws {
+            defer { refreshInstallationStatus() }
+            do {
+                for try await step in installationManager.installLatestVersion() {
+                    Task { @MainActor in
+                        self.installationStep = step
+                    }
+                }
+                Task {
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                    Task { @MainActor in
+                        self.installationStep = nil
+                    }
+                }
+            } catch {
+                Task { @MainActor in
+                    installationStep = nil
+                }
+                throw error
+            }
+        }
+
+        func uninstall() {
+            Task {
+                defer { refreshInstallationStatus() }
+                try await installationManager.uninstall()
+                Task { @MainActor in
+                    CopilotView.copilotAuthService = nil
+                }
+            }
+        }
+    }
 
     @Environment(\.openURL) var openURL
     @Environment(\.toast) var toast
     @StateObject var settings = Settings()
+    @StateObject var viewModel = ViewModel()
 
     @State var status: GitHubCopilotAccountStatus?
     @State var userCode: String?
@@ -32,6 +91,30 @@ struct CopilotView: View {
         let service = try GitHubCopilotAuthService()
         Self.copilotAuthService = service
         return service
+    }
+    
+    var installButton: some View {
+        Button(action: {
+            Task {
+                do {
+                    try await viewModel.install()
+                } catch {
+                    toast(Text(error.localizedDescription), .error)
+                }
+            }
+        }) {
+            Text("Install")
+        }
+        .disabled(viewModel.installationStep != nil)
+    }
+
+    var uninstallButton: some View {
+        Button(action: {
+            viewModel.uninstall()
+        }) {
+            Text("Uninstall")
+        }
+        .disabled(viewModel.installationStep != nil)
     }
 
     var body: some View {
@@ -66,7 +149,15 @@ struct CopilotView: View {
                 .foregroundColor(.secondary)
 
                 VStack(alignment: .leading) {
-                    Text("Language Server Version: \(version ?? "Loading..")")
+                    HStack {
+                        Text("Language Server Version: \(version ?? "Loading..")")
+                        switch viewModel.installationStatus {
+                        case .notInstalled:
+                            installButton
+                        case .installed:
+                            uninstallButton
+                        }
+                    }
                     Text("Status: \(status?.description ?? "Loading..")")
 
                     HStack(alignment: .center) {

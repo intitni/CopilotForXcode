@@ -58,7 +58,6 @@ public struct GitHubCopilotInstallationManager {
                     continuation.yield(.downloading)
                     let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
                     let executable = Bundle.main.bundleURL.appendingPathComponent("Contents/Applications/CopilotForXcodeExtensionService.app/Contents/Resources/copilot")
-                    print(executable)
                     guard FileManager.default.fileExists(atPath: executable.path) else {
                         throw Error.failedToFindLanguageServer
                     }
