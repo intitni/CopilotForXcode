@@ -133,6 +133,8 @@ brew upgrade --cask copilot-for-xcode
 
 Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).  
 
+After updating, please restart Xcode to allow the extension to reload.
+
 If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
 
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
