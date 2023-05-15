@@ -1,8 +1,9 @@
 import Client
+import HostApp
+import LaunchAgentManager
 import SwiftUI
 import UpdateChecker
 import XPCShared
-import HostApp
 
 @main
 struct CopilotForXcodeApp: App {
@@ -14,8 +15,23 @@ struct CopilotForXcodeApp: App {
                     UserDefaults.setupDefaultSettings()
                 }
                 .environment(\.updateChecker, UpdateChecker(hostBundle: Bundle.main))
+                .onAppear {
+                    #if DEBUG
+                    // do not auto install on debug build
+                    #else
+                    Task {
+                        do {
+                            try await LaunchAgentManager()
+                                .setupLaunchAgentForTheFirstTimeIfNeeded()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                    #endif
+                }
         }
     }
 }
 
 var isPreview: Bool { ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" }
+

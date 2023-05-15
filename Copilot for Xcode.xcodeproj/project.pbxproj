@@ -39,6 +39,7 @@
 		C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; };
 		C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
+		C89A37162A12728200BE3C16 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89A37152A12728200BE3C16 /* LaunchAgentManager.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
 /* End PBXBuildFile section */
@@ -176,6 +177,7 @@
 		C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousSuggestionCommand.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
+		C89A37152A12728200BE3C16 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -286,6 +288,7 @@
 			children = (
 				C87B03A3293B24AB00C77EAE /* Copilot-for-Xcode-Info.plist */,
 				C8189B192938972F00C9DCDA /* App.swift */,
+				C89A37152A12728200BE3C16 /* LaunchAgentManager.swift */,
 				C8189B1D2938973000C9DCDA /* Assets.xcassets */,
 				C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */,
 				C8189B1F2938973000C9DCDA /* Preview Content */,
@@ -516,6 +519,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C89A37162A12728200BE3C16 /* LaunchAgentManager.swift in Sources */,
 				C8189B1A2938972F00C9DCDA /* App.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
