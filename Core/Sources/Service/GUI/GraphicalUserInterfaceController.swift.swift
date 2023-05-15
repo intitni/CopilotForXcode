@@ -10,19 +10,12 @@ public final class GraphicalUserInterfaceController {
     private nonisolated init() {
         Task { @MainActor in
             suggestionWidget.dataSource = WidgetDataSource.shared
-            suggestionWidget.onOpenChatClicked = {
+            suggestionWidget.onOpenChatClicked = { [weak self] in
                 Task {
-                    let commandHandler = WindowBaseCommandHandler()
-                    _ = try await commandHandler.chatWithSelection(editor: .init(
-                        content: "",
-                        lines: [],
-                        uti: "",
-                        cursorPosition: .outOfScope,
-                        selections: [],
-                        tabSize: 0,
-                        indentSize: 0,
-                        usesTabsForIndentation: false
-                    ))
+                    let uri = try await Environment.fetchFocusedElementURI()
+                    let dataSource = WidgetDataSource.shared
+                    await dataSource.createChatIfNeeded(for: uri)
+                    self?.suggestionWidget.presentChatRoom(fileURL: uri)
                 }
             }
             suggestionWidget.onCustomCommandClicked = { command in

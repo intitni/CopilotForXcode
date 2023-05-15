@@ -555,14 +555,17 @@ extension SuggestionWidgetController {
         }
 
         if let app = ActiveApplicationMonitor.activeApplication, app.isXcode {
-            panelWindow.alphaValue = 1
-            widgetWindow.alphaValue = 1
-            tabWindow.alphaValue = 1
+            let application = AXUIElementCreateApplication(app.processIdentifier)
+            /// We need this to hide the windows when Xcode is minimized.
+            let noFocus = application.focusedWindow == nil
+            panelWindow.alphaValue = noFocus ? 0 : 1
+            widgetWindow.alphaValue = noFocus ? 0 : 1
+            tabWindow.alphaValue = noFocus ? 0 : 1
 
             if detachChat {
                 chatWindow.alphaValue = chatWindowViewModel.chat != nil ? 1 : 0
             } else {
-                chatWindow.alphaValue = 1
+                chatWindow.alphaValue = noFocus ? 0 : 1
             }
         } else if let app = ActiveApplicationMonitor.activeApplication,
                   app.bundleIdentifier == Bundle.main.bundleIdentifier
