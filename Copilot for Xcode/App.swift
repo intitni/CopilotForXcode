@@ -1,8 +1,9 @@
 import Client
+import HostApp
+import LaunchAgentManager
 import SwiftUI
 import UpdateChecker
 import XPCShared
-import HostApp
 
 @main
 struct CopilotForXcodeApp: App {
@@ -19,3 +20,4 @@ struct CopilotForXcodeApp: App {
 }
 
 var isPreview: Bool { ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" }
+

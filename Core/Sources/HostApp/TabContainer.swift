@@ -1,4 +1,5 @@
 import Foundation
+import LaunchAgentManager
 import SwiftUI
 import UpdateChecker
 
@@ -66,6 +67,20 @@ public struct TabContainer: View {
         .padding(.top, 8)
         .environment(\.toast) { [toastController] content, type in
             toastController.toast(content: content, type: type)
+        }
+        .onAppear {
+            #if DEBUG
+            // do not auto install on debug build
+            #else
+            Task {
+                do {
+                    try await LaunchAgentManager()
+                        .setupLaunchAgentForTheFirstTimeIfNeeded()
+                } catch {
+                    toastController.toast(content: Text(error.localizedDescription), type: .error)
+                }
+            }
+            #endif
         }
     }
 }
