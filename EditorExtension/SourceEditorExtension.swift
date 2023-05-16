@@ -11,7 +11,6 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RejectSuggestionCommand(),
             NextSuggestionCommand(),
             PreviousSuggestionCommand(),
-            ToggleRealtimeSuggestionsCommand(),
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
             ChatWithSelectionCommand(),

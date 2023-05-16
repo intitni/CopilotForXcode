@@ -1,6 +1,6 @@
 import Client
-import SuggestionModel
 import Foundation
+import SuggestionModel
 import XcodeKit
 
 class RejectSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
@@ -10,20 +10,32 @@ class RejectSuggestionCommand: NSObject, XCSourceEditorCommand, CommandType {
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
     ) {
-        Task {
-            do {
-                let service = try getService()
-                if let content = try await service.getSuggestionRejectedCode(
-                    editorContent: .init(invocation)
-                ) {
-                    invocation.accept(content)
+        switch UserDefaults.shared.value(for: \.suggestionPresentationMode) {
+        case .comment:
+            Task {
+                do {
+                    try await (Task(timeout: 7) {
+                        let service = try getService()
+                        if let content = try await service.getSuggestionRejectedCode(
+                            editorContent: .init(invocation)
+                        ) {
+                            invocation.accept(content)
+                        }
+                        completionHandler(nil)
+                    }.value)
+                } catch is CancellationError {
+                    completionHandler(nil)
+                } catch {
+                    completionHandler(error)
                 }
-                completionHandler(nil)
-            } catch is CancellationError {
-                completionHandler(nil)
-            } catch {
-                completionHandler(error)
+            }
+        case .floatingWidget:
+            completionHandler(nil)
+            Task {
+                let service = try getService()
+                _ = try await service.getSuggestionRejectedCode(editorContent: .init(invocation))
             }
         }
     }
 }
+
