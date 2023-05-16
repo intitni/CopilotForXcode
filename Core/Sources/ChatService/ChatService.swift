@@ -6,7 +6,6 @@ import OpenAIService
 public final class ChatService: ObservableObject {
     public let chatGPTService: any ChatGPTServiceType
     let pluginController: ChatPluginController
-    var runningPlugin: ChatPlugin?
     var cancellable = Set<AnyCancellable>()
 
     public init<T: ChatGPTServiceType>(chatGPTService: T) {
@@ -31,16 +30,12 @@ public final class ChatService: ObservableObject {
     }
 
     public func stopReceivingMessage() async {
-        if let runningPlugin {
-            await runningPlugin.stopResponding()
-        }
+        await pluginController.stopResponding()
         await chatGPTService.stopReceivingMessage()
     }
 
     public func clearHistory() async {
-        if let runningPlugin {
-            await runningPlugin.cancel()
-        }
+        await pluginController.cancel()
         await chatGPTService.clearHistory()
     }
 
@@ -58,5 +53,9 @@ public final class ChatService: ObservableObject {
 
     public func mutateSystemPrompt(_ newPrompt: String) async {
         await chatGPTService.mutateSystemPrompt(newPrompt)
+    }
+    
+    public func mutateHistory(_ mutator: @escaping (inout [ChatMessage]) -> Void) async {
+        await chatGPTService.mutateHistory(mutator)
     }
 }

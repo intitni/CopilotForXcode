@@ -17,6 +17,7 @@ final class ChatPluginController {
         self.plugins = all
     }
 
+    /// Handle the message in a plugin if required. Return false if no plugin handles the message.
     func handleContent(_ content: String) async throws -> Bool {
         // look for the prefix of content, see if there is something like /command.
         // If there is, then we need to find the plugin that can handle this command.
@@ -88,7 +89,17 @@ final class ChatPluginController {
             return false
         }
     }
+    
+    func stopResponding() async {
+        await runningPlugin?.stopResponding()
+    }
+    
+    func cancel() async {
+        await runningPlugin?.cancel()
+    }
 }
+
+// MARK: - ChatPluginDelegate
 
 extension ChatPluginController: ChatPluginDelegate {
     public func pluginDidStartResponding(_: ChatPlugins.ChatPlugin) {

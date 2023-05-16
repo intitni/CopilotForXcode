@@ -17,6 +17,7 @@ let package = Package(
                 "UpdateChecker",
                 "Logger",
                 "UserDefaultsObserver",
+                "XcodeInspector",
             ]
         ),
         .library(
@@ -175,7 +176,7 @@ let package = Package(
 
         .target(
             name: "ChatService",
-            dependencies: ["OpenAIService", "ChatPlugins", "Environment"]
+            dependencies: ["OpenAIService", "ChatPlugins", "Environment", "XcodeInspector"]
         ),
         .target(
             name: "ChatPlugins",
@@ -225,6 +226,15 @@ let package = Package(
             dependencies: ["Preferences", "GitHubCopilotService"]
         ),
         .target(name: "UserDefaultsObserver"),
+        .target(
+            name: "XcodeInspector",
+            dependencies: [
+                "AXExtension",
+                "Environment",
+                "Logger",
+                "AXNotificationStream"
+            ]
+        ),
 
         // MARK: - GitHub Copilot
 
