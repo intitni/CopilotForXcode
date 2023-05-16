@@ -43,21 +43,20 @@ extension EditorContent {
         let buffer = invocation.buffer
         self.init(
             content: buffer.completeBuffer,
-            lines: buffer.lines as! [String],
+            lines: buffer.lines as? [String] ?? [],
             uti: buffer.contentUTI,
             cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.end).map {
                 CursorPosition(line: $0.line, character: $0.column)
             } ?? CursorPosition(line: 0, character: 0),
             selections: buffer.selections.map {
-                Selection(
-                    start: CursorPosition(
-                        line: ($0 as! XCSourceTextRange).start.line,
-                        character: ($0 as! XCSourceTextRange).start.column
-                    ),
-                    end: CursorPosition(
-                        line: ($0 as! XCSourceTextRange).end.line,
-                        character: ($0 as! XCSourceTextRange).end.column
-                    )
+                let sl = ($0 as? XCSourceTextRange)?.start.line ?? 0
+                let sc = ($0 as? XCSourceTextRange)?.start.column ?? 0
+                let el = ($0 as? XCSourceTextRange)?.end.line ?? 0
+                let ec = ($0 as? XCSourceTextRange)?.end.column ?? 0
+                
+                return Selection(
+                    start: CursorPosition( line: sl, character: sc ),
+                    end: CursorPosition( line: el, character: ec )
                 )
             },
             tabSize: buffer.tabWidth,
