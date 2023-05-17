@@ -4,7 +4,7 @@ import Foundation
 import XcodeKit
 
 class ChatWithSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Chat with Selection" }
+    var name: String { "Open Chat" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,

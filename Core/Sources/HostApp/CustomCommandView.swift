@@ -23,10 +23,9 @@ struct CustomCommandView: View {
                 "Reject Suggestion",
                 "Next Suggestion",
                 "Previous Suggestion",
-                "Toggle Real-time Suggestions",
                 "Real-time Suggestions",
                 "Prefetch Suggestions",
-                "Chat with Selection",
+                "Open Chat",
                 "Prompt to Code",
             ]
 
@@ -63,7 +62,7 @@ struct CustomCommandView: View {
                             Group {
                                 switch command.feature {
                                 case .chatWithSelection:
-                                    Text("Chat with Selection")
+                                    Text("Open Chat")
                                 case .customChat:
                                     Text("Custom Chat")
                                 case .promptToCode:
@@ -207,7 +206,7 @@ struct EditCustomCommandView: View {
                         Text({
                             switch commandType {
                             case .chatWithSelection:
-                                return "Chat with Selection"
+                                return "Open Chat"
                             case .promptToCode:
                                 return "Prompt to Code"
                             case .customChat:
