@@ -108,7 +108,21 @@ public final class XcodeInspector: ObservableObject {
         latestActiveXcode = xcode
         activeDocumentURL = xcode.documentURL
         focusedWindow = xcode.focusedWindow
+        
+        let setFocusedElement = { [weak self] in
+            guard let self else { return }
+            focusedElement = xcode.appElement.focusedElement
+            if let editorElement = focusedElement, editorElement.isSourceEditor {
+                focusedEditor = .init(
+                    runningApplication: xcode.runningApplication,
+                    element: editorElement
+                )
+            } else {
+                focusedEditor = nil
+            }
+        }
 
+        setFocusedElement()
         let focusedElementChanged = Task { @MainActor in
             let notification = AXNotificationStream(
                 app: xcode.runningApplication,
@@ -116,15 +130,7 @@ public final class XcodeInspector: ObservableObject {
             )
             for await _ in notification {
                 try Task.checkCancellation()
-                focusedElement = xcode.appElement.focusedElement
-                if let editorElement = focusedElement, editorElement.isSourceEditor {
-                    focusedEditor = .init(
-                        runningApplication: xcode.runningApplication,
-                        element: editorElement
-                    )
-                } else {
-                    focusedEditor = nil
-                }
+                setFocusedElement()
             }
         }
 
