@@ -33,6 +33,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
         _ = XcodeInspector.shared
+        AXIsProcessTrustedWithOptions(nil)
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
