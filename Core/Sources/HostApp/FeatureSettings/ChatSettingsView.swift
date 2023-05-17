@@ -4,6 +4,10 @@ struct ChatSettingsView: View {
     class Settings: ObservableObject {
         @AppStorage(\.chatFontSize) var chatFontSize
         @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
+        @AppStorage(\.embedFileContentInChatContextIfNoSelection)
+        var embedFileContentInChatContextIfNoSelection
+        @AppStorage(\.maxEmbeddableFileInChatContextLineCount)
+        var maxEmbeddableFileInChatContextLineCount
         init() {}
     }
     
@@ -36,6 +40,33 @@ struct ChatSettingsView: View {
 
                 Text("pt")
             }
+            
+            Divider()
+            
+            Toggle(isOn: $settings.embedFileContentInChatContextIfNoSelection) {
+                Text("Embed file content in chat context if no code is selected.")
+            }
+            
+            HStack {
+                TextField(text: .init(get: {
+                    "\(Int(settings.maxEmbeddableFileInChatContextLineCount))"
+                }, set: {
+                    settings.maxEmbeddableFileInChatContextLineCount = Int($0) ?? 0
+                })) {
+                    Text("Max embeddable file")
+                }
+                .textFieldStyle(.roundedBorder)
+
+                Text("lines")
+            }
         }
+    }
+}
+
+// MARK: - Preview
+
+struct ChatSettingsView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChatSettingsView()
     }
 }
