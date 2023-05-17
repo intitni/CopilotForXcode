@@ -17,3 +17,4 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
         return true
     }
 }
+

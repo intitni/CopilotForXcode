@@ -18,11 +18,19 @@ public final class AXNotificationStream: AsyncSequence {
     deinit {
         continuation.finish()
     }
+    
+    public convenience init(
+        app: NSRunningApplication,
+        element: AXUIElement? = nil,
+        notificationNames: String...
+    ) {
+        self.init(app: app, element: element, notificationNames: notificationNames)
+    }
 
     public init(
         app: NSRunningApplication,
         element: AXUIElement? = nil,
-        notificationNames: String...
+        notificationNames: [String]
     ) {
         var cont: Continuation!
         stream = Stream { continuation in

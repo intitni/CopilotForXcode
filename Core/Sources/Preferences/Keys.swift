@@ -6,320 +6,207 @@ public protocol UserDefaultPreferenceKey {
     var key: String { get }
 }
 
+public struct PreferenceKey<T>: UserDefaultPreferenceKey {
+    public let defaultValue: T
+    public let key: String
+}
+
+public struct FeatureFlag: UserDefaultPreferenceKey {
+    public let defaultValue: Bool
+    public let key: String
+}
+
 public struct UserDefaultPreferenceKeys {
     public init() {}
 
-    // MARK: - Realtime Suggestion
+    // MARK: Quit XPC Service On Xcode And App Quit
 
-    public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
-        public let defaultValue: Bool = true
-        public let key = "RealtimeSuggestionToggle"
-    }
+    public let quitXPCServiceOnXcodeAndAppQuit = PreferenceKey(
+        defaultValue: true,
+        key: "QuitXPCServiceOnXcodeAndAppQuit"
+    )
 
-    public var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
+    // MARK: Automatically Check For Update
 
-    // MARK: - Suggestion Feature Provider
+    public let automaticallyCheckForUpdate = PreferenceKey(
+        defaultValue: false,
+        key: "AutomaticallyCheckForUpdate"
+    )
 
-    public struct SuggestionFeatureProviderKey: UserDefaultPreferenceKey {
-        public let defaultValue: SuggestionFeatureProvider = .gitHubCopilot
-        public let key = "SuggestionFeatureProvider"
-    }
+    // MARK: Suggestion Widget Position Mode
 
-    public var suggestionFeatureProvider: SuggestionFeatureProviderKey { .init() }
+    public let suggestionWidgetPositionMode = PreferenceKey(
+        defaultValue: SuggestionWidgetPositionMode.fixedToBottom,
+        key: "SuggestionWidgetPositionMode"
+    )
 
-    // MARK: - Realtime Suggestion Debounce
+    // MARK: Widget Color Scheme
 
-    public struct RealtimeSuggestionDebounce: UserDefaultPreferenceKey {
-        public let defaultValue: Double = 1
-        public let key = "RealtimeSuggestionDebounce"
-    }
+    public let widgetColorScheme = PreferenceKey(
+        defaultValue: WidgetColorScheme.dark,
+        key: "WidgetColorScheme"
+    )
 
-    public var realtimeSuggestionDebounce: RealtimeSuggestionDebounce { .init() }
+    // MARK: Force Order Widget to Front
 
-    // MARK: - Quit XPC Service On Xcode And App Quit
+    public let forceOrderWidgetToFront = PreferenceKey(
+        defaultValue: true,
+        key: "ForceOrderWidgetToFront"
+    )
 
-    public struct QuitXPCServiceOnXcodeAndAppQuit: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "QuitXPCServiceOnXcodeAndAppQuit"
-    }
+    // MARK: Prefer Widget to Stay Inside Editor When Width Greater Than
 
-    public var quitXPCServiceOnXcodeAndAppQuit: QuitXPCServiceOnXcodeAndAppQuit { .init() }
-
-    // MARK: - Suggestion Presentation Mode
-
-    public struct SuggestionPresentationMode: UserDefaultPreferenceKey {
-        public let defaultValue = PresentationMode.floatingWidget
-        public let key = "SuggestionPresentationMode"
-    }
-
-    public var suggestionPresentationMode: SuggestionPresentationMode { .init() }
-
-    // MARK: - Automatically Check For Update
-
-    public struct AutomaticallyCheckForUpdate: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "AutomaticallyCheckForUpdate"
-    }
-
-    public var automaticallyCheckForUpdate: AutomaticallyCheckForUpdate { .init() }
-
-    // MARK: - Suggestion Widget Position Mode
-
-    public struct SuggestionWidgetPositionModeKey: UserDefaultPreferenceKey {
-        public let defaultValue = SuggestionWidgetPositionMode.fixedToBottom
-        public let key = "SuggestionWidgetPositionMode"
-    }
-
-    public var suggestionWidgetPositionMode: SuggestionWidgetPositionModeKey { .init() }
-
-    // MARK: - Widget Color Scheme
-
-    public struct WidgetColorSchemeKey: UserDefaultPreferenceKey {
-        public let defaultValue = WidgetColorScheme.dark
-        public let key = "WidgetColorScheme"
-    }
-
-    public var widgetColorScheme: WidgetColorSchemeKey { .init() }
-
-    // MARK: - Accept Suggestion with Accessibility API
-
-    public struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "AcceptSuggestionWithAccessibilityAPI"
-    }
-
-    public var acceptSuggestionWithAccessibilityAPI: AcceptSuggestionWithAccessibilityAPI {
-        .init()
-    }
-
-    // MARK: - Use Global Chat
-
-    public struct UseGlobalChat: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "UseGlobalChat"
-    }
-
-    public var useGlobalChat: UseGlobalChat { .init() }
-
-    // MARK: - Hide Common Preceding Spaces in Suggestion
-
-    public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "HideCommonPrecedingSpacesInSuggestion"
-    }
-
-    public var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
-        .init()
-    }
-
-    // MARK: - Force Order Widget to Front
-
-    public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "ForceOrderWidgetToFront"
-    }
-
-    public var forceOrderWidgetToFront: HideCommonPrecedingSpacesInSuggestion {
-        .init()
-    }
-
-    // MARK: - Disable Suggestion Feature Globally
-
-    public struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "DisableSuggestionFeatureGlobally"
-    }
-
-    public var disableSuggestionFeatureGlobally: DisableSuggestionFeatureGlobally {
-        .init()
-    }
-
-    // MARK: - Suggestion Feature Enabled Project List
-
-    public struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
-        public let defaultValue: [String] = []
-        public let key = "SuggestionFeatureEnabledProjectList"
-    }
-
-    public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
-        .init()
-    }
-    
-    // MARK: - Suggestion Feature Disabled Language List
-
-    public struct SuggestionFeatureDisabledLanguageList: UserDefaultPreferenceKey {
-        public let defaultValue: [String] = []
-        public let key = "SuggestionFeatureDisabledLanguageList"
-    }
-
-    public var suggestionFeatureDisabledLanguageList: SuggestionFeatureDisabledLanguageList {
-        .init()
-    }
-
-    // MARK: - Prompt to Code Feature Provider
-
-    public struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
-        public let defaultValue: PromptToCodeFeatureProvider = .openAI
-        public let key = "PromptToCodeFeatureProvider"
-    }
-
-    public var promptToCodeFeatureProvider: PromptToCodeFeatureProviderKey {
-        .init()
-    }
-
-    // MARK: - Prefer Widget to Stay Inside Editor When Width Greater Than
-
-    public struct PreferWidgetToStayInsideEditorWhenWidthGreaterThan: UserDefaultPreferenceKey {
-        public let defaultValue = 1400 as Double
-        public let key = "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
-    }
-
-    public var preferWidgetToStayInsideEditorWhenWidthGreaterThan: PreferWidgetToStayInsideEditorWhenWidthGreaterThan {
-        .init()
-    }
+    public let preferWidgetToStayInsideEditorWhenWidthGreaterThan = PreferenceKey(
+        defaultValue: 1400 as Double,
+        key: "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
+    )
 }
 
 // MARK: - OpenAI Account Settings
 
 public extension UserDefaultPreferenceKeys {
-    struct OpenAIAPIKey: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "OpenAIAPIKey"
+    var openAIAPIKey: PreferenceKey<String> {
+        .init(defaultValue: "", key: "OpenAIAPIKey")
     }
 
-    var openAIAPIKey: OpenAIAPIKey { .init() }
-
-    struct ChatGPTEndpoint: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "ChatGPTEndpoint"
+    var chatGPTEndpoint: PreferenceKey<String> {
+        .init(defaultValue: "", key: "ChatGPTEndpoint")
     }
 
-    var chatGPTEndpoint: ChatGPTEndpoint { .init() }
-
-    struct ChatGPTModel: UserDefaultPreferenceKey {
-        public let defaultValue = Preferences.ChatGPTModel.gpt35Turbo.rawValue
-        public let key = "ChatGPTModel"
+    var chatGPTModel: PreferenceKey<String> {
+        .init(defaultValue: Preferences.ChatGPTModel.gpt35Turbo.rawValue, key: "ChatGPTModel")
     }
 
-    var chatGPTModel: ChatGPTModel { .init() }
-
-    struct ChatGPTMaxToken: UserDefaultPreferenceKey {
-        public let defaultValue = 4000
-        public let key = "ChatGPTMaxToken"
+    var chatGPTMaxToken: PreferenceKey<Int> {
+        .init(defaultValue: 4000, key: "ChatGPTMaxToken")
     }
 
-    var chatGPTMaxToken: ChatGPTMaxToken { .init() }
-
-    struct ChatGPTLanguage: UserDefaultPreferenceKey {
-        public let defaultValue = ""
-        public let key = "ChatGPTLanguage"
+    var chatGPTLanguage: PreferenceKey<String> {
+        .init(defaultValue: "", key: "ChatGPTLanguage")
     }
 
-    var chatGPTLanguage: ChatGPTLanguage { .init() }
-
-    struct ChatGPTMaxMessageCount: UserDefaultPreferenceKey {
-        public let defaultValue = 5
-        public let key = "ChatGPTMaxMessageCount"
+    var chatGPTMaxMessageCount: PreferenceKey<Int> {
+        .init(defaultValue: 5, key: "ChatGPTMaxMessageCount")
     }
 
-    var chatGPTMaxMessageCount: ChatGPTMaxMessageCount { .init() }
-
-    struct ChatGPTTemperature: UserDefaultPreferenceKey {
-        public let defaultValue = 0.7
-        public let key = "ChatGPTTemperature"
+    var chatGPTTemperature: PreferenceKey<Double> {
+        .init(defaultValue: 0.7, key: "ChatGPTTemperature")
     }
-
-    var chatGPTTemperature: ChatGPTTemperature { .init() }
 }
 
 // MARK: - GitHub Copilot Settings
 
 public extension UserDefaultPreferenceKeys {
-    struct GitHubCopilotVerboseLog: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "GitHubCopilotVerboseLog"
+    var gitHubCopilotVerboseLog: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "GitHubCopilotVerboseLog")
     }
 
-    var gitHubCopilotVerboseLog: GitHubCopilotVerboseLog { .init() }
-
-    // MARK: - Node Path
-
-    struct NodePath: UserDefaultPreferenceKey {
-        public let defaultValue: String = ""
-        public let key = "NodePath"
+    var nodePath: PreferenceKey<String> {
+        .init(defaultValue: "", key: "NodePath")
     }
 
-    var nodePath: NodePath { .init() }
-
-    // MARK: - Run Node With
-
-    struct RunNodeWithKey: UserDefaultPreferenceKey {
-        public let defaultValue = NodeRunner.bash
-        public let key = "RunNodeWith"
+    var runNodeWith: PreferenceKey<NodeRunner> {
+        .init(defaultValue: .env, key: "RunNodeWith")
     }
-
-    var runNodeWith: RunNodeWithKey { .init() }
 }
 
 // MARK: - Codeium Settings
 
 public extension UserDefaultPreferenceKeys {
-    struct CodeiumVerboseLog: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "CodeiumVerboseLog"
-    }
-
-    var codeiumVerboseLog: CodeiumVerboseLog { .init() }
-}
-
-public extension UserDefaultPreferenceKeys {
-    struct PromptToCodeGenerateDescription: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "PromptToCodeGenerateDescription"
-    }
-
-    var promptToCodeGenerateDescription: PromptToCodeGenerateDescription { .init() }
-
-    struct PromptToCodeGenerateDescriptionInUserPreferredLanguage: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "PromptToCodeGenerateDescriptionInUserPreferredLanguage"
-    }
-
-    var promptToCodeGenerateDescriptionInUserPreferredLanguage: PromptToCodeGenerateDescriptionInUserPreferredLanguage {
-        .init()
+    var codeiumVerboseLog: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "CodeiumVerboseLog")
     }
 }
 
-// MARK: - UI
+// MARK: - Prompt to Code
 
 public extension UserDefaultPreferenceKeys {
-    struct SuggestionCodeFontSize: UserDefaultPreferenceKey {
-        public let defaultValue = 13 as Double
-        public let key = "SuggestionCodeFontSize"
+    var promptToCodeFeatureProvider: PreferenceKey<PromptToCodeFeatureProvider> {
+        .init(defaultValue: .openAI, key: "PromptToCodeFeatureProvider")
     }
 
-    var suggestionCodeFontSize: SuggestionCodeFontSize { .init() }
-
-    struct ChatFontSize: UserDefaultPreferenceKey {
-        public let defaultValue = 12 as Double
-        public let key = "ChatFontSize"
+    var promptToCodeGenerateDescription: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "PromptToCodeGenerateDescription")
     }
 
-    var chatFontSize: ChatFontSize { .init() }
+    var promptToCodeGenerateDescriptionInUserPreferredLanguage: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "PromptToCodeGenerateDescriptionInUserPreferredLanguage")
+    }
+}
 
-    struct ChatCodeFontSize: UserDefaultPreferenceKey {
-        public let defaultValue = 12 as Double
-        public let key = "ChatCodeFontSize"
+// MARK: - Suggestion
+
+public extension UserDefaultPreferenceKeys {
+    var suggestionFeatureProvider: PreferenceKey<SuggestionFeatureProvider> {
+        .init(defaultValue: .gitHubCopilot, key: "SuggestionFeatureProvider")
     }
 
-    var chatCodeFontSize: ChatCodeFontSize { .init() }
+    var realtimeSuggestionToggle: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "RealtimeSuggestionToggle")
+    }
+
+    var suggestionCodeFontSize: PreferenceKey<Double> {
+        .init(defaultValue: 13, key: "SuggestionCodeFontSize")
+    }
+
+    var disableSuggestionFeatureGlobally: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "DisableSuggestionFeatureGlobally")
+    }
+
+    var suggestionFeatureEnabledProjectList: PreferenceKey<[String]> {
+        .init(defaultValue: [], key: "SuggestionFeatureEnabledProjectList")
+    }
+
+    var suggestionFeatureDisabledLanguageList: PreferenceKey<[String]> {
+        .init(defaultValue: [], key: "SuggestionFeatureDisabledLanguageList")
+    }
+
+    var hideCommonPrecedingSpacesInSuggestion: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "HideCommonPrecedingSpacesInSuggestion")
+    }
+
+    var acceptSuggestionWithAccessibilityAPI: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "AcceptSuggestionWithAccessibilityAPI")
+    }
+
+    var suggestionPresentationMode: PreferenceKey<PresentationMode> {
+        .init(defaultValue: .floatingWidget, key: "SuggestionPresentationMode")
+    }
+
+    var realtimeSuggestionDebounce: PreferenceKey<Double> {
+        .init(defaultValue: 1, key: "RealtimeSuggestionDebounce")
+    }
+}
+
+// MARK: - Chat
+
+public extension UserDefaultPreferenceKeys {
+    var chatFontSize: PreferenceKey<Double> {
+        .init(defaultValue: 12, key: "ChatFontSize")
+    }
+
+    var chatCodeFontSize: PreferenceKey<Double> {
+        .init(defaultValue: 12, key: "ChatCodeFontSize")
+    }
+
+    var useGlobalChat: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "UseGlobalChat")
+    }
+
+    var embedFileContentInChatContextIfNoSelection: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "EmbedFileContentInChatContextIfNoSelection")
+    }
+    
+    var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
+        .init(defaultValue: 200, key: "MaxEmbeddableFileInChatContextLineCount")
+    }
 }
 
 // MARK: - Custom Commands
 
 public extension UserDefaultPreferenceKeys {
-    struct CustomCommandsKey: UserDefaultPreferenceKey {
-        public let defaultValue: [CustomCommand] = [
+    var customCommands: PreferenceKey<[CustomCommand]> {
+        .init(defaultValue: [
             .init(
                 commandId: "BuiltInCustomCommandExplainSelection",
                 name: "Explain Selection",
@@ -337,49 +224,31 @@ public extension UserDefaultPreferenceKeys {
                     continuousMode: false
                 )
             ),
-        ]
-        public let key = "CustomCommands"
+        ], key: "CustomCommands")
     }
-
-    var customCommands: CustomCommandsKey { .init() }
 }
 
 // MARK: - Feature Flags
 
-public enum FeatureFlags {
-    public struct DisableLazyVStack: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "FeatureFlag-DisableLazyVStack"
-    }
-
-    public struct PreCacheOnFileOpen: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "FeatureFlag-PreCacheOnFileOpen"
-    }
-
-    public struct RunNodeWithInteractiveLoggedInShell: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "FeatureFlag-RunNodeWithInteractiveLoggedInShell"
-    }
-
-    public struct UseCustomScrollViewWorkaround: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "FeatureFlag-UseCustomScrollViewWorkaround"
-    }
-
-    public struct TriggerActionWithAccessibilityAPI: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "FeatureFlag-TriggerActionWithAccessibilityAPI"
-    }
-}
-
 public extension UserDefaultPreferenceKeys {
-    var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
-    var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
-    var runNodeWithInteractiveLoggedInShell: FeatureFlags
-        .RunNodeWithInteractiveLoggedInShell { .init() }
-    var useCustomScrollViewWorkaround: FeatureFlags.UseCustomScrollViewWorkaround { .init() }
-    var triggerActionWithAccessibilityAPI: FeatureFlags
-        .TriggerActionWithAccessibilityAPI { .init() }
+    var disableLazyVStack: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-DisableLazyVStack")
+    }
+
+    var preCacheOnFileOpen: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-PreCacheOnFileOpen")
+    }
+
+    var runNodeWithInteractiveLoggedInShell: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-RunNodeWithInteractiveLoggedInShell")
+    }
+
+    var useCustomScrollViewWorkaround: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-UseCustomScrollViewWorkaround")
+    }
+
+    var triggerActionWithAccessibilityAPI: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
+    }
 }
 
