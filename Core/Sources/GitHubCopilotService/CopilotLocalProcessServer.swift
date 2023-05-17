@@ -9,9 +9,11 @@ import ProcessEnv
 /// We need it because the original one does not allow us to handle custom notifications.
 class CopilotLocalProcessServer {
     private let transport: StdioDataTransport
+    private let customTransport: CustomDataTransport
     private let process: Process
     private var wrappedServer: CustomJSONRPCLanguageServer?
     var terminationHandler: (() -> Void)?
+    @MainActor var ongoingCompletionRequestIDs: [JSONId] = []
 
     public convenience init(
         path: String,
@@ -29,9 +31,26 @@ class CopilotLocalProcessServer {
 
     init(executionParameters parameters: Process.ExecutionParameters) {
         transport = StdioDataTransport()
-        wrappedServer = CustomJSONRPCLanguageServer(dataTransport: transport)
+        let framing = SeperatedHTTPHeaderMessageFraming()
+        let messageTransport = MessageTransport(
+            dataTransport: transport,
+            messageProtocol: framing
+        )
+        customTransport = CustomDataTransport(nextTransport: messageTransport)
+        wrappedServer = CustomJSONRPCLanguageServer(dataTransport: customTransport)
 
         process = Process()
+
+        // Because the implementation of LanguageClient is so closed,
+        // we need to get the request IDs from a custom transport before the data
+        // is written to the language server.
+        customTransport.onWriteRequest = { [weak self] request in
+            if request.method == "getCompletionsCycling" {
+                Task { @MainActor [weak self] in
+                    self?.ongoingCompletionRequestIDs.append(request.id)
+                }
+            }
+        }
 
         process.standardInput = transport.stdinPipe
         process.standardOutput = transport.stdoutPipe
@@ -89,6 +108,27 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
 
         server.sendNotification(notif, completionHandler: completionHandler)
     }
+    
+    /// Cancel ongoing completion requests.
+    public func cancelOngoingTasks() async {
+        guard let server = wrappedServer, process.isRunning else {
+            return
+        }
+        
+        let task = Task { @MainActor in
+            for id in self.ongoingCompletionRequestIDs {
+                switch id {
+                case let .numericId(id):
+                    try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
+                case let .stringId(id):
+                    try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
+                }
+            }
+            self.ongoingCompletionRequestIDs = []
+        }
+        
+        await task.value
+    }
 
     public func sendRequest<Response: Codable>(
         _ request: ClientRequest,
@@ -139,13 +179,7 @@ final class CustomJSONRPCLanguageServer: Server {
     }
 
     convenience init(dataTransport: DataTransport) {
-        let framing = SeperatedHTTPHeaderMessageFraming()
-        let messageTransport = MessageTransport(
-            dataTransport: dataTransport,
-            messageProtocol: framing
-        )
-
-        self.init(protocolTransport: ProtocolTransport(dataTransport: messageTransport))
+        self.init(protocolTransport: ProtocolTransport(dataTransport: dataTransport))
     }
 
     deinit {
@@ -219,3 +253,4 @@ extension CustomJSONRPCLanguageServer {
         internalServer.sendRequest(request, completionHandler: completionHandler)
     }
 }
+
