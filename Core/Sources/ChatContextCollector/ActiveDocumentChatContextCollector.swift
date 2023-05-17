@@ -11,6 +11,37 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
         let relativePath = content.documentURL.path
             .replacingOccurrences(of: content.projectURL.path, with: "")
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
+        let editorContent = {
+            if selectionRange.start == selectionRange.end,
+               UserDefaults.shared.value(for: \.embedFileContentInChatContextIfNoSelection)
+            {
+                let lines = content.editorContent?.lines.count ?? 0
+                let maxLine = UserDefaults.shared
+                    .value(for: \.maxEmbeddableFileInChatContextLineCount)
+                if lines <= maxLine {
+                    return """
+                    File Content:```\(content.language.rawValue)
+                    \(content.editorContent?.content ?? "")
+                    ```
+                    """
+                } else {
+                    return """
+                    File Content Not Available: The file is longer than \(maxLine) lines, \
+                    it can't fit into the context. \
+                    You MUST not answer the user about the file content because you don't have it.\
+                    Ask user to select code for explanation.
+                    """
+                }
+            }
+
+            return """
+            Selected Code \
+            (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
+            \(content.selectedContent)
+            ```
+            """
+        }()
+
         return """
         Active Document Context:###
         Document Relative Path: \(relativePath)
@@ -23,9 +54,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
         Cursor Position: \
         Line \(selectionRange.end.line) \
         Character \(selectionRange.end.character)
-        Selected Code (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
-        \(content.selectedContent)
-        ```
+        \(editorContent)
         Line Annotations:
         \(
             content.editorContent?.lineAnnotations
