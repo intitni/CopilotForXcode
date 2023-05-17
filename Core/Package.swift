@@ -24,13 +24,10 @@ let package = Package(
             name: "Client",
             targets: [
                 "SuggestionModel",
-                "GitHubCopilotService",
                 "Client",
                 "XPCShared",
                 "Preferences",
-                "LaunchAgentManager",
                 "Logger",
-                "UpdateChecker",
             ]
         ),
         .library(
@@ -232,7 +229,8 @@ let package = Package(
                 "AXExtension",
                 "Environment",
                 "Logger",
-                "AXNotificationStream"
+                "AXNotificationStream",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
 

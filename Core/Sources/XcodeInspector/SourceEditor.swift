@@ -7,15 +7,15 @@ import SuggestionModel
 public class SourceEditor {
     public struct Content {
         /// The content of the source editor.
-        var content: String
+        public var content: String
         /// The content of the source editor in lines.
-        var lines: [String]
+        public var lines: [String]
         /// The selection ranges of the source editor.
-        var selections: [CursorRange]
+        public var selections: [CursorRange]
         /// The cursor position of the source editor.
-        var cursorPosition: CursorPosition
+        public var cursorPosition: CursorPosition
         /// Line annotations of the source editor.
-        var lineAnnotations: [String]
+        public var lineAnnotations: [String]
     }
 
     let runningApplication: NSRunningApplication
@@ -25,8 +25,8 @@ public class SourceEditor {
     public var content: Content {
         let content = element.value
         let split = Self.breakLines(content)
-        let lineAnnotationElements = element.children { $0.identifier == "Line Annotation" }
-        let lineAnnotations = lineAnnotationElements.map(\.label)
+        let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
+        let lineAnnotations = lineAnnotationElements.map(\.description)
 
         if let selectionRange = element.selectedTextRange {
             let range = Self.convertRangeToCursorRange(selectionRange, in: content)

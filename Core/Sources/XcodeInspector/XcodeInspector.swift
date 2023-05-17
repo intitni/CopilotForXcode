@@ -1,4 +1,5 @@
 import AppKit
+import AsyncAlgorithms
 import AXExtension
 import AXNotificationStream
 import Combine
@@ -14,8 +15,8 @@ public final class XcodeInspector: ObservableObject {
     @Published public internal(set) var activeXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var latestActiveXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var xcodes: [XcodeAppInstanceInspector] = []
-    @Published public internal(set) var activeProjectPath = ""
-    @Published public internal(set) var activeDocumentPath = ""
+    @Published public internal(set) var activeProjectURL = URL(fileURLWithPath: "/")
+    @Published public internal(set) var activeDocumentURL = URL(fileURLWithPath: "/")
     @Published public internal(set) var focusedWindow: XcodeWindowInspector?
     @Published public internal(set) var focusedEditor: SourceEditor?
     @Published public internal(set) var focusedElement: AXUIElement?
@@ -90,7 +91,8 @@ public final class XcodeInspector: ObservableObject {
     }
 
     func observeXcode(_ xcode: XcodeAppInstanceInspector) {
-        xcode.$document.filter { _ in xcode.isActive }.assign(to: &$activeDocumentPath)
+        xcode.$documentURL.filter { _ in xcode.isActive }.assign(to: &$activeDocumentURL)
+        xcode.$projectURL.filter { _ in xcode.isActive }.assign(to: &$activeProjectURL)
         xcode.$focusedWindow.filter { _ in xcode.isActive }.assign(to: &$focusedWindow)
     }
 
@@ -100,7 +102,7 @@ public final class XcodeInspector: ObservableObject {
 
         activeXcode = xcode
         latestActiveXcode = xcode
-        activeDocumentPath = xcode.document
+        activeDocumentURL = xcode.documentURL
         focusedWindow = xcode.focusedWindow
 
         let focusedElementChanged = Task { @MainActor in
@@ -137,7 +139,10 @@ public class AppInstanceInspector: ObservableObject {
 
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published var focusedWindow: XcodeWindowInspector?
-    var longRunningTasks = Set<Task<Void, Error>>()
+    @Published var documentURL: URL = .init(fileURLWithPath: "/")
+    @Published var projectURL: URL = .init(fileURLWithPath: "/")
+    @Published var tabs: Set<String> = []
+    private var longRunningTasks = Set<Task<Void, Error>>()
 
     deinit {
         for task in longRunningTasks { task.cancel() }
@@ -146,6 +151,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     override init(runningApplication: NSRunningApplication) {
         super.init(runningApplication: runningApplication)
 
+        observeFocusedWindow()
         let focusedWindowChanged = Task {
             let notification = AXNotificationStream(
                 app: runningApplication,
@@ -153,80 +159,50 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             )
             for await _ in notification {
                 try Task.checkCancellation()
-                if let window = appElement.focusedWindow {
-                    focusedWindow = XcodeWindowInspector(uiElement: window)
-                } else {
-                    focusedWindow = nil
-                }
+                observeFocusedWindow()
             }
         }
 
         longRunningTasks.insert(focusedWindowChanged)
-    }
-}
 
-public class XcodeWindowInspector: ObservableObject {
-    let uiElement: AXUIElement
-
-    init(uiElement: AXUIElement) {
-        self.uiElement = uiElement
-    }
-}
-
-public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
-    let app: NSRunningApplication
-    @Published var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published var projectURL: URL = .init(fileURLWithPath: "/")
-    @Published var tabs: Set<String> = []
-    private var updateTabsTask: Task<Void, Error>?
-    private var focusedElementChangedTask: Task<Void, Error>?
-
-    deinit {
-        updateTabsTask?.cancel()
-        focusedElementChangedTask?.cancel()
-    }
-
-    init(app: NSRunningApplication, uiElement: AXUIElement) {
-        self.app = app
-        super.init(uiElement: uiElement)
-
-        updateTabsTask = Task { @MainActor in
-            while true {
-                try Task.checkCancellation()
-                if let updatedTabs = Self.findAvailableOpenedTabs(app) {
-                    tabs = updatedTabs
+        if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
+            tabs = updatedTabs
+        }
+        let updateTabsTask = Task { @MainActor in
+            let notification = AXNotificationStream(
+                app: runningApplication,
+                notificationNames: kAXFocusedUIElementChangedNotification
+            )
+            if #available(macOS 13.0, *) {
+                for await _ in notification.debounce(for: .seconds(5)) {
+                    try Task.checkCancellation()
+                    if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
+                        tabs = updatedTabs
+                    }
                 }
-                try await Task.sleep(nanoseconds: 60 * 1_000_000_000)
+            } else {
+                for await _ in notification {
+                    try Task.checkCancellation()
+                    if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
+                        tabs = updatedTabs
+                    }
+                }
             }
         }
 
-        focusedElementChangedTask = Task { @MainActor in
-            let update = {
-                let documentURL = Self.extractDocumentURL(app, windowElement: uiElement)
-                if let documentURL {
-                    self.documentURL = documentURL
-                }
-                let projectURL = Self.extractProjectURL(
-                    app,
-                    windowElement: uiElement,
-                    fileURL: documentURL
-                )
-                if let projectURL {
-                    self.projectURL = projectURL
-                }
+        longRunningTasks.insert(updateTabsTask)
+    }
+
+    func observeFocusedWindow() {
+        if let window = appElement.focusedWindow {
+            let window = XcodeWindowInspector(uiElement: window)
+            focusedWindow = window
+            if let workspaceWindow = window as? WorkspaceXcodeWindowInspector {
+                workspaceWindow.$documentURL.assign(to: &$documentURL)
+                workspaceWindow.$projectURL.assign(to: &$projectURL)
             }
-            
-            update()
-            let notifications = AXNotificationStream(
-                app: app,
-                element: uiElement,
-                notificationNames: kAXFocusedUIElementChangedNotification
-            )
-            
-            for await _ in notifications {
-                try Task.checkCancellation()
-                update()
-            }
+        } else {
+            focusedWindow = nil
         }
     }
 
@@ -248,74 +224,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             }
         }
         return allTabs
-    }
-
-    static func extractDocumentURL(
-        _ app: NSRunningApplication,
-        windowElement: AXUIElement
-    ) -> URL? {
-        // fetch file path of the frontmost window of Xcode through Accessability API.
-        let application = AXUIElementCreateApplication(app.processIdentifier)
-        var path = windowElement.document
-        if let path = path?.removingPercentEncoding {
-            let url = URL(
-                fileURLWithPath: path
-                    .replacingOccurrences(of: "file://", with: "")
-            )
-            return url
-        }
-        return nil
-    }
-
-    static func extractProjectURL(
-        _ app: NSRunningApplication,
-        windowElement: AXUIElement,
-        fileURL: URL?
-    ) -> URL? {
-        let application = AXUIElementCreateApplication(app.processIdentifier)
-        let focusedWindow = application.focusedWindow
-        for child in focusedWindow?.children ?? [] {
-            if child.description.starts(with: "/"), child.description.count > 1 {
-                let path = child.description
-                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                var url = URL(fileURLWithPath: trimmedNewLine)
-                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                    !url.pathExtension.isEmpty
-                {
-                    url = url.deletingLastPathComponent()
-                }
-                return url
-            }
-        }
-        
-        guard var currentURL = fileURL else { return nil }
-        var firstDirectoryURL: URL?
-        while currentURL.pathComponents.count > 1 {
-            defer { currentURL.deleteLastPathComponent() }
-            guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
-            if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
-            let gitURL = currentURL.appendingPathComponent(".git")
-            if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                return currentURL
-            }
-        }
-
-        return firstDirectoryURL ?? fileURL
-    }
-}
-
-public extension NSRunningApplication {
-    var isXcode: Bool { bundleIdentifier == "com.apple.dt.Xcode" }
-    var isCopilotForXcodeExtensionService: Bool {
-        bundleIdentifier == Bundle.main.bundleIdentifier
-    }
-}
-
-extension FileManager {
-    func fileIsDirectory(atPath path: String) -> Bool {
-        var isDirectory: ObjCBool = false
-        let exists = fileExists(atPath: path, isDirectory: &isDirectory)
-        return isDirectory.boolValue && exists
     }
 }
 
