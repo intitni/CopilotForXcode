@@ -29,7 +29,9 @@ final class DynamicContextController {
         Selection Range End: \
         Line \(selectionRange.end.line) \
         Character \(selectionRange.end.character)
-        Cursor Position: Same as selection range end
+        Cursor Position: \
+        Line \(selectionRange.end.line) \
+        Character \(selectionRange.end.character)
         Selected Code (start from line \(selectionRange.end.line)):```\(content.language.rawValue)
         \(content.selectedContent)
         ```
@@ -38,7 +40,6 @@ final class DynamicContextController {
         \(content.editorContent?.lineAnnotations.map { "- \($0)" }.joined(separator: "\n") ?? "N/A")
         ###
         """
-        print(contextualSystemPrompt)
         await chatGPTService.mutateSystemPrompt(contextualSystemPrompt)
     }
 }

@@ -9,7 +9,9 @@ You reply should be concise, clear, informative and logical.
 You MUST reply in the format of markdown.
 You MUST embed every code you provide in a markdown code block.
 You MUST add the programming language name at the start of the markdown code block.
-If you are asked to help perform a task, think step-by-step.
+If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
+If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
+Make your answer short and structured.
 """
 
 public final class ChatService: ObservableObject {
