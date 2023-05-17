@@ -173,11 +173,27 @@ let package = Package(
 
         .target(
             name: "ChatService",
-            dependencies: ["OpenAIService", "ChatPlugins", "Environment", "XcodeInspector"]
+            dependencies: [
+                "ChatPlugins",
+                "ChatContextCollector",
+                "OpenAIService",
+                "Environment",
+                "XcodeInspector",
+                "Preferences",
+            ]
         ),
         .target(
             name: "ChatPlugins",
             dependencies: ["OpenAIService", "Environment", "Terminal"]
+        ),
+        .target(
+            name: "ChatContextCollector",
+            dependencies: [
+                "OpenAIService",
+                "Environment",
+                "Preferences",
+                "SuggestionModel"
+            ]
         ),
 
         // MARK: - UI

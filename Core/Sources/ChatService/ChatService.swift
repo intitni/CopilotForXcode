@@ -1,3 +1,4 @@
+import ChatContextCollector
 import ChatPlugins
 import Combine
 import Foundation
@@ -30,7 +31,10 @@ public final class ChatService: ObservableObject {
             TerminalChatPlugin.self,
             AITerminalChatPlugin.self
         )
-        contextController = DynamicContextController(chatGPTService: chatGPTService)
+        contextController = DynamicContextController(
+            chatGPTService: chatGPTService,
+            contextCollectors: ActiveDocumentChatContextCollector()
+        )
 
         chatGPTService.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
@@ -74,7 +78,7 @@ public final class ChatService: ObservableObject {
     public func mutateSystemPrompt(_ newPrompt: String?) {
         systemPrompt = newPrompt ?? defaultSystemPrompt
     }
-    
+
     public func mutateExtraSystemPrompt(_ newPrompt: String) {
         extraSystemPrompt = newPrompt
     }
