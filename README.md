@@ -158,21 +158,18 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Toggle Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
-
-#### Keyboard Shortcuts
-
-| Shortcut | Description |
-|:---:|---|
-| `⌘W` | Cancel. |
-| `⌘↩︎` | Accept suggestion. |
-| `⇧↩︎` | Add new line. |
 
 ### Chat
 
 This feature is powered by ChatGPT. Please ensure that you have set up your OpenAI account before using it.
+
+The chat knows the following information:
+- The selected code in the active editor.
+- The file path of the active file.
+- The project path.
+- The errors and warnings in the active editor.
 
 There are currently two tabs in the chat panel: one is available shared across Xcode, and the other is only available in the current file.
 
@@ -180,7 +177,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 #### Commands
 
-- Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
+- Open Chat: Open a chat window.
 - Explain Selection: Open a chat window and explain the selected code.
 
 #### Keyboard Shortcuts
@@ -233,7 +230,7 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 | Reject Suggestion | `⌥{` |
 | Next Suggestion | `⌥>` |
 | Previous Suggestion | `⌥<` |
-| Chat with Selection | `⌥"` |
+| Open Chat | `⌥"` |
 | Explain Selection | `⌥\|` |
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
