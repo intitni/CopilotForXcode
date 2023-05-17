@@ -24,18 +24,17 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         focusedElementChangedTask?.cancel()
     }
 
-    init(app: NSRunningApplication, uiElement: AXUIElement) {
+    public init(app: NSRunningApplication, uiElement: AXUIElement) {
         self.app = app
         super.init(uiElement: uiElement)
 
         focusedElementChangedTask = Task { @MainActor in
             let update = {
-                let documentURL = Self.extractDocumentURL(app, windowElement: uiElement)
+                let documentURL = Self.extractDocumentURL(windowElement: uiElement)
                 if let documentURL {
                     self.documentURL = documentURL
                 }
                 let projectURL = Self.extractProjectURL(
-                    app,
                     windowElement: uiElement,
                     fileURL: documentURL
                 )
@@ -47,7 +46,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             update()
             let notifications = AXNotificationStream(
                 app: app,
-                element: uiElement,
                 notificationNames: kAXFocusedUIElementChangedNotification
             )
 
@@ -59,12 +57,10 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     }
 
     static func extractDocumentURL(
-        _ app: NSRunningApplication,
         windowElement: AXUIElement
     ) -> URL? {
-        // fetch file path of the frontmost window of Xcode through Accessability API.
-        let application = AXUIElementCreateApplication(app.processIdentifier)
-        var path = windowElement.document
+        // fetch file path of the frontmost window of Xcode through Accessibility API.
+        let path = windowElement.document
         if let path = path?.removingPercentEncoding {
             let url = URL(
                 fileURLWithPath: path
@@ -76,13 +72,10 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     }
 
     static func extractProjectURL(
-        _ app: NSRunningApplication,
         windowElement: AXUIElement,
         fileURL: URL?
     ) -> URL? {
-        let application = AXUIElementCreateApplication(app.processIdentifier)
-        let focusedWindow = application.focusedWindow
-        for child in focusedWindow?.children ?? [] {
+        for child in windowElement.children {
             if child.description.starts(with: "/"), child.description.count > 1 {
                 let path = child.description
                 let trimmedNewLine = path.trimmingCharacters(in: .newlines)

@@ -91,6 +91,10 @@ public final class XcodeInspector: ObservableObject {
     }
 
     func observeXcode(_ xcode: XcodeAppInstanceInspector) {
+        activeDocumentURL = xcode.documentURL
+        activeProjectURL = xcode.projectURL
+        focusedWindow = xcode.focusedWindow
+
         xcode.$documentURL.filter { _ in xcode.isActive }.assign(to: &$activeDocumentURL)
         xcode.$projectURL.filter { _ in xcode.isActive }.assign(to: &$activeProjectURL)
         xcode.$focusedWindow.filter { _ in xcode.isActive }.assign(to: &$focusedWindow)
@@ -123,6 +127,8 @@ public final class XcodeInspector: ObservableObject {
                 }
             }
         }
+
+        activeXcodeObservations.insert(focusedElementChanged)
     }
 }
 
@@ -143,6 +149,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published var projectURL: URL = .init(fileURLWithPath: "/")
     @Published var tabs: Set<String> = []
     private var longRunningTasks = Set<Task<Void, Error>>()
+    private var focusedWindowObservations = Set<AnyCancellable>()
 
     deinit {
         for task in longRunningTasks { task.cancel() }
@@ -195,11 +202,31 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
     func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
-            let window = XcodeWindowInspector(uiElement: window)
-            focusedWindow = window
-            if let workspaceWindow = window as? WorkspaceXcodeWindowInspector {
-                workspaceWindow.$documentURL.assign(to: &$documentURL)
-                workspaceWindow.$projectURL.assign(to: &$projectURL)
+            if window.identifier == "Xcode.WorkspaceWindow" {
+                let window = WorkspaceXcodeWindowInspector(
+                    app: runningApplication,
+                    uiElement: window
+                )
+                focusedWindow = window
+                focusedWindowObservations.forEach { $0.cancel() }
+                focusedWindowObservations.removeAll()
+
+                documentURL = window.documentURL
+                projectURL = window.projectURL
+
+                window.$documentURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .sink { [weak self] url in
+                        self?.documentURL = url
+                    }.store(in: &focusedWindowObservations)
+                window.$projectURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .sink { [weak self] url in
+                        self?.projectURL = url
+                    }.store(in: &focusedWindowObservations)
+            } else {
+                let window = XcodeWindowInspector(uiElement: window)
+                focusedWindow = window
             }
         } else {
             focusedWindow = nil
