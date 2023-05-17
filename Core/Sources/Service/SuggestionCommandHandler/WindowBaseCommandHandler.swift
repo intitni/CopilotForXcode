@@ -397,8 +397,6 @@ extension WindowBaseCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let code = {
             guard let selection = editor.selections.last,
@@ -406,31 +404,10 @@ extension WindowBaseCommandHandler {
             return editor.selectedCode(in: selection)
         }()
 
-        var systemPrompt = specifiedSystemPrompt ?? {
-            if code.isEmpty {
-                return """
-                \(language.isEmpty ? "" : "You must always reply in \(language)")
-                You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-                
-                You don't have any code in advance, ask me to provide it when needed.
-                """
-            }
-            return """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
-            ```\(codeLanguage.rawValue)
-            \(code)
-            ```
-            """
-        }()
-
-        if let extraSystemPrompt {
-            systemPrompt += "\n\(extraSystemPrompt)"
-        }
-
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-
-        await chat.mutateSystemPrompt(systemPrompt)
+        
+        chat.mutateSystemPrompt(specifiedSystemPrompt)
+        chat.mutateExtraSystemPrompt(extraSystemPrompt ?? "")
 
         Task {
             let customCommandPrefix = {
@@ -484,20 +461,10 @@ extension WindowBaseCommandHandler {
         let focusedElementURI = try await Environment.fetchFocusedElementURI()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
 
-        var systemPrompt = specifiedSystemPrompt ?? """
-        \(language.isEmpty ? "" : "You must always reply in \(language)")
-        You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-        
-        You don't have any code in advance, ask me to provide it when needed.
-        """
-
-        if let extraSystemPrompt {
-            systemPrompt += "\n\(extraSystemPrompt)"
-        }
-
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
 
-        await chat.mutateSystemPrompt(systemPrompt)
+        chat.mutateSystemPrompt(specifiedSystemPrompt)
+        chat.mutateExtraSystemPrompt(extraSystemPrompt ?? "")
 
         Task {
             let customCommandPrefix = {
