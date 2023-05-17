@@ -192,7 +192,8 @@ let package = Package(
                 "OpenAIService",
                 "Environment",
                 "Preferences",
-                "SuggestionModel"
+                "SuggestionModel",
+                "XcodeInspector",
             ]
         ),
 
