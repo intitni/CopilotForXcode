@@ -9,34 +9,7 @@ public protocol UserDefaultPreferenceKey {
 public struct UserDefaultPreferenceKeys {
     public init() {}
 
-    // MARK: - Realtime Suggestion
-
-    public struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
-        public let defaultValue: Bool = true
-        public let key = "RealtimeSuggestionToggle"
-    }
-
-    public var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
-
-    // MARK: - Suggestion Feature Provider
-
-    public struct SuggestionFeatureProviderKey: UserDefaultPreferenceKey {
-        public let defaultValue: SuggestionFeatureProvider = .gitHubCopilot
-        public let key = "SuggestionFeatureProvider"
-    }
-
-    public var suggestionFeatureProvider: SuggestionFeatureProviderKey { .init() }
-
-    // MARK: - Realtime Suggestion Debounce
-
-    public struct RealtimeSuggestionDebounce: UserDefaultPreferenceKey {
-        public let defaultValue: Double = 1
-        public let key = "RealtimeSuggestionDebounce"
-    }
-
-    public var realtimeSuggestionDebounce: RealtimeSuggestionDebounce { .init() }
-
-    // MARK: - Quit XPC Service On Xcode And App Quit
+    // MARK: Quit XPC Service On Xcode And App Quit
 
     public struct QuitXPCServiceOnXcodeAndAppQuit: UserDefaultPreferenceKey {
         public let defaultValue = true
@@ -45,16 +18,7 @@ public struct UserDefaultPreferenceKeys {
 
     public var quitXPCServiceOnXcodeAndAppQuit: QuitXPCServiceOnXcodeAndAppQuit { .init() }
 
-    // MARK: - Suggestion Presentation Mode
-
-    public struct SuggestionPresentationMode: UserDefaultPreferenceKey {
-        public let defaultValue = PresentationMode.floatingWidget
-        public let key = "SuggestionPresentationMode"
-    }
-
-    public var suggestionPresentationMode: SuggestionPresentationMode { .init() }
-
-    // MARK: - Automatically Check For Update
+    // MARK: Automatically Check For Update
 
     public struct AutomaticallyCheckForUpdate: UserDefaultPreferenceKey {
         public let defaultValue = false
@@ -63,7 +27,7 @@ public struct UserDefaultPreferenceKeys {
 
     public var automaticallyCheckForUpdate: AutomaticallyCheckForUpdate { .init() }
 
-    // MARK: - Suggestion Widget Position Mode
+    // MARK: Suggestion Widget Position Mode
 
     public struct SuggestionWidgetPositionModeKey: UserDefaultPreferenceKey {
         public let defaultValue = SuggestionWidgetPositionMode.fixedToBottom
@@ -72,7 +36,7 @@ public struct UserDefaultPreferenceKeys {
 
     public var suggestionWidgetPositionMode: SuggestionWidgetPositionModeKey { .init() }
 
-    // MARK: - Widget Color Scheme
+    // MARK: Widget Color Scheme
 
     public struct WidgetColorSchemeKey: UserDefaultPreferenceKey {
         public let defaultValue = WidgetColorScheme.dark
@@ -81,38 +45,7 @@ public struct UserDefaultPreferenceKeys {
 
     public var widgetColorScheme: WidgetColorSchemeKey { .init() }
 
-    // MARK: - Accept Suggestion with Accessibility API
-
-    public struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "AcceptSuggestionWithAccessibilityAPI"
-    }
-
-    public var acceptSuggestionWithAccessibilityAPI: AcceptSuggestionWithAccessibilityAPI {
-        .init()
-    }
-
-    // MARK: - Use Global Chat
-
-    public struct UseGlobalChat: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "UseGlobalChat"
-    }
-
-    public var useGlobalChat: UseGlobalChat { .init() }
-
-    // MARK: - Hide Common Preceding Spaces in Suggestion
-
-    public struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
-        public let defaultValue = true
-        public let key = "HideCommonPrecedingSpacesInSuggestion"
-    }
-
-    public var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
-        .init()
-    }
-
-    // MARK: - Force Order Widget to Front
+    // MARK: Force Order Widget to Front
 
     public struct ForceOrderWidgetToFront: UserDefaultPreferenceKey {
         public let defaultValue = true
@@ -123,51 +56,7 @@ public struct UserDefaultPreferenceKeys {
         .init()
     }
 
-    // MARK: - Disable Suggestion Feature Globally
-
-    public struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
-        public let defaultValue = false
-        public let key = "DisableSuggestionFeatureGlobally"
-    }
-
-    public var disableSuggestionFeatureGlobally: DisableSuggestionFeatureGlobally {
-        .init()
-    }
-
-    // MARK: - Suggestion Feature Enabled Project List
-
-    public struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
-        public let defaultValue: [String] = []
-        public let key = "SuggestionFeatureEnabledProjectList"
-    }
-
-    public var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
-        .init()
-    }
-    
-    // MARK: - Suggestion Feature Disabled Language List
-
-    public struct SuggestionFeatureDisabledLanguageList: UserDefaultPreferenceKey {
-        public let defaultValue: [String] = []
-        public let key = "SuggestionFeatureDisabledLanguageList"
-    }
-
-    public var suggestionFeatureDisabledLanguageList: SuggestionFeatureDisabledLanguageList {
-        .init()
-    }
-
-    // MARK: - Prompt to Code Feature Provider
-
-    public struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
-        public let defaultValue: PromptToCodeFeatureProvider = .openAI
-        public let key = "PromptToCodeFeatureProvider"
-    }
-
-    public var promptToCodeFeatureProvider: PromptToCodeFeatureProviderKey {
-        .init()
-    }
-
-    // MARK: - Prefer Widget to Stay Inside Editor When Width Greater Than
+    // MARK: Prefer Widget to Stay Inside Editor When Width Greater Than
 
     public struct PreferWidgetToStayInsideEditorWhenWidthGreaterThan: UserDefaultPreferenceKey {
         public let defaultValue = 1400 as Double
@@ -242,16 +131,12 @@ public extension UserDefaultPreferenceKeys {
 
     var gitHubCopilotVerboseLog: GitHubCopilotVerboseLog { .init() }
 
-    // MARK: - Node Path
-
     struct NodePath: UserDefaultPreferenceKey {
         public let defaultValue: String = ""
         public let key = "NodePath"
     }
 
     var nodePath: NodePath { .init() }
-
-    // MARK: - Run Node With
 
     struct RunNodeWithKey: UserDefaultPreferenceKey {
         public let defaultValue = NodeRunner.bash
@@ -272,7 +157,18 @@ public extension UserDefaultPreferenceKeys {
     var codeiumVerboseLog: CodeiumVerboseLog { .init() }
 }
 
+// MARK: - Prompt to Code
+
 public extension UserDefaultPreferenceKeys {
+    struct PromptToCodeFeatureProviderKey: UserDefaultPreferenceKey {
+        public let defaultValue: PromptToCodeFeatureProvider = .openAI
+        public let key = "PromptToCodeFeatureProvider"
+    }
+
+    var promptToCodeFeatureProvider: PromptToCodeFeatureProviderKey {
+        .init()
+    }
+
     struct PromptToCodeGenerateDescription: UserDefaultPreferenceKey {
         public let defaultValue = true
         public let key = "PromptToCodeGenerateDescription"
@@ -290,9 +186,23 @@ public extension UserDefaultPreferenceKeys {
     }
 }
 
-// MARK: - UI
+// MARK: - Suggestion
 
 public extension UserDefaultPreferenceKeys {
+    struct SuggestionFeatureProviderKey: UserDefaultPreferenceKey {
+        public let defaultValue: SuggestionFeatureProvider = .gitHubCopilot
+        public let key = "SuggestionFeatureProvider"
+    }
+
+    var suggestionFeatureProvider: SuggestionFeatureProviderKey { .init() }
+
+    struct RealtimeSuggestionToggle: UserDefaultPreferenceKey {
+        public let defaultValue: Bool = true
+        public let key = "RealtimeSuggestionToggle"
+    }
+
+    var realtimeSuggestionToggle: RealtimeSuggestionToggle { .init() }
+
     struct SuggestionCodeFontSize: UserDefaultPreferenceKey {
         public let defaultValue = 13 as Double
         public let key = "SuggestionCodeFontSize"
@@ -300,6 +210,69 @@ public extension UserDefaultPreferenceKeys {
 
     var suggestionCodeFontSize: SuggestionCodeFontSize { .init() }
 
+    struct DisableSuggestionFeatureGlobally: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "DisableSuggestionFeatureGlobally"
+    }
+
+    var disableSuggestionFeatureGlobally: DisableSuggestionFeatureGlobally {
+        .init()
+    }
+
+    struct SuggestionFeatureEnabledProjectList: UserDefaultPreferenceKey {
+        public let defaultValue: [String] = []
+        public let key = "SuggestionFeatureEnabledProjectList"
+    }
+
+    var suggestionFeatureEnabledProjectList: SuggestionFeatureEnabledProjectList {
+        .init()
+    }
+
+    struct SuggestionFeatureDisabledLanguageList: UserDefaultPreferenceKey {
+        public let defaultValue: [String] = []
+        public let key = "SuggestionFeatureDisabledLanguageList"
+    }
+
+    var suggestionFeatureDisabledLanguageList: SuggestionFeatureDisabledLanguageList {
+        .init()
+    }
+
+    struct HideCommonPrecedingSpacesInSuggestion: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "HideCommonPrecedingSpacesInSuggestion"
+    }
+
+    var hideCommonPrecedingSpacesInSuggestion: HideCommonPrecedingSpacesInSuggestion {
+        .init()
+    }
+
+    struct AcceptSuggestionWithAccessibilityAPI: UserDefaultPreferenceKey {
+        public let defaultValue = false
+        public let key = "AcceptSuggestionWithAccessibilityAPI"
+    }
+
+    var acceptSuggestionWithAccessibilityAPI: AcceptSuggestionWithAccessibilityAPI {
+        .init()
+    }
+
+    struct SuggestionPresentationMode: UserDefaultPreferenceKey {
+        public let defaultValue = PresentationMode.floatingWidget
+        public let key = "SuggestionPresentationMode"
+    }
+
+    var suggestionPresentationMode: SuggestionPresentationMode { .init() }
+
+    struct RealtimeSuggestionDebounce: UserDefaultPreferenceKey {
+        public let defaultValue: Double = 1
+        public let key = "RealtimeSuggestionDebounce"
+    }
+
+    var realtimeSuggestionDebounce: RealtimeSuggestionDebounce { .init() }
+}
+
+// MARK: - Chat
+
+public extension UserDefaultPreferenceKeys {
     struct ChatFontSize: UserDefaultPreferenceKey {
         public let defaultValue = 12 as Double
         public let key = "ChatFontSize"
@@ -313,6 +286,13 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var chatCodeFontSize: ChatCodeFontSize { .init() }
+
+    struct UseGlobalChat: UserDefaultPreferenceKey {
+        public let defaultValue = true
+        public let key = "UseGlobalChat"
+    }
+
+    var useGlobalChat: UseGlobalChat { .init() }
 }
 
 // MARK: - Custom Commands
