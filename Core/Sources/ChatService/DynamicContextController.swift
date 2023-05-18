@@ -13,7 +13,7 @@ final class DynamicContextController {
         self.contextCollectors = contextCollectors
     }
 
-    func updatePromptToMatchContent(systemPrompt: String) async throws {
+    func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = (await chatGPTService.history).map(\.content)
         let contextualSystemPrompt = """
@@ -22,7 +22,7 @@ final class DynamicContextController {
 
         \(
             contextCollectors
-                .map { $0.generateSystemPrompt(oldMessages: oldMessages) }
+                .map { $0.generateSystemPrompt(history: oldMessages, content: content) }
                 .joined(separator: "\n")
         )
         """

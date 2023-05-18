@@ -47,7 +47,7 @@ public final class ChatService: ObservableObject {
         try await contextController.updatePromptToMatchContent(systemPrompt: """
         \(systemPrompt)
         \(extraSystemPrompt)
-        """)
+        """, content: content)
 
         _ = try await chatGPTService.send(content: content, summary: nil)
     }

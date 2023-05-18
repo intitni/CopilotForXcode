@@ -1,5 +1,5 @@
 import Foundation
 
 public protocol ChatContextCollector {
-    func generateSystemPrompt(oldMessages: [String]) -> String
+    func generateSystemPrompt(history: [String], content: String) -> String
 }

@@ -6,12 +6,20 @@ import XcodeInspector
 public struct ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
-    public func generateSystemPrompt(oldMessages: [String]) -> String {
+    public func generateSystemPrompt(history: [String], content prompt: String) -> String {
         let content = getEditorInformation()
         let relativePath = content.documentURL.path
             .replacingOccurrences(of: content.projectURL.path, with: "")
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
+            if prompt.hasPrefix("@file") {
+                return """
+                File Content:```\(content.language.rawValue)
+                \(content.editorContent?.content ?? "")
+                ```
+                """
+            }
+            
             if selectionRange.start == selectionRange.end,
                UserDefaults.shared.value(for: \.embedFileContentInChatContextIfNoSelection)
             {
