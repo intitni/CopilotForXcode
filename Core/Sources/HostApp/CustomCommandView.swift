@@ -121,7 +121,8 @@ struct CustomCommandView: View {
                         name: "New Command",
                         feature: .chatWithSelection(
                             extraSystemPrompt: nil,
-                            prompt: "Tell me about the code."
+                            prompt: "Tell me about the code.",
+                            useExtraSystemPrompt: false
                         )
                     ))
                 }) {
@@ -155,8 +156,10 @@ struct EditCustomCommandView: View {
     @State var name: String
     @State var prompt: String
     @State var systemPrompt: String
+    @State var usePrompt: Bool
     @State var continuousMode: Bool
     @State var editingContentInFullScreen: Binding<String>?
+    @State var generatingPromptToCodeDescription: Bool
 
     enum CommandType: Int, CaseIterable {
         case chatWithSelection
@@ -173,26 +176,34 @@ struct EditCustomCommandView: View {
         originalName = editingCommand.wrappedValue?.command.name ?? ""
         name = originalName
         switch editingCommand.wrappedValue?.command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
             commandType = .chatWithSelection
             self.prompt = prompt ?? ""
             systemPrompt = extraSystemPrompt ?? ""
+            usePrompt = useExtraSystemPrompt ?? true
             continuousMode = false
+            generatingPromptToCodeDescription = true
         case let .customChat(systemPrompt, prompt):
             commandType = .customChat
             self.systemPrompt = systemPrompt ?? ""
             self.prompt = prompt ?? ""
+            usePrompt = false
             continuousMode = false
-        case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
+            generatingPromptToCodeDescription = true
+        case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             commandType = .promptToCode
             self.prompt = prompt ?? ""
             systemPrompt = extraSystemPrompt ?? ""
+            usePrompt = false
             self.continuousMode = continuousMode ?? false
+            generatingPromptToCodeDescription = generateDescription ?? true
         case .none:
             commandType = .chatWithSelection
             prompt = ""
             systemPrompt = ""
             continuousMode = false
+            usePrompt = true
+            generatingPromptToCodeDescription = true
         }
     }
 
@@ -218,14 +229,15 @@ struct EditCustomCommandView: View {
 
                 switch commandType {
                 case .chatWithSelection:
-                    systemPromptTextField(title: "Extra System Prompt")
+                    systemPromptTextField(title: "Extra System Prompt", hasToggle: true)
                     promptTextField
                 case .promptToCode:
                     continuousModeToggle
-                    systemPromptTextField(title: "Extra System Prompt")
+                    generateDescriptionToggle
+                    systemPromptTextField(title: "Extra System Prompt", hasToggle: false)
                     promptTextField
                 case .customChat:
-                    systemPromptTextField()
+                    systemPromptTextField(hasToggle: false)
                     promptTextField
                 }
             }.padding()
@@ -253,16 +265,21 @@ struct EditCustomCommandView: View {
                                 case .chatWithSelection:
                                     return .chatWithSelection(
                                         extraSystemPrompt: systemPrompt,
-                                        prompt: prompt
+                                        prompt: prompt,
+                                        useExtraSystemPrompt: usePrompt
                                     )
                                 case .promptToCode:
                                     return .promptToCode(
                                         extraSystemPrompt: systemPrompt,
                                         prompt: prompt,
-                                        continuousMode: continuousMode
+                                        continuousMode: continuousMode,
+                                        generateDescription: generatingPromptToCodeDescription
                                     )
                                 case .customChat:
-                                    return .customChat(systemPrompt: systemPrompt, prompt: prompt)
+                                    return .customChat(
+                                        systemPrompt: systemPrompt,
+                                        prompt: prompt
+                                    )
                                 }
                             }()
                         )
@@ -354,9 +371,13 @@ struct EditCustomCommandView: View {
     }
 
     @ViewBuilder
-    func systemPromptTextField(title: String? = nil) -> some View {
+    func systemPromptTextField(title: String? = nil, hasToggle: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title ?? "System Prompt")
+            if hasToggle {
+                Toggle(title ?? "System Prompt", isOn: $usePrompt)
+            } else {
+                Text(title ?? "System Prompt")
+            }
             editableText($systemPrompt)
         }
         .padding(.vertical, 4)
@@ -364,6 +385,10 @@ struct EditCustomCommandView: View {
 
     var continuousModeToggle: some View {
         Toggle("Continuous Mode", isOn: $continuousMode)
+    }
+    
+    var generateDescriptionToggle: some View {
+        Toggle("Generate Description", isOn: $generatingPromptToCodeDescription)
     }
 
     func editableText(_ binding: Binding<String>) -> some View {
@@ -407,13 +432,21 @@ struct CustomCommandView_Preview: PreviewProvider {
             editingCommand: .init(isNew: false, command: .init(
                 commandId: "1",
                 name: "Explain Code",
-                feature: .chatWithSelection(extraSystemPrompt: nil, prompt: "Hello")
+                feature: .chatWithSelection(
+                    extraSystemPrompt: nil,
+                    prompt: "Hello",
+                    useExtraSystemPrompt: false
+                )
             )),
             settings: .init(customCommands: .init(wrappedValue: [
                 .init(
                     commandId: "1",
                     name: "Explain Code",
-                    feature: .chatWithSelection(extraSystemPrompt: nil, prompt: "Hello")
+                    feature: .chatWithSelection(
+                        extraSystemPrompt: nil,
+                        prompt: "Hello",
+                        useExtraSystemPrompt: false
+                    )
                 ),
                 .init(
                     commandId: "2",
@@ -421,7 +454,8 @@ struct CustomCommandView_Preview: PreviewProvider {
                     feature: .promptToCode(
                         extraSystemPrompt: nil,
                         prompt: "Refactor",
-                        continuousMode: false
+                        continuousMode: false,
+                        generateDescription: true
                     )
                 ),
             ], "CustomCommandView_Preview"))
@@ -440,7 +474,8 @@ struct EditCustomCommandView_Preview: PreviewProvider {
                     feature: .promptToCode(
                         extraSystemPrompt: nil,
                         prompt: "Hello",
-                        continuousMode: false
+                        continuousMode: false,
+                        generateDescription: true
                     )
                 )
             )),

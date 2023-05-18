@@ -211,17 +211,19 @@ public extension UserDefaultPreferenceKeys {
                 commandId: "BuiltInCustomCommandExplainSelection",
                 name: "Explain Selection",
                 feature: .chatWithSelection(
-                    extraSystemPrompt: nil,
-                    prompt: "Explain the code concisely, do not interpret or translate it."
+                    extraSystemPrompt: "",
+                    prompt: "Explain the selected code concisely, step-by-step.",
+                    useExtraSystemPrompt: true
                 )
             ),
             .init(
                 commandId: "BuiltInCustomCommandAddDocumentationToSelection",
                 name: "Add Documentation to Selection",
                 feature: .promptToCode(
-                    extraSystemPrompt: nil,
+                    extraSystemPrompt: "",
                     prompt: "Add documentation on top of the code. Use triple slash if the language supports it.",
-                    continuousMode: false
+                    continuousMode: false,
+                    generateDescription: true
                 )
             ),
         ], key: "CustomCommands")

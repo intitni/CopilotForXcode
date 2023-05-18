@@ -98,6 +98,7 @@ final class WidgetDataSource {
         identSize: Int = 4,
         usesTabsForIndentation: Bool = false,
         extraSystemPrompt: String?,
+        generateDescriptionRequirement: Bool?,
         name: String?
     ) async -> PromptToCodeService {
         let build = {
@@ -110,7 +111,8 @@ final class WidgetDataSource {
                 projectRootURL: projectURL,
                 fileURL: url,
                 allCode: allCode,
-                extraSystemPrompt: extraSystemPrompt
+                extraSystemPrompt: extraSystemPrompt,
+                generateDescriptionRequirement: generateDescriptionRequirement
             )
             let provider = PromptToCodeProvider(
                 service: service,

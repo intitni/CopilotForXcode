@@ -6,8 +6,8 @@ public struct CustomCommand: Codable {
     ///
     /// Keep everything optional so nothing will break when the format changes.
     public enum Feature: Codable {
-        case promptToCode(extraSystemPrompt: String?, prompt: String?, continuousMode: Bool?)
-        case chatWithSelection(extraSystemPrompt: String?, prompt: String?)
+        case promptToCode(extraSystemPrompt: String?, prompt: String?, continuousMode: Bool?, generateDescription: Bool?)
+        case chatWithSelection(extraSystemPrompt: String?, prompt: String?, useExtraSystemPrompt: Bool?)
         case customChat(systemPrompt: String?, prompt: String?)
     }
 
