@@ -174,7 +174,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
-        .init(defaultValue: 1, key: "RealtimeSuggestionDebounce")
+        .init(defaultValue: 0, key: "RealtimeSuggestionDebounce")
     }
 }
 
