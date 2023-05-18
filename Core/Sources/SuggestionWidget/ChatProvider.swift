@@ -1,10 +1,13 @@
 import Foundation
+import Preferences
 import SwiftUI
 
 public final class ChatProvider: ObservableObject {
     let id = UUID()
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
+    public var systemPrompt = ""
+    public var extraSystemPrompt = ""
     public var onMessageSend: (String) -> Void
     public var onStop: () -> Void
     public var onClear: () -> Void
@@ -12,6 +15,8 @@ public final class ChatProvider: ObservableObject {
     public var onSwitchContext: () -> Void
     public var onDeleteMessage: (String) -> Void
     public var onResendMessage: (String) -> Void
+    public var onResetPrompt: () -> Void
+    public var onRunCustomCommand: (CustomCommand) -> Void = { _ in }
 
     public init(
         history: [ChatMessage] = [],
@@ -22,7 +27,9 @@ public final class ChatProvider: ObservableObject {
         onClose: @escaping () -> Void = {},
         onSwitchContext: @escaping () -> Void = {},
         onDeleteMessage: @escaping (String) -> Void = { _ in },
-        onResendMessage: @escaping (String) -> Void = { _ in }
+        onResendMessage: @escaping (String) -> Void = { _ in },
+        onResetPrompt: @escaping () -> Void = {},
+        onRunCustomCommand: @escaping (CustomCommand) -> Void = { _ in }
     ) {
         self.history = history
         self.isReceivingMessage = isReceivingMessage
@@ -33,6 +40,8 @@ public final class ChatProvider: ObservableObject {
         self.onSwitchContext = onSwitchContext
         self.onDeleteMessage = onDeleteMessage
         self.onResendMessage = onResendMessage
+        self.onResetPrompt = onResetPrompt
+        self.onRunCustomCommand = onRunCustomCommand
     }
 
     public func send(_ message: String) { onMessageSend(message) }
@@ -42,6 +51,10 @@ public final class ChatProvider: ObservableObject {
     public func switchContext() { onSwitchContext() }
     public func deleteMessage(id: String) { onDeleteMessage(id) }
     public func resendMessage(id: String) { onResendMessage(id) }
+    public func resetPrompt() { onResetPrompt() }
+    public func triggerCustomCommand(_ command: CustomCommand) {
+        onRunCustomCommand(command)
+    }
 }
 
 public struct ChatMessage: Equatable {
@@ -55,3 +68,4 @@ public struct ChatMessage: Equatable {
         self.text = text
     }
 }
+
