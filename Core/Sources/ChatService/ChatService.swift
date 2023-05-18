@@ -20,8 +20,8 @@ public final class ChatService: ObservableObject {
     let pluginController: ChatPluginController
     let contextController: DynamicContextController
     var cancellable = Set<AnyCancellable>()
-    var systemPrompt = defaultSystemPrompt
-    var extraSystemPrompt = ""
+    @Published public internal(set) var systemPrompt = defaultSystemPrompt
+    @Published public internal(set) var extraSystemPrompt = ""
 
     public init<T: ChatGPTServiceType>(chatGPTService: T) {
         self.chatGPTService = chatGPTService
@@ -60,6 +60,11 @@ public final class ChatService: ObservableObject {
     public func clearHistory() async {
         await pluginController.cancel()
         await chatGPTService.clearHistory()
+    }
+    
+    public func resetPrompt() async {
+        systemPrompt = defaultSystemPrompt
+        extraSystemPrompt = ""
     }
 
     public func deleteMessage(id: String) async {
