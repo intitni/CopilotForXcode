@@ -42,13 +42,7 @@ final class WidgetDataSource {
     func createChatIfNeeded(for url: URL) -> ChatService {
         let build = {
             let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-            let systemPrompt = """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-            
-            You don't have any code in advance, ask me to provide it when needed.
-            """
-            let service = ChatService(chatGPTService: ChatGPTService(systemPrompt: systemPrompt))
+            let service = ChatService(chatGPTService: ChatGPTService())
             let provider = ChatProvider(
                 service: service,
                 fileURL: url,
@@ -104,6 +98,7 @@ final class WidgetDataSource {
         identSize: Int = 4,
         usesTabsForIndentation: Bool = false,
         extraSystemPrompt: String?,
+        generateDescriptionRequirement: Bool?,
         name: String?
     ) async -> PromptToCodeService {
         let build = {
@@ -116,7 +111,8 @@ final class WidgetDataSource {
                 projectRootURL: projectURL,
                 fileURL: url,
                 allCode: allCode,
-                extraSystemPrompt: extraSystemPrompt
+                extraSystemPrompt: extraSystemPrompt,
+                generateDescriptionRequirement: generateDescriptionRequirement
             )
             let provider = PromptToCodeProvider(
                 service: service,

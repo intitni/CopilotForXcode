@@ -22,7 +22,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         projectRootURL: URL,
         fileURL: URL,
         allCode: String,
-        extraSystemPrompt: String?
+        extraSystemPrompt: String?,
+        generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let textLanguage = {
@@ -33,10 +34,12 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             }
             return userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
         }()
-        
+
         let rule: String = {
             func generateDescription(index: Int) -> String {
-                return UserDefaults.shared.value(for: \.promptToCodeGenerateDescription)
+                let generateDescription = generateDescriptionRequirement ?? UserDefaults.shared
+                    .value(for: \.promptToCodeGenerateDescription)
+                return generateDescription
                     ? """
                     \(index). After the code block, write a clear and concise description \
                     in 1-3 sentences about what you did in step 1\(textLanguage).
@@ -87,7 +90,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     You are good at writing in \(language.rawValue).
                     The active file is: \(fileURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
-                    
+
                     \(rule)
                     """
                 } else {
@@ -95,7 +98,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     You are good at writing in \(language.rawValue).
                     The active file is: \(fileURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
-                                        
+
                     \(rule)
                     """
                 }
@@ -105,7 +108,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     You are a senior programer in writing in \(language.rawValue).
                     The active file is: \(fileURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
-                                        
+
                     \(rule)
                     """
                 } else {
@@ -113,7 +116,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
                     You are a senior programer in writing in \(language.rawValue).
                     The active file is: \(fileURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
-                                        
+
                     \(rule)
                     """
                 }
@@ -138,7 +141,7 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             }
         }()
 
-        let secondMessage: String = """
+        let secondMessage = """
         Requirements:###
         \(requirement)
         ###

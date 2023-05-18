@@ -1,6 +1,6 @@
 import Client
-import SuggestionModel
 import Foundation
+import SuggestionModel
 import XcodeKit
 
 class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
@@ -10,21 +10,14 @@ class CustomCommand: NSObject, XCSourceEditorCommand, CommandType {
         with invocation: XCSourceEditorCommandInvocation,
         completionHandler: @escaping (Error?) -> Void
     ) {
+        completionHandler(nil)
         Task {
-            do {
-                let service = try getService()
-                if let content = try await service.customCommand(
-                    id: customCommandMap[invocation.commandIdentifier] ?? "",
-                    editorContent: .init(invocation)
-                ) {
-                    invocation.accept(content)
-                }
-                completionHandler(nil)
-            } catch is CancellationError {
-                completionHandler(nil)
-            } catch {
-                completionHandler(error)
-            }
+            let service = try getService()
+            _ = try await service.customCommand(
+                id: customCommandMap[invocation.commandIdentifier] ?? "",
+                editorContent: .init(invocation)
+            )
         }
     }
 }
+

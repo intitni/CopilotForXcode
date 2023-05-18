@@ -234,8 +234,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await startChatWithSelection(
-                    editor: editor,
+                try await startChat(
                     specifiedSystemPrompt: nil,
                     extraSystemPrompt: nil,
                     sendingMessageImmediately: nil,
@@ -256,6 +255,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     extraSystemPrompt: nil,
                     prompt: nil,
                     isContinuous: false,
+                    generateDescription: nil,
                     name: nil
                 )
             } catch {
@@ -288,27 +288,28 @@ extension WindowBaseCommandHandler {
         else { throw CommandNotFoundError() }
 
         switch command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt):
-            try await startChatWithSelection(
-                editor: editor,
+        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
+            let updatePrompt = useExtraSystemPrompt ?? true
+            try await startChat(
                 specifiedSystemPrompt: nil,
-                extraSystemPrompt: extraSystemPrompt,
+                extraSystemPrompt: updatePrompt ? extraSystemPrompt : nil,
                 sendingMessageImmediately: prompt,
                 name: command.name
             )
         case let .customChat(systemPrompt, prompt):
             try await startChat(
                 specifiedSystemPrompt: systemPrompt,
-                extraSystemPrompt: nil,
+                extraSystemPrompt: "",
                 sendingMessageImmediately: prompt,
                 name: command.name
             )
-        case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
+        case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             try await presentPromptToCode(
                 editor: editor,
                 extraSystemPrompt: extraSystemPrompt,
                 prompt: prompt,
                 isContinuous: continuousMode ?? false,
+                generateDescription: generateDescription,
                 name: command.name
             )
         }
@@ -319,6 +320,7 @@ extension WindowBaseCommandHandler {
         extraSystemPrompt: String?,
         prompt: String?,
         isContinuous: Bool,
+        generateDescription: Bool?,
         name: String?
     ) async throws {
         presenter.markAsProcessing(true)
@@ -375,6 +377,7 @@ extension WindowBaseCommandHandler {
             selectionRange: selection,
             language: codeLanguage,
             extraSystemPrompt: extraSystemPrompt,
+            generateDescriptionRequirement: generateDescription,
             name: name
         )
 
@@ -384,92 +387,6 @@ extension WindowBaseCommandHandler {
         }
 
         presenter.presentPromptToCode(fileURL: fileURL)
-    }
-
-    private func startChatWithSelection(
-        editor: EditorContent,
-        specifiedSystemPrompt: String?,
-        extraSystemPrompt: String?,
-        sendingMessageImmediately: String?,
-        name: String?
-    ) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let fileURL = try await Environment.fetchCurrentFileURL()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let codeLanguage = languageIdentifierFromFileURL(fileURL)
-
-        let code = {
-            guard let selection = editor.selections.last,
-                  selection.start != selection.end else { return "" }
-            return editor.selectedCode(in: selection)
-        }()
-
-        var systemPrompt = specifiedSystemPrompt ?? {
-            if code.isEmpty {
-                return """
-                \(language.isEmpty ? "" : "You must always reply in \(language)")
-                You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-                
-                You don't have any code in advance, ask me to provide it when needed.
-                """
-            }
-            return """
-            \(language.isEmpty ? "" : "You must always reply in \(language)")
-            You are a senior programmer, you will answer my questions concisely about the code below, or modify it according to my requests. When you receive a modification request, reply with the modified code in a code block.
-            ```\(codeLanguage.rawValue)
-            \(code)
-            ```
-            """
-        }()
-
-        if let extraSystemPrompt {
-            systemPrompt += "\n\(extraSystemPrompt)"
-        }
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-
-        await chat.mutateSystemPrompt(systemPrompt)
-
-        Task {
-            let customCommandPrefix = {
-                if let name { return "[\(name)] " }
-                return ""
-            }()
-            
-            if specifiedSystemPrompt != nil {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            } else if !code.isEmpty, let selection = editor.selections.last {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
-                    ))
-                }
-            } else if !customCommandPrefix.isEmpty {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            }
-
-            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
-                try await chat.send(content: sendingMessageImmediately)
-            }
-        }
-
-        presenter.presentChatRoom(fileURL: fileURL)
     }
     
     private func startChat(
@@ -482,22 +399,11 @@ extension WindowBaseCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let focusedElementURI = try await Environment.fetchFocusedElementURI()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-
-        var systemPrompt = specifiedSystemPrompt ?? """
-        \(language.isEmpty ? "" : "You must always reply in \(language)")
-        You are a senior programmer, you will answer my questions concisely. If you are replying with code, embed the code in a code block in markdown.
-        
-        You don't have any code in advance, ask me to provide it when needed.
-        """
-
-        if let extraSystemPrompt {
-            systemPrompt += "\n\(extraSystemPrompt)"
-        }
 
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
 
-        await chat.mutateSystemPrompt(systemPrompt)
+        chat.mutateSystemPrompt(specifiedSystemPrompt)
+        chat.mutateExtraSystemPrompt(extraSystemPrompt ?? "")
 
         Task {
             let customCommandPrefix = {
@@ -505,15 +411,7 @@ extension WindowBaseCommandHandler {
                 return ""
             }()
             
-            if specifiedSystemPrompt != nil {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            } else if !customCommandPrefix.isEmpty {
+            if specifiedSystemPrompt != nil || extraSystemPrompt != nil {
                 await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
                         role: .assistant,

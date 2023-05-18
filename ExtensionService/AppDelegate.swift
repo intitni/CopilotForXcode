@@ -11,6 +11,7 @@ import SwiftUI
 import UpdateChecker
 import UserDefaultsObserver
 import UserNotifications
+import XcodeInspector
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -31,6 +32,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
+        _ = XcodeInspector.shared
+        AXIsProcessTrustedWithOptions(nil)
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()

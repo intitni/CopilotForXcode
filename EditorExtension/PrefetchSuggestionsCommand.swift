@@ -11,7 +11,6 @@ class PrefetchSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
         completionHandler: @escaping (Error?) -> Void
     ) {
         completionHandler(nil)
-
         Task {
             let service = try getService()
             await service.prefetchRealtimeSuggestions(editorContent: .init(invocation))

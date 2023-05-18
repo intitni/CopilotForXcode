@@ -82,10 +82,11 @@ If you are using macOS Monterey, enter the `Extensions` menu in `System Preferen
 ### Setting Up GitHub Copilot
  
 1. In the host app, switch to the service tab and click on GitHub Copilot to access your GitHub Copilot account settings.
-2. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path. 
-3. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
-4. After signing in, go back to the app and click "Confirm Sign-in" to finish.
-5. Go to "Feature - Suggestion" and update the feature provider to "GitHub Copilot".
+2. Click "Install" to install the language server.
+3. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path. 
+4. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
+5. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+6. Go to "Feature - Suggestion" and update the feature provider to "GitHub Copilot".
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/GitHub Copilot/executable/`.
 
@@ -158,21 +159,18 @@ Whenever you stop typing for a few milliseconds, the app will automatically fetc
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
-- Toggle Real-time Suggestions: When turn on, Copilot will auto-insert suggestion comments to your code while editing.
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
-
-#### Keyboard Shortcuts
-
-| Shortcut | Description |
-|:---:|---|
-| `⌘W` | Cancel. |
-| `⌘↩︎` | Accept suggestion. |
-| `⇧↩︎` | Add new line. |
 
 ### Chat
 
 This feature is powered by ChatGPT. Please ensure that you have set up your OpenAI account before using it.
+
+The chat knows the following information:
+- The selected code in the active editor.
+- The file path of the active file.
+- The project path.
+- The errors and warnings in the active editor.
 
 There are currently two tabs in the chat panel: one is available shared across Xcode, and the other is only available in the current file.
 
@@ -180,7 +178,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 #### Commands
 
-- Chat with Selection: Open a chat window, if there is a selection, the selected code will be added to the prompt.
+- Open Chat: Open a chat window.
 - Explain Selection: Open a chat window and explain the selected code.
 
 #### Keyboard Shortcuts
@@ -190,6 +188,12 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | `⌘W` | Close the chat. |
 | `⌘M` | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
 | `⇧↩︎` | Add new line. |
+
+#### Chat Scope
+
+The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
+
+Currently, the only supported scope is `@file`, which will import the content of the file into the system prompt.
 
 #### Chat Plugins
 
@@ -210,7 +214,16 @@ If you need to end a plugin, you can just type
 
 ### Prompt to Code
 
-Refactor selected code or write new code using natural language.
+Refactor existing code or write new code using natural language.
+
+This feature is recommended when you need to update a specific piece of code. Some example use cases include:
+- Improving the code's readability.
+- Correcting bugs in the code.
+- Adding documentation to the code.
+- Breaking a large function into smaller functions.
+- Generating code with a specific template through custom commands.
+- Polishing and correcting grammar and spelling errors in the documentation.
+- Translating a localizable strings file.
 
 #### Commands
 
@@ -233,7 +246,7 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 | Reject Suggestion | `⌥{` |
 | Next Suggestion | `⌥>` |
 | Previous Suggestion | `⌥<` |
-| Chat with Selection | `⌥"` |
+| Open Chat | `⌥"` |
 | Explain Selection | `⌥\|` |
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.

@@ -49,6 +49,7 @@ public final class PromptToCodeService: ObservableObject {
     public var fileURL: URL
     public var allCode: String
     public var extraSystemPrompt: String?
+    public var generateDescriptionRequirement: Bool?
 
     public init(
         code: String,
@@ -59,7 +60,8 @@ public final class PromptToCodeService: ObservableObject {
         projectRootURL: URL,
         fileURL: URL,
         allCode: String,
-        extraSystemPrompt: String? = nil
+        extraSystemPrompt: String? = nil,
+        generateDescriptionRequirement: Bool?
     ) {
         self.code = code
         self.selectionRange = selectionRange
@@ -71,6 +73,7 @@ public final class PromptToCodeService: ObservableObject {
         self.allCode = allCode
         self.history = .empty
         self.extraSystemPrompt = extraSystemPrompt
+        self.generateDescriptionRequirement = generateDescriptionRequirement
     }
 
     public func modifyCode(prompt: String) async throws {
@@ -92,7 +95,8 @@ public final class PromptToCodeService: ObservableObject {
                 projectRootURL: projectRootURL,
                 fileURL: fileURL,
                 allCode: allCode,
-                extraSystemPrompt: extraSystemPrompt
+                extraSystemPrompt: extraSystemPrompt,
+                generateDescriptionRequirement: generateDescriptionRequirement
             )
             for try await fragment in stream {
                 code = fragment.code
@@ -145,7 +149,8 @@ protocol PromptToCodeAPI {
         projectRootURL: URL,
         fileURL: URL,
         allCode: String,
-        extraSystemPrompt: String?
+        extraSystemPrompt: String?,
+        generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error>
 
     func stopResponding()

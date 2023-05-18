@@ -17,19 +17,17 @@ let package = Package(
                 "UpdateChecker",
                 "Logger",
                 "UserDefaultsObserver",
+                "XcodeInspector",
             ]
         ),
         .library(
             name: "Client",
             targets: [
                 "SuggestionModel",
-                "GitHubCopilotService",
                 "Client",
                 "XPCShared",
                 "Preferences",
-                "LaunchAgentManager",
                 "Logger",
-                "UpdateChecker",
             ]
         ),
         .library(
@@ -175,11 +173,28 @@ let package = Package(
 
         .target(
             name: "ChatService",
-            dependencies: ["OpenAIService", "ChatPlugins", "Environment"]
+            dependencies: [
+                "ChatPlugins",
+                "ChatContextCollector",
+                "OpenAIService",
+                "Environment",
+                "XcodeInspector",
+                "Preferences",
+            ]
         ),
         .target(
             name: "ChatPlugins",
             dependencies: ["OpenAIService", "Environment", "Terminal"]
+        ),
+        .target(
+            name: "ChatContextCollector",
+            dependencies: [
+                "OpenAIService",
+                "Environment",
+                "Preferences",
+                "SuggestionModel",
+                "XcodeInspector",
+            ]
         ),
 
         // MARK: - UI
@@ -225,6 +240,16 @@ let package = Package(
             dependencies: ["Preferences", "GitHubCopilotService"]
         ),
         .target(name: "UserDefaultsObserver"),
+        .target(
+            name: "XcodeInspector",
+            dependencies: [
+                "AXExtension",
+                "Environment",
+                "Logger",
+                "AXNotificationStream",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+            ]
+        ),
 
         // MARK: - GitHub Copilot
 

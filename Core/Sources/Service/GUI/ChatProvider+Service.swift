@@ -1,4 +1,5 @@
 import ChatService
+import Combine
 import Foundation
 import OpenAIService
 import SuggestionWidget
@@ -11,6 +12,7 @@ extension ChatProvider {
         onSwitchContext: @escaping () -> Void
     ) {
         self.init()
+
         let cancellable = service.objectWillChange.sink { [weak self] in
             guard let self else { return }
             Task { @MainActor in
@@ -22,6 +24,8 @@ extension ChatProvider {
                     )
                 }
                 self.isReceivingMessage = await service.chatGPTService.isReceivingMessage
+                self.systemPrompt = service.systemPrompt
+                self.extraSystemPrompt = service.extraSystemPrompt
             }
         }
 
@@ -75,5 +79,19 @@ extension ChatProvider {
                 }
             }
         }
+
+        onResetPrompt = {
+            Task {
+                await service.resetPrompt()
+            }
+        }
+        
+        onRunCustomCommand = { command in
+            Task {
+                let commandHandler = PseudoCommandHandler()
+                await commandHandler.handleCustomCommand(command)
+            }
+        }
     }
 }
+
