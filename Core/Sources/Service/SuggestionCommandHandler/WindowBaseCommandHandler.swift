@@ -406,15 +406,7 @@ extension WindowBaseCommandHandler {
                 return ""
             }()
             
-            if specifiedSystemPrompt != nil {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            } else if !customCommandPrefix.isEmpty {
+            if specifiedSystemPrompt != nil || extraSystemPrompt != nil {
                 await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
                         role: .assistant,
