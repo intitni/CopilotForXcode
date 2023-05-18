@@ -105,6 +105,24 @@ struct ExtensionServiceView: View {
                 }) {
                     Text("Reveal Extension Service in Finder")
                 }
+
+                Button(action: {
+                    let url = URL(
+                        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+                    )!
+                    NSWorkspace.shared.open(url)
+                }) {
+                    Text("Accessibility Settings")
+                }
+
+                Button(action: {
+                    let url = URL(
+                        string: "x-apple.systempreferences:com.apple.ExtensionsPreferences"
+                    )!
+                    NSWorkspace.shared.open(url)
+                }) {
+                    Text("Extensions Settings")
+                }
             }
         }
         .padding()
