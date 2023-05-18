@@ -194,11 +194,11 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var embedFileContentInChatContextIfNoSelection: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "EmbedFileContentInChatContextIfNoSelection")
+        .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
     
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
-        .init(defaultValue: 200, key: "MaxEmbeddableFileInChatContextLineCount")
+        .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
 }
 
