@@ -255,6 +255,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     extraSystemPrompt: nil,
                     prompt: nil,
                     isContinuous: false,
+                    generateDescription: nil,
                     name: nil
                 )
             } catch {
@@ -287,26 +288,28 @@ extension WindowBaseCommandHandler {
         else { throw CommandNotFoundError() }
 
         switch command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
+            let updatePrompt = useExtraSystemPrompt ?? true
             try await startChat(
                 specifiedSystemPrompt: nil,
-                extraSystemPrompt: extraSystemPrompt,
+                extraSystemPrompt: updatePrompt ? extraSystemPrompt : nil,
                 sendingMessageImmediately: prompt,
                 name: command.name
             )
         case let .customChat(systemPrompt, prompt):
             try await startChat(
                 specifiedSystemPrompt: systemPrompt,
-                extraSystemPrompt: nil,
+                extraSystemPrompt: "",
                 sendingMessageImmediately: prompt,
                 name: command.name
             )
-        case let .promptToCode(extraSystemPrompt, prompt, continuousMode):
+        case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             try await presentPromptToCode(
                 editor: editor,
                 extraSystemPrompt: extraSystemPrompt,
                 prompt: prompt,
                 isContinuous: continuousMode ?? false,
+                generateDescription: generateDescription,
                 name: command.name
             )
         }
@@ -317,6 +320,7 @@ extension WindowBaseCommandHandler {
         extraSystemPrompt: String?,
         prompt: String?,
         isContinuous: Bool,
+        generateDescription: Bool?,
         name: String?
     ) async throws {
         presenter.markAsProcessing(true)
@@ -373,6 +377,7 @@ extension WindowBaseCommandHandler {
             selectionRange: selection,
             language: codeLanguage,
             extraSystemPrompt: extraSystemPrompt,
+            generateDescriptionRequirement: generateDescription,
             name: name
         )
 
