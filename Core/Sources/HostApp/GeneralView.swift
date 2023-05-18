@@ -115,6 +115,7 @@ struct ExtensionServiceView: View {
 
     func checkStatus() {
         Task {
+            try await Task.sleep(nanoseconds: 2_000_000_000)
             isRunningAction = true
             defer { isRunningAction = false }
             do {
