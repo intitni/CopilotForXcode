@@ -94,7 +94,8 @@ struct OpenAIView: View {
                         in: 0...model.maxToken,
                         step: 1
                     ) {
-                        Text("Max Token")
+                        Text("Max Token (Including Reply)")
+                            .multilineTextAlignment(.trailing)
                     }
                     TextField(text: binding) {
                         EmptyView()
