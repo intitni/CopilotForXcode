@@ -74,7 +74,8 @@ struct PseudoCommandHandler {
                 return it
             }
             switch command.feature {
-            case .customChat:
+            // editor content is not required.
+            case .customChat, .chatWithSelection:
                 return .init(
                     content: "",
                     lines: [],
@@ -85,7 +86,8 @@ struct PseudoCommandHandler {
                     indentSize: 0,
                     usesTabsForIndentation: false
                 )
-            case .chatWithSelection, .promptToCode:
+            // editor content is required.
+            case .promptToCode:
                 return nil
             }
         }() else {

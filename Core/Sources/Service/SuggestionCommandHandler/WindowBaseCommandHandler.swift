@@ -234,8 +234,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {
-                try await startChatWithSelection(
-                    editor: editor,
+                try await startChat(
                     specifiedSystemPrompt: nil,
                     extraSystemPrompt: nil,
                     sendingMessageImmediately: nil,
@@ -289,8 +288,7 @@ extension WindowBaseCommandHandler {
 
         switch command.feature {
         case let .chatWithSelection(extraSystemPrompt, prompt):
-            try await startChatWithSelection(
-                editor: editor,
+            try await startChat(
                 specifiedSystemPrompt: nil,
                 extraSystemPrompt: extraSystemPrompt,
                 sendingMessageImmediately: prompt,
@@ -385,69 +383,6 @@ extension WindowBaseCommandHandler {
 
         presenter.presentPromptToCode(fileURL: fileURL)
     }
-
-    private func startChatWithSelection(
-        editor: EditorContent,
-        specifiedSystemPrompt: String?,
-        extraSystemPrompt: String?,
-        sendingMessageImmediately: String?,
-        name: String?
-    ) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let fileURL = try await Environment.fetchCurrentFileURL()
-
-        let code = {
-            guard let selection = editor.selections.last,
-                  selection.start != selection.end else { return "" }
-            return editor.selectedCode(in: selection)
-        }()
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: fileURL)
-        
-        chat.mutateSystemPrompt(specifiedSystemPrompt)
-        chat.mutateExtraSystemPrompt(extraSystemPrompt ?? "")
-
-        Task {
-            let customCommandPrefix = {
-                if let name { return "[\(name)] " }
-                return ""
-            }()
-            
-            if specifiedSystemPrompt != nil {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            } else if !code.isEmpty, let selection = editor.selections.last {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)Chatting about selected code in `\(fileURL.lastPathComponent)` from `\(selection.start.line + 1):\(selection.start.character + 1)` to `\(selection.end.line + 1):\(selection.end.character)`.\nThe code will persist in the conversation."
-                    ))
-                }
-            } else if !customCommandPrefix.isEmpty {
-                await chat.chatGPTService.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            }
-
-            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
-                try await chat.send(content: sendingMessageImmediately)
-            }
-        }
-
-        presenter.presentChatRoom(fileURL: fileURL)
-    }
     
     private func startChat(
         specifiedSystemPrompt: String?,
@@ -459,7 +394,6 @@ extension WindowBaseCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         let focusedElementURI = try await Environment.fetchFocusedElementURI()
-        let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
 
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
 
