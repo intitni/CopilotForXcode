@@ -1,26 +1,30 @@
-// swift-tools-version: 5.8
+// swift-tools-version: 5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "Tool",
+    platforms: [.macOS(.v12)],
     products: [
-        .library(
-            name: "Tool",
-            targets: ["LangChainService"]
-        ),
+        .library(name: "Terminal", targets: ["Terminal"]),
+        .library(name: "LangChainService", targets: ["LangChainService"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/pvieito/PythonKit.git", from: "0.3.1"),
-    ],
+    dependencies: [],
     targets: [
+        // MARK: - Helpers
+
+        .target(name: "Terminal"),
+
+        // MARK: - Services
+
         .target(
             name: "LangChainService",
-            dependencies: [
-                "PythonKit",
-            ]
+            dependencies: []
         ),
+
+        // MARK: - Tests
+
         .testTarget(
             name: "LangChainServiceTests",
             dependencies: ["LangChainService"]

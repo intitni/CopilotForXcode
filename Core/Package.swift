@@ -47,6 +47,7 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(path: "../Tool"),
         .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
@@ -184,7 +185,11 @@ let package = Package(
         ),
         .target(
             name: "ChatPlugins",
-            dependencies: ["OpenAIService", "Environment", "Terminal"]
+            dependencies: [
+                "OpenAIService",
+                "Environment",
+                .product(name: "Terminal", package: "Tool"),
+            ]
         ),
         .target(
             name: "ChatContextCollector",
@@ -226,12 +231,11 @@ let package = Package(
         .target(name: "DisplayLink"),
         .target(name: "ActiveApplicationMonitor"),
         .target(name: "AXNotificationStream"),
-        .target(name: "Terminal"),
         .target(
             name: "UpdateChecker",
             dependencies: [
                 "Logger",
-                "Sparkle"
+                "Sparkle",
             ]
         ),
         .target(name: "AXExtension"),
@@ -260,7 +264,7 @@ let package = Package(
                 "SuggestionModel",
                 "XPCShared",
                 "Preferences",
-                "Terminal",
+                .product(name: "Terminal", package: "Tool"),
             ]
         ),
         .testTarget(
@@ -293,7 +297,7 @@ let package = Package(
                 "SuggestionModel",
                 "Preferences",
                 "KeychainAccess",
-                "Terminal",
+                .product(name: "Terminal", package: "Tool"),
                 "Configs",
             ]
         ),
