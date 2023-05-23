@@ -172,10 +172,11 @@ public final class SuggestionWidgetController: NSObject {
                         if app != previousApp {
                             windowChangeObservationTask?.cancel()
                             windowChangeObservationTask = nil
-                            self.observeXcodeWindowChangeIfNeeded(app)
+                            observeXcodeWindowChangeIfNeeded(app)
                         }
-                        await self.updateContentForActiveEditor()
-                        self.updateWindowLocation()
+                        await updateContentForActiveEditor()
+                        updateWindowLocation()
+                        orderFront()
                     } else {
                         if ActiveApplicationMonitor.activeApplication?.bundleIdentifier != Bundle
                             .main.bundleIdentifier
@@ -203,11 +204,8 @@ public final class SuggestionWidgetController: NSObject {
                     guard let activeXcode = ActiveApplicationMonitor.activeXcode else { continue }
                     guard fullscreenDetector.isOnActiveSpace else { continue }
                     let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                    if let window = app.focusedWindow, window.isFullScreen {
-                        widgetWindow.orderFrontRegardless()
-                        tabWindow.orderFrontRegardless()
-                        panelWindow.orderFrontRegardless()
-                        chatWindow.orderFrontRegardless()
+                    if let window = app.focusedWindow {
+                        orderFront()
                     }
                 }
             }
@@ -262,6 +260,13 @@ public final class SuggestionWidgetController: NSObject {
                 updateColorScheme()
             }
         }
+    }
+    
+    func orderFront() {
+        widgetWindow.orderFrontRegardless()
+        tabWindow.orderFrontRegardless()
+        panelWindow.orderFrontRegardless()
+        chatWindow.orderFrontRegardless()
     }
 }
 

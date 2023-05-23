@@ -77,7 +77,8 @@ func highlightedCodeBlock(
         return formatted
     default:
         var language = language
-        if language == "objective-c" {
+        // Workaround: Highlightr uses a different identifier for Objective-C.
+        if language.lowercased().hasPrefix("objective"), language.lowercased().hasSuffix("c") {
             language = "objectivec"
         }
         func unhighlightedCode() -> NSAttributedString {
