@@ -168,9 +168,9 @@ This feature is powered by ChatGPT. Please ensure that you have set up your Open
 
 The chat knows the following information:
 - The selected code in the active editor.
-- The file path of the active file.
-- The project path.
-- The errors and warnings in the active editor.
+- The relative path of the file.
+- The error and warning labels in the active editor.
+- The text cursor location.
 
 There are currently two tabs in the chat panel: one is available shared across Xcode, and the other is only available in the current file.
 
