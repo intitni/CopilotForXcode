@@ -80,6 +80,7 @@ final class Workspace {
     }
 
     let projectRootURL: URL
+    let openedFileRecoverableStorage: OpenedFileRecoverableStorage
     var lastSuggestionUpdateTime = Environment.now()
     var isExpired: Bool {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
@@ -98,17 +99,7 @@ final class Workspace {
         ], context: nil
     )
 
-    private var _suggestionService: SuggestionServiceType? {
-        didSet {
-            guard _suggestionService != nil else { return }
-            Task {
-                try await Task.sleep(nanoseconds: 1_000_000_000)
-                for (_, filespace) in filespaces {
-                    notifyOpenFile(filespace: filespace)
-                }
-            }
-        }
-    }
+    private var _suggestionService: SuggestionServiceType?
 
     private var suggestionService: SuggestionServiceType? {
         // Check if the workspace is disabled.
@@ -149,10 +140,16 @@ final class Workspace {
 
     private init(projectRootURL: URL) {
         self.projectRootURL = projectRootURL
+        openedFileRecoverableStorage = .init(projectRootURL: projectRootURL)
 
         userDefaultsObserver.onChange = { [weak self] in
             guard let self else { return }
             _ = self.suggestionService
+        }
+        
+        let openedFiles = openedFileRecoverableStorage.openedFiles
+        for fileURL in openedFiles {
+            _ = createFilespaceIfNeeded(fileURL: fileURL)
         }
     }
 
@@ -364,6 +361,7 @@ extension Workspace {
 
     func notifyOpenFile(filespace: Filespace) {
         refreshUpdateTime()
+        openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
             try await suggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
@@ -401,6 +399,7 @@ extension Workspace {
                 Task {
                     try await suggestionService?.notifyCloseTextDocument(fileURL: fileURL)
                 }
+                openedFileRecoverableStorage.closeFile(fileURL: fileURL)
                 filespaces[fileURL] = nil
             }
         }
