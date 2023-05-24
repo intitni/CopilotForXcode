@@ -26,7 +26,7 @@ public class RealtimeSuggestionController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var focusedUIElement: AXUIElement?
-    private var sourceEditor: AXUIElement?
+    private var sourceEditor: SourceEditor?
 
     var isCommentMode: Bool {
         UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
@@ -116,7 +116,7 @@ public class RealtimeSuggestionController {
         }
 
         guard focusElementType == "Source Editor" else { return }
-        sourceEditor = focusElement
+        sourceEditor = SourceEditor(runningApplication: activeXcode, element: focusElement)
 
         editorObservationTask?.cancel()
         editorObservationTask = nil
@@ -138,11 +138,7 @@ public class RealtimeSuggestionController {
                     self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
-                    guard let editor = sourceEditor else { continue }
-                    let sourceEditor = SourceEditor(
-                        runningApplication: activeXcode,
-                        element: editor
-                    )
+                    guard let sourceEditor else { continue }
                     await PseudoCommandHandler()
                         .invalidateRealtimeSuggestionsIfNeeded(sourceEditor: sourceEditor)
                 default:

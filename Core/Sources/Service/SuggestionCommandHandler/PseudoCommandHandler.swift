@@ -39,9 +39,21 @@ struct PseudoCommandHandler {
         ))
     }
 
-    func generateRealtimeSuggestions(sourceEditor: AXUIElement?) async {
+    func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
         // Can't use handler if content is not available.
-        guard let editor = await getEditorContent(sourceEditor: sourceEditor) else { return }
+        guard
+            let editor = await getEditorContent(sourceEditor: sourceEditor),
+            let filespace = await getFilespace()
+        else { return }
+
+        if await filespace.validateSuggestions(
+            lines: editor.lines,
+            cursorPosition: editor.cursorPosition
+        ) {
+            return
+        } else {
+            PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: filespace.fileURL)
+        }
 
         // Otherwise, get it from pseudo handler directly.
         let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
@@ -246,11 +258,9 @@ extension PseudoCommandHandler {
     }
 
     @ServiceActor
-    func getEditorContent(sourceEditor: AXUIElement?) async -> EditorContent? {
-        guard
-            let filespace = await getFilespace(),
-            let content = await getFileContent(sourceEditor: sourceEditor)
-        else { return nil }
+    func getEditorContent(sourceEditor: SourceEditor?) async -> EditorContent? {
+        guard let filespace = await getFilespace(), let sourceEditor else { return nil }
+        let content = sourceEditor.content
         let uti = filespace.uti ?? ""
         let tabSize = filespace.tabSize ?? 4
         let indentSize = filespace.indentSize ?? 4

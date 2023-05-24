@@ -154,6 +154,7 @@ public struct SuggestionInjector {
 
         var toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
 
+        // prepending prefix text not in range if needed.
         if let firstRemovedLine,
            !firstRemovedLine.isEmptyOrNewLine,
            start.character > 0,
@@ -175,8 +176,16 @@ public struct SuggestionInjector {
             )
         }
 
+        // appending suffix text not in range if needed.
         let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
+        let skipAppendingDueToContinueTyping = {
+            guard let first = toBeInserted.first?.dropLast(1), !first.isEmpty else { return false }
+            let droppedLast = lastRemovedLine?.dropLast(1)
+            guard let droppedLast, !droppedLast.isEmpty else { return false }
+            return first.hasPrefix(droppedLast)
+        }()
         if let lastRemovedLine,
+           !skipAppendingDueToContinueTyping,
            !lastRemovedLine.isEmptyOrNewLine,
            end.character >= 0,
            end.character - 1 < lastRemovedLine.count,
@@ -191,6 +200,7 @@ public struct SuggestionInjector {
                 toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
             }
             let leftover = lastRemovedLine[leftoverRange]
+            
             toBeInserted[toBeInserted.endIndex - 1]
                 .append(contentsOf: leftover)
         }
