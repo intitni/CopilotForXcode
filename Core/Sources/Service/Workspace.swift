@@ -8,7 +8,10 @@ import SuggestionInjector
 import SuggestionModel
 import SuggestionService
 import UserDefaultsObserver
+import XcodeInspector
 import XPCShared
+
+// MARK: - Filespace
 
 @ServiceActor
 final class Filespace {
@@ -65,6 +68,8 @@ final class Filespace {
         lastSuggestionUpdateTime = Environment.now()
     }
 }
+
+// MARK: - Workspace
 
 @ServiceActor
 final class Workspace {
@@ -167,18 +172,36 @@ final class Workspace {
         return false
     }
 
+    /// This is the only way to create a workspace and a filespace.
     static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws
         -> (workspace: Workspace, filespace: Filespace)
     {
-        // never create duplicated filespaces
+        // If we know which project is opened.
+        if let currentProjectURL = try await Environment.fetchCurrentProjectRootURLFromXcode() {
+            if let existed = workspaces[currentProjectURL] {
+                let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
+                return (existed, filespace)
+            }
+            
+            let new = Workspace(projectRootURL: currentProjectURL)
+            let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
+            return (new, filespace)
+        }
+        
+        // If not, we try to reuse a filespace if found.
+        //
+        // Sometimes, we can't get the project root path from Xcode window, for example, when the
+        // quick open window in displayed.
         for workspace in workspaces.values {
             if let filespace = workspace.filespaces[fileURL] {
                 return (workspace, filespace)
             }
         }
 
-        let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
-        let workspaceURL = projectURL ?? fileURL
+        // If we can't find an existed one, we will try to guess it.
+        // Most of the time we won't enter this branch, just incase.
+        
+        let workspaceURL = try await Environment.guessProjectRootURLForFile(fileURL)
 
         let workspace = {
             if let existed = workspaces[workspaceURL] {
@@ -199,7 +222,7 @@ final class Workspace {
         return (workspace, filespace)
     }
 
-    func createFilespaceIfNeeded(fileURL: URL) -> Filespace {
+    private func createFilespaceIfNeeded(fileURL: URL) -> Filespace {
         let existedFilespace = filespaces[fileURL]
         let filespace = existedFilespace ?? .init(fileURL: fileURL, onSave: { [weak self]
             filespace in
@@ -217,6 +240,8 @@ final class Workspace {
         return filespace
     }
 }
+
+// MARK: - Suggestion
 
 extension Workspace {
     @discardableResult
@@ -366,6 +391,8 @@ extension Workspace {
     }
 }
 
+// MARK: - Cleanup
+
 extension Workspace {
     func cleanUp(availableTabs: Set<String>) {
         for (fileURL, _) in filespaces {
@@ -392,6 +419,8 @@ extension Workspace {
         realtimeSuggestionRequests = []
     }
 }
+
+// MARK: - Helper
 
 final class FileSaveWatcher {
     let url: URL
