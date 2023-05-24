@@ -70,5 +70,10 @@ extension CodeiumSuggestionProvider {
     }
 
     func notifySaveTextDocument(fileURL: URL) async throws {}
+    
+    func cancelRequest() async {
+        await (try? createCodeiumServiceIfNeeded())?
+            .cancelRequest()
+    }
 }
 

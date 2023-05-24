@@ -73,5 +73,10 @@ extension GitHubCopilotSuggestionProvider {
         try await (try? createGitHubCopilotServiceIfNeeded())?
             .notifySaveTextDocument(fileURL: fileURL)
     }
+    
+    func cancelRequest() async {
+        await (try? createGitHubCopilotServiceIfNeeded())?
+            .cancelRequest()
+    }
 }
 
