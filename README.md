@@ -275,7 +275,7 @@ fi
 
 ## License 
 
-GPLv3.
+Please check [LICENSE.md](LICENSE.md) for details.
 
 ## Credits
 
