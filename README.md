@@ -275,7 +275,7 @@ fi
 
 ## License 
 
-MIT.
+GPLv3.
 
 ## Credits
 
