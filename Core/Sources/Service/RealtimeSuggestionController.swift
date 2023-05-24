@@ -171,12 +171,6 @@ public class RealtimeSuggestionController {
     func handleHIDEvent(event: CGEvent) async {
         guard await Environment.isXcodeActive() else { return }
 
-        // Mouse clicks should cancel in-flight tasks.
-        if [CGEventType.rightMouseDown, .leftMouseDown].contains(event.type) {
-            await cancelInFlightTasks()
-            return
-        }
-
         let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let escape = 0x35
 
