@@ -16,17 +16,17 @@ struct CopilotView: View {
 
         init() {}
     }
-    
+
     class ViewModel: ObservableObject {
         let installationManager = GitHubCopilotInstallationManager()
-        
+
         @Published var installationStatus: GitHubCopilotInstallationManager.InstallationStatus
         @Published var installationStep: GitHubCopilotInstallationManager.InstallationStep?
-        
+
         init() {
             installationStatus = installationManager.checkInstallation()
         }
-        
+
         init(
             installationStatus: GitHubCopilotInstallationManager.InstallationStatus,
             installationStep: GitHubCopilotInstallationManager.InstallationStep?
@@ -35,13 +35,13 @@ struct CopilotView: View {
             self.installationStatus = installationStatus
             self.installationStep = installationStep
         }
-        
+
         func refreshInstallationStatus() {
             Task { @MainActor in
                 installationStatus = installationManager.checkInstallation()
             }
         }
-        
+
         func install() async throws {
             defer { refreshInstallationStatus() }
             do {
@@ -92,7 +92,7 @@ struct CopilotView: View {
         Self.copilotAuthService = service
         return service
     }
-    
+
     var installButton: some View {
         Button(action: {
             Task {
@@ -104,6 +104,21 @@ struct CopilotView: View {
             }
         }) {
             Text("Install")
+        }
+        .disabled(viewModel.installationStep != nil)
+    }
+
+    var updateButton: some View {
+        Button(action: {
+            Task {
+                do {
+                    try await viewModel.install()
+                } catch {
+                    toast(Text(error.localizedDescription), .error)
+                }
+            }
+        }) {
+            Text("Update")
         }
         .disabled(viewModel.installationStep != nil)
     }
@@ -150,14 +165,26 @@ struct CopilotView: View {
 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Language Server Version: \(version ?? "Loading..")")
                         switch viewModel.installationStatus {
                         case .notInstalled:
+                            Text("Copilot.Vim Version: Not Installed")
                             installButton
-                        case .installed:
+                        case let .installed(version):
+                            Text("Copilot.Vim Version: \(version)")
+                            uninstallButton
+                        case let .outdated(version, latest):
+                            Text("Copilot.Vim Version: \(version) (Update Available: \(latest))")
+                            updateButton
+                            uninstallButton
+                        case let .unsupported(version, latest):
+                            Text("Copilot.Vim Version: \(version) (Supported Version: \(latest))")
+                            updateButton
                             uninstallButton
                         }
                     }
+                    
+                    Text("Language Server Version: \(version ?? "Loading..")")
+                    
                     Text("Status: \(status?.description ?? "Loading..")")
 
                     HStack(alignment: .center) {
@@ -208,6 +235,20 @@ struct CopilotView: View {
             Self.copilotAuthService = nil
         }.onChange(of: settings.nodePath) { _ in
             Self.copilotAuthService = nil
+        }.onChange(of: viewModel.installationStep) { newValue in
+            if let step = newValue {
+                switch step {
+                case .downloading:
+                    toast(Text("Downloading.."), .info)
+                case .uninstalling:
+                    toast(Text("Uninstalling old version.."), .info)
+                case .decompressing:
+                    toast(Text("Decompressing.."), .info)
+                case .done:
+                    toast(Text("Done!"), .info)
+                    checkStatus()
+                }
+            }
         }
     }
 

@@ -255,7 +255,13 @@ let package = Package(
 
         .target(
             name: "GitHubCopilotService",
-            dependencies: ["LanguageClient", "SuggestionModel", "XPCShared", "Preferences"]
+            dependencies: [
+                "LanguageClient",
+                "SuggestionModel",
+                "XPCShared",
+                "Preferences",
+                "Terminal",
+            ]
         ),
         .testTarget(
             name: "GitHubCopilotServiceTests",

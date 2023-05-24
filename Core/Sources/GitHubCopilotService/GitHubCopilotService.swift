@@ -198,6 +198,16 @@ public class GitHubCopilotBaseService {
             try? FileManager.default
                 .createDirectory(at: executableFolderURL, withIntermediateDirectories: false)
         }
+        
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executableFolderURL.path
+        )
+        
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: supportFolderURL.path
+        )
 
         return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
     }
