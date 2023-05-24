@@ -184,6 +184,7 @@ final class Workspace {
             }
             
             let new = Workspace(projectRootURL: currentProjectURL)
+            workspaces[currentProjectURL] = new
             let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
             return (new, filespace)
         }
@@ -419,44 +420,3 @@ extension Workspace {
         realtimeSuggestionRequests = []
     }
 }
-
-// MARK: - Helper
-
-final class FileSaveWatcher {
-    let url: URL
-    var fileHandle: FileHandle?
-    var source: DispatchSourceFileSystemObject?
-    var changeHandler: () -> Void = {}
-
-    init(fileURL: URL) {
-        url = fileURL
-        startup()
-    }
-
-    deinit {
-        source?.cancel()
-    }
-
-    func startup() {
-        if let source = source {
-            source.cancel()
-        }
-
-        fileHandle = try? FileHandle(forReadingFrom: url)
-        if let fileHandle {
-            source = DispatchSource.makeFileSystemObjectSource(
-                fileDescriptor: fileHandle.fileDescriptor,
-                eventMask: .link,
-                queue: .main
-            )
-
-            source?.setEventHandler { [weak self] in
-                self?.changeHandler()
-                self?.startup()
-            }
-
-            source?.resume()
-        }
-    }
-}
-
