@@ -148,7 +148,7 @@ The app can provide real-time code suggestions based on the files you have opene
 
 If you're working on a company project and don't want the suggestion feature to be triggered, you can globally disable it and choose to enable it only for specific projects. 
 
-Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
+Whenever your code is updated, the app will automatically fetch suggestions for you, you can cancel this by pressing **Escape**.
 
 *: If a file is already open before the helper app launches, you will need to switch to those files in order to send the open file notification. 
 
