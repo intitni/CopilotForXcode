@@ -275,7 +275,7 @@ fi
 
 ## License 
 
-MIT.
+Please check [LICENSE.md](LICENSE.md) for details.
 
 ## Credits
 
