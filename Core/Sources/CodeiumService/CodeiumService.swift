@@ -230,7 +230,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
         let relativePath = getRelativePath(of: fileURL)
 
-        let request = CodeiumRequest.GetCompletion(requestBody: .init(
+        let request = await CodeiumRequest.GetCompletion(requestBody: .init(
             metadata: try getMetadata(),
             document: .init(
                 absolute_path: fileURL.path,
@@ -306,7 +306,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.openDocument(
+        await openedDocumentPool.openDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -315,7 +315,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.updateDocument(
+        await openedDocumentPool.updateDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -323,7 +323,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     }
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
-        openedDocumentPool.closeDocument(url: fileURL)
+        await openedDocumentPool.closeDocument(url: fileURL)
     }
 }
 
