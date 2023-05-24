@@ -191,7 +191,7 @@ public class RealtimeSuggestionController {
             if event.type == .keyDown {
                 await cancelInFlightTasks()
             } else {
-                let task = Task {
+                Task {
                     #warning(
                         "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
                     )
@@ -200,7 +200,6 @@ public class RealtimeSuggestionController {
                         self.triggerPrefetchDebounced(force: true)
                     }
                 }
-                inflightRealtimeSuggestionsTasks.insert(task)
             }
         }
     }
@@ -246,18 +245,6 @@ public class RealtimeSuggestionController {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }
-            }
-            group.addTask {
-                await { @ServiceActor in
-                    inflightRealtimeSuggestionsTasks.forEach {
-                        if $0 == excluding { return }
-                        $0.cancel()
-                    }
-                    inflightRealtimeSuggestionsTasks.removeAll()
-                    if let excluded = excluding {
-                        inflightRealtimeSuggestionsTasks.insert(excluded)
-                    }
-                }()
             }
         }
     }

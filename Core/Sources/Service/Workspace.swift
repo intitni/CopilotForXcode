@@ -91,7 +91,6 @@ final class Workspace {
         UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
     }
 
-    var realtimeSuggestionRequests = Set<Task<Void, Error>>()
     let userDefaultsObserver = UserDefaultsObserver(
         object: UserDefaults.shared, forKeyPaths: [
             UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
@@ -245,12 +244,8 @@ extension Workspace {
     @discardableResult
     func generateSuggestions(
         forFileAt fileURL: URL,
-        editor: EditorContent,
-        shouldcancelInFlightRealtimeSuggestionRequests: Bool = true
+        editor: EditorContent
     ) async throws -> [CodeSuggestion] {
-        if shouldcancelInFlightRealtimeSuggestionRequests {
-            cancelInFlightRealtimeSuggestionRequests()
-        }
         refreshUpdateTime()
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
@@ -291,7 +286,6 @@ extension Workspace {
     }
 
     func selectNextSuggestion(forFileAt fileURL: URL) {
-        cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
@@ -303,7 +297,6 @@ extension Workspace {
     }
 
     func selectPreviousSuggestion(forFileAt fileURL: URL) {
-        cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
@@ -315,7 +308,6 @@ extension Workspace {
     }
 
     func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
-        cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
 
         if let editor, !editor.uti.isEmpty {
@@ -331,7 +323,6 @@ extension Workspace {
     }
 
     func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CodeSuggestion? {
-        cancelInFlightRealtimeSuggestionRequests()
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               !filespace.suggestions.isEmpty,
@@ -412,10 +403,8 @@ extension Workspace {
         return filespace.isExpired
     }
 
-    func cancelInFlightRealtimeSuggestionRequests() {
-        for task in realtimeSuggestionRequests {
-            task.cancel()
-        }
-        realtimeSuggestionRequests = []
+    func cancelInFlightRealtimeSuggestionRequests() async {
+        guard let suggestionService else { return }
+        await suggestionService.cancelRequest()
     }
 }
