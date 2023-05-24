@@ -41,7 +41,6 @@ final class WidgetDataSource {
     @discardableResult
     func createChatIfNeeded(for url: URL) -> ChatService {
         let build = {
-            let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
             let service = ChatService(chatGPTService: ChatGPTService())
             let provider = ChatProvider(
                 service: service,
