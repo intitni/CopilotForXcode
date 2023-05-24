@@ -67,6 +67,20 @@ final class Filespace {
     func refreshUpdateTime() {
         lastSuggestionUpdateTime = Environment.now()
     }
+    
+    func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
+        if cursorPosition.line != suggestionSourceSnapshot.cursorPosition.line {
+            reset()
+            return false
+        }
+        
+        guard cursorPosition.line >= 0, cursorPosition.line < lines.count else {
+            reset()
+            return false
+        }
+        
+        return true
+    }
 }
 
 // MARK: - Workspace

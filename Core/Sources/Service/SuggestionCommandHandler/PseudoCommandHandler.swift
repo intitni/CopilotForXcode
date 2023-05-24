@@ -1,9 +1,10 @@
 import ActiveApplicationMonitor
 import AppKit
-import SuggestionModel
 import Environment
 import Preferences
 import SuggestionInjector
+import SuggestionModel
+import XcodeInspector
 import XPCShared
 
 /// It's used to run some commands without really triggering the menu bar item.
@@ -51,6 +52,19 @@ struct PseudoCommandHandler {
         case .floatingWidget:
             let handler = WindowBaseCommandHandler()
             _ = try? await handler.generateRealtimeSuggestions(editor: editor)
+        }
+    }
+
+    func invalidateRealtimeSuggestionsIfNeeded(sourceEditor: SourceEditor) async {
+        guard let fileURL = try? await Environment.fetchCurrentFileURL(),
+              let (_, filespace) = try? await Workspace
+              .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
+
+        if await !filespace.validateSuggestions(
+            lines: sourceEditor.content.lines,
+            cursorPosition: sourceEditor.content.cursorPosition
+        ) {
+            PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: fileURL)
         }
     }
 
@@ -214,7 +228,7 @@ extension PseudoCommandHandler {
         let content = focusElement.value
         let split = content.breakLines()
         let range = convertRangeToCursorRange(selectionRange, in: content)
-        return (content, split, [range], range.end)
+        return (content, split, [range], range.start)
     }
 
     func getFileURL() async -> URL? {
@@ -289,10 +303,10 @@ extension PseudoCommandHandler {
         var countE = 0
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
-            if countS <= range.lowerBound && range.lowerBound < countS + line.count {
+            if countS <= range.lowerBound, range.lowerBound < countS + line.count {
                 cursorRange.start = .init(line: i, character: range.lowerBound - countS)
             }
-            if countE <= range.upperBound && range.upperBound < countE + line.count {
+            if countE <= range.upperBound, range.upperBound < countE + line.count {
                 cursorRange.end = .init(line: i, character: range.upperBound - countE)
                 break
             }
@@ -321,3 +335,4 @@ public extension String {
         return all
     }
 }
+
