@@ -275,7 +275,7 @@ fi
 
 ## License 
 
-Please check [LICENSE.md](LICENSE.md) for details.
+Please check [LICENSE](LICENSE) for details.
 
 ## Credits
 
