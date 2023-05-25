@@ -2,7 +2,7 @@ import Foundation
 
 private let maxSize: Int = 1_000_000 // Byte
 
-final class OpenedDocumentPool {
+actor OpenedDocumentPool {
     var openedDocuments = [URL: OpenedDocument]()
 
     func getOtherDocuments(exceptURL: URL) -> [OpenedDocument] {

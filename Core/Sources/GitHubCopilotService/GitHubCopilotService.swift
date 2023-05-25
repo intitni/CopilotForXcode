@@ -31,6 +31,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
+    func cancelRequest() async
 }
 
 protocol GitHubCopilotLSP {
@@ -310,6 +311,10 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         ongoingTasks.insert(task)
 
         return try await task.value
+    }
+    
+    public func cancelRequest() async {
+        await localProcessServer?.cancelOngoingTasks()
     }
 
     public func notifyAccepted(_ completion: CodeSuggestion) async {

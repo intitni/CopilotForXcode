@@ -20,6 +20,7 @@ public protocol SuggestionServiceType {
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
+    func cancelRequest() async
 }
 
 protocol SuggestionServiceProvider: SuggestionServiceType {}
@@ -115,6 +116,10 @@ public extension SuggestionService {
 
     func notifySaveTextDocument(fileURL: URL) async throws {
         try await suggestionProvider.notifySaveTextDocument(fileURL: fileURL)
+    }
+    
+    func cancelRequest() async {
+        await suggestionProvider.cancelRequest()
     }
 }
 

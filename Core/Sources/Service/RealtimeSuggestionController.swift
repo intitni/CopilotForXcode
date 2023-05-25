@@ -9,6 +9,7 @@ import Foundation
 import Logger
 import Preferences
 import QuartzCore
+import XcodeInspector
 
 @ServiceActor
 public class RealtimeSuggestionController {
@@ -25,7 +26,7 @@ public class RealtimeSuggestionController {
     private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var focusedUIElement: AXUIElement?
-    private var sourceEditor: AXUIElement?
+    private var sourceEditor: SourceEditor?
 
     var isCommentMode: Bool {
         UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
@@ -48,9 +49,6 @@ public class RealtimeSuggestionController {
                     await self.handleXcodeChanged(app)
                 }
 
-                #warning(
-                    "TODO: Is it possible to get rid of hid event observation with only AXObserver?"
-                )
                 if ActiveApplicationMonitor.activeXcode != nil {
                     await startHIDObservation(by: 1)
                 } else {
@@ -118,7 +116,7 @@ public class RealtimeSuggestionController {
         }
 
         guard focusElementType == "Source Editor" else { return }
-        sourceEditor = focusElement
+        sourceEditor = SourceEditor(runningApplication: activeXcode, element: focusElement)
 
         editorObservationTask?.cancel()
         editorObservationTask = nil
@@ -127,7 +125,7 @@ public class RealtimeSuggestionController {
             let notificationsFromEditor = AXNotificationStream(
                 app: activeXcode,
                 element: focusElement,
-                notificationNames: kAXValueChangedNotification
+                notificationNames: kAXValueChangedNotification, kAXSelectedTextChangedNotification
             )
 
             for await notification in notificationsFromEditor {
@@ -139,6 +137,10 @@ public class RealtimeSuggestionController {
                 case kAXValueChangedNotification:
                     self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
+                case kAXSelectedTextChangedNotification:
+                    guard let sourceEditor else { continue }
+                    await PseudoCommandHandler()
+                        .invalidateRealtimeSuggestionsIfNeeded(sourceEditor: sourceEditor)
                 default:
                     continue
                 }
@@ -169,21 +171,8 @@ public class RealtimeSuggestionController {
     func handleHIDEvent(event: CGEvent) async {
         guard await Environment.isXcodeActive() else { return }
 
-        // Mouse clicks should cancel in-flight tasks.
-        if [CGEventType.rightMouseDown, .leftMouseDown].contains(event.type) {
-            await cancelInFlightTasks()
-            return
-        }
-
         let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let escape = 0x35
-        let arrowKeys = [0x7B, 0x7C, 0x7D, 0x7E]
-
-        // Arrow keys should cancel in-flight tasks.
-        if arrowKeys.contains(keycode) {
-            await cancelInFlightTasks()
-            return
-        }
 
         // Escape should cancel in-flight tasks.
         // Except that when the completion panel is presented, it should trigger prefetch instead.
@@ -191,7 +180,7 @@ public class RealtimeSuggestionController {
             if event.type == .keyDown {
                 await cancelInFlightTasks()
             } else {
-                let task = Task {
+                Task {
                     #warning(
                         "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
                     )
@@ -200,7 +189,6 @@ public class RealtimeSuggestionController {
                         self.triggerPrefetchDebounced(force: true)
                     }
                 }
-                inflightRealtimeSuggestionsTasks.insert(task)
             }
         }
     }
@@ -246,18 +234,6 @@ public class RealtimeSuggestionController {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }
-            }
-            group.addTask {
-                await { @ServiceActor in
-                    inflightRealtimeSuggestionsTasks.forEach {
-                        if $0 == excluding { return }
-                        $0.cancel()
-                    }
-                    inflightRealtimeSuggestionsTasks.removeAll()
-                    if let excluded = excluding {
-                        inflightRealtimeSuggestionsTasks.insert(excluded)
-                    }
-                }()
             }
         }
     }

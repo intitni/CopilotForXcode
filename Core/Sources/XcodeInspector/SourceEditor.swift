@@ -34,7 +34,7 @@ public class SourceEditor {
                 content: content,
                 lines: split,
                 selections: [range],
-                cursorPosition: range.end,
+                cursorPosition: range.start,
                 lineAnnotations: lineAnnotations
             )
         }

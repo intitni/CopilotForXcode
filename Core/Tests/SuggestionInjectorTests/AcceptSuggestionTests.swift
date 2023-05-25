@@ -131,6 +131,49 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """)
     }
+    
+    func test_accept_suggestion_overlap_continue_typing() async throws {
+        let content = """
+        struct Cat {
+            var name: Str
+        }
+        """
+        let text = """
+            var name: String
+            var age: String
+        """
+        let suggestion = CodeSuggestion(
+            text: text,
+            position: .init(line: 1, character: 12),
+            uuid: "",
+            range: .init(
+                start: .init(line: 1, character: 0),
+                end: .init(line: 1, character: 12)
+            ),
+            displayText: ""
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 0)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 2, character: 19))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct Cat {
+            var name: String
+            var age: String
+        }
+        """)
+    }
 
     func test_propose_suggestion_partial_overlap() async throws {
         let content = "func quickSort() {}}\n"

@@ -34,6 +34,10 @@ func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSugg
 }
 
 class MockSuggestionService: GitHubCopilotSuggestionServiceType {
+    func cancelRequest() async {
+        fatalError()
+    }
+    
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         fatalError()
     }

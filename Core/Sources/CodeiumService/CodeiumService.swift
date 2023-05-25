@@ -18,6 +18,7 @@ public protocol CodeiumSuggestionServiceType {
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
+    func cancelRequest() async
 }
 
 enum CodeiumError: Error, LocalizedError {
@@ -43,6 +44,7 @@ public class CodeiumSuggestionService {
     var server: CodeiumLSP?
     var heartbeatTask: Task<Void, Error>?
     var requestCounter: UInt64 = 0
+    var cancellationCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
     let onServiceLaunched: () -> Void
 
@@ -118,6 +120,7 @@ public class CodeiumSuggestionService {
             self?.server = nil
             self?.heartbeatTask?.cancel()
             self?.requestCounter = 0
+            self?.cancellationCounter = 0
             Logger.codeium.info("Language server is terminated, will be restarted when needed.")
         }
 
@@ -227,7 +230,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
         let relativePath = getRelativePath(of: fileURL)
 
-        let request = CodeiumRequest.GetCompletion(requestBody: .init(
+        let request = await CodeiumRequest.GetCompletion(requestBody: .init(
             metadata: try getMetadata(),
             document: .init(
                 absolute_path: fileURL.path,
@@ -253,8 +256,16 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                     )
                 }
         ))
+        
+        if request.requestBody.metadata.request_id <= cancellationCounter {
+            throw CancellationError()
+        }
 
         let result = try await (try await setupServerIfNeeded()).sendRequest(request)
+        
+        if request.requestBody.metadata.request_id <= cancellationCounter {
+            throw CancellationError()
+        }
 
         return result.completionItems?.filter { item in
             if ignoreSpaceOnlySuggestions {
@@ -280,6 +291,10 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
             )
         } ?? []
     }
+    
+    public func cancelRequest() async {
+        cancellationCounter = requestCounter
+    }
 
     public func notifyAccepted(_ suggestion: CodeSuggestion) async {
         _ = try? await (try setupServerIfNeeded())
@@ -291,7 +306,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.openDocument(
+        await openedDocumentPool.openDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -300,7 +315,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.updateDocument(
+        await openedDocumentPool.updateDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -308,7 +323,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     }
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
-        openedDocumentPool.closeDocument(url: fileURL)
+        await openedDocumentPool.closeDocument(url: fileURL)
     }
 }
 
