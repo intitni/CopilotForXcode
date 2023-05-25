@@ -27,9 +27,10 @@ struct OpenAIView: View {
     var body: some View {
         Form {
             HStack {
-                TextField(text: $settings.openAIAPIKey, prompt: Text("sk-*")) {
+                SecureField(text: $settings.openAIAPIKey, prompt: Text("sk-*")) {
                     Text("OpenAI API Key")
-                }.textFieldStyle(.roundedBorder)
+                }
+                .textFieldStyle(.roundedBorder)
                 Button(action: {
                     openURL(apiKeyURL)
                 }) {
