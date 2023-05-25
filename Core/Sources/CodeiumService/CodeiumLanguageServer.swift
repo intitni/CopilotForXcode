@@ -203,7 +203,7 @@ final class IOTransport {
     }
 
     private func setupFileHandleHandlers() {
-        stdoutPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+        stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
 
             guard !data.isEmpty else {
@@ -211,11 +211,11 @@ final class IOTransport {
             }
 
             if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
-                self.forwardDataToHandler(data)
+                self?.forwardDataToHandler(data)
             }
         }
 
-        stderrPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+        stderrPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
 
             guard !data.isEmpty else {
@@ -223,7 +223,7 @@ final class IOTransport {
             }
 
             if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
-                self.forwardErrorDataToHandler(data)
+                self?.forwardErrorDataToHandler(data)
             }
         }
     }
