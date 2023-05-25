@@ -43,7 +43,6 @@ public final class ScheduledCleaner {
                 }
             }
         }
-        dump(workspaceInfos)
         for (url, workspace) in workspaces {
             if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
