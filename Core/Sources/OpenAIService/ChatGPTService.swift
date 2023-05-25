@@ -187,6 +187,8 @@ public actor ChatGPTService: ChatGPTServiceType {
                         if let content = delta.content {
                             continuation.yield(content)
                         }
+                        
+                        try await Task.sleep(nanoseconds: 10_000_000)
                     }
 
                     continuation.finish()
