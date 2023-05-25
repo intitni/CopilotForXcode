@@ -3,7 +3,7 @@ import Foundation
 import Preferences
 import SuggestionModel
 
-final class CodeiumSuggestionProvider: SuggestionServiceProvider {
+actor CodeiumSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     var codeiumService: CodeiumSuggestionServiceType?

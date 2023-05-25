@@ -3,7 +3,7 @@ import GitHubCopilotService
 import Preferences
 import SuggestionModel
 
-final class GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
+actor GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     var gitHubCopilotService: GitHubCopilotSuggestionServiceType?

@@ -27,7 +27,7 @@ public protocol SuggestionServiceType {
 
 protocol SuggestionServiceProvider: SuggestionServiceType {}
 
-public final class SuggestionService: SuggestionServiceType {
+public actor SuggestionService: SuggestionServiceType {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     let providerChangeObserver = UserDefaultsObserver(
@@ -47,8 +47,10 @@ public final class SuggestionService: SuggestionServiceType {
         self.onServiceLaunched = onServiceLaunched
 
         providerChangeObserver.onChange = { [weak self] in
-            guard let self else { return }
-            suggestionProvider = buildService()
+            Task { [weak self] in
+                guard let self else { return }
+                await rebuildService()
+            }
         }
     }
 
@@ -65,6 +67,10 @@ public final class SuggestionService: SuggestionServiceType {
                 onServiceLaunched: onServiceLaunched
             )
         }
+    }
+
+    func rebuildService() {
+        suggestionProvider = buildService()
     }
 }
 
