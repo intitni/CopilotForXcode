@@ -104,11 +104,11 @@ public struct SuggestionInjector {
             )
         }
 
-        // if the suggestion is only appeding new lines and spaces, return without modification
+        // if the suggestion is only appending new lines and spaces, return without modification
         if completion.text.dropFirst(commonPrefix.count)
             .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
 
-        // determin if it's inserted to the current line or the next line
+        // determine if it's inserted to the current line or the next line
         let lineIndex = start.line + {
             guard let existedLine else { return 0 }
             if existedLine.isEmptyOrNewLine { return 1 }
