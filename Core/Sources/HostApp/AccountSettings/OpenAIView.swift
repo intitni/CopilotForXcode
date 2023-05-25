@@ -23,6 +23,7 @@ struct OpenAIView: View {
     )!
     @Environment(\.openURL) var openURL
     @StateObject var settings = OpenAIViewSettings()
+    @State var maxTokenOverLimit = false
 
     var body: some View {
         Form {
@@ -76,33 +77,39 @@ struct OpenAIView: View {
                 }
             }
 
-            if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
-                let binding = Binding(
-                    get: { String(settings.chatGPTMaxToken) },
-                    set: {
-                        if let selectionMaxToken = Int($0) {
-                            settings.chatGPTMaxToken = model
-                                .maxToken < selectionMaxToken ? model
-                                .maxToken : selectionMaxToken
+            let binding = Binding(
+                get: { String(settings.chatGPTMaxToken) },
+                set: {
+                    if let selectionMaxToken = Int($0) {
+                        if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                            maxTokenOverLimit = model.maxToken < selectionMaxToken
                         } else {
-                            settings.chatGPTMaxToken = 0
+                            maxTokenOverLimit = false
                         }
+                        settings.chatGPTMaxToken = selectionMaxToken
+                    } else {
+                        settings.chatGPTMaxToken = 0
                     }
-                )
-                HStack {
-                    Stepper(
-                        value: $settings.chatGPTMaxToken,
-                        in: 0...model.maxToken,
-                        step: 1
-                    ) {
-                        Text("Max Token (Including Reply)")
-                            .multilineTextAlignment(.trailing)
-                    }
-                    TextField(text: binding) {
-                        EmptyView()
-                    }
-                    .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                }
+            )
+            HStack {
+                Stepper(
+                    value: $settings.chatGPTMaxToken,
+                    in: 0...Int.max,
+                    step: 1
+                ) {
+                    Text("Max Token (Including Reply)")
+                        .multilineTextAlignment(.trailing)
+                }
+                TextField(text: binding) {
+                    EmptyView()
+                }
+                .labelsHidden()
+                .textFieldStyle(.roundedBorder)
+                .foregroundColor(maxTokenOverLimit ? .red : .primary)
+                
+                if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                    Text("Max: \(model.maxToken)")
                 }
             }
 
@@ -132,6 +139,11 @@ struct OpenAIView: View {
                 Text("3 Messages").tag(3)
                 Text("5 Messages").tag(5)
                 Text("7 Messages").tag(7)
+            }
+        }
+        .onAppear {
+            if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
+                maxTokenOverLimit = model.maxToken < settings.chatGPTMaxToken
             }
         }
     }
