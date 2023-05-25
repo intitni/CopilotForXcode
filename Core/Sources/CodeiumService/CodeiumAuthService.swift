@@ -4,10 +4,13 @@ import KeychainAccess
 
 public final class CodeiumAuthService {
     public init() {}
-    let codeiumKeyKey = "codeiumKey"
+    let codeiumKeyKey = "codeiumAuthKey"
     let keychain: Keychain = {
         let info = Bundle.main.infoDictionary
         return Keychain(service: keychainService, accessGroup: keychainAccessGroup)
+            .attributes([
+                kSecUseDataProtectionKeychain as String: true,
+            ])
     }()
 
     var key: String? { try? keychain.getString(codeiumKeyKey) }
