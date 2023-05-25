@@ -3,6 +3,7 @@ import AppKit
 import AXExtension
 import Foundation
 import Logger
+import XcodeInspector
 
 public final class ScheduledCleaner {
     public init() {
@@ -19,7 +20,7 @@ public final class ScheduledCleaner {
             for await app in ActiveApplicationMonitor.createStream() {
                 try Task.checkCancellation()
                 if let app, !app.isXcode {
-                    cleanUp() 
+                    cleanUp()
                 }
             }
         }
@@ -27,51 +28,48 @@ public final class ScheduledCleaner {
 
     @ServiceActor
     func cleanUp() {
-        let availableTabs = findAvailableOpenedTabs()
+        let workspaceInfos = XcodeInspector.shared.xcodes.reduce(
+            into: [
+                XcodeAppInstanceInspector.WorkspaceIdentifier:
+                    XcodeAppInstanceInspector.WorkspaceInfo
+            ]()
+        ) { result, xcode in
+            let infos = xcode.workspaces
+            for (id, info) in infos {
+                if let existed = result[id] {
+                    result[id] = existed.combined(with: info)
+                } else {
+                    result[id] = info
+                }
+            }
+        }
+        dump(workspaceInfos)
         for (url, workspace) in workspaces {
-            if workspace.isExpired {
+            if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
                 for url in workspace.filespaces.keys {
                     WidgetDataSource.shared.cleanup(for: url)
                 }
-                workspace.cleanUp(availableTabs: availableTabs)
+                workspace.cleanUp(availableTabs: [])
                 workspaces[url] = nil
             } else {
+                let tabs = (workspaceInfos[.url(url)]?.tabs ?? [])
+                    .union(workspaceInfos[.unknown]?.tabs ?? [])
                 // cleanup chats for unused files
                 let filespaces = workspace.filespaces
                 for (url, _) in filespaces {
                     if workspace.isFilespaceExpired(
                         fileURL: url,
-                        availableTabs: availableTabs
+                        availableTabs: tabs
                     ) {
                         Logger.service.info("Remove idle filespace")
                         WidgetDataSource.shared.cleanup(for: url)
                     }
                 }
                 // cleanup workspace
-                workspace.cleanUp(availableTabs: availableTabs)
+                workspace.cleanUp(availableTabs: tabs)
             }
         }
-    }
-
-    func findAvailableOpenedTabs() -> Set<String> {
-        guard let xcode = ActiveApplicationMonitor.latestXcode else { return [] }
-        let app = AXUIElementCreateApplication(xcode.processIdentifier)
-        let windows = app.windows.filter { $0.identifier == "Xcode.WorkspaceWindow" }
-        guard !windows.isEmpty else { return [] }
-        var allTabs = Set<String>()
-        for window in windows {
-            guard let editArea = window.firstChild(where: { $0.description == "editor area" })
-            else { continue }
-            let tabBars = editArea.children { $0.description == "tab bar" }
-            for tabBar in tabBars {
-                let tabs = tabBar.children { $0.roleDescription == "tab" }
-                for tab in tabs {
-                    allTabs.insert(tab.title)
-                }
-            }
-        }
-        return allTabs
     }
 }
 

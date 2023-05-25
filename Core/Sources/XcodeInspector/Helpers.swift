@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-public extension NSRunningApplication {
+extension NSRunningApplication {
     var isXcode: Bool { bundleIdentifier == "com.apple.dt.Xcode" }
     var isCopilotForXcodeExtensionService: Bool {
         bundleIdentifier == Bundle.main.bundleIdentifier

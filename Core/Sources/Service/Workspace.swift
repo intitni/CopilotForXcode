@@ -104,7 +104,7 @@ final class Workspace {
     let openedFileRecoverableStorage: OpenedFileRecoverableStorage
     var lastSuggestionUpdateTime = Environment.now()
     var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 8
+        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 4
     }
 
     private(set) var filespaces = [URL: Filespace]()

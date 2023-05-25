@@ -108,7 +108,7 @@ public final class XcodeInspector: ObservableObject {
         latestActiveXcode = xcode
         activeDocumentURL = xcode.documentURL
         focusedWindow = xcode.focusedWindow
-        
+
         let setFocusedElement = { [weak self] in
             guard let self else { return }
             focusedElement = xcode.appElement.focusedElement
@@ -150,10 +150,23 @@ public class AppInstanceInspector: ObservableObject {
 }
 
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
-    @Published var focusedWindow: XcodeWindowInspector?
-    @Published var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published var projectURL: URL = .init(fileURLWithPath: "/")
-    @Published var tabs: Set<String> = []
+    public struct WorkspaceInfo {
+        public let tabs: Set<String>
+
+        public func combined(with info: WorkspaceInfo) -> WorkspaceInfo {
+            return .init(tabs: info.tabs.union(tabs))
+        }
+    }
+
+    public enum WorkspaceIdentifier: Hashable {
+        case url(URL)
+        case unknown
+    }
+
+    @Published public var focusedWindow: XcodeWindowInspector?
+    @Published public var documentURL: URL = .init(fileURLWithPath: "/")
+    @Published public var projectURL: URL = .init(fileURLWithPath: "/")
+    @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
     private var longRunningTasks = Set<Task<Void, Error>>()
     private var focusedWindowObservations = Set<AnyCancellable>()
 
@@ -178,27 +191,22 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(focusedWindowChanged)
 
-        if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
-            tabs = updatedTabs
-        }
+        workspaces = Self.fetchWorkspaceInfo(runningApplication)
         let updateTabsTask = Task { @MainActor in
             let notification = AXNotificationStream(
                 app: runningApplication,
-                notificationNames: kAXFocusedUIElementChangedNotification
+                notificationNames: kAXFocusedUIElementChangedNotification,
+                kAXApplicationDeactivatedNotification
             )
             if #available(macOS 13.0, *) {
                 for await _ in notification.debounce(for: .seconds(5)) {
                     try Task.checkCancellation()
-                    if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
-                        tabs = updatedTabs
-                    }
+                    workspaces = Self.fetchWorkspaceInfo(runningApplication)
                 }
             } else {
                 for await _ in notification {
                     try Task.checkCancellation()
-                    if let updatedTabs = Self.findAvailableOpenedTabs(runningApplication) {
-                        tabs = updatedTabs
-                    }
+                    workspaces = Self.fetchWorkspaceInfo(runningApplication)
                 }
             }
         }
@@ -239,24 +247,50 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    static func findAvailableOpenedTabs(_ app: NSRunningApplication) -> Set<String>? {
+    static func fetchWorkspaceInfo(
+        _ app: NSRunningApplication
+    ) -> [WorkspaceIdentifier: WorkspaceInfo] {
         let app = AXUIElementCreateApplication(app.processIdentifier)
-        guard app.isFocused else { return nil }
         let windows = app.windows.filter { $0.identifier == "Xcode.WorkspaceWindow" }
-        guard !windows.isEmpty else { return [] }
-        var allTabs = Set<String>()
+
+        var dict = [WorkspaceIdentifier: WorkspaceInfo]()
+
         for window in windows {
-            guard let editArea = window.firstChild(where: { $0.description == "editor area" })
-            else { continue }
-            let tabBars = editArea.children { $0.description == "tab bar" }
-            for tabBar in tabBars {
-                let tabs = tabBar.children { $0.roleDescription == "tab" }
-                for tab in tabs {
-                    allTabs.insert(tab.title)
+            let workspaceIdentifier = {
+                for child in window.children {
+                    if child.description.starts(with: "/"), child.description.count > 1 {
+                        let path = child.description
+                        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                        var url = URL(fileURLWithPath: trimmedNewLine)
+                        while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                            !url.pathExtension.isEmpty
+                        {
+                            url = url.deletingLastPathComponent()
+                        }
+                        return WorkspaceIdentifier.url(url)
+                    }
                 }
-            }
+                return WorkspaceIdentifier.unknown
+            }()
+
+            let tabs = {
+                guard let editArea = window.firstChild(where: { $0.description == "editor area" })
+                else { return Set<String>() }
+                var allTabs = Set<String>()
+                let tabBars = editArea.children { $0.description == "tab bar" }
+                for tabBar in tabBars {
+                    let tabs = tabBar.children { $0.roleDescription == "tab" }
+                    for tab in tabs {
+                        allTabs.insert(tab.title)
+                    }
+                }
+                return allTabs
+            }()
+
+            dict[workspaceIdentifier] = .init(tabs: tabs)
         }
-        return allTabs
+
+        return dict
     }
 }
 
