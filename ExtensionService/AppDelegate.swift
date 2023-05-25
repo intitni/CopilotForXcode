@@ -42,6 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
+        DependencyUpdater().update()
         Task {
             do {
                 try await ServiceUpdateMigrator().migrate()
