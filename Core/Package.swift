@@ -50,7 +50,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
-        .package(url: "https://github.com/nmdias/FeedKit", from: "9.1.2"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
@@ -230,8 +229,7 @@ let package = Package(
             name: "UpdateChecker",
             dependencies: [
                 "Logger",
-                "Sparkle",
-                .product(name: "FeedKit", package: "FeedKit"),
+                "Sparkle"
             ]
         ),
         .target(name: "AXExtension"),
