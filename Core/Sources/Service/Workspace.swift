@@ -428,4 +428,8 @@ extension Workspace {
         guard let suggestionService else { return }
         await suggestionService.cancelRequest()
     }
+    
+    func terminateSuggestionService() async {
+        await _suggestionService?.terminate()
+    }
 }

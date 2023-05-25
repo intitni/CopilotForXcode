@@ -70,5 +70,12 @@ public final class ScheduledCleaner {
             }
         }
     }
+    
+    @ServiceActor
+    public func closeAllChildProcesses() async {
+        for (_, workspace) in workspaces {
+            await workspace.terminateSuggestionService()
+        }
+    }
 }
 

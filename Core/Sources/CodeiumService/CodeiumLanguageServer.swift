@@ -7,6 +7,7 @@ import Preferences
 
 protocol CodeiumLSP {
     func sendRequest<E: CodeiumRequestType>(_ endpoint: E) async throws -> E.Response
+    func terminate()
 }
 
 final class CodeiumLanguageServer {
@@ -118,6 +119,14 @@ final class CodeiumLanguageServer {
         Logger.codeium.info("Language server started.")
         self.port = port
         launchHandler?()
+    }
+    
+    func terminate() {
+        process.terminationHandler = nil
+        if process.isRunning {
+            process.terminate()
+        }
+        transport.close()
     }
 }
 

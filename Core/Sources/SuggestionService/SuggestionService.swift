@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Preferences
 import SuggestionModel
@@ -21,6 +22,7 @@ public protocol SuggestionServiceType {
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
+    func terminate() async
 }
 
 protocol SuggestionServiceProvider: SuggestionServiceType {}
@@ -117,9 +119,13 @@ public extension SuggestionService {
     func notifySaveTextDocument(fileURL: URL) async throws {
         try await suggestionProvider.notifySaveTextDocument(fileURL: fileURL)
     }
-    
+
     func cancelRequest() async {
         await suggestionProvider.cancelRequest()
+    }
+
+    func terminate() async {
+        await suggestionProvider.terminate()
     }
 }
 

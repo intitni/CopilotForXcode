@@ -32,6 +32,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
+    func terminate() async
 }
 
 protocol GitHubCopilotLSP {
@@ -378,6 +379,10 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Close \(uri)")
         try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
+    }
+    
+    public func terminate() async {
+        // automatically handled
     }
 }
 

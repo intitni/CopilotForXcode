@@ -19,6 +19,7 @@ public protocol CodeiumSuggestionServiceType {
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func cancelRequest() async
+    func terminate()
 }
 
 enum CodeiumError: Error, LocalizedError {
@@ -324,6 +325,11 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         await openedDocumentPool.closeDocument(url: fileURL)
+    }
+    
+    public func terminate() {
+        server?.terminate()
+        server = nil
     }
 }
 

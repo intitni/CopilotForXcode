@@ -34,7 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = RealtimeSuggestionController.shared
         _ = XcodeInspector.shared
         AXIsProcessTrustedWithOptions([
-            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
         ] as CFDictionary)
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
@@ -105,7 +105,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func quit() {
-        exit(0)
+        Task { @MainActor in
+            await scheduledCleaner.closeAllChildProcesses()
+            exit(0)
+        }
     }
 
     @objc func openCopilotForXcode() {
@@ -148,7 +151,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 Logger.service.info("Extension Service will quit.")
                 #if DEBUG
                 #else
-                exit(0)
+                quit()
                 #endif
             }
         }
@@ -172,7 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if NSWorkspace.shared.runningApplications.contains(where: \.isUserOfService) {
                     continue
                 }
-                exit(0)
+                quit()
             }
         }
     }

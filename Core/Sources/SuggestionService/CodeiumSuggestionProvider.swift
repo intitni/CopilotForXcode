@@ -75,5 +75,9 @@ extension CodeiumSuggestionProvider {
         await (try? createCodeiumServiceIfNeeded())?
             .cancelRequest()
     }
+    
+    func terminate() async {
+        (try? createCodeiumServiceIfNeeded())?.terminate()
+    }
 }
 

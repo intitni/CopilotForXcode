@@ -78,5 +78,9 @@ extension GitHubCopilotSuggestionProvider {
         await (try? createGitHubCopilotServiceIfNeeded())?
             .cancelRequest()
     }
+    
+    func terminate() async {
+        await (try? createGitHubCopilotServiceIfNeeded())?.terminate()
+    }
 }
 
