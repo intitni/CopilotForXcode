@@ -52,7 +52,7 @@ struct OpenAIView: View {
                 Button("Test") {
                     Task {
                         do {
-                            let reply = try await ChatGPTService()
+                            let reply = try await ChatGPTService(designatedProvider: .openAI)
                                 .sendAndWait(content: "Hello", summary: nil)
                             toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
                         } catch {
