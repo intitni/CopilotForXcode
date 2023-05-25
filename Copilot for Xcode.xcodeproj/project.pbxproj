@@ -10,7 +10,6 @@
 		C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */; };
 		C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */; };
 		C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */; };
-		C81291AE2994F8A000196E12 /* copilot in Copy CopilotLSP */ = {isa = PBXBuildFile; fileRef = C832A47B2940C71D000989F2 /* copilot */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C81291D72994FE6900196E12 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C81291D52994FE6900196E12 /* Main.storyboard */; };
 		C814588F2939EFDC00135263 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C814588E2939EFDC00135263 /* Cocoa.framework */; };
 		C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81458932939EFDC00135263 /* SourceEditorExtension.swift */; };
@@ -68,17 +67,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		C81291AD2994F88D00196E12 /* Copy CopilotLSP */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 7;
-			files = (
-				C81291AE2994F8A000196E12 /* copilot in Copy CopilotLSP */,
-			);
-			name = "Copy CopilotLSP";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C814589F2939EFDC00135263 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -159,7 +147,7 @@
 		C8216B70298036EC00AD38C7 /* Helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Helper; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8216B72298036EC00AD38C7 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		C8216B772980370100AD38C7 /* ReloadLaunchAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadLaunchAgent.swift; sourceTree = "<group>"; };
-		C832A47B2940C71D000989F2 /* copilot */ = {isa = PBXFileReference; lastKnownFileType = folder; name = copilot; path = copilot.vim/copilot; sourceTree = "<group>"; };
+		C82E38492A1F025F00D4EADF /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptToCodeCommand.swift; sourceTree = "<group>"; };
@@ -255,11 +243,11 @@
 			children = (
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C8520308293D805800460097 /* README.md */,
+				C82E38492A1F025F00D4EADF /* LICENSE */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
-				C832A47B2940C71D000989F2 /* copilot */,
 				C8189B282938979000C9DCDA /* Core */,
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
 				C81458922939EFDC00135263 /* EditorExtension */,
@@ -400,7 +388,6 @@
 				C861E60A2994F6070056CB02 /* Sources */,
 				C861E60B2994F6070056CB02 /* Frameworks */,
 				C861E60C2994F6070056CB02 /* Resources */,
-				C81291AD2994F88D00196E12 /* Copy CopilotLSP */,
 			);
 			buildRules = (
 			);

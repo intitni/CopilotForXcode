@@ -14,7 +14,7 @@ import XPCShared
 
     Environment.now = { Date() }
 
-    Environment.fetchCurrentProjectRootURL = { _ in
+    Environment.fetchCurrentProjectRootURLFromXcode = { 
         URL(fileURLWithPath: "/path/to/project")
     }
 

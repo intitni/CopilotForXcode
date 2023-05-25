@@ -35,13 +35,20 @@ public actor TerminalChatPlugin: ChatPlugin {
 
         do {
             let fileURL = try await Environment.fetchCurrentFileURL()
-            let projectURL = try await Environment.fetchCurrentProjectRootURL(fileURL)
+            let projectURL = try await {
+                if let url = try await Environment.fetchCurrentProjectRootURLFromXcode() {
+                    return url
+                }
+                return try await Environment.guessProjectRootURLForFile(fileURL)
+            }()
 
             await chatGPTService.mutateHistory { history in
-                history.append(.init(
-                    role: .user,
-                    content: originalMessage,
-                    summary: "Run command: \(content)")
+                history.append(
+                    .init(
+                        role: .user,
+                        content: originalMessage,
+                        summary: "Run command: \(content)"
+                    )
                 )
             }
 
@@ -49,13 +56,13 @@ public actor TerminalChatPlugin: ChatPlugin {
 
             let env = ProcessInfo.processInfo.environment
             let shell = env["SHELL"] ?? "/bin/bash"
-            
+
             let output = terminal.streamCommand(
                 shell,
                 arguments: ["-i", "-l", "-c", content],
-                currentDirectoryPath: projectURL?.path ?? fileURL.path,
+                currentDirectoryPath: projectURL.path,
                 environment: [
-                    "PROJECT_ROOT": projectURL?.path ?? fileURL.path,
+                    "PROJECT_ROOT": projectURL.path,
                     "FILE_PATH": fileURL.path,
                 ]
             )
@@ -103,9 +110,10 @@ public actor TerminalChatPlugin: ChatPlugin {
         isCancelled = true
         await terminal.terminate()
     }
-    
+
     public func stopResponding() async {
         isCancelled = true
         await terminal.terminate()
     }
 }
+

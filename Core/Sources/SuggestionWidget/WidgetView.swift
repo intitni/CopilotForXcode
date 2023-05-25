@@ -228,7 +228,13 @@ struct WidgetContextMenu: View {
 
     func updateProjectPath(fileURL: URL?) {
         Task {
-            let projectURL = try? await Environment.fetchCurrentProjectRootURL(fileURL)
+            let projectURL: URL? = await {
+                if let url = try? await Environment.fetchCurrentProjectRootURLFromXcode() {
+                    return url
+                }
+                guard let fileURL else { return nil }
+                return try? await Environment.guessProjectRootURLForFile(fileURL)
+            }()
             if let projectURL {
                 Task { @MainActor in
                     self.fileURL = fileURL

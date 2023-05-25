@@ -204,7 +204,7 @@ public final class SuggestionWidgetController: NSObject {
                     guard let activeXcode = ActiveApplicationMonitor.activeXcode else { continue }
                     guard fullscreenDetector.isOnActiveSpace else { continue }
                     let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                    if let window = app.focusedWindow {
+                    if app.focusedWindow != nil {
                         orderFront()
                     }
                 }

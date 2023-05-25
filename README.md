@@ -275,11 +275,4 @@ fi
 
 ## License 
 
-MIT.
-
-## Credits
-
-The app uses the LSP provided through [Copilot.vim](https://github.com/github/copilot.vim/tree/release/copilot/dist) to generate suggestions and displays them as comments or in a separate window.
-
-Thanks to [LSP-copilot](https://github.com/TerminalFi/LSP-copilot) for showing the way to interact with GitHub Copilot. And thanks to [LanguageClient](https://github.com/ChimeHQ/LanguageClient) for the Language Server Protocol support in Swift.
-
+Please check [LICENSE](LICENSE) for details.

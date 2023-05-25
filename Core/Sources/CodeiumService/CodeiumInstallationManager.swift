@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion: String = "1.2.17"
+    static let latestSupportedVersion = "1.2.17"
 
     public init() {}
 
@@ -72,11 +72,12 @@ public struct CodeiumInstallationManager {
                     try FileManager.default.copyItem(at: fileURL, to: targetURL)
                     defer { try? FileManager.default.removeItem(at: targetURL) }
 
+                    // uninstall
                     continuation.yield(.uninstalling)
                     try await uninstall()
 
-                    continuation.yield(.decompressing)
                     // extract file
+                    continuation.yield(.decompressing)
                     let terminal = Terminal()
                     _ = try await terminal.runCommand(
                         "/usr/bin/gunzip",

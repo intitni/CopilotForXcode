@@ -43,42 +43,46 @@ public enum Environment {
         }
     }
 
-    public static var fetchCurrentProjectRootURL: (_ fileURL: URL?) async throws
-        -> URL? = { fileURL in
-            if let xcode = ActiveApplicationMonitor.activeXcode
-                ?? ActiveApplicationMonitor.latestXcode
-            {
-                let application = AXUIElementCreateApplication(xcode.processIdentifier)
-                let focusedWindow = application.focusedWindow
-                for child in focusedWindow?.children ?? [] {
-                    if child.description.starts(with: "/"), child.description.count > 1 {
-                        let path = child.description
-                        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                        var url = URL(fileURLWithPath: trimmedNewLine)
-                        while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                            !url.pathExtension.isEmpty
-                        {
-                            url = url.deletingLastPathComponent()
-                        }
-                        return url
+    public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
+        if let xcode = ActiveApplicationMonitor.activeXcode
+            ?? ActiveApplicationMonitor.latestXcode
+        {
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            let focusedWindow = application.focusedWindow
+            for child in focusedWindow?.children ?? [] {
+                if child.description.starts(with: "/"), child.description.count > 1 {
+                    let path = child.description
+                    let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                    var url = URL(fileURLWithPath: trimmedNewLine)
+                    while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                        !url.pathExtension.isEmpty
+                    {
+                        url = url.deletingLastPathComponent()
                     }
+                    return url
                 }
             }
-
-            guard var currentURL = fileURL else { return nil }
-            var firstDirectoryURL: URL?
-            while currentURL.pathComponents.count > 1 {
-                defer { currentURL.deleteLastPathComponent() }
-                guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
-                if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
-                let gitURL = currentURL.appendingPathComponent(".git")
-                if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                    return currentURL
-                }
-            }
-
-            return firstDirectoryURL ?? fileURL
         }
+
+        return nil
+    }
+
+    public static var guessProjectRootURLForFile: (_ fileURL: URL) async throws -> URL = {
+        fileURL in
+        var currentURL = fileURL
+        var firstDirectoryURL: URL?
+        while currentURL.pathComponents.count > 1 {
+            defer { currentURL.deleteLastPathComponent() }
+            guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
+            let gitURL = currentURL.appendingPathComponent(".git")
+            if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
+                return currentURL
+            }
+        }
+
+        return firstDirectoryURL ?? fileURL
+    }
 
     public static var fetchCurrentFileURL: () async throws -> URL = {
         guard let xcode = ActiveApplicationMonitor.activeXcode

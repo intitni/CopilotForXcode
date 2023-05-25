@@ -33,7 +33,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = GraphicalUserInterfaceController.shared
         _ = RealtimeSuggestionController.shared
         _ = XcodeInspector.shared
-        AXIsProcessTrustedWithOptions(nil)
+        AXIsProcessTrustedWithOptions([
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true
+        ] as CFDictionary)
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
