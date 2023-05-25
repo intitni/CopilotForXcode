@@ -139,9 +139,9 @@ public final class XcodeInspector: ObservableObject {
 }
 
 public class AppInstanceInspector: ObservableObject {
-    let runningApplication: NSRunningApplication
-    let appElement: AXUIElement
-    var isActive: Bool { runningApplication.isActive }
+    public let appElement: AXUIElement
+    public let runningApplication: NSRunningApplication
+    public var isActive: Bool { runningApplication.isActive }
 
     init(runningApplication: NSRunningApplication) {
         self.runningApplication = runningApplication
