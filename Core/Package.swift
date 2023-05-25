@@ -209,6 +209,7 @@ let package = Package(
                 "Splash",
                 "UserDefaultsObserver",
                 "Logger",
+                "XcodeInspector",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
