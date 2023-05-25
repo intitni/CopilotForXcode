@@ -164,13 +164,6 @@ struct CodeiumView: View {
                     }) {
                         Text("Sign Out")
                     }
-                    
-                    Text(
-                        "The key is stored in the keychain. The helper app may request permission to access the key, please click \"Always Allow\" to grant this access."
-                    )
-                    .lineLimit(5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .foregroundColor(.secondary)
                 } else {
                     Text("Status: Not Signed In")
                     
