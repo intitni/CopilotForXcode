@@ -257,13 +257,13 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                     )
                 }
         ))
-        
+
         if request.requestBody.metadata.request_id <= cancellationCounter {
             throw CancellationError()
         }
 
         let result = try await (try await setupServerIfNeeded()).sendRequest(request)
-        
+
         if request.requestBody.metadata.request_id <= cancellationCounter {
             throw CancellationError()
         }
@@ -292,8 +292,16 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
             )
         } ?? []
     }
-    
+
     public func cancelRequest() async {
+        Task {
+            try await server?.sendRequest(
+                CodeiumRequest.CancelRequest(requestBody: .init(
+                    request_id: requestCounter,
+                    session_id: CodeiumSuggestionService.sessionId
+                ))
+            )
+        }
         cancellationCounter = requestCounter
     }
 
@@ -326,7 +334,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         await openedDocumentPool.closeDocument(url: fileURL)
     }
-    
+
     public func terminate() {
         server?.terminate()
         server = nil
