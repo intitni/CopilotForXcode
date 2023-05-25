@@ -42,6 +42,7 @@ let package = Package(
                 "LaunchAgentManager",
                 "Logger",
                 "UpdateChecker",
+                "OpenAIService",
             ]
         ),
     ],

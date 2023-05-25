@@ -69,10 +69,9 @@ public actor ChatGPTService: ChatGPTServiceType {
     }
 
     public var endpoint: String {
-        let value = UserDefaults.shared.value(for: \.chatGPTEndpoint)
-        if value.isEmpty { return "https://api.openai.com/v1/chat/completions" }
-
-        return value
+        var baseURL = UserDefaults.shared.value(for: \.openAIBaseURL)
+        if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+        return "\(baseURL)/v1/chat/completions"
     }
 
     public var apiKey: String {

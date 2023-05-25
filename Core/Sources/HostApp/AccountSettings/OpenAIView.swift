@@ -1,4 +1,5 @@
 import AppKit
+import OpenAIService
 import Client
 import Preferences
 import SuggestionModel
@@ -8,7 +9,7 @@ final class OpenAIViewSettings: ObservableObject {
     static let availableLocalizedLocales = Locale.availableLocalizedLocales
     @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
     @AppStorage(\.chatGPTModel) var chatGPTModel: String
-    @AppStorage(\.chatGPTEndpoint) var chatGPTEndpoint: String
+    @AppStorage(\.openAIBaseURL) var openAIBaseURL: String
     @AppStorage(\.chatGPTLanguage) var chatGPTLanguage: String
     @AppStorage(\.chatGPTMaxToken) var chatGPTMaxToken: Int
     @AppStorage(\.chatGPTTemperature) var chatGPTTemperature: Double
@@ -22,6 +23,7 @@ struct OpenAIView: View {
         string: "https://platform.openai.com/docs/models/model-endpoint-compatibility"
     )!
     @Environment(\.openURL) var openURL
+    @Environment(\.toast) var toast
     @StateObject var settings = OpenAIViewSettings()
     @State var maxTokenOverLimit = false
 
@@ -37,6 +39,27 @@ struct OpenAIView: View {
                 }) {
                     Image(systemName: "questionmark.circle.fill")
                 }.buttonStyle(.plain)
+            }
+
+            HStack {
+                TextField(
+                    text: $settings.openAIBaseURL,
+                    prompt: Text("https://api.openai.com")
+                ) {
+                    Text("OpenAI Base URL")
+                }.textFieldStyle(.roundedBorder)
+
+                Button("Test") {
+                    Task {
+                        do {
+                            let reply = try await ChatGPTService()
+                                .sendAndWait(content: "Hello", summary: nil)
+                            toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
+                        } catch {
+                            toast(Text(error.localizedDescription), .error)
+                        }
+                    }
+                }
             }
 
             HStack {
@@ -58,13 +81,6 @@ struct OpenAIView: View {
                     Image(systemName: "questionmark.circle.fill")
                 }.buttonStyle(.plain)
             }
-
-            TextField(
-                text: $settings.chatGPTEndpoint,
-                prompt: Text("https://api.openai.com/v1/chat/completions")
-            ) {
-                Text("ChatGPT Server")
-            }.textFieldStyle(.roundedBorder)
 
             if #available(macOS 13.0, *) {
                 LabeledContent("Reply in Language") {
@@ -107,7 +123,7 @@ struct OpenAIView: View {
                 .labelsHidden()
                 .textFieldStyle(.roundedBorder)
                 .foregroundColor(maxTokenOverLimit ? .red : .primary)
-                
+
                 if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
                     Text("Max: \(model.maxToken)")
                 }

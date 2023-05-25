@@ -69,8 +69,13 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: "", key: "OpenAIAPIKey")
     }
 
+    @available(*, deprecated, message: "Use `openAIBaseURL` instead.")
     var chatGPTEndpoint: PreferenceKey<String> {
         .init(defaultValue: "", key: "ChatGPTEndpoint")
+    }
+
+    var openAIBaseURL: PreferenceKey<String> {
+        .init(defaultValue: "", key: "OpenAIBaseURL")
     }
 
     var chatGPTModel: PreferenceKey<String> {
@@ -196,7 +201,7 @@ public extension UserDefaultPreferenceKeys {
     var embedFileContentInChatContextIfNoSelection: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
-    
+
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
