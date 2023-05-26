@@ -14,6 +14,8 @@ struct ChatSettingsView: View {
         var embedFileContentInChatContextIfNoSelection
         @AppStorage(\.maxEmbeddableFileInChatContextLineCount)
         var maxEmbeddableFileInChatContextLineCount
+        @AppStorage(\.useSelectionScopeByDefaultInChatContext)
+        var useSelectionScopeByDefaultInChatContext
 
         @AppStorage(\.chatFeatureProvider) var chatFeatureProvider
         @AppStorage(\.chatGPTModel) var chatGPTModel
@@ -165,6 +167,10 @@ struct ChatSettingsView: View {
     @ViewBuilder
     var contextForm: some View {
         Form {
+            Toggle(isOn: $settings.useSelectionScopeByDefaultInChatContext) {
+                Text("Use selection scope by default in chat context.")
+            }
+            
             Toggle(isOn: $settings.embedFileContentInChatContextIfNoSelection) {
                 Text("Embed file content in chat context if no code is selected.")
             }

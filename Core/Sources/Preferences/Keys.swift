@@ -225,6 +225,10 @@ public extension UserDefaultPreferenceKeys {
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
+    
+    var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
+    }
 }
 
 // MARK: - Custom Commands
