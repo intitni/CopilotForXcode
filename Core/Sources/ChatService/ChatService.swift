@@ -61,7 +61,7 @@ public final class ChatService: ObservableObject {
         await pluginController.cancel()
         await chatGPTService.clearHistory()
     }
-    
+
     public func resetPrompt() async {
         systemPrompt = defaultSystemPrompt
         extraSystemPrompt = ""
@@ -76,6 +76,19 @@ public final class ChatService: ObservableObject {
     public func resendMessage(id: String) async throws {
         if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
             try await send(content: message.content)
+        }
+    }
+
+    public func setMessageAsExtraPrompt(id: String) async {
+        if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
+            mutateExtraSystemPrompt(message.content)
+            await mutateHistory { history in
+                history.append(.init(
+                    role: .assistant,
+                    content: "",
+                    summary: "System prompt updated"
+                ))
+            }
         }
     }
 

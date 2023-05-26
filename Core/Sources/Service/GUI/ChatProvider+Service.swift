@@ -92,6 +92,12 @@ extension ChatProvider {
                 await commandHandler.handleCustomCommand(command)
             }
         }
+        
+        onSetAsExtraPrompt = { id in
+            Task {
+                await service.setMessageAsExtraPrompt(id: id)
+            }
+        }
     }
 }
 

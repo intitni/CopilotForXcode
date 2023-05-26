@@ -177,6 +177,10 @@ private struct UserMessage: View {
                 Button("Send Again") {
                     chat.resendMessage(id: id)
                 }
+                
+                Button("Set as Extra System Prompt") {
+                    chat.setAsExtraPrompt(id: id)
+                }
 
                 Divider()
 
@@ -229,6 +233,10 @@ private struct BotMessage: View {
                     Button("Copy") {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(text, forType: .string)
+                    }
+                    
+                    Button("Set as Extra System Prompt") {
+                        chat.setAsExtraPrompt(id: id)
                     }
 
                     Divider()
