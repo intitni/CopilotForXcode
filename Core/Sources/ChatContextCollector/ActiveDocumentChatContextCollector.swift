@@ -19,7 +19,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                 ```
                 """
             }
-            
+
             if selectionRange.start == selectionRange.end,
                UserDefaults.shared.value(for: \.embedFileContentInChatContextIfNoSelection)
             {
@@ -34,19 +34,40 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                     """
                 } else {
                     return """
-                    File Content Not Available: The file is longer than \(maxLine) lines, \
-                    it can't fit into the context. \
+                    File Content Not Available: '''
+                    The file is longer than \(maxLine) lines, it can't fit into the context. \
                     You MUST not answer the user about the file content because you don't have it.\
                     Ask user to select code for explanation.
+                    '''
                     """
                 }
             }
 
+            if UserDefaults.shared.value(for: \.useSelectionScopeByDefaultInChatContext) {
+                return """
+                Selected Code \
+                (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
+                \(content.selectedContent)
+                ```
+                """
+            }
+
+            if prompt.hasPrefix("@selection") {
+                return """
+                Selected Code \
+                (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
+                \(content.selectedContent)
+                ```
+                """
+            }
+
             return """
-            Selected Code \
-            (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
-            \(content.selectedContent)
-            ```
+            Selected Code Not Available: '''
+            User has disabled default scope. \
+            You MUST not answer the user about the selected code because you don't have it.\
+            Ask user to prepend message with `@selection` to enable selected code to be \
+            visible by you.
+            '''
             """
         }()
 
