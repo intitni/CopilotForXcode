@@ -193,7 +193,10 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
-Currently, the only supported scope is `@file`, which will import the content of the file into the system prompt.
+| Scope | Description |
+|:---:|---|
+| `@selection` | Inject the selected code from the active editor into the conversation. This scope will be applied to any message automatically. If you don't want this to be the default behavior, you can turn off the option `Use selection scope by default in chat context.`. |
+| `@file` | Inject the content of the file into the conversation. Keep in mind that you may not have enough tokens to inject large files. |
 
 #### Chat Plugins
 
