@@ -29,7 +29,7 @@ public struct ServiceUpdateMigrator {
             try migrateFromLowerThanOrEqualToVersion135()
         }
 
-        if old <= 170 {
+        if old < 170 {
             try migrateFromLowerThanOrEqualToVersion170()
         }
     }
