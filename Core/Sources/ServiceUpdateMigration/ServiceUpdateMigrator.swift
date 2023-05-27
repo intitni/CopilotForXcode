@@ -89,7 +89,6 @@ func migrateFromLowerThanOrEqualToVersion170() throws {
        let key = try? oldKeychain.getString("codeiumKey")
     {
         try newKeychain.set(key, key: "codeiumAuthKey")
-        try? oldKeychain.set("", key: "codeiumKey")
     }
 }
 
