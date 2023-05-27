@@ -114,9 +114,7 @@ public enum Environment {
     public static var fetchFocusedElementURI: () async throws -> URL = {
         guard let xcode = ActiveApplicationMonitor.activeXcode
             ?? ActiveApplicationMonitor.latestXcode
-        else {
-            throw FailedToFetchFileURLError()
-        }
+        else { return URL(fileURLWithPath: "/global") }
 
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         let focusedElement = application.focusedElement

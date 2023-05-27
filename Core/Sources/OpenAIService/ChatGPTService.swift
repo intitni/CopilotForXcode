@@ -188,7 +188,7 @@ public actor ChatGPTService: ChatGPTServiceType {
                             continuation.yield(content)
                         }
                         
-                        try await Task.sleep(nanoseconds: 2_000_000)
+                        try await Task.sleep(nanoseconds: 3_500_000)
                     }
 
                     continuation.finish()

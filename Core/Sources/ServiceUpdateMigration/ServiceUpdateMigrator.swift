@@ -29,7 +29,7 @@ public struct ServiceUpdateMigrator {
             try migrateFromLowerThanOrEqualToVersion135()
         }
 
-        if old <= 170 {
+        if old < 170 {
             try migrateFromLowerThanOrEqualToVersion170()
         }
     }
@@ -89,7 +89,6 @@ func migrateFromLowerThanOrEqualToVersion170() throws {
        let key = try? oldKeychain.getString("codeiumKey")
     {
         try newKeychain.set(key, key: "codeiumAuthKey")
-        try? oldKeychain.set("", key: "codeiumKey")
     }
 }
 
