@@ -69,8 +69,13 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: "", key: "OpenAIAPIKey")
     }
 
+    @available(*, deprecated, message: "Use `openAIBaseURL` instead.")
     var chatGPTEndpoint: PreferenceKey<String> {
         .init(defaultValue: "", key: "ChatGPTEndpoint")
+    }
+
+    var openAIBaseURL: PreferenceKey<String> {
+        .init(defaultValue: "", key: "OpenAIBaseURL")
     }
 
     var chatGPTModel: PreferenceKey<String> {
@@ -91,6 +96,22 @@ public extension UserDefaultPreferenceKeys {
 
     var chatGPTTemperature: PreferenceKey<Double> {
         .init(defaultValue: 0.7, key: "ChatGPTTemperature")
+    }
+}
+
+// MARK: - Azure OpenAI Settings
+
+public extension UserDefaultPreferenceKeys {
+    var azureOpenAIAPIKey: PreferenceKey<String> {
+        .init(defaultValue: "", key: "AzureOpenAIAPIKey")
+    }
+    
+    var azureOpenAIBaseURL: PreferenceKey<String> {
+        .init(defaultValue: "", key: "AzureOpenAIBaseURL")
+    }
+    
+    var azureChatGPTDeployment: PreferenceKey<String> {
+        .init(defaultValue: "", key: "AzureChatGPTDeployment")
     }
 }
 
@@ -181,6 +202,10 @@ public extension UserDefaultPreferenceKeys {
 // MARK: - Chat
 
 public extension UserDefaultPreferenceKeys {
+    var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
+        .init(defaultValue: .openAI, key: "ChatFeatureProvider")
+    }
+    
     var chatFontSize: PreferenceKey<Double> {
         .init(defaultValue: 12, key: "ChatFontSize")
     }
@@ -196,9 +221,13 @@ public extension UserDefaultPreferenceKeys {
     var embedFileContentInChatContextIfNoSelection: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
-    
+
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
+    }
+    
+    var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
     }
 }
 

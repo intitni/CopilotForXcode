@@ -3,7 +3,7 @@ import Foundation
 import Preferences
 import SuggestionModel
 
-final class CodeiumSuggestionProvider: SuggestionServiceProvider {
+actor CodeiumSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     var codeiumService: CodeiumSuggestionServiceType?
@@ -70,5 +70,14 @@ extension CodeiumSuggestionProvider {
     }
 
     func notifySaveTextDocument(fileURL: URL) async throws {}
+    
+    func cancelRequest() async {
+        await (try? createCodeiumServiceIfNeeded())?
+            .cancelRequest()
+    }
+    
+    func terminate() async {
+        (try? createCodeiumServiceIfNeeded())?.terminate()
+    }
 }
 

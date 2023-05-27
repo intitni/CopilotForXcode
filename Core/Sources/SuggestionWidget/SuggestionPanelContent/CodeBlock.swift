@@ -42,11 +42,11 @@ struct CodeBlock: View {
     @ViewBuilder
     func vstack(@ViewBuilder content: () -> some View) -> some View {
         if disableLazyVStack {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 content()
             }
         } else {
-            LazyVStack(spacing: 4) {
+            LazyVStack(spacing: 2) {
                 content()
             }
         }
@@ -78,7 +78,7 @@ struct CodeBlock: View {
             }
         }
         .foregroundColor(.white)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.system(size: fontSize, design: .monospaced))
         .padding(.leading, 4)
         .padding([.trailing, .top, .bottom])
     }
@@ -99,3 +99,22 @@ struct CodeBlock: View {
         )
     }
 }
+
+// MARK: - Preview
+
+struct CodeBlock_Previews: PreviewProvider {
+    static var previews: some View {
+        CodeBlock(
+            code: """
+            let foo = Foo()
+            let bar = Bar()
+            """,
+            language: "swift",
+            startLineIndex: 0,
+            colorScheme: .dark,
+            firstLinePrecedingSpaceCount: 0,
+            fontSize: 12
+        )
+    }
+}
+

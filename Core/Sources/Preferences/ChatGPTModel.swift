@@ -30,9 +30,9 @@ public extension ChatGPTModel {
         case .gpt432k0314:
             return 32768
         case .gpt35Turbo:
-            return 8192
+            return 4096
         case .gpt35Turbo0301:
-            return 8192
+            return 4096
         }
     }
 }

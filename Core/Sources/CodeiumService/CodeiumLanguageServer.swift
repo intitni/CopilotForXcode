@@ -7,6 +7,7 @@ import Preferences
 
 protocol CodeiumLSP {
     func sendRequest<E: CodeiumRequestType>(_ endpoint: E) async throws -> E.Response
+    func terminate()
 }
 
 final class CodeiumLanguageServer {
@@ -57,36 +58,32 @@ final class CodeiumLanguageServer {
 
     func start() {
         guard !process.isRunning else { return }
-        port = nil
         do {
             try process.run()
 
-            Task {
+            Task { @MainActor in
                 func findPort() -> String? {
                     // find a file in managerDirectoryURL whose name looks like a port, return the
                     // name if found
                     let fileManager = FileManager.default
-                    let enumerator = fileManager.enumerator(
-                        at: managerDirectoryURL,
-                        includingPropertiesForKeys: nil
-                    )
-                    while let fileURL = enumerator?.nextObject() as? URL {
-                        if fileURL.lastPathComponent.range(
+                    guard let filePaths = try? fileManager
+                        .contentsOfDirectory(atPath: managerDirectoryURL.path) else { return nil }
+                    for path in filePaths {
+                        let filename = URL(fileURLWithPath: path).lastPathComponent
+                        if filename.range(
                             of: #"^\d+$"#,
                             options: .regularExpression
                         ) != nil {
-                            return fileURL.lastPathComponent
+                            return filename
                         }
                     }
                     return nil
                 }
 
                 try await Task.sleep(nanoseconds: 2_000_000)
-                port = findPort()
                 var waited = 0
 
                 while true {
-                    try await Task.sleep(nanoseconds: 1_000_000_000)
                     waited += 1
                     if let port = findPort() {
                         finishStarting(port: port)
@@ -94,7 +91,9 @@ final class CodeiumLanguageServer {
                     }
                     if waited >= 60 {
                         process.terminate()
+                        return
                     }
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
                 }
             }
         } catch {
@@ -120,6 +119,14 @@ final class CodeiumLanguageServer {
         Logger.codeium.info("Language server started.")
         self.port = port
         launchHandler?()
+    }
+    
+    func terminate() {
+        process.terminationHandler = nil
+        if process.isRunning {
+            process.terminate()
+        }
+        transport.close()
     }
 }
 
@@ -205,7 +212,7 @@ final class IOTransport {
     }
 
     private func setupFileHandleHandlers() {
-        stdoutPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+        stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
 
             guard !data.isEmpty else {
@@ -213,11 +220,11 @@ final class IOTransport {
             }
 
             if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
-                self.forwardDataToHandler(data)
+                self?.forwardDataToHandler(data)
             }
         }
 
-        stderrPipe.fileHandleForReading.readabilityHandler = { [unowned self] handle in
+        stderrPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
 
             guard !data.isEmpty else {
@@ -225,7 +232,7 @@ final class IOTransport {
             }
 
             if UserDefaults.shared.value(for: \.codeiumVerboseLog) {
-                self.forwardErrorDataToHandler(data)
+                self?.forwardErrorDataToHandler(data)
             }
         }
     }

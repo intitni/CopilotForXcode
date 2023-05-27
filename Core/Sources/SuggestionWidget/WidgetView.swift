@@ -211,12 +211,6 @@ struct WidgetContextMenu: View {
             }
 
             Divider()
-
-            Button(action: {
-                exit(0)
-            }) {
-                Text("Quit")
-            }
         }
         .onAppear {
             updateProjectPath(fileURL: widgetViewModel.currentFileURL)

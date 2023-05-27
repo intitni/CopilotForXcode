@@ -104,11 +104,11 @@ public struct SuggestionInjector {
             )
         }
 
-        // if the suggestion is only appeding new lines and spaces, return without modification
+        // if the suggestion is only appending new lines and spaces, return without modification
         if completion.text.dropFirst(commonPrefix.count)
             .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
 
-        // determin if it's inserted to the current line or the next line
+        // determine if it's inserted to the current line or the next line
         let lineIndex = start.line + {
             guard let existedLine else { return 0 }
             if existedLine.isEmptyOrNewLine { return 1 }
@@ -154,6 +154,7 @@ public struct SuggestionInjector {
 
         var toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
 
+        // prepending prefix text not in range if needed.
         if let firstRemovedLine,
            !firstRemovedLine.isEmptyOrNewLine,
            start.character > 0,
@@ -175,8 +176,16 @@ public struct SuggestionInjector {
             )
         }
 
+        // appending suffix text not in range if needed.
         let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
+        let skipAppendingDueToContinueTyping = {
+            guard let first = toBeInserted.first?.dropLast(1), !first.isEmpty else { return false }
+            let droppedLast = lastRemovedLine?.dropLast(1)
+            guard let droppedLast, !droppedLast.isEmpty else { return false }
+            return first.hasPrefix(droppedLast)
+        }()
         if let lastRemovedLine,
+           !skipAppendingDueToContinueTyping,
            !lastRemovedLine.isEmptyOrNewLine,
            end.character >= 0,
            end.character - 1 < lastRemovedLine.count,
@@ -191,6 +200,7 @@ public struct SuggestionInjector {
                 toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
             }
             let leftover = lastRemovedLine[leftoverRange]
+            
             toBeInserted[toBeInserted.endIndex - 1]
                 .append(contentsOf: leftover)
         }

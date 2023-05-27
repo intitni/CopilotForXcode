@@ -7,6 +7,7 @@ import Environment
 import Preferences
 import SwiftUI
 import UserDefaultsObserver
+import XcodeInspector
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
@@ -482,8 +483,7 @@ extension SuggestionWidgetController {
         let detachChat = chatWindowViewModel.chatPanelInASeparateWindow
 
         if let widgetFrames = {
-            if let xcode = ActiveApplicationMonitor.latestXcode {
-                let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            if let application = XcodeInspector.shared.latestActiveXcode?.appElement {
                 if let focusElement = application.focusedElement,
                    focusElement.description == "Source Editor",
                    let parent = focusElement.parent,

@@ -17,6 +17,7 @@ public protocol ChatGPTServiceType: ObservableObject {
 public enum ChatGPTServiceError: Error, LocalizedError {
     case endpointIncorrect
     case responseInvalid
+    case otherError(String)
 
     public var errorDescription: String? {
         switch self {
@@ -24,6 +25,8 @@ public enum ChatGPTServiceError: Error, LocalizedError {
             return "ChatGPT endpoint is incorrect"
         case .responseInvalid:
             return "Response is invalid"
+        case let .otherError(content):
+            return content
         }
     }
 }
@@ -59,7 +62,7 @@ public actor ChatGPTService: ChatGPTServiceType {
     public var defaultTemperature: Double {
         min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
     }
-    
+
     var temperature: Double?
 
     public var model: String {
@@ -68,15 +71,30 @@ public actor ChatGPTService: ChatGPTServiceType {
         return value
     }
 
-    public var endpoint: String {
-        let value = UserDefaults.shared.value(for: \.chatGPTEndpoint)
-        if value.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+    var designatedProvider: ChatFeatureProvider?
 
-        return value
+    public var endpoint: String {
+        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
+        case .openAI:
+            let baseURL = UserDefaults.shared.value(for: \.openAIBaseURL)
+            if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+            return "\(baseURL)/v1/chat/completions"
+        case .azureOpenAI:
+            let baseURL = UserDefaults.shared.value(for: \.azureOpenAIBaseURL)
+            let deployment = UserDefaults.shared.value(for: \.azureChatGPTDeployment)
+            let version = "2023-05-15"
+            if baseURL.isEmpty { return "" }
+            return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
+        }
     }
 
     public var apiKey: String {
-        UserDefaults.shared.value(for: \.openAIAPIKey)
+        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
+        case .openAI:
+            return UserDefaults.shared.value(for: \.openAIAPIKey)
+        case .azureOpenAI:
+            return UserDefaults.shared.value(for: \.azureOpenAIAPIKey)
+        }
     }
 
     public var maxToken: Int {
@@ -98,10 +116,12 @@ public actor ChatGPTService: ChatGPTServiceType {
 
     public init(
         systemPrompt: String = "",
-        temperature: Double? = nil
+        temperature: Double? = nil,
+        designatedProvider: ChatFeatureProvider? = nil
     ) {
         self.systemPrompt = systemPrompt
         self.temperature = temperature
+        self.designatedProvider = designatedProvider
     }
 
     public func send(
@@ -130,7 +150,12 @@ public actor ChatGPTService: ChatGPTServiceType {
 
         isReceivingMessage = true
 
-        let api = buildCompletionStreamAPI(apiKey, url, requestBody)
+        let api = buildCompletionStreamAPI(
+            apiKey,
+            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            url,
+            requestBody
+        )
 
         return AsyncThrowingStream<String, Error> { continuation in
             Task {
@@ -162,6 +187,8 @@ public actor ChatGPTService: ChatGPTServiceType {
                         if let content = delta.content {
                             continuation.yield(content)
                         }
+                        
+                        try await Task.sleep(nanoseconds: 3_500_000)
                     }
 
                     continuation.finish()
@@ -211,7 +238,12 @@ public actor ChatGPTService: ChatGPTServiceType {
         isReceivingMessage = true
         defer { isReceivingMessage = false }
 
-        let api = buildCompletionAPI(apiKey, url, requestBody)
+        let api = buildCompletionAPI(
+            apiKey,
+            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            url,
+            requestBody
+        )
         let response = try await api()
 
         if let choice = response.choices.first {
@@ -297,3 +329,4 @@ func maxTokenForReply(model: String, remainingTokens: Int) -> Int {
     guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
     return min(model.maxToken / 2, remainingTokens)
 }
+

@@ -18,6 +18,8 @@ public protocol CodeiumSuggestionServiceType {
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
+    func cancelRequest() async
+    func terminate()
 }
 
 enum CodeiumError: Error, LocalizedError {
@@ -43,6 +45,7 @@ public class CodeiumSuggestionService {
     var server: CodeiumLSP?
     var heartbeatTask: Task<Void, Error>?
     var requestCounter: UInt64 = 0
+    var cancellationCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
     let onServiceLaunched: () -> Void
 
@@ -53,6 +56,8 @@ public class CodeiumSuggestionService {
 
     var xcodeVersion = "14.0.0"
     var languageServerVersion = CodeiumInstallationManager.latestSupportedVersion
+    
+    private var ongoingTasks = Set<Task<[CodeSuggestion], Error>>()
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -118,6 +123,7 @@ public class CodeiumSuggestionService {
             self?.server = nil
             self?.heartbeatTask?.cancel()
             self?.requestCounter = 0
+            self?.cancellationCounter = 0
             Logger.codeium.info("Language server is terminated, will be restarted when needed.")
         }
 
@@ -222,63 +228,85 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CodeSuggestion] {
+        ongoingTasks.forEach { $0.cancel() }
+        ongoingTasks.removeAll()
+        await cancelRequest()
+        
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-
         let relativePath = getRelativePath(of: fileURL)
-
-        let request = CodeiumRequest.GetCompletion(requestBody: .init(
-            metadata: try getMetadata(),
-            document: .init(
-                absolute_path: fileURL.path,
-                relative_path: relativePath,
-                text: content,
-                editor_language: languageId.rawValue,
-                language: .init(codeLanguage: languageId),
-                cursor_position: .init(
-                    row: cursorPosition.line,
-                    col: cursorPosition.character
-                )
-            ),
-            editor_options: .init(tab_size: indentSize, insert_spaces: !usesTabsForIndentation),
-            other_documents: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
-                .map { openedDocument in
-                    let languageId = languageIdentifierFromFileURL(openedDocument.url)
-                    return .init(
-                        absolute_path: openedDocument.url.path,
-                        relative_path: openedDocument.relativePath,
-                        text: openedDocument.content,
-                        editor_language: languageId.rawValue,
-                        language: .init(codeLanguage: languageId)
-                    )
-                }
-        ))
-
-        let result = try await (try await setupServerIfNeeded()).sendRequest(request)
-
-        return result.completionItems?.filter { item in
-            if ignoreSpaceOnlySuggestions {
-                return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
-            }
-            return true
-        }.map { item in
-            CodeSuggestion(
-                text: item.completion.text,
-                position: cursorPosition,
-                uuid: item.completion.completionId,
-                range: CursorRange(
-                    start: .init(
-                        line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
-                        character: item.range.startPosition?.col.flatMap(Int.init) ?? 0
-                    ),
-                    end: .init(
-                        line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
-                        character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
+        
+        let task = Task {
+            let request = await CodeiumRequest.GetCompletion(requestBody: .init(
+                metadata: try getMetadata(),
+                document: .init(
+                    absolute_path: fileURL.path,
+                    relative_path: relativePath,
+                    text: content,
+                    editor_language: languageId.rawValue,
+                    language: .init(codeLanguage: languageId),
+                    cursor_position: .init(
+                        row: cursorPosition.line,
+                        col: cursorPosition.character
                     )
                 ),
-                displayText: item.completion.text
-            )
-        } ?? []
+                editor_options: .init(tab_size: indentSize, insert_spaces: !usesTabsForIndentation),
+                other_documents: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
+                    .map { openedDocument in
+                        let languageId = languageIdentifierFromFileURL(openedDocument.url)
+                        return .init(
+                            absolute_path: openedDocument.url.path,
+                            relative_path: openedDocument.relativePath,
+                            text: openedDocument.content,
+                            editor_language: languageId.rawValue,
+                            language: .init(codeLanguage: languageId)
+                        )
+                    }
+            ))
+            
+            try Task.checkCancellation()
+
+            let result = try await (try await setupServerIfNeeded()).sendRequest(request)
+            
+            try Task.checkCancellation()
+
+            return result.completionItems?.filter { item in
+                if ignoreSpaceOnlySuggestions {
+                    return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
+                }
+                return true
+            }.map { item in
+                CodeSuggestion(
+                    text: item.completion.text,
+                    position: cursorPosition,
+                    uuid: item.completion.completionId,
+                    range: CursorRange(
+                        start: .init(
+                            line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
+                            character: item.range.startPosition?.col.flatMap(Int.init) ?? 0
+                        ),
+                        end: .init(
+                            line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
+                            character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
+                        )
+                    ),
+                    displayText: item.completion.text
+                )
+            } ?? []
+        }
+        
+        ongoingTasks.insert(task)
+
+        return try await task.value
+    }
+
+    public func cancelRequest() async {
+        _ = try? await server?.sendRequest(
+            CodeiumRequest.CancelRequest(requestBody: .init(
+                request_id: requestCounter,
+                session_id: CodeiumSuggestionService.sessionId
+            ))
+        )
     }
 
     public func notifyAccepted(_ suggestion: CodeSuggestion) async {
@@ -291,7 +319,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.openDocument(
+        await openedDocumentPool.openDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -300,7 +328,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
-        openedDocumentPool.updateDocument(
+        await openedDocumentPool.updateDocument(
             url: fileURL,
             relativePath: relativePath,
             content: content
@@ -308,7 +336,12 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
     }
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
-        openedDocumentPool.closeDocument(url: fileURL)
+        await openedDocumentPool.closeDocument(url: fileURL)
+    }
+
+    public func terminate() {
+        server?.terminate()
+        server = nil
     }
 }
 

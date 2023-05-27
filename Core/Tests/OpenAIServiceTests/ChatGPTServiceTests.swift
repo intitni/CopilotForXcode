@@ -41,7 +41,7 @@ final class ChatGPTServiceTests: XCTestCase {
             return "\(idCounter)"
         }
         var requestBody: CompletionRequestBody?
-        await service.changeBuildCompletionStreamAPI { _apiKey, _, _requestBody in
+        await service.changeBuildCompletionStreamAPI { _apiKey, _, _, _requestBody  in
             requestBody = _requestBody
             return MockCompletionStreamAPI_Success()
         }

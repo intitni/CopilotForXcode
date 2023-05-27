@@ -13,6 +13,12 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.widgetColorScheme)
         shared.setupDefaultValue(for: \.customCommands)
         shared.setupDefaultValue(for: \.runNodeWith, defaultValue: .env)
+        shared.setupDefaultValue(for: \.openAIBaseURL, defaultValue: {
+            guard let url = URL(string: shared.value(for: \.chatGPTEndpoint)) else { return "" }
+            let scheme = url.scheme ?? "https"
+            guard let host = url.host else { return "" }
+            return "\(scheme)://\(host)"
+        }() as String)
     }
 }
 
@@ -69,6 +75,16 @@ public extension UserDefaults {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         if value(forKey: key.key) == nil {
             set(key.defaultValue, forKey: key.key)
+        }
+    }
+    
+    func setupDefaultValue<K: UserDefaultPreferenceKey>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, K>,
+        defaultValue: K.Value
+    ) where K.Value: UserDefaultsStorable {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        if value(forKey: key.key) == nil {
+            set(defaultValue, forKey: key.key)
         }
     }
 

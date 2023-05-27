@@ -1,7 +1,8 @@
 import AsyncAlgorithms
 import Foundation
+import Preferences
 
-typealias CompletionStreamAPIBuilder = (String, URL, CompletionRequestBody) -> CompletionStreamAPI
+typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody) -> CompletionStreamAPI
 
 protocol CompletionStreamAPI {
     func callAsFunction() async throws -> (
@@ -54,12 +55,19 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
     var apiKey: String
     var endpoint: URL
     var requestBody: CompletionRequestBody
+    var provider: ChatFeatureProvider
 
-    init(apiKey: String, endpoint: URL, requestBody: CompletionRequestBody) {
+    init(
+        apiKey: String,
+        provider: ChatFeatureProvider,
+        endpoint: URL,
+        requestBody: CompletionRequestBody
+    ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
         self.requestBody = requestBody
         self.requestBody.stream = true
+        self.provider = provider
     }
 
     func callAsFunction() async throws -> (
@@ -72,7 +80,11 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            if provider == .openAI {
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            } else {
+                request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            }
         }
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
@@ -90,9 +102,9 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
             let error = try? decoder.decode(ChatGPTError.self, from: data)
             throw error ?? ChatGPTServiceError.responseInvalid
         }
-        
+
         var receivingDataTask: Task<Void, Error>?
-        
+
         let stream = AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
             receivingDataTask = Task {
                 do {
@@ -122,3 +134,4 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         )
     }
 }
+

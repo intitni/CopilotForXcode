@@ -3,7 +3,7 @@ import GitHubCopilotService
 import Preferences
 import SuggestionModel
 
-final class GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
+actor GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     var gitHubCopilotService: GitHubCopilotSuggestionServiceType?
@@ -72,6 +72,15 @@ extension GitHubCopilotSuggestionProvider {
     func notifySaveTextDocument(fileURL: URL) async throws {
         try await (try? createGitHubCopilotServiceIfNeeded())?
             .notifySaveTextDocument(fileURL: fileURL)
+    }
+    
+    func cancelRequest() async {
+        await (try? createGitHubCopilotServiceIfNeeded())?
+            .cancelRequest()
+    }
+    
+    func terminate() async {
+        await (try? createGitHubCopilotServiceIfNeeded())?.terminate()
     }
 }
 

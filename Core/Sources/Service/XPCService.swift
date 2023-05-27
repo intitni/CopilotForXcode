@@ -15,10 +15,6 @@ import XPCShared
 @ServiceActor
 var workspaces = [URL: Workspace]()
 
-#warning("TODO: Find a better place to store it!")
-@ServiceActor
-var inflightRealtimeSuggestionsTasks = Set<Task<Void, Never>>()
-
 public class XPCService: NSObject, XPCServiceProtocol {
     // MARK: - Service
 
@@ -127,15 +123,13 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        let task = replyWithUpdatedContent(
+        replyWithUpdatedContent(
             editorContent: editorContent,
             isRealtimeSuggestionRelatedCommand: true,
             withReply: reply
         ) { handler, editor in
             try await handler.presentRealtimeSuggestions(editor: editor)
         }
-
-        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
     public func prefetchRealtimeSuggestions(
@@ -145,15 +139,13 @@ public class XPCService: NSObject, XPCServiceProtocol {
         // We don't need to wait for this.
         reply()
 
-        let task = replyWithUpdatedContent(
+        replyWithUpdatedContent(
             editorContent: editorContent,
             isRealtimeSuggestionRelatedCommand: true,
             withReply: { _, _ in }
         ) { handler, editor in
             try await handler.generateRealtimeSuggestions(editor: editor)
         }
-
-        Task { @ServiceActor in inflightRealtimeSuggestionsTasks.insert(task) }
     }
 
     public func chatWithSelection(

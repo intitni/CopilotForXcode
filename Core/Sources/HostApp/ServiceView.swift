@@ -30,6 +30,15 @@ struct ServiceView: View {
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
+            
+            ScrollView {
+                AzureView().padding()
+            }.sidebarItem(
+                tag: 3,
+                title: "Azure",
+                subtitle: "Chat, Prompt to Code",
+                image: "globe"
+            )
         }
     }
 }

@@ -148,7 +148,7 @@ The app can provide real-time code suggestions based on the files you have opene
 
 If you're working on a company project and don't want the suggestion feature to be triggered, you can globally disable it and choose to enable it only for specific projects. 
 
-Whenever you stop typing for a few milliseconds, the app will automatically fetch suggestions for you, you can cancel this by clicking the mouse, or pressing **Escape** or the **arrow keys**.
+Whenever your code is updated, the app will automatically fetch suggestions for you, you can cancel this by pressing **Escape**.
 
 *: If a file is already open before the helper app launches, you will need to switch to those files in order to send the open file notification. 
 
@@ -179,7 +179,6 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 #### Commands
 
 - Open Chat: Open a chat window.
-- Explain Selection: Open a chat window and explain the selected code.
 
 #### Keyboard Shortcuts
 
@@ -193,7 +192,10 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
-Currently, the only supported scope is `@file`, which will import the content of the file into the system prompt.
+| Scope | Description |
+|:---:|---|
+| `@selection` | Inject the selected code from the active editor into the conversation. This scope will be applied to any message automatically. If you don't want this to be the default behavior, you can turn off the option `Use selection scope by default in chat context.`. |
+| `@file` | Inject the content of the file into the conversation. Keep in mind that you may not have enough tokens to inject large files. |
 
 #### Chat Plugins
 
@@ -231,7 +233,11 @@ This feature is recommended when you need to update a specific piece of code. So
 
 ### Custom Commands
 
-You can create custom commands that run Chat and Prompt to Code with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. 
+You can create custom commands that run Chat and Prompt to Code with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. There are 3 types of custom commands:
+
+- Prompt to Code: Run Prompt to Code with the selected code, and update or write the code using the given prompt, if provided. You can provide additional information through the extra system prompt field.
+- Open Chat: Open the chat window and immediately send a message, if provided. You can provide more information through the extra system prompt field.
+- Custom Chat: Open the chat window and immediately send a message, if provided. You can overwrite the entire system prompt through the system prompt field.
 
 ## Key Bindings
 
