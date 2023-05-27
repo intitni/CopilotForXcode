@@ -131,10 +131,10 @@ public class RealtimeSuggestionController {
             for await notification in notificationsFromEditor {
                 guard let self else { return }
                 try Task.checkCancellation()
-                await cancelInFlightTasks()
 
                 switch notification.name {
                 case kAXValueChangedNotification:
+                    await cancelInFlightTasks()
                     self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
@@ -210,7 +210,6 @@ public class RealtimeSuggestionController {
                 let isEnabled = workspace.isSuggestionFeatureEnabled
                 if !isEnabled { return }
             }
-
             if Task.isCancelled { return }
 
             Logger.service.info("Prefetch suggestions.")
