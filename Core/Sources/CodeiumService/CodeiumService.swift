@@ -56,6 +56,8 @@ public class CodeiumSuggestionService {
 
     var xcodeVersion = "14.0.0"
     var languageServerVersion = CodeiumInstallationManager.latestSupportedVersion
+    
+    private var ongoingTasks = Set<Task<[CodeSuggestion], Error>>()
 
     init(designatedServer: CodeiumLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -226,83 +228,85 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
     ) async throws -> [CodeSuggestion] {
+        ongoingTasks.forEach { $0.cancel() }
+        ongoingTasks.removeAll()
+        await cancelRequest()
+        
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-
         let relativePath = getRelativePath(of: fileURL)
-
-        let request = await CodeiumRequest.GetCompletion(requestBody: .init(
-            metadata: try getMetadata(),
-            document: .init(
-                absolute_path: fileURL.path,
-                relative_path: relativePath,
-                text: content,
-                editor_language: languageId.rawValue,
-                language: .init(codeLanguage: languageId),
-                cursor_position: .init(
-                    row: cursorPosition.line,
-                    col: cursorPosition.character
-                )
-            ),
-            editor_options: .init(tab_size: indentSize, insert_spaces: !usesTabsForIndentation),
-            other_documents: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
-                .map { openedDocument in
-                    let languageId = languageIdentifierFromFileURL(openedDocument.url)
-                    return .init(
-                        absolute_path: openedDocument.url.path,
-                        relative_path: openedDocument.relativePath,
-                        text: openedDocument.content,
-                        editor_language: languageId.rawValue,
-                        language: .init(codeLanguage: languageId)
-                    )
-                }
-        ))
-
-        if request.requestBody.metadata.request_id <= cancellationCounter {
-            throw CancellationError()
-        }
-
-        let result = try await (try await setupServerIfNeeded()).sendRequest(request)
-
-        if request.requestBody.metadata.request_id <= cancellationCounter {
-            throw CancellationError()
-        }
-
-        return result.completionItems?.filter { item in
-            if ignoreSpaceOnlySuggestions {
-                return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
-            }
-            return true
-        }.map { item in
-            CodeSuggestion(
-                text: item.completion.text,
-                position: cursorPosition,
-                uuid: item.completion.completionId,
-                range: CursorRange(
-                    start: .init(
-                        line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
-                        character: item.range.startPosition?.col.flatMap(Int.init) ?? 0
-                    ),
-                    end: .init(
-                        line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
-                        character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
+        
+        let task = Task {
+            let request = await CodeiumRequest.GetCompletion(requestBody: .init(
+                metadata: try getMetadata(),
+                document: .init(
+                    absolute_path: fileURL.path,
+                    relative_path: relativePath,
+                    text: content,
+                    editor_language: languageId.rawValue,
+                    language: .init(codeLanguage: languageId),
+                    cursor_position: .init(
+                        row: cursorPosition.line,
+                        col: cursorPosition.character
                     )
                 ),
-                displayText: item.completion.text
-            )
-        } ?? []
+                editor_options: .init(tab_size: indentSize, insert_spaces: !usesTabsForIndentation),
+                other_documents: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
+                    .map { openedDocument in
+                        let languageId = languageIdentifierFromFileURL(openedDocument.url)
+                        return .init(
+                            absolute_path: openedDocument.url.path,
+                            relative_path: openedDocument.relativePath,
+                            text: openedDocument.content,
+                            editor_language: languageId.rawValue,
+                            language: .init(codeLanguage: languageId)
+                        )
+                    }
+            ))
+            
+            try Task.checkCancellation()
+
+            let result = try await (try await setupServerIfNeeded()).sendRequest(request)
+            
+            try Task.checkCancellation()
+
+            return result.completionItems?.filter { item in
+                if ignoreSpaceOnlySuggestions {
+                    return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
+                }
+                return true
+            }.map { item in
+                CodeSuggestion(
+                    text: item.completion.text,
+                    position: cursorPosition,
+                    uuid: item.completion.completionId,
+                    range: CursorRange(
+                        start: .init(
+                            line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
+                            character: item.range.startPosition?.col.flatMap(Int.init) ?? 0
+                        ),
+                        end: .init(
+                            line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
+                            character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
+                        )
+                    ),
+                    displayText: item.completion.text
+                )
+            } ?? []
+        }
+        
+        ongoingTasks.insert(task)
+
+        return try await task.value
     }
 
     public func cancelRequest() async {
-        Task {
-            try await server?.sendRequest(
-                CodeiumRequest.CancelRequest(requestBody: .init(
-                    request_id: requestCounter,
-                    session_id: CodeiumSuggestionService.sessionId
-                ))
-            )
-        }
-        cancellationCounter = requestCounter
+        _ = try? await server?.sendRequest(
+            CodeiumRequest.CancelRequest(requestBody: .init(
+                request_id: requestCounter,
+                session_id: CodeiumSuggestionService.sessionId
+            ))
+        )
     }
 
     public func notifyAccepted(_ suggestion: CodeSuggestion) async {
