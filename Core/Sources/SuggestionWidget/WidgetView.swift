@@ -6,8 +6,39 @@ import SwiftUI
 
 @MainActor
 final class WidgetViewModel: ObservableObject {
+    struct IsProcessingCounter {
+        var expirationDate: TimeInterval
+    }
+
+    private var isProcessingCounters = [IsProcessingCounter]()
+    private var cleanupIsProcessingCounterTask: Task<Void, Error>?
     @Published var isProcessing: Bool
     @Published var currentFileURL: URL?
+
+    func markIsProcessing(date: Date = Date()) {
+        let deadline = date.timeIntervalSince1970 + 20
+        isProcessingCounters.append(IsProcessingCounter(expirationDate: deadline))
+        isProcessing = true
+        
+        cleanupIsProcessingCounterTask?.cancel()
+        cleanupIsProcessingCounterTask = Task { [weak self] in
+            try await Task.sleep(nanoseconds: 20 * 1_000_000_000)
+            try Task.checkCancellation()
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                isProcessingCounters.removeAll()
+                isProcessing = false
+            }
+        }
+    }
+
+    func endIsProcessing(date: Date = Date()) {
+        if !isProcessingCounters.isEmpty {
+            isProcessingCounters.removeFirst()
+        }
+        isProcessingCounters.removeAll(where: { $0.expirationDate < date.timeIntervalSince1970 })
+        isProcessing = !isProcessingCounters.isEmpty
+    }
 
     init(isProcessing: Bool = false) {
         self.isProcessing = isProcessing
