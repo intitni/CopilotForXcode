@@ -275,8 +275,9 @@ public final class SuggestionWidgetController: NSObject {
 
 public extension SuggestionWidgetController {
     func suggestCode(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
+            markAsProcessing(true)
+            defer { markAsProcessing(false) }
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .suggestion(suggestion)
                 suggestionPanelViewModel.isPanelDisplayed = true
@@ -285,7 +286,6 @@ public extension SuggestionWidgetController {
     }
 
     func discardSuggestion(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
             await updateContentForActiveEditor(fileURL: fileURL)
         }
@@ -302,12 +302,12 @@ public extension SuggestionWidgetController {
     func presentError(_ errorDescription: String) {
         suggestionPanelViewModel.content = .error(errorDescription)
         suggestionPanelViewModel.isPanelDisplayed = true
-        widgetViewModel.endIsProcessing()
     }
 
     func presentChatRoom(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
+            markAsProcessing(true)
+            defer { markAsProcessing(false) }
             if let chat = await dataSource?.chatForFile(at: fileURL) {
                 chatWindowViewModel.chat = chat
                 chatWindowViewModel.isPanelDisplayed = true
@@ -347,15 +347,15 @@ public extension SuggestionWidgetController {
     }
 
     func closeChatRoom(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
             await updateContentForActiveEditor(fileURL: fileURL)
         }
     }
 
     func presentPromptToCode(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
+            markAsProcessing(true)
+            defer { markAsProcessing(false) }
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
                 suggestionPanelViewModel.content = .promptToCode(provider)
                 suggestionPanelViewModel.isPanelDisplayed = true
@@ -371,7 +371,6 @@ public extension SuggestionWidgetController {
     }
 
     func discardPromptToCode(fileURL: URL) {
-        widgetViewModel.endIsProcessing()
         Task {
             await updateContentForActiveEditor(fileURL: fileURL)
         }

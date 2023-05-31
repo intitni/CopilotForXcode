@@ -12,7 +12,7 @@ final class WidgetViewModel: ObservableObject {
 
     private var isProcessingCounters = [IsProcessingCounter]()
     private var cleanupIsProcessingCounterTask: Task<Void, Error>?
-    @Published var isProcessing: Bool
+    @Published private(set) var isProcessing: Bool
     @Published var currentFileURL: URL?
 
     func markIsProcessing(date: Date = Date()) {
