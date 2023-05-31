@@ -28,6 +28,7 @@ struct PresentInWindowSuggestionPresenter {
 
     func presentError(_ error: Error) {
         if error is CancellationError { return }
+        if let urlError = error as? URLError, urlError.code == URLError.cancelled { return }
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
             controller.presentError(error.localizedDescription)
