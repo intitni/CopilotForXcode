@@ -10,17 +10,24 @@ let package = Package(
         .library(name: "Terminal", targets: ["Terminal"]),
         .library(name: "LangChainService", targets: ["LangChainService"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
+    ],
     targets: [
         // MARK: - Helpers
 
-        .target(name: "Terminal"),
+        .target(
+            name: "Terminal",
+            dependencies: []
+        ),
 
         // MARK: - Services
 
         .target(
             name: "LangChainService",
-            dependencies: []
+            dependencies: [
+                .product(name: "PythonKit", package: "PythonKit")
+            ]
         ),
 
         // MARK: - Tests
@@ -31,4 +38,3 @@ let package = Package(
         ),
     ]
 )
-

@@ -30,19 +30,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        _ = GraphicalUserInterfaceController.shared
-        _ = RealtimeSuggestionController.shared
-        _ = XcodeInspector.shared
-        AXIsProcessTrustedWithOptions([
-            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
-        ] as CFDictionary)
-        setupQuitOnUpdate()
-        setupQuitOnUserTerminated()
+//        _ = GraphicalUserInterfaceController.shared
+//        _ = RealtimeSuggestionController.shared
+//        _ = XcodeInspector.shared
+//        AXIsProcessTrustedWithOptions([
+//            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
+//        ] as CFDictionary)
+//        setupQuitOnUpdate()
+//        setupQuitOnUserTerminated()
         xpcListener = setupXPCListener()
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
         DependencyUpdater().update()
+        initializePython()
         Task {
             do {
                 try await ServiceUpdateMigrator().migrate()

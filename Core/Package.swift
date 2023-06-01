@@ -56,6 +56,7 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
+        .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
     ],
     targets: [
         // MARK: - Main
@@ -92,6 +93,7 @@ let package = Package(
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .testTarget(
