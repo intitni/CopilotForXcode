@@ -499,6 +499,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		C8A3AE572A28852D0046E809 /* Sign Python STD */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -517,6 +518,7 @@
 		};
 		C8A3B1782A2894E10046E809 /* Sign Python Site Packages */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
