@@ -1,4 +1,4 @@
-import ChatPlugins
+import ChatPlugin
 import Combine
 import Foundation
 import OpenAIService
@@ -102,13 +102,13 @@ final class ChatPluginController {
 // MARK: - ChatPluginDelegate
 
 extension ChatPluginController: ChatPluginDelegate {
-    public func pluginDidStartResponding(_: ChatPlugins.ChatPlugin) {
+    public func pluginDidStartResponding(_: ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(true)
         }
     }
 
-    public func pluginDidEndResponding(_: ChatPlugins.ChatPlugin) {
+    public func pluginDidEndResponding(_: ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(false)
         }

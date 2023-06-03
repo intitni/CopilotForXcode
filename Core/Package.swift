@@ -177,7 +177,7 @@ let package = Package(
         .target(
             name: "ChatService",
             dependencies: [
-                "ChatPlugins",
+                "ChatPlugin",
                 "ChatContextCollector",
                 "OpenAIService",
                 "Environment",
@@ -186,11 +186,12 @@ let package = Package(
             ]
         ),
         .target(
-            name: "ChatPlugins",
+            name: "ChatPlugin",
             dependencies: [
                 "OpenAIService",
                 "Environment",
                 .product(name: "Terminal", package: "Tool"),
+                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .target(

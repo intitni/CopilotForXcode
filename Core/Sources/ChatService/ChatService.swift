@@ -1,5 +1,5 @@
 import ChatContextCollector
-import ChatPlugins
+import ChatPlugin
 import Combine
 import Foundation
 import OpenAIService
