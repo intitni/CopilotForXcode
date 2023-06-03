@@ -7,14 +7,18 @@ final class ChatPluginController {
     let chatGPTService: any ChatGPTServiceType
     let plugins: [String: ChatPlugin.Type]
     var runningPlugin: ChatPlugin?
-
-    init(chatGPTService: any ChatGPTServiceType, plugins: ChatPlugin.Type...) {
+    
+    init(chatGPTService: any ChatGPTServiceType, plugins: [ChatPlugin.Type]) {
         self.chatGPTService = chatGPTService
         var all = [String: ChatPlugin.Type]()
         for plugin in plugins {
             all[plugin.command] = plugin
         }
         self.plugins = all
+    }
+
+    convenience init(chatGPTService: any ChatGPTServiceType, plugins: ChatPlugin.Type...) {
+        self.init(chatGPTService: chatGPTService, plugins: plugins)
     }
 
     /// Handle the message in a plugin if required. Return false if no plugin handles the message.

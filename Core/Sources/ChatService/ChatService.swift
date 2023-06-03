@@ -25,12 +25,7 @@ public final class ChatService: ObservableObject {
 
     public init<T: ChatGPTServiceType>(chatGPTService: T) {
         self.chatGPTService = chatGPTService
-        pluginController = ChatPluginController(
-            chatGPTService: chatGPTService,
-            plugins:
-            TerminalChatPlugin.self,
-            AITerminalChatPlugin.self
-        )
+        pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
         contextController = DynamicContextController(
             chatGPTService: chatGPTService,
             contextCollectors: ActiveDocumentChatContextCollector()
