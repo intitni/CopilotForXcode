@@ -26,7 +26,6 @@ let package = Package(
                 "SuggestionModel",
                 "Client",
                 "XPCShared",
-                "Preferences",
                 "Logger",
             ]
         ),
@@ -38,7 +37,6 @@ let package = Package(
                 "GitHubCopilotService",
                 "Client",
                 "XPCShared",
-                "Preferences",
                 "LaunchAgentManager",
                 "Logger",
                 "UpdateChecker",
@@ -65,10 +63,10 @@ let package = Package(
             name: "Client",
             dependencies: [
                 "SuggestionModel",
-                "Preferences",
                 "XPCShared",
                 "Logger",
                 "GitHubCopilotService",
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
         .target(
@@ -78,7 +76,6 @@ let package = Package(
                 "SuggestionService",
                 "GitHubCopilotService",
                 "OpenAIService",
-                "Preferences",
                 "XPCShared",
                 "CGEventObserver",
                 "DisplayLink",
@@ -92,6 +89,7 @@ let package = Package(
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ]
@@ -103,9 +101,9 @@ let package = Package(
                 "Client",
                 "GitHubCopilotService",
                 "SuggestionInjector",
-                "Preferences",
                 "XPCShared",
                 "Environment",
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
         .target(
@@ -116,19 +114,18 @@ let package = Package(
                 "SuggestionService",
             ]
         ),
-        .target(name: "Preferences", dependencies: ["Configs"]),
 
         // MARK: - Host App
 
         .target(
             name: "HostApp",
             dependencies: [
-                "Preferences",
                 "Client",
                 "GitHubCopilotService",
                 "CodeiumService",
                 "SuggestionModel",
                 "LaunchAgentManager",
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
 
@@ -182,7 +179,11 @@ let package = Package(
                 "OpenAIService",
                 "Environment",
                 "XcodeInspector",
-                "Preferences",
+
+                // plugins
+                "MathChatPlugin",
+
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
         .target(
@@ -199,9 +200,9 @@ let package = Package(
             dependencies: [
                 "OpenAIService",
                 "Environment",
-                "Preferences",
                 "SuggestionModel",
                 "XcodeInspector",
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
 
@@ -226,7 +227,6 @@ let package = Package(
 
         // MARK: - Helpers
 
-        .target(name: "Configs"),
         .target(name: "CGEventObserver"),
         .target(name: "Logger"),
         .target(name: "FileChangeChecker"),
@@ -244,7 +244,10 @@ let package = Package(
         .target(name: "AXExtension"),
         .target(
             name: "ServiceUpdateMigration",
-            dependencies: ["Preferences", "GitHubCopilotService"]
+            dependencies: [
+                "GitHubCopilotService",
+                .product(name: "Preferences", package: "Tool"),
+            ]
         ),
         .target(name: "UserDefaultsObserver"),
         .target(
@@ -266,7 +269,7 @@ let package = Package(
                 "LanguageClient",
                 "SuggestionModel",
                 "XPCShared",
-                "Preferences",
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]
         ),
@@ -281,8 +284,8 @@ let package = Package(
             name: "OpenAIService",
             dependencies: [
                 "Logger",
-                "Preferences",
                 "GPTEncoder",
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -298,11 +301,23 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 "SuggestionModel",
-                "Preferences",
                 "KeychainAccess",
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
-                "Configs",
             ]
+        ),
+
+        // MARK: - Chat Plugins
+
+        .target(
+            name: "MathChatPlugin",
+            dependencies: [
+                "ChatPlugin",
+                "OpenAIService",
+                .product(name: "LangChain", package: "Tool"),
+                .product(name: "PythonKit", package: "PythonKit"),
+            ],
+            path: "Sources/ChatPlugins/MathChatPlugin"
         ),
     ]
 )

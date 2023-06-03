@@ -8,7 +8,8 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(name: "Terminal", targets: ["Terminal"]),
-        .library(name: "LangChainService", targets: ["LangChainService"]),
+        .library(name: "LangChain", targets: ["LangChain"]),
+        .library(name: "Preferences", targets: ["Preferences", "Configs"]),
     ],
     dependencies: [
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
@@ -16,25 +17,27 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
-        .target(
-            name: "Terminal",
-            dependencies: []
-        ),
+        .target(name: "Configs"),
+
+        .target(name: "Preferences", dependencies: ["Configs"]),
+
+        .target(name: "Terminal"),
 
         // MARK: - Services
 
         .target(
-            name: "LangChainService",
+            name: "LangChain",
             dependencies: [
-                .product(name: "PythonKit", package: "PythonKit")
+                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
 
         // MARK: - Tests
 
         .testTarget(
-            name: "LangChainServiceTests",
-            dependencies: ["LangChainService"]
+            name: "LangChainTests",
+            dependencies: ["LangChain"]
         ),
     ]
 )
+
