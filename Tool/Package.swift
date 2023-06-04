@@ -8,7 +8,7 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(name: "Terminal", targets: ["Terminal"]),
-        .library(name: "LangChain", targets: ["LangChain"]),
+        .library(name: "LangChain", targets: ["LangChain", "PythonHelper"]),
         .library(name: "Preferences", targets: ["Preferences", "Configs"]),
     ],
     dependencies: [
@@ -27,6 +27,14 @@ let package = Package(
 
         .target(
             name: "LangChain",
+            dependencies: [
+                "PythonHelper",
+                .product(name: "PythonKit", package: "PythonKit"),
+            ]
+        ),
+
+        .target(
+            name: "PythonHelper",
             dependencies: [
                 .product(name: "PythonKit", package: "PythonKit"),
             ]
