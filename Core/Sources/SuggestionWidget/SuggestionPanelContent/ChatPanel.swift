@@ -61,9 +61,6 @@ struct ChatPanelToolbar: View {
 
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
-    @AppStorage(\.chatFontSize) var chatFontSize
-    @AppStorage(\.useSelectionScopeByDefaultInChatContext)
-    var useSelectionScopeByDefaultInChatContext
 
     var body: some View {
         List {
@@ -76,48 +73,7 @@ struct ChatPanelMessages: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                 }
 
-                if chat.history.isEmpty {
-                    Group {
-                        if useSelectionScopeByDefaultInChatContext {
-                            Markdown(
-                                """
-                                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-
-                                Currently, I have the ability to read the following details from the active editor:
-                                - The **selected code**.
-                                - The **relative path** of the file.
-                                - The **error and warning** labels.
-                                - The text cursor location.
-
-                                If you'd like me to examine the entire file, simply add `/file` to the beginning of your message.
-                                """
-                            )
-                        } else {
-                            Markdown(
-                                """
-                                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-
-                                Currently, I have the ability to read the following details from the active editor:
-                                - The **relative path** of the file.
-                                - The **error and warning** labels.
-                                - The text cursor location.
-
-                                If you would like me to examine the selected code, please prefix your message with `/selection`. If you would like me to examine the entire file, please prefix your message with `/file`.
-                                """
-                            )
-                        }
-                    }
-                    .textSelection(.enabled)
-                    .markdownTheme(.custom(fontSize: chatFontSize))
-                    .opacity(0.8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                    }
-                    .scaleEffect(x: -1, y: -1, anchor: .center)
-                }
+                Instruction()
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
@@ -169,6 +125,55 @@ private struct StopRespondingButton: View {
         .buttonStyle(.borderless)
         .scaleEffect(x: -1, y: -1, anchor: .center)
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
+private struct Instruction: View {
+    @AppStorage(\.useSelectionScopeByDefaultInChatContext)
+    var useSelectionScopeByDefaultInChatContext
+    @AppStorage(\.chatFontSize) var chatFontSize
+
+    var body: some View {
+        Group {
+            if useSelectionScopeByDefaultInChatContext {
+                Markdown(
+                    """
+                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+
+                    Currently, I have the ability to read the following details from the active editor:
+                    - The **selected code**.
+                    - The **relative path** of the file.
+                    - The **error and warning** labels.
+                    - The text cursor location.
+
+                    If you'd like me to examine the entire file, simply add `/file` to the beginning of your message.
+                    """
+                )
+            } else {
+                Markdown(
+                    """
+                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+
+                    Currently, I have the ability to read the following details from the active editor:
+                    - The **relative path** of the file.
+                    - The **error and warning** labels.
+                    - The text cursor location.
+
+                    If you would like me to examine the selected code, please prefix your message with `/selection`. If you would like me to examine the entire file, please prefix your message with `/file`.
+                    """
+                )
+            }
+        }
+        .textSelection(.enabled)
+        .markdownTheme(.custom(fontSize: chatFontSize))
+        .opacity(0.8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        }
+        .scaleEffect(x: -1, y: -1, anchor: .center)
     }
 }
 
