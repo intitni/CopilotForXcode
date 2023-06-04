@@ -131,3 +131,4 @@ Python/site-packages/*
 !Python/site-packages/requirements.txt
 !Python/site-packages/install.sh
 
+Python/VERSIONS
