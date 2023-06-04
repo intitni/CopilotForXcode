@@ -114,7 +114,7 @@ struct PromptToCodePanelContent: View {
                             Color.red,
                             in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                         )
-                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                        .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
 
                 if !provider.description.isEmpty {
@@ -125,7 +125,7 @@ struct PromptToCodePanelContent: View {
                         })
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                        .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
 
                 if provider.code.isEmpty {
@@ -138,7 +138,7 @@ struct PromptToCodePanelContent: View {
                     .padding()
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                    .scaleEffect(x: -1, y: -1, anchor: .center)
+                    .scaleEffect(x: 1, y: -1, anchor: .center)
                 } else {
                     CodeBlock(
                         code: provider.code,
@@ -149,7 +149,7 @@ struct PromptToCodePanelContent: View {
                         fontSize: fontSize
                     )
                     .frame(maxWidth: .infinity)
-                    .scaleEffect(x: -1, y: -1, anchor: .center)
+                    .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
 
                 if let name = provider.name {
@@ -157,10 +157,9 @@ struct PromptToCodePanelContent: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.top, 12)
-                        .scaleEffect(x: -1, y: -1, anchor: .center)
+                        .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
             }
-            .scaleEffect(x: -1, y: 1, anchor: .center)
         }
         .scaleEffect(x: 1, y: -1, anchor: .center)
     }
