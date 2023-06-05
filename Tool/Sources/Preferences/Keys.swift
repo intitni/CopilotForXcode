@@ -105,11 +105,11 @@ public extension UserDefaultPreferenceKeys {
     var azureOpenAIAPIKey: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIAPIKey")
     }
-    
+
     var azureOpenAIBaseURL: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIBaseURL")
     }
-    
+
     var azureChatGPTDeployment: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureChatGPTDeployment")
     }
@@ -205,7 +205,7 @@ public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
-    
+
     var chatFontSize: PreferenceKey<Double> {
         .init(defaultValue: 12, key: "ChatFontSize")
     }
@@ -225,9 +225,25 @@ public extension UserDefaultPreferenceKeys {
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
-    
+
     var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
+    }
+
+    var defaultChatSystemPrompt: PreferenceKey<String> {
+        .init(
+            defaultValue: """
+            You are an AI programming assistant.
+            Your reply should be concise, clear, informative and logical.
+            You MUST reply in the format of markdown.
+            You MUST embed every code you provide in a markdown code block.
+            You MUST add the programming language name at the start of the markdown code block.
+            If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
+            If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
+            Make your answer short and structured.
+            """,
+            key: "DefaultChatSystemPrompt"
+        )
     }
 }
 

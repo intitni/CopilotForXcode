@@ -19,6 +19,7 @@ struct ChatSettingsView: View {
 
         @AppStorage(\.chatFeatureProvider) var chatFeatureProvider
         @AppStorage(\.chatGPTModel) var chatGPTModel
+        @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
 
         init() {}
     }
@@ -122,6 +123,13 @@ struct ChatSettingsView: View {
                 Text("9 Messages").tag(9)
                 Text("11 Messages").tag(11)
             }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Default System Prompt")
+                EditableText(text: $settings.defaultChatSystemPrompt)
+                    .lineLimit(6)
+            }
+            .padding(.vertical, 4)
         }.onAppear {
             checkMaxToken()
         }.onChange(of: settings.chatFeatureProvider) { _ in
