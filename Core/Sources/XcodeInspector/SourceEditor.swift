@@ -16,6 +16,22 @@ public class SourceEditor {
         public var cursorPosition: CursorPosition
         /// Line annotations of the source editor.
         public var lineAnnotations: [String]
+        
+        public var selectedContent: String {
+            if let range = selections.first {
+                let startIndex = min(
+                    max(0, range.start.line),
+                    lines.endIndex - 1
+                )
+                let endIndex = min(
+                    max(startIndex, range.end.line),
+                    lines.endIndex - 1
+                )
+                let selectedContent = lines[startIndex...endIndex]
+                return selectedContent.joined()
+            }
+            return ""
+        }
     }
 
     let runningApplication: NSRunningApplication

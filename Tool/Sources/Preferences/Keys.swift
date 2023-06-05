@@ -271,6 +271,17 @@ public extension UserDefaultPreferenceKeys {
                     generateDescription: true
                 )
             ),
+            .init(
+                commandId: "BuiltInCustomCommandSendCodeToChat",
+                name: "Send Selected Code to Chat",
+                feature: .chatWithSelection(
+                    extraSystemPrompt: "",
+                    prompt: """
+                    {{selected_code}}
+                    """,
+                    useExtraSystemPrompt: true
+                )
+            ),
         ], key: "CustomCommands")
     }
 }
