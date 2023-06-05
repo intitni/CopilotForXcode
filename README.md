@@ -212,7 +212,8 @@ If you need to end a plugin, you can just type
 | Command | Description |
 |:---:|---|
 | `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
-| `/airun` | Create a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
+| `/airun` | Creates a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
+| `/math` | Solves a math problem in natural language |
 
 ### Prompt to Code
 

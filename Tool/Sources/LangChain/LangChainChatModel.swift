@@ -4,6 +4,7 @@ import PythonHelper
 import PythonKit
 
 public enum LangChainChatModel {
+    /// Dynamically create a ChatOpenAI object based on the user's preferences.
     public static func DynamicChatOpenAI(
         temperature: Double
     ) throws -> PythonObject {
