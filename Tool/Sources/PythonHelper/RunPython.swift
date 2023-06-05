@@ -1,8 +1,8 @@
 import Foundation
 import PythonKit
 
-public var gilStateEnsure: (() -> Any)!
-public var gilStateRelease: ((Any) -> Void)!
+var gilStateEnsure: (() -> Any)!
+var gilStateRelease: ((Any) -> Void)!
 func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
     let state = gilStateEnsure()
     do {
@@ -13,6 +13,32 @@ func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
         gilStateRelease(state)
         throw error
     }
+}
+
+@MainActor
+var isPythonInitialized = false
+@MainActor
+public func initializePython<GilState, ThreadState>(
+    sitePackagePath: String,
+    stdLibPath: String,
+    libDynloadPath: String,
+    Py_Initialize: () -> Void,
+    PyEval_SaveThread: () -> ThreadState,
+    PyGILState_Ensure: @escaping () -> GilState,
+    PyGILState_Release: @escaping (GilState) -> Void
+) {
+    guard !isPythonInitialized else { return }
+    setenv("PYTHONHOME", stdLibPath, 1)
+    setenv("PYTHONPATH", "\(stdLibPath):\(libDynloadPath):\(sitePackagePath)", 1)
+    isPythonInitialized = true
+    // Initialize python
+    Py_Initialize()
+    // Immediately release the thread, so that we can ensure the GIL state later.
+    // We may not recover the thread because all future tasks will be done in the other threads.
+    _ = PyEval_SaveThread()
+    // Setup GIL state guard.
+    gilStateEnsure = { PyGILState_Ensure() }
+    gilStateRelease = { gilState in PyGILState_Release(gilState as! GilState) }
 }
 
 public func runPython<T>(
