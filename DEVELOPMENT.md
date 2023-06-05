@@ -27,9 +27,8 @@ Most of the logics are implemented inside the package `Core`.
 
 ## Building and Archiving the App
 
-This project includes a Git submodule, `copilot.vim`, so you will need to either initialize the submodule or download it from the [copilot.vim](https://github.com/github/copilot.vim) repository.
-
-Finally, archive the Copilot for Xcode target.
+1. Run `make setup` to setup the project. (You may need to install the specific version of python to install the dependencies, please check `Python/site-packages/install.sh` for details.)
+2. Build or archive the Copilot for Xcode target.
 
 ## Testing Extension
 
@@ -44,6 +43,24 @@ For new tests, they should be added to the `TestPlan.xctestplan`.
 ## Chat Plugins
 
 To create a chat plugin, please use the `TerminalChatPlugin` as an example. You should add your plugin to the target `ChatPlugin` and register it in `ChatService`.
+
+## LangChain and Python
+
+The app uses PythonKit to execute Python code.
+
+When running Python code, ensure that you wrap it inside `runPython`. This will automatically insert `GilStateEnsure` and `GilStateRelease` for you.
+
+```swift
+import PythonHelper
+
+try runPython {
+    // access python here
+}
+```
+
+Instead of throwing a `PythonError`, `runPython` will throw a `ReadablePythonError`.
+
+If importing a Python module causes the app to crash, it is usually due to the thread's stack size being too small. To resolve this, try importing with `Python.attemptImportOnPythonThread`, which is defined in `PythonHelper`, or simply import from the main thread.
 
 ## Code Style
 
