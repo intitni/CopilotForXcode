@@ -73,8 +73,6 @@ struct ChatPanelMessages: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                 }
 
-                Instruction()
-
                 ForEach(chat.history.reversed(), id: \.id) { message in
                     let text = message.text.isEmpty && !message.isUser ? "..." : message
                         .text
@@ -90,6 +88,8 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .listItemTint(.clear)
+                
+                Instruction()
 
                 Spacer()
             }
@@ -146,7 +146,7 @@ private struct Instruction: View {
                     - The **error and warning** labels.
                     - The text cursor location.
 
-                    If you'd like me to examine the entire file, simply add `/file` to the beginning of your message.
+                    If you'd like me to examine the entire file, simply add `@file` to the beginning of your message.
                     """
                 )
             } else {
@@ -159,7 +159,7 @@ private struct Instruction: View {
                     - The **error and warning** labels.
                     - The text cursor location.
 
-                    If you would like me to examine the selected code, please prefix your message with `/selection`. If you would like me to examine the entire file, please prefix your message with `/file`.
+                    If you would like me to examine the selected code, please prefix your message with `@selection`. If you would like me to examine the entire file, please prefix your message with `@file`.
                     """
                 )
             }
