@@ -4,23 +4,13 @@ import Combine
 import Foundation
 import OpenAIService
 
-let defaultSystemPrompt = """
-You are an AI programming assistant.
-Your reply should be concise, clear, informative and logical.
-You MUST reply in the format of markdown.
-You MUST embed every code you provide in a markdown code block.
-You MUST add the programming language name at the start of the markdown code block.
-If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
-If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
-Make your answer short and structured.
-"""
-
 public final class ChatService: ObservableObject {
     public let chatGPTService: any ChatGPTServiceType
     let pluginController: ChatPluginController
     let contextController: DynamicContextController
     var cancellable = Set<AnyCancellable>()
-    @Published public internal(set) var systemPrompt = defaultSystemPrompt
+    @Published public internal(set) var systemPrompt = UserDefaults.shared
+        .value(for: \.defaultChatSystemPrompt)
     @Published public internal(set) var extraSystemPrompt = ""
 
     public init<T: ChatGPTServiceType>(chatGPTService: T) {
@@ -58,7 +48,7 @@ public final class ChatService: ObservableObject {
     }
 
     public func resetPrompt() async {
-        systemPrompt = defaultSystemPrompt
+        systemPrompt = UserDefaults.shared.value(for: \.defaultChatSystemPrompt)
         extraSystemPrompt = ""
     }
 
@@ -89,7 +79,7 @@ public final class ChatService: ObservableObject {
 
     /// Setting it to `nil` to reset the system prompt
     public func mutateSystemPrompt(_ newPrompt: String?) {
-        systemPrompt = newPrompt ?? defaultSystemPrompt
+        systemPrompt = newPrompt ?? UserDefaults.shared.value(for: \.defaultChatSystemPrompt)
     }
 
     public func mutateExtraSystemPrompt(_ newPrompt: String) {
