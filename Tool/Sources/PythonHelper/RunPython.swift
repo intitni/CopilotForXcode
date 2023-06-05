@@ -5,12 +5,11 @@ var gilStateEnsure: (() -> Any)!
 var gilStateRelease: ((Any) -> Void)!
 func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
     let state = gilStateEnsure()
+    defer { gilStateRelease(state) }
     do {
         let result = try closure()
-        gilStateRelease(state)
         return result
     } catch {
-        gilStateRelease(state)
         throw error
     }
 }
@@ -30,6 +29,7 @@ public func initializePython<GilState, ThreadState>(
     guard !isPythonInitialized else { return }
     setenv("PYTHONHOME", stdLibPath, 1)
     setenv("PYTHONPATH", "\(stdLibPath):\(libDynloadPath):\(sitePackagePath)", 1)
+    setenv("PYTHONIOENCODING", "utf-8", 1)
     isPythonInitialized = true
     // Initialize python
     Py_Initialize()
