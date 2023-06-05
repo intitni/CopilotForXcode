@@ -43,6 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
         DependencyUpdater().update()
+        initializePython()
         Task {
             do {
                 try await ServiceUpdateMigrator().migrate()

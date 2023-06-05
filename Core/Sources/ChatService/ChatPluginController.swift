@@ -1,4 +1,4 @@
-import ChatPlugins
+import ChatPlugin
 import Combine
 import Foundation
 import OpenAIService
@@ -7,14 +7,18 @@ final class ChatPluginController {
     let chatGPTService: any ChatGPTServiceType
     let plugins: [String: ChatPlugin.Type]
     var runningPlugin: ChatPlugin?
-
-    init(chatGPTService: any ChatGPTServiceType, plugins: ChatPlugin.Type...) {
+    
+    init(chatGPTService: any ChatGPTServiceType, plugins: [ChatPlugin.Type]) {
         self.chatGPTService = chatGPTService
         var all = [String: ChatPlugin.Type]()
         for plugin in plugins {
             all[plugin.command] = plugin
         }
         self.plugins = all
+    }
+
+    convenience init(chatGPTService: any ChatGPTServiceType, plugins: ChatPlugin.Type...) {
+        self.init(chatGPTService: chatGPTService, plugins: plugins)
     }
 
     /// Handle the message in a plugin if required. Return false if no plugin handles the message.
@@ -102,13 +106,13 @@ final class ChatPluginController {
 // MARK: - ChatPluginDelegate
 
 extension ChatPluginController: ChatPluginDelegate {
-    public func pluginDidStartResponding(_: ChatPlugins.ChatPlugin) {
+    public func pluginDidStartResponding(_: ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(true)
         }
     }
 
-    public func pluginDidEndResponding(_: ChatPlugins.ChatPlugin) {
+    public func pluginDidEndResponding(_: ChatPlugin) {
         Task {
             await chatGPTService.markReceivingMessage(false)
         }
