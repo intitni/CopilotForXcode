@@ -15,8 +15,6 @@ func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
     }
 }
 
-let pythonQueue = DispatchQueue(label: "Python Queue")
-
 public func runPython<T>(
     usePythonThread: Bool = false,
     _ closure: @escaping () throws -> T
