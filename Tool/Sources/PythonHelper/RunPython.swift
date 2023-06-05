@@ -1,39 +1,35 @@
 import Foundation
 import PythonKit
 
-public var PyGILState_Guard: ((() throws -> Void) throws -> Void)! = nil
+public var gilStateEnsure: (() -> Any)!
+public var gilStateRelease: ((Any) -> Void)!
+func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
+    let state = gilStateEnsure()
+    do {
+        let result = try closure()
+        gilStateRelease(state)
+        return result
+    } catch {
+        gilStateRelease(state)
+        throw error
+    }
+}
 
 let pythonQueue = DispatchQueue(label: "Python Queue")
 
 public func runPython<T>(
     usePythonThread: Bool = false,
     _ closure: @escaping () throws -> T
-) async throws -> T {
-    return try await withUnsafeThrowingContinuation { con in
-        if usePythonThread {
-            PythonThread.shared.runPython {
-                do {
-                    try PyGILState_Guard {
-                        con.resume(returning: try closure())
-                    }
-                } catch let error as PythonError {
-                    con.resume(throwing: ReadablePythonError(error))
-                } catch {
-                    con.resume(throwing: error)
-                }
+) throws -> T {
+    if usePythonThread {
+        return try PythonThread.shared.runPythonAndWait {
+            return try gilStateGuard {
+                try closure()
             }
-        } else {
-            pythonQueue.async {
-                do {
-                    try PyGILState_Guard {
-                        con.resume(returning: try closure())
-                    }
-                } catch let error as PythonError {
-                    con.resume(throwing: ReadablePythonError(error))
-                } catch {
-                    con.resume(throwing: error)
-                }
-            }
+        }
+    } else {
+        return try gilStateGuard {
+            try closure()
         }
     }
 }
@@ -65,6 +61,4 @@ public struct ReadablePythonError: Error, LocalizedError {
         }
     }
 }
-
-
 
