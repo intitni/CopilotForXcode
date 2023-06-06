@@ -22,7 +22,9 @@ public actor MathChatPlugin: ChatPlugin {
         delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
-        var reply = ChatMessage(id: id, role: .assistant, content: "Calculating...")
+        async let translatedCalculating = translate(text: "Calculating...")
+        async let translatedAnswer = translate(text: "Answer:")
+        var reply = ChatMessage(id: id, role: .assistant, content: await translatedCalculating)
 
         await chatGPTService.mutateHistory { history in
             history.append(.init(role: .user, content: originalMessage, summary: content))
@@ -31,11 +33,12 @@ public actor MathChatPlugin: ChatPlugin {
 
         do {
             let result = try await solveMathProblem(content)
+            let formattedResult = "\(await translatedAnswer) \(result)"
             await chatGPTService.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }
-                reply.content = result
+                reply.content = formattedResult
                 history.append(reply)
             }
         } catch {
