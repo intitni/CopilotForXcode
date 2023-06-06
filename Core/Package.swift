@@ -182,6 +182,7 @@ let package = Package(
 
                 // plugins
                 "MathChatPlugin",
+                "SearchChatPlugin",
 
                 .product(name: "Preferences", package: "Tool"),
             ]
@@ -319,6 +320,17 @@ let package = Package(
             ],
             path: "Sources/ChatPlugins/MathChatPlugin"
         ),
+        
+            .target(
+                name: "SearchChatPlugin",
+                dependencies: [
+                    "ChatPlugin",
+                    "OpenAIService",
+                    .product(name: "LangChain", package: "Tool"),
+                    .product(name: "PythonKit", package: "PythonKit"),
+                ],
+                path: "Sources/ChatPlugins/SearchChatPlugin"
+            ),
     ]
 )
 

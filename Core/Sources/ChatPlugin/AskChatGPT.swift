@@ -2,7 +2,11 @@ import Foundation
 import OpenAIService
 
 /// Quickly ask a question to ChatGPT.
-func askChatGPT(systemPrompt: String, question: String) async throws -> String? {
-    let service = ChatGPTService(systemPrompt: systemPrompt)
+public func askChatGPT(
+    systemPrompt: String,
+    question: String,
+    temperature: Double? = nil
+) async throws -> String? {
+    let service = ChatGPTService(systemPrompt: systemPrompt, temperature: temperature)
     return try await service.sendAndWait(content: question)
 }

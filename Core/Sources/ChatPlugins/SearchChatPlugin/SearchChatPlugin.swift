@@ -3,10 +3,9 @@ import Environment
 import Foundation
 import OpenAIService
 
-/// Use Python to solve math problems.
-public actor MathChatPlugin: ChatPlugin {
-    public static var command: String { "math" }
-    public nonisolated var name: String { "Math" }
+public actor SearchChatPlugin: ChatPlugin {
+    public static var command: String { "search" }
+    public nonisolated var name: String { "Search" }
 
     let chatGPTService: any ChatGPTServiceType
     var isCancelled = false
@@ -22,9 +21,7 @@ public actor MathChatPlugin: ChatPlugin {
         delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
-        async let translatedCalculating = translate(text: "Calculating...")
-        async let translatedAnswer = translate(text: "Answer:")
-        var reply = ChatMessage(id: id, role: .assistant, content: await translatedCalculating)
+        var reply = ChatMessage(id: id, role: .assistant, content: "Calculating...")
 
         await chatGPTService.mutateHistory { history in
             history.append(.init(role: .user, content: originalMessage, summary: content))
@@ -32,13 +29,12 @@ public actor MathChatPlugin: ChatPlugin {
         }
 
         do {
-            let result = try await solveMathProblem(content)
-            let formattedResult = "\(await translatedAnswer) \(result)"
+            let result = try await search(content)
             await chatGPTService.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }
-                reply.content = formattedResult
+                reply.content = result
                 history.append(reply)
             }
         } catch {
