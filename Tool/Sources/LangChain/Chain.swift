@@ -116,7 +116,7 @@ public extension Chain {
         ConnectedChain(chainA: self, chainB: another)
     }
 
-    func mapped<NewOutput>(_ map: @escaping (Output) -> NewOutput) -> MappedChain<Self, NewOutput> {
+    func map<NewOutput>(_ map: @escaping (Output) -> NewOutput) -> MappedChain<Self, NewOutput> {
         MappedChain(chain: self, map: map)
     }
 }
