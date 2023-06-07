@@ -214,6 +214,7 @@ If you need to end a plugin, you can just type
 | `/run` | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.|
 | `/airun` | Creates a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin. |
 | `/math` | Solves a math problem in natural language |
+| `/search` | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it. |
 
 ### Prompt to Code
 

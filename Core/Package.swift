@@ -15,7 +15,6 @@ let package = Package(
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
-                "Logger",
                 "UserDefaultsObserver",
                 "XcodeInspector",
             ]
@@ -26,7 +25,6 @@ let package = Package(
                 "SuggestionModel",
                 "Client",
                 "XPCShared",
-                "Logger",
             ]
         ),
         .library(
@@ -38,9 +36,7 @@ let package = Package(
                 "Client",
                 "XPCShared",
                 "LaunchAgentManager",
-                "Logger",
                 "UpdateChecker",
-                "OpenAIService",
             ]
         ),
     ],
@@ -52,7 +48,6 @@ let package = Package(
         .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
-        .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
     ],
@@ -64,8 +59,8 @@ let package = Package(
             dependencies: [
                 "SuggestionModel",
                 "XPCShared",
-                "Logger",
                 "GitHubCopilotService",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -75,7 +70,6 @@ let package = Package(
                 "SuggestionModel",
                 "SuggestionService",
                 "GitHubCopilotService",
-                "OpenAIService",
                 "XPCShared",
                 "CGEventObserver",
                 "DisplayLink",
@@ -84,11 +78,12 @@ let package = Package(
                 "Environment",
                 "SuggestionWidget",
                 "AXExtension",
-                "Logger",
                 "ChatService",
+                .product(name: "Logger", package: "Tool"),
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "PythonKit", package: "PythonKit"),
@@ -125,6 +120,7 @@ let package = Package(
                 "CodeiumService",
                 "SuggestionModel",
                 "LaunchAgentManager",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -164,8 +160,12 @@ let package = Package(
 
         .target(
             name: "PromptToCodeService",
-            dependencies: ["OpenAIService", "Environment", "GitHubCopilotService",
-                           "SuggestionModel"]
+            dependencies: [
+                "Environment",
+                "GitHubCopilotService",
+                "SuggestionModel",
+                .product(name: "OpenAIService", package: "Tool"),
+            ]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
 
@@ -176,7 +176,6 @@ let package = Package(
             dependencies: [
                 "ChatPlugin",
                 "ChatContextCollector",
-                "OpenAIService",
                 "Environment",
                 "XcodeInspector",
 
@@ -184,14 +183,15 @@ let package = Package(
                 "MathChatPlugin",
                 "SearchChatPlugin",
 
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
         .target(
             name: "ChatPlugin",
             dependencies: [
-                "OpenAIService",
                 "Environment",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ]
@@ -199,10 +199,10 @@ let package = Package(
         .target(
             name: "ChatContextCollector",
             dependencies: [
-                "OpenAIService",
                 "Environment",
                 "SuggestionModel",
                 "XcodeInspector",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -218,8 +218,8 @@ let package = Package(
                 "Highlightr",
                 "Splash",
                 "UserDefaultsObserver",
-                "Logger",
                 "XcodeInspector",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
@@ -229,7 +229,6 @@ let package = Package(
         // MARK: - Helpers
 
         .target(name: "CGEventObserver"),
-        .target(name: "Logger"),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),
@@ -238,8 +237,8 @@ let package = Package(
         .target(
             name: "UpdateChecker",
             dependencies: [
-                "Logger",
                 "Sparkle",
+                .product(name: "Logger", package: "Tool"),
             ]
         ),
         .target(name: "AXExtension"),
@@ -256,8 +255,8 @@ let package = Package(
             dependencies: [
                 "AXExtension",
                 "Environment",
-                "Logger",
                 "AXNotificationStream",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -270,6 +269,7 @@ let package = Package(
                 "LanguageClient",
                 "SuggestionModel",
                 "XPCShared",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]
@@ -277,22 +277,6 @@ let package = Package(
         .testTarget(
             name: "GitHubCopilotServiceTests",
             dependencies: ["GitHubCopilotService"]
-        ),
-
-        // MARK: - OpenAI
-
-        .target(
-            name: "OpenAIService",
-            dependencies: [
-                "Logger",
-                "GPTEncoder",
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
-            ]
-        ),
-        .testTarget(
-            name: "OpenAIServiceTests",
-            dependencies: ["OpenAIService"]
         ),
 
         // MARK: - Codeium
@@ -314,23 +298,23 @@ let package = Package(
             name: "MathChatPlugin",
             dependencies: [
                 "ChatPlugin",
-                "OpenAIService",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/MathChatPlugin"
         ),
-        
-            .target(
-                name: "SearchChatPlugin",
-                dependencies: [
-                    "ChatPlugin",
-                    "OpenAIService",
-                    .product(name: "LangChain", package: "Tool"),
-                    .product(name: "PythonKit", package: "PythonKit"),
-                ],
-                path: "Sources/ChatPlugins/SearchChatPlugin"
-            ),
+
+        .target(
+            name: "SearchChatPlugin",
+            dependencies: [
+                "ChatPlugin",
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "LangChain", package: "Tool"),
+                .product(name: "PythonKit", package: "PythonKit"),
+            ],
+            path: "Sources/ChatPlugins/SearchChatPlugin"
+        ),
     ]
 )
 

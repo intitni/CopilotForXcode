@@ -103,6 +103,10 @@ final class FetchSuggestionTests: XCTestCase {
         }
 
         class TestServer: GitHubCopilotLSP {
+            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+                // unimplemented
+            }
+            
             func sendRequest<E>(_ r: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(

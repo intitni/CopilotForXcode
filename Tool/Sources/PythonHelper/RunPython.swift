@@ -33,12 +33,12 @@ public func initializePython<GilState, ThreadState>(
     isPythonInitialized = true
     // Initialize python
     Py_Initialize()
-    // Immediately release the thread, so that we can ensure the GIL state later.
-    // We may not recover the thread because all future tasks will be done in the other threads.
-    _ = PyEval_SaveThread()
-    // Setup GIL state guard.
-    gilStateEnsure = { PyGILState_Ensure() }
-    gilStateRelease = { gilState in PyGILState_Release(gilState as! GilState) }
+//    // Immediately release the thread, so that we can ensure the GIL state later.
+//    // We may not recover the thread because all future tasks will be done in the other threads.
+//    _ = PyEval_SaveThread()
+//    // Setup GIL state guard.
+//    gilStateEnsure = { PyGILState_Ensure() }
+//    gilStateRelease = { gilState in PyGILState_Release(gilState as! GilState) }
 }
 
 public func runPython<T>(
@@ -47,14 +47,14 @@ public func runPython<T>(
 ) throws -> T {
     if usePythonThread {
         return try PythonThread.shared.runPythonAndWait {
-            return try gilStateGuard {
-                try closure()
-            }
+//            return try gilStateGuard {
+            return try closure()
+//            }
         }
     } else {
-        return try gilStateGuard {
-            try closure()
-        }
+//        return try gilStateGuard {
+        return try closure()
+//        }
     }
 }
 

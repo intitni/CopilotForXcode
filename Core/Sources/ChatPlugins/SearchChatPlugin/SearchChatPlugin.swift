@@ -21,22 +21,58 @@ public actor SearchChatPlugin: ChatPlugin {
         delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
-        var reply = ChatMessage(id: id, role: .assistant, content: "Calculating...")
+        var reply = ChatMessage(id: id, role: .assistant, content: "")
 
         await chatGPTService.mutateHistory { history in
             history.append(.init(role: .user, content: originalMessage, summary: content))
-            history.append(reply)
         }
 
         do {
-            let result = try await search(content)
-            await chatGPTService.mutateHistory { history in
-                if history.last?.id == id {
-                    history.removeLast()
+            let eventStream = try await search(content)
+
+            var actions = [String]()
+            var finishedActions = Set<String>()
+            var message = ""
+
+            for try await event in eventStream {
+                guard !isCancelled else { return }
+                switch event {
+                case let .startAction(content):
+                    actions.append(content)
+                case let .endAction(content):
+                    finishedActions.insert(content)
+                case let .answerToken(token):
+                    message.append(token)
+                case let .finishAnswer(answer, links):
+                    message = """
+                    \(answer)
+
+                    \(links.map { "- [\($0.title)](\($0.link))" }.joined(separator: "\n"))
+                    """
                 }
-                reply.content = result
-                history.append(reply)
+
+                await chatGPTService.mutateHistory { history in
+                    if history.last?.id == id {
+                        history.removeLast()
+                    }
+
+                    let actionString = actions.map {
+                        "> \(finishedActions.contains($0) ? "✅" : "🔍") \($0)"
+                    }.joined(separator: "\n>\n")
+
+                    if message.isEmpty {
+                        reply.content = actionString
+                    } else {
+                        reply.content = """
+                        \(actionString)
+
+                        \(message)
+                        """
+                    }
+                    history.append(reply)
+                }
             }
+
         } catch {
             await chatGPTService.mutateHistory { history in
                 if history.last?.id == id {

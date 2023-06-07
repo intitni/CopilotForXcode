@@ -17,6 +17,7 @@ public final class Logger {
     public static let updateChecker = Logger(category: "UpdateChecker")
     public static let gitHubCopilot = Logger(category: "GitHubCopilot")
     public static let codeium = Logger(category: "Codeium")
+    public static let langchain = Logger(category: "LangChain")
     #if DEBUG
     public static let temp = Logger(category: "Temp")
     #endif

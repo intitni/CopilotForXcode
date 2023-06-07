@@ -247,6 +247,18 @@ public extension UserDefaultPreferenceKeys {
     }
 }
 
+// MARK: - Bing Search
+
+public extension UserDefaultPreferenceKeys {
+    var bingSearchSubscriptionKey: PreferenceKey<String> {
+        .init(defaultValue: "", key: "BingSearchSubscriptionKey")
+    }
+    
+    var bingSearchEndpoint: PreferenceKey<String> {
+        .init(defaultValue: "https://api.bing.microsoft.com/v7.0/search/", key: "BingSearchEndpoint")
+    }
+}
+
 // MARK: - Custom Commands
 
 public extension UserDefaultPreferenceKeys {
