@@ -147,6 +147,8 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you'd like me to examine the entire file, simply add `@file` to the beginning of your message.
+                    
+                    To use plugins, you can start a message with `/pluginName`.
                     """
                 )
             } else {
@@ -160,6 +162,8 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you would like me to examine the selected code, please prefix your message with `@selection`. If you would like me to examine the entire file, please prefix your message with `@file`.
+                    
+                    To use plugins, you can start a message with `/pluginName`.
                     """
                 )
             }
