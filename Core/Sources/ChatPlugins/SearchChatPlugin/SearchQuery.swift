@@ -18,9 +18,9 @@ func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Er
     final class LinkStorage {
         var links = [(title: String, link: String)]()
     }
-    
+
     let linkStorage = LinkStorage()
-    
+
     let tools = [
         SimpleAgentTool(
             name: "Search",
@@ -66,27 +66,15 @@ func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Er
             self.onAgentActionEnd = onAgentActionEnd
         }
 
-        func onChainStart<T>(type: T.Type, input: T.Input) where T: LangChain.Chain {
-            print("Chain \(type) is started with input \(input).")
-        }
+        func onChainStart<T>(type: T.Type, input: T.Input) where T: LangChain.Chain {}
 
-        func onAgentFinish(output: LangChain.AgentFinish) {
-            print("Agent is finished: \(output.returnValue)")
-        }
+        func onAgentFinish(output: LangChain.AgentFinish) {}
 
         func onAgentActionStart(action: LangChain.AgentAction) {
-            print("Agent runs action: \(action.toolName) with input \(action.toolInput)")
             onAgentActionStart("\(action.toolName): \(action.toolInput)")
         }
 
         func onAgentActionEnd(action: LangChain.AgentAction) {
-            print(
-                """
-                Agent finish running action: \
-                \(action.toolName) with observation \
-                \(action.observation ?? "")
-                """
-            )
             onAgentActionEnd("\(action.toolName): \(action.toolInput)")
         }
 
