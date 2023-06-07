@@ -269,6 +269,7 @@ let package = Package(
                 "LanguageClient",
                 "SuggestionModel",
                 "XPCShared",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]

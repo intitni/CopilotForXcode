@@ -16,7 +16,7 @@ public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
             return language
         }
     }
-    
+
     public var hashValue: Int {
         rawValue.hashValue
     }
@@ -30,7 +30,7 @@ public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
             self = .other(rawValue)
         }
     }
-    
+
     public static var allCases: [CodeLanguage] {
         var all = LanguageIdentifier.allCases.map(CodeLanguage.builtIn)
         all.append(.plaintext)
@@ -38,7 +38,7 @@ public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
     }
 }
 
-extension LanguageIdentifier {
+public extension LanguageIdentifier {
     /// Copied from https://github.com/github/linguist/blob/master/lib/linguist/languages.yml [MIT]
     var fileExtensions: [String] {
         switch self {
@@ -263,3 +263,4 @@ public func languageIdentifierFromFileURL(_ fileURL: URL) -> CodeLanguage {
     }
     return .init(rawValue: fileExtension) ?? .plaintext
 }
+
