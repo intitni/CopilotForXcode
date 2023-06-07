@@ -12,7 +12,7 @@ final class ChatPluginController {
         self.chatGPTService = chatGPTService
         var all = [String: ChatPlugin.Type]()
         for plugin in plugins {
-            all[plugin.command] = plugin
+            all[plugin.command.lowercased()] = plugin
         }
         self.plugins = all
     }
@@ -29,7 +29,7 @@ final class ChatPluginController {
         let regex = try NSRegularExpression(pattern: #"^\/([a-zA-Z0-9]+)"#)
         let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
         if let match = matches.first {
-            let command = String(content[Range(match.range(at: 1), in: content)!])
+            let command = String(content[Range(match.range(at: 1), in: content)!]).lowercased()
             // handle exit plugin
             if command == "exit" {
                 if let plugin = runningPlugin {
