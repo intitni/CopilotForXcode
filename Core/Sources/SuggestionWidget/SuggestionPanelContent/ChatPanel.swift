@@ -88,7 +88,7 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .listItemTint(.clear)
-                
+
                 Instruction()
 
                 Spacer()
@@ -350,7 +350,28 @@ struct ChatPanelInputArea: View {
                 CustomTextEditor(
                     text: $typedMessage,
                     font: .systemFont(ofSize: 14),
-                    onSubmit: { submitText() }
+                    onSubmit: { submitText() },
+                    completions: { text, _, range in
+                        if text.isEmpty { return [] }
+                        let availableFeatures = [
+                            "/run",
+                            "/airun",
+                            "/math",
+                            "/search",
+                            "@selection",
+                            "@file",
+                        ]
+                        return availableFeatures
+                            .filter { $0.hasPrefix(text) && $0 != text }
+                            .compactMap {
+                                guard let index = $0.index(
+                                    $0.startIndex,
+                                    offsetBy: range.location,
+                                    limitedBy: $0.endIndex
+                                ) else { return nil }
+                                return String($0[index...])
+                            }
+                    }
                 )
                 .padding(.top, 1)
                 .padding(.bottom, -1)
