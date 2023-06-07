@@ -19,8 +19,9 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
     let tools: [String: AgentTool]
     let maxIteration: Int?
     let maxExecutionTime: Double?
-    let earlyStopHandleType: AgentEarlyStopHandleType
+    var earlyStopHandleType: AgentEarlyStopHandleType
     var now: () -> Date = { Date() }
+    var isCancelled = false
 
     public init(
         agent: InnerAgent,
@@ -47,6 +48,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
         var intermediateSteps: [AgentAction] = []
 
         func shouldContinue() -> Bool {
+            if isCancelled { return false }
             if let maxIteration = maxIteration, iterations >= maxIteration {
                 return false
             }
@@ -87,7 +89,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
             }
             iterations += 1
         }
-
+        
         let output = try await agent.returnStoppedResponse(
             input: input,
             earlyStoppedHandleType: earlyStopHandleType,
@@ -103,6 +105,11 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
 
     public nonisolated func parseOutput(_ output: Output) -> String {
         output.finalOutput
+    }
+    
+    public func cancel() {
+        isCancelled = true
+        earlyStopHandleType = .force
     }
 }
 

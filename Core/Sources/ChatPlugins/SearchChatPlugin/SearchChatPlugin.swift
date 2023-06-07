@@ -28,14 +28,17 @@ public actor SearchChatPlugin: ChatPlugin {
         }
 
         do {
-            let eventStream = try await search(content)
+            let (eventStream, cancelAgent) = try await search(content)
 
             var actions = [String]()
             var finishedActions = Set<String>()
             var message = ""
 
             for try await event in eventStream {
-                guard !isCancelled else { return }
+                guard !isCancelled else {
+                    await cancelAgent()
+                    break
+                }
                 switch event {
                 case let .startAction(content):
                     actions.append(content)

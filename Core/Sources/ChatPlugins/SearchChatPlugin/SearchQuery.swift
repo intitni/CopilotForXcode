@@ -9,7 +9,9 @@ enum SearchEvent {
     case finishAnswer(String, [(title: String, link: String)])
 }
 
-func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Error> {
+func search(_ query: String) async throws
+    -> (stream: AsyncThrowingStream<SearchEvent, Error>, cancel: () async -> Void)
+{
     let bingSearch = BingSearchService(
         subscriptionKey: UserDefaults.shared.value(for: \.bingSearchSubscriptionKey),
         searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
@@ -91,7 +93,7 @@ func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Er
         }
     }
 
-    return AsyncThrowingStream<SearchEvent, Error> { continuation in
+    return (AsyncThrowingStream<SearchEvent, Error> { continuation in
         let callback = ResultCallbackManager(
             onFinalAnswerToken: {
                 continuation.yield(.answerToken($0))
@@ -112,6 +114,8 @@ func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Er
                 continuation.finish(throwing: error)
             }
         }
-    }
+    }, {
+        await agentExecutor.cancel()
+    })
 }
 
