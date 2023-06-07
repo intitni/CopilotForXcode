@@ -289,7 +289,9 @@ public extension UserDefaultPreferenceKeys {
                 feature: .chatWithSelection(
                     extraSystemPrompt: "",
                     prompt: """
+                    ```{{active_editor_language}}
                     {{selected_code}}
+                    ```
                     """,
                     useExtraSystemPrompt: true
                 )

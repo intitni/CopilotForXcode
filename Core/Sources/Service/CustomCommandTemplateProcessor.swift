@@ -5,22 +5,30 @@ import XcodeInspector
 struct CustomCommandTemplateProcessor {
     func process(_ text: String) -> String {
         let info = getEditorInformation()
-        if let editorContent = info.editorContent {
-            let updatedText = text.replacingOccurrences(of: "{{selected_code}}", with: """
-            ```\(info.language.rawValue)
-            \(editorContent.selectedContent.trimmingCharacters(in: ["\n"]))
-            ```
+        let editorContent = info.editorContent
+        let updatedText = text
+            .replacingOccurrences(of: "{{selected_code}}", with: """
+            \(editorContent?.selectedContent.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
             """)
-            return updatedText
-        } else {
-            let updatedText = text.replacingOccurrences(of: "{{selected_code}}", with: "")
-            return updatedText
-        }
+            .replacingOccurrences(
+                of: "{{active_editor_language}}",
+                with: info.language.rawValue
+            )
+            .replacingOccurrences(
+                of: "{{active_editor_file_url}}",
+                with: info.documentURL?.path ?? ""
+            )
+            .replacingOccurrences(
+                of: "{{active_editor_file_name}}",
+                with: info.documentURL?.lastPathComponent ?? ""
+            )
+        return updatedText
     }
 
     struct EditorInformation {
         let editorContent: SourceEditor.Content?
         let language: CodeLanguage
+        let documentURL: URL?
     }
 
     func getEditorInformation() -> EditorInformation {
@@ -30,7 +38,8 @@ struct CustomCommandTemplateProcessor {
 
         return .init(
             editorContent: editorContent,
-            language: language
+            language: language,
+            documentURL: documentURL
         )
     }
 }
