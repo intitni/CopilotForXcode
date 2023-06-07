@@ -34,20 +34,24 @@ public actor MathChatPlugin: ChatPlugin {
         do {
             let result = try await solveMathProblem(content)
             let formattedResult = "\(await translatedAnswer) \(result)"
-            await chatGPTService.mutateHistory { history in
-                if history.last?.id == id {
-                    history.removeLast()
+            if !isCancelled {
+                await chatGPTService.mutateHistory { history in
+                    if history.last?.id == id {
+                        history.removeLast()
+                    }
+                    reply.content = formattedResult
+                    history.append(reply)
                 }
-                reply.content = formattedResult
-                history.append(reply)
             }
         } catch {
-            await chatGPTService.mutateHistory { history in
-                if history.last?.id == id {
-                    history.removeLast()
+            if !isCancelled {
+                await chatGPTService.mutateHistory { history in
+                    if history.last?.id == id {
+                        history.removeLast()
+                    }
+                    reply.content = error.localizedDescription
+                    history.append(reply)
                 }
-                reply.content = error.localizedDescription
-                history.append(reply)
             }
         }
 
