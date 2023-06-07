@@ -88,7 +88,7 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .listItemTint(.clear)
-                
+
                 Instruction()
 
                 Spacer()
@@ -147,6 +147,8 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you'd like me to examine the entire file, simply add `@file` to the beginning of your message.
+                    
+                    To use plugins, you can start a message with `/pluginName`.
                     """
                 )
             } else {
@@ -160,6 +162,8 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you would like me to examine the selected code, please prefix your message with `@selection`. If you would like me to examine the entire file, please prefix your message with `@file`.
+                    
+                    To use plugins, you can start a message with `/pluginName`.
                     """
                 )
             }
@@ -350,7 +354,28 @@ struct ChatPanelInputArea: View {
                 CustomTextEditor(
                     text: $typedMessage,
                     font: .systemFont(ofSize: 14),
-                    onSubmit: { submitText() }
+                    onSubmit: { submitText() },
+                    completions: { text, _, range in
+                        if text.isEmpty { return [] }
+                        let availableFeatures = [
+                            "/run",
+                            "/airun",
+                            "/math",
+                            "/search",
+                            "@selection",
+                            "@file",
+                        ]
+                        return availableFeatures
+                            .filter { $0.hasPrefix(text) && $0 != text }
+                            .compactMap {
+                                guard let index = $0.index(
+                                    $0.startIndex,
+                                    offsetBy: range.location,
+                                    limitedBy: $0.endIndex
+                                ) else { return nil }
+                                return String($0[index...])
+                            }
+                    }
                 )
                 .padding(.top, 1)
                 .padding(.bottom, -1)
