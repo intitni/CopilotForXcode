@@ -47,7 +47,7 @@ func search(_ query: String) async throws
     let agentExecutor = AgentExecutor(
         agent: ChatAgent(chatModel: chatModel, tools: tools),
         tools: tools,
-        maxIteration: 2,
+        maxIteration: UserDefaults.shared.value(for: \.chatSearchPluginMaxIterations),
         earlyStopHandleType: .generate
     )
 

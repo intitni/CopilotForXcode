@@ -20,6 +20,7 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatFeatureProvider) var chatFeatureProvider
         @AppStorage(\.chatGPTModel) var chatGPTModel
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
+        @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
 
         init() {}
     }
@@ -36,6 +37,8 @@ struct ChatSettingsView: View {
             uiForm
             Divider()
             contextForm
+            Divider()
+            pluginForm
         }
     }
 
@@ -123,7 +126,7 @@ struct ChatSettingsView: View {
                 Text("9 Messages").tag(9)
                 Text("11 Messages").tag(11)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Default System Prompt")
                 EditableText(text: $settings.defaultChatSystemPrompt)
@@ -178,7 +181,7 @@ struct ChatSettingsView: View {
             Toggle(isOn: $settings.useSelectionScopeByDefaultInChatContext) {
                 Text("Use selection scope by default in chat context.")
             }
-            
+
             Toggle(isOn: $settings.embedFileContentInChatContextIfNoSelection) {
                 Text("Embed file content in chat context if no code is selected.")
             }
@@ -195,6 +198,20 @@ struct ChatSettingsView: View {
 
                 Text("lines")
             }
+        }
+    }
+
+    @ViewBuilder
+    var pluginForm: some View {
+        Form {
+            TextField(text: .init(get: {
+                "\(Int(settings.chatSearchPluginMaxIterations))"
+            }, set: {
+                settings.chatSearchPluginMaxIterations = Int($0) ?? 0
+            })) {
+                Text("Search Plugin Max Iterations")
+            }
+            .textFieldStyle(.roundedBorder)
         }
     }
 

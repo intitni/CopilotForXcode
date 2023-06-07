@@ -245,6 +245,10 @@ public extension UserDefaultPreferenceKeys {
             key: "DefaultChatSystemPrompt"
         )
     }
+    
+    var chatSearchPluginMaxIterations: PreferenceKey<Int> {
+        .init(defaultValue: 3, key: "ChatSearchPluginMaxIterations")
+    }
 }
 
 // MARK: - Bing Search
