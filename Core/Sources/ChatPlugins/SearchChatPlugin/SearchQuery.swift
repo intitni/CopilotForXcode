@@ -1,8 +1,6 @@
 import BingSearchService
 import Foundation
 import LangChain
-import PythonHelper
-import PythonKit
 
 enum SearchEvent {
     case startAction(String)
@@ -13,8 +11,8 @@ enum SearchEvent {
 
 func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Error> {
     let bingSearch = BingSearchService(
-        subscriptionKey: "",
-        searchURL: ""
+        subscriptionKey: UserDefaults.shared.value(for: \.bingSearchSubscriptionKey),
+        searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
     )
 
     final class LinkStorage {
@@ -30,7 +28,7 @@ func search(_ query: String) async throws -> AsyncThrowingStream<SearchEvent, Er
             run: {
                 linkStorage.links = []
                 let result = try await bingSearch.search(query: $0, numberOfResult: 5)
-                guard let websites = result.webPages?.value else { return "No search results." }
+                let websites = result.webPages.value
 
                 var string = ""
                 for (index, website) in websites.enumerated() {

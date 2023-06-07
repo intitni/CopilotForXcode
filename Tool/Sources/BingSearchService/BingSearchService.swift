@@ -1,7 +1,7 @@
 import Foundation
 
 public struct BingSearchResult: Codable {
-    public var webPages: WebPages?
+    public var webPages: WebPages
 
     public struct WebPages: Codable {
         public var webSearchUrl: String
@@ -16,6 +16,16 @@ public struct BingSearchResult: Codable {
             public var snippet: String
         }
     }
+}
+
+struct BingSearchResponseError: Codable, Error, LocalizedError {
+    struct E: Codable {
+        var code: String?
+        var message: String?
+    }
+
+    var error: E
+    var errorDescription: String? { error.message }
 }
 
 enum BingSearchError: Error, LocalizedError {
@@ -52,9 +62,13 @@ public struct BingSearchService {
         request.addValue(subscriptionKey, forHTTPHeaderField: "Ocp-Apim-Subscription-Key")
 
         let (data, _) = try await URLSession.shared.data(for: request)
-        let decoder = JSONDecoder()
-        let result = try decoder.decode(BingSearchResult.self, from: data)
-        return result
+        do {
+            let result = try JSONDecoder().decode(BingSearchResult.self, from: data)
+            return result
+        } catch {
+            let e = try JSONDecoder().decode(BingSearchResponseError.self, from: data)
+            throw e
+        }
     }
 }
 
