@@ -38,10 +38,7 @@
 		C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; };
 		C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
-		C8A3AE522A2884DA0046E809 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8A3AE512A2883430046E809 /* Python.xcframework */; };
 		C8A3AE592A2885A70046E809 /* InitializePython.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3AE582A2885A70046E809 /* InitializePython.swift */; };
-		C8A3AE5B2A288AF90046E809 /* site-packages in Resources */ = {isa = PBXBuildFile; fileRef = C8A3AE5A2A288AF90046E809 /* site-packages */; };
-		C8A3B1772A288FA90046E809 /* python-stdlib in Resources */ = {isa = PBXBuildFile; fileRef = C8A3B1762A288FA90046E809 /* python-stdlib */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
 /* End PBXBuildFile section */
@@ -209,7 +206,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				C861E61E2994F6150056CB02 /* Service in Frameworks */,
-				C8A3AE522A2884DA0046E809 /* Python.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,8 +493,6 @@
 			files = (
 				C861E6152994F6080056CB02 /* Assets.xcassets in Resources */,
 				C81291D72994FE6900196E12 /* Main.storyboard in Resources */,
-				C8A3B1772A288FA90046E809 /* python-stdlib in Resources */,
-				C8A3AE5B2A288AF90046E809 /* site-packages in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -522,7 +516,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\necho \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\nfind \"$CODESIGNING_FOLDER_PATH/Contents/Resources/python-stdlib/lib-dynload\" -name \"*.so\" -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
+			shellScript = "#set -e\n#echo \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\n#find \"$CODESIGNING_FOLDER_PATH/Contents/Resources/python-stdlib/lib-dynload\" -name \"*.so\" -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
 		};
 		C8A3B1782A2894E10046E809 /* Sign Python Site Packages */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -541,7 +535,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\necho \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\nfind \"$CODESIGNING_FOLDER_PATH/Contents/Resources/site-packages\" -type f \\( -name \"*.so\" -o -name \"*.dylib\" \\) -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
+			shellScript = "#set -e\n#echo \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\n#find \"$CODESIGNING_FOLDER_PATH/Contents/Resources/site-packages\" -type f \\( -name \"*.so\" -o -name \"*.dylib\" \\) -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
