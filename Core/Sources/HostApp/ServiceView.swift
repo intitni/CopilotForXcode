@@ -39,6 +39,15 @@ struct ServiceView: View {
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
+            
+            ScrollView {
+                BingSearchView().padding()
+            }.sidebarItem(
+                tag: 4,
+                title: "Bing Search",
+                subtitle: "Search Chat Plugin",
+                image: "globe"
+            )
         }
     }
 }

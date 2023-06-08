@@ -27,9 +27,7 @@ Most of the logics are implemented inside the package `Core`.
 
 ## Building and Archiving the App
 
-This project includes a Git submodule, `copilot.vim`, so you will need to either initialize the submodule or download it from the [copilot.vim](https://github.com/github/copilot.vim) repository.
-
-Finally, archive the Copilot for Xcode target.
+1. Build or archive the Copilot for Xcode target.
 
 ## Testing Extension
 

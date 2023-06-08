@@ -330,34 +330,6 @@ struct EditCustomCommandView: View {
             }
             .padding(.bottom)
             .background(.regularMaterial)
-            .sheet(isPresented: .init(get: { editingContentInFullScreen != nil }, set: {
-                if $0 == false {
-                    editingContentInFullScreen = nil
-                }
-            }), content: {
-                VStack {
-                    if let editingContentInFullScreen {
-                        TextEditor(text: editingContentInFullScreen)
-                            .font(Font.system(.body, design: .monospaced))
-                            .padding(4)
-                            .frame(minHeight: 120)
-                            .multilineTextAlignment(.leading)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                            )
-                    }
-
-                    Button(action: {
-                        editingContentInFullScreen = nil
-                    }) {
-                        Text("Done")
-                    }
-                }
-                .padding()
-                .frame(width: 600, height: 500)
-                .background(Color(nsColor: .windowBackgroundColor))
-            })
         }
     }
 
@@ -365,7 +337,7 @@ struct EditCustomCommandView: View {
     var promptTextField: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Prompt")
-            editableText($prompt)
+            EditableText(text: $prompt)
         }
         .padding(.vertical, 4)
     }
@@ -378,7 +350,7 @@ struct EditCustomCommandView: View {
             } else {
                 Text(title ?? "System Prompt")
             }
-            editableText($systemPrompt)
+            EditableText(text: $systemPrompt)
         }
         .padding(.vertical, 4)
     }
@@ -389,38 +361,6 @@ struct EditCustomCommandView: View {
     
     var generateDescriptionToggle: some View {
         Toggle("Generate Description", isOn: $generatingPromptToCodeDescription)
-    }
-
-    func editableText(_ binding: Binding<String>) -> some View {
-        Button(action: {
-            editingContentInFullScreen = binding
-        }) {
-            HStack(alignment: .top) {
-                Text(binding.wrappedValue)
-                    .font(Font.system(.body, design: .monospaced))
-                    .padding(4)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(nsColor: .textBackgroundColor))
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
-                    }
-                Image(systemName: "square.and.pencil")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 14)
-                    .padding(4)
-                    .background(
-                        Color.primary.opacity(0.1),
-                        in: RoundedRectangle(cornerRadius: 4)
-                    )
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 

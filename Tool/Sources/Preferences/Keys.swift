@@ -105,11 +105,11 @@ public extension UserDefaultPreferenceKeys {
     var azureOpenAIAPIKey: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIAPIKey")
     }
-    
+
     var azureOpenAIBaseURL: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIBaseURL")
     }
-    
+
     var azureChatGPTDeployment: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureChatGPTDeployment")
     }
@@ -205,7 +205,7 @@ public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
-    
+
     var chatFontSize: PreferenceKey<Double> {
         .init(defaultValue: 12, key: "ChatFontSize")
     }
@@ -225,9 +225,41 @@ public extension UserDefaultPreferenceKeys {
     var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
-    
+
     var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
+    }
+
+    var defaultChatSystemPrompt: PreferenceKey<String> {
+        .init(
+            defaultValue: """
+            You are an AI programming assistant.
+            Your reply should be concise, clear, informative and logical.
+            You MUST reply in the format of markdown.
+            You MUST embed every code you provide in a markdown code block.
+            You MUST add the programming language name at the start of the markdown code block.
+            If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
+            If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
+            Make your answer short and structured.
+            """,
+            key: "DefaultChatSystemPrompt"
+        )
+    }
+    
+    var chatSearchPluginMaxIterations: PreferenceKey<Int> {
+        .init(defaultValue: 3, key: "ChatSearchPluginMaxIterations")
+    }
+}
+
+// MARK: - Bing Search
+
+public extension UserDefaultPreferenceKeys {
+    var bingSearchSubscriptionKey: PreferenceKey<String> {
+        .init(defaultValue: "", key: "BingSearchSubscriptionKey")
+    }
+    
+    var bingSearchEndpoint: PreferenceKey<String> {
+        .init(defaultValue: "https://api.bing.microsoft.com/v7.0/search/", key: "BingSearchEndpoint")
     }
 }
 
@@ -253,6 +285,19 @@ public extension UserDefaultPreferenceKeys {
                     prompt: "Add documentation on top of the code. Use triple slash if the language supports it.",
                     continuousMode: false,
                     generateDescription: true
+                )
+            ),
+            .init(
+                commandId: "BuiltInCustomCommandSendCodeToChat",
+                name: "Send Selected Code to Chat",
+                feature: .chatWithSelection(
+                    extraSystemPrompt: "",
+                    prompt: """
+                    ```{{active_editor_language}}
+                    {{selected_code}}
+                    ```
+                    """,
+                    useExtraSystemPrompt: true
                 )
             ),
         ], key: "CustomCommands")

@@ -38,6 +38,7 @@
 		C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; };
 		C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
+		C8A3AE592A2885A70046E809 /* InitializePython.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3AE582A2885A70046E809 /* InitializePython.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
 /* End PBXBuildFile section */
@@ -143,6 +144,7 @@
 		C8189B202938973000C9DCDA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C8189B222938973000C9DCDA /* Copilot_for_Xcode.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Copilot_for_Xcode.entitlements; sourceTree = "<group>"; };
 		C8189B282938979000C9DCDA /* Core */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Core; sourceTree = "<group>"; };
+		C81D181E2A1B509B006C1B70 /* Tool */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Tool; sourceTree = "<group>"; };
 		C81E867D296FE4420026E908 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		C8216B70298036EC00AD38C7 /* Helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Helper; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8216B72298036EC00AD38C7 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -164,6 +166,10 @@
 		C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousSuggestionCommand.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
+		C8A3AE512A2883430046E809 /* Python.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Python.xcframework; sourceTree = "<group>"; };
+		C8A3AE582A2885A70046E809 /* InitializePython.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitializePython.swift; sourceTree = "<group>"; };
+		C8A3AE5A2A288AF90046E809 /* site-packages */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "site-packages"; sourceTree = "<group>"; };
+		C8A3B1762A288FA90046E809 /* python-stdlib */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "python-stdlib"; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -248,11 +254,13 @@
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
+				C81D181E2A1B509B006C1B70 /* Tool */,
 				C8189B282938979000C9DCDA /* Core */,
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
 				C81458922939EFDC00135263 /* EditorExtension */,
 				C8216B71298036EC00AD38C7 /* Helper */,
 				C861E60F2994F6070056CB02 /* ExtensionService */,
+				C81BBF5A2A2CA0B8000B4F61 /* Python */,
 				C814588D2939EFDC00135263 /* Frameworks */,
 				C8189B172938972F00C9DCDA /* Products */,
 			);
@@ -289,6 +297,16 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		C81BBF5A2A2CA0B8000B4F61 /* Python */ = {
+			isa = PBXGroup;
+			children = (
+				C8A3AE512A2883430046E809 /* Python.xcframework */,
+				C8A3B1762A288FA90046E809 /* python-stdlib */,
+				C8A3AE5A2A288AF90046E809 /* site-packages */,
+			);
+			path = Python;
+			sourceTree = "<group>";
+		};
 		C8216B71298036EC00AD38C7 /* Helper */ = {
 			isa = PBXGroup;
 			children = (
@@ -304,6 +322,7 @@
 				C81291D92994FE7900196E12 /* Info.plist */,
 				C861E61F2994F6390056CB02 /* ServiceDelegate.swift */,
 				C861E6102994F6070056CB02 /* AppDelegate.swift */,
+				C8A3AE582A2885A70046E809 /* InitializePython.swift */,
 				C81291D52994FE6900196E12 /* Main.storyboard */,
 				C861E6142994F6080056CB02 /* Assets.xcassets */,
 				C861E6192994F6080056CB02 /* ExtensionService.entitlements */,
@@ -388,6 +407,8 @@
 				C861E60A2994F6070056CB02 /* Sources */,
 				C861E60B2994F6070056CB02 /* Frameworks */,
 				C861E60C2994F6070056CB02 /* Resources */,
+				C8A3AE572A28852D0046E809 /* Sign Python STD */,
+				C8A3B1782A2894E10046E809 /* Sign Python Site Packages */,
 			);
 			buildRules = (
 			);
@@ -477,6 +498,47 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		C8A3AE572A28852D0046E809 /* Sign Python STD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Python STD";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#set -e\n#echo \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\n#find \"$CODESIGNING_FOLDER_PATH/Contents/Resources/python-stdlib/lib-dynload\" -name \"*.so\" -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
+		};
+		C8A3B1782A2894E10046E809 /* Sign Python Site Packages */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Python Site Packages";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#set -e\n#echo \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\n#find \"$CODESIGNING_FOLDER_PATH/Contents/Resources/site-packages\" -type f \\( -name \"*.so\" -o -name \"*.dylib\" \\) -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		C81458882939EFDC00135263 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -520,6 +582,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8A3AE592A2885A70046E809 /* InitializePython.swift in Sources */,
 				C861E6202994F63A0056CB02 /* ServiceDelegate.swift in Sources */,
 				C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */,
 			);

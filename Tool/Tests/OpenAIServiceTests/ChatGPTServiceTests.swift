@@ -45,6 +45,7 @@ final class ChatGPTServiceTests: XCTestCase {
             requestBody = _requestBody
             return MockCompletionStreamAPI_Success()
         }
+        await service.mutateSystemPrompt("system")
         let stream = try await service.send(content: "Hello")
         var all = [String]()
         for try await text in stream {
@@ -58,7 +59,7 @@ final class ChatGPTServiceTests: XCTestCase {
         }
 
         XCTAssertEqual(requestBody?.messages, [
-            .init(role: .system, content: ""),
+            .init(role: .system, content: "system"),
             .init(role: .user, content: "Hello"),
         ], "System prompt is included")
         XCTAssertEqual(all, ["hello", "my", "friends"], "Text stream is correct")

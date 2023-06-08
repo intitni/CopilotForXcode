@@ -10,8 +10,6 @@ struct CodeBlock: View {
     let firstLinePrecedingSpaceCount: Int
     let fontSize: Double
 
-    @AppStorage(\.disableLazyVStack) var disableLazyVStack
-
     init(
         code: String,
         language: String,
@@ -39,21 +37,8 @@ struct CodeBlock: View {
         highlightedCode = result.code
     }
 
-    @ViewBuilder
-    func vstack(@ViewBuilder content: () -> some View) -> some View {
-        if disableLazyVStack {
-            VStack(spacing: 2) {
-                content()
-            }
-        } else {
-            LazyVStack(spacing: 2) {
-                content()
-            }
-        }
-    }
-
     var body: some View {
-        vstack {
+        VStack(spacing: 2) {
             ForEach(0..<highlightedCode.endIndex, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(index + startLineIndex + 1)")

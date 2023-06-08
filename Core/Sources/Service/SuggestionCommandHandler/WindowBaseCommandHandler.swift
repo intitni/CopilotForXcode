@@ -1,12 +1,12 @@
 import ChatService
-import SuggestionModel
-import GitHubCopilotService
 import Environment
 import Foundation
+import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import OpenAIService
 import SuggestionInjector
+import SuggestionModel
 import SuggestionWidget
 import XPCShared
 
@@ -53,7 +53,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             forFileAt: fileURL,
             editor: editor
         )
-        
+
         try Task.checkCancellation()
 
         if filespace.presentingSuggestion != nil {
@@ -388,7 +388,7 @@ extension WindowBaseCommandHandler {
 
         presenter.presentPromptToCode(fileURL: fileURL)
     }
-    
+
     private func startChat(
         specifiedSystemPrompt: String?,
         extraSystemPrompt: String?,
@@ -402,15 +402,16 @@ extension WindowBaseCommandHandler {
 
         let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
 
-        chat.mutateSystemPrompt(specifiedSystemPrompt)
-        chat.mutateExtraSystemPrompt(extraSystemPrompt ?? "")
+        let templateProcessor = CustomCommandTemplateProcessor()
+        chat.mutateSystemPrompt(specifiedSystemPrompt.map(templateProcessor.process))
+        chat.mutateExtraSystemPrompt(extraSystemPrompt.map(templateProcessor.process) ?? "")
 
         Task {
             let customCommandPrefix = {
                 if let name { return "[\(name)] " }
                 return ""
             }()
-            
+
             if specifiedSystemPrompt != nil || extraSystemPrompt != nil {
                 await chat.chatGPTService.mutateHistory { history in
                     history.append(.init(
@@ -422,10 +423,12 @@ extension WindowBaseCommandHandler {
             }
 
             if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
-                try await chat.send(content: sendingMessageImmediately)
+                try await chat
+                    .send(content: templateProcessor.process(sendingMessageImmediately))
             }
         }
 
         presenter.presentChatRoom(fileURL: focusedElementURI)
     }
 }
+

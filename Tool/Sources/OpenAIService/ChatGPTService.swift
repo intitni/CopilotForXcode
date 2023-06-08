@@ -109,6 +109,7 @@ public actor ChatGPTService: ChatGPTServiceType {
         didSet { objectWillChange.send() }
     }
 
+    var stop: [String]
     var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
@@ -117,10 +118,12 @@ public actor ChatGPTService: ChatGPTServiceType {
     public init(
         systemPrompt: String = "",
         temperature: Double? = nil,
+        stop: [String] = [],
         designatedProvider: ChatFeatureProvider? = nil
     ) {
         self.systemPrompt = systemPrompt
         self.temperature = temperature
+        self.stop = stop
         self.designatedProvider = designatedProvider
     }
 
@@ -130,13 +133,16 @@ public actor ChatGPTService: ChatGPTServiceType {
     ) async throws -> AsyncThrowingStream<String, Error> {
         guard !isReceivingMessage else { throw CancellationError() }
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        let newMessage = ChatMessage(
-            id: uuidGenerator(),
-            role: .user,
-            content: content,
-            summary: summary
-        )
-        history.append(newMessage)
+        
+        if !content.isEmpty || summary != nil {
+            let newMessage = ChatMessage(
+                id: uuidGenerator(),
+                role: .user,
+                content: content,
+                summary: summary
+            )
+            history.append(newMessage)
+        }
 
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
 
@@ -145,6 +151,7 @@ public actor ChatGPTService: ChatGPTServiceType {
             messages: messages,
             temperature: temperature ?? defaultTemperature,
             stream: true,
+            stop: stop.isEmpty ? nil : stop,
             max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
@@ -217,13 +224,16 @@ public actor ChatGPTService: ChatGPTServiceType {
     ) async throws -> String? {
         guard !isReceivingMessage else { throw CancellationError() }
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        let newMessage = ChatMessage(
-            id: uuidGenerator(),
-            role: .user,
-            content: content,
-            summary: summary
-        )
-        history.append(newMessage)
+        
+        if !content.isEmpty || summary != nil {
+            let newMessage = ChatMessage(
+                id: uuidGenerator(),
+                role: .user,
+                content: content,
+                summary: summary
+            )
+            history.append(newMessage)
+        }
 
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
 
@@ -232,6 +242,7 @@ public actor ChatGPTService: ChatGPTServiceType {
             messages: messages,
             temperature: temperature ?? defaultTemperature,
             stream: true,
+            stop: stop.isEmpty ? nil : stop,
             max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
         )
 
@@ -314,7 +325,9 @@ extension ChatGPTService {
             all.append(.init(role: message.role, content: message.content))
         }
 
-        all.append(.init(role: .system, content: systemPrompt))
+        if !systemPrompt.isEmpty {
+            all.append(.init(role: .system, content: systemPrompt))
+        }
         return (all.reversed(), max(minimumReplyTokens, maxTokens - allTokensCount))
     }
 }
