@@ -22,13 +22,11 @@ public actor MathChatPlugin: ChatPlugin {
         delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
-        async let translatedCalculating = translate(text: "Calculating...")
         async let translatedAnswer = translate(text: "Answer:")
-        var reply = ChatMessage(id: id, role: .assistant, content: await translatedCalculating)
+        var reply = ChatMessage(id: id, role: .assistant, content: "")
 
         await chatGPTService.mutateHistory { history in
             history.append(.init(role: .user, content: originalMessage, summary: content))
-            history.append(reply)
         }
 
         do {

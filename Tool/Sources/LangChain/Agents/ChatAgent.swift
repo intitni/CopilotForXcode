@@ -92,8 +92,9 @@ public class ChatAgent: Agent {
         let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
         if baseScratchpad.isEmpty { return .text("") }
         return .text("""
+        This was your previous work (but I haven't seen any of it! I only see what you return as final answer):
         \(baseScratchpad)
-        (Continue with your `Thought:`)
+        (Please continue with `Thought:`)
         """)
     }
 
@@ -111,7 +112,7 @@ public class ChatAgent: Agent {
                 let output = answer.trimmingCharacters(in: .whitespacesAndNewlines)
                 return .finish(AgentFinish(returnValue: output, log: text))
             } catch {
-                Logger.langchain.error("Could not parse LLM output final answer: \(error)")
+                Logger.langchain.info("Could not parse LLM output final answer: \(error)")
                 return nil
             }
         }
@@ -145,7 +146,7 @@ public class ChatAgent: Agent {
                     ),
                 ])
             } catch {
-                Logger.langchain.error("Could not parse LLM output next action: \(error)")
+                Logger.langchain.info("Could not parse LLM output next action: \(error)")
                 return nil
             }
         }
@@ -158,7 +159,12 @@ public class ChatAgent: Agent {
         let finalAnswer = try? forceParser.parse(&parsableContent)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
-        return .finish(AgentFinish(returnValue: String(finalAnswer ?? text), log: text))
+        var answer = finalAnswer ?? text
+        if answer.isEmpty {
+            answer = "Sorry, I don't know."
+        }
+        
+        return .finish(AgentFinish(returnValue: String(answer), log: text))
     }
 }
 
