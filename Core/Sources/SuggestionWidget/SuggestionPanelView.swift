@@ -1,4 +1,5 @@
 import Environment
+import Preferences
 import SwiftUI
 
 @MainActor
@@ -20,40 +21,35 @@ final class SuggestionPanelViewModel: ObservableObject {
         }
     }
 
-    enum ActiveTab {
-        case suggestion
-    }
-
-    @Published var content: Content? {
-        didSet {
-            requestApplicationPolicyUpdate?(self)
-        }
-    }
-
-    @Published var activeTab: ActiveTab {
-        didSet {
-            requestApplicationPolicyUpdate?(self)
-        }
-    }
-
+    @Published var content: Content?
     @Published var isPanelDisplayed: Bool
     @Published var alignTopToAnchor = false
     @Published var colorScheme: ColorScheme
 
-    var requestApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)?
-
     public init(
         content: Content? = nil,
         isPanelDisplayed: Bool = false,
-        activeTab: ActiveTab = .suggestion,
-        colorScheme: ColorScheme = .dark,
-        requestApplicationPolicyUpdate: ((SuggestionPanelViewModel) -> Void)? = nil
+        colorScheme: ColorScheme = .dark
     ) {
         self.content = content
         self.isPanelDisplayed = isPanelDisplayed
-        self.activeTab = activeTab
         self.colorScheme = colorScheme
-        self.requestApplicationPolicyUpdate = requestApplicationPolicyUpdate
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func animation<V: Equatable>(
+        featureFlag: KeyPath<UserDefaultPreferenceKeys, FeatureFlag>,
+        _ animation: Animation?,
+        value: V
+    ) -> some View {
+        let isOn = UserDefaults.shared.value(for: featureFlag)
+        if isOn {
+            self.animation(animation, value: value)
+        } else {
+            self
+        }
     }
 }
 
@@ -70,21 +66,19 @@ struct SuggestionPanelView: View {
 
             VStack {
                 if let content = viewModel.content {
-                    if case .suggestion = viewModel.activeTab {
-                        ZStack(alignment: .topLeading) {
-                            switch content {
-                            case let .suggestion(suggestion):
-                                CodeBlockSuggestionPanel(suggestion: suggestion)
-                            case let .promptToCode(provider):
-                                PromptToCodePanel(provider: provider)
-                            case let .error(description):
-                                ErrorPanel(viewModel: viewModel, description: description)
-                            }
+                    ZStack(alignment: .topLeading) {
+                        switch content {
+                        case let .suggestion(suggestion):
+                            CodeBlockSuggestionPanel(suggestion: suggestion)
+                        case let .promptToCode(provider):
+                            PromptToCodePanel(provider: provider)
+                        case let .error(description):
+                            ErrorPanel(viewModel: viewModel, description: description)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .allowsHitTesting(viewModel.isPanelDisplayed)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .allowsHitTesting(viewModel.isPanelDisplayed)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -101,9 +95,16 @@ struct SuggestionPanelView: View {
             guard viewModel.content != nil else { return 0 }
             return 1
         }())
-        .animation(.easeInOut(duration: 0.2), value: viewModel.content?.contentHash)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.activeTab)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.isPanelDisplayed)
+        .animation(
+            featureFlag: \.animationACrashSuggestion,
+            .easeInOut(duration: 0.2),
+            value: viewModel.content?.contentHash
+        )
+        .animation(
+            featureFlag: \.animationBCrashSuggestion,
+            .easeInOut(duration: 0.2),
+            value: viewModel.isPanelDisplayed
+        )
         .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
     }
 }
@@ -155,7 +156,6 @@ struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                 currentSuggestionIndex: 0
             )),
             isPanelDisplayed: true,
-            activeTab: .suggestion,
             colorScheme: .dark
         ))
         .frame(width: 450, height: 200)

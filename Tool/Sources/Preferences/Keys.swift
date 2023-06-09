@@ -326,5 +326,17 @@ public extension UserDefaultPreferenceKeys {
     var triggerActionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
     }
+    
+    var animationACrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationACrashSuggestion")
+    }
+    
+    var animationBCrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationBCrashSuggestion")
+    }
+    
+    var animationCCrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationCCrashSuggestion")
+    }
 }
 

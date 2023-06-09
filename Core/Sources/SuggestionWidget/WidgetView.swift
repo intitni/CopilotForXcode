@@ -19,7 +19,7 @@ final class WidgetViewModel: ObservableObject {
         let deadline = date.timeIntervalSince1970 + 20
         isProcessingCounters.append(IsProcessingCounter(expirationDate: deadline))
         isProcessing = true
-        
+
         cleanupIsProcessingCounterTask?.cancel()
         cleanupIsProcessingCounterTask = Task { [weak self] in
             try await Task.sleep(nanoseconds: 20 * 1_000_000_000)
@@ -105,6 +105,7 @@ struct WidgetView: View {
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
                             .animation(
+                                featureFlag: \.animationCCrashSuggestion,
                                 .easeInOut(duration: 1).repeatForever(autoreverses: true),
                                 value: processingProgress
                             )
@@ -117,7 +118,11 @@ struct WidgetView: View {
                             .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(!empty || viewModel.isProcessing ? 1 : 0)
-                            .animation(.easeInOut(duration: 1), value: processingProgress)
+                            .animation(
+                                featureFlag: \.animationCCrashSuggestion,
+                                .easeInOut(duration: 1),
+                                value: processingProgress
+                            )
                     }
                 }
             }
