@@ -1,7 +1,7 @@
-import SuggestionModel
 import Foundation
 import JSONRPC
 import LanguageServerProtocol
+import SuggestionModel
 
 struct GitHubCopilotDoc: Codable {
     var source: String
@@ -26,8 +26,49 @@ enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
         struct Response: Codable {}
 
+        var networkProxy: JSONValue? {
+            let host = UserDefaults.shared.value(for: \.gitHubCopilotProxyHost)
+            if host.isEmpty { return nil }
+            var port = UserDefaults.shared.value(for: \.gitHubCopilotProxyPort)
+            if port.isEmpty { port = "80" }
+            let username = UserDefaults.shared.value(for: \.gitHubCopilotProxyUsername)
+            if username.isEmpty {
+                return .hash([
+                    "host": .string(host),
+                    "port": .number(Double(Int(port) ?? 80)),
+                    "rejectUnauthorized": .bool(UserDefaults.shared
+                        .value(for: \.gitHubCopilotUseStrictSSL)),
+                ])
+            } else {
+                return .hash([
+                    "host": .string(host),
+                    "port": .number(Double(Int(port) ?? 80)),
+                    "rejectUnauthorized": .bool(UserDefaults.shared
+                        .value(for: \.gitHubCopilotUseStrictSSL)),
+                    "username": .string(username),
+                    "password": .string(UserDefaults.shared
+                        .value(for: \.gitHubCopilotProxyPassword)),
+
+                ])
+            }
+        }
+
         var request: ClientRequest {
-            .custom("setEditorInfo", .hash([
+            if let networkProxy {
+                return .custom("setEditorInfo", .hash([
+                    "editorInfo": .hash([
+                        "name": "Xcode",
+                        "version": "",
+                    ]),
+                    "editorPluginInfo": .hash([
+                        "name": "Copilot for Xcode",
+                        "version": "",
+                    ]),
+                    "networkProxy": networkProxy,
+                ]))
+            }
+
+            return .custom("setEditorInfo", .hash([
                 "editorInfo": .hash([
                     "name": "Xcode",
                     "version": "",
@@ -171,3 +212,4 @@ enum GitHubCopilotRequest {
         }
     }
 }
+
