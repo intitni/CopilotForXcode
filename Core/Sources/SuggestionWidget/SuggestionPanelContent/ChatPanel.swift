@@ -362,6 +362,7 @@ struct ChatPanelInputArea: View {
                             "/airun",
                             "/math",
                             "/search",
+                            "/shortcut",
                             "/exit",
                             "@selection",
                             "@file",

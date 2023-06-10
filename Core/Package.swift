@@ -50,6 +50,7 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
+        .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
     ],
     targets: [
         // MARK: - Main
@@ -182,6 +183,7 @@ let package = Package(
                 // plugins
                 "MathChatPlugin",
                 "SearchChatPlugin",
+                "ShortcutChatPlugin",
 
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -314,6 +316,16 @@ let package = Package(
                 .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/SearchChatPlugin"
+        ),
+
+        .target(
+            name: "ShortcutChatPlugin",
+            dependencies: [
+                "ChatPlugin",
+                .product(name: "Parsing", package: "swift-parsing"),
+                .product(name: "Terminal", package: "Tool"),
+            ],
+            path: "Sources/ChatPlugins/ShortcutChatPlugin"
         ),
     ]
 )
