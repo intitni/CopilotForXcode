@@ -13,6 +13,11 @@ struct CopilotView: View {
         @AppStorage(\.runNodeWith) var runNodeWith
         @AppStorage("username") var username: String = ""
         @AppStorage(\.gitHubCopilotVerboseLog) var gitHubCopilotVerboseLog
+        @AppStorage(\.gitHubCopilotProxyHost) var gitHubCopilotProxyHost
+        @AppStorage(\.gitHubCopilotProxyPort) var gitHubCopilotProxyPort
+        @AppStorage(\.gitHubCopilotProxyUsername) var gitHubCopilotProxyUsername
+        @AppStorage(\.gitHubCopilotProxyPassword) var gitHubCopilotProxyPassword
+        @AppStorage(\.gitHubCopilotUseStrictSSL) var gitHubCopilotUseStrictSSL
 
         init() {}
     }
@@ -182,9 +187,9 @@ struct CopilotView: View {
                             uninstallButton
                         }
                     }
-                    
+
                     Text("Language Server Version: \(version ?? "Loading..")")
-                    
+
                     Text("Status: \(status?.description ?? "Loading..")")
 
                     HStack(alignment: .center) {
@@ -225,6 +230,24 @@ struct CopilotView: View {
 
                 Form {
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
+                }
+
+                Divider()
+
+                Form {
+                    TextField(text: $settings.gitHubCopilotProxyHost, prompt: Text("xxx.xxx.xxx.xxx, leave it blank to disable proxy.")) {
+                        Text("Proxy Host")
+                    }
+                    TextField(text: $settings.gitHubCopilotProxyPort, prompt: Text("80")) {
+                        Text("Proxy Port")
+                    }
+                    TextField(text: $settings.gitHubCopilotProxyUsername) {
+                        Text("Proxy Username")
+                    }
+                    SecureField(text: $settings.gitHubCopilotProxyPassword) {
+                        Text("Proxy Password")
+                    }
+                    Toggle("Proxy Strict SSL", isOn: $settings.gitHubCopilotUseStrictSSL)
                 }
             }
             Spacer()
