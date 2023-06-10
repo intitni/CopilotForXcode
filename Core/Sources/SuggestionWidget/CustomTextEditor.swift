@@ -30,6 +30,7 @@ struct CustomTextEditor: NSViewRepresentable {
         let textView = (context.coordinator.theTextView.documentView as! NSTextView)
         guard textView.string != text else { return }
         textView.string = text
+        textView.undoManager?.removeAllActions()
     }
 }
 

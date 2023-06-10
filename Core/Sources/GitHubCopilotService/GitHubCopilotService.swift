@@ -165,7 +165,13 @@ public class GitHubCopilotBaseService {
 
         self.server = server
         localProcessServer = localServer
+        
+        Task {
+            try await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+        }
     }
+    
+    
 
     public static func createFoldersIfNeeded() throws -> (
         applicationSupportURL: URL,
@@ -211,9 +217,6 @@ public final class GitHubCopilotAuthService: GitHubCopilotBaseService,
     public init() throws {
         let home = FileManager.default.homeDirectoryForCurrentUser
         try super.init(projectRootURL: home)
-        Task {
-            try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
-        }
     }
 
     public func checkStatus() async throws -> GitHubCopilotAccountStatus {

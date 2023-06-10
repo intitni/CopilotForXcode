@@ -27,7 +27,7 @@ public final class SuggestionWidgetController: NSObject {
         it.canBecomeKeyChecker = { false }
         return it
     }()
-    
+
     private lazy var widgetWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -262,7 +262,7 @@ public final class SuggestionWidgetController: NSObject {
             }
         }
     }
-    
+
     func orderFront() {
         widgetWindow.orderFrontRegardless()
         tabWindow.orderFrontRegardless()
@@ -324,7 +324,7 @@ public extension SuggestionWidgetController {
             }
         }
     }
-    
+
     func presentDetachedGlobalChat() {
         chatWindowViewModel.chatPanelInASeparateWindow = true
         Task {

@@ -40,7 +40,9 @@ struct CustomScrollView<Content: View>: View {
             .listStyle(.plain)
             .frame(idealHeight: max(10, height))
             .onPreferenceChange(CustomScrollViewHeightPreferenceKey.self) { newHeight in
-                height = newHeight
+                Task { @MainActor in
+                    height = newHeight
+                }
             }
         } else {
             ScrollView {
@@ -49,3 +51,4 @@ struct CustomScrollView<Content: View>: View {
         }
     }
 }
+

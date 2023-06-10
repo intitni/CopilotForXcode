@@ -122,6 +122,26 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: false, key: "GitHubCopilotVerboseLog")
     }
 
+    var gitHubCopilotProxyHost: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotProxyHost")
+    }
+    
+    var gitHubCopilotProxyPort: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotProxyPort")
+    }
+
+    var gitHubCopilotUseStrictSSL: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "GitHubCopilotUseStrictSSL")
+    }
+
+    var gitHubCopilotProxyUsername: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotProxyUsername")
+    }
+
+    var gitHubCopilotProxyPassword: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotProxyPassword")
+    }
+
     var nodePath: PreferenceKey<String> {
         .init(defaultValue: "", key: "NodePath")
     }
@@ -245,7 +265,7 @@ public extension UserDefaultPreferenceKeys {
             key: "DefaultChatSystemPrompt"
         )
     }
-    
+
     var chatSearchPluginMaxIterations: PreferenceKey<Int> {
         .init(defaultValue: 3, key: "ChatSearchPluginMaxIterations")
     }
@@ -257,9 +277,12 @@ public extension UserDefaultPreferenceKeys {
     var bingSearchSubscriptionKey: PreferenceKey<String> {
         .init(defaultValue: "", key: "BingSearchSubscriptionKey")
     }
-    
+
     var bingSearchEndpoint: PreferenceKey<String> {
-        .init(defaultValue: "https://api.bing.microsoft.com/v7.0/search/", key: "BingSearchEndpoint")
+        .init(
+            defaultValue: "https://api.bing.microsoft.com/v7.0/search/",
+            key: "BingSearchEndpoint"
+        )
     }
 }
 
@@ -325,6 +348,18 @@ public extension UserDefaultPreferenceKeys {
 
     var triggerActionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
+    }
+
+    var animationACrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationACrashSuggestion")
+    }
+
+    var animationBCrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationBCrashSuggestion")
+    }
+
+    var animationCCrashSuggestion: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-AnimationCCrashSuggestion")
     }
 }
 
