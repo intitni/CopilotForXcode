@@ -110,11 +110,15 @@ func highlighted(
     brightMode: Bool,
     droppingLeadingSpaces: Bool
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
+    var fontSize: Double = 13
+    if let size = Double(UserDefaults.shared.value(for: \.codeFontSize)) {
+        fontSize = size
+    }
     let formatted = highlightedCodeBlock(
         code: code,
         language: language,
         brightMode: brightMode,
-        fontSize: 13
+        fontSize: fontSize
     )
     let middleDotColor = brightMode
         ? NSColor.black.withAlphaComponent(0.1)

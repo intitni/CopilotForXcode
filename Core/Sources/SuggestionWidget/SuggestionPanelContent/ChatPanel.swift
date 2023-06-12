@@ -57,6 +57,74 @@ struct ChatPanelToolbar: View {
     }
 }
 
+struct UserMessageView: View {
+    var message: ChatMessage
+    @Environment(\.colorScheme) var colorScheme
+    var r = 6 as Double
+
+    var body: some View {
+        let text = message.text.isEmpty ? "..." : message.text
+        Markdown(text)
+            .textSelection(.enabled)
+            .markdownTheme(.gitHub.text {
+                BackgroundColor(Color.clear)
+            })
+            .markdownCodeSyntaxHighlighter(
+                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+            )
+            .frame(alignment: .trailing)
+            .padding()
+            .background {
+                RoundedCorners(tl: r, bl: r, br: r * 1.5)
+                    .fill(Color.userChatContentBackground)
+            }
+            .overlay {
+                RoundedCorners(tl: r, bl: r, br: r * 1.5)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+            .padding(.leading)
+            .padding(.trailing, 8)
+            .rotationEffect(Angle(degrees: 180))
+            .scaleEffect(x: -1, y: 1, anchor: .center)
+            .shadow(color: .black.opacity(0.1), radius: 2)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+}
+
+struct NonUserMessageView: View {
+    var message: ChatMessage
+    @Environment(\.colorScheme) var colorScheme
+    var r = 6 as Double
+
+    var body: some View {
+        let text = message.text.isEmpty ? "..." : message.text
+        Markdown(text)
+            .textSelection(.enabled)
+            .markdownTheme(.gitHub.text {
+                BackgroundColor(Color.clear)
+            })
+            .markdownCodeSyntaxHighlighter(
+                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
+            )
+            .frame(alignment: .leading)
+            .padding()
+            .background {
+                RoundedCorners(tr: r, bl: r * 1.5, br: r)
+                    .fill(Color.contentBackground)
+            }
+            .overlay {
+                RoundedCorners(tr: r, bl: r * 1.5, br: r)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+            .padding(.leading, 8)
+            .padding(.trailing)
+            .rotationEffect(Angle(degrees: 180))
+            .scaleEffect(x: -1, y: 1, anchor: .center)
+            .shadow(color: .black.opacity(0.1), radius: 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct ChatPanelMessages: View {
     @ObservedObject var chat: ChatProvider
     var inputAreaNamespace: Namespace.ID
@@ -116,59 +184,10 @@ struct ChatPanelMessages: View {
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
-                    let text = message.text.isEmpty && !message.isUser ? "..." : message
-                        .text
-
                     if message.isUser {
-                        Markdown(text)
-                            .textSelection(.enabled)
-                            .markdownTheme(.gitHub.text {
-                                BackgroundColor(Color.clear)
-                            })
-                            .markdownCodeSyntaxHighlighter(
-                                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
-                            )
-                            .frame(alignment: .trailing)
-                            .padding()
-                            .background {
-                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
-                                    .fill(Color.userChatContentBackground)
-                            }
-                            .overlay {
-                                RoundedCorners(tl: r, bl: r, br: r * 1.5)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                            }
-                            .padding(.leading)
-                            .padding(.trailing, 8)
-                            .rotationEffect(Angle(degrees: 180))
-                            .scaleEffect(x: -1, y: 1, anchor: .center)
-                            .shadow(color: .black.opacity(0.1), radius: 2)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        UserMessageView(message: message)
                     } else {
-                        Markdown(text)
-                            .textSelection(.enabled)
-                            .markdownTheme(.gitHub.text {
-                                BackgroundColor(Color.clear)
-                            })
-                            .markdownCodeSyntaxHighlighter(
-                                ChatCodeSyntaxHighlighter(brightMode: colorScheme != .dark)
-                            )
-                            .frame(alignment: .leading)
-                            .padding()
-                            .background {
-                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
-                                    .fill(Color.contentBackground)
-                            }
-                            .overlay {
-                                RoundedCorners(tr: r, bl: r * 1.5, br: r)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                            }
-                            .padding(.leading, 8)
-                            .padding(.trailing)
-                            .rotationEffect(Angle(degrees: 180))
-                            .scaleEffect(x: -1, y: 1, anchor: .center)
-                            .shadow(color: .black.opacity(0.1), radius: 2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        NonUserMessageView(message: message)
                     }
                 }
 

@@ -136,6 +136,12 @@ public struct UserDefaultPreferenceKeys {
 
     public var disableLazyVStack: FeatureFlags.DisableLazyVStack { .init() }
     public var preCacheOnFileOpen: FeatureFlags.PreCacheOnFileOpen { .init() }
+    
+    public struct RealtimeSuggestionCodeFontSize: UserDefaultPreferenceKey {
+        public let defaultValue: String = "13"
+        public let key = "RealtimeSuggestionCodeFontSize"
+    }
+    public var codeFontSize: RealtimeSuggestionCodeFontSize { .init() }
 }
 
 public enum FeatureFlags {

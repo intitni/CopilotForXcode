@@ -25,6 +25,7 @@ struct SettingsView: View {
     @State var editingRealtimeSuggestionDebounce: Double = UserDefaults.shared
         .value(for: \.realtimeSuggestionDebounce)
     @Environment(\.updateChecker) var updateChecker
+    @AppStorage(\.codeFontSize) var codeFontSize: String
 
     var body: some View {
         Section {
@@ -114,6 +115,11 @@ struct SettingsView: View {
                     Text("Use accessibility API to accept suggestion in widget")
                 }
                 .toggleStyle(.switch)
+                HStack {
+                    Text("SuggestionCodeFontSize")
+                    TextField("(default：13)", text: $codeFontSize)
+                        .textFieldStyle(.copilot)
+                }
             }
         }.buttonStyle(.copilot)
     }
