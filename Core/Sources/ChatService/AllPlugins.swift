@@ -9,5 +9,6 @@ let allPlugins: [ChatPlugin.Type] = [
     MathChatPlugin.self,
     SearchChatPlugin.self,
     ShortcutChatPlugin.self,
+    ShortcutInputChatPlugin.self,
 ]
 
