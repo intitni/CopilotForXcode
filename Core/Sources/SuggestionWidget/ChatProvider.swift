@@ -7,6 +7,7 @@ public final class ChatProvider: ObservableObject {
     let id = UUID()
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
+    public var pluginIdentifiers: [String] = []
     public var systemPrompt = ""
     public var extraSystemPrompt = ""
     public var onMessageSend: (String) -> Void
@@ -23,6 +24,7 @@ public final class ChatProvider: ObservableObject {
     public init(
         history: [ChatMessage] = [],
         isReceivingMessage: Bool = false,
+        pluginIdentifiers: [String] = [],
         onMessageSend: @escaping (String) -> Void = { _ in },
         onStop: @escaping () -> Void = {},
         onClear: @escaping () -> Void = {},
@@ -36,6 +38,7 @@ public final class ChatProvider: ObservableObject {
     ) {
         self.history = history
         self.isReceivingMessage = isReceivingMessage
+        self.pluginIdentifiers = pluginIdentifiers
         self.onMessageSend = onMessageSend
         self.onStop = onStop
         self.onClear = onClear
@@ -59,6 +62,7 @@ public final class ChatProvider: ObservableObject {
     public func triggerCustomCommand(_ command: CustomCommand) {
         onRunCustomCommand(command)
     }
+
     public func setAsExtraPrompt(id: MessageID) { onSetAsExtraPrompt(id) }
 }
 
