@@ -2,7 +2,7 @@ import Foundation
 import Logger
 import Parsing
 
-private func formatInstruction(toolsNames: String) -> String {
+private func formatInstruction(toolsNames: String, preferredLanguage: String) -> String {
     """
     The way you use the tools is by specifying a json blob.
     Specifically, this json should have a `action` key (with the name of the tool to use) and a `action_input` key (with the input to the tool going here).
@@ -29,7 +29,7 @@ private func formatInstruction(toolsNames: String) -> String {
     Observation: the result of the action
     ... (this Thought/Action/Observation can repeat N times)
     Thought: I now know the final answer
-    Final Answer: the final answer to the original input question
+    Final Answer: the final answer to the original input question \(preferredLanguage)
     """
 }
 
@@ -40,7 +40,7 @@ public class ChatAgent: Agent {
     public let chatModelChain: ChatModelChain<AgentInput<String>>
     let tools: [AgentTool]
 
-    public init(chatModel: ChatModel, tools: [AgentTool]) {
+    public init(chatModel: ChatModel, tools: [AgentTool], preferredLanguage: String) {
         self.tools = tools
         chatModelChain = .init(
             chatModel: chatModel,
@@ -57,7 +57,12 @@ public class ChatAgent: Agent {
 
                         \(tools.map { "\($0.name): \($0.description)" }.joined(separator: "\n"))
 
-                        \(formatInstruction(toolsNames: tools.map(\.name).joined(separator: ",")))
+                        \(formatInstruction(
+                            toolsNames: tools.map(\.name).joined(separator: ","),
+                            preferredLanguage: preferredLanguage.isEmpty
+                                ? ""
+                                : "(in \(preferredLanguage)"
+                        ))
 
                         Begin! Reminder to always use the exact characters `Final Answer` when responding.
                         """
@@ -92,9 +97,9 @@ public class ChatAgent: Agent {
         let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
         if baseScratchpad.isEmpty { return .text("") }
         return .text("""
-        This was your previous work (but I haven't seen any of it! I only see what you return as final answer):
+        This was your previous work (but I haven't seen any of it! I only see what you return as `Final Answer`):
         \(baseScratchpad)
-        (Please continue with `Thought:`)
+        (Please continue with `Thought:` or `Final Answer:`)
         """)
     }
 
@@ -158,12 +163,12 @@ public class ChatAgent: Agent {
         var parsableContent = text[...]
         let finalAnswer = try? forceParser.parse(&parsableContent)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         var answer = finalAnswer ?? text
         if answer.isEmpty {
             answer = "Sorry, I don't know."
         }
-        
+
         return .finish(AgentFinish(returnValue: String(answer), log: text))
     }
 }

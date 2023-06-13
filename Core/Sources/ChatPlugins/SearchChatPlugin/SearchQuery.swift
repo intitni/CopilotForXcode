@@ -45,7 +45,11 @@ func search(_ query: String) async throws
     let chatModel = OpenAIChat(temperature: 0, stream: true)
 
     let agentExecutor = AgentExecutor(
-        agent: ChatAgent(chatModel: chatModel, tools: tools),
+        agent: ChatAgent(
+            chatModel: chatModel,
+            tools: tools,
+            preferredLanguage: UserDefaults.shared.value(for: \.chatGPTLanguage)
+        ),
         tools: tools,
         maxIteration: UserDefaults.shared.value(for: \.chatSearchPluginMaxIterations),
         earlyStopHandleType: .generate

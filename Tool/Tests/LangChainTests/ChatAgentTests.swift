@@ -18,7 +18,7 @@ final class ChatAgentParseOutputTests: XCTestCase {
         Because 42 is the answer to everything.
         """
 
-        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [])
+        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [], preferredLanguage: "")
         let result = agent.parseOutput(finalAnswer)
         XCTAssertEqual(result, .finish(.init(
             returnValue: """
@@ -36,7 +36,7 @@ final class ChatAgentParseOutputTests: XCTestCase {
         Because 42 is the answer to everything.
         """
 
-        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [])
+        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [], preferredLanguage: "")
         let result = agent.parseOutput(finalAnswer)
         XCTAssertEqual(result, .finish(.init(
             returnValue: """
@@ -60,7 +60,7 @@ final class ChatAgentParseOutputTests: XCTestCase {
         ```
         """
         
-        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [])
+        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [], preferredLanguage: "")
         let result = agent.parseOutput(reply)
         XCTAssertEqual(result, .actions([
             .init(
@@ -81,7 +81,7 @@ final class ChatAgentParseOutputTests: XCTestCase {
         ```
         """
         
-        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [])
+        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [], preferredLanguage: "")
         let result = agent.parseOutput(reply)
         XCTAssertEqual(result, .finish(.init(
             returnValue: """
@@ -98,7 +98,7 @@ final class ChatAgentParseOutputTests: XCTestCase {
         Because 42 is the answer to everything.
         """
         
-        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [])
+        let agent = ChatAgent(chatModel: FakeChatModel(), tools: [], preferredLanguage: "")
         let result = agent.parseOutput(reply)
         XCTAssertEqual(result, .finish(.init(
             returnValue: reply,
