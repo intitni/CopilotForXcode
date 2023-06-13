@@ -400,14 +400,15 @@ struct ChatPanelInputArea: View {
     }
     
     func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
-        if text.isEmpty { return [] }
+        guard text.count == 1 else { return [] }
         let plugins = chat.pluginIdentifiers.map { "/\($0)" }
         let availableFeatures = plugins + [
             "/exit",
             "@selection",
             "@file",
         ]
-        return availableFeatures
+        
+        let result: [String] = availableFeatures
             .filter { $0.hasPrefix(text) && $0 != text }
             .compactMap {
                 guard let index = $0.index(
@@ -417,6 +418,7 @@ struct ChatPanelInputArea: View {
                 ) else { return nil }
                 return String($0[index...])
             }
+        return result
     }
 }
 
