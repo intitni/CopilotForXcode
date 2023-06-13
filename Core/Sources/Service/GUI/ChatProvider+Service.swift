@@ -11,7 +11,7 @@ extension ChatProvider {
         onCloseChat: @escaping () -> Void,
         onSwitchContext: @escaping () -> Void
     ) {
-        self.init()
+        self.init(pluginIdentifiers: service.allPluginCommands)
 
         let cancellable = service.objectWillChange.sink { [weak self] in
             guard let self else { return }
@@ -23,7 +23,7 @@ extension ChatProvider {
                         text: message.summary ?? message.content
                     )
                 }
-                self.isReceivingMessage = await service.chatGPTService.isReceivingMessage
+                self.isReceivingMessage = service.isReceivingMessage
                 self.systemPrompt = service.systemPrompt
                 self.extraSystemPrompt = service.extraSystemPrompt
             }

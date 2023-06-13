@@ -7,6 +7,7 @@ final class ChatPluginController {
     let chatGPTService: any ChatGPTServiceType
     let plugins: [String: ChatPlugin.Type]
     var runningPlugin: ChatPlugin?
+    weak var chatService: ChatService?
     
     init(chatGPTService: any ChatGPTServiceType, plugins: [ChatPlugin.Type]) {
         self.chatGPTService = chatGPTService
@@ -107,15 +108,11 @@ final class ChatPluginController {
 
 extension ChatPluginController: ChatPluginDelegate {
     public func pluginDidStartResponding(_: ChatPlugin) {
-        Task {
-            await chatGPTService.markReceivingMessage(true)
-        }
+        chatService?.isReceivingMessage = true
     }
 
     public func pluginDidEndResponding(_: ChatPlugin) {
-        Task {
-            await chatGPTService.markReceivingMessage(false)
-        }
+        chatService?.isReceivingMessage = false
     }
 
     public func pluginDidStart(_ plugin: ChatPlugin) {
