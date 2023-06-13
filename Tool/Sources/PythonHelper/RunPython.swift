@@ -1,64 +1,41 @@
 import Foundation
+import Python
 import PythonKit
 
-var gilStateEnsure: (() -> Any)!
-var gilStateRelease: ((Any) -> Void)!
-func gilStateGuard<T>(_ closure: @escaping () throws -> T) throws -> T {
-    let state = gilStateEnsure()
-    defer { gilStateRelease(state) }
+@globalActor
+public actor PythonActor {
+    public static let shared = PythonActor()
+}
+
+/// You MUST run every Python code with this function.
+///
+/// It's important to note that `PythonKit` is not thread safe. You should be careful to not
+/// Introduce any racing to avoid crashes.
+///
+/// The python code will run between PyGILState_Ensure and PyGILState_Release. But I am
+/// not sure whether it's the correct thing to do.
+@PythonActor
+public func runPython<T>(
+    _ closure: @escaping () throws -> T
+) throws -> T {
     do {
+        let gilState = PyGILState_Ensure()
         let result = try closure()
+        PyGILState_Release(gilState)
+
         return result
+    } catch let error as PythonError {
+        throw ReadablePythonError(error)
     } catch {
         throw error
     }
 }
 
-@MainActor
-var isPythonInitialized = false
-@MainActor
-public func initializePython<GilState, ThreadState>(
-    sitePackagePath: String,
-    stdLibPath: String,
-    libDynloadPath: String,
-    Py_Initialize: () -> Void,
-    PyEval_SaveThread: () -> ThreadState,
-    PyGILState_Ensure: @escaping () -> GilState,
-    PyGILState_Release: @escaping (GilState) -> Void
-) {
-    guard !isPythonInitialized else { return }
-    setenv("PYTHONHOME", stdLibPath, 1)
-    setenv("PYTHONPATH", "\(stdLibPath):\(libDynloadPath):\(sitePackagePath)", 1)
-    setenv("PYTHONIOENCODING", "utf-8", 1)
-    isPythonInitialized = true
-    // Initialize python
-    Py_Initialize()
-//    // Immediately release the thread, so that we can ensure the GIL state later.
-//    // We may not recover the thread because all future tasks will be done in the other threads.
-//    _ = PyEval_SaveThread()
-//    // Setup GIL state guard.
-//    gilStateEnsure = { PyGILState_Ensure() }
-//    gilStateRelease = { gilState in PyGILState_Release(gilState as! GilState) }
-}
-
-public func runPython<T>(
-    usePythonThread: Bool = false,
-    _ closure: @escaping () throws -> T
-) throws -> T {
-    if usePythonThread {
-        return try PythonThread.shared.runPythonAndWait {
-//            return try gilStateGuard {
-            return try closure()
-//            }
-        }
-    } else {
-//        return try gilStateGuard {
-        return try closure()
-//        }
-    }
-}
-
 public extension PythonInterface {
+    /// Import a package from a thread with larger stack size.
+    ///
+    /// Sometimes the Python interpreter will crash when importing a package if the stack size
+    /// of the thread is too small. For example, `langchain`, `numpy`.
     func attemptImportOnPythonThread(_ name: String) throws -> PythonObject {
         try PythonThread.shared.runPythonAndWait {
             let module = try Python.attemptImport(name)

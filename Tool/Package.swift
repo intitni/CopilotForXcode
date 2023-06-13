@@ -14,10 +14,11 @@ let package = Package(
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
     ],
     dependencies: [
+        .package(path: "../Python"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
-        .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1")
+        .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
     ],
     targets: [
         // MARK: - Helpers
@@ -47,6 +48,7 @@ let package = Package(
         .target(
             name: "PythonHelper",
             dependencies: [
+                .product(name: "Python", package: "Python"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
