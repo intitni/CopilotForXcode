@@ -107,7 +107,11 @@ public extension Agent {
             )
         case .generate:
             var thoughts = constructBaseScratchpad(intermediateSteps: intermediateSteps)
-            thoughts += "\n\n\(llmPrefix)I now need to return a final answer based on the previous steps:"
+            thoughts += """
+            
+            \(llmPrefix)I now need to return a final answer based on the previous steps:
+            (Please continue with `Final Answer:`)
+            """
             let input = AgentInput(input: input, thoughts: .text(thoughts))
             let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
             let nextAction = parseOutput(output)
