@@ -56,7 +56,7 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
             // if no input detected, use the previous message as input
             input = await chatGPTService.history.last?.content ?? ""
         }
-        
+
         do {
             if isCancelled { throw CancellationError() }
 
@@ -89,12 +89,14 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 let data = try Data(contentsOf: temporaryOutputFileURL)
                 if let text = String(data: data, encoding: .utf8) {
                     if text.isEmpty { return }
-                    _ = try await chatGPTService.send(content: text, summary: nil)
+                    let stream = try await chatGPTService.send(content: text, summary: nil)
+                    for try await _ in stream {}
                 } else {
                     let text = """
                     [View File](\(temporaryOutputFileURL))
                     """
-                    _ = try await chatGPTService.send(content: text, summary: nil)
+                    let stream = try await chatGPTService.send(content: text, summary: nil)
+                    for try await _ in stream {}
                 }
 
                 return
