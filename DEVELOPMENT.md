@@ -27,7 +27,8 @@ Most of the logics are implemented inside the package `Core`.
 
 ## Building and Archiving the App
 
-1. Build or archive the Copilot for Xcode target.
+1. (Run `make setup` to install python and packages. But I am still considering if we should include it in the app)
+2. Build or archive the Copilot for Xcode target.
 
 ## Testing Extension
 
