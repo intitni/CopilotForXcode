@@ -220,7 +220,8 @@ If you need to end a plugin, you can just type
 |          `/airun`          | Creates a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin.                                       |
 |          `/math`           | Solves a math problem in natural language                                                                                                                                                                                 |
 |         `/search`          | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                                                                                                          |
-| `/shortcut(shortcut name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input. If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot |
+| `/shortcut(shortcut name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input. If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot. |
+| `/shortcutInput(shortcut name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input. If the message is empty, it will use the previous message as input. The output of the shortcut will be send to the bot as a user message. |
 
 ### Prompt to Code
 

@@ -355,29 +355,7 @@ struct ChatPanelInputArea: View {
                     text: $typedMessage,
                     font: .systemFont(ofSize: 14),
                     onSubmit: { submitText() },
-                    completions: { text, _, range in
-                        if text.isEmpty { return [] }
-                        let availableFeatures = [
-                            "/run",
-                            "/airun",
-                            "/math",
-                            "/search",
-                            "/shortcut",
-                            "/exit",
-                            "@selection",
-                            "@file",
-                        ]
-                        return availableFeatures
-                            .filter { $0.hasPrefix(text) && $0 != text }
-                            .compactMap {
-                                guard let index = $0.index(
-                                    $0.startIndex,
-                                    offsetBy: range.location,
-                                    limitedBy: $0.endIndex
-                                ) else { return nil }
-                                return String($0[index...])
-                            }
-                    }
+                    completions: chatAutoCompletion
                 )
                 .padding(.top, 1)
                 .padding(.bottom, -1)
@@ -419,6 +397,28 @@ struct ChatPanelInputArea: View {
         if typedMessage.isEmpty { return }
         chat.send(typedMessage)
         typedMessage = ""
+    }
+    
+    func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
+        guard text.count == 1 else { return [] }
+        let plugins = chat.pluginIdentifiers.map { "/\($0)" }
+        let availableFeatures = plugins + [
+            "/exit",
+            "@selection",
+            "@file",
+        ]
+        
+        let result: [String] = availableFeatures
+            .filter { $0.hasPrefix(text) && $0 != text }
+            .compactMap {
+                guard let index = $0.index(
+                    $0.startIndex,
+                    offsetBy: range.location,
+                    limitedBy: $0.endIndex
+                ) else { return nil }
+                return String($0[index...])
+            }
+        return result
     }
 }
 
@@ -699,4 +699,7 @@ struct ChatPanel_Light_Preview: PreviewProvider {
         .colorScheme(.light)
     }
 }
+
+
+
 

@@ -6,9 +6,11 @@ import OpenAIService
 
 public final class ChatService: ObservableObject {
     public let chatGPTService: any ChatGPTServiceType
+    public var allPluginCommands: [String] { allPlugins.map { $0.command } }
     let pluginController: ChatPluginController
     let contextController: DynamicContextController
     var cancellable = Set<AnyCancellable>()
+    @Published public internal(set) var isReceivingMessage = false
     @Published public internal(set) var systemPrompt = UserDefaults.shared
         .value(for: \.defaultChatSystemPrompt)
     @Published public internal(set) var extraSystemPrompt = ""
@@ -21,12 +23,14 @@ public final class ChatService: ObservableObject {
             contextCollectors: ActiveDocumentChatContextCollector()
         )
 
+        pluginController.chatService = self
         chatGPTService.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }.store(in: &cancellable)
     }
 
     public func send(content: String) async throws {
+        guard !isReceivingMessage else { throw CancellationError() }
         let handledInPlugin = try await pluginController.handleContent(content)
         if handledInPlugin { return }
         try await contextController.updatePromptToMatchContent(systemPrompt: """
@@ -34,17 +38,22 @@ public final class ChatService: ObservableObject {
         \(extraSystemPrompt)
         """, content: content)
 
-        _ = try await chatGPTService.send(content: content, summary: nil)
+        let stream = try await chatGPTService.send(content: content, summary: nil)
+        isReceivingMessage = true
+        for try await _ in stream {}
+        isReceivingMessage = false
     }
 
     public func stopReceivingMessage() async {
         await pluginController.stopResponding()
         await chatGPTService.stopReceivingMessage()
+        isReceivingMessage = false
     }
 
     public func clearHistory() async {
         await pluginController.cancel()
         await chatGPTService.clearHistory()
+        isReceivingMessage = false
     }
 
     public func resetPrompt() async {
