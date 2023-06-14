@@ -18,7 +18,12 @@ public struct OpenAIChat: ChatModel {
         stops: [String],
         callbackManagers: [ChainCallbackManager]
     ) async throws -> String {
-        let service = ChatGPTService(temperature: temperature, stop: stops)
+        let service = ChatGPTService(configuration: OverridingUserPreferenceChatGPTConfiguration(
+            overriding: .init(
+                temperature: temperature,
+                stop: stops
+            )
+        ))
         await service.mutateHistory { history in
             for message in prompt {
                 let role: OpenAIService.ChatMessage.Role = {

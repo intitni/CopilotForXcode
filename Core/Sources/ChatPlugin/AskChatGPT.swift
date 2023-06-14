@@ -7,6 +7,12 @@ public func askChatGPT(
     question: String,
     temperature: Double? = nil
 ) async throws -> String? {
-    let service = ChatGPTService(systemPrompt: systemPrompt, temperature: temperature)
+    let service = ChatGPTService(
+        systemPrompt: systemPrompt,
+        configuration: OverridingUserPreferenceChatGPTConfiguration(
+            overriding: .init(temperature: temperature)
+        )
+    )
     return try await service.sendAndWait(content: question)
 }
+

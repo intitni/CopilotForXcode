@@ -12,7 +12,7 @@ struct OpenAIView: View {
         @AppStorage(\.openAIBaseURL) var openAIBaseURL: String
         init() {}
     }
-    
+
     let apiKeyURL = URL(string: "https://platform.openai.com/account/api-keys")!
     let modelURL = URL(
         string: "https://platform.openai.com/docs/models/model-endpoint-compatibility"
@@ -49,7 +49,12 @@ struct OpenAIView: View {
                         isTesting = true
                         defer { isTesting = false }
                         do {
-                            let reply = try await ChatGPTService(designatedProvider: .openAI)
+                            let reply =
+                                try await ChatGPTService(
+                                    configuration: OverridingUserPreferenceChatGPTConfiguration(
+                                        overriding: .init(featureProvider: .openAI)
+                                    )
+                                )
                                 .sendAndWait(content: "Hello", summary: nil)
                             toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
                         } catch {

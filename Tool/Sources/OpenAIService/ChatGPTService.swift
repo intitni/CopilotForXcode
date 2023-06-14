@@ -56,54 +56,12 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
 public actor ChatGPTService: ChatGPTServiceType {
     public var systemPrompt: String
-
-    public var defaultTemperature: Double {
-        min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
-    }
-
-    var temperature: Double?
-
-    public var model: String {
-        let value = UserDefaults.shared.value(for: \.chatGPTModel)
-        if value.isEmpty { return "gpt-3.5-turbo" }
-        return value
-    }
-
-    var designatedProvider: ChatFeatureProvider?
-
-    public var endpoint: String {
-        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
-        case .openAI:
-            let baseURL = UserDefaults.shared.value(for: \.openAIBaseURL)
-            if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
-            return "\(baseURL)/v1/chat/completions"
-        case .azureOpenAI:
-            let baseURL = UserDefaults.shared.value(for: \.azureOpenAIBaseURL)
-            let deployment = UserDefaults.shared.value(for: \.azureChatGPTDeployment)
-            let version = "2023-05-15"
-            if baseURL.isEmpty { return "" }
-            return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
-        }
-    }
-
-    public var apiKey: String {
-        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
-        case .openAI:
-            return UserDefaults.shared.value(for: \.openAIAPIKey)
-        case .azureOpenAI:
-            return UserDefaults.shared.value(for: \.azureOpenAIAPIKey)
-        }
-    }
-
-    public var maxToken: Int {
-        UserDefaults.shared.value(for: \.chatGPTMaxToken)
-    }
-
     public var history: [ChatMessage] = [] {
         didSet { objectWillChange.send() }
     }
 
-    var stop: [String]
+    public var configuration: ChatGPTConfiguration
+
     var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
@@ -111,22 +69,19 @@ public actor ChatGPTService: ChatGPTServiceType {
 
     public init(
         systemPrompt: String = "",
-        temperature: Double? = nil,
-        stop: [String] = [],
-        designatedProvider: ChatFeatureProvider? = nil
+        configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration()
     ) {
         self.systemPrompt = systemPrompt
-        self.temperature = temperature
-        self.stop = stop
-        self.designatedProvider = designatedProvider
+        self.configuration = configuration
     }
 
     public func send(
         content: String,
         summary: String? = nil
     ) async throws -> AsyncThrowingStream<String, Error> {
-        guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        
+        guard let url = URL(string: configuration.endpoint)
+        else { throw ChatGPTServiceError.endpointIncorrect }
+
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
                 id: uuidGenerator(),
@@ -140,17 +95,20 @@ public actor ChatGPTService: ChatGPTServiceType {
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
 
         let requestBody = CompletionRequestBody(
-            model: model,
+            model: configuration.model,
             messages: messages,
-            temperature: temperature ?? defaultTemperature,
+            temperature: configuration.temperature,
             stream: true,
-            stop: stop.isEmpty ? nil : stop,
-            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
+            stop: configuration.stop.isEmpty ? nil : configuration.stop,
+            max_tokens: maxTokenForReply(
+                model: configuration.model,
+                remainingTokens: remainingTokens
+            )
         )
 
         let api = buildCompletionStreamAPI(
-            apiKey,
-            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            configuration.apiKey,
+            configuration.featureProvider,
             url,
             requestBody
         )
@@ -181,7 +139,7 @@ public actor ChatGPTService: ChatGPTServiceType {
                         if let content = delta.content {
                             continuation.yield(content)
                         }
-                        
+
                         try await Task.sleep(nanoseconds: 3_500_000)
                     }
 
@@ -205,8 +163,8 @@ public actor ChatGPTService: ChatGPTServiceType {
         content: String,
         summary: String? = nil
     ) async throws -> String? {
-        guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        
+        guard let url = URL(string: configuration.endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
+
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
                 id: uuidGenerator(),
@@ -220,17 +178,17 @@ public actor ChatGPTService: ChatGPTServiceType {
         let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
 
         let requestBody = CompletionRequestBody(
-            model: model,
+            model: configuration.model,
             messages: messages,
-            temperature: temperature ?? defaultTemperature,
+            temperature: configuration.temperature,
             stream: true,
-            stop: stop.isEmpty ? nil : stop,
-            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
+            stop: configuration.stop.isEmpty ? nil : configuration.stop,
+            max_tokens: maxTokenForReply(model: configuration.model, remainingTokens: remainingTokens)
         )
 
         let api = buildCompletionAPI(
-            apiKey,
-            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            configuration.apiKey,
+            configuration.featureProvider,
             url,
             requestBody
         )

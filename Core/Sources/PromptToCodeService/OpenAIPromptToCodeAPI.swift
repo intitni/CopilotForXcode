@@ -147,7 +147,12 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         ###
         """
 
-        let chatGPTService = ChatGPTService(systemPrompt: systemPrompt, temperature: 0.3)
+        let chatGPTService = ChatGPTService(
+            systemPrompt: systemPrompt,
+            configuration: OverridingUserPreferenceChatGPTConfiguration(
+                overriding: .init(temperature: 0)
+            )
+        )
         service = chatGPTService
         if let firstMessage {
             await chatGPTService.mutateHistory { history in
