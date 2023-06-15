@@ -28,11 +28,13 @@ public struct ChatMessage: Equatable, Codable {
         id: String = UUID().uuidString,
         role: Role,
         content: String,
-        summary: String? = nil
+        summary: String? = nil,
+        tokenCount: Int? = nil
     ) {
         self.role = role
         self.content = content
         self.summary = summary
         self.id = id
+        self.tokensCount = tokenCount
     }
 }

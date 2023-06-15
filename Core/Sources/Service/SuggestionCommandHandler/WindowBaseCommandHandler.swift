@@ -413,7 +413,7 @@ extension WindowBaseCommandHandler {
             }()
 
             if specifiedSystemPrompt != nil || extraSystemPrompt != nil {
-                await chat.chatGPTService.mutateHistory { history in
+                await chat.mutateHistory { history in
                     history.append(.init(
                         role: .assistant,
                         content: "",

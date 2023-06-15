@@ -8,7 +8,8 @@ public protocol ChatGPTConfiguration {
     var endpoint: String { get }
     var apiKey: String { get }
     var stop: [String] { get }
-    var maxToken: Int { get }
+    var maxTokens: Int { get }
+    var minimumReplyTokens: Int { get }
 }
 
 extension ChatGPTConfiguration {
@@ -60,12 +61,16 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
         apiKey(for: featureProvider)
     }
 
-    public var maxToken: Int {
+    public var maxTokens: Int {
         UserDefaults.shared.value(for: \.chatGPTMaxToken)
     }
 
     public var stop: [String] {
-        [""]
+        []
+    }
+
+    public var minimumReplyTokens: Int {
+        300
     }
 
     public init() {}
@@ -79,13 +84,15 @@ public class OverridingUserPreferenceChatGPTConfiguration: ChatGPTConfiguration 
         var endPoint: String?
         var apiKey: String?
         var stop: [String]?
-        var maxToken: Int?
+        var maxTokens: Int?
+        var minimumReplyTokens: Int?
 
         public init(
             temperature: Double? = nil,
             model: String? = nil,
             stop: [String]? = nil,
-            maxToken: Int? = nil,
+            maxTokens: Int? = nil,
+            minimumReplyTokens: Int? = nil,
             featureProvider: ChatFeatureProvider? = nil,
             endPoint: String? = nil,
             apiKey: String? = nil
@@ -93,7 +100,8 @@ public class OverridingUserPreferenceChatGPTConfiguration: ChatGPTConfiguration 
             self.temperature = temperature
             self.model = model
             self.stop = stop
-            self.maxToken = maxToken
+            self.maxTokens = maxTokens
+            self.minimumReplyTokens = minimumReplyTokens
             self.featureProvider = featureProvider
             self.endPoint = endPoint
             self.apiKey = apiKey
@@ -135,8 +143,12 @@ public class OverridingUserPreferenceChatGPTConfiguration: ChatGPTConfiguration 
         overriding.stop ?? userPreference.stop
     }
 
-    public var maxToken: Int {
-        overriding.maxToken ?? userPreference.maxToken
+    public var maxTokens: Int {
+        overriding.maxTokens ?? userPreference.maxTokens
+    }
+
+    public var minimumReplyTokens: Int {
+        overriding.minimumReplyTokens ?? userPreference.minimumReplyTokens
     }
 }
 

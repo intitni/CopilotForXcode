@@ -27,7 +27,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
 
         do {
             if let command {
-                await chatGPTService.mutateHistory { history in
+                await chatGPTService.memory.mutateHistory { history in
                     history.append(.init(role: .user, content: content))
                 }
                 delegate?.pluginDidStartResponding(self)
@@ -43,14 +43,14 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 case .cancellation:
                     delegate?.pluginDidEndResponding(self)
                     delegate?.pluginDidEnd(self)
-                    await chatGPTService.mutateHistory { history in
+                    await chatGPTService.memory.mutateHistory { history in
                         history.append(.init(role: .assistant, content: "Cancelled"))
                     }
                 case .modification:
                     let result = try await modifyCommand(command: command, requirement: content)
                     self.command = result
                     delegate?.pluginDidEndResponding(self)
-                    await chatGPTService.mutateHistory { history in
+                    await chatGPTService.memory.mutateHistory { history in
                         history.append(.init(role: .assistant, content: """
                         Should I run this command? You can instruct me to modify it again.
                         ```
@@ -60,7 +60,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                     }
                 case .other:
                     delegate?.pluginDidEndResponding(self)
-                    await chatGPTService.mutateHistory { history in
+                    await chatGPTService.memory.mutateHistory { history in
                         history.append(.init(
                             role: .assistant,
                             content: "Sorry, I don't understand. Do you want me to run it?"
@@ -68,7 +68,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                     }
                 }
             } else {
-                await chatGPTService.mutateHistory { history in
+                await chatGPTService.memory.mutateHistory { history in
                     history.append(.init(
                         role: .user,
                         content: originalMessage,
@@ -79,7 +79,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 let result = try await generateCommand(task: content)
                 command = result
                 if isCancelled { return }
-                await chatGPTService.mutateHistory { history in
+                await chatGPTService.memory.mutateHistory { history in
                     history.append(.init(role: .assistant, content: """
                     Should I run this command? You can instruct me to modify it.
                     ```
@@ -90,7 +90,7 @@ public actor AITerminalChatPlugin: ChatPlugin {
                 delegate?.pluginDidEndResponding(self)
             }
         } catch {
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 history.append(.init(role: .assistant, content: error.localizedDescription))
             }
             delegate?.pluginDidEndResponding(self)

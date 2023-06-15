@@ -23,9 +23,7 @@ public actor SearchChatPlugin: ChatPlugin {
         let id = "\(Self.command)-\(UUID().uuidString)"
         var reply = ChatMessage(id: id, role: .assistant, content: "")
 
-        await chatGPTService.mutateHistory { history in
-            history.append(.init(role: .user, content: originalMessage, summary: content))
-        }
+        await chatGPTService.memory.appendMessage(.init(role: .user, content: originalMessage, summary: content))
 
         do {
             let (eventStream, cancelAgent) = try await search(content)
@@ -54,7 +52,7 @@ public actor SearchChatPlugin: ChatPlugin {
                     """
                 }
 
-                await chatGPTService.mutateHistory { history in
+                await chatGPTService.memory.mutateHistory { history in
                     if history.last?.id == id {
                         history.removeLast()
                     }
@@ -77,7 +75,7 @@ public actor SearchChatPlugin: ChatPlugin {
             }
 
         } catch {
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }

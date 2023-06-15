@@ -45,16 +45,14 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 role: .assistant,
                 content: "Please provide the shortcut name in format: `/\(Self.command)(shortcut name)`."
             )
-            await chatGPTService.mutateHistory { history in
-                history.append(reply)
-            }
+            await chatGPTService.memory.appendMessage(reply)
             return
         }
 
         var input = String(content).trimmingCharacters(in: .whitespacesAndNewlines)
         if input.isEmpty {
             // if no input detected, use the previous message as input
-            input = await chatGPTService.history.last?.content ?? ""
+            input = await chatGPTService.memory.messages.last?.content ?? ""
         }
 
         do {
@@ -108,9 +106,7 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 role: .assistant,
                 content: error.localizedDescription
             )
-            await chatGPTService.mutateHistory { history in
-                history.append(reply)
-            }
+            await chatGPTService.memory.appendMessage(reply)
         }
     }
 

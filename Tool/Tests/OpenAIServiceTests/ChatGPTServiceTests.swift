@@ -34,23 +34,26 @@ struct MockCompletionStreamAPI_Success: CompletionStreamAPI {
 
 final class ChatGPTServiceTests: XCTestCase {
     func test_success() async throws {
-        let service = ChatGPTService()
+        let memory = AutoManagedChatGPTMemory(
+            systemPrompt: "system",
+            configuration: UserPreferenceChatGPTConfiguration()
+        )
+        let service = ChatGPTService(memory: memory)
         var idCounter = 0
-        await service.changeUUIDGenerator {
+        service.changeUUIDGenerator {
             defer { idCounter += 1 }
             return "\(idCounter)"
         }
         var requestBody: CompletionRequestBody?
-        await service.changeBuildCompletionStreamAPI { _apiKey, _, _, _requestBody  in
+        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody in
             requestBody = _requestBody
             return MockCompletionStreamAPI_Success()
         }
-        await service.mutateSystemPrompt("system")
         let stream = try await service.send(content: "Hello")
         var all = [String]()
         for try await text in stream {
             all.append(text)
-            let history = await service.history
+            let history = await memory.history
             XCTAssertEqual(history.last?.id, "1")
             XCTAssertTrue(
                 history.last?.content.hasPrefix(all.joined()) ?? false,
@@ -63,7 +66,7 @@ final class ChatGPTServiceTests: XCTestCase {
             .init(role: .user, content: "Hello"),
         ], "System prompt is included")
         XCTAssertEqual(all, ["hello", "my", "friends"], "Text stream is correct")
-        var history = await service.history
+        var history = await memory.history
         for (i, _) in history.enumerated() {
             history[i].tokensCount = nil
         }
@@ -73,3 +76,4 @@ final class ChatGPTServiceTests: XCTestCase {
         ], "History is correctly updated")
     }
 }
+

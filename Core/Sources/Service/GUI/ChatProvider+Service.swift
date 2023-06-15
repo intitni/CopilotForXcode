@@ -16,7 +16,7 @@ extension ChatProvider {
         let cancellable = service.objectWillChange.sink { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                self.history = (await service.chatGPTService.history).map { message in
+                self.history = (await service.memory.history).map { message in
                     .init(
                         id: message.id,
                         isUser: message.role == .user,

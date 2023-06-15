@@ -5,28 +5,50 @@ import Foundation
 import OpenAIService
 
 public final class ChatService: ObservableObject {
+    public let memory: AutoManagedChatGPTMemory
+    public let configuration: OverridingUserPreferenceChatGPTConfiguration
     public let chatGPTService: any ChatGPTServiceType
     public var allPluginCommands: [String] { allPlugins.map { $0.command } }
-    let pluginController: ChatPluginController
-    let contextController: DynamicContextController
-    var cancellable = Set<AnyCancellable>()
     @Published public internal(set) var isReceivingMessage = false
     @Published public internal(set) var systemPrompt = UserDefaults.shared
         .value(for: \.defaultChatSystemPrompt)
     @Published public internal(set) var extraSystemPrompt = ""
 
-    public init<T: ChatGPTServiceType>(chatGPTService: T) {
+    let pluginController: ChatPluginController
+    let contextController: DynamicContextController
+    var cancellable = Set<AnyCancellable>()
+
+    init<T: ChatGPTServiceType>(
+        memory: AutoManagedChatGPTMemory,
+        configuration: OverridingUserPreferenceChatGPTConfiguration,
+        chatGPTService: T
+    ) {
+        self.memory = memory
+        self.configuration = configuration
         self.chatGPTService = chatGPTService
         pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
         contextController = DynamicContextController(
-            chatGPTService: chatGPTService,
+            memory: memory,
             contextCollectors: ActiveDocumentChatContextCollector()
         )
 
         pluginController.chatService = self
-        chatGPTService.objectWillChange.sink { [weak self] _ in
+    }
+
+    public init() {
+        self.configuration = OverridingUserPreferenceChatGPTConfiguration()
+        self.memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
+        chatGPTService = ChatGPTService(memory: memory, configuration: configuration)
+        pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
+        contextController = DynamicContextController(
+            memory: memory,
+            contextCollectors: ActiveDocumentChatContextCollector()
+        )
+
+        pluginController.chatService = self
+        memory.observeHistoryChange { [weak self] in
             self?.objectWillChange.send()
-        }.store(in: &cancellable)
+        }
     }
 
     public func send(content: String) async throws {
@@ -52,7 +74,8 @@ public final class ChatService: ObservableObject {
 
     public func clearHistory() async {
         await pluginController.cancel()
-        await chatGPTService.clearHistory()
+        await memory.clearHistory()
+        await chatGPTService.stopReceivingMessage()
         isReceivingMessage = false
     }
 
@@ -62,25 +85,23 @@ public final class ChatService: ObservableObject {
     }
 
     public func deleteMessage(id: String) async {
-        await chatGPTService.mutateHistory { messages in
-            messages.removeAll(where: { $0.id == id })
-        }
+        await memory.removeMessage(id)
     }
 
     public func resendMessage(id: String) async throws {
-        if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
+        if let message = (await memory.history).first(where: { $0.id == id }) {
             try await send(content: message.content)
         }
     }
 
     public func setMessageAsExtraPrompt(id: String) async {
-        if let message = (await chatGPTService.history).first(where: { $0.id == id }) {
+        if let message = (await memory.history).first(where: { $0.id == id }) {
             mutateExtraSystemPrompt(message.content)
             await mutateHistory { history in
                 history.append(.init(
                     role: .assistant,
                     content: "",
-                    summary: "System prompt updated"
+                    summary: "System prompt updated."
                 ))
             }
         }
@@ -96,7 +117,7 @@ public final class ChatService: ObservableObject {
     }
 
     public func mutateHistory(_ mutator: @escaping (inout [ChatMessage]) -> Void) async {
-        await chatGPTService.mutateHistory(mutator)
+        await memory.mutateHistory(mutator)
     }
 }
 

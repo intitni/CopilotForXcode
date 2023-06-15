@@ -18,27 +18,28 @@ public struct OpenAIChat: ChatModel {
         stops: [String],
         callbackManagers: [ChainCallbackManager]
     ) async throws -> String {
-        let service = ChatGPTService(configuration: OverridingUserPreferenceChatGPTConfiguration(
+        let configuration = OverridingUserPreferenceChatGPTConfiguration(
             overriding: .init(
                 temperature: temperature,
                 stop: stops
             )
-        ))
-        await service.mutateHistory { history in
-            for message in prompt {
-                let role: OpenAIService.ChatMessage.Role = {
-                    switch message.role {
-                    case .system:
-                        return .system
-                    case .user:
-                        return .user
-                    case .assistant:
-                        return .assistant
-                    }
-                }()
-                history.append(.init(role: role, content: message.content))
-            }
+        )
+        let memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
+        let service = ChatGPTService(memory: memory, configuration: configuration)
+        for message in prompt {
+            let role: OpenAIService.ChatMessage.Role = {
+                switch message.role {
+                case .system:
+                    return .system
+                case .user:
+                    return .user
+                case .assistant:
+                    return .assistant
+                }
+            }()
+            await memory.appendMessage(.init(role: role, content: message.content))
         }
+        
         if stream {
             let stream = try await service.send(content: "")
             var message = ""

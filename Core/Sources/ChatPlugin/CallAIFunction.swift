@@ -16,8 +16,16 @@ func callAIFunction(
         }
     }
     let argsString = args.joined(separator: ", ")
+    let configuration = OverridingUserPreferenceChatGPTConfiguration(
+        overriding: .init(temperature: 0)
+    )
     let service = ChatGPTService(
-        systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value."
+        memory: AutoManagedChatGPTMemory(
+            systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value.",
+            configuration: configuration
+        ),
+        configuration: configuration
     )
     return try await service.sendAndWait(content: argsString)
 }
+

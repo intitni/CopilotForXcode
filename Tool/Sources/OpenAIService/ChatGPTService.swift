@@ -3,13 +3,11 @@ import Foundation
 import GPTEncoder
 import Preferences
 
-public protocol ChatGPTServiceType: ObservableObject {
-    var history: [ChatMessage] { get async }
+public protocol ChatGPTServiceType {
+    var memory: ChatGPTMemory { get set }
+    var configuration: ChatGPTConfiguration { get set }
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
     func stopReceivingMessage() async
-    func clearHistory() async
-    func mutateSystemPrompt(_ newPrompt: String) async
-    func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -54,12 +52,8 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
     }
 }
 
-public actor ChatGPTService: ChatGPTServiceType {
-    public var systemPrompt: String
-    public var history: [ChatMessage] = [] {
-        didSet { objectWillChange.send() }
-    }
-
+public class ChatGPTService: ChatGPTServiceType {
+    public var memory: ChatGPTMemory
     public var configuration: ChatGPTConfiguration
 
     var uuidGenerator: () -> String = { UUID().uuidString }
@@ -68,10 +62,13 @@ public actor ChatGPTService: ChatGPTServiceType {
     var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
 
     public init(
-        systemPrompt: String = "",
+        memory: ChatGPTMemory = AutoManagedChatGPTMemory(
+            systemPrompt: "",
+            configuration: UserPreferenceChatGPTConfiguration()
+        ),
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration()
     ) {
-        self.systemPrompt = systemPrompt
+        self.memory = memory
         self.configuration = configuration
     }
 
@@ -89,10 +86,13 @@ public actor ChatGPTService: ChatGPTServiceType {
                 content: content,
                 summary: summary
             )
-            history.append(newMessage)
+            await memory.appendMessage(newMessage)
         }
 
-        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        let messages = await memory.messages.map {
+            CompletionRequestBody.Message(role: $0.role, content: $0.content)
+        }
+        let remainingTokens = await memory.remainingTokens
 
         let requestBody = CompletionRequestBody(
             model: configuration.model,
@@ -121,20 +121,11 @@ public actor ChatGPTService: ChatGPTServiceType {
                     for try await trunk in trunks {
                         guard let delta = trunk.choices.first?.delta else { continue }
 
-                        if history.last?.id == trunk.id {
-                            if let role = delta.role {
-                                history[history.endIndex - 1].role = role
-                            }
-                            if let content = delta.content {
-                                history[history.endIndex - 1].content.append(content)
-                            }
-                        } else {
-                            history.append(.init(
-                                id: trunk.id,
-                                role: delta.role ?? .assistant,
-                                content: delta.content ?? ""
-                            ))
-                        }
+                        await memory.streamMessage(
+                            id: trunk.id,
+                            role: delta.role,
+                            content: delta.content
+                        )
 
                         if let content = delta.content {
                             continuation.yield(content)
@@ -149,7 +140,7 @@ public actor ChatGPTService: ChatGPTServiceType {
                 } catch let error as NSError where error.code == NSURLErrorCancelled {
                     continuation.finish(throwing: error)
                 } catch {
-                    history.append(.init(
+                    await memory.appendMessage(.init(
                         role: .assistant,
                         content: error.localizedDescription
                     ))
@@ -163,7 +154,8 @@ public actor ChatGPTService: ChatGPTServiceType {
         content: String,
         summary: String? = nil
     ) async throws -> String? {
-        guard let url = URL(string: configuration.endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
+        guard let url = URL(string: configuration.endpoint)
+        else { throw ChatGPTServiceError.endpointIncorrect }
 
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
@@ -172,10 +164,13 @@ public actor ChatGPTService: ChatGPTServiceType {
                 content: content,
                 summary: summary
             )
-            history.append(newMessage)
+            await memory.appendMessage(newMessage)
         }
-
-        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        
+        let messages = await memory.messages.map {
+            CompletionRequestBody.Message(role: $0.role, content: $0.content)
+        }
+        let remainingTokens = await memory.remainingTokens
 
         let requestBody = CompletionRequestBody(
             model: configuration.model,
@@ -183,7 +178,10 @@ public actor ChatGPTService: ChatGPTServiceType {
             temperature: configuration.temperature,
             stream: true,
             stop: configuration.stop.isEmpty ? nil : configuration.stop,
-            max_tokens: maxTokenForReply(model: configuration.model, remainingTokens: remainingTokens)
+            max_tokens: maxTokenForReply(
+                model: configuration.model,
+                remainingTokens: remainingTokens
+            )
         )
 
         let api = buildCompletionAPI(
@@ -195,7 +193,7 @@ public actor ChatGPTService: ChatGPTServiceType {
         let response = try await api()
 
         if let choice = response.choices.first {
-            history.append(.init(
+            await memory.appendMessage(.init(
                 id: response.id,
                 role: choice.message.role,
                 content: choice.message.content
@@ -211,19 +209,6 @@ public actor ChatGPTService: ChatGPTServiceType {
         cancelTask?()
         cancelTask = nil
     }
-
-    public func clearHistory() {
-        stopReceivingMessage()
-        history = []
-    }
-
-    public func mutateSystemPrompt(_ newPrompt: String) {
-        systemPrompt = newPrompt
-    }
-
-    public func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async {
-        mutate(&history)
-    }
 }
 
 extension ChatGPTService {
@@ -234,43 +219,10 @@ extension ChatGPTService {
     func changeUUIDGenerator(_ generator: @escaping () -> String) {
         uuidGenerator = generator
     }
-
-    func combineHistoryWithSystemPrompt(
-        minimumReplyTokens: Int = 300,
-        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        maxTokens: Int = UserDefaults.shared.value(for: \.chatGPTMaxToken),
-        encoder: TokenEncoder = GPTEncoder()
-    )
-        -> (messages: [CompletionRequestBody.Message], remainingTokens: Int)
-    {
-        var all: [CompletionRequestBody.Message] = []
-        var allTokensCount = encoder.encode(text: systemPrompt).count
-        for (index, message) in history.enumerated().reversed() {
-            if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
-            if message.content.isEmpty { continue }
-            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
-            history[index].tokensCount = tokensCount
-            if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
-                break
-            }
-            allTokensCount += tokensCount
-            all.append(.init(role: message.role, content: message.content))
-        }
-
-        if !systemPrompt.isEmpty {
-            all.append(.init(role: .system, content: systemPrompt))
-        }
-        return (all.reversed(), max(minimumReplyTokens, maxTokens - allTokensCount))
-    }
 }
 
-protocol TokenEncoder {
-    func encode(text: String) -> [Int]
-}
-
-extension GPTEncoder: TokenEncoder {}
-
-func maxTokenForReply(model: String, remainingTokens: Int) -> Int {
+func maxTokenForReply(model: String, remainingTokens: Int?) -> Int? {
+    guard let remainingTokens else { return nil }
     guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
     return min(model.maxToken / 2, remainingTokens)
 }
