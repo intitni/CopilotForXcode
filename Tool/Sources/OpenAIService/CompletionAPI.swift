@@ -10,10 +10,7 @@ protocol CompletionAPI {
 
 /// https://platform.openai.com/docs/api-reference/chat/create
 struct CompletionResponseBody: Codable, Equatable {
-    struct Message: Codable, Equatable {
-        var role: ChatMessage.Role
-        var content: String
-    }
+    typealias Message = CompletionRequestBody.Message
 
     struct Choice: Codable, Equatable {
         var message: Message

@@ -35,11 +35,20 @@ public extension ChatGPTMemory {
     }
 
     /// Stream a message to the history.
-    func streamMessage(id: String, role: ChatMessage.Role?, content: String?) async {
+    func streamMessage(
+        id: String,
+        role: ChatMessage.Role?,
+        content: String?,
+        functionCall: ChatMessage.FunctionCall?
+    ) async {
         await mutateHistory { history in
             if let index = history.firstIndex(where: { $0.id == id }) {
                 if let content {
-                    history[index].content.append(content)
+                    if history[index].content == nil {
+                        history[index].content = content
+                    } else {
+                        history[index].content?.append(content)
+                    }
                 }
                 if let role {
                     history[index].role = role
@@ -48,7 +57,9 @@ public extension ChatGPTMemory {
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
-                    content: content ?? ""
+                    content: content,
+                    name: nil,
+                    functionCall: functionCall
                 ))
             }
         }

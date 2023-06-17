@@ -1,4 +1,5 @@
 import Foundation
+import OpenAIService
 import Preferences
 import SuggestionModel
 import XcodeInspector
@@ -6,7 +7,7 @@ import XcodeInspector
 public struct ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
-    public func generateSystemPrompt(history: [String], content prompt: String) -> String {
+    public func generateSystemPrompt(history: [ChatMessage], content prompt: String) -> String {
         let content = getEditorInformation()
         let relativePath = content.documentURL.path
             .replacingOccurrences(of: content.projectURL.path, with: "")

@@ -1,6 +1,7 @@
 import AsyncAlgorithms
 import Foundation
 import Preferences
+import JSONRPC
 
 typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody) -> CompletionStreamAPI
 
@@ -12,10 +13,64 @@ protocol CompletionStreamAPI {
 }
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionRequestBody: Codable, Equatable {
+struct CompletionRequestBody: Encodable, Equatable {
     struct Message: Codable, Equatable {
+        /// The role of the message.
         var role: ChatMessage.Role
-        var content: String
+        /// The content of the message.
+        var content: String?
+        /// When we want to reply to a function call with the result, we have to provide the
+        /// name of the function call, and include the result in `content`.
+        ///
+        /// - important: It's required when the role is `function`.
+        var name: String?
+        /// When the bot wants to call a function, it will reply with a function call in format:
+        /// ```json
+        /// {
+        ///   "name": "weather",
+        ///   "arguments": "{ \"location\": \"earth\" }"
+        /// }
+        /// ```
+        var function_call: MessageFunctionCall?
+    }
+    
+    struct MessageFunctionCall: Codable, Equatable {
+        /// The name of the
+        var name: String
+        /// A JSON string.
+        var arguments: String
+    }
+    
+    enum FunctionCallStrategy: Encodable, Equatable {
+        /// Forbid the bot to call any function.
+        case none
+        /// Let the bot choose what function to call.
+        case auto
+        /// Force the bot to call a function with the given name.
+        case name(String)
+        
+        struct CallFunctionNamed: Codable {
+            var name: String
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .none:
+                try container.encode("none")
+            case .auto:
+                try container.encode("auto")
+            case let .name(name):
+                try container.encode(CallFunctionNamed(name: name))
+            }
+        }
+    }
+    
+    struct Function: Codable {
+        var name: String
+        var description: String
+        /// JSON schema.
+        var arguments: String
     }
 
     var model: String
@@ -30,6 +85,8 @@ struct CompletionRequestBody: Codable, Equatable {
     var frequency_penalty: Double?
     var logit_bias: [String: Double]?
     var user: String?
+    var function_call: FunctionCallStrategy?
+    var functions: [Int] = []
 }
 
 struct CompletionStreamDataTrunk: Codable {
@@ -47,6 +104,7 @@ struct CompletionStreamDataTrunk: Codable {
         struct Delta: Codable {
             var role: ChatMessage.Role?
             var content: String?
+            var function_call: String?
         }
     }
 }

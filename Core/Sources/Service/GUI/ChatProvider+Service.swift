@@ -20,7 +20,7 @@ extension ChatProvider {
                     .init(
                         id: message.id,
                         isUser: message.role == .user,
-                        text: message.summary ?? message.content
+                        text: message.summary ?? message.content ?? ""
                     )
                 }
                 self.isReceivingMessage = service.isReceivingMessage

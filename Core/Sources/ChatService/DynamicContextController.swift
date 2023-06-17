@@ -15,7 +15,7 @@ final class DynamicContextController {
 
     func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let oldMessages = (await memory.history).map(\.content)
+        let oldMessages = await memory.history
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)

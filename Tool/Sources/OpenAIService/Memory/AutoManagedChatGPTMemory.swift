@@ -30,7 +30,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public func mutateSystemPrompt(_ newPrompt: String) {
         systemPrompt.content = newPrompt
     }
-    
+
     public nonisolated
     func observeHistoryChange(_ onChange: @escaping () -> Void) {
         Task {
@@ -42,29 +42,31 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
     ) -> [ChatMessage] {
+        func countToken(_ message: inout ChatMessage) -> Int {
+            if let count = systemPrompt.tokensCount { return count }
+            let count = encoder.countToken(message: systemPrompt)
+            message.tokensCount = count
+            return count
+        }
+        
         var all: [ChatMessage] = []
-        let systemMessageTokenCount = systemPrompt.tokensCount
-            ?? encoder.encode(text: systemPrompt.content).count
-        systemPrompt.tokensCount = systemMessageTokenCount
-
-        var allTokensCount = systemMessageTokenCount
+        let systemMessageTokenCount = countToken(&systemPrompt)
+        var allTokensCount = systemPrompt.isEmpty ? 0 : systemMessageTokenCount
+        
         for (index, message) in history.enumerated().reversed() {
-            var message = message
             if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
-            if message.content.isEmpty { continue }
-            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
-            history[index].tokensCount = tokensCount
+            if message.isEmpty { continue }
+            let tokensCount = countToken(&history[index])
             if tokensCount + allTokensCount >
                 configuration.maxTokens - configuration.minimumReplyTokens
             {
                 break
             }
-            message.tokensCount = tokensCount
             allTokensCount += tokensCount
             all.append(message)
         }
 
-        if !systemPrompt.content.isEmpty {
+        if !systemPrompt.isEmpty {
             all.append(systemPrompt)
         }
         return all.reversed()

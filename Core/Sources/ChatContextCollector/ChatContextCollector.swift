@@ -1,5 +1,7 @@
 import Foundation
+import OpenAIService
 
 public protocol ChatContextCollector {
-    func generateSystemPrompt(history: [String], content: String) -> String
+    func generateSystemPrompt(history: [ChatMessage], content: String) -> String
 }
+

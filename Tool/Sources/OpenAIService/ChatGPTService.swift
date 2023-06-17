@@ -84,6 +84,8 @@ public class ChatGPTService: ChatGPTServiceType {
                 id: uuidGenerator(),
                 role: .user,
                 content: content,
+                name: nil,
+                functionCall: nil,
                 summary: summary
             )
             await memory.appendMessage(newMessage)
@@ -103,7 +105,9 @@ public class ChatGPTService: ChatGPTServiceType {
             max_tokens: maxTokenForReply(
                 model: configuration.model,
                 remainingTokens: remainingTokens
-            )
+            ),
+            function_call: nil,
+            functions: []
         )
 
         let api = buildCompletionStreamAPI(
@@ -118,20 +122,44 @@ public class ChatGPTService: ChatGPTServiceType {
                 do {
                     let (trunks, cancel) = try await api()
                     cancelTask = cancel
+                    var id = ""
+                    var functionCallRawString = ""
                     for try await trunk in trunks {
+                        id = trunk.id
+
                         guard let delta = trunk.choices.first?.delta else { continue }
 
                         await memory.streamMessage(
                             id: trunk.id,
                             role: delta.role,
-                            content: delta.content
+                            content: delta.content,
+                            functionCall: nil
                         )
+
+                        if let call = delta.function_call {
+                            functionCallRawString.append(call)
+                        }
 
                         if let content = delta.content {
                             continuation.yield(content)
                         }
 
-                        try await Task.sleep(nanoseconds: 3_500_000)
+                        try await Task.sleep(nanoseconds: 3_000_000)
+                    }
+
+                    if !functionCallRawString.isEmpty,
+                       let data = functionCallRawString.data(using: .utf8)
+                    {
+                        let function = try JSONDecoder().decode(
+                            ChatMessage.FunctionCall.self,
+                            from: data
+                        )
+                        await memory.streamMessage(
+                            id: id,
+                            role: nil,
+                            content: nil,
+                            functionCall: function
+                        )
                     }
 
                     continuation.finish()
@@ -166,7 +194,7 @@ public class ChatGPTService: ChatGPTServiceType {
             )
             await memory.appendMessage(newMessage)
         }
-        
+
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(role: $0.role, content: $0.content)
         }
@@ -181,7 +209,9 @@ public class ChatGPTService: ChatGPTServiceType {
             max_tokens: maxTokenForReply(
                 model: configuration.model,
                 remainingTokens: remainingTokens
-            )
+            ),
+            function_call: nil,
+            functions: []
         )
 
         let api = buildCompletionAPI(

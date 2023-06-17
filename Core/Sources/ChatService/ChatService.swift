@@ -36,8 +36,8 @@ public final class ChatService: ObservableObject {
     }
 
     public init() {
-        self.configuration = OverridingUserPreferenceChatGPTConfiguration()
-        self.memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
+        configuration = OverridingUserPreferenceChatGPTConfiguration()
+        memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
         chatGPTService = ChatGPTService(memory: memory, configuration: configuration)
         pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
         contextController = DynamicContextController(
@@ -89,14 +89,18 @@ public final class ChatService: ObservableObject {
     }
 
     public func resendMessage(id: String) async throws {
-        if let message = (await memory.history).first(where: { $0.id == id }) {
-            try await send(content: message.content)
+        if let message = (await memory.history).first(where: { $0.id == id }),
+           let content = message.content
+        {
+            try await send(content: content)
         }
     }
 
     public func setMessageAsExtraPrompt(id: String) async {
-        if let message = (await memory.history).first(where: { $0.id == id }) {
-            mutateExtraSystemPrompt(message.content)
+        if let message = (await memory.history).first(where: { $0.id == id }),
+           let content = message.content
+        {
+            mutateExtraSystemPrompt(content)
             await mutateHistory { history in
                 history.append(.init(
                     role: .assistant,
