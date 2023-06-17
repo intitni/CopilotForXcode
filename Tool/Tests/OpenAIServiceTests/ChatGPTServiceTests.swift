@@ -56,7 +56,7 @@ final class ChatGPTServiceTests: XCTestCase {
             let history = await memory.history
             XCTAssertEqual(history.last?.id, "1")
             XCTAssertTrue(
-                history.last?.content.hasPrefix(all.joined()) ?? false,
+                history.last?.content?.hasPrefix(all.joined()) ?? false,
                 "History is dynamically updated"
             )
         }

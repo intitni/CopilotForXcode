@@ -13,8 +13,12 @@ public protocol ChatGPTMemory {
 public extension ChatGPTMemory {
     /// Append a message to the history.
     func appendMessage(_ message: ChatMessage) async {
-        await mutateHistory {
-            $0.append(message)
+        await mutateHistory { history in
+            if let index = history.firstIndex(where: { $0.id == message.id }) {
+                history[index] = message
+            } else {
+                history.append(message)
+            }
         }
     }
 
@@ -37,9 +41,10 @@ public extension ChatGPTMemory {
     /// Stream a message to the history.
     func streamMessage(
         id: String,
-        role: ChatMessage.Role?,
-        content: String?,
-        functionCall: ChatMessage.FunctionCall?
+        role: ChatMessage.Role? = nil,
+        content: String? = nil,
+        functionCall: ChatMessage.FunctionCall? = nil,
+        summary: String? = nil
     ) async {
         await mutateHistory { history in
             if let index = history.firstIndex(where: { $0.id == id }) {
@@ -53,13 +58,20 @@ public extension ChatGPTMemory {
                 if let role {
                     history[index].role = role
                 }
+                if let functionCall {
+                    history[index].functionCall = functionCall
+                }
+                if let summary {
+                    history[index].summary = summary
+                }
             } else {
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
                     content: content,
                     name: nil,
-                    functionCall: functionCall
+                    functionCall: functionCall,
+                    summary: summary
                 ))
             }
         }

@@ -1,7 +1,6 @@
 import AsyncAlgorithms
 import Foundation
 import Preferences
-import JSONRPC
 
 typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody) -> CompletionStreamAPI
 
@@ -38,7 +37,7 @@ struct CompletionRequestBody: Encodable, Equatable {
         /// The name of the
         var name: String
         /// A JSON string.
-        var arguments: String
+        var arguments: String?
     }
     
     enum FunctionCallStrategy: Encodable, Equatable {
@@ -85,8 +84,9 @@ struct CompletionRequestBody: Encodable, Equatable {
     var frequency_penalty: Double?
     var logit_bias: [String: Double]?
     var user: String?
+    /// Pass nil to let the bot decide.
     var function_call: FunctionCallStrategy?
-    var functions: [Int] = []
+    var functions: [String] = []
 }
 
 struct CompletionStreamDataTrunk: Codable {
