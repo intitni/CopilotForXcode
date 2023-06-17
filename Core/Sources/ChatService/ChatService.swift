@@ -6,7 +6,7 @@ import OpenAIService
 
 public final class ChatService: ObservableObject {
     public let memory: AutoManagedChatGPTMemory
-    public let configuration: OverridingUserPreferenceChatGPTConfiguration
+    public let configuration: OverridingChatGPTConfiguration<UserPreferenceChatGPTConfiguration>
     public let chatGPTService: any ChatGPTServiceType
     public var allPluginCommands: [String] { allPlugins.map { $0.command } }
     @Published public internal(set) var isReceivingMessage = false
@@ -20,7 +20,7 @@ public final class ChatService: ObservableObject {
 
     init<T: ChatGPTServiceType>(
         memory: AutoManagedChatGPTMemory,
-        configuration: OverridingUserPreferenceChatGPTConfiguration,
+        configuration: OverridingChatGPTConfiguration<UserPreferenceChatGPTConfiguration>,
         chatGPTService: T
     ) {
         self.memory = memory
@@ -36,7 +36,7 @@ public final class ChatService: ObservableObject {
     }
 
     public init() {
-        configuration = OverridingUserPreferenceChatGPTConfiguration()
+        configuration = UserPreferenceChatGPTConfiguration().overriding()
         memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
         chatGPTService = ChatGPTService(memory: memory, configuration: configuration)
         pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)

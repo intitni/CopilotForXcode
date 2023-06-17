@@ -39,7 +39,9 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     public init() {}
 }
 
-public class OverridingUserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
+public class OverridingChatGPTConfiguration<
+    Configuration: ChatGPTConfiguration
+>: ChatGPTConfiguration {
     public struct Overriding {
         var featureProvider: ChatFeatureProvider?
         var temperature: Double?
@@ -71,47 +73,48 @@ public class OverridingUserPreferenceChatGPTConfiguration: ChatGPTConfiguration 
         }
     }
 
-    private let userPreference = UserPreferenceChatGPTConfiguration()
+    private let configuration: Configuration
     public var overriding = Overriding()
 
-    public init(overriding: Overriding = .init()) {
-        self.overriding = overriding
+    public init(overriding configuration: Configuration, with overrides: Overriding = .init()) {
+        self.overriding = overrides
+        self.configuration = configuration
     }
 
     public var featureProvider: ChatFeatureProvider {
-        overriding.featureProvider ?? userPreference.featureProvider
+        overriding.featureProvider ?? configuration.featureProvider
     }
 
     public var temperature: Double {
-        overriding.temperature ?? userPreference.temperature
+        overriding.temperature ?? configuration.temperature
     }
 
     public var model: String {
-        overriding.model ?? userPreference.model
+        overriding.model ?? configuration.model
     }
 
     public var endpoint: String {
         overriding.endPoint
             ?? overriding.featureProvider.map(endpoint(for:))
-            ?? userPreference.endpoint
+            ?? configuration.endpoint
     }
 
     public var apiKey: String {
         overriding.apiKey
             ?? overriding.featureProvider.map(apiKey(for:))
-            ?? userPreference.apiKey
+            ?? configuration.apiKey
     }
 
     public var stop: [String] {
-        overriding.stop ?? userPreference.stop
+        overriding.stop ?? configuration.stop
     }
 
     public var maxTokens: Int {
-        overriding.maxTokens ?? userPreference.maxTokens
+        overriding.maxTokens ?? configuration.maxTokens
     }
 
     public var minimumReplyTokens: Int {
-        overriding.minimumReplyTokens ?? userPreference.minimumReplyTokens
+        overriding.minimumReplyTokens ?? configuration.minimumReplyTokens
     }
 }
 

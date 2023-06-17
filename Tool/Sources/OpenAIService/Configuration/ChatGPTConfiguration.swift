@@ -12,7 +12,7 @@ public protocol ChatGPTConfiguration {
     var minimumReplyTokens: Int { get }
 }
 
-extension ChatGPTConfiguration {
+public extension ChatGPTConfiguration {
     func endpoint(for provider: ChatFeatureProvider) -> String {
         switch provider {
         case .openAI:
@@ -36,4 +36,11 @@ extension ChatGPTConfiguration {
             return UserDefaults.shared.value(for: \.azureOpenAIAPIKey)
         }
     }
+
+    func overriding(
+        _ overrides: OverridingChatGPTConfiguration<Self>.Overriding = .init()
+    ) -> OverridingChatGPTConfiguration<Self> {
+        .init(overriding: self, with: overrides)
+    }
 }
+

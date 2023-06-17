@@ -147,9 +147,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
         ###
         """
 
-        let configuration = OverridingUserPreferenceChatGPTConfiguration(
-            overriding: .init(temperature: 0)
-        )
+        let configuration =  UserPreferenceChatGPTConfiguration()
+            .overriding(.init(temperature: 0))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
             configuration: configuration

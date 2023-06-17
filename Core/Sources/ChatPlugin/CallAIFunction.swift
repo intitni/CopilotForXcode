@@ -16,9 +16,8 @@ func callAIFunction(
         }
     }
     let argsString = args.joined(separator: ", ")
-    let configuration = OverridingUserPreferenceChatGPTConfiguration(
-        overriding: .init(temperature: 0)
-    )
+    let configuration = UserPreferenceChatGPTConfiguration()
+        .overriding(.init(temperature: 0))
     let service = ChatGPTService(
         memory: AutoManagedChatGPTMemory(
             systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value.",
