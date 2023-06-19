@@ -48,7 +48,11 @@ public struct BingSearchService {
         self.searchURL = searchURL
     }
 
-    public func search(query: String, numberOfResult: Int) async throws -> BingSearchResult {
+    public func search(
+        query: String,
+        numberOfResult: Int,
+        freshness: String? = nil
+    ) async throws -> BingSearchResult {
         guard let url = URL(string: searchURL)
         else { throw BingSearchError.searchURLFormatIncorrect(searchURL) }
 
@@ -56,7 +60,8 @@ public struct BingSearchService {
         components?.queryItems = [
             .init(name: "q", value: query),
             .init(name: "count", value: String(numberOfResult)),
-        ]
+            freshness.map { .init(name: "freshness", value: $0) },
+        ].compactMap { $0 }
         var request = URLRequest(url: components?.url ?? url)
         request.httpMethod = "GET"
         request.addValue(subscriptionKey, forHTTPHeaderField: "Ocp-Apim-Subscription-Key")
