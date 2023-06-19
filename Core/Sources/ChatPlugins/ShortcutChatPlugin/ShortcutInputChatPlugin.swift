@@ -45,16 +45,14 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 role: .assistant,
                 content: "Please provide the shortcut name in format: `/\(Self.command)(shortcut name)`."
             )
-            await chatGPTService.mutateHistory { history in
-                history.append(reply)
-            }
+            await chatGPTService.memory.appendMessage(reply)
             return
         }
 
         var input = String(content).trimmingCharacters(in: .whitespacesAndNewlines)
         if input.isEmpty {
             // if no input detected, use the previous message as input
-            input = await chatGPTService.history.last?.content ?? ""
+            input = await chatGPTService.memory.messages.last?.content ?? ""
         }
 
         do {
@@ -90,13 +88,17 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 if let text = String(data: data, encoding: .utf8) {
                     if text.isEmpty { return }
                     let stream = try await chatGPTService.send(content: text, summary: nil)
-                    for try await _ in stream {}
+                    do {
+                        for try await _ in stream {}
+                    } catch {}
                 } else {
                     let text = """
                     [View File](\(temporaryOutputFileURL))
                     """
                     let stream = try await chatGPTService.send(content: text, summary: nil)
-                    for try await _ in stream {}
+                    do {
+                        for try await _ in stream {}
+                    } catch {}
                 }
 
                 return
@@ -108,9 +110,7 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 role: .assistant,
                 content: error.localizedDescription
             )
-            await chatGPTService.mutateHistory { history in
-                history.append(reply)
-            }
+            await chatGPTService.memory.appendMessage(reply)
         }
     }
 

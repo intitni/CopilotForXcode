@@ -19,6 +19,7 @@ let package = Package(
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
+        .package(url: "https://github.com/ChimeHQ/JSONRPC", from: "0.6.0"),
     ],
     targets: [
         // MARK: - Helpers
@@ -61,6 +62,7 @@ let package = Package(
                 "GPTEncoder",
                 "Logger",
                 "Preferences",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),

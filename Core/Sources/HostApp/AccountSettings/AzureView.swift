@@ -44,7 +44,11 @@ struct AzureView: View {
                         isTesting = true
                         defer { isTesting = false }
                         do {
-                            let reply = try await ChatGPTService(designatedProvider: .azureOpenAI)
+                            let reply =
+                                try await ChatGPTService(
+                                    configuration: UserPreferenceChatGPTConfiguration()
+                                        .overriding(.init(featureProvider: .azureOpenAI))
+                                )
                                 .sendAndWait(content: "Hello", summary: nil)
                             toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
                         } catch {

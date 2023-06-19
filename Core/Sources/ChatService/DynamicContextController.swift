@@ -5,17 +5,17 @@ import Preferences
 import XcodeInspector
 
 final class DynamicContextController {
-    let chatGPTService: any ChatGPTServiceType
     let contextCollectors: [ChatContextCollector]
+    let memory: AutoManagedChatGPTMemory
 
-    init(chatGPTService: any ChatGPTServiceType, contextCollectors: ChatContextCollector...) {
-        self.chatGPTService = chatGPTService
+    init(memory: AutoManagedChatGPTMemory, contextCollectors: ChatContextCollector...) {
+        self.memory = memory
         self.contextCollectors = contextCollectors
     }
 
     func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
-        let oldMessages = (await chatGPTService.history).map(\.content)
+        let oldMessages = await memory.history
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)
@@ -26,7 +26,7 @@ final class DynamicContextController {
                 .joined(separator: "\n")
         )
         """
-        await chatGPTService.mutateSystemPrompt(contextualSystemPrompt)
+        await memory.mutateSystemPrompt(contextualSystemPrompt)
     }
 }
 

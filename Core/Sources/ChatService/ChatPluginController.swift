@@ -35,7 +35,7 @@ final class ChatPluginController {
             if command == "exit" {
                 if let plugin = runningPlugin {
                     runningPlugin = nil
-                    _ = await chatGPTService.mutateHistory { history in
+                    _ = await chatGPTService.memory.mutateHistory { history in
                         history.append(.init(
                             role: .user,
                             content: "",
@@ -48,7 +48,7 @@ final class ChatPluginController {
                         ))
                     }
                 } else {
-                    _ = await chatGPTService.mutateHistory { history in
+                    _ = await chatGPTService.memory.mutateHistory { history in
                         history.append(.init(
                             role: .system,
                             content: "",

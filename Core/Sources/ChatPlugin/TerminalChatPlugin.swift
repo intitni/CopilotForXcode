@@ -42,7 +42,7 @@ public actor TerminalChatPlugin: ChatPlugin {
                 return try await Environment.guessProjectRootURLForFile(fileURL)
             }()
 
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 history.append(
                     .init(
                         role: .user,
@@ -69,7 +69,7 @@ public actor TerminalChatPlugin: ChatPlugin {
 
             for try await content in output {
                 if isCancelled { throw CancellationError() }
-                await chatGPTService.mutateHistory { history in
+                await chatGPTService.memory.mutateHistory { history in
                     if history.last?.id == id {
                         history.removeLast()
                     }
@@ -78,7 +78,7 @@ public actor TerminalChatPlugin: ChatPlugin {
                 }
             }
             outputContent += "\n[finished]"
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }
@@ -86,7 +86,7 @@ public actor TerminalChatPlugin: ChatPlugin {
             }
         } catch let error as Terminal.TerminationError {
             outputContent += "\n[error: \(error.status)]"
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }
@@ -94,7 +94,7 @@ public actor TerminalChatPlugin: ChatPlugin {
             }
         } catch {
             outputContent += "\n[error: \(error.localizedDescription)]"
-            await chatGPTService.mutateHistory { history in
+            await chatGPTService.memory.mutateHistory { history in
                 if history.last?.id == id {
                     history.removeLast()
                 }

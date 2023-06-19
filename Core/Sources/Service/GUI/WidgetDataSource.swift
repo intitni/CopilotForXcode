@@ -41,7 +41,7 @@ final class WidgetDataSource {
     @discardableResult
     func createChatIfNeeded(for url: URL) -> ChatService {
         let build = {
-            let service = ChatService(chatGPTService: ChatGPTService())
+            let service = ChatService()
             let provider = ChatProvider(
                 service: service,
                 fileURL: url,
