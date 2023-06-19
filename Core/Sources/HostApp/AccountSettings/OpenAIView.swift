@@ -51,9 +51,8 @@ struct OpenAIView: View {
                         do {
                             let reply =
                                 try await ChatGPTService(
-                                    configuration: OverridingUserPreferenceChatGPTConfiguration(
-                                        overriding: .init(featureProvider: .openAI)
-                                    )
+                                    configuration: UserPreferenceChatGPTConfiguration()
+                                        .overriding(.init(featureProvider: .openAI))
                                 )
                                 .sendAndWait(content: "Hello", summary: nil)
                             toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)

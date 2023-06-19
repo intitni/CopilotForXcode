@@ -1,13 +1,16 @@
 import Foundation
 
 public protocol ChatGPTFunctionProvider {
-    var functionSchemas: [String] { get }
-    func function(named: String) -> (any ChatGPTFunction)?
+    var functions: [any ChatGPTFunction] { get }
+}
+
+extension ChatGPTFunctionProvider {
+    func function(named: String) -> (any ChatGPTFunction)? {
+        functions.first(where: { $0.name == named })
+    }
 }
 
 public struct NoChatGPTFunctionProvider: ChatGPTFunctionProvider {
+    public var functions: [any ChatGPTFunction] { [] }
     public init() {}
-
-    public var functionSchemas: [String] { [] }
-    public func function(named: String) -> (any ChatGPTFunction)? { nil }
 }

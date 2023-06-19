@@ -95,12 +95,10 @@ private func runService(
     minimumReplyTokens: Int,
     maxNumberOfMessages: Int
 ) async -> (messages: [String], remainingTokens: Int?, memory: AutoManagedChatGPTMemory) {
-    let configuration = OverridingUserPreferenceChatGPTConfiguration(
-        overriding: .init(
-            maxTokens: maxTokens,
-            minimumReplyTokens: minimumReplyTokens
-        )
-    )
+    let configuration = UserPreferenceChatGPTConfiguration().overriding(.init(
+        maxTokens: maxTokens,
+        minimumReplyTokens: minimumReplyTokens
+    ))
     let memory = AutoManagedChatGPTMemory(
         systemPrompt: systemPrompt,
         configuration: configuration
@@ -119,6 +117,7 @@ private func runService(
         encoder: MockEncoder()
     )
 
-    return (messages.map(\.content), remainingTokens, memory)
+    let contents = messages.map { $0.content ?? "" }
+    return (contents, remainingTokens, memory)
 }
 

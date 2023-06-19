@@ -88,13 +88,17 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
                 if let text = String(data: data, encoding: .utf8) {
                     if text.isEmpty { return }
                     let stream = try await chatGPTService.send(content: text, summary: nil)
-                    for try await _ in stream {}
+                    do {
+                        for try await _ in stream {}
+                    } catch {}
                 } else {
                     let text = """
                     [View File](\(temporaryOutputFileURL))
                     """
                     let stream = try await chatGPTService.send(content: text, summary: nil)
-                    for try await _ in stream {}
+                    do {
+                        for try await _ in stream {}
+                    } catch {}
                 }
 
                 return

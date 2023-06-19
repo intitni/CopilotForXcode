@@ -18,9 +18,7 @@ extension TokenEncoder {
         }
         if let functionCall = message.functionCall {
             total += encode(text: functionCall.name).count
-            if let arguments = functionCall.arguments {
-                total += encode(text: arguments).count
-            }
+            total += encode(text: functionCall.arguments).count
         }
         return total
     }

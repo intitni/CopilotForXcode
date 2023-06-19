@@ -60,14 +60,13 @@ public final class ChatService: ObservableObject {
         \(extraSystemPrompt)
         """, content: content)
 
+        let stream = try await chatGPTService.send(content: content, summary: nil)
+        isReceivingMessage = true
         do {
-            let stream = try await chatGPTService.send(content: content, summary: nil)
-            isReceivingMessage = true
             for try await _ in stream {}
             isReceivingMessage = false
         } catch {
             isReceivingMessage = false
-            throw error
         }
     }
 

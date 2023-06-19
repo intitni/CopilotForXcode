@@ -95,30 +95,28 @@ public class ChatGPTService: ChatGPTServiceType {
         return AsyncThrowingStream<String, Error> { continuation in
             Task(priority: .userInitiated) {
                 do {
-                    let stream = try await sendMemory()
                     var functionCall: ChatMessage.FunctionCall?
-                    var functionCallMessageID = uuidGenerator()
-                    for try await content in stream {
-                        switch content {
-                        case let .text(text):
-                            continuation.yield(text)
-                        case let .functionCall(call):
-                            functionCall = call
-                            await prepareFunctionCall(call, messageId: functionCallMessageID)
+                    var functionCallMessageID = ""
+                    var isInitialCall = true
+                    while functionCall != nil || isInitialCall {
+                        isInitialCall = false
+                        if let call = functionCall {
+                            functionCall = nil
+                            await runFunctionCall(call, messageId: functionCallMessageID)
                         }
-                    }
-
-                    while let call = functionCall {
-                        functionCall = nil
-                        await runFunctionCall(call)
-                        functionCallMessageID = uuidGenerator()
-                        let nextStream = try await sendMemory()
-                        for try await content in nextStream {
+                        let stream = try await sendMemory()
+                        for try await content in stream {
                             switch content {
                             case let .text(text):
                                 continuation.yield(text)
                             case let .functionCall(call):
-                                functionCall = call
+                                if functionCall == nil {
+                                    functionCallMessageID = uuidGenerator()
+                                    functionCall = call
+                                } else {
+                                    functionCall?.name.append(call.name)
+                                    functionCall?.arguments.append(call.arguments)
+                                }
                                 await prepareFunctionCall(call, messageId: functionCallMessageID)
                             }
                         }
@@ -180,7 +178,14 @@ extension ChatGPTService {
         else { throw ChatGPTServiceError.endpointIncorrect }
 
         let messages = await memory.messages.map {
-            CompletionRequestBody.Message(role: $0.role, content: $0.content)
+            CompletionRequestBody.Message(
+                role: $0.role,
+                content: $0.content ?? "",
+                name: $0.name,
+                function_call: $0.functionCall.map {
+                    .init(name: $0.name, arguments: $0.arguments)
+                }
+            )
         }
         let remainingTokens = await memory.remainingTokens
 
@@ -195,7 +200,13 @@ extension ChatGPTService {
                 remainingTokens: remainingTokens
             ),
             function_call: nil,
-            functions: functionProvider.functionSchemas
+            functions: functionProvider.functions.map {
+                ChatGPTFunctionSchema(
+                    name: $0.name,
+                    description: $0.description,
+                    parameters: $0.argumentSchema
+                )
+            }
         )
 
         let api = buildCompletionStreamAPI(
@@ -213,13 +224,15 @@ extension ChatGPTService {
                     for try await trunk in trunks {
                         guard let delta = trunk.choices.first?.delta else { continue }
 
-                        // The api will always return a function call with correct JSON format.
+                        // The api will always return a function call with JSON object.
                         // The first round will contain the function name and an empty argument.
                         // e.g. {"name":"weather","arguments":""}
-                        let functionCall: ChatMessage.FunctionCall? = delta.function_call.flatMap {
-                            guard let data = $0.data(using: .utf8) else { return nil }
-                            return try? JSONDecoder()
-                                .decode(ChatMessage.FunctionCall.self, from: data)
+                        // The other rounds will contain part of the arguments.
+                        let functionCall = delta.function_call.map {
+                            ChatMessage.FunctionCall(
+                                name: $0.name ?? "",
+                                arguments: $0.arguments ?? ""
+                            )
                         }
 
                         await memory.streamMessage(
@@ -264,11 +277,10 @@ extension ChatGPTService {
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
                 role: $0.role,
-                content: $0.content,
+                content: $0.content ?? "",
                 name: $0.name,
                 function_call: $0.functionCall.map {
-                    CompletionRequestBody
-                        .MessageFunctionCall(name: $0.name, arguments: $0.arguments)
+                    .init(name: $0.name, arguments: $0.arguments)
                 }
             )
         }
@@ -285,7 +297,13 @@ extension ChatGPTService {
                 remainingTokens: remainingTokens
             ),
             function_call: nil,
-            functions: functionProvider.functionSchemas
+            functions: functionProvider.functions.map {
+                ChatGPTFunctionSchema(
+                    name: $0.name,
+                    description: $0.description,
+                    parameters: $0.argumentSchema
+                )
+            }
         )
 
         let api = buildCompletionAPI(
@@ -303,13 +321,13 @@ extension ChatGPTService {
             content: choice.message.content,
             name: choice.message.name,
             functionCall: choice.message.function_call.map {
-                ChatMessage.FunctionCall(name: $0.name, arguments: $0.arguments)
+                ChatMessage.FunctionCall(name: $0.name, arguments: $0.arguments ?? "")
             }
         )
         await memory.appendMessage(message)
         return message
     }
-    
+
     /// When a function call is detected, but arguments are not yet ready, we can call this
     /// to insert a message placeholder in memory.
     func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
@@ -318,6 +336,7 @@ extension ChatGPTService {
             id: messageId,
             role: .function,
             content: nil,
+            name: call.name,
             summary: function.message(at: .detected)
         )
         await memory.appendMessage(responseMessage)
@@ -348,32 +367,32 @@ extension ChatGPTService {
             id: messageId,
             role: .function,
             content: nil,
-            summary: function
-                .message(at: .processing(argumentsJsonString: call.arguments ?? ""))
+            name: call.name,
+            summary: function.message(at: .processing(argumentsJsonString: call.arguments))
         )
         await memory.appendMessage(responseMessage)
 
         do {
             // Run the function
-            let response = try await function
-                .call(argumentsJsonString: call.arguments ?? "")
+            let result = try await function
+                .call(argumentsJsonString: call.arguments)
 
             // Update the message to display the finish state of the function.
             await memory.updateMessage(id: messageId) { message in
-                message.content = response
+                message.content = result.botReadableContent
                 message.summary = function.message(at: .ended(
-                    argumentsJsonString: call.arguments ?? "",
-                    result: response
+                    argumentsJsonString: call.arguments,
+                    result: result
                 ))
             }
-            return response
+            return result.botReadableContent
         } catch {
             // For errors, use the error message as the result.
             let content = "Error: \(error.localizedDescription)"
             await memory.updateMessage(id: messageId) { message in
                 message.content = content
                 message.summary = function.message(at: .error(
-                    argumentsJsonString: call.arguments ?? "",
+                    argumentsJsonString: call.arguments,
                     result: error
                 ))
             }

@@ -59,7 +59,12 @@ public extension ChatGPTMemory {
                     history[index].role = role
                 }
                 if let functionCall {
-                    history[index].functionCall = functionCall
+                    if history[index].functionCall == nil {
+                        history[index].functionCall = functionCall
+                    } else {
+                        history[index].functionCall?.name.append(functionCall.name)
+                        history[index].functionCall?.arguments.append(functionCall.arguments)
+                    }
                 }
                 if let summary {
                     history[index].summary = summary

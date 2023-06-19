@@ -43,8 +43,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
     ) -> [ChatMessage] {
         func countToken(_ message: inout ChatMessage) -> Int {
-            if let count = systemPrompt.tokensCount { return count }
-            let count = encoder.countToken(message: systemPrompt)
+            if let count = message.tokensCount { return count }
+            let count = encoder.countToken(message: message)
             message.tokensCount = count
             return count
         }
@@ -76,12 +76,14 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
     ) -> Int? {
-        let tokensCount = generateSendingHistory(
-            maxNumberOfMessages: maxNumberOfMessages,
-            encoder: encoder
-        )
-        .reduce(0) { $0 + ($1.tokensCount ?? 0) }
-        return max(configuration.minimumReplyTokens, configuration.maxTokens - tokensCount)
+        // It should be fine to just let OpenAI decide.
+        return nil
+//        let tokensCount = generateSendingHistory(
+//            maxNumberOfMessages: maxNumberOfMessages,
+//            encoder: encoder
+//        )
+//        .reduce(0) { $0 + ($1.tokensCount ?? 0) }
+//        return max(configuration.minimumReplyTokens, configuration.maxTokens - tokensCount)
     }
 
     func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {

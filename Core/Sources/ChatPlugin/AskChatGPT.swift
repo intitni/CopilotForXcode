@@ -12,8 +12,7 @@ public func askChatGPT(
     let memory = AutoManagedChatGPTMemory(systemPrompt: systemPrompt, configuration: configuration)
     let service = ChatGPTService(
         memory: memory,
-        configuration: UserPreferenceChatGPTConfiguration()
-            .overriding(.init(temperature: temperature))
+        configuration: configuration
     )
     return try await service.sendAndWait(content: question)
 }

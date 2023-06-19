@@ -17,7 +17,7 @@ public struct ChatMessage: Equatable, Codable {
 
     public struct FunctionCall: Codable, Equatable {
         var name: String
-        var arguments: String?
+        var arguments: String
     }
 
     /// The role of a message.
@@ -49,10 +49,10 @@ public struct ChatMessage: Equatable, Codable {
     
     /// Is the message considered empty.
     var isEmpty: Bool {
-        if let content, !content.isEmpty { return true }
-        if let functionCall, !functionCall.name.isEmpty { return true }
-        if let name, !name.isEmpty { return true }
-        return false
+        if let content, !content.isEmpty { return false }
+        if let functionCall, !functionCall.name.isEmpty { return false }
+        if let name, !name.isEmpty { return false }
+        return true
     }
 
     public init(

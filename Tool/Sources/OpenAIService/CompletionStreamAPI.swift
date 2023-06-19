@@ -17,7 +17,7 @@ struct CompletionRequestBody: Encodable, Equatable {
         /// The role of the message.
         var role: ChatMessage.Role
         /// The content of the message.
-        var content: String?
+        var content: String
         /// When we want to reply to a function call with the result, we have to provide the
         /// name of the function call, and include the result in `content`.
         ///
@@ -86,7 +86,7 @@ struct CompletionRequestBody: Encodable, Equatable {
     var user: String?
     /// Pass nil to let the bot decide.
     var function_call: FunctionCallStrategy?
-    var functions: [String] = []
+    var functions: [ChatGPTFunctionSchema]? = nil
 }
 
 struct CompletionStreamDataTrunk: Codable {
@@ -102,9 +102,14 @@ struct CompletionStreamDataTrunk: Codable {
         var finish_reason: String?
 
         struct Delta: Codable {
+            struct FunctionCall: Codable {
+                var name: String?
+                var arguments: String?
+            }
+            
             var role: ChatMessage.Role?
             var content: String?
-            var function_call: String?
+            var function_call: FunctionCall?
         }
     }
 }
