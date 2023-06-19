@@ -16,36 +16,51 @@ public final class ChatService: ObservableObject {
 
     let pluginController: ChatPluginController
     let contextController: DynamicContextController
+    let functionProvider: ChatFunctionProvider
     var cancellable = Set<AnyCancellable>()
 
     init<T: ChatGPTServiceType>(
         memory: AutoManagedChatGPTMemory,
         configuration: OverridingChatGPTConfiguration<UserPreferenceChatGPTConfiguration>,
+        functionProvider: ChatFunctionProvider,
         chatGPTService: T
     ) {
         self.memory = memory
         self.configuration = configuration
         self.chatGPTService = chatGPTService
-        pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
+        self.functionProvider = functionProvider
+        pluginController = ChatPluginController(
+            chatGPTService: chatGPTService,
+            plugins: allPlugins
+        )
         contextController = DynamicContextController(
             memory: memory,
-            contextCollectors: ActiveDocumentChatContextCollector()
+            functionProvider: functionProvider,
+            contextCollectors: allContextCollectors
         )
 
         pluginController.chatService = self
     }
 
-    public init() {
-        configuration = UserPreferenceChatGPTConfiguration().overriding()
-        memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
-        chatGPTService = ChatGPTService(memory: memory, configuration: configuration)
-        pluginController = ChatPluginController(chatGPTService: chatGPTService, plugins: allPlugins)
-        contextController = DynamicContextController(
+    public convenience init() {
+        let configuration = UserPreferenceChatGPTConfiguration().overriding()
+        let functionProvider = ChatFunctionProvider()
+        let memory = AutoManagedChatGPTMemory(
+            systemPrompt: "",
+            configuration: configuration,
+            functionProvider: functionProvider
+        )
+        self.init(
             memory: memory,
-            contextCollectors: ActiveDocumentChatContextCollector()
+            configuration: configuration,
+            functionProvider: functionProvider,
+            chatGPTService: ChatGPTService(
+                memory: memory,
+                configuration: configuration,
+                functionProvider: functionProvider
+            )
         )
 
-        pluginController.chatService = self
         memory.observeHistoryChange { [weak self] in
             self?.objectWillChange.send()
         }
