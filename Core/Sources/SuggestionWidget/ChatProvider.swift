@@ -1,4 +1,5 @@
 import Foundation
+import OpenAIService
 import Preferences
 import SwiftUI
 
@@ -67,13 +68,20 @@ public final class ChatProvider: ObservableObject {
 }
 
 public struct ChatMessage: Equatable {
+    public enum Role {
+        case user
+        case assistant
+        case function
+        case ignored
+    }
+    
     public var id: String
-    public var isUser: Bool
+    public var role: Role
     public var text: String
 
-    public init(id: String, isUser: Bool, text: String) {
+    public init(id: String, role: Role, text: String) {
         self.id = id
-        self.isUser = isUser
+        self.role = role
         self.text = text
     }
 }

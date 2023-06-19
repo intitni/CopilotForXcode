@@ -184,11 +184,16 @@ let package = Package(
                 "MathChatPlugin",
                 "SearchChatPlugin",
                 "ShortcutChatPlugin",
-
+                
+                // context collectors
+                "WebChatContextCollector",
+                
+                .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
+        .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
             name: "ChatPlugin",
             dependencies: [
@@ -313,6 +318,7 @@ let package = Package(
                 "ChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
+                .product(name: "ExternalServices", package: "Tool"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/SearchChatPlugin"
@@ -327,6 +333,19 @@ let package = Package(
             ],
             path: "Sources/ChatPlugins/ShortcutChatPlugin"
         ),
+        
+        // MAKR: - Chat Context Collector
+        
+        .target(
+            name: "WebChatContextCollector",
+            dependencies: [
+                "ChatContextCollector",
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "ExternalServices", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+            ],
+            path: "Sources/ChatContextCollectors/WebChatContextCollector"
+        )
     ]
 )
 

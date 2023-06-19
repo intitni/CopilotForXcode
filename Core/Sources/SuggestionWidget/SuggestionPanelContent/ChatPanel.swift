@@ -74,17 +74,21 @@ struct ChatPanelMessages: View {
                 }
 
                 ForEach(chat.history.reversed(), id: \.id) { message in
-                    let text = message.text.isEmpty && !message.isUser ? "..." : message
-                        .text
+                    let text = message.text
 
-                    if message.isUser {
+                    switch message.role {
+                    case .user:
                         UserMessage(id: message.id, text: text, chat: chat)
                             .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                             .padding(.vertical, 4)
-                    } else {
+                    case .assistant:
                         BotMessage(id: message.id, text: text, chat: chat)
                             .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
                             .padding(.vertical, 4)
+                    case .function:
+                        FunctionMessage(id: message.id, text: text)
+                    case .ignored:
+                        EmptyView()
                     }
                 }
                 .listItemTint(.clear)
@@ -147,7 +151,7 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you'd like me to examine the entire file, simply add `@file` to the beginning of your message.
-                    
+
                     To use plugins, you can start a message with `/pluginName`.
                     """
                 )
@@ -162,7 +166,7 @@ private struct Instruction: View {
                     - The text cursor location.
 
                     If you would like me to examine the selected code, please prefix your message with `@selection`. If you would like me to examine the entire file, please prefix your message with `@file`.
-                    
+
                     To use plugins, you can start a message with `/pluginName`.
                     """
                 )
@@ -297,6 +301,21 @@ private struct BotMessage: View {
     }
 }
 
+struct FunctionMessage: View {
+    let id: String
+    let text: String
+    @AppStorage(\.chatFontSize) var chatFontSize
+
+    var body: some View {
+        Markdown(text)
+            .textSelection(.enabled)
+            .markdownTheme(.functionCall(fontSize: chatFontSize))
+            .scaleEffect(x: -1, y: -1, anchor: .center)
+            .padding(.vertical, 2)
+            .padding(.trailing, 2)
+    }
+}
+
 struct ChatPanelInputArea: View {
     @ObservedObject var chat: ChatProvider
     @Binding var typedMessage: String
@@ -398,7 +417,7 @@ struct ChatPanelInputArea: View {
         chat.send(typedMessage)
         typedMessage = ""
     }
-    
+
     func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
         guard text.count == 1 else { return [] }
         let plugins = chat.pluginIdentifiers.map { "/\($0)" }
@@ -407,7 +426,7 @@ struct ChatPanelInputArea: View {
             "@selection",
             "@file",
         ]
-        
+
         let result: [String] = availableFeatures
             .filter { $0.hasPrefix(text) && $0 != text }
             .compactMap {
@@ -584,12 +603,12 @@ struct ChatPanel_Preview: PreviewProvider {
     static let history: [ChatMessage] = [
         .init(
             id: "1",
-            isUser: true,
+            role: .user,
             text: "**Hello**"
         ),
         .init(
             id: "2",
-            isUser: false,
+            role: .assistant,
             text: """
             ```swift
             func foo() {}
@@ -597,11 +616,19 @@ struct ChatPanel_Preview: PreviewProvider {
             **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
             """
         ),
-        .init(id: "5", isUser: false, text: "Yooo"),
-        .init(id: "4", isUser: true, text: "Yeeeehh"),
+        .init(id: "7", role: .ignored, text: "Ignored"),
+        .init(id: "6", role: .function, text: """
+        Searching for something...
+        - abc
+        - [def](https://1.com)
+        > hello
+        > hi
+        """),
+        .init(id: "5", role: .assistant, text: "Yooo"),
+        .init(id: "4", role: .user, text: "Yeeeehh"),
         .init(
             id: "3",
-            isUser: true,
+            role: .user,
             text: #"""
             Please buy me a coffee!
             | Coffee | Milk |
@@ -624,7 +651,7 @@ struct ChatPanel_Preview: PreviewProvider {
             history: ChatPanel_Preview.history,
             isReceivingMessage: true
         ))
-        .frame(width: 450, height: 700)
+        .frame(width: 450, height: 1200)
         .colorScheme(.dark)
     }
 }
@@ -699,7 +726,4 @@ struct ChatPanel_Light_Preview: PreviewProvider {
         .colorScheme(.light)
     }
 }
-
-
-
 

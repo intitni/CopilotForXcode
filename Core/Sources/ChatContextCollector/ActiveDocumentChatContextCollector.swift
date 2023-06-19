@@ -7,13 +7,17 @@ import XcodeInspector
 public struct ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
-    public func generateSystemPrompt(history: [ChatMessage], content prompt: String) -> String {
+    public func generateContext(
+        history: [ChatMessage],
+        scopes: Set<String>,
+        content: String
+    ) -> ChatContext? {
         let content = getEditorInformation()
         let relativePath = content.documentURL.path
             .replacingOccurrences(of: content.projectURL.path, with: "")
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
-            if prompt.hasPrefix("@file") {
+            if scopes.contains("file") {
                 return """
                 File Content:```\(content.language.rawValue)
                 \(content.editorContent?.content ?? "")
@@ -53,7 +57,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                 """
             }
 
-            if prompt.hasPrefix("@selection") {
+            if scopes.contains("selection") {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
@@ -72,27 +76,30 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
             """
         }()
 
-        return """
-        Active Document Context:###
-        Document Relative Path: \(relativePath)
-        Selection Range Start: \
-        Line \(selectionRange.start.line) \
-        Character \(selectionRange.start.character)
-        Selection Range End: \
-        Line \(selectionRange.end.line) \
-        Character \(selectionRange.end.character)
-        Cursor Position: \
-        Line \(selectionRange.end.line) \
-        Character \(selectionRange.end.character)
-        \(editorContent)
-        Line Annotations:
-        \(
-            content.editorContent?.lineAnnotations
-                .map { "  - \($0)" }
-                .joined(separator: "\n") ?? "N/A"
+        return .init(
+            systemPrompt: """
+            Active Document Context:###
+            Document Relative Path: \(relativePath)
+            Selection Range Start: \
+            Line \(selectionRange.start.line) \
+            Character \(selectionRange.start.character)
+            Selection Range End: \
+            Line \(selectionRange.end.line) \
+            Character \(selectionRange.end.character)
+            Cursor Position: \
+            Line \(selectionRange.end.line) \
+            Character \(selectionRange.end.character)
+            \(editorContent)
+            Line Annotations:
+            \(
+                content.editorContent?.lineAnnotations
+                    .map { "  - \($0)" }
+                    .joined(separator: "\n") ?? "N/A"
+            )
+            ###
+            """,
+            functions: []
         )
-        ###
-        """
     }
 }
 
