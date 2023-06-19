@@ -77,6 +77,13 @@
         "identifier" : "OpenAIServiceTests",
         "name" : "OpenAIServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ChatServiceTests",
+        "name" : "ChatServiceTests"
+      }
     }
   ],
   "version" : 1
