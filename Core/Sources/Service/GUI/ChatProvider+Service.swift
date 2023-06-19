@@ -19,7 +19,18 @@ extension ChatProvider {
                 self.history = (await service.memory.history).map { message in
                     .init(
                         id: message.id,
-                        isUser: message.role == .user,
+                        role: {
+                            switch message.role {
+                            case .system: return .ignored
+                            case .user: return .user
+                            case .assistant:
+                                if let text = message.summary ?? message.content, !text.isEmpty {
+                                    return .assistant
+                                }
+                                return .ignored
+                            case .function: return .function
+                            }
+                        }(),
                         text: message.summary ?? message.content ?? ""
                     )
                 }
