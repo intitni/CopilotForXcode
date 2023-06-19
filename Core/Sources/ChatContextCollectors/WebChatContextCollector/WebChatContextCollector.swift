@@ -15,7 +15,7 @@ public struct WebChatContextCollector: ChatContextCollector {
     ) -> ChatContext? {
         guard scopes.contains("web") else { return nil }
         return .init(
-            systemPrompt: "You prefer to answer questions with latest latest on the internet.",
+            systemPrompt: "You prefer to answer questions with latest content on the internet.",
             functions: [
                 SearchFunction(),
             ]
