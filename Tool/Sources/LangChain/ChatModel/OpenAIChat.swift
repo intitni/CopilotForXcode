@@ -22,7 +22,11 @@ public struct OpenAIChat: ChatModel {
             temperature: temperature,
             stop: stops
         ))
-        let memory = AutoManagedChatGPTMemory(systemPrompt: "", configuration: configuration)
+        let memory = AutoManagedChatGPTMemory(
+            systemPrompt: "",
+            configuration: configuration,
+            functionProvider: NoChatGPTFunctionProvider()
+        )
         let service = ChatGPTService(memory: memory, configuration: configuration)
         for message in prompt {
             let role: OpenAIService.ChatMessage.Role = {

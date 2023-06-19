@@ -21,7 +21,8 @@ func callAIFunction(
     let service = ChatGPTService(
         memory: AutoManagedChatGPTMemory(
             systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value.",
-            configuration: configuration
+            configuration: configuration,
+            functionProvider: NoChatGPTFunctionProvider()
         ),
         configuration: configuration
     )

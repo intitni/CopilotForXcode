@@ -23,8 +23,8 @@ extension TokenEncoder {
         return total
     }
 
-    func countToken(functionJSONSchema: String) -> Int {
-        encode(text: functionJSONSchema).count
+    func countToken(text: String) -> Int {
+        encode(text: text).count
     }
 }
 

@@ -9,7 +9,11 @@ public func askChatGPT(
 ) async throws -> String? {
     let configuration = UserPreferenceChatGPTConfiguration()
         .overriding(.init(temperature: temperature))
-    let memory = AutoManagedChatGPTMemory(systemPrompt: systemPrompt, configuration: configuration)
+    let memory = AutoManagedChatGPTMemory(
+        systemPrompt: systemPrompt,
+        configuration: configuration,
+        functionProvider: NoChatGPTFunctionProvider()
+    )
     let service = ChatGPTService(
         memory: memory,
         configuration: configuration

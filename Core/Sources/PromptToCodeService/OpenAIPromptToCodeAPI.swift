@@ -151,7 +151,8 @@ final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
             .overriding(.init(temperature: 0))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
-            configuration: configuration
+            configuration: configuration,
+            functionProvider: NoChatGPTFunctionProvider()
         )
         let chatGPTService = ChatGPTService(
             memory: memory,

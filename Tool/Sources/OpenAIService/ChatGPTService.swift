@@ -65,7 +65,8 @@ public class ChatGPTService: ChatGPTServiceType {
     public init(
         memory: ChatGPTMemory = AutoManagedChatGPTMemory(
             systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration()
+            configuration: UserPreferenceChatGPTConfiguration(),
+            functionProvider: NoChatGPTFunctionProvider()
         ),
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()

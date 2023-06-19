@@ -13,14 +13,20 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     public var configuration: ChatGPTConfiguration
+    public var functionProvider: ChatGPTFunctionProvider
 
     static let encoder: TokenEncoder = GPTEncoder()
 
     var onHistoryChange: () -> Void = {}
 
-    public init(systemPrompt: String, configuration: ChatGPTConfiguration) {
+    public init(
+        systemPrompt: String,
+        configuration: ChatGPTConfiguration,
+        functionProvider: ChatGPTFunctionProvider
+    ) {
         self.systemPrompt = .init(role: .system, content: systemPrompt)
         self.configuration = configuration
+        self.functionProvider = functionProvider
     }
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
@@ -48,11 +54,22 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             message.tokensCount = count
             return count
         }
-        
+
         var all: [ChatMessage] = []
         let systemMessageTokenCount = countToken(&systemPrompt)
-        var allTokensCount = systemPrompt.isEmpty ? 0 : systemMessageTokenCount
-        
+        let functionTokenCount = functionProvider.functions.reduce(into: 0) { partial, function in
+            var count = encoder.countToken(text: function.name)
+                + encoder.countToken(text: function.description)
+            if let data = try? JSONEncoder().encode(function.argumentSchema),
+               let string = String(data: data, encoding: .utf8)
+            {
+                count += encoder.countToken(text: string)
+            }
+            partial += count
+        }
+        var allTokensCount = functionTokenCount
+        allTokensCount += systemPrompt.isEmpty ? 0 : systemMessageTokenCount
+
         for (index, message) in history.enumerated().reversed() {
             if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
             if message.isEmpty { continue }
