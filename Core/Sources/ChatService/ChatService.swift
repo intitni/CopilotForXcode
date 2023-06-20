@@ -40,8 +40,12 @@ public final class ChatService: ObservableObject {
 
         let stream = try await chatGPTService.send(content: content, summary: nil)
         isReceivingMessage = true
-        for try await _ in stream {}
-        isReceivingMessage = false
+        do {
+            for try await _ in stream {}
+            isReceivingMessage = false
+        } catch {
+            isReceivingMessage = false
+        }
     }
 
     public func stopReceivingMessage() async {
