@@ -8,7 +8,7 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(name: "Terminal", targets: ["Terminal"]),
-        .library(name: "LangChain", targets: ["LangChain", "PythonHelper"]),
+        .library(name: "LangChain", targets: ["LangChain"]),
         .library(name: "ExternalServices", targets: ["BingSearchService"]),
         .library(name: "Preferences", targets: ["Preferences", "Configs"]),
         .library(name: "Logger", targets: ["Logger"]),
@@ -38,10 +38,8 @@ let package = Package(
         .target(
             name: "LangChain",
             dependencies: [
-                "PythonHelper",
                 "OpenAIService",
                 .product(name: "Parsing", package: "swift-parsing"),
-                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
 
