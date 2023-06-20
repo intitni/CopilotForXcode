@@ -163,6 +163,8 @@ public enum Environment {
                         Logger.service
                             .error("Trigger command \(name) failed: \(error.localizedDescription)")
                         throw error
+                    } else {
+                        return
                     }
                 }
             } else if let commandMenu = app.menuBar?.child(title: bundleName),
@@ -173,17 +175,18 @@ public enum Environment {
                     Logger.service
                         .error("Trigger command \(name) failed: \(error.localizedDescription)")
                     throw error
+                } else {
+                    return
                 }
-            } else {
-                struct CantRunCommand: Error, LocalizedError {
-                    let name: String
-                    var errorDescription: String? {
-                        "Can't run command \(name)."
-                    }
-                }
-
-                throw CantRunCommand(name: name)
             }
+            struct CantRunCommand: Error, LocalizedError {
+                let name: String
+                var errorDescription: String? {
+                    "Can't run command \(name)."
+                }
+            }
+
+            throw CantRunCommand(name: name)
         } else {
             /// check if menu is open, if not, click the menu item.
             let appleScript = """
