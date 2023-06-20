@@ -6,8 +6,6 @@ struct PromptToCodeSettingsView: View {
         var hideCommonPrecedingSpacesInSuggestion
         @AppStorage(\.suggestionCodeFontSize)
         var suggestionCodeFontSize
-        @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
-        var acceptSuggestionWithAccessibilityAPI
         @AppStorage(\.promptToCodeGenerateDescription)
         var promptToCodeGenerateDescription
         @AppStorage(\.promptToCodeGenerateDescriptionInUserPreferredLanguage)
@@ -56,12 +54,6 @@ struct PromptToCodeSettingsView: View {
                     .textFieldStyle(.roundedBorder)
 
                     Text("pt")
-                }.disabled(true)
-
-                Divider()
-
-                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
-                    Text("Use accessibility API to accept suggestion in widget")
                 }.disabled(true)
             }
         }

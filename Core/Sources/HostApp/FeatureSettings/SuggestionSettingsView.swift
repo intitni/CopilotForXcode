@@ -9,8 +9,6 @@ struct SuggestionSettingsView: View {
         var realtimeSuggestionDebounce
         @AppStorage(\.suggestionPresentationMode)
         var suggestionPresentationMode
-        @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
-        var acceptSuggestionWithAccessibilityAPI
         @AppStorage(\.disableSuggestionFeatureGlobally)
         var disableSuggestionFeatureGlobally
         @AppStorage(\.suggestionFeatureEnabledProjectList)
@@ -124,16 +122,6 @@ struct SuggestionSettingsView: View {
                     Text("pt")
                 }
                 Divider()
-            }
-
-            Group {
-                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
-                    Text("Use accessibility API to accept suggestion in widget")
-                }
-
-                Text("You can turn it on if the accept button is not working for you.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }
