@@ -4,7 +4,6 @@ import FileChangeChecker
 import LaunchAgentManager
 import Logger
 import Preferences
-import PythonHelper
 import Service
 import ServiceManagement
 import ServiceUpdateMigration
@@ -48,7 +47,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Task {
             do {
                 try await ServiceUpdateMigrator().migrate()
-                await initializePython()
             } catch {
                 Logger.service.error(error.localizedDescription)
             }

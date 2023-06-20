@@ -1,6 +1,8 @@
-setup: setup-langchain
+setup:
+	echo "Setup."
 
 setup-langchain:
+	echo "Don't setup LangChain!"
 	cd Python; \
 	curl -L https://github.com/beeware/Python-Apple-support/releases/download/3.11-b1/Python-3.11-macOS-support.b1.tar.gz -o Python-3.11-macOS-support.b1.tar.gz; \
 	tar -xzvf Python-3.11-macOS-support.b1.tar.gz; \
