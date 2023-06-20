@@ -136,14 +136,21 @@ struct PseudoCommandHandler {
     }
 
     func acceptSuggestion() async {
-        if UserDefaults.shared.value(for: \.acceptSuggestionWithAccessibilityAPI) {
+        do {
+            try await Environment.triggerAction("Accept Suggestion")
+        } catch {
             guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor
                 .latestXcode else { return }
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
+            guard let (
+                content,
+                lines,
+                _,
+                cursorPosition
+            ) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -199,21 +206,15 @@ struct PseudoCommandHandler {
                     }
                 }
 
-                if let oldScrollPosition, let scrollBar = focusElement.parent?.verticalScrollBar {
+                if let oldScrollPosition,
+                   let scrollBar = focusElement.parent?.verticalScrollBar
+                {
                     AXUIElementSetAttributeValue(
                         scrollBar,
                         kAXValueAttribute as CFString,
                         oldScrollPosition as CFTypeRef
                     )
                 }
-
-            } catch {
-                PresentInWindowSuggestionPresenter().presentError(error)
-            }
-        } else {
-            do {
-                try await Environment.triggerAction("Accept Suggestion")
-                return
             } catch {
                 PresentInWindowSuggestionPresenter().presentError(error)
             }
