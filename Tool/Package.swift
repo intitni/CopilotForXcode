@@ -9,6 +9,7 @@ let package = Package(
     products: [
         .library(name: "Terminal", targets: ["Terminal"]),
         .library(name: "LangChain", targets: ["LangChain"]),
+        .library(name: "PythonHelper", targets: ["PythonHelper"]),
         .library(name: "ExternalServices", targets: ["BingSearchService"]),
         .library(name: "Preferences", targets: ["Preferences", "Configs"]),
         .library(name: "Logger", targets: ["Logger"]),
@@ -40,6 +41,8 @@ let package = Package(
             name: "LangChain",
             dependencies: [
                 "OpenAIService",
+                "PythonHelper",
+                .product(name: "PythonKit", package: "PythonKit"),
                 .product(name: "Parsing", package: "swift-parsing"),
             ]
         ),
@@ -49,6 +52,7 @@ let package = Package(
         .target(
             name: "PythonHelper",
             dependencies: [
+                "Logger",
                 .product(name: "Python", package: "Python"),
                 .product(name: "PythonKit", package: "PythonKit"),
             ]
