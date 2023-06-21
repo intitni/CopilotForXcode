@@ -101,7 +101,8 @@ private func runService(
     ))
     let memory = AutoManagedChatGPTMemory(
         systemPrompt: systemPrompt,
-        configuration: configuration
+        configuration: configuration,
+        functionProvider: NoChatGPTFunctionProvider()
     )
 
     for message in messages {
