@@ -3,6 +3,7 @@ import LanguageClient
 import LanguageServerProtocol
 import Logger
 import SuggestionModel
+import XcodeInspector
 
 public protocol CodeiumSuggestionServiceType {
     func getCompletions(
@@ -54,9 +55,9 @@ public class CodeiumSuggestionService {
 
     let authService = CodeiumAuthService()
 
-    var xcodeVersion = "14.0.0"
+    var fallbackXcodeVersion = "14.0.0"
     var languageServerVersion = CodeiumInstallationManager.latestSupportedVersion
-    
+
     private var ongoingTasks = Set<Task<[CodeSuggestion], Error>>()
 
     init(designatedServer: CodeiumLSP) {
@@ -95,13 +96,6 @@ public class CodeiumSuggestionService {
         }
 
         let metadata = try getMetadata()
-        xcodeVersion = (try? await getXcodeVersion()) ?? xcodeVersion
-        let versionNumberSegmentCount = xcodeVersion.split(separator: ".").count
-        if versionNumberSegmentCount == 2 {
-            xcodeVersion += ".0"
-        } else if versionNumberSegmentCount == 1 {
-            xcodeVersion += ".0.0"
-        }
         let tempFolderURL = FileManager.default.temporaryDirectory
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
@@ -192,9 +186,16 @@ extension CodeiumSuggestionService {
             }
             throw E()
         }
+        var ideVersion = XcodeInspector.shared.latestActiveXcode?.version ?? fallbackXcodeVersion
+        let versionNumberSegmentCount = ideVersion.split(separator: ".").count
+        if versionNumberSegmentCount == 2 {
+            ideVersion += ".0"
+        } else if versionNumberSegmentCount == 1 {
+            ideVersion += ".0.0"
+        }
         return Metadata(
             ide_name: "xcode",
-            ide_version: xcodeVersion,
+            ide_version: ideVersion,
             extension_version: languageServerVersion,
             api_key: key,
             session_id: CodeiumSuggestionService.sessionId,
@@ -231,11 +232,11 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         ongoingTasks.forEach { $0.cancel() }
         ongoingTasks.removeAll()
         await cancelRequest()
-        
+
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
         let relativePath = getRelativePath(of: fileURL)
-        
+
         let task = Task {
             let request = await CodeiumRequest.GetCompletion(requestBody: .init(
                 metadata: try getMetadata(),
@@ -263,11 +264,11 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                         )
                     }
             ))
-            
+
             try Task.checkCancellation()
 
             let result = try await (try await setupServerIfNeeded()).sendRequest(request)
-            
+
             try Task.checkCancellation()
 
             return result.completionItems?.filter { item in
@@ -294,7 +295,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                 )
             } ?? []
         }
-        
+
         ongoingTasks.insert(task)
 
         return try await task.value
