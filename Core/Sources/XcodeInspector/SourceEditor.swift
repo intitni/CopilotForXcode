@@ -35,7 +35,7 @@ public class SourceEditor {
     }
 
     let runningApplication: NSRunningApplication
-    let element: AXUIElement
+    public let element: AXUIElement
 
     /// The content of the source editor.
     public var content: Content {

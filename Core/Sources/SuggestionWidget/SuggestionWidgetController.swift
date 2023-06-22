@@ -44,8 +44,10 @@ public final class SuggestionWidgetController: NSObject {
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
-                panelViewModel: suggestionPanelViewModel,
+                panelViewModel: sharedPanelViewModel,
                 chatWindowViewModel: chatWindowViewModel,
+                sharedPanelDisplayController: sharedPanelDisplayController,
+                suggestionPanelDisplayController: suggestionPanelDisplayController,
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
@@ -94,11 +96,41 @@ public final class SuggestionWidgetController: NSObject {
         it.collectionBehavior = [.fullScreenAuxiliary]
         it.hasShadow = true
         it.contentView = NSHostingView(
-            rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
+            rootView: SharedPanelView(
+                viewModel: sharedPanelViewModel,
+                displayController: sharedPanelDisplayController
+            )
         )
         it.setIsVisible(true)
-        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .promptToCode = suggestionPanelViewModel.content { return true }
+        it.canBecomeKeyChecker = { [sharedPanelViewModel] in
+            if case .promptToCode = sharedPanelViewModel.content { return true }
+            return false
+        }
+        return it
+    }()
+
+    private lazy var suggestionWindow = {
+        let it = CanBecomeKeyWindow(
+            contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.hasShadow = true
+        it.contentView = NSHostingView(
+            rootView: SuggestionPanelView(
+                viewModel: sharedPanelViewModel,
+                displayController: suggestionPanelDisplayController
+            )
+        )
+        it.setIsVisible(true)
+        it.canBecomeKeyChecker = { [sharedPanelViewModel] in
+            if case .promptToCode = sharedPanelViewModel.content { return true }
             return false
         }
         return it
@@ -126,8 +158,10 @@ public final class SuggestionWidgetController: NSObject {
     }()
 
     let widgetViewModel = WidgetViewModel()
-    let suggestionPanelViewModel = SuggestionPanelViewModel()
+    let sharedPanelViewModel = SharedPanelViewModel()
     let chatWindowViewModel = ChatWindowViewModel()
+    let sharedPanelDisplayController = SharedPanelDisplayController()
+    let suggestionPanelDisplayController = SuggestionPanelDisplayController()
 
     private var presentationModeChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
@@ -185,6 +219,7 @@ public final class SuggestionWidgetController: NSObject {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                             self.tabWindow.alphaValue = 0
+                            self.suggestionWindow.alphaValue = 0
                             if !chatWindowViewModel.chatPanelInASeparateWindow {
                                 self.chatWindow.alphaValue = 0
                             }
@@ -246,7 +281,7 @@ public final class SuggestionWidgetController: NSObject {
                         return .light
                     }
                 }()
-                self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                self.sharedPanelViewModel.colorScheme = self.colorScheme
                 self.chatWindowViewModel.colorScheme = self.colorScheme
                 Task {
                     await self.updateContentForActiveEditor()
@@ -261,12 +296,21 @@ public final class SuggestionWidgetController: NSObject {
                 updateColorScheme()
             }
         }
+
+        Task { @MainActor in
+            XcodeInspector.shared.$completionPanel.sink { [weak self] _ in
+                Task { @MainActor in
+                    self?.updateWindowLocation()
+                }
+            }.store(in: &cancellable)
+        }
     }
 
     func orderFront() {
         widgetWindow.orderFrontRegardless()
         tabWindow.orderFrontRegardless()
         panelWindow.orderFrontRegardless()
+        suggestionWindow.orderFrontRegardless()
         chatWindow.orderFrontRegardless()
     }
 }
@@ -279,8 +323,13 @@ public extension SuggestionWidgetController {
             markAsProcessing(true)
             defer { markAsProcessing(false) }
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
-                suggestionPanelViewModel.content = .suggestion(suggestion)
-                suggestionPanelViewModel.isPanelDisplayed = true
+                sharedPanelViewModel.content = .suggestion(suggestion)
+                switch UserDefaults.shared.value(for: \.suggestionPresentationMode) {
+                case .nearbyTextCursor:
+                    suggestionPanelDisplayController.isPanelDisplayed = true
+                case .floatingWidget:
+                    sharedPanelDisplayController.isPanelDisplayed = true
+                }
             }
         }
     }
@@ -300,8 +349,8 @@ public extension SuggestionWidgetController {
     }
 
     func presentError(_ errorDescription: String) {
-        suggestionPanelViewModel.content = .error(errorDescription)
-        suggestionPanelViewModel.isPanelDisplayed = true
+        sharedPanelViewModel.content = .error(errorDescription)
+        sharedPanelDisplayController.isPanelDisplayed = true
     }
 
     func presentChatRoom(fileURL: URL) {
@@ -357,8 +406,8 @@ public extension SuggestionWidgetController {
             markAsProcessing(true)
             defer { markAsProcessing(false) }
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
-                suggestionPanelViewModel.content = .promptToCode(provider)
-                suggestionPanelViewModel.isPanelDisplayed = true
+                sharedPanelViewModel.content = .promptToCode(provider)
+                sharedPanelDisplayController.isPanelDisplayed = true
 
                 Task { @MainActor in
                     // looks like we need a delay.
@@ -451,14 +500,14 @@ extension SuggestionWidgetController {
                         scroll
                     ) {
                         guard let self else { return }
-                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
+                        guard ActiveApplicationMonitor.latestXcode != nil else { return }
                         try Task.checkCancellation()
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
-                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
+                        guard ActiveApplicationMonitor.latestXcode != nil else { return }
                         try Task.checkCancellation()
                         let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
@@ -480,14 +529,24 @@ extension SuggestionWidgetController {
             widgetWindow.setFrame(widgetLocation.widgetFrame, display: false, animate: animated)
             tabWindow.setFrame(widgetLocation.tabFrame, display: false, animate: animated)
             panelWindow.setFrame(
-                (widgetLocation.suggestionPanelLocation ?? widgetLocation.defaultPanelLocation)
-                    .frame,
+                widgetLocation.defaultPanelLocation.frame,
                 display: false,
                 animate: animated
             )
-            suggestionPanelViewModel.alignTopToAnchor = (
-                widgetLocation.suggestionPanelLocation ?? widgetLocation.defaultPanelLocation
-            ).alignPanelTop
+
+            sharedPanelDisplayController.alignTopToAnchor = widgetLocation.defaultPanelLocation
+                .alignPanelTop
+
+            let suggestionPanelLocation = widgetLocation.suggestionPanelLocation ?? widgetLocation
+                .defaultPanelLocation
+            suggestionWindow.setFrame(
+                suggestionPanelLocation.frame,
+                display: false,
+                animate: animated
+            )
+            suggestionPanelDisplayController.alignTopToAnchor = suggestionPanelLocation
+                .alignPanelTop
+
             if detachChat {
                 if chatWindow.alphaValue == 0 {
                     chatWindow.setFrame(
@@ -510,6 +569,7 @@ extension SuggestionWidgetController {
             /// We need this to hide the windows when Xcode is minimized.
             let noFocus = application.focusedWindow == nil
             panelWindow.alphaValue = noFocus ? 0 : 1
+            suggestionWindow.alphaValue = noFocus ? 0 : 1
             widgetWindow.alphaValue = noFocus ? 0 : 1
             tabWindow.alphaValue = noFocus ? 0 : 1
 
@@ -529,6 +589,7 @@ extension SuggestionWidgetController {
             }()
 
             panelWindow.alphaValue = noFocus ? 0 : 1
+            suggestionWindow.alphaValue = noFocus ? 0 : 1
             widgetWindow.alphaValue = noFocus ? 0 : 1
             tabWindow.alphaValue = noFocus ? 0 : 1
             if detachChat {
@@ -538,6 +599,7 @@ extension SuggestionWidgetController {
             }
         } else {
             panelWindow.alphaValue = 0
+            suggestionWindow.alphaValue = 0
             widgetWindow.alphaValue = 0
             tabWindow.alphaValue = 0
             if !detachChat {
@@ -551,7 +613,7 @@ extension SuggestionWidgetController {
             if let fileURL { return fileURL }
             return try? await Environment.fetchCurrentFileURL()
         }() else {
-            suggestionPanelViewModel.content = nil
+            sharedPanelViewModel.content = nil
             chatWindowViewModel.chat = nil
             return
         }
@@ -565,20 +627,19 @@ extension SuggestionWidgetController {
         }
 
         if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
-            if case let .promptToCode(currentProvider) = suggestionPanelViewModel.content,
+            if case let .promptToCode(currentProvider) = sharedPanelViewModel.content,
                currentProvider.id == provider.id { return }
-            suggestionPanelViewModel.content = .promptToCode(provider)
+            sharedPanelViewModel.content = .promptToCode(provider)
         } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
-            suggestionPanelViewModel.content = .suggestion(suggestion)
+            sharedPanelViewModel.content = .suggestion(suggestion)
         } else {
-            suggestionPanelViewModel.content = nil
+            sharedPanelViewModel.content = nil
         }
     }
 
     private func generateWidgetLocation() -> WidgetLocation? {
         if let application = XcodeInspector.shared.latestActiveXcode?.appElement {
-            if let focusElement = application.focusedElement,
-               focusElement.description == "Source Editor",
+            if let focusElement = XcodeInspector.shared.focusedEditor?.element,
                let parent = focusElement.parent,
                let frame = parent.rect,
                let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
