@@ -228,46 +228,90 @@ enum UpdateLocationStrategy {
             let proposedX = selectionFrame.maxX - 40
             let maxY = max(
                 proposedY,
-                mainScreen.frame.height - editorFrame.maxY,
                 4 + activeScreen.frame.minY
             )
             let y = min(
                 maxY,
-                activeScreen.frame.maxY - 4,
-                mainScreen.frame.height - editorFrame.minY
+                activeScreen.frame.maxY - 4
             )
-            print(y, activeScreen.frame.minY, activeScreen.frame.maxY)
-            let alignPanelTopToAnchor = y - Style.panelHeight >= activeScreen.frame.minY
 
-            if let completionPanel, let completionPanelRect = completionPanel.rect {
-                return .init(
-                    frame: completionPanelRect,
-                    alignPanelTop: alignPanelTopToAnchor
-                )
-            } else {
+            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxWidth >= activeScreen.frame.minY
+
+            let caseIgnoreCompletionPanel = {
+                (alignPanelTopToAnchor: Bool) -> WidgetLocation.PanelLocation? in
+                let x: Double = {
+                    if proposedX + Style.inlineSuggestionMinWidth <= activeScreen.frame.maxX {
+                        return proposedX
+                    }
+                    return activeScreen.frame.maxX - Style.inlineSuggestionMinWidth
+                }()
                 if alignPanelTopToAnchor {
                     // case: present below selection
                     return .init(
                         frame: .init(
-                            x: proposedX,
-                            y: y - Style.panelHeight,
+                            x: x,
+                            y: y - Style.inlineSuggestionMaxWidth,
                             width: Style.inlineSuggestionMinWidth,
-                            height: Style.panelHeight
+                            height: Style.inlineSuggestionMaxWidth
                         ),
                         alignPanelTop: alignPanelTopToAnchor
                     )
                 } else {
-                    // case: present above selection
                     return .init(
                         frame: .init(
-                            x: proposedX,
-                            y: y + selectionFrame.height,
+                            x: x,
+                            y: y + selectionFrame.height - Style.widgetPadding,
                             width: Style.inlineSuggestionMinWidth,
-                            height: Style.panelHeight
+                            height: Style.inlineSuggestionMaxWidth
                         ),
                         alignPanelTop: alignPanelTopToAnchor
                     )
                 }
+            }
+
+            let caseConsiderCompletionPanel = {
+                (completionPanelRect: CGRect) -> WidgetLocation.PanelLocation? in
+                let completionPanelBelowCursor = completionPanelRect.minY >= selectionFrame.midY
+
+                switch (completionPanelBelowCursor, alignPanelTopToAnchor) {
+                case (true, false), (false, true):
+                    return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
+                case (true, true), (false, false):
+                    let y = completionPanelBelowCursor
+                        ? y - Style.inlineSuggestionMaxWidth
+                        : y + selectionFrame.height - Style.widgetPadding
+                    if let x = {
+                        let proposedX = completionPanelRect.maxX + Style.widgetPadding
+                        if proposedX + Style.inlineSuggestionMinWidth <= activeScreen.frame.maxX {
+                            return proposedX
+                        }
+                        let leftSideX = completionPanelRect.minX
+                            - Style.widgetPadding
+                            - Style.inlineSuggestionMinWidth
+                        if leftSideX >= activeScreen.frame.minX {
+                            return leftSideX
+                        }
+                        return nil
+                    }() {
+                        print(mainScreen.frame, completionPanelRect, y)
+                        return .init(
+                            frame: .init(
+                                x: x,
+                                y: y,
+                                width: Style.inlineSuggestionMinWidth,
+                                height: Style.inlineSuggestionMaxWidth
+                            ),
+                            alignPanelTop: alignPanelTopToAnchor
+                        )
+                    }
+                    return caseIgnoreCompletionPanel(!alignPanelTopToAnchor)
+                }
+            }
+
+            if let completionPanel, let completionPanelRect = completionPanel.rect {
+                return caseConsiderCompletionPanel(completionPanelRect)
+            } else {
+                return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
             }
         }
     }
