@@ -474,15 +474,6 @@ extension SuggestionWidgetController {
     /// - note: It's possible to get the scroll view's position by getting position on the focus
     /// element.
     private func updateWindowLocation(animated: Bool = false) {
-        guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
-        else {
-            panelWindow.alphaValue = 0
-            widgetWindow.alphaValue = 0
-            tabWindow.alphaValue = 0
-            chatWindow.alphaValue = 0
-            return
-        }
-
         let detachChat = chatWindowViewModel.chatPanelInASeparateWindow
 
         if let widgetFrames = {
