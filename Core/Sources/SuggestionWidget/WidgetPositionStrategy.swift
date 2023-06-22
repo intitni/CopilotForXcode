@@ -235,7 +235,7 @@ enum UpdateLocationStrategy {
                 activeScreen.frame.maxY - 4
             )
 
-            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxWidth >= activeScreen.frame.minY
+            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxHeight >= activeScreen.frame.minY
 
             let caseIgnoreCompletionPanel = {
                 (alignPanelTopToAnchor: Bool) -> WidgetLocation.PanelLocation? in
@@ -250,9 +250,9 @@ enum UpdateLocationStrategy {
                     return .init(
                         frame: .init(
                             x: x,
-                            y: y - Style.inlineSuggestionMaxWidth,
+                            y: y - Style.inlineSuggestionMaxHeight,
                             width: Style.inlineSuggestionMinWidth,
-                            height: Style.inlineSuggestionMaxWidth
+                            height: Style.inlineSuggestionMaxHeight
                         ),
                         alignPanelTop: alignPanelTopToAnchor
                     )
@@ -262,7 +262,7 @@ enum UpdateLocationStrategy {
                             x: x,
                             y: y + selectionFrame.height - Style.widgetPadding,
                             width: Style.inlineSuggestionMinWidth,
-                            height: Style.inlineSuggestionMaxWidth
+                            height: Style.inlineSuggestionMaxHeight
                         ),
                         alignPanelTop: alignPanelTopToAnchor
                     )
@@ -278,7 +278,7 @@ enum UpdateLocationStrategy {
                     return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
                 case (true, true), (false, false):
                     let y = completionPanelBelowCursor
-                        ? y - Style.inlineSuggestionMaxWidth
+                        ? y - Style.inlineSuggestionMaxHeight
                         : y + selectionFrame.height - Style.widgetPadding
                     if let x = {
                         let proposedX = completionPanelRect.maxX + Style.widgetPadding
@@ -299,7 +299,7 @@ enum UpdateLocationStrategy {
                                 x: x,
                                 y: y,
                                 width: Style.inlineSuggestionMinWidth,
-                                height: Style.inlineSuggestionMaxWidth
+                                height: Style.inlineSuggestionMaxHeight
                             ),
                             alignPanelTop: alignPanelTopToAnchor
                         )
