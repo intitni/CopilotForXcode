@@ -10,6 +10,7 @@ public final class XcodeInspector: ObservableObject {
 
     private var cancellable = Set<AnyCancellable>()
     private var activeXcodeObservations = Set<Task<Void, Error>>()
+    private var activeXcodeCancellable = Set<AnyCancellable>()
 
     @Published public internal(set) var activeApplication: AppInstanceInspector?
     @Published public internal(set) var activeXcode: XcodeAppInstanceInspector?
@@ -20,6 +21,7 @@ public final class XcodeInspector: ObservableObject {
     @Published public internal(set) var focusedWindow: XcodeWindowInspector?
     @Published public internal(set) var focusedEditor: SourceEditor?
     @Published public internal(set) var focusedElement: AXUIElement?
+    @Published public internal(set) var completionPanel: AXUIElement?
 
     init() {
         let runningApplications = NSWorkspace.shared.runningApplications
@@ -30,10 +32,6 @@ public final class XcodeInspector: ObservableObject {
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
-
-        for xcode in xcodes {
-            observeXcode(xcode)
-        }
 
         if let activeXcode {
             setActiveXcode(activeXcode)
@@ -56,7 +54,6 @@ public final class XcodeInspector: ObservableObject {
                         let new = XcodeAppInstanceInspector(runningApplication: app)
                         xcodes.append(new)
                         setActiveXcode(new)
-                        observeXcode(new)
                     }
                 } else {
                     activeApplication = AppInstanceInspector(runningApplication: app)
@@ -90,23 +87,18 @@ public final class XcodeInspector: ObservableObject {
         }
     }
 
-    func observeXcode(_ xcode: XcodeAppInstanceInspector) {
-        activeDocumentURL = xcode.documentURL
-        activeProjectURL = xcode.projectURL
-        focusedWindow = xcode.focusedWindow
-
-        xcode.$documentURL.filter { _ in xcode.isActive }.assign(to: &$activeDocumentURL)
-        xcode.$projectURL.filter { _ in xcode.isActive }.assign(to: &$activeProjectURL)
-        xcode.$focusedWindow.filter { _ in xcode.isActive }.assign(to: &$focusedWindow)
-    }
-
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         for task in activeXcodeObservations { task.cancel() }
+        for cancellable in activeXcodeCancellable { cancellable.cancel() }
         activeXcodeObservations.removeAll()
+        activeXcodeCancellable.removeAll()
 
         activeXcode = xcode
         latestActiveXcode = xcode
         activeDocumentURL = xcode.documentURL
+        focusedWindow = xcode.focusedWindow
+        completionPanel = xcode.completionPanel
+        activeProjectURL = xcode.projectURL
         focusedWindow = xcode.focusedWindow
 
         let setFocusedElement = { [weak self] in
@@ -135,6 +127,22 @@ public final class XcodeInspector: ObservableObject {
         }
 
         activeXcodeObservations.insert(focusedElementChanged)
+
+        xcode.$completionPanel.sink { [weak self] element in
+            self?.completionPanel = element
+        }.store(in: &activeXcodeCancellable)
+
+        xcode.$documentURL.sink { [weak self] url in
+            self?.activeDocumentURL = url
+        }.store(in: &activeXcodeCancellable)
+
+        xcode.$projectURL.sink { [weak self] url in
+            self?.activeProjectURL = url
+        }.store(in: &activeXcodeCancellable)
+
+        xcode.$focusedWindow.sink { [weak self] window in
+            self?.focusedWindow = window
+        }.store(in: &activeXcodeCancellable)
     }
 }
 
@@ -168,7 +176,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published public var projectURL: URL = .init(fileURLWithPath: "/")
     @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
     @Published public private(set) var completionPanel: AXUIElement?
-    
+
     var _version: String?
     public var version: String? {
         if let _version { return _version }
@@ -234,7 +242,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
 
         longRunningTasks.insert(updateTabsTask)
-        
+
         completionPanel = appElement.firstChild { element in
             element.identifier == "_XC_COMPLETION_TABLE_"
         }?.parent
@@ -245,7 +253,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 element: appElement,
                 notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
             )
-            
+
             for await event in stream {
                 let isCompletionPanel = {
                     event.element.firstChild { element in
@@ -263,11 +271,11 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     }
                 default: break
                 }
-                
+
                 try Task.checkCancellation()
             }
         }
-        
+
         longRunningTasks.insert(completionPanelTask)
     }
 
