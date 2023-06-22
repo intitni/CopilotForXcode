@@ -2,9 +2,8 @@ import ActiveApplicationMonitor
 import AppKit
 import AXExtension
 import Foundation
-import GitHubCopilotService
 import Logger
-import SuggestionService
+import Preferences
 
 public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     public var errorDescription: String? {
@@ -132,13 +131,6 @@ public enum Environment {
         } catch {
             return windowElement
         }
-    }
-
-    public static var createSuggestionService: (
-        _ projectRootURL: URL,
-        _ onServiceLaunched: @escaping (SuggestionServiceType) -> Void
-    ) -> SuggestionServiceType = { projectRootURL, onServiceLaunched in
-        SuggestionService(projectRootURL: projectRootURL, onServiceLaunched: onServiceLaunched)
     }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in

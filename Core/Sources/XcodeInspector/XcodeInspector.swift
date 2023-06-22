@@ -167,6 +167,26 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published public var documentURL: URL = .init(fileURLWithPath: "/")
     @Published public var projectURL: URL = .init(fileURLWithPath: "/")
     @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
+    var _version: String?
+    public var version: String? {
+        if let _version { return _version }
+        guard let plistPath = runningApplication.bundleURL?
+            .appendingPathComponent("Contents")
+            .appendingPathComponent("version.plist")
+            .path
+        else { return nil }
+        guard let plistData = FileManager.default.contents(atPath: plistPath) else { return nil }
+        var format = PropertyListSerialization.PropertyListFormat.xml
+        guard let plistDict = try? PropertyListSerialization.propertyList(
+            from: plistData,
+            options: .mutableContainersAndLeaves,
+            format: &format
+        ) as? [String: AnyObject] else { return nil }
+        let result = plistDict["CFBundleShortVersionString"] as? String
+        _version = result
+        return result
+    }
+
     private var longRunningTasks = Set<Task<Void, Error>>()
     private var focusedWindowObservations = Set<AnyCancellable>()
 

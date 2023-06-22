@@ -135,7 +135,7 @@ final class Workspace {
         }
 
         if _suggestionService == nil {
-            _suggestionService = Environment.createSuggestionService(projectRootURL) {
+            _suggestionService = SuggestionService(projectRootURL: projectRootURL) {
                 [weak self] _ in
                 guard let self else { return }
                 for (_, filespace) in filespaces {

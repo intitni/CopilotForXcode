@@ -15,6 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
+        // TODO: Switch to Tiktoken. https://github.com/aespinilla/Tiktoken
         .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1")
@@ -56,9 +57,9 @@ let package = Package(
         .target(
             name: "OpenAIService",
             dependencies: [
-                "GPTEncoder",
                 "Logger",
                 "Preferences",
+                .product(name: "GPTEncoder", package: "GPTEncoder"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
