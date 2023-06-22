@@ -23,6 +23,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", from: "0.6.0"),
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
     ],
     targets: [
         // MARK: - Helpers
@@ -44,6 +45,7 @@ let package = Package(
                 "PythonHelper",
                 .product(name: "PythonKit", package: "PythonKit"),
                 .product(name: "Parsing", package: "swift-parsing"),
+                .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
         ),
 
