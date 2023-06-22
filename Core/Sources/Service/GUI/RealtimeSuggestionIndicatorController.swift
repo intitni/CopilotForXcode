@@ -9,7 +9,8 @@ import QuartzCore
 import SwiftUI
 import UserDefaultsObserver
 
-/// Present a tiny dot next to mouse cursor if real-time suggestion is enabled.
+/// Deprecated: This class is no longer in use.
+@available(*, deprecated, message: "This class is no longer in use.")
 @MainActor
 final class RealtimeSuggestionIndicatorController {
     class IndicatorContentViewModel: ObservableObject {
@@ -226,10 +227,8 @@ final class RealtimeSuggestionIndicatorController {
     private func updateIndicatorVisibility() async {
         let isVisible = await {
             let isOn = UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
-            let isCommentMode = UserDefaults.shared
-                .value(for: \.suggestionPresentationMode) == .comment
             let isXcodeActive = await Environment.isXcodeActive()
-            return isOn && isXcodeActive && isCommentMode
+            return isOn && isXcodeActive
         }()
 
         guard window.isVisible != isVisible else { return }
