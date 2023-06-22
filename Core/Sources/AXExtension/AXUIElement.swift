@@ -63,6 +63,10 @@ public extension AXUIElement {
     var isEnabled: Bool {
         (try? copyValue(key: kAXEnabledAttribute)) ?? false
     }
+    
+    var isHidden: Bool {
+        (try? copyValue(key: kAXHiddenAttribute)) ?? false
+    }
 }
 
 // MARK: - Rect

@@ -16,7 +16,7 @@ public class SourceEditor {
         public var cursorPosition: CursorPosition
         /// Line annotations of the source editor.
         public var lineAnnotations: [String]
-        
+
         public var selectedContent: String {
             if let range = selections.first {
                 let startIndex = min(

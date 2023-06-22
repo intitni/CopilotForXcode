@@ -6,7 +6,7 @@ public final class AXNotificationStream: AsyncSequence {
     public typealias Stream = AsyncStream<Element>
     public typealias Continuation = Stream.Continuation
     public typealias AsyncIterator = Stream.AsyncIterator
-    public typealias Element = (name: String, info: CFDictionary)
+    public typealias Element = (name: String, element: AXUIElement, info: CFDictionary)
 
     private var continuation: Continuation
     private let stream: Stream
@@ -48,7 +48,7 @@ public final class AXNotificationStream: AsyncSequence {
         ) {
             guard let pointer = pointer?.assumingMemoryBound(to: Continuation.self)
             else { return }
-            pointer.pointee.yield((notificationName as String, userInfo))
+            pointer.pointee.yield((notificationName as String, element, userInfo))
         }
 
         _ = AXObserverCreateWithInfoCallback(

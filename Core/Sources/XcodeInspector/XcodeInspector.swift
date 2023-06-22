@@ -167,6 +167,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published public var documentURL: URL = .init(fileURLWithPath: "/")
     @Published public var projectURL: URL = .init(fileURLWithPath: "/")
     @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
+    @Published public private(set) var completionPanel: AXUIElement?
+    
     var _version: String?
     public var version: String? {
         if let _version { return _version }
@@ -232,6 +234,41 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
 
         longRunningTasks.insert(updateTabsTask)
+        
+        completionPanel = appElement.firstChild { element in
+            element.identifier == "_XC_COMPLETION_TABLE_"
+        }?.parent
+
+        let completionPanelTask = Task {
+            let stream = AXNotificationStream(
+                app: runningApplication,
+                element: appElement,
+                notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
+            )
+            
+            for await event in stream {
+                let isCompletionPanel = {
+                    event.element.firstChild { element in
+                        element.identifier == "_XC_COMPLETION_TABLE_"
+                    } != nil
+                }
+                switch event.name {
+                case kAXCreatedNotification:
+                    if isCompletionPanel() {
+                        completionPanel = event.element
+                    }
+                case kAXUIElementDestroyedNotification:
+                    if isCompletionPanel() {
+                        completionPanel = nil
+                    }
+                default: break
+                }
+                
+                try Task.checkCancellation()
+            }
+        }
+        
+        longRunningTasks.insert(completionPanelTask)
     }
 
     func observeFocusedWindow() {
