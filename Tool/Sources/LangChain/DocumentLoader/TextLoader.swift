@@ -23,10 +23,12 @@ public struct TextLoader: DocumentLoader {
             options: options,
             documentAttributes: nil
         )
+        let modificationDate = try? url.resourceValues(forKeys: [.contentModificationDateKey])
+            .contentModificationDate
         return [Document(pageContent: attributedString.string, metadata: [
             "filename": url.lastPathComponent,
             "extension": url.pathExtension,
-            "contentModificationDate": (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
+            "contentModificationDate": modificationDate ?? Date(),
         ])]
     }
 }
