@@ -1,6 +1,18 @@
 import AppKit
 import Foundation
 
+struct WidgetLocation {
+    struct PanelLocation {
+        var frame: CGRect
+        var alignPanelTop: Bool
+    }
+
+    var widgetFrame: CGRect
+    var tabFrame: CGRect
+    var defaultPanelLocation: PanelLocation
+    var suggestionPanelLocation: PanelLocation?
+}
+
 enum UpdateLocationStrategy {
     struct AlignToTextCursor {
         func framesForWindows(
@@ -10,12 +22,7 @@ enum UpdateLocationStrategy {
             editor: AXUIElement,
             preferredInsideEditorMinWidth: Double = UserDefaults.shared
                 .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
-        ) -> (
-            widgetFrame: CGRect,
-            panelFrame: CGRect,
-            tabFrame: CGRect,
-            alignPanelTopToAnchor: Bool
-        ) {
+        ) -> WidgetLocation {
             guard let selectedRange: AXValue = try? editor
                 .copyValue(key: kAXSelectedTextRangeAttribute),
                 let rect: AXValue = try? editor.copyParameterizedValue(
@@ -56,12 +63,7 @@ enum UpdateLocationStrategy {
             activeScreen: NSScreen,
             preferredInsideEditorMinWidth: Double = UserDefaults.shared
                 .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
-        ) -> (
-            widgetFrame: CGRect,
-            panelFrame: CGRect,
-            tabFrame: CGRect,
-            alignPanelTopToAnchor: Bool
-        ) {
+        ) -> WidgetLocation {
             return HorizontalMovable().framesForWindows(
                 y: mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
                 alignPanelTopToAnchor: false,
@@ -81,12 +83,7 @@ enum UpdateLocationStrategy {
             mainScreen: NSScreen,
             activeScreen: NSScreen,
             preferredInsideEditorMinWidth: Double
-        ) -> (
-            widgetFrame: CGRect,
-            panelFrame: CGRect,
-            tabFrame: CGRect,
-            alignPanelTopToAnchor: Bool
-        ) {
+        ) -> WidgetLocation {
             let maxY = max(
                 y,
                 mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
@@ -132,7 +129,15 @@ enum UpdateLocationStrategy {
                     height: Style.widgetHeight
                 )
 
-                return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
+                return .init(
+                    widgetFrame: anchorFrame,
+                    tabFrame: tabFrame,
+                    defaultPanelLocation: .init(
+                        frame: panelFrame,
+                        alignPanelTop: alignPanelTopToAnchor
+                    ),
+                    suggestionPanelLocation: nil
+                )
             } else {
                 let proposedAnchorFrameOnTheLeftSide = CGRect(
                     x: editorFrame.minX + Style.widgetPadding,
@@ -169,7 +174,15 @@ enum UpdateLocationStrategy {
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
-                    return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
+                    return .init(
+                        widgetFrame: anchorFrame,
+                        tabFrame: tabFrame,
+                        defaultPanelLocation: .init(
+                            frame: panelFrame,
+                            alignPanelTop: alignPanelTopToAnchor
+                        ),
+                        suggestionPanelLocation: nil
+                    )
                 } else {
                     let anchorFrame = proposedAnchorFrameOnTheRightSide
                     let panelFrame = CGRect(
@@ -186,9 +199,174 @@ enum UpdateLocationStrategy {
                         width: Style.widgetWidth,
                         height: Style.widgetHeight
                     )
-                    return (anchorFrame, panelFrame, tabFrame, alignPanelTopToAnchor)
+                    return .init(
+                        widgetFrame: anchorFrame,
+                        tabFrame: tabFrame,
+                        defaultPanelLocation: .init(
+                            frame: panelFrame,
+                            alignPanelTop: alignPanelTopToAnchor
+                        ),
+                        suggestionPanelLocation: nil
+                    )
                 }
             }
         }
     }
+
+    struct NearbyTextCursor {
+        func framesForSuggestionWindow(
+            editorFrame: CGRect,
+            mainScreen: NSScreen,
+            activeScreen: NSScreen,
+            editor: AXUIElement,
+            completionPanel: AXUIElement?
+        ) -> WidgetLocation.PanelLocation? {
+            guard let selectionFrame = UpdateLocationStrategy
+                .getSelectionFirstLineFrame(editor: editor) else { return nil }
+
+            let proposedY = mainScreen.frame.height - selectionFrame.maxY
+            let proposedX = selectionFrame.maxX - 40
+            let maxY = max(
+                proposedY,
+                4 + activeScreen.frame.minY
+            )
+            let y = min(
+                maxY,
+                activeScreen.frame.maxY - 4
+            )
+
+            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxHeight >= activeScreen.frame.minY
+
+            let caseIgnoreCompletionPanel = {
+                (alignPanelTopToAnchor: Bool) -> WidgetLocation.PanelLocation? in
+                let x: Double = {
+                    if proposedX + Style.inlineSuggestionMinWidth <= activeScreen.frame.maxX {
+                        return proposedX
+                    }
+                    return activeScreen.frame.maxX - Style.inlineSuggestionMinWidth
+                }()
+                if alignPanelTopToAnchor {
+                    // case: present below selection
+                    return .init(
+                        frame: .init(
+                            x: x,
+                            y: y - Style.inlineSuggestionMaxHeight,
+                            width: Style.inlineSuggestionMinWidth,
+                            height: Style.inlineSuggestionMaxHeight
+                        ),
+                        alignPanelTop: alignPanelTopToAnchor
+                    )
+                } else {
+                    return .init(
+                        frame: .init(
+                            x: x,
+                            y: y + selectionFrame.height - Style.widgetPadding,
+                            width: Style.inlineSuggestionMinWidth,
+                            height: Style.inlineSuggestionMaxHeight
+                        ),
+                        alignPanelTop: alignPanelTopToAnchor
+                    )
+                }
+            }
+
+            let caseConsiderCompletionPanel = {
+                (completionPanelRect: CGRect) -> WidgetLocation.PanelLocation? in
+                let completionPanelBelowCursor = completionPanelRect.minY >= selectionFrame.midY
+
+                switch (completionPanelBelowCursor, alignPanelTopToAnchor) {
+                case (true, false), (false, true):
+                    return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
+                case (true, true), (false, false):
+                    let y = completionPanelBelowCursor
+                        ? y - Style.inlineSuggestionMaxHeight
+                        : y + selectionFrame.height - Style.widgetPadding
+                    if let x = {
+                        let proposedX = completionPanelRect.maxX + Style.widgetPadding
+                        if proposedX + Style.inlineSuggestionMinWidth <= activeScreen.frame.maxX {
+                            return proposedX
+                        }
+                        let leftSideX = completionPanelRect.minX
+                            - Style.widgetPadding
+                            - Style.inlineSuggestionMinWidth
+                        if leftSideX >= activeScreen.frame.minX {
+                            return leftSideX
+                        }
+                        return nil
+                    }() {
+                        print(mainScreen.frame, completionPanelRect, y)
+                        return .init(
+                            frame: .init(
+                                x: x,
+                                y: y,
+                                width: Style.inlineSuggestionMinWidth,
+                                height: Style.inlineSuggestionMaxHeight
+                            ),
+                            alignPanelTop: alignPanelTopToAnchor
+                        )
+                    }
+                    return caseIgnoreCompletionPanel(!alignPanelTopToAnchor)
+                }
+            }
+
+            if let completionPanel, let completionPanelRect = completionPanel.rect {
+                return caseConsiderCompletionPanel(completionPanelRect)
+            } else {
+                return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
+            }
+        }
+    }
+
+    /// Get the frame of the selection.
+    static func getSelectionFrame(editor: AXUIElement) -> CGRect? {
+        guard let selectedRange: AXValue = try? editor
+            .copyValue(key: kAXSelectedTextRangeAttribute),
+            let rect: AXValue = try? editor.copyParameterizedValue(
+                key: kAXBoundsForRangeParameterizedAttribute,
+                parameters: selectedRange
+            )
+        else {
+            return nil
+        }
+        var selectionFrame: CGRect = .zero
+        let found = AXValueGetValue(rect, .cgRect, &selectionFrame)
+        guard found else { return nil }
+        return selectionFrame
+    }
+
+    /// Get the frame of the first line of the selection.
+    static func getSelectionFirstLineFrame(editor: AXUIElement) -> CGRect? {
+        // Find selection range rect
+        guard let selectedRange: AXValue = try? editor
+            .copyValue(key: kAXSelectedTextRangeAttribute),
+            let rect: AXValue = try? editor.copyParameterizedValue(
+                key: kAXBoundsForRangeParameterizedAttribute,
+                parameters: selectedRange
+            )
+        else {
+            return nil
+        }
+        var selectionFrame: CGRect = .zero
+        let found = AXValueGetValue(rect, .cgRect, &selectionFrame)
+        guard found else { return nil }
+
+        var firstLineRange: CFRange = .init()
+        let foundFirstLine = AXValueGetValue(selectedRange, .cfRange, &firstLineRange)
+        firstLineRange.length = 0
+        if foundFirstLine,
+           let firstLineSelectionRange = AXValueCreate(.cfRange, &firstLineRange),
+           let firstLineRect: AXValue = try? editor.copyParameterizedValue(
+               key: kAXBoundsForRangeParameterizedAttribute,
+               parameters: firstLineSelectionRange
+           )
+        {
+            var firstLineFrame: CGRect = .zero
+            let foundFirstLineFrame = AXValueGetValue(firstLineRect, .cgRect, &firstLineFrame)
+            if foundFirstLineFrame {
+                selectionFrame = firstLineFrame
+            }
+        }
+
+        return selectionFrame
+    }
 }
+

@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ErrorPanel: View {
-    var viewModel: SuggestionPanelViewModel
+    var viewModel: SharedPanelViewModel
+    var displayController: SharedPanelDisplayController
     var description: String
 
     var body: some View {
@@ -15,7 +16,7 @@ struct ErrorPanel: View {
             
             // close button
             Button(action: {
-                viewModel.isPanelDisplayed = false
+                displayController.isPanelDisplayed = false
                 viewModel.content = nil
             }) {
                 Image(systemName: "xmark")
