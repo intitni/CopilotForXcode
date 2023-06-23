@@ -224,6 +224,11 @@ enum UpdateLocationStrategy {
             guard let selectionFrame = UpdateLocationStrategy
                 .getSelectionFirstLineFrame(editor: editor) else { return nil }
 
+            // hide it when the line of code is outside of the editor visible rect
+            if selectionFrame.maxY < editorFrame.minY || selectionFrame.minY > editorFrame.maxY {
+                return nil
+            }
+
             let proposedY = mainScreen.frame.height - selectionFrame.maxY
             let proposedX = selectionFrame.maxX - 40
             let maxY = max(
@@ -235,7 +240,11 @@ enum UpdateLocationStrategy {
                 activeScreen.frame.maxY - 4
             )
 
-            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxHeight >= activeScreen.frame.minY
+            // align panel to top == place under the selection frame.
+            // we initially try to place it at the bottom side, but if there is no enough space
+            // we move it to the top of the selection frame.
+            let alignPanelTopToAnchor = y - Style.inlineSuggestionMaxHeight
+                >= activeScreen.frame.minY
 
             let caseIgnoreCompletionPanel = {
                 (alignPanelTopToAnchor: Bool) -> WidgetLocation.PanelLocation? in
@@ -246,7 +255,7 @@ enum UpdateLocationStrategy {
                     return activeScreen.frame.maxX - Style.inlineSuggestionMinWidth
                 }()
                 if alignPanelTopToAnchor {
-                    // case: present below selection
+                    // case: present under selection
                     return .init(
                         frame: .init(
                             x: x,
@@ -257,6 +266,7 @@ enum UpdateLocationStrategy {
                         alignPanelTop: alignPanelTopToAnchor
                     )
                 } else {
+                    // case: present above selection
                     return .init(
                         frame: .init(
                             x: x,
@@ -275,8 +285,10 @@ enum UpdateLocationStrategy {
 
                 switch (completionPanelBelowCursor, alignPanelTopToAnchor) {
                 case (true, false), (false, true):
+                    // case: different position, place the suggestion as it should be
                     return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
                 case (true, true), (false, false):
+                    // case: same position, place the suggestion next to the completion panel
                     let y = completionPanelBelowCursor
                         ? y - Style.inlineSuggestionMaxHeight
                         : y + selectionFrame.height - Style.widgetPadding
@@ -303,6 +315,7 @@ enum UpdateLocationStrategy {
                             alignPanelTop: alignPanelTopToAnchor
                         )
                     }
+                    // case: no enough horizontal space, place the suggestion on the other side
                     return caseIgnoreCompletionPanel(!alignPanelTopToAnchor)
                 }
             }

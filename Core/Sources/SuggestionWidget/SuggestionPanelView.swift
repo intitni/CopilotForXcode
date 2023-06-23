@@ -4,14 +4,17 @@ import SwiftUI
 @MainActor
 final class SuggestionPanelDisplayController: ObservableObject {
     @Published var alignTopToAnchor = false
+    @Published var isPanelOutOfFrame: Bool = false
     @Published var isPanelDisplayed: Bool = false
 
     init(
         alignTopToAnchor: Bool = false,
+        isPanelOutOfFrame: Bool = false,
         isPanelDisplayed: Bool = false
     ) {
         self.alignTopToAnchor = alignTopToAnchor
         self.isPanelDisplayed = isPanelDisplayed
+        self.isPanelOutOfFrame = isPanelOutOfFrame
     }
 }
 
@@ -45,7 +48,9 @@ struct SuggestionPanelView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
                     .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(displayController.isPanelDisplayed)
+                    .allowsHitTesting(
+                        displayController.isPanelDisplayed && !displayController.isPanelOutOfFrame
+                    )
                 }
             }
             .frame(maxWidth: .infinity)
@@ -59,6 +64,7 @@ struct SuggestionPanelView: View {
         .preferredColorScheme(viewModel.colorScheme)
         .opacity({
             guard displayController.isPanelDisplayed else { return 0 }
+            guard !displayController.isPanelOutOfFrame else { return 0 }
             guard viewModel.content != nil else { return 0 }
             return 1
         }())
@@ -72,6 +78,12 @@ struct SuggestionPanelView: View {
             .easeInOut(duration: 0.2),
             value: displayController.isPanelDisplayed
         )
+        .animation(
+            featureFlag: \.animationBCrashSuggestion,
+            .easeInOut(duration: 0.2),
+            value: displayController.isPanelOutOfFrame
+        )
         .frame(maxWidth: Style.inlineSuggestionMinWidth, maxHeight: Style.inlineSuggestionMaxHeight)
     }
 }
+

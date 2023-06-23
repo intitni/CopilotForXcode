@@ -537,15 +537,18 @@ extension SuggestionWidgetController {
             sharedPanelDisplayController.alignTopToAnchor = widgetLocation.defaultPanelLocation
                 .alignPanelTop
 
-            let suggestionPanelLocation = widgetLocation.suggestionPanelLocation ?? widgetLocation
-                .defaultPanelLocation
-            suggestionWindow.setFrame(
-                suggestionPanelLocation.frame,
-                display: false,
-                animate: animated
-            )
-            suggestionPanelDisplayController.alignTopToAnchor = suggestionPanelLocation
-                .alignPanelTop
+            if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
+                suggestionWindow.setFrame(
+                    suggestionPanelLocation.frame,
+                    display: false,
+                    animate: animated
+                )
+                suggestionPanelDisplayController.isPanelOutOfFrame = false
+                suggestionPanelDisplayController.alignTopToAnchor = suggestionPanelLocation
+                    .alignPanelTop
+            } else {
+                suggestionPanelDisplayController.isPanelOutOfFrame = true
+            }
 
             if detachChat {
                 if chatWindow.alphaValue == 0 {
