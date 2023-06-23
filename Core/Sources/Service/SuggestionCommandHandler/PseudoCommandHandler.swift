@@ -130,6 +130,9 @@ struct PseudoCommandHandler {
 
     func acceptSuggestion() async {
         do {
+            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                throw CancellationError()
+            }
             try await Environment.triggerAction("Accept Suggestion")
         } catch {
             guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor
