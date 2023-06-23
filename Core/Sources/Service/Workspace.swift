@@ -67,25 +67,30 @@ final class Filespace {
     func refreshUpdateTime() {
         lastSuggestionUpdateTime = Environment.now()
     }
-    
+
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
         if cursorPosition.line != suggestionSourceSnapshot.cursorPosition.line {
             reset()
             return false
         }
-        
+
         guard cursorPosition.line >= 0, cursorPosition.line < lines.count else {
             reset()
             return false
         }
-        
+
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
         let suggestionFirstLine = presentingSuggestion?.text.split(separator: "\n").first ?? ""
         if !suggestionFirstLine.hasPrefix(editingLine) {
             reset()
             return false
         }
-        
+
+        if editingLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            reset()
+            return false
+        }
+
         return true
     }
 }
@@ -166,7 +171,7 @@ final class Workspace {
             guard let self else { return }
             _ = self.suggestionService
         }
-        
+
         let openedFiles = openedFileRecoverableStorage.openedFiles
         for fileURL in openedFiles {
             _ = createFilespaceIfNeeded(fileURL: fileURL)
@@ -199,13 +204,13 @@ final class Workspace {
                 let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
                 return (existed, filespace)
             }
-            
+
             let new = Workspace(projectRootURL: currentProjectURL)
             workspaces[currentProjectURL] = new
             let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
             return (new, filespace)
         }
-        
+
         // If not, we try to reuse a filespace if found.
         //
         // Sometimes, we can't get the project root path from Xcode window, for example, when the
@@ -218,7 +223,7 @@ final class Workspace {
 
         // If we can't find an existed one, we will try to guess it.
         // Most of the time we won't enter this branch, just incase.
-        
+
         let workspaceURL = try await Environment.guessProjectRootURLForFile(fileURL)
 
         let workspace = {
@@ -428,8 +433,9 @@ extension Workspace {
         guard let suggestionService else { return }
         await suggestionService.cancelRequest()
     }
-    
+
     func terminateSuggestionService() async {
         await _suggestionService?.terminate()
     }
 }
+
