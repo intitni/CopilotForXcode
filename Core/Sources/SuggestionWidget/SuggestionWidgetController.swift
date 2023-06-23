@@ -39,7 +39,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -72,7 +72,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: TabView(chatWindowViewModel: chatWindowViewModel)
@@ -93,7 +93,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SharedPanelView(
@@ -120,7 +120,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(
@@ -147,7 +147,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: ChatWindowView(viewModel: chatWindowViewModel)
@@ -240,7 +240,7 @@ public final class SuggestionWidgetController: NSObject {
                     guard let activeXcode = ActiveApplicationMonitor.activeXcode else { continue }
                     guard fullscreenDetector.isOnActiveSpace else { continue }
                     let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                    if app.focusedWindow != nil {
+                    if let window = app.focusedWindow, window.isFullScreen {
                         orderFront()
                     }
                 }
