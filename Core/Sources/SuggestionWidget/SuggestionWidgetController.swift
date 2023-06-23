@@ -289,11 +289,14 @@ public final class SuggestionWidgetController: NSObject {
             systemColorSchemeChangeObserver.onChange = {
                 updateColorScheme()
             }
-        }
 
-        Task { @MainActor in
-            XcodeInspector.shared.$completionPanel.sink { [weak self] _ in
+            XcodeInspector.shared.$completionPanel.sink { [weak self] newValue in
                 Task { @MainActor in
+                    if newValue == nil {
+                        // so that the buttons on the suggestion panel could be clicked
+                        // before the completion panel updates the location of the suggestion panel
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                    }
                     self?.updateWindowLocation()
                 }
             }.store(in: &cancellable)
