@@ -515,10 +515,7 @@ extension SuggestionWidgetController {
         }
     }
 
-    /// Update the window location.
-    ///
-    /// - note: It's possible to get the scroll view's position by getting position on the focus
-    /// element.
+    /// Update the window location and opacity.
     private func updateWindowLocation(animated: Bool = false) {
         let detachChat = chatWindowViewModel.chatPanelInASeparateWindow
 
@@ -582,10 +579,11 @@ extension SuggestionWidgetController {
                   app.bundleIdentifier == Bundle.main.bundleIdentifier
         {
             let noFocus = {
-                guard let xcode = ActiveApplicationMonitor.latestXcode else { return true }
-                let application = AXUIElementCreateApplication(xcode.processIdentifier)
-                return application
-                    .focusedWindow == nil || (application.focusedWindow?.role == "AXWindow")
+                guard let xcode = XcodeInspector.shared.latestActiveXcode else { return true }
+                if let window = xcode.appElement.focusedWindow, window.role == "AXWindow" {
+                    return false
+                }
+                return true
             }()
 
             panelWindow.alphaValue = noFocus ? 0 : 1
