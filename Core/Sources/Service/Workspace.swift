@@ -80,8 +80,14 @@ final class Filespace {
         }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
-        let suggestionFirstLine = presentingSuggestion?.text.split(separator: "\n").first ?? ""
+        let suggestionLines = presentingSuggestion?.text.split(separator: "\n") ?? []
+        let suggestionFirstLine = suggestionLines.first ?? ""
         if !suggestionFirstLine.hasPrefix(editingLine) {
+            reset()
+            return false
+        }
+        
+        if editingLine == suggestionFirstLine, suggestionLines.count <= 1 {
             reset()
             return false
         }
