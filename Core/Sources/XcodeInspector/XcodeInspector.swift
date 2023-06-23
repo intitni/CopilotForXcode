@@ -33,11 +33,11 @@ public final class XcodeInspector: ObservableObject {
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
 
-        if let activeXcode {
-            setActiveXcode(activeXcode)
-        }
-
         Task { @MainActor in // Did activate app
+            if let activeXcode {
+                setActiveXcode(activeXcode)
+            }
+            
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didActivateApplicationNotification)
             for await notification in sequence {
@@ -87,7 +87,10 @@ public final class XcodeInspector: ObservableObject {
         }
     }
 
+    @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
+        xcode.refresh()
+        
         for task in activeXcodeObservations { task.cancel() }
         for cancellable in activeXcodeCancellable { cancellable.cancel() }
         activeXcodeObservations.removeAll()
@@ -208,6 +211,51 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         super.init(runningApplication: runningApplication)
 
         observeFocusedWindow()
+        observe()
+    }
+
+    func observeFocusedWindow() {
+        if let window = appElement.focusedWindow {
+            if window.identifier == "Xcode.WorkspaceWindow" {
+                let window = WorkspaceXcodeWindowInspector(
+                    app: runningApplication,
+                    uiElement: window
+                )
+                focusedWindow = window
+                focusedWindowObservations.forEach { $0.cancel() }
+                focusedWindowObservations.removeAll()
+
+                documentURL = window.documentURL
+                projectURL = window.projectURL
+
+                window.$documentURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .sink { [weak self] url in
+                        self?.documentURL = url
+                    }.store(in: &focusedWindowObservations)
+                window.$projectURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .sink { [weak self] url in
+                        self?.projectURL = url
+                    }.store(in: &focusedWindowObservations)
+            } else {
+                let window = XcodeWindowInspector(uiElement: window)
+                focusedWindow = window
+            }
+        } else {
+            focusedWindow = nil
+        }
+    }
+    
+    func refresh() {
+        (focusedWindow as? WorkspaceXcodeWindowInspector)?.refresh()
+        observe()
+    }
+    
+    func observe() {
+        longRunningTasks.forEach { $0.cancel() }
+        longRunningTasks = []
+        
         let focusedWindowChanged = Task {
             let notification = AXNotificationStream(
                 app: runningApplication,
@@ -243,14 +291,9 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(updateTabsTask)
 
-        completionPanel = appElement.firstChild { element in
-            element.identifier == "_XC_COMPLETION_TABLE_"
-        }?.parent
-
         let completionPanelTask = Task {
             let stream = AXNotificationStream(
                 app: runningApplication,
-                element: appElement,
                 notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
             )
 
@@ -277,39 +320,6 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
 
         longRunningTasks.insert(completionPanelTask)
-    }
-
-    func observeFocusedWindow() {
-        if let window = appElement.focusedWindow {
-            if window.identifier == "Xcode.WorkspaceWindow" {
-                let window = WorkspaceXcodeWindowInspector(
-                    app: runningApplication,
-                    uiElement: window
-                )
-                focusedWindow = window
-                focusedWindowObservations.forEach { $0.cancel() }
-                focusedWindowObservations.removeAll()
-
-                documentURL = window.documentURL
-                projectURL = window.projectURL
-
-                window.$documentURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .sink { [weak self] url in
-                        self?.documentURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$projectURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .sink { [weak self] url in
-                        self?.projectURL = url
-                    }.store(in: &focusedWindowObservations)
-            } else {
-                let window = XcodeWindowInspector(uiElement: window)
-                focusedWindow = window
-            }
-        } else {
-            focusedWindow = nil
-        }
     }
 
     static func fetchWorkspaceInfo(
