@@ -11,6 +11,8 @@ import XcodeInspector
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
+    // you should make these window `.transient` so they never show up in the mission control.
+    
     private lazy var fullscreenDetector = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -21,7 +23,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         it.hasShadow = false
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { false }
