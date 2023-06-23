@@ -229,9 +229,7 @@ public final class SuggestionWidgetController: NSObject {
                     }
                 }
             }
-        }
 
-        Task { @MainActor in
             fullscreenDetectingTask = Task { [weak self] in
                 let sequence = NSWorkspace.shared.notificationCenter
                     .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
@@ -247,16 +245,12 @@ public final class SuggestionWidgetController: NSObject {
                     }
                 }
             }
-        }
 
-        Task { @MainActor in
             presentationModeChangeObserver.onChange = { [weak self] in
                 guard let self else { return }
                 self.updateWindowLocation()
             }
-        }
 
-        Task { @MainActor in
             chatWindowViewModel.$chatPanelInASeparateWindow.dropFirst().removeDuplicates()
                 .sink { [weak self] _ in
                     guard let self else { return }
@@ -264,9 +258,7 @@ public final class SuggestionWidgetController: NSObject {
                         self.updateWindowLocation(animated: true)
                     }
                 }.store(in: &cancellable)
-        }
 
-        Task { @MainActor in
             let updateColorScheme = { @MainActor [weak self] in
                 guard let self else { return }
                 let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
