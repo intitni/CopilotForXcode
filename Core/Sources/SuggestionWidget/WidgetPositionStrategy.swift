@@ -293,7 +293,6 @@ enum UpdateLocationStrategy {
                         }
                         return nil
                     }() {
-                        print(mainScreen.frame, completionPanelRect, y)
                         return .init(
                             frame: .init(
                                 x: x,
