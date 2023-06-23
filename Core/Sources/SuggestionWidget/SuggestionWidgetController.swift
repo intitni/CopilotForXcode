@@ -25,7 +25,7 @@ public final class SuggestionWidgetController: NSObject {
         it.backgroundColor = .clear
         it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         it.hasShadow = false
-        it.setIsVisible(true)
+        it.setIsVisible(false)
         it.canBecomeKeyChecker = { false }
         return it
     }()
