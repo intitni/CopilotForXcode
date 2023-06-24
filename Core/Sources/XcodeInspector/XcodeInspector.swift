@@ -213,10 +213,10 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         observeFocusedWindow()
         observeAXNotifications()
         
-        if !(focusedWindow is WorkspaceXcodeWindowInspector) {
-            // Sometimes the focused window may note be ready on app launch.
-            Task {
-                try await Task.sleep(nanoseconds: 2_000_000_000)
+        Task {
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            // Sometimes the focused window may not be ready on app launch.
+            if !(focusedWindow is WorkspaceXcodeWindowInspector) {
                 observeFocusedWindow()
             }
         }
