@@ -211,7 +211,15 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         super.init(runningApplication: runningApplication)
 
         observeFocusedWindow()
-        observe()
+        observeAXNotifications()
+        
+        if !(focusedWindow is WorkspaceXcodeWindowInspector) {
+            // Sometimes the focused window may note be ready on app launch.
+            Task {
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+                observeFocusedWindow()
+            }
+        }
     }
 
     func observeFocusedWindow() {
@@ -248,11 +256,14 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
     
     func refresh() {
-        (focusedWindow as? WorkspaceXcodeWindowInspector)?.refresh()
-        observe()
+        if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
+            focusedWindow.refresh()
+        } else {
+            observeFocusedWindow()
+        }
     }
     
-    func observe() {
+    func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
         
