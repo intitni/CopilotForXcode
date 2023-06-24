@@ -110,7 +110,7 @@ extension AppDelegate: NSMenuDelegate {
                 xcodeMenu.items.append(.text("Active Project: \(xcode.projectURL)"))
                 xcodeMenu.items.append(.text("Active Document: \(xcode.documentURL)"))
                 
-                for (key, workspace) in xcode.workspaces {
+                for (key, workspace) in xcode.realtimeWorkspaces {
                     let workspaceItem = NSMenuItem(
                         title: "Workspace \(key)",
                         action: nil,
