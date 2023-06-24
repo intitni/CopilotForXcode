@@ -1,64 +1,31 @@
-import Environment
-import Preferences
+import Foundation
 import SwiftUI
 
 @MainActor
-final class SuggestionPanelViewModel: ObservableObject {
-    enum Content {
-        case suggestion(SuggestionProvider)
-        case promptToCode(PromptToCodeProvider)
-        case error(String)
-
-        var contentHash: String {
-            switch self {
-            case let .error(e):
-                return "error: \(e)"
-            case let .suggestion(provider):
-                return "suggestion: \(provider.code.hashValue)"
-            case let .promptToCode(provider):
-                return "provider: \(provider.id)"
-            }
-        }
-    }
-
-    @Published var content: Content?
-    @Published var isPanelDisplayed: Bool
+final class SuggestionPanelDisplayController: ObservableObject {
     @Published var alignTopToAnchor = false
-    @Published var colorScheme: ColorScheme
+    @Published var isPanelOutOfFrame: Bool = false
+    @Published var isPanelDisplayed: Bool = false
 
-    public init(
-        content: Content? = nil,
-        isPanelDisplayed: Bool = false,
-        colorScheme: ColorScheme = .dark
+    init(
+        alignTopToAnchor: Bool = false,
+        isPanelOutOfFrame: Bool = false,
+        isPanelDisplayed: Bool = false
     ) {
-        self.content = content
+        self.alignTopToAnchor = alignTopToAnchor
         self.isPanelDisplayed = isPanelDisplayed
-        self.colorScheme = colorScheme
-    }
-}
-
-extension View {
-    @ViewBuilder
-    func animation<V: Equatable>(
-        featureFlag: KeyPath<UserDefaultPreferenceKeys, FeatureFlag>,
-        _ animation: Animation?,
-        value: V
-    ) -> some View {
-        let isOn = UserDefaults.shared.value(for: featureFlag)
-        if isOn {
-            self.animation(animation, value: value)
-        } else {
-            self
-        }
+        self.isPanelOutOfFrame = isPanelOutOfFrame
     }
 }
 
 struct SuggestionPanelView: View {
-    @ObservedObject var viewModel: SuggestionPanelViewModel
+    @ObservedObject var viewModel: SharedPanelViewModel
+    @ObservedObject var displayController: SuggestionPanelDisplayController
+    @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
     var body: some View {
         VStack(spacing: 0) {
-            if !viewModel.alignTopToAnchor {
+            if !displayController.alignTopToAnchor {
                 Spacer()
                     .frame(minHeight: 0, maxHeight: .infinity)
                     .allowsHitTesting(false)
@@ -69,21 +36,26 @@ struct SuggestionPanelView: View {
                     ZStack(alignment: .topLeading) {
                         switch content {
                         case let .suggestion(suggestion):
-                            CodeBlockSuggestionPanel(suggestion: suggestion)
-                        case let .promptToCode(provider):
-                            PromptToCodePanel(provider: provider)
-                        case let .error(description):
-                            ErrorPanel(viewModel: viewModel, description: description)
+                            switch suggestionPresentationMode {
+                            case .nearbyTextCursor:
+                                CodeBlockSuggestionPanel(suggestion: suggestion)
+                            case .floatingWidget:
+                                EmptyView()
+                            }
+                        default:
+                            EmptyView()
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+                    .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
                     .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(viewModel.isPanelDisplayed)
+                    .allowsHitTesting(
+                        displayController.isPanelDisplayed && !displayController.isPanelOutOfFrame
+                    )
                 }
             }
             .frame(maxWidth: .infinity)
 
-            if viewModel.alignTopToAnchor {
+            if displayController.alignTopToAnchor {
                 Spacer()
                     .frame(minHeight: 0, maxHeight: .infinity)
                     .allowsHitTesting(false)
@@ -91,7 +63,8 @@ struct SuggestionPanelView: View {
         }
         .preferredColorScheme(viewModel.colorScheme)
         .opacity({
-            guard viewModel.isPanelDisplayed else { return 0 }
+            guard displayController.isPanelDisplayed else { return 0 }
+            guard !displayController.isPanelOutOfFrame else { return 0 }
             guard viewModel.content != nil else { return 0 }
             return 1
         }())
@@ -103,69 +76,14 @@ struct SuggestionPanelView: View {
         .animation(
             featureFlag: \.animationBCrashSuggestion,
             .easeInOut(duration: 0.2),
-            value: viewModel.isPanelDisplayed
+            value: displayController.isPanelDisplayed
         )
-        .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
-    }
-}
-
-struct CommandButtonStyle: ButtonStyle {
-    let color: Color
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .foregroundColor(.white)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(color.opacity(configuration.isPressed ? 0.8 : 1))
-                    .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
-            }
-    }
-}
-
-// MARK: - Previews
-
-struct SuggestionPanelView_Error_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .error("This is an error\nerror"),
-            isPanelDisplayed: true
-        ))
-        .frame(width: 450, height: 200)
-    }
-}
-
-struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
-    static var previews: some View {
-        SuggestionPanelView(viewModel: .init(
-            content: .suggestion(SuggestionProvider(
-                code: """
-                - (void)addSubview:(UIView *)view {
-                    [self addSubview:view];
-                }
-                """,
-                language: "objective-c",
-                startLineIndex: 8,
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            isPanelDisplayed: true,
-            colorScheme: .dark
-        ))
-        .frame(width: 450, height: 200)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
+        .animation(
+            featureFlag: \.animationBCrashSuggestion,
+            .easeInOut(duration: 0.2),
+            value: displayController.isPanelOutOfFrame
+        )
+        .frame(maxWidth: Style.inlineSuggestionMinWidth, maxHeight: Style.inlineSuggestionMaxHeight)
     }
 }
 

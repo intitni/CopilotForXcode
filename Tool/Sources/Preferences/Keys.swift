@@ -206,10 +206,6 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: true, key: "HideCommonPrecedingSpacesInSuggestion")
     }
 
-    var acceptSuggestionWithAccessibilityAPI: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "AcceptSuggestionWithAccessibilityAPI")
-    }
-
     var suggestionPresentationMode: PreferenceKey<PresentationMode> {
         .init(defaultValue: .floatingWidget, key: "SuggestionPresentationMode")
     }
@@ -348,6 +344,10 @@ public extension UserDefaultPreferenceKeys {
 
     var triggerActionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
+    }
+    
+    var alwaysAcceptSuggestionWithAccessibilityAPI: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-AlwaysAcceptSuggestionWithAccessibilityAPI")
     }
 
     var animationACrashSuggestion: FeatureFlag {

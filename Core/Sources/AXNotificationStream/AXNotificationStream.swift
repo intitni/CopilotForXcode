@@ -6,7 +6,7 @@ public final class AXNotificationStream: AsyncSequence {
     public typealias Stream = AsyncStream<Element>
     public typealias Continuation = Stream.Continuation
     public typealias AsyncIterator = Stream.AsyncIterator
-    public typealias Element = (name: String, info: CFDictionary)
+    public typealias Element = (name: String, element: AXUIElement, info: CFDictionary)
 
     private var continuation: Continuation
     private let stream: Stream
@@ -48,7 +48,7 @@ public final class AXNotificationStream: AsyncSequence {
         ) {
             guard let pointer = pointer?.assumingMemoryBound(to: Continuation.self)
             else { return }
-            pointer.pointee.yield((notificationName as String, userInfo))
+            pointer.pointee.yield((notificationName as String, element, userInfo))
         }
 
         _ = AXObserverCreateWithInfoCallback(
@@ -72,13 +72,24 @@ public final class AXNotificationStream: AsyncSequence {
                 .commonModes
             )
         }
-        for name in notificationNames {
-            AXObserverAddNotification(observer, observingElement, name as CFString, &continuation)
+        
+        Task {
+            for name in notificationNames {
+                var error = AXError.cannotComplete
+                var retryCount = 0
+                while error == AXError.cannotComplete, retryCount < 5 {
+                    error = AXObserverAddNotification(observer, observingElement, name as CFString, &continuation)
+                    if error == .cannotComplete {
+                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                    }
+                    retryCount += 1
+                }
+            }
+            CFRunLoopAddSource(
+                CFRunLoopGetMain(),
+                AXObserverGetRunLoopSource(observer),
+                .commonModes
+            )
         }
-        CFRunLoopAddSource(
-            CFRunLoopGetMain(),
-            AXObserverGetRunLoopSource(observer),
-            .commonModes
-        )
     }
 }

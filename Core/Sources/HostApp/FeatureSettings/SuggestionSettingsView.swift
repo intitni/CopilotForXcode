@@ -9,8 +9,6 @@ struct SuggestionSettingsView: View {
         var realtimeSuggestionDebounce
         @AppStorage(\.suggestionPresentationMode)
         var suggestionPresentationMode
-        @AppStorage(\.acceptSuggestionWithAccessibilityAPI)
-        var acceptSuggestionWithAccessibilityAPI
         @AppStorage(\.disableSuggestionFeatureGlobally)
         var disableSuggestionFeatureGlobally
         @AppStorage(\.suggestionFeatureEnabledProjectList)
@@ -34,8 +32,8 @@ struct SuggestionSettingsView: View {
                 Picker(selection: $settings.suggestionPresentationMode) {
                     ForEach(PresentationMode.allCases, id: \.rawValue) {
                         switch $0 {
-                        case .comment:
-                            Text("Comment (Deprecating Soon)").tag($0)
+                        case .nearbyTextCursor:
+                            Text("Nearby Text Cursor").tag($0)
                         case .floatingWidget:
                             Text("Floating Widget").tag($0)
                         }
@@ -124,16 +122,6 @@ struct SuggestionSettingsView: View {
                     Text("pt")
                 }
                 Divider()
-            }
-
-            Group {
-                Toggle(isOn: $settings.acceptSuggestionWithAccessibilityAPI) {
-                    Text("Use accessibility API to accept suggestion in widget")
-                }
-
-                Text("You can turn it on if the accept button is not working for you.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }

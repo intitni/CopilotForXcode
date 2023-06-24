@@ -28,10 +28,6 @@ public class RealtimeSuggestionController {
     private var focusedUIElement: AXUIElement?
     private var sourceEditor: SourceEditor?
 
-    var isCommentMode: Bool {
-        UserDefaults.shared.value(for: \.suggestionPresentationMode) == .comment
-    }
-
     private nonisolated init() {
         Task { [weak self] in
 
@@ -179,16 +175,6 @@ public class RealtimeSuggestionController {
         if keycode == escape {
             if event.type == .keyDown {
                 await cancelInFlightTasks()
-            } else {
-                Task {
-                    #warning(
-                        "TODO: Any method to avoid using AppleScript to check that completion panel is presented?"
-                    )
-                    if isCommentMode, await Environment.frontmostXcodeWindowIsEditor() {
-                        if Task.isCancelled { return }
-                        self.triggerPrefetchDebounced(force: true)
-                    }
-                }
             }
         }
     }
@@ -213,11 +199,6 @@ public class RealtimeSuggestionController {
             if Task.isCancelled { return }
 
             Logger.service.info("Prefetch suggestions.")
-
-            if !force, isCommentMode, await !Environment.frontmostXcodeWindowIsEditor() {
-                Logger.service.info("Completion panel is open, blocked.")
-                return
-            }
 
             // So the editor won't be blocked (after information are cached)!
             await PseudoCommandHandler().generateRealtimeSuggestions(sourceEditor: sourceEditor)

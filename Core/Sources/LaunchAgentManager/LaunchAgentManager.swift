@@ -1,9 +1,11 @@
 import Foundation
 
+#warning("TODO: Migrate to SMAppService")
 public struct LaunchAgentManager {
     let lastLaunchAgentVersionKey = "LastLaunchAgentVersion"
     let serviceIdentifier: String
     let executablePath: String
+    let bundleIdentifier: String
 
     var launchAgentDirURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -14,9 +16,10 @@ public struct LaunchAgentManager {
         launchAgentDirURL.appendingPathComponent("\(serviceIdentifier).plist").path
     }
 
-    public init(serviceIdentifier: String, executablePath: String) {
+    public init(serviceIdentifier: String, executablePath: String, bundleIdentifier: String) {
         self.serviceIdentifier = serviceIdentifier
         self.executablePath = executablePath
+        self.bundleIdentifier = bundleIdentifier
     }
 
     public func setupLaunchAgentForTheFirstTimeIfNeeded() async throws {
@@ -44,6 +47,11 @@ public struct LaunchAgentManager {
                 <key>\(serviceIdentifier)</key>
                 <true/>
             </dict>
+            <key>AssociatedBundleIdentifiers</key>
+            <array>
+                <string>\(bundleIdentifier)</string>
+                <string>\(serviceIdentifier)</string>
+            </array>
         </dict>
         </plist>
         """

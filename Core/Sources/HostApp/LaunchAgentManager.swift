@@ -13,7 +13,9 @@ extension LaunchAgentManager {
                 .appendingPathComponent(
                     "CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService"
                 )
-                .path
+                .path,
+            bundleIdentifier: Bundle.main
+                .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
         )
     }
 }

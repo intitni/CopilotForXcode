@@ -11,6 +11,8 @@ import XcodeInspector
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
+    // you should make these window `.transient` so they never show up in the mission control.
+
     private lazy var fullscreenDetector = {
         let it = CanBecomeKeyWindow(
             contentRect: .zero,
@@ -21,9 +23,9 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         it.hasShadow = false
-        it.setIsVisible(true)
+        it.setIsVisible(false)
         it.canBecomeKeyChecker = { false }
         return it
     }()
@@ -39,13 +41,15 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 viewModel: widgetViewModel,
-                panelViewModel: suggestionPanelViewModel,
+                panelViewModel: sharedPanelViewModel,
                 chatWindowViewModel: chatWindowViewModel,
+                sharedPanelDisplayController: sharedPanelDisplayController,
+                suggestionPanelDisplayController: suggestionPanelDisplayController,
                 onOpenChatClicked: { [weak self] in
                     self?.onOpenChatClicked()
                 },
@@ -70,7 +74,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(19)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: TabView(chatWindowViewModel: chatWindowViewModel)
@@ -91,14 +95,44 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
-            rootView: SuggestionPanelView(viewModel: suggestionPanelViewModel)
+            rootView: SharedPanelView(
+                viewModel: sharedPanelViewModel,
+                displayController: sharedPanelDisplayController
+            )
         )
         it.setIsVisible(true)
-        it.canBecomeKeyChecker = { [suggestionPanelViewModel] in
-            if case .promptToCode = suggestionPanelViewModel.content { return true }
+        it.canBecomeKeyChecker = { [sharedPanelViewModel] in
+            if case .promptToCode = sharedPanelViewModel.content { return true }
+            return false
+        }
+        return it
+    }()
+
+    private lazy var suggestionWindow = {
+        let it = CanBecomeKeyWindow(
+            contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.hasShadow = true
+        it.contentView = NSHostingView(
+            rootView: SuggestionPanelView(
+                viewModel: sharedPanelViewModel,
+                displayController: suggestionPanelDisplayController
+            )
+        )
+        it.setIsVisible(true)
+        it.canBecomeKeyChecker = { [sharedPanelViewModel] in
+            if case .promptToCode = sharedPanelViewModel.content { return true }
             return false
         }
         return it
@@ -115,7 +149,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .floating
-        it.collectionBehavior = [.fullScreenAuxiliary]
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: ChatWindowView(viewModel: chatWindowViewModel)
@@ -126,8 +160,10 @@ public final class SuggestionWidgetController: NSObject {
     }()
 
     let widgetViewModel = WidgetViewModel()
-    let suggestionPanelViewModel = SuggestionPanelViewModel()
+    let sharedPanelViewModel = SharedPanelViewModel()
     let chatWindowViewModel = ChatWindowViewModel()
+    let sharedPanelDisplayController = SharedPanelDisplayController()
+    let suggestionPanelDisplayController = SuggestionPanelDisplayController()
 
     private var presentationModeChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
@@ -185,6 +221,7 @@ public final class SuggestionWidgetController: NSObject {
                             self.widgetWindow.alphaValue = 0
                             self.panelWindow.alphaValue = 0
                             self.tabWindow.alphaValue = 0
+                            self.suggestionWindow.alphaValue = 0
                             if !chatWindowViewModel.chatPanelInASeparateWindow {
                                 self.chatWindow.alphaValue = 0
                             }
@@ -192,9 +229,7 @@ public final class SuggestionWidgetController: NSObject {
                     }
                 }
             }
-        }
 
-        Task { @MainActor in
             fullscreenDetectingTask = Task { [weak self] in
                 let sequence = NSWorkspace.shared.notificationCenter
                     .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
@@ -205,21 +240,17 @@ public final class SuggestionWidgetController: NSObject {
                     guard let activeXcode = ActiveApplicationMonitor.activeXcode else { continue }
                     guard fullscreenDetector.isOnActiveSpace else { continue }
                     let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                    if app.focusedWindow != nil {
+                    if let window = app.focusedWindow, window.isFullScreen {
                         orderFront()
                     }
                 }
             }
-        }
 
-        Task { @MainActor in
             presentationModeChangeObserver.onChange = { [weak self] in
                 guard let self else { return }
                 self.updateWindowLocation()
             }
-        }
 
-        Task { @MainActor in
             chatWindowViewModel.$chatPanelInASeparateWindow.dropFirst().removeDuplicates()
                 .sink { [weak self] _ in
                     guard let self else { return }
@@ -227,9 +258,7 @@ public final class SuggestionWidgetController: NSObject {
                         self.updateWindowLocation(animated: true)
                     }
                 }.store(in: &cancellable)
-        }
 
-        Task { @MainActor in
             let updateColorScheme = { @MainActor [weak self] in
                 guard let self else { return }
                 let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
@@ -246,7 +275,7 @@ public final class SuggestionWidgetController: NSObject {
                         return .light
                     }
                 }()
-                self.suggestionPanelViewModel.colorScheme = self.colorScheme
+                self.sharedPanelViewModel.colorScheme = self.colorScheme
                 self.chatWindowViewModel.colorScheme = self.colorScheme
                 Task {
                     await self.updateContentForActiveEditor()
@@ -260,6 +289,17 @@ public final class SuggestionWidgetController: NSObject {
             systemColorSchemeChangeObserver.onChange = {
                 updateColorScheme()
             }
+
+            XcodeInspector.shared.$completionPanel.sink { [weak self] newValue in
+                Task { @MainActor in
+                    if newValue == nil {
+                        // so that the buttons on the suggestion panel could be clicked
+                        // before the completion panel updates the location of the suggestion panel
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                    }
+                    self?.updateWindowLocation()
+                }
+            }.store(in: &cancellable)
         }
     }
 
@@ -267,6 +307,7 @@ public final class SuggestionWidgetController: NSObject {
         widgetWindow.orderFrontRegardless()
         tabWindow.orderFrontRegardless()
         panelWindow.orderFrontRegardless()
+        suggestionWindow.orderFrontRegardless()
         chatWindow.orderFrontRegardless()
     }
 }
@@ -279,8 +320,13 @@ public extension SuggestionWidgetController {
             markAsProcessing(true)
             defer { markAsProcessing(false) }
             if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
-                suggestionPanelViewModel.content = .suggestion(suggestion)
-                suggestionPanelViewModel.isPanelDisplayed = true
+                sharedPanelViewModel.content = .suggestion(suggestion)
+                switch UserDefaults.shared.value(for: \.suggestionPresentationMode) {
+                case .nearbyTextCursor:
+                    suggestionPanelDisplayController.isPanelDisplayed = true
+                case .floatingWidget:
+                    sharedPanelDisplayController.isPanelDisplayed = true
+                }
             }
         }
     }
@@ -300,8 +346,8 @@ public extension SuggestionWidgetController {
     }
 
     func presentError(_ errorDescription: String) {
-        suggestionPanelViewModel.content = .error(errorDescription)
-        suggestionPanelViewModel.isPanelDisplayed = true
+        sharedPanelViewModel.content = .error(errorDescription)
+        sharedPanelDisplayController.isPanelDisplayed = true
     }
 
     func presentChatRoom(fileURL: URL) {
@@ -357,8 +403,8 @@ public extension SuggestionWidgetController {
             markAsProcessing(true)
             defer { markAsProcessing(false) }
             if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
-                suggestionPanelViewModel.content = .promptToCode(provider)
-                suggestionPanelViewModel.isPanelDisplayed = true
+                sharedPanelViewModel.content = .promptToCode(provider)
+                sharedPanelDisplayController.isPanelDisplayed = true
 
                 Task { @MainActor in
                     // looks like we need a delay.
@@ -451,14 +497,14 @@ extension SuggestionWidgetController {
                         scroll
                     ) {
                         guard let self else { return }
-                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
+                        guard ActiveApplicationMonitor.latestXcode != nil else { return }
                         try Task.checkCancellation()
                         self.updateWindowLocation(animated: false)
                     }
                 } else {
                     for await _ in merge(selectionRangeChange, scroll) {
                         guard let self else { return }
-                        guard ActiveApplicationMonitor.activeXcode != nil else { return }
+                        guard ActiveApplicationMonitor.latestXcode != nil else { return }
                         try Task.checkCancellation()
                         let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
                         if mode != .alignToTextCursor { break }
@@ -469,96 +515,49 @@ extension SuggestionWidgetController {
         }
     }
 
-    /// Update the window location.
-    ///
-    /// - note: It's possible to get the scroll view's position by getting position on the focus
-    /// element.
+    /// Update the window location and opacity.
     private func updateWindowLocation(animated: Bool = false) {
-        guard UserDefaults.shared.value(for: \.suggestionPresentationMode) == .floatingWidget
-        else {
-            panelWindow.alphaValue = 0
-            widgetWindow.alphaValue = 0
-            tabWindow.alphaValue = 0
-            chatWindow.alphaValue = 0
-            return
-        }
-
         let detachChat = chatWindowViewModel.chatPanelInASeparateWindow
 
-        if let widgetFrames = {
-            if let application = XcodeInspector.shared.latestActiveXcode?.appElement {
-                if let focusElement = application.focusedElement,
-                   focusElement.description == "Source Editor",
-                   let parent = focusElement.parent,
-                   let frame = parent.rect,
-                   let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-                   let firstScreen = NSScreen.main
-                {
-                    let mode = UserDefaults.shared.value(for: \.suggestionWidgetPositionMode)
-                    switch mode {
-                    case .fixedToBottom:
-                        return UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                            editorFrame: frame,
-                            mainScreen: screen,
-                            activeScreen: firstScreen
-                        )
-                    case .alignToTextCursor:
-                        return UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
-                            editorFrame: frame,
-                            mainScreen: screen,
-                            activeScreen: firstScreen,
-                            editor: focusElement
-                        )
-                    }
-                } else if var window = application.focusedWindow,
-                          var frame = application.focusedWindow?.rect,
-                          !["menu bar", "menu bar item"].contains(window.description),
-                          frame.size.height > 300,
-                          let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-                          let firstScreen = NSScreen.main
-                {
-                    if ["open_quickly"].contains(window.identifier)
-                        || ["alert"].contains(window.label)
-                    {
-                        // fallback to use workspace window
-                        guard let workspaceWindow = application.windows
-                            .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
-                            let rect = workspaceWindow.rect
-                        else { return (.zero, .zero, .zero, false) }
+        if let widgetLocation = generateWidgetLocation() {
+            widgetWindow.setFrame(widgetLocation.widgetFrame, display: false, animate: animated)
+            tabWindow.setFrame(widgetLocation.tabFrame, display: false, animate: animated)
+            panelWindow.setFrame(
+                widgetLocation.defaultPanelLocation.frame,
+                display: false,
+                animate: animated
+            )
 
-                        window = workspaceWindow
-                        frame = rect
-                    }
+            sharedPanelDisplayController.alignTopToAnchor = widgetLocation.defaultPanelLocation
+                .alignPanelTop
 
-                    if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
-                        // extra padding to bottom so buttons won't be covered
-                        frame.size.height -= 40
-                    } else {
-                        // move a bit away from the window so buttons won't be covered
-                        frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
-                        frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
-                    }
-
-                    return UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen,
-                        preferredInsideEditorMinWidth: 9_999_999_999 // never
-                    )
-                }
+            if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
+                suggestionWindow.setFrame(
+                    suggestionPanelLocation.frame,
+                    display: false,
+                    animate: animated
+                )
+                suggestionPanelDisplayController.isPanelOutOfFrame = false
+                suggestionPanelDisplayController.alignTopToAnchor = suggestionPanelLocation
+                    .alignPanelTop
+            } else {
+                suggestionPanelDisplayController.isPanelOutOfFrame = true
             }
-            return nil
-        }() {
-            widgetWindow.setFrame(widgetFrames.widgetFrame, display: false, animate: animated)
-            panelWindow.setFrame(widgetFrames.panelFrame, display: false, animate: animated)
-            tabWindow.setFrame(widgetFrames.tabFrame, display: false, animate: animated)
-            suggestionPanelViewModel.alignTopToAnchor = widgetFrames.alignPanelTopToAnchor
+
             if detachChat {
                 if chatWindow.alphaValue == 0 {
-                    chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
+                    chatWindow.setFrame(
+                        widgetLocation.defaultPanelLocation.frame,
+                        display: false,
+                        animate: animated
+                    )
                 }
             } else {
-                chatWindow.setFrame(panelWindow.frame, display: false, animate: animated)
+                chatWindow.setFrame(
+                    widgetLocation.defaultPanelLocation.frame,
+                    display: false,
+                    animate: animated
+                )
             }
         }
 
@@ -567,6 +566,7 @@ extension SuggestionWidgetController {
             /// We need this to hide the windows when Xcode is minimized.
             let noFocus = application.focusedWindow == nil
             panelWindow.alphaValue = noFocus ? 0 : 1
+            suggestionWindow.alphaValue = noFocus ? 0 : 1
             widgetWindow.alphaValue = noFocus ? 0 : 1
             tabWindow.alphaValue = noFocus ? 0 : 1
 
@@ -579,13 +579,15 @@ extension SuggestionWidgetController {
                   app.bundleIdentifier == Bundle.main.bundleIdentifier
         {
             let noFocus = {
-                guard let xcode = ActiveApplicationMonitor.latestXcode else { return true }
-                let application = AXUIElementCreateApplication(xcode.processIdentifier)
-                return application
-                    .focusedWindow == nil || (application.focusedWindow?.role == "AXWindow")
+                guard let xcode = XcodeInspector.shared.latestActiveXcode else { return true }
+                if let window = xcode.appElement.focusedWindow, window.role == "AXWindow" {
+                    return false
+                }
+                return true
             }()
 
             panelWindow.alphaValue = noFocus ? 0 : 1
+            suggestionWindow.alphaValue = noFocus ? 0 : 1
             widgetWindow.alphaValue = noFocus ? 0 : 1
             tabWindow.alphaValue = noFocus ? 0 : 1
             if detachChat {
@@ -595,6 +597,7 @@ extension SuggestionWidgetController {
             }
         } else {
             panelWindow.alphaValue = 0
+            suggestionWindow.alphaValue = 0
             widgetWindow.alphaValue = 0
             tabWindow.alphaValue = 0
             if !detachChat {
@@ -608,7 +611,7 @@ extension SuggestionWidgetController {
             if let fileURL { return fileURL }
             return try? await Environment.fetchCurrentFileURL()
         }() else {
-            suggestionPanelViewModel.content = nil
+            sharedPanelViewModel.content = nil
             chatWindowViewModel.chat = nil
             return
         }
@@ -622,16 +625,120 @@ extension SuggestionWidgetController {
         }
 
         if let provider = await dataSource?.promptToCodeForFile(at: fileURL) {
-            if case let .promptToCode(currentProvider) = suggestionPanelViewModel.content,
+            if case let .promptToCode(currentProvider) = sharedPanelViewModel.content,
                currentProvider.id == provider.id { return }
-            suggestionPanelViewModel.content = .promptToCode(provider)
+            sharedPanelViewModel.content = .promptToCode(provider)
         } else if let suggestion = await dataSource?.suggestionForFile(at: fileURL) {
-            suggestionPanelViewModel.content = .suggestion(suggestion)
+            sharedPanelViewModel.content = .suggestion(suggestion)
         } else {
-            suggestionPanelViewModel.content = nil
+            sharedPanelViewModel.content = nil
         }
     }
+
+    private func generateWidgetLocation() -> WidgetLocation? {
+        if let application = XcodeInspector.shared.latestActiveXcode?.appElement {
+            if let focusElement = XcodeInspector.shared.focusedEditor?.element,
+               let parent = focusElement.parent,
+               let frame = parent.rect,
+               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+               let firstScreen = NSScreen.main
+            {
+                let positionMode = UserDefaults.shared
+                    .value(for: \.suggestionWidgetPositionMode)
+                let suggestionMode = UserDefaults.shared
+                    .value(for: \.suggestionPresentationMode)
+
+                switch positionMode {
+                case .fixedToBottom:
+                    var result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen
+                    )
+                    switch suggestionMode {
+                    case .nearbyTextCursor:
+                        result.suggestionPanelLocation = UpdateLocationStrategy
+                            .NearbyTextCursor()
+                            .framesForSuggestionWindow(
+                                editorFrame: frame, mainScreen: screen,
+                                activeScreen: firstScreen,
+                                editor: focusElement,
+                                completionPanel: XcodeInspector.shared.completionPanel
+                            )
+                    default:
+                        break
+                    }
+                    return result
+                case .alignToTextCursor:
+                    var result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen,
+                        editor: focusElement
+                    )
+                    switch suggestionMode {
+                    case .nearbyTextCursor:
+                        result.suggestionPanelLocation = UpdateLocationStrategy
+                            .NearbyTextCursor()
+                            .framesForSuggestionWindow(
+                                editorFrame: frame, mainScreen: screen,
+                                activeScreen: firstScreen,
+                                editor: focusElement,
+                                completionPanel: XcodeInspector.shared.completionPanel
+                            )
+                    default:
+                        break
+                    }
+                    return result
+                }
+            } else if var window = application.focusedWindow,
+                      var frame = application.focusedWindow?.rect,
+                      !["menu bar", "menu bar item"].contains(window.description),
+                      frame.size.height > 300,
+                      let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                      let firstScreen = NSScreen.main
+            {
+                if ["open_quickly"].contains(window.identifier)
+                    || ["alert"].contains(window.label)
+                {
+                    // fallback to use workspace window
+                    guard let workspaceWindow = application.windows
+                        .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
+                        let rect = workspaceWindow.rect
+                    else {
+                        return WidgetLocation(
+                            widgetFrame: .zero,
+                            tabFrame: .zero,
+                            defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
+                        )
+                    }
+
+                    window = workspaceWindow
+                    frame = rect
+                }
+
+                if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
+                    // extra padding to bottom so buttons won't be covered
+                    frame.size.height -= 40
+                } else {
+                    // move a bit away from the window so buttons won't be covered
+                    frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
+                    frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                }
+
+                return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                    editorFrame: frame,
+                    mainScreen: screen,
+                    activeScreen: firstScreen,
+                    preferredInsideEditorMinWidth: 9_999_999_999 // never
+                )
+            }
+        }
+        return nil
+    }
 }
+
+// MARK: - NSWindowDelegate
 
 extension SuggestionWidgetController: NSWindowDelegate {
     public func windowWillMove(_ notification: Notification) {
@@ -667,6 +774,8 @@ extension SuggestionWidgetController: NSWindowDelegate {
         }
     }
 }
+
+// MARK: - Window Subclasses
 
 class CanBecomeKeyWindow: NSWindow {
     var canBecomeKeyChecker: () -> Bool = { true }
