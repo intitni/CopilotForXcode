@@ -34,7 +34,7 @@ public final class ScheduledCleaner {
                     XcodeAppInstanceInspector.WorkspaceInfo
             ]()
         ) { result, xcode in
-            let infos = xcode.workspaces
+            let infos = xcode.realtimeWorkspaces
             for (id, info) in infos {
                 if let existed = result[id] {
                     result[id] = existed.combined(with: info)
