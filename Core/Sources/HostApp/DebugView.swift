@@ -10,6 +10,7 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.triggerActionWithAccessibilityAPI) var triggerActionWithAccessibilityAPI
     @AppStorage(\.alwaysAcceptSuggestionWithAccessibilityAPI)
     var alwaysAcceptSuggestionWithAccessibilityAPI
+    @AppStorage(\.enableXcodeInspectorDebugMenu) var enableXcodeInspectorDebugMenu
     init() {}
 }
 
@@ -39,6 +40,9 @@ struct DebugSettingsView: View {
                 }
                 Toggle(isOn: $settings.alwaysAcceptSuggestionWithAccessibilityAPI) {
                     Text("Always accept suggestion with AccessibilityAPI")
+                }
+                Toggle(isOn: $settings.enableXcodeInspectorDebugMenu) {
+                    Text("Enable Xcode inspector debug menu")
                 }
             }
             .padding()

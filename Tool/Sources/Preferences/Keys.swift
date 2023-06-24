@@ -361,5 +361,9 @@ public extension UserDefaultPreferenceKeys {
     var animationCCrashSuggestion: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-AnimationCCrashSuggestion")
     }
+    
+    var enableXcodeInspectorDebugMenu: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-EnableXcodeInspectorDebugMenu")
+    }
 }
 
