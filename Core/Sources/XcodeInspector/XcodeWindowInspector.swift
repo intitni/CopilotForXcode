@@ -23,27 +23,26 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         updateTabsTask?.cancel()
         focusedElementChangedTask?.cancel()
     }
+    
+    public func refresh() {
+        updateURLs()
+    }
 
     public init(app: NSRunningApplication, uiElement: AXUIElement) {
         self.app = app
         super.init(uiElement: uiElement)
 
         focusedElementChangedTask = Task { @MainActor in
-            let update = {
-                let documentURL = Self.extractDocumentURL(windowElement: uiElement)
-                if let documentURL {
-                    self.documentURL = documentURL
-                }
-                let projectURL = Self.extractProjectURL(
-                    windowElement: uiElement,
-                    fileURL: documentURL
-                )
-                if let projectURL {
-                    self.projectURL = projectURL
+            updateURLs()
+            
+            Task { @MainActor in
+                // prevent that documentURL may not be available yet
+                try await Task.sleep(nanoseconds: 500_000_000)
+                if documentURL == .init(fileURLWithPath: "/") {
+                    updateURLs()
                 }
             }
-
-            update()
+            
             let notifications = AXNotificationStream(
                 app: app,
                 notificationNames: kAXFocusedUIElementChangedNotification
@@ -51,8 +50,22 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
 
             for await _ in notifications {
                 try Task.checkCancellation()
-                update()
+                updateURLs()
             }
+        }
+    }
+    
+    func updateURLs() {
+        let documentURL = Self.extractDocumentURL(windowElement: uiElement)
+        if let documentURL {
+            self.documentURL = documentURL
+        }
+        let projectURL = Self.extractProjectURL(
+            windowElement: uiElement,
+            fileURL: documentURL
+        )
+        if let projectURL {
+            self.projectURL = projectURL
         }
     }
 

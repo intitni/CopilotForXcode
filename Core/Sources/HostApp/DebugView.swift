@@ -8,6 +8,8 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.preCacheOnFileOpen) var preCacheOnFileOpen
     @AppStorage(\.useCustomScrollViewWorkaround) var useCustomScrollViewWorkaround
     @AppStorage(\.triggerActionWithAccessibilityAPI) var triggerActionWithAccessibilityAPI
+    @AppStorage(\.alwaysAcceptSuggestionWithAccessibilityAPI)
+    var alwaysAcceptSuggestionWithAccessibilityAPI
     init() {}
 }
 
@@ -34,6 +36,9 @@ struct DebugSettingsView: View {
                 }
                 Toggle(isOn: $settings.triggerActionWithAccessibilityAPI) {
                     Text("Trigger command with AccessibilityAPI")
+                }
+                Toggle(isOn: $settings.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                    Text("Always accept suggestion with AccessibilityAPI")
                 }
             }
             .padding()

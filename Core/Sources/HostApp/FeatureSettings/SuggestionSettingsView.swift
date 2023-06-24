@@ -32,8 +32,8 @@ struct SuggestionSettingsView: View {
                 Picker(selection: $settings.suggestionPresentationMode) {
                     ForEach(PresentationMode.allCases, id: \.rawValue) {
                         switch $0 {
-                        case .comment:
-                            Text("Comment (Deprecating Soon)").tag($0)
+                        case .nearbyTextCursor:
+                            Text("Nearby Text Cursor").tag($0)
                         case .floatingWidget:
                             Text("Floating Widget").tag($0)
                         }

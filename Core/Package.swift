@@ -107,7 +107,7 @@ let package = Package(
             dependencies: [
                 "ActiveApplicationMonitor",
                 "AXExtension",
-                "SuggestionService",
+                .product(name: "Preferences", package: "Tool"),
             ]
         ),
 
@@ -261,6 +261,7 @@ let package = Package(
             name: "XcodeInspector",
             dependencies: [
                 "AXExtension",
+                "SuggestionModel",
                 "Environment",
                 "AXNotificationStream",
                 .product(name: "Logger", package: "Tool"),
@@ -294,6 +295,7 @@ let package = Package(
                 "LanguageClient",
                 "SuggestionModel",
                 "KeychainAccess",
+                "XcodeInspector",
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]

@@ -345,6 +345,10 @@ public extension UserDefaultPreferenceKeys {
     var triggerActionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
     }
+    
+    var alwaysAcceptSuggestionWithAccessibilityAPI: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-AlwaysAcceptSuggestionWithAccessibilityAPI")
+    }
 
     var animationACrashSuggestion: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-AnimationACrashSuggestion")

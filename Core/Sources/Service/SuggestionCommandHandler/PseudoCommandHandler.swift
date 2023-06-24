@@ -56,15 +56,8 @@ struct PseudoCommandHandler {
         }
 
         // Otherwise, get it from pseudo handler directly.
-        let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
-        switch mode {
-        case .comment:
-            let handler = CommentBaseCommandHandler()
-            _ = try? await handler.generateRealtimeSuggestions(editor: editor)
-        case .floatingWidget:
-            let handler = WindowBaseCommandHandler()
-            _ = try? await handler.generateRealtimeSuggestions(editor: editor)
-        }
+        let handler = WindowBaseCommandHandler()
+        _ = try? await handler.generateRealtimeSuggestions(editor: editor)
     }
 
     func invalidateRealtimeSuggestionsIfNeeded(sourceEditor: SourceEditor) async {
@@ -137,6 +130,9 @@ struct PseudoCommandHandler {
 
     func acceptSuggestion() async {
         do {
+            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                throw CancellationError()
+            }
             try await Environment.triggerAction("Accept Suggestion")
         } catch {
             guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor
