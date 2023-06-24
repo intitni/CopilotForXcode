@@ -38,6 +38,7 @@
 		C87B03AC293B2CF300C77EAE /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; };
 		C87B03AD293B2CF300C77EAE /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C81458902939EFDC00135263 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
+		C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */; };
 		C8A3AE592A2885A70046E809 /* InitializePython.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A3AE582A2885A70046E809 /* InitializePython.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
@@ -166,6 +167,7 @@
 		C87B03A8293B262600C77EAE /* NextSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousSuggestionCommand.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
+		C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Menu.swift"; sourceTree = "<group>"; };
 		C8A3AE512A2883430046E809 /* Python.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Python.xcframework; sourceTree = "<group>"; };
 		C8A3AE582A2885A70046E809 /* InitializePython.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitializePython.swift; sourceTree = "<group>"; };
 		C8A3AE5A2A288AF90046E809 /* site-packages */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "site-packages"; sourceTree = "<group>"; };
@@ -322,6 +324,7 @@
 				C81291D92994FE7900196E12 /* Info.plist */,
 				C861E61F2994F6390056CB02 /* ServiceDelegate.swift */,
 				C861E6102994F6070056CB02 /* AppDelegate.swift */,
+				C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */,
 				C8A3AE582A2885A70046E809 /* InitializePython.swift */,
 				C81291D52994FE6900196E12 /* Main.storyboard */,
 				C861E6142994F6080056CB02 /* Assets.xcassets */,
@@ -583,6 +586,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C8A3AE592A2885A70046E809 /* InitializePython.swift in Sources */,
+				C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */,
 				C861E6202994F63A0056CB02 /* ServiceDelegate.swift in Sources */,
 				C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */,
 			);
