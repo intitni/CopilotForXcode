@@ -1,4 +1,4 @@
-import AppKit
+
 import Environment
 import FileChangeChecker
 import LaunchAgentManager
@@ -20,9 +20,9 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let scheduledCleaner = ScheduledCleaner()
-    private var statusBarItem: NSStatusItem!
-    private var xpcListener: (NSXPCListener, ServiceDelegate)?
-    private let updateChecker =
+    var statusBarItem: NSStatusItem!
+    var xpcListener: (NSXPCListener, ServiceDelegate)?
+    let updateChecker =
         UpdateChecker(
             hostBundle: locateHostBundleURL(url: Bundle.main.bundleURL)
                 .flatMap(Bundle.init(url:))
@@ -51,59 +51,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 Logger.service.error(error.localizedDescription)
             }
         }
-    }
-
-    @objc private func buildStatusBarMenu() {
-        let statusBar = NSStatusBar.system
-        statusBarItem = statusBar.statusItem(
-            withLength: NSStatusItem.squareLength
-        )
-        statusBarItem.button?.image = NSImage(named: "MenuBarIcon")
-
-        let statusBarMenu = NSMenu(title: "Status Bar Menu")
-        statusBarItem.menu = statusBarMenu
-
-        let hostAppName = Bundle.main.object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
-            ?? "Copilot for Xcode"
-
-        let copilotName = NSMenuItem(
-            title: hostAppName,
-            action: nil,
-            keyEquivalent: ""
-        )
-
-        let checkForUpdate = NSMenuItem(
-            title: "Check for Updates",
-            action: #selector(checkForUpdate),
-            keyEquivalent: ""
-        )
-
-        let openCopilotForXcode = NSMenuItem(
-            title: "Open \(hostAppName)",
-            action: #selector(openCopilotForXcode),
-            keyEquivalent: ""
-        )
-
-        let openGlobalChat = NSMenuItem(
-            title: "Open Chat",
-            action: #selector(openGlobalChat),
-            keyEquivalent: ""
-        )
-
-        let quitItem = NSMenuItem(
-            title: "Quit",
-            action: #selector(quit),
-            keyEquivalent: ""
-        )
-        quitItem.target = self
-
-        statusBarMenu.addItem(copilotName)
-        statusBarMenu.addItem(openCopilotForXcode)
-        statusBarMenu.addItem(checkForUpdate)
-        statusBarMenu.addItem(.separator())
-        statusBarMenu.addItem(openGlobalChat)
-        statusBarMenu.addItem(.separator())
-        statusBarMenu.addItem(quitItem)
     }
 
     @objc func quit() {

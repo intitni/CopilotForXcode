@@ -37,7 +37,7 @@ public final class XcodeInspector: ObservableObject {
             if let activeXcode {
                 setActiveXcode(activeXcode)
             }
-            
+
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didActivateApplicationNotification)
             for await notification in sequence {
@@ -90,7 +90,7 @@ public final class XcodeInspector: ObservableObject {
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         xcode.refresh()
-        
+
         for task in activeXcodeObservations { task.cancel() }
         for cancellable in activeXcodeCancellable { cancellable.cancel() }
         activeXcodeObservations.removeAll()
@@ -178,6 +178,10 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published public var documentURL: URL = .init(fileURLWithPath: "/")
     @Published public var projectURL: URL = .init(fileURLWithPath: "/")
     @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
+    public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
+        Self.fetchWorkspaceInfo(runningApplication)
+    }
+
     @Published public private(set) var completionPanel: AXUIElement?
 
     var _version: String?
@@ -211,7 +215,15 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         super.init(runningApplication: runningApplication)
 
         observeFocusedWindow()
-        observe()
+        observeAXNotifications()
+
+        Task {
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            // Sometimes the focused window may not be ready on app launch.
+            if !(focusedWindow is WorkspaceXcodeWindowInspector) {
+                observeFocusedWindow()
+            }
+        }
     }
 
     func observeFocusedWindow() {
@@ -246,16 +258,19 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             focusedWindow = nil
         }
     }
-    
+
     func refresh() {
-        (focusedWindow as? WorkspaceXcodeWindowInspector)?.refresh()
-        observe()
+        if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
+            focusedWindow.refresh()
+        } else {
+            observeFocusedWindow()
+        }
     }
-    
-    func observe() {
+
+    func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
-        
+
         let focusedWindowChanged = Task {
             let notification = AXNotificationStream(
                 app: runningApplication,
@@ -277,7 +292,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 kAXApplicationDeactivatedNotification
             )
             if #available(macOS 13.0, *) {
-                for await _ in notification.debounce(for: .seconds(5)) {
+                for await _ in notification.debounce(for: .seconds(2)) {
                     try Task.checkCancellation()
                     workspaces = Self.fetchWorkspaceInfo(runningApplication)
                 }
