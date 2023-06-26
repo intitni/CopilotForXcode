@@ -149,6 +149,8 @@ public final class XcodeInspector: ObservableObject {
     }
 }
 
+// MARK: - AppInstanceInspector
+
 public class AppInstanceInspector: ObservableObject {
     public let appElement: AXUIElement
     public let runningApplication: NSRunningApplication
@@ -160,26 +162,16 @@ public class AppInstanceInspector: ObservableObject {
     }
 }
 
+// MARK: - XcodeAppInstanceInspector
+
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
-    public struct WorkspaceInfo {
-        public let tabs: Set<String>
-
-        public func combined(with info: WorkspaceInfo) -> WorkspaceInfo {
-            return .init(tabs: info.tabs.union(tabs))
-        }
-    }
-
-    public enum WorkspaceIdentifier: Hashable {
-        case url(URL)
-        case unknown
-    }
-
     @Published public var focusedWindow: XcodeWindowInspector?
     @Published public var documentURL: URL = .init(fileURLWithPath: "/")
     @Published public var projectURL: URL = .init(fileURLWithPath: "/")
-    @Published public var workspaces = [WorkspaceIdentifier: WorkspaceInfo]()
+    @Published public var workspaces = [WorkspaceIdentifier: Workspace]()
     public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
-        Self.fetchWorkspaceInfo(runningApplication)
+        updateWorkspaceInfo()
+        return workspaces.mapValues(\.info)
     }
 
     @Published public private(set) var completionPanel: AXUIElement?
@@ -284,7 +276,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(focusedWindowChanged)
 
-        workspaces = Self.fetchWorkspaceInfo(runningApplication)
+        updateWorkspaceInfo()
         let updateTabsTask = Task { @MainActor in
             let notification = AXNotificationStream(
                 app: runningApplication,
@@ -294,12 +286,12 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             if #available(macOS 13.0, *) {
                 for await _ in notification.debounce(for: .seconds(2)) {
                     try Task.checkCancellation()
-                    workspaces = Self.fetchWorkspaceInfo(runningApplication)
+                    updateWorkspaceInfo()
                 }
             } else {
                 for await _ in notification {
                     try Task.checkCancellation()
-                    workspaces = Self.fetchWorkspaceInfo(runningApplication)
+                    updateWorkspaceInfo()
                 }
             }
         }
@@ -313,6 +305,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             )
 
             for await event in stream {
+                // We can only observe the creation and closing of the parent
+                // of the completion panel.
                 let isCompletionPanel = {
                     event.element.firstChild { element in
                         element.identifier == "_XC_COMPLETION_TABLE_"
@@ -336,32 +330,75 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(completionPanelTask)
     }
+}
 
-    static func fetchWorkspaceInfo(
+// MARK: - Workspace Info
+
+extension XcodeAppInstanceInspector {
+    public enum WorkspaceIdentifier: Hashable {
+        case url(URL)
+        case unknown
+    }
+
+    public class Workspace {
+        public let element: AXUIElement
+        public var info: WorkspaceInfo
+
+        /// When a window is closed, all it's properties will be set to nil.
+        /// Since we can't get notification for window closing,
+        /// we will use it to check if the window is closed.
+        var isValid: Bool {
+            element.parent != nil
+        }
+
+        init(element: AXUIElement) {
+            self.element = element
+            info = .init(tabs: [])
+        }
+    }
+
+    public struct WorkspaceInfo {
+        public let tabs: Set<String>
+
+        public func combined(with info: WorkspaceInfo) -> WorkspaceInfo {
+            return .init(tabs: tabs.union(info.tabs))
+        }
+    }
+
+    func updateWorkspaceInfo() {
+        let workspaceInfoInVisibleSpace = Self.fetchVisibleWorkspaces(runningApplication)
+        workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
+    }
+
+    /// Use the project path as the workspace identifier.
+    static func workspaceIdentifier(_ window: AXUIElement) -> WorkspaceIdentifier {
+        for child in window.children {
+            if child.description.starts(with: "/"), child.description.count > 1 {
+                let path = child.description
+                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                var url = URL(fileURLWithPath: trimmedNewLine)
+                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                    !url.pathExtension.isEmpty
+                {
+                    url = url.deletingLastPathComponent()
+                }
+                return WorkspaceIdentifier.url(url)
+            }
+        }
+        return WorkspaceIdentifier.unknown
+    }
+
+    /// With Accessibility API, we can ONLY get the information of visible windows.
+    static func fetchVisibleWorkspaces(
         _ app: NSRunningApplication
-    ) -> [WorkspaceIdentifier: WorkspaceInfo] {
+    ) -> [WorkspaceIdentifier: Workspace] {
         let app = AXUIElementCreateApplication(app.processIdentifier)
         let windows = app.windows.filter { $0.identifier == "Xcode.WorkspaceWindow" }
 
-        var dict = [WorkspaceIdentifier: WorkspaceInfo]()
+        var dict = [WorkspaceIdentifier: Workspace]()
 
         for window in windows {
-            let workspaceIdentifier = {
-                for child in window.children {
-                    if child.description.starts(with: "/"), child.description.count > 1 {
-                        let path = child.description
-                        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                        var url = URL(fileURLWithPath: trimmedNewLine)
-                        while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                            !url.pathExtension.isEmpty
-                        {
-                            url = url.deletingLastPathComponent()
-                        }
-                        return WorkspaceIdentifier.url(url)
-                    }
-                }
-                return WorkspaceIdentifier.unknown
-            }()
+            let workspaceIdentifier = workspaceIdentifier(window)
 
             let tabs = {
                 guard let editArea = window.firstChild(where: { $0.description == "editor area" })
@@ -377,10 +414,26 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 return allTabs
             }()
 
-            dict[workspaceIdentifier] = .init(tabs: tabs)
+            let workspace = Workspace(element: window)
+            workspace.info = .init(tabs: tabs)
+            dict[workspaceIdentifier] = workspace
         }
-
         return dict
+    }
+
+    static func updateWorkspace(
+        _ old: [WorkspaceIdentifier: Workspace],
+        with new: [WorkspaceIdentifier: Workspace]
+    ) -> [WorkspaceIdentifier: Workspace] {
+        var updated = old.filter { $0.value.isValid } // remove closed windows.
+        for (identifier, workspace) in new {
+            if let existed = updated[identifier] {
+                existed.info = workspace.info
+            } else {
+                updated[identifier] = workspace
+            }
+        }
+        return updated
     }
 }
 
