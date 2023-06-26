@@ -198,7 +198,7 @@ public class RealtimeSuggestionController {
             }
             if Task.isCancelled { return }
 
-            Logger.service.info("Prefetch suggestions.")
+//            Logger.service.info("Prefetch suggestions.")
 
             // So the editor won't be blocked (after information are cached)!
             await PseudoCommandHandler().generateRealtimeSuggestions(sourceEditor: sourceEditor)
