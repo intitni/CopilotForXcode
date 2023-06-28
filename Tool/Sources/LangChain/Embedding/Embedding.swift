@@ -2,7 +2,7 @@ import Foundation
 
 public protocol Embeddings {
     /// Embed search docs.
-    func embedDocuments(texts: [String]) -> [[Float]]
+    func embed(documents: [String]) async throws -> [[Float]]
     /// Embed query text.
-    func embedQuery(text: String) -> [Float]
+    func embed(query: String) async throws -> [Float]
 }

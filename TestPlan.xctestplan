@@ -84,6 +84,13 @@
         "identifier" : "ChatServiceTests",
         "name" : "ChatServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "TokenEncoderTests",
+        "name" : "TokenEncoderTests"
+      }
     }
   ],
   "version" : 1
