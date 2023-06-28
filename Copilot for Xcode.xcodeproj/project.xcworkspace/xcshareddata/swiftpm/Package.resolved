@@ -19,15 +19,6 @@
       }
     },
     {
-      "identity" : "gptencoder",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/alfianlosari/GPTEncoder",
-      "state" : {
-        "revision" : "a86968867ab4380e36b904a14c42215f71efe8b4",
-        "version" : "1.0.4"
-      }
-    },
-    {
       "identity" : "highlightr",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/raspu/Highlightr",
@@ -178,6 +169,15 @@
       "state" : {
         "revision" : "0e96a20ffd37a515c5c963952d4335c89bed50a6",
         "version" : "2.6.0"
+      }
+    },
+    {
+      "identity" : "tiktoken",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/intitni/Tiktoken",
+      "state" : {
+        "branch" : "main",
+        "revision" : "6a2ac324c6daec167ca95268d5a487e6de6a1cea"
       }
     },
     {

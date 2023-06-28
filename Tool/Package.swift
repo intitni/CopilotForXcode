@@ -18,8 +18,8 @@ let package = Package(
     dependencies: [
         .package(path: "../Python"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
-        // TODO: Switch to Tiktoken. https://github.com/aespinilla/Tiktoken
-        .package(url: "https://github.com/alfianlosari/GPTEncoder", from: "1.0.4"),
+        // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
+        .package(url: "https://github.com/intitni/Tiktoken", branch: "main"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", from: "0.6.0"),
@@ -35,6 +35,20 @@ let package = Package(
         .target(name: "Terminal"),
 
         .target(name: "Logger"),
+        
+        .target(
+            name: "TokenEncoder",
+            dependencies: [
+                .product(name: "Tiktoken", package: "Tiktoken"),
+            ],
+            resources: [
+                .copy("Resources/cl100k_base.tiktoken")
+            ]
+        ),
+        .testTarget(
+            name: "TokenEncoderTests",
+            dependencies: ["TokenEncoder"]
+        ),
 
         // MARK: - Services
 
@@ -67,7 +81,7 @@ let package = Package(
             dependencies: [
                 "Logger",
                 "Preferences",
-                .product(name: "GPTEncoder", package: "GPTEncoder"),
+                "TokenEncoder",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]

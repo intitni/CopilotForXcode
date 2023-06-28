@@ -1,5 +1,4 @@
 import Foundation
-import GPTEncoder
 
 public protocol ChatGPTMemory {
     /// The visible messages to the ChatGPT service.
@@ -87,4 +86,3 @@ public extension ChatGPTMemory {
         await mutateHistory { $0.removeAll() }
     }
 }
-

@@ -1,6 +1,6 @@
 import Foundation
-import GPTEncoder
 import Preferences
+import TokenEncoder
 
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
@@ -15,7 +15,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
-    static let encoder: TokenEncoder = GPTEncoder()
+    static let encoder: TokenEncoder = TiktokenCl100kBaseTokenEncoder()
 
     var onHistoryChange: () -> Void = {}
 
@@ -27,6 +27,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         self.systemPrompt = .init(role: .system, content: systemPrompt)
         self.configuration = configuration
         self.functionProvider = functionProvider
+        _ = Self.encoder // force pre-initialize
     }
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
@@ -105,6 +106,23 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
 
     func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
         onHistoryChange = onChange
+    }
+}
+
+extension TokenEncoder {
+    func countToken(message: ChatMessage) -> Int {
+        var total = 3
+        if let content = message.content {
+            total += encode(text: content).count
+        }
+        if let name = message.name {
+            total += encode(text: name).count
+        }
+        if let functionCall = message.functionCall {
+            total += encode(text: functionCall.name).count
+            total += encode(text: functionCall.arguments).count
+        }
+        return total
     }
 }
 

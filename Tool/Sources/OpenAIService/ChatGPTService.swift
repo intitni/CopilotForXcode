@@ -1,6 +1,5 @@
 import AsyncAlgorithms
 import Foundation
-import GPTEncoder
 import Preferences
 
 public protocol ChatGPTServiceType {
