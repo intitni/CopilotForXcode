@@ -32,17 +32,14 @@ public struct WebLoader: DocumentLoader {
                 do {
                     let parsed = try SwiftSoup.parse(result.html, result.url.path)
 
-                    let body = try parsed.body()?.text()
                     let title = (try? parsed.title()) ?? "Untitled"
-                    
+                    let body = try DefaultLoadContentStrategy().load(parsed)
+
                     if let body = body {
                         let doc = Document(pageContent: body, metadata: [
                             "title": title,
-                            "filename": result.url.lastPathComponent,
-                            "extension": result.url.pathExtension,
-                            "contentModificationDate": (try? result.url
-                                .resourceValues(forKeys: [.contentModificationDateKey])
-                                .contentModificationDate) ?? Date(),
+                            "url": result.url,
+                            "date": Date(),
                         ])
                         documents.append(doc)
                     }
@@ -53,6 +50,32 @@ public struct WebLoader: DocumentLoader {
                 }
             }
             return documents
+        }
+    }
+}
+
+protocol LoadWebPageMainContentStrategy {
+    func load(_ document: SwiftSoup.Document) throws -> String?
+}
+
+extension LoadWebPageMainContentStrategy {
+    func text(inFirstTag tagName: String, from document: SwiftSoup.Document) -> String? {
+        if let tag = try? document.getElementsByTag(tagName).first(),
+           let text = try? tag.text()
+        {
+            return text
+        }
+        return nil
+    }
+}
+
+extension WebLoader {
+    struct DefaultLoadContentStrategy: LoadWebPageMainContentStrategy {
+        func load(_ document: SwiftSoup.Document) throws -> String? {
+            if let article = text(inFirstTag: "article", from: document) { return article }
+            if let main = text(inFirstTag: "main", from: document) { return main }
+            let body = try document.body()?.text()
+            return body
         }
     }
 }
