@@ -1,7 +1,5 @@
 import Foundation
 import OpenAIService
-import PythonHelper
-import PythonKit
 import TokenEncoder
 
 public struct OpenAIEmbedding: Embeddings {
@@ -159,19 +157,9 @@ extension OpenAIEmbedding {
             } else if embeddings.isEmpty {
                 results.append(.init(document: document, embeddings: []))
             } else if shouldAverageLongEmbeddings {
-                // untested
+                // unimplemented
                 do {
-                    guard let averagedEmbeddings = try await runPython({
-                        let numpy = try Python.attemptImportOnPythonThread("numpy")
-                        let average = numpy.average(
-                            embeddings,
-                            axis: 0,
-                            weights: embeddings.map(\.count)
-                        )
-                        let normalized = average / numpy.linalg.norm(average)
-                        return [Float](normalized.tolist())
-                    }) else { throw CancellationError() }
-                    results.append(.init(document: document, embeddings: averagedEmbeddings))
+                    // average
                 } catch {
                     if let first = embeddings.first {
                         results.append(.init(document: document, embeddings: first))
