@@ -26,9 +26,11 @@ public struct TextLoader: DocumentLoader {
         let modificationDate = try? url.resourceValues(forKeys: [.contentModificationDateKey])
             .contentModificationDate
         return [Document(pageContent: attributedString.string, metadata: [
-            "filename": url.lastPathComponent,
-            "extension": url.pathExtension,
-            "contentModificationDate": modificationDate ?? Date(),
+            "filename": .string(url.lastPathComponent),
+            "extension": .string(url.pathExtension),
+            "contentModificationDate": .number(
+                (modificationDate ?? Date()).timeIntervalSince1970
+            ),
         ])]
     }
 }

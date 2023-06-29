@@ -1,4 +1,5 @@
 import Foundation
+import JSONRPC
 
 public protocol DocumentTransformer {
     func transformDocuments(_ documents: [Document]) async throws -> [Document]
@@ -13,7 +14,7 @@ public extension TextSplitter {
     /// Create documents from a list of texts.
     func createDocuments(
         texts: [String],
-        metadata: [[String: Any]] = []
+        metadata: [JSONValue] = []
     ) async throws -> [Document] {
         var documents = [Document]()
         let paddingLength = texts.count - metadata.count
@@ -31,7 +32,7 @@ public extension TextSplitter {
     /// Split documents.
     func splitDocuments(_ documents: [Document]) async throws -> [Document] {
         var texts = [String]()
-        var metadata = [[String: Any]]()
+        var metadata = [JSONValue]()
         for document in documents {
             texts.append(document.pageContent)
             metadata.append(document.metadata)

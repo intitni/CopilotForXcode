@@ -1,9 +1,10 @@
 import Foundation
+import JSONRPC
 
-public struct Document {
+public struct Document: Codable {
     public var pageContent: String
-    public var metadata: [String: Any]
-    public init(pageContent: String, metadata: [String: Any]) {
+    public var metadata: JSONValue
+    public init(pageContent: String, metadata: JSONValue) {
         self.pageContent = pageContent
         self.metadata = metadata
     }

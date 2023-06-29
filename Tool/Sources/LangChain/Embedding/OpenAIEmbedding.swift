@@ -21,37 +21,45 @@ public struct OpenAIEmbedding: Embeddings {
         self.safe = safe
     }
 
-    public func embed(documents: [String]) async throws -> [[Float]] {
+    public func embed(documents: [Document]) async throws -> [EmbeddedDocument] {
         if safe {
-            return try await getLenSafeEmbeddings(texts: documents).map(\.embeddings)
+            return try await getLenSafeEmbeddings(documents: documents)
         }
-        return try await getEmbeddings(texts: documents).map(\.embeddings)
+        return try await getEmbeddings(documents: documents)
     }
 
     public func embed(query: String) async throws -> [Float] {
         if safe {
-            return try await getLenSafeEmbeddings(texts: [query]).first?.embeddings ?? []
+            return try await getLenSafeEmbeddings(documents: [.init(
+                pageContent: query,
+                metadata: .null
+            )])
+            .first?
+            .embeddings ?? []
         }
-        return try await getEmbeddings(texts: [query]).first?.embeddings ?? []
+        return try await getEmbeddings(documents: [.init(pageContent: query, metadata: .null)])
+            .first?
+            .embeddings ?? []
     }
 }
 
 extension OpenAIEmbedding {
     func getEmbeddings(
-        texts: [String]
-    ) async throws -> [(originalText: String, embeddings: [Float])] {
+        documents: [Document]
+    ) async throws -> [EmbeddedDocument] {
         try await withThrowingTaskGroup(
-            of: (originalText: String, embeddings: [Float]).self
+            of: (document: Document, embeddings: [Float]).self
         ) { group in
-            for text in texts {
+            for document in documents {
                 group.addTask {
                     var retryCount = 6
                     var previousError: Error?
                     while retryCount > 0 {
                         do {
-                            let embeddings = try await service.embed(text: text).data
+                            let embeddings = try await service.embed(text: document.pageContent)
+                                .data
                                 .map(\.embeddings).first ?? []
-                            return (text, embeddings)
+                            return (document, embeddings)
                         } catch {
                             retryCount -= 1
                             previousError = error
@@ -60,27 +68,27 @@ extension OpenAIEmbedding {
                     throw previousError ?? CancellationError()
                 }
             }
-            var all = [(originalText: String, embeddings: [Float])]()
+            var all = [EmbeddedDocument]()
             for try await result in group {
-                all.append(result)
+                all.append(.init(document: result.document, embeddings: result.embeddings))
             }
             return all
         }
     }
 
     func getLenSafeEmbeddings(
-        texts: [String]
-    ) async throws -> [(originalText: String, embeddings: [Float])] {
+        documents: [Document]
+    ) async throws -> [EmbeddedDocument] {
         struct Text {
-            var rawText: String
+            var document: Document
             var chunkedTokens: [[Int]]
         }
 
-        var texts = texts.map { Text(rawText: $0, chunkedTokens: []) }
+        var texts = documents.map { Text(document: $0, chunkedTokens: []) }
         let encoding = TiktokenCl100kBaseTokenEncoder()
 
         for (index, text) in texts.enumerated() {
-            let token = encoding.encode(text: text.rawText)
+            let token = encoding.encode(text: text.document.pageContent)
             // just incase the calculation is incorrect
             let maxToken = max(10, service.configuration.maxToken - 10)
 
@@ -92,27 +100,28 @@ extension OpenAIEmbedding {
         }
 
         let batchedEmbeddings = try await withThrowingTaskGroup(
-            of: (String, [[Float]]).self
+            of: (Document, [[Float]]).self
         ) { group in
             for text in texts {
                 group.addTask {
                     var retryCount = 6
                     var previousError: Error?
-                    guard !text.chunkedTokens.isEmpty else { return (text.rawText, []) }
+                    guard !text.chunkedTokens.isEmpty
+                    else { return (text.document, []) }
                     while retryCount > 0 {
                         do {
                             if text.chunkedTokens.count <= 1 {
                                 // if possible, we should just let OpenAI do the tokenization.
                                 return (
-                                    text.rawText,
-                                    try await service.embed(text: text.rawText)
+                                    text.document,
+                                    try await service.embed(text: text.document.pageContent)
                                         .data
                                         .map(\.embeddings)
                                 )
                             }
                             if shouldAverageLongEmbeddings {
                                 return (
-                                    text.rawText,
+                                    text.document,
                                     try await service.embed(tokens: text.chunkedTokens)
                                         .data
                                         .map(\.embeddings)
@@ -121,7 +130,7 @@ extension OpenAIEmbedding {
                             // if `shouldAverageLongEmbeddings` is false,
                             // we only embed the first chunk to save some money.
                             return (
-                                text.rawText,
+                                text.document,
                                 try await service.embed(tokens: [text.chunkedTokens.first ?? []])
                                     .data
                                     .map(\.embeddings)
@@ -134,7 +143,7 @@ extension OpenAIEmbedding {
                     throw previousError ?? CancellationError()
                 }
             }
-            var result = [(originalText: String, embeddings: [[Float]])]()
+            var result = [(document: Document, embeddings: [[Float]])]()
             for try await response in group {
                 try Task.checkCancellation()
                 result.append((response.0, response.1))
@@ -142,13 +151,13 @@ extension OpenAIEmbedding {
             return result
         }
 
-        var results = [(originalText: String, embeddings: [Float])]()
+        var results = [EmbeddedDocument]()
 
-        for (text, embeddings) in batchedEmbeddings {
+        for (document, embeddings) in batchedEmbeddings {
             if embeddings.count == 1, let first = embeddings.first {
-                results.append((text, first))
+                results.append(.init(document: document, embeddings: first))
             } else if embeddings.isEmpty {
-                results.append((text, []))
+                results.append(.init(document: document, embeddings: []))
             } else if shouldAverageLongEmbeddings {
                 // untested
                 do {
@@ -162,14 +171,14 @@ extension OpenAIEmbedding {
                         let normalized = average / numpy.linalg.norm(average)
                         return [Float](normalized.tolist())
                     }) else { throw CancellationError() }
-                    results.append((text, averagedEmbeddings))
+                    results.append(.init(document: document, embeddings: averagedEmbeddings))
                 } catch {
                     if let first = embeddings.first {
-                        results.append((text, first))
+                        results.append(.init(document: document, embeddings: first))
                     }
                 }
             } else if let first = embeddings.first {
-                results.append((text, first))
+                results.append(.init(document: document, embeddings: first))
             }
         }
 

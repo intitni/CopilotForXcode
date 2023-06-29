@@ -37,9 +37,9 @@ public struct WebLoader: DocumentLoader {
 
                     if let body = body {
                         let doc = Document(pageContent: body, metadata: [
-                            "title": title,
-                            "url": result.url,
-                            "date": Date(),
+                            "title": .string(title),
+                            "url": .string(result.url.absoluteString),
+                            "date": .number(Date().timeIntervalSince1970),
                         ])
                         documents.append(doc)
                     }
