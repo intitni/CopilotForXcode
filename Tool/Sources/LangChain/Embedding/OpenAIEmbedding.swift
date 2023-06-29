@@ -6,25 +6,68 @@ import TokenEncoder
 
 public struct OpenAIEmbedding: Embeddings {
     public var service: EmbeddingService
+    public var shouldAverageLongEmbeddings: Bool
     /// Usually we won't hit the limit because the max token is 8191 and we will do text splitting
     /// before embedding.
-    public var shouldAverageLongEmbeddings: Bool
+    public var safe: Bool
 
-    public init(configuration: EmbeddingConfiguration, shouldAverageLongEmbeddings: Bool = false) {
+    public init(
+        configuration: EmbeddingConfiguration,
+        shouldAverageLongEmbeddings: Bool = false,
+        safe: Bool = false
+    ) {
         service = EmbeddingService(configuration: configuration)
         self.shouldAverageLongEmbeddings = shouldAverageLongEmbeddings
+        self.safe = safe
     }
 
     public func embed(documents: [String]) async throws -> [[Float]] {
-        []
+        if safe {
+            return try await getLenSafeEmbeddings(texts: documents).map(\.embeddings)
+        }
+        return try await getEmbeddings(texts: documents).map(\.embeddings)
     }
 
     public func embed(query: String) async throws -> [Float] {
-        return try await getLenSafeEmbeddings(texts: [query]).first?.embeddings ?? []
+        if safe {
+            return try await getLenSafeEmbeddings(texts: [query]).first?.embeddings ?? []
+        }
+        return try await getEmbeddings(texts: [query]).first?.embeddings ?? []
     }
 }
 
 extension OpenAIEmbedding {
+    func getEmbeddings(
+        texts: [String]
+    ) async throws -> [(originalText: String, embeddings: [Float])] {
+        try await withThrowingTaskGroup(
+            of: (originalText: String, embeddings: [Float]).self
+        ) { group in
+            for text in texts {
+                group.addTask {
+                    var retryCount = 6
+                    var previousError: Error?
+                    while retryCount > 0 {
+                        do {
+                            let embeddings = try await service.embed(text: text).data
+                                .map(\.embeddings).first ?? []
+                            return (text, embeddings)
+                        } catch {
+                            retryCount -= 1
+                            previousError = error
+                        }
+                    }
+                    throw previousError ?? CancellationError()
+                }
+            }
+            var all = [(originalText: String, embeddings: [Float])]()
+            for try await result in group {
+                all.append(result)
+            }
+            return all
+        }
+    }
+
     func getLenSafeEmbeddings(
         texts: [String]
     ) async throws -> [(originalText: String, embeddings: [Float])] {
@@ -116,7 +159,7 @@ extension OpenAIEmbedding {
                             axis: 0,
                             weights: embeddings.map(\.count)
                         )
-                        let normalized = average / numpy.linalg.norm(embeddings)
+                        let normalized = average / numpy.linalg.norm(average)
                         return [Float](normalized.tolist())
                     }) else { throw CancellationError() }
                     results.append((text, averagedEmbeddings))
