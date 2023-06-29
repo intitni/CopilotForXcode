@@ -6,6 +6,10 @@ public protocol DocumentTransformer {
 }
 
 public protocol TextSplitter: DocumentTransformer {
+    var chunkSize: Int { get }
+    var chunkOverlap: Int { get }
+    var lengthFunction: (String) -> Int { get }
+
     /// Split text into multiple components.
     func split(text: String) async throws -> [String]
 }
@@ -46,5 +50,87 @@ public extension TextSplitter {
     }
 }
 
-extension TextSplitter {}
+public extension TextSplitter {
+    /// Merge small splits to just fit in the chunk size.
+    func mergeSplits(_ splits: [String]) -> [String] {
+        let chunkOverlap = chunkOverlap < chunkSize ? chunkOverlap : 0
+
+        var chunks = [String]()
+        var currentChunk = [String]()
+        var overlappingChunks = [String]()
+        var currentChunkSize = 0
+        
+        func join(_ a: [String], _ b: [String]) -> String {
+            return (a + b).joined().trimmingCharacters(in: .whitespaces)
+        }
+
+        for text in splits {
+            let textLength = lengthFunction(text)
+            if currentChunkSize + textLength > chunkSize {
+                let currentChunkText = join(overlappingChunks, currentChunk)
+                chunks.append(currentChunkText)
+
+                overlappingChunks = []
+                var overlappingSize = 0
+                // use small chunks as overlap if possible
+                for chunk in currentChunk.reversed() {
+                    let length = lengthFunction(chunk)
+                    if overlappingSize + length > chunkOverlap { break }
+                    if overlappingSize + length + textLength > chunkSize { break }
+                    overlappingSize += length
+                    overlappingChunks.insert(chunk, at: 0)
+                }
+//                // fallback to use suffix if no small chunk found
+//                if overlappingChunks.isEmpty {
+//                    let suffix = String(
+//                        currentChunkText.suffix(min(chunkOverlap, chunkSize - textLength))
+//                    )
+//                    overlappingChunks.append(suffix)
+//                    overlappingSize = lengthFunction(suffix)
+//                }
+
+                currentChunkSize = overlappingSize + textLength
+                currentChunk = [text]
+            } else {
+                currentChunkSize += textLength
+                currentChunk.append(text)
+            }
+        }
+
+        if !currentChunk.isEmpty {
+            chunks.append(join(overlappingChunks, currentChunk))
+        }
+
+        return chunks
+    }
+
+    /// Split the text by separator.
+    func split(text: String, separator: String) -> [String] {
+        guard !separator.isEmpty else {
+            return [text]
+        }
+
+        let pattern = "(\(separator))"
+        if let regex = try? NSRegularExpression(pattern: pattern) {
+            let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+            var all = [String]()
+            var start = text.startIndex
+            for match in matches {
+                guard let range = Range(match.range, in: text) else { break }
+                guard range.lowerBound > start else { break }
+                let result = text[start..<range.lowerBound]
+                start = range.lowerBound
+                if !result.isEmpty {
+                    all.append(String(result))
+                }
+            }
+            if start < text.endIndex {
+                all.append(String(text[start...]))
+            }
+            return all
+        } else {
+            return [text]
+        }
+    }
+}
 

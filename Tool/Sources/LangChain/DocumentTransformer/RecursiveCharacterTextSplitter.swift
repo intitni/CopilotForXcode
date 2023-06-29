@@ -1,39 +1,99 @@
 import Foundation
-import PythonHelper
-import PythonKit
 
-public struct RecursiveCharacterTextSplitter: TextSplitter {
+class RecursiveCharacterTextSplitter: TextSplitter {
+    /**
+     Implementation of splitting text that looks at characters.
+     Recursively tries to split by different characters to find one that works.
+     */
     public var separators: [String]
     public var chunkSize: Int
     public var chunkOverlap: Int
-    
-    public init(
+    public var lengthFunction: (String) -> Int
+
+    init(
         separators: [String] = ["\n\n", "\n", " ", ""],
         chunkSize: Int = 4000,
-        chunkOverlap: Int = 200
+        chunkOverlap: Int = 200,
+        lengthFunction: @escaping (String) -> Int = { $0.count }
     ) {
-        self.separators = separators
+        assert(chunkOverlap <= chunkSize)
         self.chunkSize = chunkSize
         self.chunkOverlap = chunkOverlap
+        self.lengthFunction = lengthFunction
+        self.separators = separators
+    }
+
+    init(
+        separatorSet: TextSplitterSeparatorSet,
+        chunkSize: Int = 4000,
+        chunkOverlap: Int = 200,
+        lengthFunction: @escaping (String) -> Int = { $0.count }
+    ) {
+        assert(chunkOverlap <= chunkSize)
+        self.chunkSize = chunkSize
+        self.chunkOverlap = chunkOverlap
+        self.lengthFunction = lengthFunction
+        separators = separatorSet.separators
     }
 
     public func split(text: String) async throws -> [String] {
-        try await runPython {
-            let text_splitter = try Python.attemptImportOnPythonThread("langchain.text_splitter")
-            let PythonRecursiveCharacterTextSplitter = text_splitter.RecursiveCharacterTextSplitter
-            let splitter = PythonRecursiveCharacterTextSplitter(
-                separators: separators,
-                chunk_size: chunkSize,
-                chunk_overlap: chunkOverlap
-//                length_function: PythonFunction({ object in
-//                    if let string = String(object) { return string.count }
-//                    return 0
-//                })
-            )
-            let result = splitter.split_text(text)
-            guard let array = [String](result) else { return [] }
-            return array
+        return split(text: text, separators: separators)
+    }
+
+    private func split(text: String, separators: [String]) -> [String] {
+        var finalChunks = [String]()
+
+        // Get appropriate separator to use
+        let firstSeparatorIndex = separators.firstIndex {
+            let pattern = "(\($0))"
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { return false }
+            return regex.firstMatch(
+                in: text,
+                options: [],
+                range: NSRange(text.startIndex..., in: text)
+            ) != nil
         }
+        var separator: String
+        var nextSeparators: [String]
+        
+        if let index = firstSeparatorIndex {
+            separator = separators[index]
+            if index < separators.endIndex - 1 {
+                nextSeparators = Array(separators[(index + 1)...])
+            } else {
+                nextSeparators = []
+            }
+        } else {
+            separator = ""
+            nextSeparators = []
+        }
+
+        let splits = split(text: text, separator: separator)
+
+        // Now go merging things, recursively splitting longer texts.
+        var goodSplits = [String]()
+        for s in splits {
+            if lengthFunction(s) < chunkSize {
+                goodSplits.append(s)
+            } else {
+                if !goodSplits.isEmpty {
+                    let mergedText = mergeSplits(goodSplits)
+                    finalChunks.append(contentsOf: mergedText)
+                    goodSplits.removeAll()
+                }
+                if nextSeparators.isEmpty {
+                    finalChunks.append(s)
+                } else {
+                    let other_info = split(text: s, separators: nextSeparators)
+                    finalChunks.append(contentsOf: other_info)
+                }
+            }
+        }
+        if !goodSplits.isEmpty {
+            let merged_text = mergeSplits(goodSplits)
+            finalChunks.append(contentsOf: merged_text)
+        }
+        return finalChunks
     }
 }
 

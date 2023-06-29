@@ -1,4 +1,5 @@
 import Foundation
+import TokenEncoder
 import XCTest
 
 @testable import OpenAIService
