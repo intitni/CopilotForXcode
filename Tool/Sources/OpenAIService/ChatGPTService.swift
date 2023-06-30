@@ -356,6 +356,7 @@ extension ChatGPTService {
                 id: messageId,
                 role: .function,
                 content: content,
+                name: call.name,
                 summary: "Function `\(call.name)` not found."
             )
             await memory.appendMessage(responseMessage)
