@@ -56,7 +56,7 @@ extension OpenAIEmbedding {
                         do {
                             let embeddings = try await service.embed(text: document.pageContent)
                                 .data
-                                .map(\.embeddings).first ?? []
+                                .map(\.embedding).first ?? []
                             return (document, embeddings)
                         } catch {
                             retryCount -= 1
@@ -114,7 +114,7 @@ extension OpenAIEmbedding {
                                     text.document,
                                     try await service.embed(text: text.document.pageContent)
                                         .data
-                                        .map(\.embeddings)
+                                        .map(\.embedding)
                                 )
                             }
                             if shouldAverageLongEmbeddings {
@@ -122,7 +122,7 @@ extension OpenAIEmbedding {
                                     text.document,
                                     try await service.embed(tokens: text.chunkedTokens)
                                         .data
-                                        .map(\.embeddings)
+                                        .map(\.embedding)
                                 )
                             }
                             // if `shouldAverageLongEmbeddings` is false,
@@ -131,7 +131,7 @@ extension OpenAIEmbedding {
                                 text.document,
                                 try await service.embed(tokens: [text.chunkedTokens.first ?? []])
                                     .data
-                                    .map(\.embeddings)
+                                    .map(\.embedding)
                             )
                         } catch {
                             retryCount -= 1
@@ -158,12 +158,8 @@ extension OpenAIEmbedding {
                 results.append(.init(document: document, embeddings: []))
             } else if shouldAverageLongEmbeddings {
                 // unimplemented
-                do {
-                    // average
-                } catch {
-                    if let first = embeddings.first {
-                        results.append(.init(document: document, embeddings: first))
-                    }
+                if let first = embeddings.first {
+                    results.append(.init(document: document, embeddings: first))
                 }
             } else if let first = embeddings.first {
                 results.append(.init(document: document, embeddings: first))
