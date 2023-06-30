@@ -30,11 +30,14 @@ struct BingSearchResponseError: Codable, Error, LocalizedError {
 
 enum BingSearchError: Error, LocalizedError {
     case searchURLFormatIncorrect(String)
+    case subscriptionKeyNotAvailable
 
     var errorDescription: String? {
         switch self {
         case let .searchURLFormatIncorrect(url):
             return "The search URL format is incorrect: \(url)"
+        case .subscriptionKeyNotAvailable:
+            return "The user doesn't provide a subscription key to use Bing search."
         }
     }
 }
@@ -53,6 +56,7 @@ public struct BingSearchService {
         numberOfResult: Int,
         freshness: String? = nil
     ) async throws -> BingSearchResult {
+        guard !subscriptionKey.isEmpty else { throw BingSearchError.subscriptionKeyNotAvailable }
         guard let url = URL(string: searchURL)
         else { throw BingSearchError.searchURLFormatIncorrect(searchURL) }
 
