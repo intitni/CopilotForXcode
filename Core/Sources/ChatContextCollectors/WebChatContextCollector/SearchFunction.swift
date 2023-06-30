@@ -111,14 +111,6 @@ struct SearchFunction: ChatGPTFunction {
             freshness: arguments.freshness
         )
 
-        let content = result.webPages.value.enumerated().map {
-            let (index, page) = $0
-            return """
-            \(index + 1). \(page.name) \(page.url)
-            \(page.snippet)
-            """
-        }.joined(separator: "\n")
-
         return .init(result: result)
     }
 }
