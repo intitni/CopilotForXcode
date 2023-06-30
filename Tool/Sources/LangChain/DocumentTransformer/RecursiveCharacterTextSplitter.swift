@@ -1,6 +1,6 @@
 import Foundation
 
-class RecursiveCharacterTextSplitter: TextSplitter {
+public class RecursiveCharacterTextSplitter: TextSplitter {
     /**
      Implementation of splitting text that looks at characters.
      Recursively tries to split by different characters to find one that works.
@@ -10,7 +10,7 @@ class RecursiveCharacterTextSplitter: TextSplitter {
     public var chunkOverlap: Int
     public var lengthFunction: (String) -> Int
 
-    init(
+    public init(
         separators: [String] = ["\n\n", "\n", " ", ""],
         chunkSize: Int = 4000,
         chunkOverlap: Int = 200,
@@ -23,7 +23,7 @@ class RecursiveCharacterTextSplitter: TextSplitter {
         self.separators = separators
     }
 
-    init(
+    public init(
         separatorSet: TextSplitterSeparatorSet,
         chunkSize: Int = 4000,
         chunkOverlap: Int = 200,
