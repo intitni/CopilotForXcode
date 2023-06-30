@@ -17,7 +17,7 @@ extension EmbeddingConfiguration {
         case .openAI:
             let baseURL = UserDefaults.shared.value(for: \.openAIBaseURL)
             if baseURL.isEmpty { return "https://api.openai.com/v1/embeddings" }
-            return "\(baseURL)/v1/chat/completions"
+            return "\(baseURL)/v1/embeddings"
         case .azureOpenAI:
             let baseURL = UserDefaults.shared.value(for: \.azureOpenAIBaseURL)
             let deployment = UserDefaults.shared.value(for: \.azureChatGPTDeployment)

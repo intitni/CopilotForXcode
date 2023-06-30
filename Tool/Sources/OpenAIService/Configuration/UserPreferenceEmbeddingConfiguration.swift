@@ -7,9 +7,7 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
     }
 
     public var model: String {
-        let value = UserDefaults.shared.value(for: \.chatGPTModel)
-        if value.isEmpty { return "text-embedding-ada-002" }
-        return value
+        return "text-embedding-ada-002"
     }
 
     public var endpoint: String {

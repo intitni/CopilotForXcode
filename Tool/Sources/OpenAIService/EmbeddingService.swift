@@ -2,7 +2,7 @@ import Foundation
 
 public struct EmbeddingResponse: Decodable {
     public struct Object: Decodable {
-        public var embeddings: [Float]
+        public var embedding: [Float]
         public var index: Int
         public var object: String
     }
