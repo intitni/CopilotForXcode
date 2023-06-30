@@ -1,11 +1,18 @@
 import Foundation
 import USearch
+import USearchObjective
+
+@globalActor
+private actor TemporaryUSearchActor {
+    static let shared = TemporaryUSearchActor()
+}
 
 /// A temporary USearch index for small and temporary documents.
-public class TemporaryUSearch {
+public actor TemporaryUSearch: VectorStore {
     public let identifier: String
     let index: USearchIndex
     var documents: [UInt32: Document] = [:]
+    var isViewOnly: Bool = false
 
     public init(identifier: String) {
         self.identifier = identifier
@@ -18,10 +25,10 @@ public class TemporaryUSearch {
     }
 
     /// Load a USearch index if found.
-    public static func load(identifier: String) -> TemporaryUSearch? {
+    public static func load(identifier: String) async -> TemporaryUSearch? {
         let it = TemporaryUSearch(identifier: identifier)
         do {
-            try it.load()
+            try await it.load()
             return it
         } catch {
             return nil
@@ -29,10 +36,10 @@ public class TemporaryUSearch {
     }
 
     /// Create a readonly USearch instance if the index is found.
-    public static func view(identifier: String) -> TemporaryUSearch? {
+    public static func view(identifier: String) async -> TemporaryUSearch? {
         let it = TemporaryUSearch(identifier: identifier)
         do {
-            try it.view()
+            try await it.view()
             return it
         } catch {
             return nil
@@ -50,24 +57,41 @@ public class TemporaryUSearch {
         }
     }
 
-    public func search(embeddings: [Float], count: Int, threshold: Float = 0.1) -> [Document] {
+    public func searchWithDistance(
+        embeddings: [Float],
+        count: Int
+    ) async throws -> [(document: Document, distance: Float)] {
         let embeddings = embeddings.map { Float32($0) }[...]
         let result = index.search(vector: embeddings, count: count)
-        var matches = [Document]()
+        var matches = [(document: Document, distance: Float)]()
         for (index, distance) in zip(result.0, result.1) {
-            if let document = documents[index], distance < threshold {
-                matches.append(document)
+            if let document = documents[index] {
+                matches.append((document, distance))
             }
         }
         return matches
     }
 
     public func clear() {
+        guard !isViewOnly else { return }
         index.clear()
         documents = [:]
     }
 
-    public func set(_ documents: [EmbeddedDocument]) {
+    public func add(_ documents: [EmbeddedDocument]) async throws {
+        guard !isViewOnly else { return }
+        let lastIndex = self.documents.keys.max() ?? 0
+        for (i, document) in documents.enumerated() {
+            let key = lastIndex + UInt32(i) + 1
+            let embeddings = document.embeddings.map { Float32($0) }[...]
+            index.add(label: key, vector: embeddings)
+            self.documents[key] = document.document
+        }
+        save()
+    }
+
+    public func set(_ documents: [EmbeddedDocument]) async throws {
+        guard !isViewOnly else { return }
         clear()
         for (i, document) in documents.enumerated() {
             let embeddings = document.embeddings.map { Float32($0) }[...]
@@ -110,6 +134,7 @@ public class TemporaryUSearch {
         }
         let docs = try JSONDecoder().decode([UInt32: Document].self, from: documentsData)
         documents = docs
+        isViewOnly = true
     }
 }
 
