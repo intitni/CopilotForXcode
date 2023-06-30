@@ -1,12 +1,17 @@
 import Foundation
 import Logger
 import SwiftSoup
+import WebKit
 
 public struct WebLoader: DocumentLoader {
+    enum MetadataKeys {
+        static let title = "title"
+        static let url = "url"
+        static let date = "date"
+    }
+    
     var downloadHTML: (_ url: URL) async throws -> (url: URL, html: String) = { url in
-        let session = URLSession.shared
-        let (data, _) = try await session.data(for: .init(url: url))
-        let html = String(data: data, encoding: .utf8) ?? ""
+        let html = try await WebScrapper().fetch(url: url)
         return (url, html)
     }
 
@@ -37,9 +42,9 @@ public struct WebLoader: DocumentLoader {
 
                     if let body = body {
                         let doc = Document(pageContent: body, metadata: [
-                            "title": .string(title),
-                            "url": .string(result.url.absoluteString),
-                            "date": .number(Date().timeIntervalSince1970),
+                            MetadataKeys.title: .string(title),
+                            MetadataKeys.url: .string(result.url.absoluteString),
+                            MetadataKeys.date: .number(Date().timeIntervalSince1970),
                         ])
                         documents.append(doc)
                     }
@@ -80,3 +85,67 @@ extension WebLoader {
     }
 }
 
+@MainActor
+final class WebScrapper: NSObject, WKNavigationDelegate {
+    var webView: WKWebView
+
+    let retryLimit: Int
+    var webViewDidFinishLoading = false
+    var navigationError: (any Error)?
+
+    init(retryLimit: Int = 10) {
+        self.retryLimit = retryLimit
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.preferredContentMode = .desktop
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.applicationNameForUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15"
+        // The web page need the web view to have a size to load correctly.
+        let webView = WKWebView(
+            frame: .init(x: 0, y: 0, width: 500, height: 500),
+            configuration: configuration
+        )
+        self.webView = webView
+        super.init()
+        webView.navigationDelegate = self
+    }
+
+    func fetch(url: URL) async throws -> String {
+        webViewDidFinishLoading = false
+        navigationError = nil
+        var retryCount = 0
+        _ = webView.load(.init(url: url))
+        while !webViewDidFinishLoading {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        if let navigationError { throw navigationError }
+        while retryCount < retryLimit {
+            let html = try await getHTML()
+            if !html.isEmpty { return html }
+            retryCount += 1
+        }
+        
+        throw CancellationError()
+    }
+
+    nonisolated func webView(_: WKWebView, didFinish _: WKNavigation!) {
+        Task { @MainActor in
+            self.webViewDidFinishLoading = true
+        }
+    }
+
+    nonisolated func webView(_: WKWebView, didFail _: WKNavigation!, withError error: Error) {
+        Task { @MainActor in
+            self.navigationError = error
+            self.webViewDidFinishLoading = true
+        }
+    }
+
+    func getHTML() async throws -> String {
+        return try await webView.evaluateJavaScript(getHTMLText) as? String ?? ""
+    }
+}
+
+private let getHTMLText = """
+document.documentElement.outerHTML;
+"""
