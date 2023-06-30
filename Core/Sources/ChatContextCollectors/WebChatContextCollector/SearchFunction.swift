@@ -29,6 +29,8 @@ struct SearchFunction: ChatGPTFunction {
         }
     }
 
+    var reportProgress: (String) async -> Void = { _ in }
+
     var name: String {
         "searchWeb"
     }
@@ -58,60 +60,38 @@ struct SearchFunction: ChatGPTFunction {
         ]
     }
 
-    func message(at phase: ChatGPTFunctionCallPhase) -> String {
-        func parseArgument(_ string: String) throws -> Arguments {
-            try JSONDecoder().decode(Arguments.self, from: string.data(using: .utf8) ?? Data())
-        }
-
-        switch phase {
-        case .detected:
-            return "Searching.."
-        case let .processing(argumentsJsonString):
-            do {
-                let arguments = try parseArgument(argumentsJsonString)
-                return "Searching \(arguments.query)"
-            } catch {
-                return "Searching.."
-            }
-        case let .ended(argumentsJsonString, result):
-            do {
-                let arguments = try parseArgument(argumentsJsonString)
-                if let result = result as? Result {
-                    return """
-                    Finish searching \(arguments.query)
-                    \(
-                        result.result.webPages.value
-                            .map { "- [\($0.name)](\($0.url))" }
-                            .joined(separator: "\n")
-                    )
-                    """
-                }
-                return "Finish searching \(arguments.query)"
-            } catch {
-                return "Finish searching"
-            }
-        case let .error(argumentsJsonString, _):
-            do {
-                let arguments = try parseArgument(argumentsJsonString)
-                return "Failed searching \(arguments.query)"
-            } catch {
-                return "Failed searching"
-            }
-        }
+    func prepare() async {
+        await reportProgress("Searching..")
     }
 
     func call(arguments: Arguments) async throws -> Result {
-        let bingSearch = BingSearchService(
-            subscriptionKey: UserDefaults.shared.value(for: \.bingSearchSubscriptionKey),
-            searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
-        )
-        let result = try await bingSearch.search(
-            query: arguments.query,
-            numberOfResult: UserDefaults.shared.value(for: \.chatGPTMaxToken) > 5000 ? 5 : 3,
-            freshness: arguments.freshness
-        )
+        await reportProgress("Searching \(arguments.query)")
 
-        return .init(result: result)
+        do {
+            let bingSearch = BingSearchService(
+                subscriptionKey: UserDefaults.shared.value(for: \.bingSearchSubscriptionKey),
+                searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
+            )
+            let result = try await bingSearch.search(
+                query: arguments.query,
+                numberOfResult: UserDefaults.shared.value(for: \.chatGPTMaxToken) > 5000 ? 5 : 3,
+                freshness: arguments.freshness
+            )
+
+            await reportProgress("""
+            Finish searching \(arguments.query)
+            \(
+                result.webPages.value
+                    .map { "- [\($0.name)](\($0.url))" }
+                    .joined(separator: "\n")
+            )
+            """)
+
+            return .init(result: result)
+        } catch {
+            await reportProgress("Failed searching: \(error.localizedDescription)")
+            throw error
+        }
     }
 }
 

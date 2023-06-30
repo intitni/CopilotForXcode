@@ -331,15 +331,20 @@ extension ChatGPTService {
     /// When a function call is detected, but arguments are not yet ready, we can call this
     /// to insert a message placeholder in memory.
     func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
-        guard let function = functionProvider.function(named: call.name) else { return }
+        guard var function = functionProvider.function(named: call.name) else { return }
         let responseMessage = ChatMessage(
             id: messageId,
             role: .function,
             content: nil,
-            name: call.name,
-            summary: function.message(at: .detected)
+            name: call.name
         )
         await memory.appendMessage(responseMessage)
+        function.reportProgress = { [weak self] summary in
+            await self?.memory.updateMessage(id: messageId) { message in
+                message.summary = summary
+            }
+        }
+        await function.prepare()
     }
 
     /// Run a function call from the bot, and insert the result in memory.
@@ -350,7 +355,7 @@ extension ChatGPTService {
     ) async -> String {
         let messageId = messageId ?? uuidGenerator()
 
-        guard let function = functionProvider.function(named: call.name) else {
+        guard var function = functionProvider.function(named: call.name) else {
             let content = "Error: function not found"
             let responseMessage = ChatMessage(
                 id: messageId,
@@ -368,34 +373,31 @@ extension ChatGPTService {
             id: messageId,
             role: .function,
             content: nil,
-            name: call.name,
-            summary: function.message(at: .processing(argumentsJsonString: call.arguments))
+            name: call.name
         )
+        
         await memory.appendMessage(responseMessage)
 
+        function.reportProgress = { [weak self] summary in
+            await self?.memory.updateMessage(id: messageId) { message in
+                message.summary = summary
+            }
+        }
+        
         do {
             // Run the function
-            let result = try await function
-                .call(argumentsJsonString: call.arguments)
+            let result = try await function.call(argumentsJsonString: call.arguments)
 
-            // Update the message to display the finish state of the function.
             await memory.updateMessage(id: messageId) { message in
                 message.content = result.botReadableContent
-                message.summary = function.message(at: .ended(
-                    argumentsJsonString: call.arguments,
-                    result: result
-                ))
             }
+            
             return result.botReadableContent
         } catch {
             // For errors, use the error message as the result.
             let content = "Error: \(error.localizedDescription)"
             await memory.updateMessage(id: messageId) { message in
                 message.content = content
-                message.summary = function.message(at: .error(
-                    argumentsJsonString: call.arguments,
-                    result: error
-                ))
             }
             return content
         }

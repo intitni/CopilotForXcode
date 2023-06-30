@@ -347,9 +347,11 @@ extension ChatGPTStreamTests {
                 .type: ["null"]
             ]
         }
+        
+        var reportProgress: (String) async -> Void = { print($0) }
 
-        func message(at phase: ChatGPTFunctionCallPhase) -> String {
-            return "running"
+        func prepare() async {
+            print("Function will be called")
         }
 
         func call(arguments: Parameters) async throws -> String {

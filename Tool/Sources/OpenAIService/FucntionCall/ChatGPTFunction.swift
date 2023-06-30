@@ -26,10 +26,12 @@ public protocol ChatGPTFunction {
     var description: String { get }
     /// The arguments schema that the function take in [JSON schema](https://json-schema.org).
     var argumentSchema: JSONSchemaValue { get }
+    /// Prepare to call the function
+    func prepare() async
     /// Call the function with the given arguments.
     func call(arguments: Arguments) async throws -> Result
     /// The message to present in different phases.
-    func message(at phase: ChatGPTFunctionCallPhase) -> String
+    var reportProgress: (String) async -> Void { get set }
 }
 
 public extension ChatGPTFunction {
