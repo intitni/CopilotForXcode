@@ -13,7 +13,7 @@ public final class WebChatContextCollector: ChatContextCollector {
         content: String
     ) -> ChatContext? {
         guard scopes.contains("web") else { return nil }
-        let links = Self.detectLinks(from: history)
+        let links = Self.detectLinks(from: history) + Self.detectLinks(from: content)
         let functions: [(any ChatGPTFunction)?] = [
             SearchFunction(),
             // allow this function only when there is a link in the memory.
@@ -28,21 +28,22 @@ public final class WebChatContextCollector: ChatContextCollector {
 
 extension WebChatContextCollector {
     static func detectLinks(from messages: [ChatMessage]) -> [String] {
+        return messages.lazy.compactMap(\.content).map(detectLinks(from:)).flatMap { $0 }
+    }
+    
+    static func detectLinks(from content: String) -> [String] {
         var links = [String]()
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-        for message in messages {
-            guard let content = message.content else { continue }
-            let matches = detector?.matches(
-                in: content,
-                options: [],
-                range: NSRange(content.startIndex..., in: content)
-            )
+        let matches = detector?.matches(
+            in: content,
+            options: [],
+            range: NSRange(content.startIndex..., in: content)
+        )
 
-            for match in matches ?? [] {
-                guard let range = Range(match.range, in: content) else { continue }
-                let url = content[range]
-                links.append(String(url))
-            }
+        for match in matches ?? [] {
+            guard let range = Range(match.range, in: content) else { continue }
+            let url = content[range]
+            links.append(String(url))
         }
         return links
     }
