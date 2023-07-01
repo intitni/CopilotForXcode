@@ -80,10 +80,11 @@ let package = Package(
                 "SuggestionWidget",
                 "AXExtension",
                 "ChatService",
-                .product(name: "Logger", package: "Tool"),
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
+                .product(name: "Logger", package: "Tool"),
+                .product(name: "PythonHelper", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
@@ -321,7 +322,6 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
                 .product(name: "ExternalServices", package: "Tool"),
-                .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/SearchChatPlugin"
         ),
@@ -342,6 +342,7 @@ let package = Package(
             name: "WebChatContextCollector",
             dependencies: [
                 "ChatContextCollector",
+                .product(name: "LangChain", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "ExternalServices", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),

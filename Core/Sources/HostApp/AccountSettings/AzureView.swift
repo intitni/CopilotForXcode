@@ -9,6 +9,7 @@ final class AzureViewSettings: ObservableObject {
     @AppStorage(\.azureOpenAIAPIKey) var azureOpenAIAPIKey: String
     @AppStorage(\.azureOpenAIBaseURL) var azureOpenAIBaseURL: String
     @AppStorage(\.azureChatGPTDeployment) var azureChatGPTDeployment: String
+    @AppStorage(\.azureEmbeddingDeployment) var azureEmbeddingDeployment: String
     init() {}
 }
 
@@ -57,6 +58,15 @@ struct AzureView: View {
                     }
                 }
                 .disabled(isTesting)
+            }
+            
+            HStack {
+                TextField(
+                    text: $settings.azureEmbeddingDeployment,
+                    prompt: Text("")
+                ) {
+                    Text("Embedding Model Deployment Name")
+                }.textFieldStyle(.roundedBorder)
             }
         }
     }

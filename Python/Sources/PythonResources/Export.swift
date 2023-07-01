@@ -1,9 +1,21 @@
 import Foundation
 
+class BundleFinder {}
+
 let containingBundle: Bundle? = {
     if Bundle.main.path(forResource: "site-packages", ofType: nil) != nil {
         return Bundle.main
     }
+    
+    if Bundle.main.bundlePath.contains("Contents/Developer/Platforms") {
+        // unit tests
+        let bundle = Bundle(for: BundleFinder.self)
+        let path = bundle.bundleURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("CopilotForXcodeExtensionService.app").path
+        return Bundle(path: path)
+    }
+    
     let path = Bundle.main.bundleURL
         .appendingPathComponent("Contents")
         .appendingPathComponent("Applications")

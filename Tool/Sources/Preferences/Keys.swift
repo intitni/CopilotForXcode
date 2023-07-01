@@ -79,7 +79,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var chatGPTModel: PreferenceKey<String> {
-        .init(defaultValue: Preferences.ChatGPTModel.gpt35Turbo.rawValue, key: "ChatGPTModel")
+        .init(defaultValue: ChatGPTModel.gpt35Turbo.rawValue, key: "ChatGPTModel")
     }
 
     var chatGPTMaxToken: PreferenceKey<Int> {
@@ -97,6 +97,13 @@ public extension UserDefaultPreferenceKeys {
     var chatGPTTemperature: PreferenceKey<Double> {
         .init(defaultValue: 0.7, key: "ChatGPTTemperature")
     }
+
+    var embeddingModel: PreferenceKey<String> {
+        .init(
+            defaultValue: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue,
+            key: "OpenAIEmbeddingModel"
+        )
+    }
 }
 
 // MARK: - Azure OpenAI Settings
@@ -113,6 +120,10 @@ public extension UserDefaultPreferenceKeys {
     var azureChatGPTDeployment: PreferenceKey<String> {
         .init(defaultValue: "", key: "AzureChatGPTDeployment")
     }
+
+    var azureEmbeddingDeployment: PreferenceKey<String> {
+        .init(defaultValue: "", key: "AzureEmbeddingDeployment")
+    }
 }
 
 // MARK: - GitHub Copilot Settings
@@ -125,7 +136,7 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotProxyHost: PreferenceKey<String> {
         .init(defaultValue: "", key: "GitHubCopilotProxyHost")
     }
-    
+
     var gitHubCopilotProxyPort: PreferenceKey<String> {
         .init(defaultValue: "", key: "GitHubCopilotProxyPort")
     }
@@ -220,6 +231,10 @@ public extension UserDefaultPreferenceKeys {
 public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
+    }
+    
+    var embeddingFeatureProvider: PreferenceKey<EmbeddingFeatureProvider> {
+        .init(defaultValue: .openAI, key: "EmbeddingFeatureProvider")
     }
 
     var chatFontSize: PreferenceKey<Double> {
@@ -345,7 +360,7 @@ public extension UserDefaultPreferenceKeys {
     var triggerActionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-TriggerActionWithAccessibilityAPI")
     }
-    
+
     var alwaysAcceptSuggestionWithAccessibilityAPI: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-AlwaysAcceptSuggestionWithAccessibilityAPI")
     }
@@ -361,7 +376,7 @@ public extension UserDefaultPreferenceKeys {
     var animationCCrashSuggestion: FeatureFlag {
         .init(defaultValue: true, key: "FeatureFlag-AnimationCCrashSuggestion")
     }
-    
+
     var enableXcodeInspectorDebugMenu: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-EnableXcodeInspectorDebugMenu")
     }

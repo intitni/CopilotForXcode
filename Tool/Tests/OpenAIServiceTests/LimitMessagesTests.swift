@@ -1,4 +1,5 @@
 import Foundation
+import TokenEncoder
 import XCTest
 
 @testable import OpenAIService
@@ -101,7 +102,8 @@ private func runService(
     ))
     let memory = AutoManagedChatGPTMemory(
         systemPrompt: systemPrompt,
-        configuration: configuration
+        configuration: configuration,
+        functionProvider: NoChatGPTFunctionProvider()
     )
 
     for message in messages {

@@ -2,7 +2,8 @@ import AsyncAlgorithms
 import Foundation
 import Preferences
 
-typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody) -> CompletionStreamAPI
+typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody)
+    -> CompletionStreamAPI
 
 protocol CompletionStreamAPI {
     func callAsFunction() async throws -> (
@@ -32,14 +33,14 @@ struct CompletionRequestBody: Encodable, Equatable {
         /// ```
         var function_call: MessageFunctionCall?
     }
-    
+
     struct MessageFunctionCall: Codable, Equatable {
         /// The name of the
         var name: String
         /// A JSON string.
         var arguments: String?
     }
-    
+
     enum FunctionCallStrategy: Encodable, Equatable {
         /// Forbid the bot to call any function.
         case none
@@ -47,7 +48,7 @@ struct CompletionRequestBody: Encodable, Equatable {
         case auto
         /// Force the bot to call a function with the given name.
         case name(String)
-        
+
         struct CallFunctionNamed: Codable {
             var name: String
         }
@@ -64,7 +65,7 @@ struct CompletionRequestBody: Encodable, Equatable {
             }
         }
     }
-    
+
     struct Function: Codable {
         var name: String
         var description: String
@@ -86,7 +87,39 @@ struct CompletionRequestBody: Encodable, Equatable {
     var user: String?
     /// Pass nil to let the bot decide.
     var function_call: FunctionCallStrategy?
-    var functions: [ChatGPTFunctionSchema]? = nil
+    var functions: [ChatGPTFunctionSchema]?
+
+    init(
+        model: String,
+        messages: [Message],
+        temperature: Double? = nil,
+        top_p: Double? = nil,
+        n: Double? = nil,
+        stream: Bool? = nil,
+        stop: [String]? = nil,
+        max_tokens: Int? = nil,
+        presence_penalty: Double? = nil,
+        frequency_penalty: Double? = nil,
+        logit_bias: [String: Double]? = nil,
+        user: String? = nil,
+        function_call: FunctionCallStrategy? = nil,
+        functions: [ChatGPTFunctionSchema] = []
+    ) {
+        self.model = model
+        self.messages = messages
+        self.temperature = temperature
+        self.top_p = top_p
+        self.n = n
+        self.stream = stream
+        self.stop = stop
+        self.max_tokens = max_tokens
+        self.presence_penalty = presence_penalty
+        self.frequency_penalty = frequency_penalty
+        self.logit_bias = logit_bias
+        self.user = user
+        self.function_call = function_call
+        self.functions = functions.isEmpty ? nil : functions
+    }
 }
 
 struct CompletionStreamDataTrunk: Codable {
@@ -106,7 +139,7 @@ struct CompletionStreamDataTrunk: Codable {
                 var name: String?
                 var arguments: String?
             }
-            
+
             var role: ChatMessage.Role?
             var content: String?
             var function_call: FunctionCall?

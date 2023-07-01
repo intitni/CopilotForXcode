@@ -89,6 +89,13 @@ public final class ChatService: ObservableObject {
         await pluginController.stopResponding()
         await chatGPTService.stopReceivingMessage()
         isReceivingMessage = false
+        
+        // if it's stopped before the function finishes, remove the function call.
+        await memory.mutateHistory { history in
+            if history.last?.role == .assistant && history.last?.functionCall != nil {
+                history.removeLast()
+            }
+        }
     }
 
     public func clearHistory() async {
