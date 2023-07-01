@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import ChatService
+import ChatTab
 import Foundation
 import GitHubCopilotService
 import OpenAIService

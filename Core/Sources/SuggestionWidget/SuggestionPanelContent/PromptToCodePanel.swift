@@ -1,4 +1,5 @@
 import MarkdownUI
+import SharedUIComponents
 import SwiftUI
 
 struct PromptToCodePanel: View {

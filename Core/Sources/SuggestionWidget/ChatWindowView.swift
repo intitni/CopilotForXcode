@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import SwiftUI
+import ChatTab
 
 private let r: Double = 8
 

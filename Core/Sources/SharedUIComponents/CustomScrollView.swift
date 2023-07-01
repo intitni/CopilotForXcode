@@ -1,16 +1,17 @@
 import AppKit
 import Combine
+import Preferences
 import SwiftUI
 
-struct CustomScrollViewHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: Double = 0
-    static func reduce(value: inout Double, nextValue: () -> Double) {
+public struct CustomScrollViewHeightPreferenceKey: SwiftUI.PreferenceKey {
+    public static var defaultValue: Double = 0
+    public static func reduce(value: inout Double, nextValue: () -> Double) {
         value = nextValue() + value
     }
 }
 
-struct CustomScrollViewUpdateHeightModifier: ViewModifier {
-    func body(content: Content) -> some View {
+public struct CustomScrollViewUpdateHeightModifier: ViewModifier {
+    public func body(content: Content) -> some View {
         content
             .background {
                 GeometryReader { proxy in
@@ -25,12 +26,16 @@ struct CustomScrollViewUpdateHeightModifier: ViewModifier {
 }
 
 /// Used to workaround a SwiftUI bug. https://github.com/intitni/CopilotForXcode/issues/122
-struct CustomScrollView<Content: View>: View {
+public struct CustomScrollView<Content: View>: View {
     @ViewBuilder var content: () -> Content
     @State var height: Double = 10
     @AppStorage(\.useCustomScrollViewWorkaround) var useNSScrollViewWrapper
 
-    var body: some View {
+    public init(content: @escaping () -> Content) {
+        self.content = content
+    }
+    
+    public var body: some View {
         if useNSScrollViewWrapper {
             List {
                 content()

@@ -5,7 +5,7 @@ import Splash
 import SwiftUI
 import XPCShared
 
-func highlightedCodeBlock(
+public func highlightedCodeBlock(
     code: String,
     language: String,
     brightMode: Bool,
@@ -105,7 +105,7 @@ func highlightedCodeBlock(
     }
 }
 
-func highlighted(
+public func highlighted(
     code: String,
     language: String,
     brightMode: Bool,
@@ -206,3 +206,4 @@ func convertToCodeLines(
     }
     return (output, commonLeadingSpaceCount)
 }
+

@@ -3,16 +3,6 @@ import MarkdownUI
 import SharedUIComponents
 import SwiftUI
 
-enum Style {
-    static let panelHeight: Double = 500
-    static let panelWidth: Double = 454
-    static let inlineSuggestionMinWidth: Double = 540
-    static let inlineSuggestionMaxHeight: Double = 400
-    static let widgetHeight: Double = 24
-    static var widgetWidth: Double { widgetHeight }
-    static let widgetPadding: Double = 4
-}
-
 extension Color {
     static var contentBackground: Color {
         Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
@@ -40,21 +30,6 @@ extension NSAppearance {
         } else {
             return false
         }
-    }
-}
-
-extension View {
-    func xcodeStyleFrame() -> some View {
-        clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
-                    .padding(1)
-            )
     }
 }
 
