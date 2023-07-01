@@ -2,9 +2,10 @@ import Foundation
 import JSONRPC
 
 public struct Document: Codable {
+    public typealias Metadata = [String: JSONValue]
     public var pageContent: String
-    public var metadata: JSONValue
-    public init(pageContent: String, metadata: JSONValue) {
+    public var metadata: Metadata
+    public init(pageContent: String, metadata: Metadata) {
         self.pageContent = pageContent
         self.metadata = metadata
     }

@@ -18,7 +18,7 @@ public extension TextSplitter {
     /// Create documents from a list of texts.
     func createDocuments(
         texts: [String],
-        metadata: [JSONValue] = []
+        metadata: [Document.Metadata] = []
     ) async throws -> [Document] {
         var documents = [Document]()
         let paddingLength = texts.count - metadata.count
@@ -36,7 +36,7 @@ public extension TextSplitter {
     /// Split documents.
     func splitDocuments(_ documents: [Document]) async throws -> [Document] {
         var texts = [String]()
-        var metadata = [JSONValue]()
+        var metadata = [Document.Metadata]()
         for document in documents {
             texts.append(document.pageContent)
             metadata.append(document.metadata)

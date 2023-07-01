@@ -39,16 +39,15 @@ public struct WebLoader: DocumentLoader {
                     let parsed = try SwiftSoup.parse(result.html, result.url.path)
 
                     let title = (try? parsed.title()) ?? "Untitled"
-                    let body = try DefaultLoadContentStrategy().load(parsed)
-
-                    if let body = body {
-                        let doc = Document(pageContent: body, metadata: [
+                    let parsedDocuments = try DefaultLoadContentStrategy().load(
+                        parsed,
+                        metadata: [
                             MetadataKeys.title: .string(title),
                             MetadataKeys.url: .string(result.url.absoluteString),
                             MetadataKeys.date: .number(Date().timeIntervalSince1970),
-                        ])
-                        documents.append(doc)
-                    }
+                        ]
+                    )
+                    documents.append(contentsOf: parsedDocuments)
                 } catch let Exception.Error(_, message) {
                     Logger.langchain.error(message)
                 } catch {
@@ -61,7 +60,7 @@ public struct WebLoader: DocumentLoader {
 }
 
 protocol LoadWebPageMainContentStrategy {
-    func load(_ document: SwiftSoup.Document) throws -> String?
+    func load(_ document: SwiftSoup.Document, metadata: Document.Metadata) throws -> [Document]
 }
 
 extension LoadWebPageMainContentStrategy {
@@ -77,11 +76,19 @@ extension LoadWebPageMainContentStrategy {
 
 extension WebLoader {
     struct DefaultLoadContentStrategy: LoadWebPageMainContentStrategy {
-        func load(_ document: SwiftSoup.Document) throws -> String? {
-            if let article = text(inFirstTag: "article", from: document) { return article }
-            if let main = text(inFirstTag: "main", from: document) { return main }
-            let body = try document.body()?.text()
-            return body
+        func load(
+            _ document: SwiftSoup.Document,
+            metadata: Document.Metadata
+        ) throws -> [Document] {
+            if let mainContent = try? {
+                if let article = text(inFirstTag: "article", from: document) { return article }
+                if let main = text(inFirstTag: "main", from: document) { return main }
+                let body = try document.body()?.text()
+                return body
+            }() {
+                return [.init(pageContent: mainContent, metadata: metadata)]
+            }
+            return []
         }
     }
 }
@@ -100,7 +107,9 @@ final class WebScrapper: NSObject, WKNavigationDelegate {
         configuration.defaultWebpagePreferences.preferredContentMode = .desktop
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
-        configuration.applicationNameForUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15"
+        configuration
+            .applicationNameForUserAgent =
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15"
         // The web page need the web view to have a size to load correctly.
         let webView = WKWebView(
             frame: .init(x: 0, y: 0, width: 500, height: 500),
@@ -125,7 +134,7 @@ final class WebScrapper: NSObject, WKNavigationDelegate {
             if !html.isEmpty { return html }
             retryCount += 1
         }
-        
+
         throw CancellationError()
     }
 
@@ -150,3 +159,4 @@ final class WebScrapper: NSObject, WKNavigationDelegate {
 private let getHTMLText = """
 document.documentElement.outerHTML;
 """
+

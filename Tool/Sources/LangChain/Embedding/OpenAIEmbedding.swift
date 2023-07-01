@@ -30,12 +30,12 @@ public struct OpenAIEmbedding: Embeddings {
         if safe {
             return try await getLenSafeEmbeddings(documents: [.init(
                 pageContent: query,
-                metadata: .null
+                metadata: [:]
             )])
             .first?
             .embeddings ?? []
         }
-        return try await getEmbeddings(documents: [.init(pageContent: query, metadata: .null)])
+        return try await getEmbeddings(documents: [.init(pageContent: query, metadata: [:])])
             .first?
             .embeddings ?? []
     }
@@ -119,7 +119,7 @@ extension OpenAIEmbedding {
                                         .map(\.embedding)
                                 )
                             }
-                            
+
                             if shouldAverageLongEmbeddings {
                                 return (
                                     text.document,
