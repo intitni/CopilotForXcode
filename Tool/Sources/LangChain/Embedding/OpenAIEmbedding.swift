@@ -74,6 +74,8 @@ extension OpenAIEmbedding {
         }
     }
 
+    /// OpenAI's embedding API doesn't support embedding inputs longer than the max token.
+    /// https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
     func getLenSafeEmbeddings(
         documents: [Document]
     ) async throws -> [EmbeddedDocument] {
@@ -117,6 +119,7 @@ extension OpenAIEmbedding {
                                         .map(\.embedding)
                                 )
                             }
+                            
                             if shouldAverageLongEmbeddings {
                                 return (
                                     text.document,

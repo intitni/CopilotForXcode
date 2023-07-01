@@ -1,9 +1,13 @@
 import Foundation
 import JSONRPC
 
+/// Split text into multiple components.
 public protocol TextSplitter: DocumentTransformer {
+    /// The maximum size of chunks.
     var chunkSize: Int { get }
+    /// The maximum overlap between chunks.
     var chunkOverlap: Int { get }
+    /// A function to compute the length of text.
     var lengthFunction: (String) -> Int { get }
 
     /// Split text into multiple components.

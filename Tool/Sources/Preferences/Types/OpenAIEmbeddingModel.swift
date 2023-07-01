@@ -6,7 +6,7 @@ public extension OpenAIEmbeddingModel {
     var maxToken: Int {
         switch self {
         case .textEmbeddingAda002:
-            return 8192
+            return 8191
         }
     }
 }

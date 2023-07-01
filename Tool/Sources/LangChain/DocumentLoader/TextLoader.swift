@@ -1,7 +1,14 @@
 import AppKit
 import Foundation
 
+/// Load a text document from local file.
 public struct TextLoader: DocumentLoader {
+    enum MetadataKeys {
+        static let filename = "filename"
+        static let `extension` = "extension"
+        static let contentModificationDate = "contentModificationDate"
+    }
+    
     let url: URL
     let encoding: String.Encoding
     let options: [NSAttributedString.DocumentReadingOptionKey: Any]
@@ -26,9 +33,9 @@ public struct TextLoader: DocumentLoader {
         let modificationDate = try? url.resourceValues(forKeys: [.contentModificationDateKey])
             .contentModificationDate
         return [Document(pageContent: attributedString.string, metadata: [
-            "filename": .string(url.lastPathComponent),
-            "extension": .string(url.pathExtension),
-            "contentModificationDate": .number(
+            MetadataKeys.filename: .string(url.lastPathComponent),
+            MetadataKeys.extension: .string(url.pathExtension),
+            MetadataKeys.contentModificationDate: .number(
                 (modificationDate ?? Date()).timeIntervalSince1970
             ),
         ])]

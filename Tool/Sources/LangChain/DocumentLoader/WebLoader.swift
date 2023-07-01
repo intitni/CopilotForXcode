@@ -3,13 +3,14 @@ import Logger
 import SwiftSoup
 import WebKit
 
+/// Load the body of a web page.
 public struct WebLoader: DocumentLoader {
     enum MetadataKeys {
         static let title = "title"
         static let url = "url"
         static let date = "date"
     }
-    
+
     var downloadHTML: (_ url: URL) async throws -> (url: URL, html: String) = { url in
         let html = try await WebScrapper().fetch(url: url)
         return (url, html)

@@ -1,15 +1,23 @@
 import Foundation
 
+/// Implementation of splitting text that looks at characters.
+/// Recursively tries to split by different characters to find one that works.
 public class RecursiveCharacterTextSplitter: TextSplitter {
-    /**
-     Implementation of splitting text that looks at characters.
-     Recursively tries to split by different characters to find one that works.
-     */
-    public var separators: [String]
     public var chunkSize: Int
     public var chunkOverlap: Int
     public var lengthFunction: (String) -> Int
 
+    /// A list of separators to try. They will be used in order. Supports regular expressions.
+    public var separators: [String]
+
+    /// Create a new splitter
+    /// - Parameters:
+    ///    - separators: A list of separators to try. They will be used in order. Supports regular
+    /// expressions.
+    ///    - chunkSize: The maximum size of chunks. Don't use chunk size larger than 8191, because
+    /// length safe embedding is not implemented.
+    ///    - chunkOverlap: The maximum overlap between chunks.
+    ///    - lengthFunction: A function to compute the length of text.
     public init(
         separators: [String] = ["\n\n", "\n", " ", ""],
         chunkSize: Int = 4000,
@@ -23,6 +31,13 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
         self.separators = separators
     }
 
+    // Create a new splitter
+    /// - Parameters:
+    ///    - separatorSet: A set of separators to try.
+    ///    - chunkSize: The maximum size of chunks. Don't use chunk size larger than 8191, because
+    /// length safe embedding is not implemented.
+    ///    - chunkOverlap: The maximum overlap between chunks.
+    ///    - lengthFunction: A function to compute the length of text.
     public init(
         separatorSet: TextSplitterSeparatorSet,
         chunkSize: Int = 4000,
@@ -55,7 +70,7 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
         }
         var separator: String
         var nextSeparators: [String]
-        
+
         if let index = firstSeparatorIndex {
             separator = separators[index]
             if index < separators.endIndex - 1 {
