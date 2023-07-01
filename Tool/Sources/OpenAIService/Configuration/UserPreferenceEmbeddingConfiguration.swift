@@ -2,12 +2,12 @@ import Foundation
 import Preferences
 
 public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
-    public var featureProvider: ChatFeatureProvider {
-        UserDefaults.shared.value(for: \.chatFeatureProvider)
+    public var featureProvider: EmbeddingFeatureProvider {
+        UserDefaults.shared.value(for: \.embeddingFeatureProvider)
     }
 
     public var model: String {
-        return "text-embedding-ada-002"
+        OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
     }
 
     public var endpoint: String {
@@ -19,7 +19,7 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
     }
 
     public var maxToken: Int {
-        8191
+        OpenAIEmbeddingModel.textEmbeddingAda002.maxToken
     }
     
     public init() {}
@@ -29,7 +29,7 @@ public class OverridingEmbeddingConfiguration<
     Configuration: EmbeddingConfiguration
 >: EmbeddingConfiguration {
     public struct Overriding {
-        var featureProvider: ChatFeatureProvider?
+        var featureProvider: EmbeddingFeatureProvider?
         var model: String?
         var endPoint: String?
         var apiKey: String?
@@ -37,7 +37,7 @@ public class OverridingEmbeddingConfiguration<
 
         public init(
             model: String? = nil,
-            featureProvider: ChatFeatureProvider? = nil,
+            featureProvider: EmbeddingFeatureProvider? = nil,
             endPoint: String? = nil,
             apiKey: String? = nil,
             maxTokens: Int? = nil
@@ -58,7 +58,7 @@ public class OverridingEmbeddingConfiguration<
         self.configuration = configuration
     }
 
-    public var featureProvider: ChatFeatureProvider {
+    public var featureProvider: EmbeddingFeatureProvider {
         overriding.featureProvider ?? configuration.featureProvider
     }
     

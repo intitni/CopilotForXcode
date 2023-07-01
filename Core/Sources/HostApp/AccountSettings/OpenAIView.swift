@@ -9,6 +9,7 @@ struct OpenAIView: View {
     final class Settings: ObservableObject {
         @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
         @AppStorage(\.chatGPTModel) var chatGPTModel: String
+        @AppStorage(\.embeddingModel) var embeddingModel: String
         @AppStorage(\.openAIBaseURL) var openAIBaseURL: String
         init() {}
     }
@@ -75,6 +76,26 @@ struct OpenAIView: View {
                     }
                 } label: {
                     Text("ChatGPT Model")
+                }.pickerStyle(.menu)
+                Button(action: {
+                    openURL(modelURL)
+                }) {
+                    Image(systemName: "questionmark.circle.fill")
+                }.buttonStyle(.plain)
+            }
+            
+            HStack {
+                Picker(selection: $settings.embeddingModel) {
+                    if !settings.embeddingModel.isEmpty,
+                       OpenAIEmbeddingModel(rawValue: settings.embeddingModel) == nil
+                    {
+                        Text(settings.embeddingModel).tag(settings.embeddingModel)
+                    }
+                    ForEach(OpenAIEmbeddingModel.allCases, id: \.self) { model in
+                        Text(model.rawValue).tag(model.rawValue)
+                    }
+                } label: {
+                    Text("Embedding Model")
                 }.pickerStyle(.menu)
                 Button(action: {
                     openURL(modelURL)

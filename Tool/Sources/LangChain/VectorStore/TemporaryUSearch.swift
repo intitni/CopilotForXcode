@@ -7,6 +7,10 @@ private actor TemporaryUSearchActor {
     static let shared = TemporaryUSearchActor()
 }
 
+#warning(
+    "It's not working yet because of a bug in USearch https://github.com/unum-cloud/usearch/issues/131"
+)
+
 /// A temporary USearch index for small and temporary documents.
 public actor TemporaryUSearch: VectorStore {
     public let identifier: String

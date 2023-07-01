@@ -1,8 +1,6 @@
 import Foundation
 import Preferences
 
-public typealias EmbeddingFeatureProvider = ChatFeatureProvider
-
 public protocol EmbeddingConfiguration {
     var featureProvider: EmbeddingFeatureProvider { get }
     var endpoint: String { get }
@@ -27,7 +25,7 @@ extension EmbeddingConfiguration {
         }
     }
     
-    func apiKey(for provider: ChatFeatureProvider) -> String {
+    func apiKey(for provider: EmbeddingFeatureProvider) -> String {
         switch provider {
         case .openAI:
             return UserDefaults.shared.value(for: \.openAIAPIKey)
