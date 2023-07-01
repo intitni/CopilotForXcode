@@ -46,7 +46,6 @@ public class XPCService: NSObject, XPCServiceProtocol {
         let task = Task {
             do {
                 let editor = try JSONDecoder().decode(EditorContent.self, from: editorContent)
-                let mode = UserDefaults.shared.value(for: \.suggestionPresentationMode)
                 let handler: SuggestionCommandHandler = WindowBaseCommandHandler()
                 try Task.checkCancellation()
                 guard let updatedContent = try await getUpdatedContent(handler, editor) else {
