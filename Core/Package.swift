@@ -51,6 +51,10 @@ let package = Package(
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "0.55.0"
+        ),
     ],
     targets: [
         // MARK: - Main
@@ -83,6 +87,7 @@ let package = Package(
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
+                "ChatTab",
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "PythonHelper", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -185,10 +190,10 @@ let package = Package(
                 "MathChatPlugin",
                 "SearchChatPlugin",
                 "ShortcutChatPlugin",
-                
+
                 // context collectors
                 "WebChatContextCollector",
-                
+
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -215,21 +220,41 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "ChatTab",
+            dependencies: [
+                "SharedUIComponents",
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "Logger", package: "Tool"),
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+            ]
+        ),
+
         // MARK: - UI
+
+        .target(
+            name: "SharedUIComponents",
+            dependencies: [
+                "Highlightr",
+                "Splash",
+                .product(name: "Preferences", package: "Tool"),
+            ]
+        ),
 
         .target(
             name: "SuggestionWidget",
             dependencies: [
+                "ChatTab",
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
                 "Environment",
-                "Highlightr",
-                "Splash",
                 "UserDefaultsObserver",
                 "XcodeInspector",
+                "SharedUIComponents",
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "SuggestionWidgetTests", dependencies: ["SuggestionWidget"]),
@@ -335,9 +360,9 @@ let package = Package(
             ],
             path: "Sources/ChatPlugins/ShortcutChatPlugin"
         ),
-        
+
         // MAKR: - Chat Context Collector
-        
+
         .target(
             name: "WebChatContextCollector",
             dependencies: [
@@ -348,7 +373,7 @@ let package = Package(
                 .product(name: "Preferences", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/WebChatContextCollector"
-        )
+        ),
     ]
 )
 

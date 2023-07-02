@@ -1,51 +1,7 @@
+import ComposableArchitecture
 import Environment
 import Preferences
 import SwiftUI
-
-@MainActor
-final class SharedPanelViewModel: ObservableObject {
-    enum Content {
-        case suggestion(SuggestionProvider)
-        case promptToCode(PromptToCodeProvider)
-        case error(String)
-
-        var contentHash: String {
-            switch self {
-            case let .error(e):
-                return "error: \(e)"
-            case let .suggestion(provider):
-                return "suggestion: \(provider.code.hashValue)"
-            case let .promptToCode(provider):
-                return "provider: \(provider.id)"
-            }
-        }
-    }
-
-    @Published var content: Content?
-    @Published var colorScheme: ColorScheme
-
-    init(
-        content: Content? = nil,
-        colorScheme: ColorScheme = .dark
-    ) {
-        self.content = content
-        self.colorScheme = colorScheme
-    }
-}
-
-@MainActor
-final class SharedPanelDisplayController: ObservableObject {
-    @Published var alignTopToAnchor = false
-    @Published var isPanelDisplayed: Bool = false
-
-    init(
-        alignTopToAnchor: Bool = false,
-        isPanelDisplayed: Bool = false
-    ) {
-        self.alignTopToAnchor = alignTopToAnchor
-        self.isPanelDisplayed = isPanelDisplayed
-    }
-}
 
 extension View {
     @ViewBuilder
@@ -64,69 +20,79 @@ extension View {
 }
 
 struct SharedPanelView: View {
-    @ObservedObject var viewModel: SharedPanelViewModel
-    @ObservedObject var displayController: SharedPanelDisplayController
+    var store: StoreOf<SharedPanelFeature>
     @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
-    var body: some View {
-        VStack(spacing: 0) {
-            if !displayController.alignTopToAnchor {
-                Spacer()
-                    .frame(minHeight: 0, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-            }
+    struct OverallState: Equatable {
+        var isPanelDisplayed: Bool
+        var opacity: Double
+        var colorScheme: ColorScheme
+        var contentHash: String
+        var alignTopToAnchor: Bool
+    }
 
-            VStack {
-                if let content = viewModel.content {
-                    ZStack(alignment: .topLeading) {
-                        switch content {
-                        case let .suggestion(suggestion):
-                            switch suggestionPresentationMode {
-                            case .nearbyTextCursor:
-                                EmptyView()
-                            case .floatingWidget:
-                                CodeBlockSuggestionPanel(suggestion: suggestion)
+    var body: some View {
+        WithViewStore(
+            store,
+            observe: { OverallState(
+                isPanelDisplayed: $0.isPanelDisplayed,
+                opacity: $0.opacity,
+                colorScheme: $0.colorScheme,
+                contentHash: $0.content?.contentHash ?? "",
+                alignTopToAnchor: $0.alignTopToAnchor
+            ) }
+        ) { viewStore in
+            VStack(spacing: 0) {
+                if !viewStore.alignTopToAnchor {
+                    Spacer()
+                        .frame(minHeight: 0, maxHeight: .infinity)
+                        .allowsHitTesting(false)
+                }
+
+                IfLetStore(store.scope(state: \.content, action: { $0 })) { store in
+                    WithViewStore(store) { viewStore in
+                        ZStack(alignment: .topLeading) {
+                            switch viewStore.state {
+                            case let .suggestion(suggestion):
+                                switch suggestionPresentationMode {
+                                case .nearbyTextCursor:
+                                    EmptyView()
+                                case .floatingWidget:
+                                    CodeBlockSuggestionPanel(suggestion: suggestion)
+                                }
+                            case let .promptToCode(provider):
+                                PromptToCodePanel(provider: provider)
+                            case let .error(description):
+                                ErrorPanel(description: description) {
+                                    viewStore.send(
+                                        .closeButtonTapped,
+                                        animation: .easeInOut(duration: 0.2)
+                                    )
+                                }
                             }
-                        case let .promptToCode(provider):
-                            PromptToCodePanel(provider: provider)
-                        case let .error(description):
-                            ErrorPanel(
-                                viewModel: viewModel,
-                                displayController: displayController,
-                                description: description
-                            )
                         }
+                        .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(displayController.isPanelDisplayed)
+                }
+                .allowsHitTesting(viewStore.isPanelDisplayed)
+                .frame(maxWidth: .infinity)
+
+                if viewStore.alignTopToAnchor {
+                    Spacer()
+                        .frame(minHeight: 0, maxHeight: .infinity)
+                        .allowsHitTesting(false)
                 }
             }
-            .frame(maxWidth: .infinity)
-
-            if displayController.alignTopToAnchor {
-                Spacer()
-                    .frame(minHeight: 0, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-            }
+            .preferredColorScheme(viewStore.colorScheme)
+            .opacity(viewStore.opacity)
+            .animation(
+                featureFlag: \.animationBCrashSuggestion,
+                .easeInOut(duration: 0.2),
+                value: viewStore.isPanelDisplayed
+            )
+            .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
         }
-        .preferredColorScheme(viewModel.colorScheme)
-        .opacity({
-            guard displayController.isPanelDisplayed else { return 0 }
-            guard viewModel.content != nil else { return 0 }
-            return 1
-        }())
-        .animation(
-            featureFlag: \.animationACrashSuggestion,
-            .easeInOut(duration: 0.2),
-            value: viewModel.content?.contentHash
-        )
-        .animation(
-            featureFlag: \.animationBCrashSuggestion,
-            .easeInOut(duration: 0.2),
-            value: displayController.isPanelDisplayed
-        )
-        .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
     }
 }
 
@@ -154,29 +120,40 @@ struct CommandButtonStyle: ButtonStyle {
 
 struct SuggestionPanelView_Error_Preview: PreviewProvider {
     static var previews: some View {
-        SharedPanelView(viewModel: .init(
-            content: .error("This is an error\nerror")
-        ), displayController: .init(isPanelDisplayed: true))
+        SharedPanelView(store: .init(
+            initialState: .init(
+                content: .error("This is an error\nerror"),
+                colorScheme: .light,
+                isPanelDisplayed: true
+            ),
+            reducer: SharedPanelFeature()
+        ))
         .frame(width: 450, height: 200)
     }
 }
 
 struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
     static var previews: some View {
-        SharedPanelView(viewModel: .init(
-            content: .suggestion(SuggestionProvider(
-                code: """
-                - (void)addSubview:(UIView *)view {
-                    [self addSubview:view];
-                }
-                """,
-                language: "objective-c",
-                startLineIndex: 8,
-                suggestionCount: 2,
-                currentSuggestionIndex: 0
-            )),
-            colorScheme: .dark
-        ), displayController: .init(isPanelDisplayed: true))
+        SharedPanelView(store: .init(
+            initialState: .init(
+                content: .suggestion(
+                    SuggestionProvider(
+                        code: """
+                        - (void)addSubview:(UIView *)view {
+                            [self addSubview:view];
+                        }
+                        """,
+                        language: "objective-c",
+                        startLineIndex: 8,
+                        suggestionCount: 2,
+                        currentSuggestionIndex: 0
+                    )
+                ),
+                colorScheme: .dark,
+                isPanelDisplayed: true
+            ),
+            reducer: SharedPanelFeature()
+        ))
         .frame(width: 450, height: 200)
         .background {
             HStack {

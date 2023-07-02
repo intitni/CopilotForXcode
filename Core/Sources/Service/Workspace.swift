@@ -282,10 +282,6 @@ extension Workspace {
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
 
-        if filespaces[fileURL] == nil {
-            filespaces[fileURL] = filespace
-        }
-
         if !editor.uti.isEmpty {
             filespace.uti = editor.uti
             filespace.tabSize = editor.tabSize

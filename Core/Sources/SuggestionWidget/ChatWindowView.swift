@@ -1,47 +1,34 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatTab
+import ComposableArchitecture
 import SwiftUI
 
 private let r: Double = 8
 
-@MainActor
-final class ChatWindowViewModel: ObservableObject {
-    @Published var chat: ChatProvider?
-    @Published var colorScheme: ColorScheme
-    @Published var isPanelDisplayed = false
-    @Published var chatPanelInASeparateWindow = false
-
-    public init(chat: ChatProvider? = nil, colorScheme: ColorScheme = .dark) {
-        self.chat = chat
-        self.colorScheme = colorScheme
-    }
-}
-
 struct ChatWindowView: View {
-    @ObservedObject var viewModel: ChatWindowViewModel
+    let store: StoreOf<ChatPanelFeature>
 
     var body: some View {
-        Group {
-            if let chat = viewModel.chat {
-                ChatPanel(chat: chat)
-                    .background {
-                        Button(action: {
-                            viewModel.isPanelDisplayed = false
-                            if let app = ActiveApplicationMonitor.previousActiveApplication,
-                               app.isXcode
-                            {
-                                app.activate()
+        WithViewStore(store, observe: { $0 }) { viewStore in
+            Group {
+                if let chat = viewStore.chat {
+                    ChatPanel(chat: chat)
+                        .background {
+                            Button(action: {
+                                viewStore.send(.hideButtonClicked)
+                            }) {
+                                EmptyView()
                             }
-                        }) {
-                            EmptyView()
+                            .keyboardShortcut("M", modifiers: [.command])
                         }
-                        .keyboardShortcut("M", modifiers: [.command])
-                    }
+                }
             }
+            .xcodeStyleFrame()
+            .opacity(viewStore.isPanelDisplayed ? 1 : 0)
+            .frame(minWidth: Style.panelWidth, minHeight: Style.panelHeight)
+            .preferredColorScheme(viewStore.colorScheme)
         }
-        .opacity(viewModel.isPanelDisplayed ? 1 : 0)
-        .frame(minWidth: Style.panelWidth, minHeight: Style.panelHeight)
-        .preferredColorScheme(viewModel.colorScheme)
     }
 }
 

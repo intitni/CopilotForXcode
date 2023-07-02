@@ -8,16 +8,16 @@ public final class GraphicalUserInterfaceController {
     nonisolated let suggestionWidget = SuggestionWidgetController()
     private nonisolated init() {
         Task { @MainActor in
-            suggestionWidget.dataSource = WidgetDataSource.shared
-            suggestionWidget.onOpenChatClicked = { [weak self] in
+            suggestionWidget.dependency.suggestionWidgetDataSource = WidgetDataSource.shared
+            suggestionWidget.dependency.onOpenChatClicked = { [weak self] in
                 Task {
                     let uri = try await Environment.fetchFocusedElementURI()
                     let dataSource = WidgetDataSource.shared
                     await dataSource.createChatIfNeeded(for: uri)
-                    self?.suggestionWidget.presentChatRoom(fileURL: uri)
+                    self?.suggestionWidget.presentChatRoom()
                 }
             }
-            suggestionWidget.onCustomCommandClicked = { command in
+            suggestionWidget.dependency.onCustomCommandClicked = { command in
                 Task {
                     let commandHandler = PseudoCommandHandler()
                     await commandHandler.handleCustomCommand(command)

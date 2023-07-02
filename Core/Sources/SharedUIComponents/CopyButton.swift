@@ -1,10 +1,15 @@
 import AppKit
 import SwiftUI
 
-struct CopyButton: View {
-    var copy: () -> Void
+public struct CopyButton: View {
+    public var copy: () -> Void
     @State var isCopied = false
-    var body: some View {
+    
+    public init(copy: @escaping () -> Void) {
+        self.copy = copy
+    }
+    
+    public var body: some View {
         Button(action: {
             withAnimation(.linear(duration: 0.1)) {
                 isCopied = true

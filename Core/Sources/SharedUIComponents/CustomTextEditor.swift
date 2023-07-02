@@ -1,19 +1,29 @@
 import SwiftUI
 
-struct CustomTextEditor: NSViewRepresentable {
-    func makeCoordinator() -> Coordinator {
+public struct CustomTextEditor: NSViewRepresentable {
+    public func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    @Binding var text: String
-    let font: NSFont
-    let onSubmit: () -> Void
-    var completions: (_ text: String, _ words: [String], _ range: NSRange)
-        -> [String] = { _, _, _ in
-            []
-        }
+    @Binding public var text: String
+    public let font: NSFont
+    public let onSubmit: () -> Void
+    public var completions: (_ text: String, _ words: [String], _ range: NSRange) -> [String]
 
-    func makeNSView(context: Context) -> NSScrollView {
+    public init(
+        text: Binding<String>,
+        font: NSFont,
+        onSubmit: @escaping () -> Void,
+        completions: @escaping (_ text: String, _ words: [String], _ range: NSRange)
+            -> [String] = { _, _, _ in [] }
+    ) {
+        _text = text
+        self.font = font
+        self.onSubmit = onSubmit
+        self.completions = completions
+    }
+
+    public func makeNSView(context: Context) -> NSScrollView {
         context.coordinator.completions = completions
         let textView = (context.coordinator.theTextView.documentView as! NSTextView)
         textView.delegate = context.coordinator
@@ -25,7 +35,7 @@ struct CustomTextEditor: NSViewRepresentable {
         return context.coordinator.theTextView
     }
 
-    func updateNSView(_ nsView: NSScrollView, context: Context) {
+    public func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.completions = completions
         let textView = (context.coordinator.theTextView.documentView as! NSTextView)
         guard textView.string != text else { return }
@@ -34,7 +44,7 @@ struct CustomTextEditor: NSViewRepresentable {
     }
 }
 
-extension CustomTextEditor {
+public extension CustomTextEditor {
     class Coordinator: NSObject, NSTextViewDelegate {
         var view: CustomTextEditor
         var theTextView = NSTextView.scrollableTextView()
@@ -45,7 +55,7 @@ extension CustomTextEditor {
             self.view = view
         }
 
-        func textDidChange(_ notification: Notification) {
+        public func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else {
                 return
             }
@@ -54,7 +64,10 @@ extension CustomTextEditor {
             textView.complete(nil)
         }
 
-        func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        public func textView(
+            _ textView: NSTextView,
+            doCommandBy commandSelector: Selector
+        ) -> Bool {
             if commandSelector == #selector(NSTextView.insertNewline(_:)) {
                 if let event = NSApplication.shared.currentEvent,
                    !event.modifierFlags.contains(.shift),
@@ -68,7 +81,7 @@ extension CustomTextEditor {
             return false
         }
 
-        func textView(
+        public func textView(
             _ textView: NSTextView,
             shouldChangeTextIn affectedCharRange: NSRange,
             replacementString: String?
@@ -76,7 +89,7 @@ extension CustomTextEditor {
             return true
         }
 
-        func textView(
+        public func textView(
             _ textView: NSTextView,
             completions words: [String],
             forPartialWordRange charRange: NSRange,

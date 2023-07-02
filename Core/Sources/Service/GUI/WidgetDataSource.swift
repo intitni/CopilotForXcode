@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import ChatService
+import ChatTab
 import Foundation
 import GitHubCopilotService
 import OpenAIService
@@ -54,7 +55,10 @@ final class WidgetDataSource {
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closeChatRoom(fileURL: url)
                     if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
-                        app.activate()
+                        Task { @MainActor in
+                            try await Task.sleep(nanoseconds: 200_000_000)
+                            app.activate()
+                        }
                     }
                 },
                 onSwitchContext: { [weak self] in
@@ -121,7 +125,10 @@ final class WidgetDataSource {
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
                     if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
-                        app.activate()
+                        Task { @MainActor in
+                            try await Task.sleep(nanoseconds: 200_000_000)
+                            app.activate()
+                        }
                     }
                 }
             )
@@ -178,6 +185,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                             if let app = ActiveApplicationMonitor.previousActiveApplication,
                                app.isXcode
                             {
+                                try await Task.sleep(nanoseconds: 200_000_000)
                                 app.activate()
                             }
                         }
@@ -189,6 +197,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                             if let app = ActiveApplicationMonitor.previousActiveApplication,
                                app.isXcode
                             {
+                                try await Task.sleep(nanoseconds: 200_000_000)
                                 app.activate()
                             }
                         }

@@ -60,10 +60,9 @@ struct PseudoCommandHandler {
         _ = try? await handler.generateRealtimeSuggestions(editor: editor)
     }
 
-    func invalidateRealtimeSuggestionsIfNeeded(sourceEditor: SourceEditor) async {
-        guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-              let (_, filespace) = try? await Workspace
-              .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
+    func invalidateRealtimeSuggestionsIfNeeded(fileURL: URL, sourceEditor: SourceEditor) async {
+        guard let (_, filespace) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
 
         if await !filespace.validateSuggestions(
             lines: sourceEditor.content.lines,

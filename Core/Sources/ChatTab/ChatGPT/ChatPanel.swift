@@ -1,15 +1,21 @@
 import AppKit
 import MarkdownUI
+import SharedUIComponents
 import SwiftUI
 
 private let r: Double = 8
 
-struct ChatPanel: View {
+public struct ChatPanel: View {
     let chat: ChatProvider
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
+    
+    public init(chat: ChatProvider, typedMessage: String = "") {
+        self.chat = chat
+        self.typedMessage = typedMessage
+    }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             ChatPanelToolbar(chat: chat)
             Divider()
@@ -23,7 +29,6 @@ struct ChatPanel: View {
             )
         }
         .background(.regularMaterial)
-        .xcodeStyleFrame()
     }
 }
 

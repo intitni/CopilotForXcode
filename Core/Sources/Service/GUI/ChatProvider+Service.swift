@@ -1,4 +1,5 @@
 import ChatService
+import ChatTab
 import Combine
 import Foundation
 import OpenAIService
@@ -96,14 +97,14 @@ extension ChatProvider {
                 await service.resetPrompt()
             }
         }
-        
+
         onRunCustomCommand = { command in
             Task {
                 let commandHandler = PseudoCommandHandler()
                 await commandHandler.handleCustomCommand(command)
             }
         }
-        
+
         onSetAsExtraPrompt = { id in
             Task {
                 await service.setMessageAsExtraPrompt(id: id)

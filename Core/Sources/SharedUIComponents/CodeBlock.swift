@@ -1,16 +1,16 @@
 import SwiftUI
 
-struct CodeBlock: View {
-    let code: String
-    let language: String
-    let startLineIndex: Int
-    let colorScheme: ColorScheme
-    let commonPrecedingSpaceCount: Int
-    let highlightedCode: [NSAttributedString]
-    let firstLinePrecedingSpaceCount: Int
-    let fontSize: Double
+public struct CodeBlock: View {
+    public let code: String
+    public let language: String
+    public let startLineIndex: Int
+    public let colorScheme: ColorScheme
+    public let commonPrecedingSpaceCount: Int
+    public let highlightedCode: [NSAttributedString]
+    public let firstLinePrecedingSpaceCount: Int
+    public let fontSize: Double
 
-    init(
+    public init(
         code: String,
         language: String,
         startLineIndex: Int,
@@ -37,7 +37,7 @@ struct CodeBlock: View {
         highlightedCode = result.code
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 2) {
             ForEach(0..<highlightedCode.endIndex, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 4) {

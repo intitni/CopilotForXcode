@@ -5,7 +5,7 @@ import SwiftUI
 
 public final class ChatProvider: ObservableObject {
     public typealias MessageID = String
-    let id = UUID()
+    public let id = UUID()
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
     public var pluginIdentifiers: [String] = []
@@ -74,7 +74,7 @@ public struct ChatMessage: Equatable {
         case function
         case ignored
     }
-    
+
     public var id: String
     public var role: Role
     public var text: String
