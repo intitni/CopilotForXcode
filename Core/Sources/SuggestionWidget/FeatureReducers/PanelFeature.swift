@@ -67,7 +67,7 @@ struct PanelFeature: ReducerProtocol {
                     // looks like we need a delay.
                     try await Task.sleep(nanoseconds: 150_000_000)
                     await NSApplication.shared.activate(ignoringOtherApps: true)
-                    await windows.panelWindow.makeKey()
+                    await windows.sharedPanelWindow.makeKey()
                 }
 
             case let .presentPanelContent(content, shouldDisplay):

@@ -18,9 +18,9 @@ public final class Windows {
     var fullscreenDetector: NSWindow!
     var widgetWindow: NSWindow!
     var tabWindow: NSWindow!
-    var panelWindow: NSWindow!
-    var suggestionWindow: NSWindow!
-    var chatWindow: NSWindow!
+    var sharedPanelWindow: NSWindow!
+    var suggestionPanelWindow: NSWindow!
+    var chatPanelWindow: NSWindow!
 
     nonisolated
     init() {}
@@ -28,9 +28,9 @@ public final class Windows {
     func orderFront() {
         widgetWindow?.orderFrontRegardless()
         tabWindow?.orderFrontRegardless()
-        panelWindow?.orderFrontRegardless()
-        suggestionWindow?.orderFrontRegardless()
-        chatWindow?.orderFrontRegardless()
+        sharedPanelWindow?.orderFrontRegardless()
+        suggestionPanelWindow?.orderFrontRegardless()
+        chatPanelWindow?.orderFrontRegardless()
     }
 }
 

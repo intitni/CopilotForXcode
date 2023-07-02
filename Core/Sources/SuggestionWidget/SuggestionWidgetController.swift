@@ -81,7 +81,7 @@ public final class SuggestionWidgetController: NSObject {
         return it
     }()
 
-    private lazy var panelWindow = {
+    private lazy var sharedPanelWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: .borderless,
@@ -117,7 +117,7 @@ public final class SuggestionWidgetController: NSObject {
         return it
     }()
 
-    private lazy var suggestionWindow = {
+    private lazy var suggestionPanelWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: .borderless,
@@ -146,7 +146,7 @@ public final class SuggestionWidgetController: NSObject {
         return it
     }()
 
-    private lazy var chatWindow = {
+    private lazy var chatPanelWindow = {
         let it = ChatWindow(
             contentRect: .zero,
             styleMask: [.resizable],
@@ -202,10 +202,10 @@ public final class SuggestionWidgetController: NSObject {
 
         Task { @MainActor in
 
-            windows.chatWindow = chatWindow
+            windows.chatPanelWindow = chatPanelWindow
             windows.tabWindow = tabWindow
-            windows.panelWindow = panelWindow
-            windows.suggestionWindow = suggestionWindow
+            windows.sharedPanelWindow = sharedPanelWindow
+            windows.suggestionPanelWindow = suggestionPanelWindow
             windows.fullscreenDetector = fullscreenDetector
             windows.widgetWindow = widgetWindow
 
@@ -262,7 +262,7 @@ public extension SuggestionWidgetController {
 
 extension SuggestionWidgetController: NSWindowDelegate {
     public func windowWillMove(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === chatWindow else { return }
+        guard (notification.object as? NSWindow) === chatPanelWindow else { return }
         Task { @MainActor in
             await Task.yield()
             store.send(.chatPanel(.detachChatPanel))
@@ -270,11 +270,11 @@ extension SuggestionWidgetController: NSWindowDelegate {
     }
 
     public func windowDidBecomeKey(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === chatWindow else { return }
+        guard (notification.object as? NSWindow) === chatPanelWindow else { return }
         let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?
             .frame ?? .zero
         var mouseLocation = NSEvent.mouseLocation
-        let windowFrame = chatWindow.frame
+        let windowFrame = chatPanelWindow.frame
         if mouseLocation.y > windowFrame.maxY - 40,
            mouseLocation.y < windowFrame.maxY,
            mouseLocation.x > windowFrame.minX,
@@ -289,7 +289,7 @@ extension SuggestionWidgetController: NSWindowDelegate {
             ),
                 let event = NSEvent(cgEvent: cgEvent)
             {
-                chatWindow.performDrag(with: event)
+                chatPanelWindow.performDrag(with: event)
             }
         }
     }
