@@ -57,6 +57,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
 
     func call(arguments: Arguments) async throws -> Result {
         do {
+            throw CancellationError()
             let embedding = OpenAIEmbedding(
                 configuration: UserPreferenceEmbeddingConfiguration()
             )
