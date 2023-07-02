@@ -3,7 +3,6 @@ import Foundation
 import Highlightr
 import Splash
 import SwiftUI
-import XPCShared
 
 public func highlightedCodeBlock(
     code: String,

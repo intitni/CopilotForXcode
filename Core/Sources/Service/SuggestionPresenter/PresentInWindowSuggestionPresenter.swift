@@ -1,21 +1,21 @@
 import ChatService
-import SuggestionModel
 import Foundation
 import OpenAIService
+import SuggestionModel
 import SuggestionWidget
 
 struct PresentInWindowSuggestionPresenter {
     func presentSuggestion(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.suggestCode(fileURL: fileURL)
+            controller.suggestCode()
         }
     }
 
     func discardSuggestion(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.discardSuggestion(fileURL: fileURL)
+            controller.discardSuggestion()
         }
     }
 
@@ -45,28 +45,29 @@ struct PresentInWindowSuggestionPresenter {
     func closeChatRoom(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.closeChatRoom(fileURL: fileURL)
+            controller.closeChatRoom()
         }
     }
 
     func presentChatRoom(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.presentChatRoom(fileURL: fileURL)
+            controller.presentChatRoom()
         }
     }
-    
+
     func presentPromptToCode(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.presentPromptToCode(fileURL: fileURL)
+            controller.presentPromptToCode()
         }
     }
-    
+
     func closePromptToCode(fileURL: URL) {
         Task { @MainActor in
             let controller = GraphicalUserInterfaceController.shared.suggestionWidget
-            controller.discardPromptToCode(fileURL: fileURL)
+            controller.discardPromptToCode()
         }
     }
 }
+

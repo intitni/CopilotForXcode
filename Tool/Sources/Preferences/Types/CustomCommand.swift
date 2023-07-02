@@ -1,11 +1,11 @@
 import Foundation
 import CryptoKit
 
-public struct CustomCommand: Codable {
+public struct CustomCommand: Codable, Equatable {
     /// The custom command feature.
     ///
     /// Keep everything optional so nothing will break when the format changes.
-    public enum Feature: Codable {
+    public enum Feature: Codable, Equatable {
         case promptToCode(extraSystemPrompt: String?, prompt: String?, continuousMode: Bool?, generateDescription: Bool?)
         case chatWithSelection(extraSystemPrompt: String?, prompt: String?, useExtraSystemPrompt: Bool?)
         case customChat(systemPrompt: String?, prompt: String?)

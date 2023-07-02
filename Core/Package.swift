@@ -51,6 +51,10 @@ let package = Package(
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "0.55.0"
+        ),
     ],
     targets: [
         // MARK: - Main
@@ -220,6 +224,7 @@ let package = Package(
             name: "ChatTab",
             dependencies: [
                 "SharedUIComponents",
+                .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
@@ -249,6 +254,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "SuggestionWidgetTests", dependencies: ["SuggestionWidget"]),

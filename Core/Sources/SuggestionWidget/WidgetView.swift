@@ -1,161 +1,110 @@
 import ActiveApplicationMonitor
+import ComposableArchitecture
 import Environment
 import Preferences
 import SuggestionModel
 import SwiftUI
 
-@MainActor
-final class WidgetViewModel: ObservableObject {
-    struct IsProcessingCounter {
-        var expirationDate: TimeInterval
-    }
-
-    private var isProcessingCounters = [IsProcessingCounter]()
-    private var cleanupIsProcessingCounterTask: Task<Void, Error>?
-    @Published private(set) var isProcessing: Bool
-    @Published var currentFileURL: URL?
-
-    func markIsProcessing(date: Date = Date()) {
-        let deadline = date.timeIntervalSince1970 + 20
-        isProcessingCounters.append(IsProcessingCounter(expirationDate: deadline))
-        isProcessing = true
-
-        cleanupIsProcessingCounterTask?.cancel()
-        cleanupIsProcessingCounterTask = Task { [weak self] in
-            try await Task.sleep(nanoseconds: 20 * 1_000_000_000)
-            try Task.checkCancellation()
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                isProcessingCounters.removeAll()
-                isProcessing = false
-            }
-        }
-    }
-
-    func endIsProcessing(date: Date = Date()) {
-        if !isProcessingCounters.isEmpty {
-            isProcessingCounters.removeFirst()
-        }
-        isProcessingCounters.removeAll(where: { $0.expirationDate < date.timeIntervalSince1970 })
-        isProcessing = !isProcessingCounters.isEmpty
-    }
-
-    init(isProcessing: Bool = false) {
-        self.isProcessing = isProcessing
-    }
-}
-
 struct WidgetView: View {
-    @ObservedObject var viewModel: WidgetViewModel
-    @ObservedObject var panelViewModel: SharedPanelViewModel
-    @ObservedObject var chatWindowViewModel: ChatWindowViewModel
-    @ObservedObject var sharedPanelDisplayController: SharedPanelDisplayController
-    @ObservedObject var suggestionPanelDisplayController: SuggestionPanelDisplayController
+    let store: StoreOf<CircularWidgetFeature>
     @State var isHovering: Bool = false
-    @State var processingProgress: Double = 0
     var onOpenChatClicked: () -> Void = {}
     var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
 
     var body: some View {
-        Circle().fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
+        Circle()
+            .fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    let wasDisplayed = {
-                        if (sharedPanelDisplayController.isPanelDisplayed || suggestionPanelDisplayController.isPanelDisplayed),
-                           panelViewModel.content != nil { return true }
-                        if chatWindowViewModel.isPanelDisplayed,
-                           chatWindowViewModel.chat != nil { return true }
-                        return false
-                    }()
-                    sharedPanelDisplayController.isPanelDisplayed = !wasDisplayed
-                    suggestionPanelDisplayController.isPanelDisplayed = !wasDisplayed
-                    chatWindowViewModel.isPanelDisplayed = !wasDisplayed
-                    let isDisplayed = !wasDisplayed
-
-                    if !isDisplayed {
-                        if let app = ActiveApplicationMonitor.previousActiveApplication,
-                           app.isXcode
-                        {
-                            app.activate()
-                        }
-                    }
+                    store.send(.widgetClicked)
                 }
             }
-            .overlay {
-                let minimumLineWidth: Double = 3
-                let lineWidth = (1 - processingProgress) *
-                    (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
-                let scale = max(processingProgress * 1, 0.0001)
-                let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
-
-                ZStack {
-                    Circle()
-                        .stroke(
-                            Color(nsColor: .darkGray),
-                            style: .init(lineWidth: minimumLineWidth)
-                        )
-                        .padding(minimumLineWidth / 2)
-
-                    // how do I stop the repeatForever animation without removing the view?
-                    // I tried many solutions found on stackoverflow but non of them works.
-                    if viewModel.isProcessing {
-                        Circle()
-                            .stroke(
-                                Color.accentColor,
-                                style: .init(lineWidth: lineWidth)
-                            )
-                            .padding(minimumLineWidth / 2)
-                            .scaleEffect(x: scale, y: scale)
-                            .opacity(!empty || viewModel.isProcessing ? 1 : 0)
-                            .animation(
-                                featureFlag: \.animationCCrashSuggestion,
-                                .easeInOut(duration: 1).repeatForever(autoreverses: true),
-                                value: processingProgress
-                            )
-                    } else {
-                        Circle()
-                            .stroke(
-                                Color.accentColor,
-                                style: .init(lineWidth: lineWidth)
-                            )
-                            .padding(minimumLineWidth / 2)
-                            .scaleEffect(x: scale, y: scale)
-                            .opacity(!empty || viewModel.isProcessing ? 1 : 0)
-                            .animation(
-                                featureFlag: \.animationCCrashSuggestion,
-                                .easeInOut(duration: 1),
-                                value: processingProgress
-                            )
-                    }
-                }
-            }
-            .onChange(of: viewModel.isProcessing) { _ in refreshRing() }
-            .onChange(of: panelViewModel.content?.contentHash) { _ in refreshRing() }
-            .onChange(of: chatWindowViewModel.chat?.id) { _ in refreshRing() }
+            .overlay { overlayCircle }
             .onHover { yes in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isHovering = yes
                 }
             }.contextMenu {
-                WidgetContextMenu(
-                    chatWindowViewModel: chatWindowViewModel,
-                    widgetViewModel: viewModel,
-                    isChatOpen: chatWindowViewModel.isPanelDisplayed
-                        && chatWindowViewModel.chat != nil,
-                    onOpenChatClicked: onOpenChatClicked,
-                    onCustomCommandClicked: onCustomCommandClicked
-                )
+                WidgetContextMenu(store: store)
             }
     }
 
-    func refreshRing() {
-        Task {
-            await Task.yield()
-            if viewModel.isProcessing {
-                processingProgress = 1 - processingProgress
-            } else {
-                let empty = panelViewModel.content == nil && chatWindowViewModel.chat == nil
-                processingProgress = empty ? 0 : 1
+    struct OverlayCircleState: Equatable {
+        var isProcessing: Bool
+        var isContentEmpty: Bool
+    }
+
+    @ViewBuilder var overlayCircle: some View {
+        WithViewStore(store, observe: { $0.animationProgress }) { viewStore in
+            let processingProgress = viewStore.state
+            let minimumLineWidth: Double = 3
+            let lineWidth = (1 - processingProgress) *
+                (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
+            let scale = max(processingProgress * 1, 0.0001)
+            ZStack {
+                Circle()
+                    .stroke(
+                        Color(nsColor: .darkGray),
+                        style: .init(lineWidth: minimumLineWidth)
+                    )
+                    .padding(minimumLineWidth / 2)
+
+                // how do I stop the repeatForever animation without removing the view?
+                // I tried many solutions found on stackoverflow but non of them works.
+                WithViewStore(
+                    store,
+                    observe: {
+                        OverlayCircleState(
+                            isProcessing: $0.isProcessing,
+                            isContentEmpty: $0.isContentEmpty
+                        )
+                    }
+                ) { viewStore in
+                    Group {
+                        if viewStore.isProcessing {
+                            Circle()
+                                .stroke(
+                                    Color.accentColor,
+                                    style: .init(lineWidth: lineWidth)
+                                )
+                                .padding(minimumLineWidth / 2)
+                                .scaleEffect(x: scale, y: scale)
+                                .opacity(
+                                    !viewStore.isContentEmpty || viewStore
+                                        .isProcessing ? 1 : 0
+                                )
+                                .animation(
+                                    featureFlag: \.animationCCrashSuggestion,
+                                    .easeInOut(duration: 1)
+                                        .repeatForever(autoreverses: true),
+                                    value: processingProgress
+                                )
+                        } else {
+                            Circle()
+                                .stroke(
+                                    Color.accentColor,
+                                    style: .init(lineWidth: lineWidth)
+                                )
+                                .padding(minimumLineWidth / 2)
+                                .scaleEffect(x: scale, y: scale)
+                                .opacity(
+                                    !viewStore.isContentEmpty || viewStore
+                                        .isProcessing ? 1 : 0
+                                )
+                                .animation(
+                                    featureFlag: \.animationCCrashSuggestion,
+                                    .easeInOut(duration: 1),
+                                    value: processingProgress
+                                )
+                        }
+                    }
+                    .onChange(of: viewStore.isProcessing) { _ in
+                        viewStore.send(._refreshRing)
+                    }
+                    .onChange(of: viewStore.isContentEmpty) { _ in
+                        viewStore.send(._refreshRing)
+                    }
+                }
             }
         }
     }
@@ -169,22 +118,20 @@ struct WidgetContextMenu: View {
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @AppStorage(\.suggestionFeatureDisabledLanguageList) var suggestionFeatureDisabledLanguageList
     @AppStorage(\.customCommands) var customCommands
-    @ObservedObject var chatWindowViewModel: ChatWindowViewModel
-    @ObservedObject var widgetViewModel: WidgetViewModel
-    @State var projectPath: String?
-    @State var fileURL: URL?
-    var isChatOpen: Bool
-    var onOpenChatClicked: () -> Void = {}
-    var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
+    let store: StoreOf<CircularWidgetFeature>
+
+    @Dependency(\.xcodeInspector) var xcodeInspector
 
     var body: some View {
         Group {
             Group { // Commands
-                if !isChatOpen {
-                    Button(action: {
-                        onOpenChatClicked()
-                    }) {
-                        Text("Open Chat")
+                WithViewStore(store, observe: { $0.isChatOpen }) { viewStore in
+                    if !viewStore.state {
+                        Button(action: {
+                            viewStore.send(.openChatButtonClicked)
+                        }) {
+                            Text("Open Chat")
+                        }
                     }
                 }
 
@@ -202,12 +149,17 @@ struct WidgetContextMenu: View {
             Divider()
 
             Group { // Settings
-                Button(action: {
-                    chatWindowViewModel.chatPanelInASeparateWindow.toggle()
-                }) {
-                    Text("Detach Chat Panel")
-                    if chatWindowViewModel.chatPanelInASeparateWindow {
-                        Image(systemName: "checkmark")
+                WithViewStore(
+                    store,
+                    observe: { $0.isChatPanelDetached }
+                ) { viewStore in
+                    Button(action: {
+                        viewStore.send(.detachChatPanelToggleClicked)
+                    }) {
+                        Text("Detach Chat Panel")
+                        if viewStore.state {
+                            Image(systemName: "checkmark")
+                        }
                     }
                 }
 
@@ -241,37 +193,13 @@ struct WidgetContextMenu: View {
 
             Divider()
         }
-        .onAppear {
-            updateProjectPath(fileURL: widgetViewModel.currentFileURL)
-        }
-        .onChange(of: widgetViewModel.currentFileURL) { fileURL in
-            updateProjectPath(fileURL: fileURL)
-        }
-    }
-
-    func updateProjectPath(fileURL: URL?) {
-        Task {
-            let projectURL: URL? = await {
-                if let url = try? await Environment.fetchCurrentProjectRootURLFromXcode() {
-                    return url
-                }
-                guard let fileURL else { return nil }
-                return try? await Environment.guessProjectRootURLForFile(fileURL)
-            }()
-            if let projectURL {
-                Task { @MainActor in
-                    self.fileURL = fileURL
-                    self.projectPath = projectURL.path
-                }
-            }
-        }
     }
 
     func customCommandMenu() -> some View {
         Menu("Custom Commands") {
             ForEach(customCommands, id: \.name) { command in
                 Button(action: {
-                    onCustomCommandClicked(command)
+                    store.send(.runCustomCommandButtonClicked(command))
                 }) {
                     Text(command.name)
                 }
@@ -283,22 +211,25 @@ struct WidgetContextMenu: View {
 extension WidgetContextMenu {
     @ViewBuilder
     var enableSuggestionForProject: some View {
-        if let projectPath, disableSuggestionFeatureGlobally {
-            let matchedPath = suggestionFeatureEnabledProjectList.first { path in
-                projectPath.hasPrefix(path)
-            }
-            Button(action: {
-                if matchedPath != nil {
-                    suggestionFeatureEnabledProjectList
-                        .removeAll { path in path == matchedPath }
-                } else {
-                    suggestionFeatureEnabledProjectList.append(projectPath)
+        WithViewStore(store) { _ in
+            let projectPath = xcodeInspector.activeProjectURL.path
+            if disableSuggestionFeatureGlobally {
+                let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                    projectPath.hasPrefix(path)
                 }
-            }) {
-                if matchedPath == nil {
-                    Text("Add to Suggestion-Enabled Project List")
-                } else {
-                    Text("Remove from Suggestion-Enabled Project List")
+                Button(action: {
+                    if matchedPath != nil {
+                        suggestionFeatureEnabledProjectList
+                            .removeAll { path in path == matchedPath }
+                    } else {
+                        suggestionFeatureEnabledProjectList.append(projectPath)
+                    }
+                }) {
+                    if matchedPath == nil {
+                        Text("Add to Suggestion-Enabled Project List")
+                    } else {
+                        Text("Remove from Suggestion-Enabled Project List")
+                    }
                 }
             }
         }
@@ -306,7 +237,8 @@ extension WidgetContextMenu {
 
     @ViewBuilder
     var disableSuggestionForLanguage: some View {
-        if let fileURL {
+        WithViewStore(store) { _ in
+            let fileURL = xcodeInspector.activeDocumentURL
             let fileLanguage = languageIdentifierFromFileURL(fileURL)
             let matched = suggestionFeatureDisabledLanguageList.first { rawValue in
                 fileLanguage.rawValue == rawValue
@@ -332,45 +264,58 @@ struct WidgetView_Preview: PreviewProvider {
     static var previews: some View {
         VStack {
             WidgetView(
-                viewModel: .init(isProcessing: false),
-                panelViewModel: .init(),
-                chatWindowViewModel: .init(),
-                sharedPanelDisplayController: .init(),
-                suggestionPanelDisplayController: .init(),
+                store: Store(
+                    initialState: .init(
+                        isProcessing: false,
+                        isDisplayingContent: false,
+                        isContentEmpty: true,
+                        isChatPanelDetached: false,
+                        isChatOpen: false
+                    ),
+                    reducer: CircularWidgetFeature()
+                ),
                 isHovering: false
             )
 
             WidgetView(
-                viewModel: .init(isProcessing: false),
-                panelViewModel: .init(),
-                chatWindowViewModel: .init(),
-                sharedPanelDisplayController: .init(),
-                suggestionPanelDisplayController: .init(),
+                store: Store(
+                    initialState: .init(
+                        isProcessing: false,
+                        isDisplayingContent: false,
+                        isContentEmpty: true,
+                        isChatPanelDetached: false,
+                        isChatOpen: false
+                    ),
+                    reducer: CircularWidgetFeature()
+                ),
                 isHovering: true
             )
 
             WidgetView(
-                viewModel: .init(isProcessing: true),
-                panelViewModel: .init(),
-                chatWindowViewModel: .init(),
-                sharedPanelDisplayController: .init(),
-                suggestionPanelDisplayController: .init(),
+                store: Store(
+                    initialState: .init(
+                        isProcessing: true,
+                        isDisplayingContent: false,
+                        isContentEmpty: true,
+                        isChatPanelDetached: false,
+                        isChatOpen: false
+                    ),
+                    reducer: CircularWidgetFeature()
+                ),
                 isHovering: false
             )
 
             WidgetView(
-                viewModel: .init(isProcessing: false),
-                panelViewModel: .init(
-                    content: .suggestion(SuggestionProvider(
-                        code: "Hello",
-                        startLineIndex: 0,
-                        suggestionCount: 0,
-                        currentSuggestionIndex: 0
-                    ))
+                store: Store(
+                    initialState: .init(
+                        isProcessing: false,
+                        isDisplayingContent: true,
+                        isContentEmpty: true,
+                        isChatPanelDetached: false,
+                        isChatOpen: false
+                    ),
+                    reducer: CircularWidgetFeature()
                 ),
-                chatWindowViewModel: .init(),
-                sharedPanelDisplayController: .init(),
-                suggestionPanelDisplayController: .init(),
                 isHovering: false
             )
         }

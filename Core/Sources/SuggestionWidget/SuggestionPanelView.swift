@@ -1,89 +1,86 @@
+import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-@MainActor
-final class SuggestionPanelDisplayController: ObservableObject {
-    @Published var alignTopToAnchor = false
-    @Published var isPanelOutOfFrame: Bool = false
-    @Published var isPanelDisplayed: Bool = false
-
-    init(
-        alignTopToAnchor: Bool = false,
-        isPanelOutOfFrame: Bool = false,
-        isPanelDisplayed: Bool = false
-    ) {
-        self.alignTopToAnchor = alignTopToAnchor
-        self.isPanelDisplayed = isPanelDisplayed
-        self.isPanelOutOfFrame = isPanelOutOfFrame
-    }
-}
-
 struct SuggestionPanelView: View {
-    @ObservedObject var viewModel: SharedPanelViewModel
-    @ObservedObject var displayController: SuggestionPanelDisplayController
+    let store: StoreOf<SuggestionPanelFeature>
     @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
-    var body: some View {
-        VStack(spacing: 0) {
-            if !displayController.alignTopToAnchor {
-                Spacer()
-                    .frame(minHeight: 0, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-            }
+    struct OverallState: Equatable {
+        var isPanelDisplayed: Bool
+        var opacity: Double
+        var colorScheme: ColorScheme
+        var contentHash: String
+        var isPanelOutOfFrame: Bool
+        var alignTopToAnchor: Bool
+    }
 
-            VStack {
-                if let content = viewModel.content {
-                    ZStack(alignment: .topLeading) {
-                        switch content {
-                        case let .suggestion(suggestion):
-                            switch suggestionPresentationMode {
-                            case .nearbyTextCursor:
-                                CodeBlockSuggestionPanel(suggestion: suggestion)
-                            case .floatingWidget:
+    var body: some View {
+        WithViewStore(
+            store,
+            observe: { OverallState(
+                isPanelDisplayed: $0.isPanelDisplayed,
+                opacity: $0.opacity,
+                colorScheme: $0.colorScheme,
+                contentHash: $0.content?.contentHash ?? "",
+                isPanelOutOfFrame: $0.isPanelOutOfFrame,
+                alignTopToAnchor: $0.alignTopToAnchor
+            ) }
+        ) { viewStore in
+            VStack(spacing: 0) {
+                if !viewStore.alignTopToAnchor {
+                    Spacer()
+                        .frame(minHeight: 0, maxHeight: .infinity)
+                        .allowsHitTesting(false)
+                }
+
+                IfLetStore(store.scope(state: \.content, action: { $0 })) { store in
+                    WithViewStore(store) { viewStore in
+                        ZStack(alignment: .topLeading) {
+                            switch viewStore.state {
+                            case let .suggestion(suggestion):
+                                switch suggestionPresentationMode {
+                                case .nearbyTextCursor:
+                                    CodeBlockSuggestionPanel(suggestion: suggestion)
+                                case .floatingWidget:
+                                    EmptyView()
+                                }
+                            default:
                                 EmptyView()
                             }
-                        default:
-                            EmptyView()
                         }
+                        .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(
-                        displayController.isPanelDisplayed && !displayController.isPanelOutOfFrame
-                    )
+                }
+                .allowsHitTesting(
+                    viewStore.isPanelDisplayed && !viewStore.isPanelOutOfFrame
+                )
+                .frame(maxWidth: .infinity)
+
+                if viewStore.alignTopToAnchor {
+                    Spacer()
+                        .frame(minHeight: 0, maxHeight: .infinity)
+                        .allowsHitTesting(false)
                 }
             }
-            .frame(maxWidth: .infinity)
-
-            if displayController.alignTopToAnchor {
-                Spacer()
-                    .frame(minHeight: 0, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-            }
+            .preferredColorScheme(viewStore.colorScheme)
+            .opacity(viewStore.opacity)
+            .animation(
+                featureFlag: \.animationBCrashSuggestion,
+                .easeInOut(duration: 0.2),
+                value: viewStore.isPanelDisplayed
+            )
+            .animation(
+                featureFlag: \.animationBCrashSuggestion,
+                .easeInOut(duration: 0.2),
+                value: viewStore.isPanelOutOfFrame
+            )
+            .frame(
+                maxWidth: Style.inlineSuggestionMinWidth,
+                maxHeight: Style.inlineSuggestionMaxHeight
+            )
         }
-        .preferredColorScheme(viewModel.colorScheme)
-        .opacity({
-            guard displayController.isPanelDisplayed else { return 0 }
-            guard !displayController.isPanelOutOfFrame else { return 0 }
-            guard viewModel.content != nil else { return 0 }
-            return 1
-        }())
-        .animation(
-            featureFlag: \.animationACrashSuggestion,
-            .easeInOut(duration: 0.2),
-            value: viewModel.content?.contentHash
-        )
-        .animation(
-            featureFlag: \.animationBCrashSuggestion,
-            .easeInOut(duration: 0.2),
-            value: displayController.isPanelDisplayed
-        )
-        .animation(
-            featureFlag: \.animationBCrashSuggestion,
-            .easeInOut(duration: 0.2),
-            value: displayController.isPanelOutOfFrame
-        )
-        .frame(maxWidth: Style.inlineSuggestionMinWidth, maxHeight: Style.inlineSuggestionMaxHeight)
     }
 }
 
