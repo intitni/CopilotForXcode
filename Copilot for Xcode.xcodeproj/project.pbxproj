@@ -24,8 +24,6 @@
 		C8216B802980378300AD38C7 /* Helper in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C8216B70298036EC00AD38C7 /* Helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C8520301293C4D9000460097 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8520300293C4D9000460097 /* Helpers.swift */; };
 		C861A6A329E5503F005C41A3 /* PromptToCodeCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */; };
-		C861A7AD2A41EDDF006A8698 /* python-stdlib in Resources */ = {isa = PBXBuildFile; fileRef = C83E5DEA2A38CD000071506D /* python-stdlib */; };
-		C861A7AE2A41EF1A006A8698 /* site-packages in Resources */ = {isa = PBXBuildFile; fileRef = C83E5DE92A38CD000071506D /* site-packages */; };
 		C861E6112994F6070056CB02 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C861E6102994F6070056CB02 /* AppDelegate.swift */; };
 		C861E6152994F6080056CB02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C861E6142994F6080056CB02 /* Assets.xcassets */; };
 		C861E61E2994F6150056CB02 /* Service in Frameworks */ = {isa = PBXBuildFile; productRef = C861E61D2994F6150056CB02 /* Service */; };
@@ -487,8 +485,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C861A7AE2A41EF1A006A8698 /* site-packages in Resources */,
-				C861A7AD2A41EDDF006A8698 /* python-stdlib in Resources */,
 				C861E6152994F6080056CB02 /* Assets.xcassets in Resources */,
 				C81291D72994FE6900196E12 /* Main.storyboard in Resources */,
 			);
@@ -514,7 +510,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\necho \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\nfind \"$CODESIGNING_FOLDER_PATH/Contents/Resources/python-stdlib/lib-dynload\" -name \"*.so\" -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
+			shellScript = "#set -e\n#echo \"Signing as $EXPANDED_CODE_SIGN_IDENTITY_NAME ($EXPANDED_CODE_SIGN_IDENTITY)\"\n#find \"$CODESIGNING_FOLDER_PATH/Contents/Resources/python-stdlib/lib-dynload\" -name \"*.so\" -exec /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" -o runtime --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der {} \\;\n";
 		};
 		C8A3B1782A2894E10046E809 /* Sign Python Site Packages */ = {
 			isa = PBXShellScriptBuildPhase;
