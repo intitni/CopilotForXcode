@@ -19,8 +19,8 @@ struct PanelFeature: ReducerProtocol {
         case presentPromptToCode
         case presentPanelContent(SharedPanelFeature.Content, shouldDisplay: Bool)
         case discardPanelContent
-        case updatePanelContent
         case removeDisplayedContent
+        case switchToAnotherEditorAndUpdateContent
 
         case sharedPanel(SharedPanelFeature.Action)
         case suggestionPanel(SuggestionPanelFeature.Action)
@@ -48,13 +48,13 @@ struct PanelFeature: ReducerProtocol {
                     ) else { return }
                     let content = SharedPanelFeature.Content.suggestion(provider)
                     await send(.presentPanelContent(content, shouldDisplay: true))
-                }
+                }.animation(.easeInOut(duration: 0.2))
 
             case let .presentError(errorDescription):
                 return .run { send in
                     let content = SharedPanelFeature.Content.error(errorDescription)
                     await send(.presentPanelContent(content, shouldDisplay: true))
-                }
+                }.animation(.easeInOut(duration: 0.2))
 
             case .presentPromptToCode:
                 return .run { send in
@@ -68,7 +68,7 @@ struct PanelFeature: ReducerProtocol {
                     try await Task.sleep(nanoseconds: 150_000_000)
                     await NSApplication.shared.activate(ignoringOtherApps: true)
                     await windows.sharedPanelWindow.makeKey()
-                }
+                }.animation(.easeInOut(duration: 0.2))
 
             case let .presentPanelContent(content, shouldDisplay):
                 state.sharedPanelState.content = content
@@ -94,10 +94,23 @@ struct PanelFeature: ReducerProtocol {
 
             case .discardPanelContent:
                 return .run { send in
-                    await send(.updatePanelContent)
-                }
+                    let fileURL = xcodeInspector.activeDocumentURL
+                    if let provider = await fetchPromptToCodeProvider(fileURL: fileURL) {
+                        await send(.presentPanelContent(
+                            .promptToCode(provider),
+                            shouldDisplay: false
+                        ))
+                    } else if let provider = await fetchSuggestionProvider(fileURL: fileURL) {
+                        await send(.presentPanelContent(
+                            .suggestion(provider),
+                            shouldDisplay: false
+                        ))
+                    } else {
+                        await send(.removeDisplayedContent)
+                    }
+                }.animation(.easeInOut(duration: 0.2))
 
-            case .updatePanelContent:
+            case .switchToAnotherEditorAndUpdateContent:
                 return .run { send in
                     let fileURL = xcodeInspector.activeDocumentURL
                     if let provider = await fetchPromptToCodeProvider(fileURL: fileURL) {

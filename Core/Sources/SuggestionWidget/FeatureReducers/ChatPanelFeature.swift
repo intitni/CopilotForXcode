@@ -39,10 +39,13 @@ struct ChatPanelFeature: ReducerProtocol {
             switch action {
             case .hideButtonClicked:
                 state.isPanelDisplayed = false
-                if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
-                    app.activate()
+
+                return .run { _ in
+                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                        app.activate()
+                    }
                 }
-                return .none
 
             case .toggleChatPanelDetachedButtonClicked:
                 state.chatPanelInASeparateWindow.toggle()
@@ -55,7 +58,7 @@ struct ChatPanelFeature: ReducerProtocol {
             case .attachChatPanel:
                 state.chatPanelInASeparateWindow = false
                 return .none
-                
+
             case .closeChatPanel:
                 state.chat = nil
                 return .none
@@ -69,7 +72,7 @@ struct ChatPanelFeature: ReducerProtocol {
                     guard let provider = await fetchChatProvider(
                         fileURL: xcodeInspector.activeDocumentURL
                     ) else { return }
-                    
+
                     if oldChatProviderId != provider.id {
                         await send(.updateChatProvider(provider))
                     }
@@ -106,3 +109,4 @@ struct ChatPanelFeature: ReducerProtocol {
             .chatForFile(at: fileURL)
     }
 }
+

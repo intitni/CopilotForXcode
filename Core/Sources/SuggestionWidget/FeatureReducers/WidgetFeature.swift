@@ -131,19 +131,23 @@ struct WidgetFeature: ReducerProtocol {
                 }
 
             case .circularWidget(.widgetClicked):
-                if state._circularWidgetState.isDisplayingContent {
+                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
+                if isDisplayingContent {
                     state.panelState.sharedPanelState.isPanelDisplayed = false
                     state.panelState.suggestionPanelState.isPanelDisplayed = false
                     state.chatPanelState.isPanelDisplayed = false
-                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
-                        app.activate()
-                    }
                 } else {
                     state.panelState.sharedPanelState.isPanelDisplayed = true
                     state.panelState.suggestionPanelState.isPanelDisplayed = true
                     state.chatPanelState.isPanelDisplayed = true
                 }
-                return .none
+                return .run { _ in
+                    guard isDisplayingContent else { return }
+                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                        app.activate()
+                    }
+                }
 
             default: return .none
             }
@@ -312,17 +316,22 @@ struct WidgetFeature: ReducerProtocol {
                     for await notification in notifications {
                         try Task.checkCancellation()
 
-                        await send(.updateWindowLocation(animated: false))
-                        await send(.updateWindowOpacity)
-
                         if [
                             kAXFocusedUIElementChangedNotification,
                             kAXApplicationActivatedNotification,
+                            kAXMainWindowChangedNotification,
+                            kAXFocusedWindowChangedNotification,
                         ].contains(notification.name) {
+                            await hidePanelWindows()
+                            await send(.panel(.removeDisplayedContent))
+                            await send(.updateWindowLocation(animated: false))
+                            await send(.updateWindowOpacity)
                             await send(.observeEditorChange)
-
-                            await send(.panel(.updatePanelContent))
+                            await send(.panel(.switchToAnotherEditorAndUpdateContent))
                             await send(.chatPanel(.updateContent))
+                        } else {
+                            await send(.updateWindowLocation(animated: false))
+                            await send(.updateWindowOpacity)
                         }
                     }
                 }.cancellable(id: CancelID.observeWindowChange, cancelInFlight: true)
@@ -373,7 +382,7 @@ struct WidgetFeature: ReducerProtocol {
             case .updateActiveApplication:
                 if let app = activeApplicationMonitor.activeApplication, app.isXcode {
                     return .run { send in
-                        await send(.panel(.updatePanelContent))
+                        await send(.panel(.switchToAnotherEditorAndUpdateContent))
                         await send(.chatPanel(.updateContent))
                         await send(.updateWindowLocation(animated: false))
                         await send(.updateWindowOpacity)
@@ -547,6 +556,12 @@ struct WidgetFeature: ReducerProtocol {
                 return .none
             }
         }
+    }
+
+    @MainActor
+    func hidePanelWindows() {
+        windows.sharedPanelWindow.alphaValue = 0
+        windows.suggestionPanelWindow.alphaValue = 0
     }
 
     func generateWidgetLocation() -> WidgetLocation? {
