@@ -238,7 +238,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     specifiedSystemPrompt: nil,
                     extraSystemPrompt: nil,
                     sendingMessageImmediately: nil,
-                    name: nil
+                    name: nil,
+                    sendSilently: false
                 )
             } catch {
                 presenter.presentError(error)
@@ -288,20 +289,22 @@ extension WindowBaseCommandHandler {
         else { throw CommandNotFoundError() }
 
         switch command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt, sendSilently):
             let updatePrompt = useExtraSystemPrompt ?? true
             try await startChat(
                 specifiedSystemPrompt: nil,
                 extraSystemPrompt: updatePrompt ? extraSystemPrompt : nil,
                 sendingMessageImmediately: prompt,
-                name: command.name
+                name: command.name,
+                sendSilently: sendSilently ?? false
             )
         case let .customChat(systemPrompt, prompt):
             try await startChat(
                 specifiedSystemPrompt: systemPrompt,
                 extraSystemPrompt: "",
                 sendingMessageImmediately: prompt,
-                name: command.name
+                name: command.name,
+                sendSilently: false
             )
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             try await presentPromptToCode(
@@ -393,7 +396,8 @@ extension WindowBaseCommandHandler {
         specifiedSystemPrompt: String?,
         extraSystemPrompt: String?,
         sendingMessageImmediately: String?,
-        name: String?
+        name: String?,
+        sendSilently: Bool
     ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
@@ -428,7 +432,9 @@ extension WindowBaseCommandHandler {
             }
         }
 
-        presenter.presentChatRoom(fileURL: focusedElementURI)
+        if !sendSilently {
+            presenter.presentChatRoom(fileURL: focusedElementURI)
+        }
     }
 }
 

@@ -308,7 +308,8 @@ public extension UserDefaultPreferenceKeys {
                 feature: .chatWithSelection(
                     extraSystemPrompt: "",
                     prompt: "Explain the selected code concisely, step-by-step.",
-                    useExtraSystemPrompt: true
+                    useExtraSystemPrompt: true,
+                    sendSilently: false
                 )
             ),
             .init(
@@ -331,7 +332,8 @@ public extension UserDefaultPreferenceKeys {
                     {{selected_code}}
                     ```
                     """,
-                    useExtraSystemPrompt: true
+                    useExtraSystemPrompt: true,
+                    sendSilently: false
                 )
             ),
         ], key: "CustomCommands")
