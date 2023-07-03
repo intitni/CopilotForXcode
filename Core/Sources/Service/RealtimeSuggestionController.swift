@@ -104,11 +104,10 @@ public class RealtimeSuggestionController {
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
         focusedUIElement = focusElement
-
-        let fileURL = XcodeInspector.shared.activeDocumentURL
-
+        
         Task { // Notify suggestion service for open file.
             try await Task.sleep(nanoseconds: 500_000_000)
+            let fileURL = try await Environment.fetchCurrentFileURL()
             _ = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
         }
 
@@ -119,6 +118,7 @@ public class RealtimeSuggestionController {
         editorObservationTask = nil
 
         editorObservationTask = Task { [weak self] in
+            let fileURL = try await Environment.fetchCurrentFileURL()
             if let sourceEditor = self?.sourceEditor {
                 await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                     fileURL: fileURL,
@@ -143,6 +143,7 @@ public class RealtimeSuggestionController {
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
                     guard let sourceEditor else { continue }
+                    let fileURL = XcodeInspector.shared.activeDocumentURL
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                         fileURL: fileURL,
                         sourceEditor: sourceEditor
