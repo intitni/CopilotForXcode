@@ -27,7 +27,7 @@ struct ChatPanelFeature: ReducerProtocol {
         case closeChatPanel
 
         case updateContent
-        case updateChatProvider(ChatProvider?)
+        case updateChatProvider(ChatProvider?, forceDisplayIfPossible: Bool)
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
@@ -67,37 +67,35 @@ struct ChatPanelFeature: ReducerProtocol {
                 if forceDetach {
                     state.chatPanelInASeparateWindow = true
                 }
-                let oldChatProviderId = state.chat?.id
+
                 return .run { send in
                     guard let provider = await fetchChatProvider(
                         fileURL: xcodeInspector.activeDocumentURL
                     ) else { return }
-
-                    if oldChatProviderId != provider.id {
-                        await send(.updateChatProvider(provider))
-                    }
+                    await send(.updateChatProvider(provider, forceDisplayIfPossible: true))
 
                     try await Task.sleep(nanoseconds: 150_000_000)
                     await NSApplication.shared.activate(ignoringOtherApps: true)
                 }
 
             case .updateContent:
-                let oldChatProviderId = state.chat?.id
                 return .run { send in
                     if let provider = await fetchChatProvider(
                         fileURL: xcodeInspector.activeDocumentURL
                     ) {
-                        if oldChatProviderId != provider.id {
-                            await send(.updateChatProvider(provider))
-                        }
+                        await send(.updateChatProvider(provider, forceDisplayIfPossible: false))
                     } else {
-                        await send(.updateChatProvider(nil))
+                        await send(.updateChatProvider(nil, forceDisplayIfPossible: true))
                     }
                 }
 
-            case let .updateChatProvider(provider):
-                state.chat = provider
-                state.isPanelDisplayed = provider != nil
+            case let .updateChatProvider(provider, updateDisplay):
+                if state.chat?.id != provider?.id {
+                    state.chat = provider
+                }
+                if updateDisplay {
+                    state.isPanelDisplayed = provider != nil
+                }
                 return .none
             }
         }
