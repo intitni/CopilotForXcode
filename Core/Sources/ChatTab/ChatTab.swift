@@ -1,28 +1,50 @@
 import Foundation
 import SwiftUI
 
-public protocol ChatTab {
-    associatedtype Body: View
-    var id: UUID { get }
-    @ViewBuilder @MainActor var body: Body { get }
+open class BaseChatTab: Equatable {
+    public let id: UUID
+    
+    public static func == (lhs: BaseChatTab, rhs: BaseChatTab) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    init(id: UUID) {
+        self.id = id
+    }
+    
+    @ViewBuilder
+    public var body: some View {
+        if let tab = self as? ChatTabType {
+            AnyView(tab.buildView()).id(id)
+        } else {
+            EmptyView()
+        }
+    }
 }
+
+public protocol ChatTabType {
+    @ViewBuilder
+    func buildView() -> any View
+}
+
+public typealias ChatTab = BaseChatTab & ChatTabType
 
 public class ChatGPTChatTab: ChatTab {
     public var provider: ChatProvider
-    public var id: UUID { provider.id }
-    public var body: some View {
+    
+    public func buildView() -> any View {
         ChatPanel(chat: provider)
     }
-    
+
     public init(provider: ChatProvider) {
         self.provider = provider
+        super.init(id: provider.id)
     }
 }
 
 public class EmptyChatTab: ChatTab {
-    public var id: UUID { .init() }
-    
-    public var body: some View {
+    public func buildView() -> any View {
         EmptyView()
     }
 }
+

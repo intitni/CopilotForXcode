@@ -4,18 +4,21 @@ import ChatTab
 import ComposableArchitecture
 import SwiftUI
 
-extension ChatProvider: Equatable {
-    public static func == (lhs: ChatProvider, rhs: ChatProvider) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
 struct ChatPanelFeature: ReducerProtocol {
     struct State: Equatable {
-        var chat: ChatProvider?
+        var chatTabs: [BaseChatTab] = []
         var colorScheme: ColorScheme = .light
         var isPanelDisplayed = false
         var chatPanelInASeparateWindow = false
+        var tabIndex = 0
+
+        var currentTab: BaseChatTab? {
+            if tabIndex >= 0, tabIndex < chatTabs.endIndex {
+                return chatTabs[tabIndex]
+            } else {
+                return nil
+            }
+        }
     }
 
     enum Action: Equatable {
@@ -24,15 +27,18 @@ struct ChatPanelFeature: ReducerProtocol {
         case detachChatPanel
         case attachChatPanel
         case presentChatPanel(forceDetach: Bool)
-        case closeChatPanel
 
         case updateContent
-        case updateChatProvider(ChatProvider?, forceDisplayIfPossible: Bool)
+        case updateChatTabs([BaseChatTab])
+        case closeTabButtonClicked(index: Int)
+        case createNewTapButtonClicked
+        case tabClicked(index: Int)
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
-    @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
+    @Dependency(\.activatePreviouslyActiveXcode) var activatePreviouslyActiveXcode
+    @Dependency(\.activateExtensionService) var activateExtensionService
 
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -41,10 +47,7 @@ struct ChatPanelFeature: ReducerProtocol {
                 state.isPanelDisplayed = false
 
                 return .run { _ in
-                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
-                        try await Task.sleep(nanoseconds: 200_000_000)
-                        app.activate()
-                    }
+                    await activatePreviouslyActiveXcode()
                 }
 
             case .toggleChatPanelDetachedButtonClicked:
@@ -59,52 +62,44 @@ struct ChatPanelFeature: ReducerProtocol {
                 state.chatPanelInASeparateWindow = false
                 return .none
 
-            case .closeChatPanel:
-                state.chat = nil
-                return .none
-
             case let .presentChatPanel(forceDetach):
                 if forceDetach {
                     state.chatPanelInASeparateWindow = true
                 }
-
                 return .run { send in
-                    guard let provider = await fetchChatProvider(
-                        fileURL: xcodeInspector.activeDocumentURL
-                    ) else { return }
-                    await send(.updateChatProvider(provider, forceDisplayIfPossible: true))
-
-                    try await Task.sleep(nanoseconds: 150_000_000)
-                    await NSApplication.shared.activate(ignoringOtherApps: true)
+                    let tabs = await fetchChatTabs()
+                    await send(.updateChatTabs(tabs))
+                    await activateExtensionService()
                 }
 
             case .updateContent:
                 return .run { send in
-                    if let provider = await fetchChatProvider(
-                        fileURL: xcodeInspector.activeDocumentURL
-                    ) {
-                        await send(.updateChatProvider(provider, forceDisplayIfPossible: false))
-                    } else {
-                        await send(.updateChatProvider(nil, forceDisplayIfPossible: true))
-                    }
+                    let tabs = await fetchChatTabs()
+                    await send(.updateChatTabs(tabs))
                 }
 
-            case let .updateChatProvider(provider, updateDisplay):
-                if state.chat?.id != provider?.id {
-                    state.chat = provider
-                }
-                if updateDisplay {
-                    state.isPanelDisplayed = provider != nil
-                }
+            case let .updateChatTabs(tabs):
+                state.chatTabs = tabs
+                state.isPanelDisplayed = !tabs.isEmpty
+                return .none
+
+            case let .closeTabButtonClicked(index):
+                return .none
+                
+            case .createNewTapButtonClicked:
+                return .none
+                
+            case let .tabClicked(index):
                 return .none
             }
         }
     }
 
-    func fetchChatProvider(fileURL: URL) async -> ChatProvider? {
-        await suggestionWidgetControllerDependency
-            .suggestionWidgetDataSource?
-            .chatForFile(at: fileURL)
+    func fetchChatTabs() async -> [ChatTab] {
+        return []
+//        await suggestionWidgetControllerDependency
+//            .suggestionWidgetDataSource?
+//            .chatForFile(at: fileURL)
     }
 }
 
