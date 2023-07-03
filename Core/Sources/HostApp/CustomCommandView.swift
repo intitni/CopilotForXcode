@@ -25,7 +25,7 @@ struct CustomCommandView: View {
                 "Previous Suggestion",
                 "Real-time Suggestions",
                 "Prefetch Suggestions",
-                "Open Chat",
+                "Send Message",
                 "Prompt to Code",
             ]
 
@@ -62,7 +62,7 @@ struct CustomCommandView: View {
                             Group {
                                 switch command.feature {
                                 case .chatWithSelection:
-                                    Text("Open Chat")
+                                    Text("Send Message")
                                 case .customChat:
                                     Text("Custom Chat")
                                 case .promptToCode:
@@ -122,7 +122,8 @@ struct CustomCommandView: View {
                         feature: .chatWithSelection(
                             extraSystemPrompt: nil,
                             prompt: "Tell me about the code.",
-                            useExtraSystemPrompt: false
+                            useExtraSystemPrompt: false,
+                            sendSilently: false
                         )
                     ))
                 }) {
@@ -160,6 +161,7 @@ struct EditCustomCommandView: View {
     @State var continuousMode: Bool
     @State var editingContentInFullScreen: Binding<String>?
     @State var generatingPromptToCodeDescription: Bool
+    @State var sendSilently: Bool
 
     enum CommandType: Int, CaseIterable {
         case chatWithSelection
@@ -176,13 +178,14 @@ struct EditCustomCommandView: View {
         originalName = editingCommand.wrappedValue?.command.name ?? ""
         name = originalName
         switch editingCommand.wrappedValue?.command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
+        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt, sendSilently):
             commandType = .chatWithSelection
             self.prompt = prompt ?? ""
             systemPrompt = extraSystemPrompt ?? ""
             usePrompt = useExtraSystemPrompt ?? true
             continuousMode = false
             generatingPromptToCodeDescription = true
+            self.sendSilently = sendSilently ?? false
         case let .customChat(systemPrompt, prompt):
             commandType = .customChat
             self.systemPrompt = systemPrompt ?? ""
@@ -190,6 +193,7 @@ struct EditCustomCommandView: View {
             usePrompt = false
             continuousMode = false
             generatingPromptToCodeDescription = true
+            sendSilently = false
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             commandType = .promptToCode
             self.prompt = prompt ?? ""
@@ -197,6 +201,7 @@ struct EditCustomCommandView: View {
             usePrompt = false
             self.continuousMode = continuousMode ?? false
             generatingPromptToCodeDescription = generateDescription ?? true
+            sendSilently = false
         case .none:
             commandType = .chatWithSelection
             prompt = ""
@@ -204,6 +209,7 @@ struct EditCustomCommandView: View {
             continuousMode = false
             usePrompt = true
             generatingPromptToCodeDescription = true
+            sendSilently = false
         }
     }
 
@@ -217,7 +223,7 @@ struct EditCustomCommandView: View {
                         Text({
                             switch commandType {
                             case .chatWithSelection:
-                                return "Open Chat"
+                                return "Send Message"
                             case .promptToCode:
                                 return "Prompt to Code"
                             case .customChat:
@@ -231,6 +237,7 @@ struct EditCustomCommandView: View {
                 case .chatWithSelection:
                     systemPromptTextField(title: "Extra System Prompt", hasToggle: true)
                     promptTextField
+                    sendSilentlyToggle
                 case .promptToCode:
                     continuousModeToggle
                     generateDescriptionToggle
@@ -266,7 +273,8 @@ struct EditCustomCommandView: View {
                                     return .chatWithSelection(
                                         extraSystemPrompt: systemPrompt,
                                         prompt: prompt,
-                                        useExtraSystemPrompt: usePrompt
+                                        useExtraSystemPrompt: usePrompt,
+                                        sendSilently: sendSilently
                                     )
                                 case .promptToCode:
                                     return .promptToCode(
@@ -362,6 +370,15 @@ struct EditCustomCommandView: View {
     var generateDescriptionToggle: some View {
         Toggle("Generate Description", isOn: $generatingPromptToCodeDescription)
     }
+    
+    var sendSilentlyToggle: some View {
+        Group {
+            Toggle("Send Silently", isOn: $sendSilently)
+            Text("Send a message without opening the chat panel. Useful when you need to run a command with `/run`.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
 }
 
 // MARK: - Previews
@@ -375,7 +392,8 @@ struct CustomCommandView_Preview: PreviewProvider {
                 feature: .chatWithSelection(
                     extraSystemPrompt: nil,
                     prompt: "Hello",
-                    useExtraSystemPrompt: false
+                    useExtraSystemPrompt: false,
+                    sendSilently: false
                 )
             )),
             settings: .init(customCommands: .init(wrappedValue: [
@@ -385,7 +403,8 @@ struct CustomCommandView_Preview: PreviewProvider {
                     feature: .chatWithSelection(
                         extraSystemPrompt: nil,
                         prompt: "Hello",
-                        useExtraSystemPrompt: false
+                        useExtraSystemPrompt: false,
+                        sendSilently: true
                     )
                 ),
                 .init(
