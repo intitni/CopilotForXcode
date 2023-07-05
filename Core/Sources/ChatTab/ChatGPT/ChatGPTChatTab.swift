@@ -97,9 +97,7 @@ extension ChatProvider {
 
         onRunCustomCommand = { command in
             Task {
-                #warning("how to handle custom command?")
-//                let commandHandler = PseudoCommandHandler()
-//                await commandHandler.handleCustomCommand(command)
+                try await service.handleCustomCommand(command)
             }
         }
 
