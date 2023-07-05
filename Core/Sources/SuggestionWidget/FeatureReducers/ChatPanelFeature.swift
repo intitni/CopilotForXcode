@@ -40,6 +40,7 @@ public struct ChatPanelFeature: ReducerProtocol {
     public enum Action: Equatable {
         // Window
         case hideButtonClicked
+        case closeActiveTabClicked
         case toggleChatPanelDetachedButtonClicked
         case detachChatPanel
         case attachChatPanel
@@ -67,7 +68,17 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .run { _ in
                     await activatePreviouslyActiveXcode()
                 }
-
+                
+            case .closeActiveTabClicked:
+                if let id = state.chatTapGroup.selectedTabId {
+                    return .run { send in
+                        await send(.closeTabButtonClicked(id: id))
+                    }
+                }
+                
+                state.isPanelDisplayed = false
+                return .none
+                
             case .toggleChatPanelDetachedButtonClicked:
                 state.chatPanelInASeparateWindow.toggle()
                 return .none
@@ -111,6 +122,9 @@ public struct ChatPanelFeature: ReducerProtocol {
 
             case let .closeTabButtonClicked(id):
                 state.chatTapGroup.tabs.removeAll { $0.id == id }
+                if state.chatTapGroup.tabs.isEmpty {
+                    state.isPanelDisplayed = false
+                }
                 return .none
 
             case .createNewTapButtonClicked:

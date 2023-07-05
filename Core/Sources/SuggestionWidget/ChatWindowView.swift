@@ -50,6 +50,14 @@ struct ChatWindowView: View {
                 }
                 .opacity(0)
                 .keyboardShortcut("M", modifiers: [.command])
+                
+                Button(action: {
+                    viewStore.send(.closeActiveTabClicked)
+                }) {
+                    EmptyView()
+                }
+                .opacity(0)
+                .keyboardShortcut("W", modifiers: [.command])
             }
             .background(.regularMaterial)
             .xcodeStyleFrame()
