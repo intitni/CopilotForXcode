@@ -27,6 +27,13 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(.tertiary)
+                    .frame(width: 120, height: 4)
+                    .frame(height: 16)
+                
+                Divider()
+                
                 ChatTabBar(store: store)
                     .frame(height: 32)
 

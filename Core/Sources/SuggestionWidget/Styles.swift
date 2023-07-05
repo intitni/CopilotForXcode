@@ -5,7 +5,7 @@ import SwiftUI
 
 enum Style {
     static let panelHeight: Double = 500
-    static let panelWidth: Double = 454
+    static let panelWidth: Double = 480
     static let inlineSuggestionMinWidth: Double = 540
     static let inlineSuggestionMaxHeight: Double = 400
     static let widgetHeight: Double = 24
