@@ -93,6 +93,7 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
 //                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
@@ -224,6 +225,7 @@ let package = Package(
             name: "ChatTab",
             dependencies: [
                 "SharedUIComponents",
+                "ChatService",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
@@ -240,6 +242,7 @@ let package = Package(
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
+        .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
 
         .target(
             name: "SuggestionWidget",
