@@ -5,12 +5,12 @@ import Preferences
 import SuggestionModel
 import SwiftUI
 
-struct CircularWidgetFeature: ReducerProtocol {
-    struct IsProcessingCounter: Equatable {
+public struct CircularWidgetFeature: ReducerProtocol {
+    public struct IsProcessingCounter: Equatable {
         var expirationDate: TimeInterval
     }
 
-    struct State: Equatable {
+    public struct State: Equatable {
         var isProcessingCounters = [IsProcessingCounter]()
         var isProcessing: Bool
         var isDisplayingContent: Bool
@@ -20,7 +20,7 @@ struct CircularWidgetFeature: ReducerProtocol {
         var animationProgress: Double = 0
     }
 
-    enum Action: Equatable {
+    public enum Action: Equatable {
         case widgetClicked
         case detachChatPanelToggleClicked
         case openChatButtonClicked
@@ -35,7 +35,7 @@ struct CircularWidgetFeature: ReducerProtocol {
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
 
-    func reduce(into state: inout State, action: Action) -> EffectTask<Action> {
+    public func reduce(into state: inout State, action: Action) -> EffectTask<Action> {
         switch action {
         case .detachChatPanelToggleClicked:
             return .none // handled elsewhere
@@ -87,3 +87,4 @@ struct CircularWidgetFeature: ReducerProtocol {
         }
     }
 }
+

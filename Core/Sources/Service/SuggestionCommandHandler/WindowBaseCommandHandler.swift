@@ -131,8 +131,10 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
 
-        if WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService != nil {
-            WidgetDataSource.shared.removePromptToCode(for: fileURL)
+        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+
+        if await dataSource.promptToCodes[fileURL]?.promptToCodeService != nil {
+            await dataSource.removePromptToCode(for: fileURL)
             presenter.closePromptToCode(fileURL: fileURL)
             return
         }
@@ -154,7 +156,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        if let service = WidgetDataSource.shared.promptToCodes[fileURL]?.promptToCodeService {
+        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+
+        if let service = await dataSource.promptToCodes[fileURL]?.promptToCodeService {
             let suggestion = CodeSuggestion(
                 text: service.code,
                 position: service.selectionRange.start,
@@ -177,7 +181,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 )
                 presenter.presentPromptToCode(fileURL: fileURL)
             } else {
-                WidgetDataSource.shared.removePromptToCode(for: fileURL)
+                await dataSource.removePromptToCode(for: fileURL)
                 presenter.closePromptToCode(fileURL: fileURL)
             }
 
@@ -233,16 +237,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
-            do {
-                try await startChat(
-                    specifiedSystemPrompt: nil,
-                    extraSystemPrompt: nil,
-                    sendingMessageImmediately: nil,
-                    name: nil
-                )
-            } catch {
-                presenter.presentError(error)
-            }
+            let viewStore = GraphicalUserInterfaceController.shared.viewStore
+            viewStore.send(.openChatPanel(forceDetach: false))
         }
         return nil
     }
@@ -288,21 +284,9 @@ extension WindowBaseCommandHandler {
         else { throw CommandNotFoundError() }
 
         switch command.feature {
-        case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
-            let updatePrompt = useExtraSystemPrompt ?? true
-            try await startChat(
-                specifiedSystemPrompt: nil,
-                extraSystemPrompt: updatePrompt ? extraSystemPrompt : nil,
-                sendingMessageImmediately: prompt,
-                name: command.name
-            )
-        case let .customChat(systemPrompt, prompt):
-            try await startChat(
-                specifiedSystemPrompt: systemPrompt,
-                extraSystemPrompt: "",
-                sendingMessageImmediately: prompt,
-                name: command.name
-            )
+        case .chatWithSelection, .customChat:
+            GraphicalUserInterfaceController.shared.viewStore
+                .send(.sendCustomCommandToActiveChat(command))
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             try await presentPromptToCode(
                 editor: editor,
@@ -369,7 +353,9 @@ extension WindowBaseCommandHandler {
             )
         }() as (String, CursorRange)
 
-        let promptToCode = await WidgetDataSource.shared.createPromptToCode(
+        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+
+        let promptToCode = await dataSource.createPromptToCode(
             for: fileURL,
             projectURL: workspace.projectRootURL,
             selectedCode: code,
@@ -387,48 +373,6 @@ extension WindowBaseCommandHandler {
         }
 
         presenter.presentPromptToCode(fileURL: fileURL)
-    }
-
-    private func startChat(
-        specifiedSystemPrompt: String?,
-        extraSystemPrompt: String?,
-        sendingMessageImmediately: String?,
-        name: String?
-    ) async throws {
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
-        let focusedElementURI = try await Environment.fetchFocusedElementURI()
-
-        let chat = WidgetDataSource.shared.createChatIfNeeded(for: focusedElementURI)
-
-        let templateProcessor = CustomCommandTemplateProcessor()
-        chat.mutateSystemPrompt(specifiedSystemPrompt.map(templateProcessor.process))
-        chat.mutateExtraSystemPrompt(extraSystemPrompt.map(templateProcessor.process) ?? "")
-
-        Task {
-            let customCommandPrefix = {
-                if let name { return "[\(name)] " }
-                return ""
-            }()
-
-            if specifiedSystemPrompt != nil || extraSystemPrompt != nil {
-                await chat.mutateHistory { history in
-                    history.append(.init(
-                        role: .assistant,
-                        content: "",
-                        summary: "\(customCommandPrefix)System prompt is updated."
-                    ))
-                }
-            }
-
-            if let sendingMessageImmediately, !sendingMessageImmediately.isEmpty {
-                try await chat
-                    .send(content: templateProcessor.process(sendingMessageImmediately))
-            }
-        }
-
-        presenter.presentChatRoom(fileURL: focusedElementURI)
     }
 }
 

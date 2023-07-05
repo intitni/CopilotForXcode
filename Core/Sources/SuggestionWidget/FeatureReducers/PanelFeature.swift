@@ -2,8 +2,16 @@ import AppKit
 import ComposableArchitecture
 import Foundation
 
-struct PanelFeature: ReducerProtocol {
-    struct State: Equatable {
+public struct PanelFeature: ReducerProtocol {
+    public struct State: Equatable {
+        var content: SharedPanelFeature.Content? {
+            get { sharedPanelState.content ?? suggestionPanelState.content }
+            set {
+                sharedPanelState.content = newValue
+                suggestionPanelState.content = newValue
+            }
+        }
+
         // MARK: SharedPanel
 
         var sharedPanelState = SharedPanelFeature.State()
@@ -13,7 +21,7 @@ struct PanelFeature: ReducerProtocol {
         var suggestionPanelState = SuggestionPanelFeature.State()
     }
 
-    enum Action: Equatable {
+    public enum Action: Equatable {
         case presentSuggestion
         case presentError(String)
         case presentPromptToCode
@@ -28,9 +36,9 @@ struct PanelFeature: ReducerProtocol {
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
-    @Dependency(\.windows) var windows
+    var windows: WidgetWindows { suggestionWidgetControllerDependency.windows }
 
-    var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerProtocol<State, Action> {
         Scope(state: \.suggestionPanelState, action: /Action.suggestionPanel) {
             SuggestionPanelFeature()
         }
@@ -71,8 +79,7 @@ struct PanelFeature: ReducerProtocol {
                 }.animation(.easeInOut(duration: 0.2))
 
             case let .presentPanelContent(content, shouldDisplay):
-                state.sharedPanelState.content = content
-                state.suggestionPanelState.content = content
+                state.content = content
 
                 guard shouldDisplay else { return .none }
 
@@ -129,8 +136,7 @@ struct PanelFeature: ReducerProtocol {
                 }
 
             case .removeDisplayedContent:
-                state.sharedPanelState.content = nil
-                state.suggestionPanelState.content = nil
+                state.content = nil
                 return .none
 
             case .sharedPanel:

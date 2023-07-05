@@ -3,8 +3,8 @@ import Environment
 import Preferences
 import SwiftUI
 
-struct SharedPanelFeature: ReducerProtocol {
-    enum Content: Equatable {
+public struct SharedPanelFeature: ReducerProtocol {
+    public enum Content: Equatable {
         case suggestion(SuggestionProvider)
         case promptToCode(PromptToCodeProvider)
         case error(String)
@@ -20,12 +20,12 @@ struct SharedPanelFeature: ReducerProtocol {
             }
         }
 
-        static func == (lhs: Content, rhs: Content) -> Bool {
+        public static func == (lhs: Content, rhs: Content) -> Bool {
             lhs.contentHash == rhs.contentHash
         }
     }
 
-    struct State: Equatable {
+    public struct State: Equatable {
         var content: Content?
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
@@ -37,11 +37,11 @@ struct SharedPanelFeature: ReducerProtocol {
         }
     }
 
-    enum Action: Equatable {
+    public enum Action: Equatable {
         case closeButtonTapped
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
             case .closeButtonTapped:

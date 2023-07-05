@@ -2,8 +2,8 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-struct SuggestionPanelFeature: ReducerProtocol {
-    struct State: Equatable {
+public struct SuggestionPanelFeature: ReducerProtocol {
+    public struct State: Equatable {
         var content: SharedPanelFeature.Content?
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
@@ -17,11 +17,11 @@ struct SuggestionPanelFeature: ReducerProtocol {
         }
     }
 
-    enum Action: Equatable {
+    public enum Action: Equatable {
         case noAction
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerProtocol<State, Action> {
         Reduce { _, _ in .none }
     }
 }
