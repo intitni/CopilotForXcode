@@ -35,7 +35,7 @@ struct ChatWindowView: View {
                 Divider()
                 
                 ChatTabBar(store: store)
-                    .frame(height: 32)
+                    .frame(height: 26)
 
                 Divider()
 
@@ -124,12 +124,12 @@ struct ChatTabBarButton: View {
                 store.send(.tabClicked(id: info.id))
             }) {
                 Text(info.title)
+                    .font(.callout)
                     .lineLimit(1)
                     .frame(maxWidth: 120)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 32)
-            .frame(maxHeight: .infinity)
 
             .overlay(alignment: .leading) {
                 Button(action: {
@@ -140,16 +140,17 @@ struct ChatTabBarButton: View {
                 }
                 .buttonStyle(.plain)
                 .padding(2)
-                .padding(.leading, 10)
+                .padding(.leading, 8)
                 .opacity(isHovered ? 1 : 0)
             }
             .onHover { isHovered = $0 }
             .animation(.linear(duration: 0.1), value: isHovered)
             .animation(.linear(duration: 0.1), value: isSelected)
 
-            Divider().padding(.vertical, 16)
+            Divider().padding(.vertical, 6)
         }
         .background(isSelected ? Color(nsColor: .selectedControlColor) : Color.clear)
+        .frame(maxHeight: .infinity)
     }
 }
 
