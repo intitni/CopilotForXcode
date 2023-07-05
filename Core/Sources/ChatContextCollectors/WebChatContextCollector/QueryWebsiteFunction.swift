@@ -56,72 +56,73 @@ struct QueryWebsiteFunction: ChatGPTFunction {
     }
 
     func call(arguments: Arguments) async throws -> Result {
-        do {
-            throw CancellationError()
-            let embedding = OpenAIEmbedding(
-                configuration: UserPreferenceEmbeddingConfiguration()
-            )
-
-            let queryEmbeddings = try await embedding.embed(query: arguments.query)
-            let searchCount = UserDefaults.shared.value(for: \.chatGPTMaxToken) > 5000 ? 3 : 2
-
-            let result = try await withThrowingTaskGroup(
-                of: [(document: Document, distance: Float)].self
-            ) { group in
-                for urlString in arguments.urls {
-                    guard let url = URL(string: urlString) else { continue }
-                    group.addTask {
-                        if let database = await TemporaryUSearch.view(identifier: urlString) {
-                            return try await database.searchWithDistance(
-                                embeddings: queryEmbeddings,
-                                count: searchCount
-                            )
-                        }
-                        // 1. grab the website content
-                        await reportProgress("Loading \(url)..")
-                        print("== load \(url)")
-                        let loader = WebLoader(urls: [url])
-                        let documents = try await loader.load()
-                        await reportProgress("Processing \(url)..")
-                        print("== loaded \(url), documents: \(documents.count)")
-                        // 2. split the content
-                        let splitter = RecursiveCharacterTextSplitter(
-                            chunkSize: 1000,
-                            chunkOverlap: 100
-                        )
-                        let splitDocuments = try await splitter.transformDocuments(documents)
-                        print("== split \(url), documents: \(splitDocuments.count)")
-                        // 3. embedding and store in db
-                        await reportProgress("Embedding \(url)..")
-                        let embeddedDocuments = try await embedding.embed(documents: splitDocuments)
-                        print("== embedded \(url)")
-                        let database = TemporaryUSearch(identifier: urlString)
-                        try await database.set(embeddedDocuments)
-                        print("== save to database \(url)")
-                        let result = try await database.searchWithDistance(
-                            embeddings: queryEmbeddings,
-                            count: searchCount
-                        )
-                        print("== result of \(url): \(result)")
-                        return result
-                    }
-                }
-
-                var all = [(document: Document, distance: Float)]()
-                for try await result in group {
-                    all.append(contentsOf: result)
-                }
-                await reportProgress("Finish reading websites.")
-                return all
-                    .sorted { $0.distance < $1.distance }
-                    .prefix(searchCount)
-            }
-
-            return .init(relevantDocuments: result.map(\.document))
-        } catch {
-            await reportProgress("Failed reading websites.")
-            throw error
-        }
+        throw CancellationError()
+//        do {
+//            throw CancellationError()
+//            let embedding = OpenAIEmbedding(
+//                configuration: UserPreferenceEmbeddingConfiguration()
+//            )
+//
+//            let queryEmbeddings = try await embedding.embed(query: arguments.query)
+//            let searchCount = UserDefaults.shared.value(for: \.chatGPTMaxToken) > 5000 ? 3 : 2
+//
+//            let result = try await withThrowingTaskGroup(
+//                of: [(document: Document, distance: Float)].self
+//            ) { group in
+//                for urlString in arguments.urls {
+//                    guard let url = URL(string: urlString) else { continue }
+//                    group.addTask {
+//                        if let database = await TemporaryUSearch.view(identifier: urlString) {
+//                            return try await database.searchWithDistance(
+//                                embeddings: queryEmbeddings,
+//                                count: searchCount
+//                            )
+//                        }
+//                        // 1. grab the website content
+//                        await reportProgress("Loading \(url)..")
+//                        print("== load \(url)")
+//                        let loader = WebLoader(urls: [url])
+//                        let documents = try await loader.load()
+//                        await reportProgress("Processing \(url)..")
+//                        print("== loaded \(url), documents: \(documents.count)")
+//                        // 2. split the content
+//                        let splitter = RecursiveCharacterTextSplitter(
+//                            chunkSize: 1000,
+//                            chunkOverlap: 100
+//                        )
+//                        let splitDocuments = try await splitter.transformDocuments(documents)
+//                        print("== split \(url), documents: \(splitDocuments.count)")
+//                        // 3. embedding and store in db
+//                        await reportProgress("Embedding \(url)..")
+//                        let embeddedDocuments = try await embedding.embed(documents: splitDocuments)
+//                        print("== embedded \(url)")
+//                        let database = TemporaryUSearch(identifier: urlString)
+//                        try await database.set(embeddedDocuments)
+//                        print("== save to database \(url)")
+//                        let result = try await database.searchWithDistance(
+//                            embeddings: queryEmbeddings,
+//                            count: searchCount
+//                        )
+//                        print("== result of \(url): \(result)")
+//                        return result
+//                    }
+//                }
+//
+//                var all = [(document: Document, distance: Float)]()
+//                for try await result in group {
+//                    all.append(contentsOf: result)
+//                }
+//                await reportProgress("Finish reading websites.")
+//                return all
+//                    .sorted { $0.distance < $1.distance }
+//                    .prefix(searchCount)
+//            }
+//
+//            return .init(relevantDocuments: result.map(\.document))
+//        } catch {
+//            await reportProgress("Failed reading websites.")
+//            throw error
+//        }
     }
 }
 
