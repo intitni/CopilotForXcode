@@ -285,8 +285,10 @@ extension WindowBaseCommandHandler {
 
         switch command.feature {
         case .chatWithSelection, .customChat:
-            GraphicalUserInterfaceController.shared.viewStore
-                .send(.sendCustomCommandToActiveChat(command))
+            Task { @MainActor in
+                GraphicalUserInterfaceController.shared.viewStore
+                    .send(.sendCustomCommandToActiveChat(command))
+            }
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
             try await presentPromptToCode(
                 editor: editor,

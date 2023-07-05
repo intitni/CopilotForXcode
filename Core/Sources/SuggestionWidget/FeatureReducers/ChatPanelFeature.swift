@@ -11,13 +11,18 @@ public struct ChatPanelFeature: ReducerProtocol {
         public var tabInfo: [ChatTabInfo]
         public var selectedTabId: String?
 
-        init(tabs: [BaseChatTab] = [], tabTypes: [String] = [], tabInfo: [ChatTabInfo] = [], selectedTabId: String? = nil) {
+        init(
+            tabs: [BaseChatTab] = [],
+            tabTypes: [String] = [],
+            tabInfo: [ChatTabInfo] = [],
+            selectedTabId: String? = nil
+        ) {
             self.tabs = tabs
             self.tabTypes = tabTypes
             self.tabInfo = tabInfo
             self.selectedTabId = selectedTabId
         }
-        
+
         public var activeChatTab: BaseChatTab? {
             guard let id = selectedTabId else { return tabs.first }
             guard let tab = tabs.first(where: { $0.id == id }) else { return tabs.first }
@@ -118,7 +123,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                 }
                 state.chatTapGroup.selectedTabId = id
                 return .none
-                
+
             case let .appendAndSelectTab(tab):
                 guard !state.chatTapGroup.tabInfo.contains(where: { $0.id == tab.id })
                 else { return .none }
