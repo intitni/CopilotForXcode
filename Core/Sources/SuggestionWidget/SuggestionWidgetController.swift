@@ -178,39 +178,26 @@ public final class SuggestionWidgetController: NSObject {
 
     public let dependency: SuggestionWidgetControllerDependency
 
-    override public nonisolated init() {
-        let dependency = SuggestionWidgetControllerDependency()
-        let windows = Windows()
-        let userDefaultsObservers = UserDefaultsObservers()
-
-        let store = StoreOf<WidgetFeature>(
-            initialState: .init(),
-            reducer: WidgetFeature()
-        ) { dependencies in
-            dependencies.suggestionWidgetControllerDependency = dependency
-            dependencies.windows = windows
-            dependencies.userDefaultsObservers = userDefaultsObservers
-        }
-
+    public init(
+        store: StoreOf<WidgetFeature>,
+        dependency: SuggestionWidgetControllerDependency
+    ) {
+        self.dependency = dependency
         self.store = store
         viewStore = .init(store, observe: { $0 })
-        self.dependency = dependency
 
         super.init()
 
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
 
-        Task { @MainActor in
+        dependency.windows.chatPanelWindow = chatPanelWindow
+        dependency.windows.tabWindow = tabWindow
+        dependency.windows.sharedPanelWindow = sharedPanelWindow
+        dependency.windows.suggestionPanelWindow = suggestionPanelWindow
+        dependency.windows.fullscreenDetector = fullscreenDetector
+        dependency.windows.widgetWindow = widgetWindow
 
-            windows.chatPanelWindow = chatPanelWindow
-            windows.tabWindow = tabWindow
-            windows.sharedPanelWindow = sharedPanelWindow
-            windows.suggestionPanelWindow = suggestionPanelWindow
-            windows.fullscreenDetector = fullscreenDetector
-            windows.widgetWindow = widgetWindow
-
-            store.send(.startup)
-        }
+        store.send(.startup)
     }
 }
 
@@ -246,7 +233,7 @@ public extension SuggestionWidgetController {
     }
 
     func closeChatRoom() {
-        store.send(.chatPanel(.closeChatPanel))
+//        store.send(.chatPanel(.closeChatPanel))
     }
 
     func presentPromptToCode() {
