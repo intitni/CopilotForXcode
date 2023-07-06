@@ -128,8 +128,10 @@ let package = Package(
                 "CodeiumService",
                 "SuggestionModel",
                 "LaunchAgentManager",
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 

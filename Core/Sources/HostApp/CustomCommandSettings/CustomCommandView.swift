@@ -1,3 +1,5 @@
+import ComposableArchitecture
+import MarkdownUI
 import Preferences
 import SwiftUI
 
@@ -29,8 +31,8 @@ struct CustomCommandView: View {
     }
 
     @State var editingCommand: EditingCommand?
-
     @StateObject var settings = Settings()
+    @Environment(\.toast) var toast
 
     var body: some View {
         HStack(spacing: 0) {
@@ -122,12 +124,77 @@ struct CustomCommandView: View {
 
             if let editingCommand {
                 EditCustomCommandView(
-                    editingCommand: $editingCommand,
-                    settings: settings
+                    store: .init(
+                        initialState: .init(editingCommand),
+                        reducer: EditCustomCommand(
+                            settings: settings,
+                            toast: toast,
+                            editingCommand: $editingCommand
+                        )
+                    )
                 ).id(editingCommand.command.id)
             } else {
-                Color.clear
+                CustomCommandTypeDescription(text: """
+                # Send Message
+
+                This command sends a message to the active chat tab. You can provide additional context through the "Extra System Prompt" as well.
+
+                # Prompt to Code
+
+                This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the "Extra Context" as well.
+
+                # Custom Chat
+
+                This command will overwrite the system prompt to let the bot behave differently.
+
+                # One-time Dialog
+
+                This command allows you to send a message to a temporary chat without opening the chat panel.
+
+                It is particularly useful for one-time commands, such as running a terminal command with `/run`.
+
+                For example, you can set the prompt to `/run open $FILE_PATH -a "Finder.app"` to reveal the active document in Finder.
+                """)
             }
+        }
+    }
+}
+
+struct CustomCommandTypeDescription: View {
+    let text: String
+    var body: some View {
+        ScrollView {
+            Markdown(text)
+                .lineLimit(nil)
+                .markdownTheme(
+                    .gitHub
+                        .text {
+                            ForegroundColor(.secondary)
+                            BackgroundColor(.clear)
+                            FontSize(14)
+                        }
+                        .heading1 { conf in
+                            VStack(alignment: .leading, spacing: 0) {
+                                conf.label
+                                    .relativePadding(.bottom, length: .em(0.3))
+                                    .relativeLineSpacing(.em(0.125))
+                                    .markdownMargin(top: 24, bottom: 16)
+                                    .markdownTextStyle {
+                                        FontWeight(.semibold)
+                                        FontSize(.em(1.25))
+                                    }
+                                Divider()
+                            }
+                        }
+                )
+                .padding()
+                .background(Color.primary.opacity(0.02), in: RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(style: .init(lineWidth: 1))
+                        .foregroundColor(Color(nsColor: .separatorColor))
+                }
+                .padding()
         }
     }
 }
@@ -146,6 +213,35 @@ struct CustomCommandView_Preview: PreviewProvider {
                     useExtraSystemPrompt: false
                 )
             )),
+            settings: .init(customCommands: .init(wrappedValue: [
+                .init(
+                    commandId: "1",
+                    name: "Explain Code",
+                    feature: .chatWithSelection(
+                        extraSystemPrompt: nil,
+                        prompt: "Hello",
+                        useExtraSystemPrompt: false
+                    )
+                ),
+                .init(
+                    commandId: "2",
+                    name: "Refactor Code",
+                    feature: .promptToCode(
+                        extraSystemPrompt: nil,
+                        prompt: "Refactor",
+                        continuousMode: false,
+                        generateDescription: true
+                    )
+                ),
+            ], "CustomCommandView_Preview"))
+        )
+    }
+}
+
+struct CustomCommandView_NoEditing_Preview: PreviewProvider {
+    static var previews: some View {
+        CustomCommandView(
+            editingCommand: nil,
             settings: .init(customCommands: .init(wrappedValue: [
                 .init(
                     commandId: "1",
