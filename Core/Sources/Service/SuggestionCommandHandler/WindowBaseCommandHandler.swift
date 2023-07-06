@@ -409,15 +409,16 @@ extension WindowBaseCommandHandler {
         }
 
         let result = try await service.sendAndWait(content: prompt)
+        
+        guard receiveReplyInNotification else { return }
 
         let granted = try await UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound])
+            .requestAuthorization(options: [.alert])
 
         if granted {
             let content = UNMutableNotificationContent()
-            content.title = "Reply from Prompt"
+            content.title = "Reply"
             content.body = result
-            content.sound = UNNotificationSound.default
             let request = UNNotificationRequest(
                 identifier: "reply",
                 content: content,

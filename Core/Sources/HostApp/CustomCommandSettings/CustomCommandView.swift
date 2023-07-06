@@ -14,6 +14,18 @@ extension List {
     }
 }
 
+let customCommandStore = StoreOf<CustomCommandFeature>(
+    initialState: .init(),
+    reducer: CustomCommandFeature(
+        settings: .init(),
+        toast: { content, type in
+            Task { @MainActor in
+                globalToastController.toast(content: content, type: type)
+            }
+        }
+    )
+)
+
 struct CustomCommandView: View {
     final class Settings: ObservableObject {
         @AppStorage(\.customCommands) var customCommands
@@ -25,137 +37,134 @@ struct CustomCommandView: View {
         }
     }
 
-    struct EditingCommand {
-        var isNew: Bool
-        var command: CustomCommand
-    }
-
-    @State var editingCommand: EditingCommand?
+    var store: StoreOf<CustomCommandFeature>
     @StateObject var settings = Settings()
     @Environment(\.toast) var toast
 
     var body: some View {
         HStack(spacing: 0) {
-            List {
-                ForEach(settings.customCommands, id: \.name) { command in
-                    HStack(spacing: 4) {
-                        Image(systemName: "line.3.horizontal")
-
-                        VStack(alignment: .leading) {
-                            Text(command.name)
-                                .foregroundStyle(.primary)
-
-                            Group {
-                                switch command.feature {
-                                case .chatWithSelection:
-                                    Text("Send Message")
-                                case .customChat:
-                                    Text("Custom Chat")
-                                case .promptToCode:
-                                    Text("Prompt to Code")
-                                case .oneTimeDialog:
-                                    Text("One-time Dialog")
-                                }
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editingCommand = .init(isNew: false, command: command)
-                        }
-                    }
-                    .padding(4)
-                    .background(
-                        editingCommand?.command.id == command.id
-                            ? Color.primary.opacity(0.05)
-                            : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 4)
-                    )
-                    .contextMenu {
-                        Button("Remove") {
-                            settings.customCommands.removeAll(
-                                where: { $0.id == command.id }
-                            )
-                            if let editingCommand, editingCommand.command.id == command.id {
-                                self.editingCommand = nil
-                            }
-                        }
-                    }
-                }
-                .onMove(perform: { indices, newOffset in
-                    settings.customCommands.move(fromOffsets: indices, toOffset: newOffset)
-                })
-            }
-            .removeBackground()
-            .padding(.vertical, 4)
-            .listStyle(.plain)
-            .frame(width: 200)
-            .background(Color.primary.opacity(0.05))
-            .overlay {
-                if settings.customCommands.isEmpty {
-                    Text("""
-                    Empty
-                    Add command with "+" button
-                    """)
-                    .multilineTextAlignment(.center)
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button(action: {
-                    editingCommand = .init(isNew: true, command: CustomCommand(
-                        commandId: UUID().uuidString,
-                        name: "New Command",
-                        feature: .chatWithSelection(
-                            extraSystemPrompt: nil,
-                            prompt: "Tell me about the code.",
-                            useExtraSystemPrompt: false
-                        )
-                    ))
-                }) {
-                    Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
-                }
-                .buttonStyle(.plain)
-                .padding()
-            }
-
+            leftPane
             Divider()
+            rightPane
+        }
+    }
 
-            if let editingCommand {
-                EditCustomCommandView(
-                    store: .init(
-                        initialState: .init(editingCommand),
-                        reducer: EditCustomCommand(
-                            settings: settings,
-                            toast: toast,
-                            editingCommand: $editingCommand
-                        )
-                    )
-                ).id(editingCommand.command.id)
-            } else {
-                CustomCommandTypeDescription(text: """
-                # Send Message
-
-                This command sends a message to the active chat tab. You can provide additional context through the "Extra System Prompt" as well.
-
-                # Prompt to Code
-
-                This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the "Extra Context" as well.
-
-                # Custom Chat
-
-                This command will overwrite the system prompt to let the bot behave differently.
-
-                # One-time Dialog
-
-                This command allows you to send a message to a temporary chat without opening the chat panel.
-
-                It is particularly useful for one-time commands, such as running a terminal command with `/run`.
-
-                For example, you can set the prompt to `/run open $FILE_PATH -a "Finder.app"` to reveal the active document in Finder.
-                """)
+    @ViewBuilder
+    var leftPane: some View {
+        List {
+            ForEach(settings.customCommands, id: \.name) { command in
+                CommandButton(store: store, command: command)
             }
+            .onMove(perform: { indices, newOffset in
+                settings.customCommands.move(fromOffsets: indices, toOffset: newOffset)
+            })
+        }
+        .removeBackground()
+        .padding(.vertical, 4)
+        .listStyle(.plain)
+        .frame(width: 200)
+        .background(Color.primary.opacity(0.05))
+        .overlay {
+            if settings.customCommands.isEmpty {
+                Text("""
+                Empty
+                Add command with "+" button
+                """)
+                .multilineTextAlignment(.center)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button(action: {
+                store.send(.createNewCommand)
+            }) {
+                Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+            }
+            .buttonStyle(.plain)
+            .padding()
+        }
+    }
+
+    struct CommandButton: View {
+        let store: StoreOf<CustomCommandFeature>
+        let command: CustomCommand
+
+        var body: some View {
+            HStack(spacing: 4) {
+                Image(systemName: "line.3.horizontal")
+
+                VStack(alignment: .leading) {
+                    Text(command.name)
+                        .foregroundStyle(.primary)
+
+                    Group {
+                        switch command.feature {
+                        case .chatWithSelection:
+                            Text("Send Message")
+                        case .customChat:
+                            Text("Custom Chat")
+                        case .promptToCode:
+                            Text("Prompt to Code")
+                        case .oneTimeDialog:
+                            Text("One-time Dialog")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    store.send(.editCommand(command))
+                }
+            }
+            .padding(4)
+            .background {
+                WithViewStore(store, observe: { $0.editCustomCommand?.commandId }) { viewStore in
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            viewStore.state == command.id
+                                ? Color.primary.opacity(0.05)
+                                : Color.clear
+                        )
+                }
+            }
+            .contextMenu {
+                Button("Remove") {
+                    store.send(.deleteCommand(command))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var rightPane: some View {
+        IfLetStore(store.scope(
+            state: \.editCustomCommand,
+            action: CustomCommandFeature.Action.editCustomCommand
+        )) { store in
+            EditCustomCommandView(store: store)
+        } else: {
+            CustomCommandTypeDescription(text: """
+            # Send Message
+
+            This command sends a message to the active chat tab. You can provide additional context through the "Extra System Prompt" as well.
+
+            # Prompt to Code
+
+            This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the "Extra Context" as well.
+
+            # Custom Chat
+
+            This command will overwrite the system prompt to let the bot behave differently.
+
+            # One-time Dialog
+
+            This command allows you to send a message to a temporary chat without opening the chat panel.
+
+            It is particularly useful for one-time commands, such as running a terminal command with `/run`.
+
+            For example, you can set the prompt to `/run open .` to open the project in Finder.
+            """)
         }
     }
 }
@@ -203,8 +212,8 @@ struct CustomCommandTypeDescription: View {
 
 struct CustomCommandView_Preview: PreviewProvider {
     static var previews: some View {
-        CustomCommandView(
-            editingCommand: .init(isNew: false, command: .init(
+        let settings = CustomCommandView.Settings(customCommands: .init(wrappedValue: [
+            .init(
                 commandId: "1",
                 name: "Explain Code",
                 feature: .chatWithSelection(
@@ -212,57 +221,77 @@ struct CustomCommandView_Preview: PreviewProvider {
                     prompt: "Hello",
                     useExtraSystemPrompt: false
                 )
-            )),
-            settings: .init(customCommands: .init(wrappedValue: [
-                .init(
-                    commandId: "1",
-                    name: "Explain Code",
-                    feature: .chatWithSelection(
-                        extraSystemPrompt: nil,
-                        prompt: "Hello",
-                        useExtraSystemPrompt: false
-                    )
+            ),
+            .init(
+                commandId: "2",
+                name: "Refactor Code",
+                feature: .promptToCode(
+                    extraSystemPrompt: nil,
+                    prompt: "Refactor",
+                    continuousMode: false,
+                    generateDescription: true
+                )
+            ),
+        ], "CustomCommandView_Preview"))
+
+        return CustomCommandView(
+            store: .init(
+                initialState: .init(
+                    editCustomCommand: .init(.init(.init(
+                        commandId: "1",
+                        name: "Explain Code",
+                        feature: .chatWithSelection(
+                            extraSystemPrompt: nil,
+                            prompt: "Hello",
+                            useExtraSystemPrompt: false
+                        )
+                    )))
                 ),
-                .init(
-                    commandId: "2",
-                    name: "Refactor Code",
-                    feature: .promptToCode(
-                        extraSystemPrompt: nil,
-                        prompt: "Refactor",
-                        continuousMode: false,
-                        generateDescription: true
-                    )
-                ),
-            ], "CustomCommandView_Preview"))
+                reducer: CustomCommandFeature(
+                    settings: settings,
+                    toast: { _, _ in }
+                )
+            ),
+            settings: settings
         )
     }
 }
 
 struct CustomCommandView_NoEditing_Preview: PreviewProvider {
     static var previews: some View {
-        CustomCommandView(
-            editingCommand: nil,
-            settings: .init(customCommands: .init(wrappedValue: [
-                .init(
-                    commandId: "1",
-                    name: "Explain Code",
-                    feature: .chatWithSelection(
-                        extraSystemPrompt: nil,
-                        prompt: "Hello",
-                        useExtraSystemPrompt: false
-                    )
+        let settings = CustomCommandView.Settings(customCommands: .init(wrappedValue: [
+            .init(
+                commandId: "1",
+                name: "Explain Code",
+                feature: .chatWithSelection(
+                    extraSystemPrompt: nil,
+                    prompt: "Hello",
+                    useExtraSystemPrompt: false
+                )
+            ),
+            .init(
+                commandId: "2",
+                name: "Refactor Code",
+                feature: .promptToCode(
+                    extraSystemPrompt: nil,
+                    prompt: "Refactor",
+                    continuousMode: false,
+                    generateDescription: true
+                )
+            ),
+        ], "CustomCommandView_Preview"))
+
+        return CustomCommandView(
+            store: .init(
+                initialState: .init(
+                    editCustomCommand: nil
                 ),
-                .init(
-                    commandId: "2",
-                    name: "Refactor Code",
-                    feature: .promptToCode(
-                        extraSystemPrompt: nil,
-                        prompt: "Refactor",
-                        continuousMode: false,
-                        generateDescription: true
-                    )
-                ),
-            ], "CustomCommandView_Preview"))
+                reducer: CustomCommandFeature(
+                    settings: settings,
+                    toast: { _, _ in }
+                )
+            ),
+            settings: settings
         )
     }
 }

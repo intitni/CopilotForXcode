@@ -227,30 +227,24 @@ struct EditOneTimeDialogCommandView: View {
 
 struct EditCustomCommandView_Preview: PreviewProvider {
     static var previews: some View {
-        let command = CustomCommandView.EditingCommand(
-            isNew: false,
-            command: .init(
-                commandId: "4",
-                name: "Explain Code",
-                feature: .promptToCode(
-                    extraSystemPrompt: nil,
-                    prompt: "Hello",
-                    continuousMode: false,
-                    generateDescription: true
-                )
-            )
-        )
-
         EditCustomCommandView(
             store: .init(
-                initialState: .init(command),
+                initialState: .init(.init(
+                    commandId: "4",
+                    name: "Explain Code",
+                    feature: .promptToCode(
+                        extraSystemPrompt: nil,
+                        prompt: "Hello",
+                        continuousMode: false,
+                        generateDescription: true
+                    )
+                )),
                 reducer: EditCustomCommand(
                     settings: .init(customCommands: .init(
                         wrappedValue: [],
                         "CustomCommandView_Preview"
                     )),
-                    toast: { _, _ in },
-                    editingCommand: .constant(command)
+                    toast: { _, _ in }
                 )
             )
         )

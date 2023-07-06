@@ -15,23 +15,32 @@ struct EditCustomCommand: ReducerProtocol {
         @BindingState var name: String = ""
         @BindingState var commandType: CommandType = .sendMessage
         var isNewCommand: Bool = false
+        let commandId: String
 
         var sendMessage = EditSendMessageCommand.State()
         var promptToCode = EditPromptToCodeCommand.State()
         var customChat = EditCustomChatCommand.State()
         var oneTimeDialog = EditOneTimeDialogCommand.State()
 
-        init(_ editingCommand: CustomCommandView.EditingCommand) {
-            isNewCommand = editingCommand.isNew
-            name = editingCommand.command.name
+        init(_ command: CustomCommand?) {
+            isNewCommand = command == nil
+            commandId = command?.id ?? UUID().uuidString
+            name = command?.name ?? "New Command"
 
-            switch editingCommand.command.feature {
+            switch command?.feature {
             case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
                 commandType = .sendMessage
                 sendMessage = .init(
                     extraSystemPrompt: extraSystemPrompt ?? "",
                     useExtraSystemPrompt: useExtraSystemPrompt ?? false,
                     prompt: prompt ?? ""
+                )
+            case .none:
+                commandType = .sendMessage
+                sendMessage = .init(
+                    extraSystemPrompt: "",
+                    useExtraSystemPrompt: false,
+                    prompt: "Hello"
                 )
             case let .customChat(systemPrompt, prompt):
                 commandType = .customChat
@@ -76,7 +85,6 @@ struct EditCustomCommand: ReducerProtocol {
 
     let settings: CustomCommandView.Settings
     let toast: (Text, ToastType) -> Void
-    @Binding var editingCommand: CustomCommandView.EditingCommand?
 
     var body: some ReducerProtocol<State, Action> {
         Scope(state: \.sendMessage, action: /Action.sendMessage) {
@@ -106,7 +114,7 @@ struct EditCustomCommand: ReducerProtocol {
                 }
 
                 let newCommand = CustomCommand(
-                    commandId: editingCommand?.command.id ?? UUID().uuidString,
+                    commandId: state.commandId,
                     name: state.name,
                     feature: {
                         switch state.commandType {
@@ -145,8 +153,6 @@ struct EditCustomCommand: ReducerProtocol {
 
                 if state.isNewCommand {
                     settings.customCommands.append(newCommand)
-                    editingCommand?.isNew = false
-                    editingCommand?.command = newCommand
                     state.isNewCommand = false
                     toast(Text("The command is created."), .info)
                 } else {
@@ -157,14 +163,12 @@ struct EditCustomCommand: ReducerProtocol {
                     } else {
                         settings.customCommands.append(newCommand)
                     }
-
                     toast(Text("The command is updated."), .info)
                 }
 
                 return .none
 
             case .close:
-                editingCommand = nil
                 return .none
 
             case .binding:
