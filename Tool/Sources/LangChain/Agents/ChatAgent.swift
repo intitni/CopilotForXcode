@@ -102,7 +102,7 @@ public class ChatAgent: Agent {
         (Please continue with `Thought:` or `Final Answer:`)
         """)
     }
-
+ 
     public func validateTools(tools: [AgentTool]) throws {
         // no validation
     }

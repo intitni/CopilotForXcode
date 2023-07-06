@@ -10,12 +10,22 @@ public final class ChatProvider: ObservableObject {
     @Published public var isReceivingMessage = false
     public var pluginIdentifiers: [String] = []
     public var systemPrompt = ""
+    public var title: String {
+        let defaultTitle = "Chat"
+        guard let lastMessageText = history
+            .filter({ $0.role == .assistant || $0.role == .user })
+            .last?
+            .text else { return defaultTitle }
+        if lastMessageText.isEmpty { return defaultTitle }
+        return lastMessageText
+            .trimmingCharacters(in: .punctuationCharacters)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     public var extraSystemPrompt = ""
     public var onMessageSend: (String) -> Void
     public var onStop: () -> Void
     public var onClear: () -> Void
-    public var onClose: () -> Void
-    public var onSwitchContext: () -> Void
     public var onDeleteMessage: (MessageID) -> Void
     public var onResendMessage: (MessageID) -> Void
     public var onResetPrompt: () -> Void
@@ -29,8 +39,6 @@ public final class ChatProvider: ObservableObject {
         onMessageSend: @escaping (String) -> Void = { _ in },
         onStop: @escaping () -> Void = {},
         onClear: @escaping () -> Void = {},
-        onClose: @escaping () -> Void = {},
-        onSwitchContext: @escaping () -> Void = {},
         onDeleteMessage: @escaping (MessageID) -> Void = { _ in },
         onResendMessage: @escaping (MessageID) -> Void = { _ in },
         onResetPrompt: @escaping () -> Void = {},
@@ -43,8 +51,6 @@ public final class ChatProvider: ObservableObject {
         self.onMessageSend = onMessageSend
         self.onStop = onStop
         self.onClear = onClear
-        self.onClose = onClose
-        self.onSwitchContext = onSwitchContext
         self.onDeleteMessage = onDeleteMessage
         self.onResendMessage = onResendMessage
         self.onResetPrompt = onResetPrompt
@@ -55,8 +61,6 @@ public final class ChatProvider: ObservableObject {
     public func send(_ message: String) { onMessageSend(message) }
     public func stop() { onStop() }
     public func clear() { onClear() }
-    public func close() { onClose() }
-    public func switchContext() { onSwitchContext() }
     public func deleteMessage(id: MessageID) { onDeleteMessage(id) }
     public func resendMessage(id: MessageID) { onResendMessage(id) }
     public func resetPrompt() { onResetPrompt() }

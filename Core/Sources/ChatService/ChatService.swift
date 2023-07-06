@@ -3,6 +3,7 @@ import ChatPlugin
 import Combine
 import Foundation
 import OpenAIService
+import Preferences
 
 public final class ChatService: ObservableObject {
     public let memory: AutoManagedChatGPTMemory
@@ -89,10 +90,10 @@ public final class ChatService: ObservableObject {
         await pluginController.stopResponding()
         await chatGPTService.stopReceivingMessage()
         isReceivingMessage = false
-        
+
         // if it's stopped before the function finishes, remove the function call.
         await memory.mutateHistory { history in
-            if history.last?.role == .assistant && history.last?.functionCall != nil {
+            if history.last?.role == .assistant, history.last?.functionCall != nil {
                 history.removeLast()
             }
         }
@@ -148,6 +149,63 @@ public final class ChatService: ObservableObject {
 
     public func mutateHistory(_ mutator: @escaping (inout [ChatMessage]) -> Void) async {
         await memory.mutateHistory(mutator)
+    }
+
+    public func handleCustomCommand(_ command: CustomCommand) async throws {
+        struct CustomCommandInfo {
+            var specifiedSystemPrompt: String?
+            var extraSystemPrompt: String?
+            var sendingMessageImmediately: String?
+            var name: String?
+        }
+
+        let info: CustomCommandInfo? = {
+            switch command.feature {
+            case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
+                let updatePrompt = useExtraSystemPrompt ?? true
+                return .init(
+                    extraSystemPrompt: updatePrompt ? extraSystemPrompt : nil,
+                    sendingMessageImmediately: prompt,
+                    name: command.name
+                )
+            case let .customChat(systemPrompt, prompt):
+                return .init(
+                    specifiedSystemPrompt: systemPrompt,
+                    extraSystemPrompt: "",
+                    sendingMessageImmediately: prompt,
+                    name: command.name
+                )
+            case .promptToCode:
+                return nil
+            }
+        }()
+
+        guard let info else { return }
+
+        let templateProcessor = CustomCommandTemplateProcessor()
+        mutateSystemPrompt(info.specifiedSystemPrompt.map(templateProcessor.process))
+        mutateExtraSystemPrompt(info.extraSystemPrompt.map(templateProcessor.process) ?? "")
+
+        let customCommandPrefix = {
+            if let name = info.name { return "[\(name)] " }
+            return ""
+        }()
+
+        if info.specifiedSystemPrompt != nil || info.extraSystemPrompt != nil {
+            await mutateHistory { history in
+                history.append(.init(
+                    role: .assistant,
+                    content: "",
+                    summary: "\(customCommandPrefix)System prompt is updated."
+                ))
+            }
+        }
+
+        if let sendingMessageImmediately = info.sendingMessageImmediately,
+           !sendingMessageImmediately.isEmpty
+        {
+            try await send(content: templateProcessor.process(sendingMessageImmediately))
+        }
     }
 }
 

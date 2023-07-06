@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", from: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
-        .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.0"),
+//        .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
     ],
     targets: [
         // MARK: - Helpers
@@ -59,7 +59,7 @@ let package = Package(
                 "OpenAIService",
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
-                .product(name: "USearch", package: "usearch"),
+//                .product(name: "USearch", package: "usearch"),
             ]
         ),
 

@@ -11,10 +11,13 @@ public final class SuggestionWidgetControllerDependency {
     public var suggestionWidgetDataSource: SuggestionWidgetDataSource?
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
+    public var windows: WidgetWindows = .init()
+
+    public init() {}
 }
 
 @MainActor
-public final class Windows {
+public final class WidgetWindows {
     var fullscreenDetector: NSWindow!
     var widgetWindow: NSWindow!
     var tabWindow: NSWindow!
@@ -34,7 +37,7 @@ public final class Windows {
     }
 }
 
-public final class UserDefaultsObservers {
+public final class WidgetUserDefaultsObservers {
     let presentationModeChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
         forKeyPaths: [
@@ -49,18 +52,16 @@ public final class UserDefaultsObservers {
     let systemColorSchemeChangeObserver = UserDefaultsObserver(
         object: UserDefaults.standard, forKeyPaths: ["AppleInterfaceStyle"], context: nil
     )
+
+    public init() {}
 }
 
 struct SuggestionWidgetControllerDependencyKey: DependencyKey {
     static let liveValue = SuggestionWidgetControllerDependency()
 }
 
-struct WindowsDependencyKey: DependencyKey {
-    static let liveValue = Windows()
-}
-
 struct UserDefaultsDependencyKey: DependencyKey {
-    static let liveValue = UserDefaultsObservers()
+    static let liveValue = WidgetUserDefaultsObservers()
 }
 
 struct XcodeInspectorKey: DependencyKey {
@@ -71,22 +72,36 @@ struct ActiveApplicationMonitorKey: DependencyKey {
     static let liveValue = ActiveApplicationMonitor.self
 }
 
-extension DependencyValues {
+struct ActivatePreviouslyActiveXcodeKey: DependencyKey {
+    static let liveValue = { @MainActor in
+        @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
+        if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            app.activate()
+        }
+    }
+}
+
+struct ActivateExtensionServiceKey: DependencyKey {
+    static let liveValue = { @MainActor in
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+}
+
+public extension DependencyValues {
     var suggestionWidgetControllerDependency: SuggestionWidgetControllerDependency {
         get { self[SuggestionWidgetControllerDependencyKey.self] }
         set { self[SuggestionWidgetControllerDependencyKey.self] = newValue }
     }
 
-    var windows: Windows {
-        get { self[WindowsDependencyKey.self] }
-        set { self[WindowsDependencyKey.self] = newValue }
-    }
-
-    var userDefaultsObservers: UserDefaultsObservers {
+    var suggestionWidgetUserDefaultsObservers: WidgetUserDefaultsObservers {
         get { self[UserDefaultsDependencyKey.self] }
         set { self[UserDefaultsDependencyKey.self] = newValue }
     }
+}
 
+extension DependencyValues {
     var xcodeInspector: XcodeInspector {
         get { self[XcodeInspectorKey.self] }
         set { self[XcodeInspectorKey.self] = newValue }
@@ -95,6 +110,16 @@ extension DependencyValues {
     var activeApplicationMonitor: ActiveApplicationMonitor.Type {
         get { self[ActiveApplicationMonitorKey.self] }
         set { self[ActiveApplicationMonitorKey.self] = newValue }
+    }
+
+    var activatePreviouslyActiveXcode: () async -> Void {
+        get { self[ActivatePreviouslyActiveXcodeKey.self] }
+        set { self[ActivatePreviouslyActiveXcodeKey.self] = newValue }
+    }
+
+    var activateExtensionService: () async -> Void {
+        get { self[ActivateExtensionServiceKey.self] }
+        set { self[ActivateExtensionServiceKey.self] = newValue }
     }
 }
 

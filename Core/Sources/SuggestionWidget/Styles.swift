@@ -4,7 +4,7 @@ import SharedUIComponents
 import SwiftUI
 
 enum Style {
-    static let panelHeight: Double = 500
+    static let panelHeight: Double = 560
     static let panelWidth: Double = 454
     static let inlineSuggestionMinWidth: Double = 540
     static let inlineSuggestionMaxHeight: Double = 400

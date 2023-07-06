@@ -1,17 +1,33 @@
 import ChatService
-import ChatTab
 import Combine
 import Foundation
-import OpenAIService
-import SuggestionWidget
+import SwiftUI
+
+/// A chat tab that provides a context aware chat bot, powered by ChatGPT.
+public class ChatGPTChatTab: ChatTab {
+    public let service: ChatService
+    public let provider: ChatProvider
+    private var cancellable = Set<AnyCancellable>()
+
+    public func buildView() -> any View {
+        ChatPanel(chat: provider)
+    }
+
+    public init(service: ChatService = .init()) {
+        self.service = service
+        provider = .init(service: service)
+        super.init(id: "Chat-" + provider.id.uuidString, title: "Chat")
+        
+        provider.$history.sink { [weak self] _ in
+            if let title = self?.provider.title {
+                self?.title = title
+            }
+        }.store(in: &cancellable)
+    }
+}
 
 extension ChatProvider {
-    convenience init(
-        service: ChatService,
-        fileURL: URL,
-        onCloseChat: @escaping () -> Void,
-        onSwitchContext: @escaping () -> Void
-    ) {
+    convenience init(service: ChatService) {
         self.init(pluginIdentifiers: service.allPluginCommands)
 
         let cancellable = service.objectWillChange.sink { [weak self] in
@@ -46,11 +62,7 @@ extension ChatProvider {
         onMessageSend = { [cancellable] message in
             _ = cancellable
             Task {
-                do {
-                    _ = try await service.send(content: message)
-                } catch {
-                    PresentInWindowSuggestionPresenter().presentError(error)
-                }
+                try await service.send(content: message)
             }
         }
         onStop = {
@@ -65,17 +77,6 @@ extension ChatProvider {
             }
         }
 
-        onClose = {
-            Task {
-                await service.stopReceivingMessage()
-                onCloseChat()
-            }
-        }
-
-        self.onSwitchContext = {
-            onSwitchContext()
-        }
-
         onDeleteMessage = { id in
             Task {
                 await service.deleteMessage(id: id)
@@ -84,11 +85,7 @@ extension ChatProvider {
 
         onResendMessage = { id in
             Task {
-                do {
-                    try await service.resendMessage(id: id)
-                } catch {
-                    PresentInWindowSuggestionPresenter().presentError(error)
-                }
+                try await service.resendMessage(id: id)
             }
         }
 
@@ -100,8 +97,7 @@ extension ChatProvider {
 
         onRunCustomCommand = { command in
             Task {
-                let commandHandler = PseudoCommandHandler()
-                await commandHandler.handleCustomCommand(command)
+                try await service.handleCustomCommand(command)
             }
         }
 

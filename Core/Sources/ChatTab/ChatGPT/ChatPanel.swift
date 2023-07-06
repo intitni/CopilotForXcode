@@ -6,10 +6,10 @@ import SwiftUI
 private let r: Double = 8
 
 public struct ChatPanel: View {
-    let chat: ChatProvider
+    @ObservedObject var chat: ChatProvider
     @Namespace var inputAreaNamespace
     @State var typedMessage = ""
-    
+
     public init(chat: ChatProvider, typedMessage: String = "") {
         self.chat = chat
         self.typedMessage = typedMessage
@@ -17,8 +17,6 @@ public struct ChatPanel: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            ChatPanelToolbar(chat: chat)
-            Divider()
             ChatPanelMessages(
                 chat: chat
             )
@@ -28,38 +26,6 @@ public struct ChatPanel: View {
                 typedMessage: $typedMessage
             )
         }
-        .background(.regularMaterial)
-    }
-}
-
-struct ChatPanelToolbar: View {
-    @ObservedObject var chat: ChatProvider
-    @AppStorage(\.useGlobalChat) var useGlobalChat
-
-    var body: some View {
-        HStack {
-            Button(action: {
-                chat.close()
-            }) {
-                Image(systemName: "xmark")
-                    .padding(4)
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("w", modifiers: [.command])
-
-            Spacer()
-
-            Toggle(isOn: .init(get: {
-                useGlobalChat
-            }, set: { _ in
-                chat.switchContext()
-            })) { EmptyView() }
-                .toggleStyle(GlobalChatSwitchToggleStyle())
-        }
-        .padding(.leading, 4)
-        .padding(.trailing, 8)
-        .padding(.vertical, 4)
         .background(.regularMaterial)
     }
 }

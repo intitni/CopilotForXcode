@@ -9,47 +9,49 @@ import Preferences
 import SwiftUI
 import XcodeInspector
 
-struct WidgetFeature: ReducerProtocol {
-    struct WindowState: Equatable {
+public struct WidgetFeature: ReducerProtocol {
+    public struct WindowState: Equatable {
         var alphaValue: Double = 0
         var frame: CGRect = .zero
     }
 
-    struct Windows: Equatable {
-        var widgetWindowState = WindowState()
-        var chatWindowState = WindowState()
-        var suggestionPanelWindowState = WindowState()
-        var sharedPanelWindowState = WindowState()
-        var tabWindowState = WindowState()
+    public struct Windows: Equatable {
+        public var widgetWindowState = WindowState()
+        public var chatWindowState = WindowState()
+        public var suggestionPanelWindowState = WindowState()
+        public var sharedPanelWindowState = WindowState()
+        public var tabWindowState = WindowState()
     }
 
-    struct State: Equatable {
-        var colorScheme: ColorScheme = .light
+    public struct State: Equatable {
+        public var colorScheme: ColorScheme = .light
 
         // MARK: Panels
 
-        var panelState = PanelFeature.State()
+        public var panelState = PanelFeature.State()
 
         // MARK: ChatPanel
 
-        var chatPanelState = ChatPanelFeature.State()
+        public var chatPanelState = ChatPanelFeature.State()
 
         // MARK: CircularWidget
 
-        struct CircularWidgetState: Equatable {
+        public struct CircularWidgetState: Equatable {
             var isProcessingCounters = [CircularWidgetFeature.IsProcessingCounter]()
             var isProcessing: Bool = false
             var animationProgress: Double = 0
         }
 
-        var circularWidgetState = CircularWidgetState()
+        public var circularWidgetState = CircularWidgetState()
         var _circularWidgetState: CircularWidgetFeature.State {
             get {
                 .init(
                     isProcessingCounters: circularWidgetState.isProcessingCounters,
                     isProcessing: circularWidgetState.isProcessing,
                     isDisplayingContent: {
-                        if chatPanelState.isPanelDisplayed, chatPanelState.chat != nil {
+                        if chatPanelState.isPanelDisplayed,
+                           !chatPanelState.chatTapGroup.tabs.isEmpty
+                        {
                             return true
                         }
                         if panelState.sharedPanelState.isPanelDisplayed,
@@ -64,10 +66,11 @@ struct WidgetFeature: ReducerProtocol {
                         }
                         return false
                     }(),
-                    isContentEmpty: chatPanelState.chat == nil && panelState.sharedPanelState
-                        .content == nil,
+                    isContentEmpty: chatPanelState.chatTapGroup.tabs.isEmpty
+                        && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
-                    isChatOpen: chatPanelState.isPanelDisplayed && chatPanelState.chat != nil,
+                    isChatOpen: chatPanelState.isPanelDisplayed
+                        && !chatPanelState.chatTapGroup.tabs.isEmpty,
                     animationProgress: circularWidgetState.animationProgress
                 )
             }
@@ -79,6 +82,8 @@ struct WidgetFeature: ReducerProtocol {
                 )
             }
         }
+
+        public init() {}
     }
 
     private enum CancelID {
@@ -90,7 +95,7 @@ struct WidgetFeature: ReducerProtocol {
         case observeUserDefaults
     }
 
-    enum Action: Equatable {
+    public enum Action: Equatable {
         case startup
         case observeActiveApplicationChange
         case observeCompletionPanelChange
@@ -112,13 +117,18 @@ struct WidgetFeature: ReducerProtocol {
         case circularWidget(CircularWidgetFeature.Action)
     }
 
-    @Dependency(\.windows) var windows
-    @Dependency(\.userDefaultsObservers) var userDefaultsObservers
+    var windows: WidgetWindows {
+        suggestionWidgetControllerDependency.windows
+    }
+
+    @Dependency(\.suggestionWidgetUserDefaultsObservers) var userDefaultsObservers
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
     @Dependency(\.xcodeInspector) var xcodeInspector
 
-    var body: some ReducerProtocol<State, Action> {
+    public init() {}
+
+    public var body: some ReducerProtocol<State, Action> {
         Scope(state: \._circularWidgetState, action: /Action.circularWidget) {
             CircularWidgetFeature()
         }
@@ -328,7 +338,6 @@ struct WidgetFeature: ReducerProtocol {
                             await send(.updateWindowOpacity)
                             await send(.observeEditorChange)
                             await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                            await send(.chatPanel(.updateContent))
                         } else {
                             await send(.updateWindowLocation(animated: false))
                             await send(.updateWindowOpacity)
@@ -383,7 +392,6 @@ struct WidgetFeature: ReducerProtocol {
                 if let app = activeApplicationMonitor.activeApplication, app.isXcode {
                     return .run { send in
                         await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                        await send(.chatPanel(.updateContent))
                         await send(.updateWindowLocation(animated: false))
                         await send(.updateWindowOpacity)
                         await windows.orderFront()
@@ -481,7 +489,7 @@ struct WidgetFeature: ReducerProtocol {
 
             case .updateWindowOpacity:
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-                let hasChat = state.chatPanelState.chat != nil
+                let hasChat = !state.chatPanelState.chatTapGroup.tabs.isEmpty
 
                 return .run { _ in
                     Task { @MainActor in
