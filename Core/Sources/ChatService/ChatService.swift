@@ -184,7 +184,7 @@ public final class ChatService: ObservableObject {
                     name: command.name
                 )
             case .promptToCode: return nil
-            case .oneTimeDialog: return nil
+            case .singleRoundDialog: return nil
             }
         }()
 

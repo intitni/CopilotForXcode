@@ -104,8 +104,8 @@ struct CustomCommandView: View {
                             Text("Custom Chat")
                         case .promptToCode:
                             Text("Prompt to Code")
-                        case .oneTimeDialog:
-                            Text("One-time Dialog")
+                        case .singleRoundDialog:
+                            Text("Single Round Dialog")
                         }
                     }
                     .font(.caption)
@@ -157,7 +157,7 @@ struct CustomCommandView: View {
 
             This command will overwrite the system prompt to let the bot behave differently.
 
-            # One-time Dialog
+            # Single Round Dialog
 
             This command allows you to send a message to a temporary chat without opening the chat panel.
 

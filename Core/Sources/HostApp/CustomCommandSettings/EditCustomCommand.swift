@@ -8,7 +8,7 @@ struct EditCustomCommand: ReducerProtocol {
         case sendMessage
         case promptToCode
         case customChat
-        case oneTimeDialog
+        case singleRoundDialog
     }
 
     struct State: Equatable {
@@ -20,7 +20,7 @@ struct EditCustomCommand: ReducerProtocol {
         var sendMessage = EditSendMessageCommand.State()
         var promptToCode = EditPromptToCodeCommand.State()
         var customChat = EditCustomChatCommand.State()
-        var oneTimeDialog = EditOneTimeDialogCommand.State()
+        var singleRoundDialog = EditSingleRoundDialogCommand.State()
 
         init(_ command: CustomCommand?) {
             isNewCommand = command == nil
@@ -48,14 +48,14 @@ struct EditCustomCommand: ReducerProtocol {
                     systemPrompt: systemPrompt ?? "",
                     prompt: prompt ?? ""
                 )
-            case let .oneTimeDialog(
+            case let .singleRoundDialog(
                 systemPrompt,
                 overwriteSystemPrompt,
                 prompt,
                 receiveReplyInNotification
             ):
-                commandType = .oneTimeDialog
-                oneTimeDialog = .init(
+                commandType = .singleRoundDialog
+                singleRoundDialog = .init(
                     systemPrompt: systemPrompt ?? "",
                     overwriteSystemPrompt: overwriteSystemPrompt ?? false,
                     prompt: prompt ?? "",
@@ -80,7 +80,7 @@ struct EditCustomCommand: ReducerProtocol {
         case sendMessage(EditSendMessageCommand.Action)
         case promptToCode(EditPromptToCodeCommand.Action)
         case customChat(EditCustomChatCommand.Action)
-        case oneTimeDialog(EditOneTimeDialogCommand.Action)
+        case singleRoundDialog(EditSingleRoundDialogCommand.Action)
     }
 
     let settings: CustomCommandView.Settings
@@ -99,8 +99,8 @@ struct EditCustomCommand: ReducerProtocol {
             EditCustomChatCommand()
         }
 
-        Scope(state: \.oneTimeDialog, action: /Action.oneTimeDialog) {
-            EditOneTimeDialogCommand()
+        Scope(state: \.singleRoundDialog, action: /Action.singleRoundDialog) {
+            EditSingleRoundDialogCommand()
         }
 
         BindingReducer()
@@ -139,9 +139,9 @@ struct EditCustomCommand: ReducerProtocol {
                                 systemPrompt: state.systemPrompt,
                                 prompt: state.prompt
                             )
-                        case .oneTimeDialog:
-                            let state = state.oneTimeDialog
-                            return .oneTimeDialog(
+                        case .singleRoundDialog:
+                            let state = state.singleRoundDialog
+                            return .singleRoundDialog(
                                 systemPrompt: state.systemPrompt,
                                 overwriteSystemPrompt: state.overwriteSystemPrompt,
                                 prompt: state.prompt,
@@ -179,7 +179,7 @@ struct EditCustomCommand: ReducerProtocol {
                 return .none
             case .customChat:
                 return .none
-            case .oneTimeDialog:
+            case .singleRoundDialog:
                 return .none
             }
         }
@@ -241,7 +241,7 @@ struct EditCustomChatCommand: ReducerProtocol {
     }
 }
 
-struct EditOneTimeDialogCommand: ReducerProtocol {
+struct EditSingleRoundDialogCommand: ReducerProtocol {
     struct State: Equatable {
         @BindingState var systemPrompt: String = ""
         @BindingState var overwriteSystemPrompt: Bool = false

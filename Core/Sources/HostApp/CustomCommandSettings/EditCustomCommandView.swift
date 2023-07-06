@@ -40,8 +40,8 @@ struct EditCustomCommandView: View {
                             return "Prompt to Code"
                         case .customChat:
                             return "Custom Chat"
-                        case .oneTimeDialog:
-                            return "One-time Dialog"
+                        case .singleRoundDialog:
+                            return "Single Round Dialog"
                         }
                     }() as String).tag(commandType)
                 }
@@ -76,11 +76,11 @@ struct EditCustomCommandView: View {
                         action: EditCustomCommand.Action.customChat
                     )
                 )
-            case .oneTimeDialog:
-                EditOneTimeDialogCommandView(
+            case .singleRoundDialog:
+                EditSingleRoundDialogCommandView(
                     store: store.scope(
-                        state: \.oneTimeDialog,
-                        action: EditCustomCommand.Action.oneTimeDialog
+                        state: \.singleRoundDialog,
+                        action: EditCustomCommand.Action.singleRoundDialog
                     )
                 )
             }
@@ -186,8 +186,8 @@ struct EditCustomChatCommandView: View {
     }
 }
 
-struct EditOneTimeDialogCommandView: View {
-    let store: StoreOf<EditOneTimeDialogCommand>
+struct EditSingleRoundDialogCommandView: View {
+    let store: StoreOf<EditSingleRoundDialogCommand>
 
     var body: some View {
         WithViewStore(store, observe: { $0 }) { viewStore in
@@ -252,11 +252,11 @@ struct EditCustomCommandView_Preview: PreviewProvider {
     }
 }
 
-struct EditOneTimeDialogCommandView_Preview: PreviewProvider {
+struct EditSingleRoundDialogCommandView_Preview: PreviewProvider {
     static var previews: some View {
-        EditOneTimeDialogCommandView(store: .init(
+        EditSingleRoundDialogCommandView(store: .init(
             initialState: .init(),
-            reducer: EditOneTimeDialogCommand()
+            reducer: EditSingleRoundDialogCommand()
         ))
         .frame(width: 800, height: 600)
     }

@@ -299,13 +299,13 @@ extension WindowBaseCommandHandler {
                 generateDescription: generateDescription,
                 name: command.name
             )
-        case let .oneTimeDialog(
+        case let .singleRoundDialog(
             systemPrompt,
             overwriteSystemPrompt,
             prompt,
             receiveReplyInNotification
         ):
-            try await executeOneTimeDialog(
+            try await executeSingleRoundDialog(
                 systemPrompt: systemPrompt,
                 overwriteSystemPrompt: overwriteSystemPrompt ?? false,
                 prompt: prompt ?? "",
@@ -390,7 +390,7 @@ extension WindowBaseCommandHandler {
         presenter.presentPromptToCode(fileURL: fileURL)
     }
 
-    func executeOneTimeDialog(
+    func executeSingleRoundDialog(
         systemPrompt: String?,
         overwriteSystemPrompt: Bool,
         prompt: String,

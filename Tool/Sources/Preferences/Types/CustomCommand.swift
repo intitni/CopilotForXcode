@@ -21,8 +21,8 @@ public struct CustomCommand: Codable, Equatable {
         )
         /// Custom chat.
         case customChat(systemPrompt: String?, prompt: String?)
-        /// One-time dialog.
-        case oneTimeDialog(
+        /// Single round dialog.
+        case singleRoundDialog(
             systemPrompt: String?,
             overwriteSystemPrompt: Bool?,
             prompt: String?,
