@@ -93,7 +93,7 @@ struct PseudoCommandHandler {
             }
             switch command.feature {
             // editor content is not required.
-            case .customChat, .chatWithSelection:
+            case .customChat, .chatWithSelection, .oneTimeDialog:
                 return .init(
                     content: "",
                     lines: [],

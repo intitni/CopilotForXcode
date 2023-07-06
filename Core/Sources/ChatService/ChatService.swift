@@ -85,6 +85,14 @@ public final class ChatService: ObservableObject {
             isReceivingMessage = false
         }
     }
+    
+    public func sendAndWait(content: String) async throws -> String {
+        try await send(content: content)
+        if let reply = await memory.history.last(where: { $0.role == .assistant })?.content {
+            return reply
+        }
+        return ""
+    }
 
     public func stopReceivingMessage() async {
         await pluginController.stopResponding()
@@ -175,8 +183,8 @@ public final class ChatService: ObservableObject {
                     sendingMessageImmediately: prompt,
                     name: command.name
                 )
-            case .promptToCode:
-                return nil
+            case .promptToCode: return nil
+            case .oneTimeDialog: return nil
             }
         }()
 

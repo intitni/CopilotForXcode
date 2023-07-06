@@ -8,6 +8,7 @@ import OpenAIService
 import SuggestionInjector
 import SuggestionModel
 import SuggestionWidget
+import UserNotifications
 import XPCShared
 
 @ServiceActor
@@ -298,6 +299,18 @@ extension WindowBaseCommandHandler {
                 generateDescription: generateDescription,
                 name: command.name
             )
+        case let .oneTimeDialog(
+            systemPrompt,
+            overwriteSystemPrompt,
+            prompt,
+            receiveReplyInNotification
+        ):
+            try await executeOneTimeDialog(
+                systemPrompt: systemPrompt,
+                overwriteSystemPrompt: overwriteSystemPrompt ?? false,
+                prompt: prompt ?? "",
+                receiveReplyInNotification: receiveReplyInNotification ?? false
+            )
         }
     }
 
@@ -375,6 +388,49 @@ extension WindowBaseCommandHandler {
         }
 
         presenter.presentPromptToCode(fileURL: fileURL)
+    }
+
+    func executeOneTimeDialog(
+        systemPrompt: String?,
+        overwriteSystemPrompt: Bool,
+        prompt: String,
+        receiveReplyInNotification: Bool
+    ) async throws {
+        guard !prompt.isEmpty else { return }
+
+        let service = ChatService()
+
+        if let systemPrompt {
+            if overwriteSystemPrompt {
+                service.mutateSystemPrompt(systemPrompt)
+            } else {
+                service.mutateExtraSystemPrompt(systemPrompt)
+            }
+        }
+
+        let result = try await service.sendAndWait(content: prompt)
+
+        let granted = try await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound])
+
+        if granted {
+            let content = UNMutableNotificationContent()
+            content.title = "Reply from Prompt"
+            content.body = result
+            content.sound = UNNotificationSound.default
+            let request = UNNotificationRequest(
+                identifier: "reply",
+                content: content,
+                trigger: nil
+            )
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                presenter.presentError(error)
+            }
+        } else {
+            presenter.presentErrorMessage("Notification permission is not granted.")
+        }
     }
 }
 

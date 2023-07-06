@@ -463,6 +463,7 @@ struct ChatContextMenu: View {
                     switch $0.feature {
                     case .chatWithSelection, .customChat: return true
                     case .promptToCode: return false
+                    case .oneTimeDialog: return false
                     }
                 },
                 id: \.name
