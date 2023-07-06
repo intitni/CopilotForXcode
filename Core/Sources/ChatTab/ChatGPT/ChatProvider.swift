@@ -18,6 +18,8 @@ public final class ChatProvider: ObservableObject {
             .text else { return defaultTitle }
         if lastMessageText.isEmpty { return defaultTitle }
         return lastMessageText
+            .trimmingCharacters(in: .punctuationCharacters)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public var extraSystemPrompt = ""
