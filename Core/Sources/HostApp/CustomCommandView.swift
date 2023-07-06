@@ -62,7 +62,7 @@ struct CustomCommandView: View {
                             Group {
                                 switch command.feature {
                                 case .chatWithSelection:
-                                    Text("Open Chat")
+                                    Text("Send Message")
                                 case .customChat:
                                     Text("Custom Chat")
                                 case .promptToCode:
@@ -217,7 +217,7 @@ struct EditCustomCommandView: View {
                         Text({
                             switch commandType {
                             case .chatWithSelection:
-                                return "Open Chat"
+                                return "Send Message"
                             case .promptToCode:
                                 return "Prompt to Code"
                             case .customChat:

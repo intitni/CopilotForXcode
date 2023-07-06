@@ -251,10 +251,10 @@ This feature is recommended when you need to update a specific piece of code. So
 You can create custom commands that run Chat and Prompt to Code with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. There are 3 types of custom commands:
 
 - Prompt to Code: Run Prompt to Code with the selected code, and update or write the code using the given prompt, if provided. You can provide additional information through the extra system prompt field.
-- Open Chat: Open the chat window and immediately send a message, if provided. You can provide more information through the extra system prompt field.
+- Send Message: Open the chat window and immediately send a message, if provided. You can provide more information through the extra system prompt field.
 - Custom Chat: Open the chat window and immediately send a message, if provided. You can overwrite the entire system prompt through the system prompt field.
 
-For Open Chat and Custom Chat commands, you can use the following template arguments:
+For Send Message and Custom Chat commands, you can use the following template arguments:
 
 | Argument                      | Description                                    |
 | ----------------------------- | ---------------------------------------------- |
