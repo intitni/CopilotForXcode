@@ -1,6 +1,16 @@
 import Foundation
 import SwiftUI
 
+// Hack to disable smart quotes and dashes in TextEditor
+extension NSTextView {
+    open override var frame: CGRect {
+        didSet {
+            self.isAutomaticQuoteSubstitutionEnabled = false
+            self.isAutomaticDashSubstitutionEnabled = false
+        }
+    }
+}
+
 struct EditableText: View {
     var text: Binding<String>
     @State var isEditing: Bool = false

@@ -8,6 +8,7 @@ import OpenAIService
 import SuggestionInjector
 import SuggestionModel
 import SuggestionWidget
+import UserNotifications
 import XPCShared
 
 @ServiceActor
@@ -298,6 +299,18 @@ extension WindowBaseCommandHandler {
                 generateDescription: generateDescription,
                 name: command.name
             )
+        case let .singleRoundDialog(
+            systemPrompt,
+            overwriteSystemPrompt,
+            prompt,
+            receiveReplyInNotification
+        ):
+            try await executeSingleRoundDialog(
+                systemPrompt: systemPrompt,
+                overwriteSystemPrompt: overwriteSystemPrompt ?? false,
+                prompt: prompt ?? "",
+                receiveReplyInNotification: receiveReplyInNotification ?? false
+            )
         }
     }
 
@@ -375,6 +388,46 @@ extension WindowBaseCommandHandler {
         }
 
         presenter.presentPromptToCode(fileURL: fileURL)
+    }
+
+    func executeSingleRoundDialog(
+        systemPrompt: String?,
+        overwriteSystemPrompt: Bool,
+        prompt: String,
+        receiveReplyInNotification: Bool
+    ) async throws {
+        guard !prompt.isEmpty else { return }
+
+        let service = ChatService()
+
+        let result = try await service.handleSingleRoundDialogCommand(
+            systemPrompt: systemPrompt,
+            overwriteSystemPrompt: overwriteSystemPrompt,
+            prompt: prompt
+        )
+
+        guard receiveReplyInNotification else { return }
+
+        let granted = try await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert])
+
+        if granted {
+            let content = UNMutableNotificationContent()
+            content.title = "Reply"
+            content.body = result
+            let request = UNNotificationRequest(
+                identifier: "reply",
+                content: content,
+                trigger: nil
+            )
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                presenter.presentError(error)
+            }
+        } else {
+            presenter.presentErrorMessage("Notification permission is not granted.")
+        }
     }
 }
 

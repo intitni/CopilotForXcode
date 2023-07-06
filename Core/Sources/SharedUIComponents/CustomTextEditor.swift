@@ -31,6 +31,9 @@ public struct CustomTextEditor: NSViewRepresentable {
         textView.font = font
         textView.allowsUndo = true
         textView.drawsBackground = false
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
 
         return context.coordinator.theTextView
     }

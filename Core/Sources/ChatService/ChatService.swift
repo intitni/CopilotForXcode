@@ -86,6 +86,14 @@ public final class ChatService: ObservableObject {
         }
     }
 
+    public func sendAndWait(content: String) async throws -> String {
+        try await send(content: content)
+        if let reply = await memory.history.last(where: { $0.role == .assistant })?.content {
+            return reply
+        }
+        return ""
+    }
+
     public func stopReceivingMessage() async {
         await pluginController.stopResponding()
         await chatGPTService.stopReceivingMessage()
@@ -175,8 +183,8 @@ public final class ChatService: ObservableObject {
                     sendingMessageImmediately: prompt,
                     name: command.name
                 )
-            case .promptToCode:
-                return nil
+            case .promptToCode: return nil
+            case .singleRoundDialog: return nil
             }
         }()
 
@@ -206,6 +214,22 @@ public final class ChatService: ObservableObject {
         {
             try await send(content: templateProcessor.process(sendingMessageImmediately))
         }
+    }
+
+    public func handleSingleRoundDialogCommand(
+        systemPrompt: String?,
+        overwriteSystemPrompt: Bool,
+        prompt: String
+    ) async throws -> String {
+        let templateProcessor = CustomCommandTemplateProcessor()
+        if let systemPrompt {
+            if overwriteSystemPrompt {
+                mutateSystemPrompt(templateProcessor.process(systemPrompt))
+            } else {
+                mutateExtraSystemPrompt(templateProcessor.process(systemPrompt))
+            }
+        }
+        return try await sendAndWait(content: templateProcessor.process(prompt))
     }
 }
 
