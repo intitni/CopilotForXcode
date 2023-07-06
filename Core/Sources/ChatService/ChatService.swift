@@ -85,7 +85,7 @@ public final class ChatService: ObservableObject {
             isReceivingMessage = false
         }
     }
-    
+
     public func sendAndWait(content: String) async throws -> String {
         try await send(content: content)
         if let reply = await memory.history.last(where: { $0.role == .assistant })?.content {
@@ -214,6 +214,22 @@ public final class ChatService: ObservableObject {
         {
             try await send(content: templateProcessor.process(sendingMessageImmediately))
         }
+    }
+
+    public func handleSingleRoundDialogCommand(
+        systemPrompt: String?,
+        overwriteSystemPrompt: Bool,
+        prompt: String
+    ) async throws -> String {
+        let templateProcessor = CustomCommandTemplateProcessor()
+        if let systemPrompt {
+            if overwriteSystemPrompt {
+                mutateSystemPrompt(templateProcessor.process(systemPrompt))
+            } else {
+                mutateExtraSystemPrompt(templateProcessor.process(systemPrompt))
+            }
+        }
+        return try await sendAndWait(content: templateProcessor.process(prompt))
     }
 }
 

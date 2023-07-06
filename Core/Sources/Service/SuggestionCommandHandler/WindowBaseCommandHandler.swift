@@ -400,16 +400,12 @@ extension WindowBaseCommandHandler {
 
         let service = ChatService()
 
-        if let systemPrompt {
-            if overwriteSystemPrompt {
-                service.mutateSystemPrompt(systemPrompt)
-            } else {
-                service.mutateExtraSystemPrompt(systemPrompt)
-            }
-        }
+        let result = try await service.handleSingleRoundDialogCommand(
+            systemPrompt: systemPrompt,
+            overwriteSystemPrompt: overwriteSystemPrompt,
+            prompt: prompt
+        )
 
-        let result = try await service.sendAndWait(content: prompt)
-        
         guard receiveReplyInNotification else { return }
 
         let granted = try await UNUserNotificationCenter.current()

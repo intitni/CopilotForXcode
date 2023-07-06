@@ -41,6 +41,18 @@ public struct CustomCommand: Codable, Equatable {
         self.feature = feature
     }
 
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        commandId = try container.decodeIfPresent(String.self, forKey: .commandId)
+        name = try container.decode(String.self, forKey: .name)
+        feature = (try? container
+            .decode(CustomCommand.Feature.self, forKey: .feature)) ?? .chatWithSelection(
+                extraSystemPrompt: "",
+                prompt: "",
+                useExtraSystemPrompt: false
+            )
+    }
+
     var legacyId: String {
         name.sha1HexString
     }
