@@ -218,7 +218,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var suggestionPresentationMode: PreferenceKey<PresentationMode> {
-        .init(defaultValue: .floatingWidget, key: "SuggestionPresentationMode")
+        .init(defaultValue: .nearbyTextCursor, key: "SuggestionPresentationMode")
     }
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
