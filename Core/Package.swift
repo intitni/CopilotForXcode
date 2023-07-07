@@ -89,12 +89,10 @@ let package = Package(
                 "UserDefaultsObserver",
                 "ChatTab",
                 .product(name: "Logger", package: "Tool"),
-//                .product(name: "PythonHelper", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .testTarget(
@@ -210,7 +208,6 @@ let package = Package(
                 "Environment",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .target(
@@ -341,7 +338,6 @@ let package = Package(
                 "ChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/MathChatPlugin"
         ),

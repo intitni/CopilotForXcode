@@ -235,6 +235,15 @@
       }
     },
     {
+      "identity" : "usearch",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/unum-cloud/usearch",
+      "state" : {
+        "revision" : "f2ab884d50902c3ad63f07a3a20bc34008a17449",
+        "version" : "0.19.3"
+      }
+    },
+    {
       "identity" : "xctest-dynamic-overlay",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",

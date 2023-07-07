@@ -451,6 +451,7 @@
 			mainGroup = C8189B0D2938972F00C9DCDA;
 			packageReferences = (
 				C8216B792980373800AD38C7 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				C80C91742A588DD800B5EADA /* XCRemoteSwiftPackageReference "usearch" */,
 			);
 			productRefGroup = C8189B172938972F00C9DCDA /* Products */;
 			projectDirPath = "";
@@ -976,6 +977,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		C80C91742A588DD800B5EADA /* XCRemoteSwiftPackageReference "usearch" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/unum-cloud/usearch";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.19.1;
+			};
+		};
 		C8216B792980373800AD38C7 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
