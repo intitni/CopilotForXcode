@@ -91,6 +91,20 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         XCTAssertNil(suggestion)
     }
     
+    func test_line_content_does_not_match_input_should_invalidate_index_out_of_scope() async throws {
+        let filespace = try await prepare(
+            suggestionText: "hello man",
+            cursorPosition: .init(line: 1, character: 0)
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "helo\n", "\n"],
+            cursorPosition: .init(line: 1, character: 100)
+        )
+        XCTAssertFalse(isValid)
+        let suggestion = await filespace.presentingSuggestion
+        XCTAssertNil(suggestion)
+    }
+    
     func test_finish_typing_the_whole_single_line_suggestion_should_invalidate() async throws {
         let filespace = try await prepare(
             suggestionText: "hello man",

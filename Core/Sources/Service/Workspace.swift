@@ -93,9 +93,12 @@ final class Filespace {
         let suggestionFirstLine = suggestionLines.first ?? ""
 
         // the line content doesn't match the suggestion
-        if cursorPosition.character > 0, !suggestionFirstLine
-            .hasPrefix(editingLine[..<editingLine
-                    .index(editingLine.startIndex, offsetBy: cursorPosition.character)])
+        if cursorPosition.character > 0,
+           !suggestionFirstLine.hasPrefix(editingLine[..<(editingLine.index(
+               editingLine.startIndex,
+               offsetBy: cursorPosition.character,
+               limitedBy: editingLine.endIndex
+           ) ?? editingLine.endIndex)])
         {
             reset()
             return false
