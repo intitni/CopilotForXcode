@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import SuggestionWidget
+@testable import SharedUIComponents
 
 final class ConvertToCodeLinesTests: XCTestCase {
     func test_do_not_remove_common_leading_spaces() async throws {

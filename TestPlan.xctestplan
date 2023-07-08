@@ -87,7 +87,14 @@
     },
     {
       "target" : {
-        "containerPath" : "container:",
+        "containerPath" : "container:Core",
+        "identifier" : "SharedUIComponentsTests",
+        "name" : "SharedUIComponentsTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
         "identifier" : "TokenEncoderTests",
         "name" : "TokenEncoderTests"
       }
