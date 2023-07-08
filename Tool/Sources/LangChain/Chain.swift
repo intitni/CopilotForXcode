@@ -13,7 +13,7 @@ public extension Chain {
         return parseOutput(output)
     }
 
-    func call(_ input: Input, callbackManagers: [ChainCallbackManager]) async throws -> Output {
+    func call(_ input: Input, callbackManagers: [ChainCallbackManager] = []) async throws -> Output {
         for callbackManager in callbackManagers {
             callbackManager.onChainStart(type: Self.self, input: input)
         }
