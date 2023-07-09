@@ -74,8 +74,10 @@ final class Filespace {
     ///    - cursorPosition: cursor position
     /// - Returns: `true` if the suggestion is still valid
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
+        guard let presentingSuggestion else { return false }
+
         // cursor has moved to another line
-        if cursorPosition.line != suggestionSourceSnapshot.cursorPosition.line {
+        if cursorPosition.line != presentingSuggestion.position.line {
             reset()
             return false
         }
@@ -87,11 +89,17 @@ final class Filespace {
         }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
-        let suggestionLines = presentingSuggestion?.text.split(separator: "\n") ?? []
+        let suggestionLines = presentingSuggestion.text.split(separator: "\n")
         let suggestionFirstLine = suggestionLines.first ?? ""
 
         // the line content doesn't match the suggestion
-        if !suggestionFirstLine.hasPrefix(editingLine) {
+        if cursorPosition.character > 0,
+           !suggestionFirstLine.hasPrefix(editingLine[..<(editingLine.index(
+               editingLine.startIndex,
+               offsetBy: cursorPosition.character,
+               limitedBy: editingLine.endIndex
+           ) ?? editingLine.endIndex)])
+        {
             reset()
             return false
         }
@@ -102,8 +110,8 @@ final class Filespace {
             return false
         }
 
-        // the line is empty
-        if editingLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        // undo to a state before the suggestion was generated
+        if editingLine.count < presentingSuggestion.position.character {
             reset()
             return false
         }
@@ -451,3 +459,4 @@ extension Workspace {
         await _suggestionService?.terminate()
     }
 }
+

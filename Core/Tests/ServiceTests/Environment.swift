@@ -23,6 +23,8 @@ import XPCShared
     }
 
     Environment.triggerAction = { _ in }
+    
+    Environment.guessProjectRootURLForFile = { $0 }
 }
 
 func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSuggestion {

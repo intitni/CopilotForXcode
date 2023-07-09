@@ -106,6 +106,7 @@ let package = Package(
                 "SuggestionInjector",
                 "XPCShared",
                 "Environment",
+                "SuggestionModel",
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
