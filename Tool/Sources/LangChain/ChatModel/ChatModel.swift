@@ -4,7 +4,7 @@ public protocol ChatModel {
     func generate(
         prompt: [ChatMessage],
         stops: [String],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> String
 }
 

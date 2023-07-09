@@ -86,7 +86,7 @@ public extension Agent {
     func plan(
         input: Input,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> AgentNextStep {
         let input = getFullInputs(input: input, intermediateSteps: intermediateSteps)
         let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
@@ -97,7 +97,7 @@ public extension Agent {
         input: Input,
         earlyStoppedHandleType: AgentEarlyStopHandleType,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> AgentFinish {
         switch earlyStoppedHandleType {
         case .force:
