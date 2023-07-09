@@ -98,9 +98,12 @@ public class ChatGPTService: ChatGPTServiceType {
                     var functionCall: ChatMessage.FunctionCall?
                     var functionCallMessageID = ""
                     var isInitialCall = true
-                    while functionCall != nil || isInitialCall {
+                    loop: while functionCall != nil || isInitialCall {
                         isInitialCall = false
                         if let call = functionCall {
+                            if !configuration.runFunctionsAutomatically {
+                                break loop
+                            }
                             functionCall = nil
                             await runFunctionCall(call, messageId: functionCallMessageID)
                         }
@@ -148,6 +151,9 @@ public class ChatGPTService: ChatGPTServiceType {
         var finalResult = message?.content
         var functionCall = message?.functionCall
         while let call = functionCall {
+            if !configuration.runFunctionsAutomatically {
+                break
+            }
             functionCall = nil
             await runFunctionCall(call)
             guard let nextMessage = try await sendMemoryAndWait() else { break }
@@ -375,7 +381,7 @@ extension ChatGPTService {
             content: nil,
             name: call.name
         )
-        
+
         await memory.appendMessage(responseMessage)
 
         function.reportProgress = { [weak self] summary in
@@ -383,7 +389,7 @@ extension ChatGPTService {
                 message.summary = summary
             }
         }
-        
+
         do {
             // Run the function
             let result = try await function.call(argumentsJsonString: call.arguments)
@@ -391,7 +397,7 @@ extension ChatGPTService {
             await memory.updateMessage(id: messageId) { message in
                 message.content = result.botReadableContent
             }
-            
+
             return result.botReadableContent
         } catch {
             // For errors, use the error message as the result.
