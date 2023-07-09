@@ -17,15 +17,11 @@ public extension Chain {
     }
 
     func call(_ input: Input, callbackManagers: [CallbackManager] = []) async throws -> Output {
-        for callbackManager in callbackManagers {
-            callbackManager
-                .send(CallbackEvents.ChainDidStart(info: (type: Self.self, input: input)))
-        }
+        callbackManagers
+            .send(CallbackEvents.ChainDidStart(info: (type: Self.self, input: input)))
         defer {
-            for callbackManager in callbackManagers {
-                callbackManager
-                    .send(CallbackEvents.ChainDidEnd(info: (type: Self.self, input: input)))
-            }
+            callbackManagers
+                .send(CallbackEvents.ChainDidEnd(info: (type: Self.self, input: input)))
         }
         return try await callLogic(input, callbackManagers: callbackManagers)
     }

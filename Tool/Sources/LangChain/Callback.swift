@@ -8,7 +8,7 @@ public protocol CallbackEvent {
 public enum CallbackEvents {}
 
 public struct CallbackManager {
-    private var observers = [Any]()
+    fileprivate var observers = [Any]()
 
     public init() {}
 
@@ -28,6 +28,16 @@ public struct CallbackManager {
     public func send<Event: CallbackEvent>(_ event: Event) {
         for case let observer as ((Event.Info) -> Void) in observers {
             observer(event.info)
+        }
+    }
+}
+
+public extension [CallbackManager] {
+    func send<Event: CallbackEvent>(_ event: Event) {
+        for cb in self {
+            for case let observer as ((Event.Info) -> Void) in cb.observers {
+                observer(event.info)
+            }
         }
     }
 }

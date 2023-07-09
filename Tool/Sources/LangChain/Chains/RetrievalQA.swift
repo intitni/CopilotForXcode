@@ -30,13 +30,22 @@ public final class RetrievalQAChain: Chain {
             count: 10
         )
         let refinementChain = RefineDocumentChain(chatModelFactory: chatModelFactory)
-        let answer = try await refinementChain.run(.init(question: input, documents: documents))
+        let answer = try await refinementChain.run(
+            .init(question: input, documents: documents),
+            callbackManagers: callbackManagers
+        )
 
         return .init(answer: answer, sourceDocuments: documents.map(\.document))
     }
 
     public func parseOutput(_ output: Output) -> String {
         return output.answer
+    }
+}
+
+public extension CallbackEvents {
+    struct RetrievalQADidGenerateIntermediateAnswer: CallbackEvent {
+        public let info: String
     }
 }
 
@@ -79,7 +88,8 @@ public final class RefineDocumentChain: Chain {
             chatModel: chatModelFactory(),
             promptTemplate: { input in [
                 .init(role: .system, content: """
-                The user will send you a question, you must update your previous answer to it at your best.
+                The user will send you a question, you must refine your previous answer to it at your best.
+                You should focus on answering the question, there is no need to add extra details in other topics.
                 Previous answer:###
                 \(input.previousAnswer)
                 ###
@@ -107,6 +117,7 @@ public final class RefineDocumentChain: Chain {
             ),
             callbackManagers: callbackManagers
         )
+        callbackManagers.send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
         for document in input.documents.dropFirst(1) {
             output = try await refinementChatModel.call(
                 .init(
@@ -117,6 +128,8 @@ public final class RefineDocumentChain: Chain {
                 ),
                 callbackManagers: callbackManagers
             )
+            callbackManagers
+                .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
         }
         return output
     }

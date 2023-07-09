@@ -87,7 +87,6 @@ public actor USearchIndex {
     }
 
     public func save(path: String) throws {
-        print(path)
         if !FileManager.default.fileExists(atPath: path) {
             FileManager.default.createFile(atPath: path, contents: nil, attributes: nil)
         }
