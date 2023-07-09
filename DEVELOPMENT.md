@@ -33,6 +33,10 @@ Most of the logics are implemented inside the package `Core`.
 
 Just run both the `ExtensionService` and the `EditorExtension` Target.
 
+## SwiftUI Previews
+
+Looks like SwiftUI Previews are not very happy with Objective-C packages when running with app targets. To use previews, please switch schemes to the package product targets.
+
 ## Unit Tests
 
 To run unit tests, just run test from the `Copilot for Xcode` target.
