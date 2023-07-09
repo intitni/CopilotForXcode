@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/intitni/Tiktoken", branch: "main"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
-        .package(url: "https://github.com/ChimeHQ/JSONRPC", from: "0.6.0"),
+        .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
         .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
     ],

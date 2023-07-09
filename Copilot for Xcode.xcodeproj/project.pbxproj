@@ -151,8 +151,6 @@
 		C8216B772980370100AD38C7 /* ReloadLaunchAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadLaunchAgent.swift; sourceTree = "<group>"; };
 		C82E38492A1F025F00D4EADF /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C83E3F3E2A38C66D0071506D /* Python */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Python; sourceTree = "<group>"; };
-		C83E5DE92A38CD000071506D /* site-packages */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "site-packages"; path = "Python/site-packages"; sourceTree = "<group>"; };
-		C83E5DEA2A38CD000071506D /* python-stdlib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "python-stdlib"; path = "Python/python-stdlib"; sourceTree = "<group>"; };
 		C83E5DED2A38CD8C0071506D /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -263,8 +261,6 @@
 				C81458922939EFDC00135263 /* EditorExtension */,
 				C8216B71298036EC00AD38C7 /* Helper */,
 				C861E60F2994F6070056CB02 /* ExtensionService */,
-				C83E5DEA2A38CD000071506D /* python-stdlib */,
-				C83E5DE92A38CD000071506D /* site-packages */,
 				C814588D2939EFDC00135263 /* Frameworks */,
 				C8189B172938972F00C9DCDA /* Products */,
 			);
