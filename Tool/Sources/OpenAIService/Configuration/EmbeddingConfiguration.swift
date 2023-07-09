@@ -9,7 +9,7 @@ public protocol EmbeddingConfiguration {
     var model: String { get }
 }
 
-extension EmbeddingConfiguration {
+public extension EmbeddingConfiguration {
     func endpoint(for provider: EmbeddingFeatureProvider) -> String {
         switch provider {
         case .openAI:
@@ -24,7 +24,7 @@ extension EmbeddingConfiguration {
             return "\(baseURL)/openai/deployments/\(deployment)/embeddings?api-version=\(version)"
         }
     }
-    
+
     func apiKey(for provider: EmbeddingFeatureProvider) -> String {
         switch provider {
         case .openAI:
@@ -33,11 +33,19 @@ extension EmbeddingConfiguration {
             return UserDefaults.shared.value(for: \.azureOpenAIAPIKey)
         }
     }
-    
+
     func overriding(
-        _ overrides: OverridingEmbeddingConfiguration<Self>.Overriding = .init()
+        _ overrides: OverridingEmbeddingConfiguration<Self>.Overriding
     ) -> OverridingEmbeddingConfiguration<Self> {
         .init(overriding: self, with: overrides)
+    }
+
+    func overriding(
+        _ update: (inout OverridingEmbeddingConfiguration<Self>.Overriding) -> Void = { _ in }
+    ) -> OverridingEmbeddingConfiguration<Self> {
+        var overrides = OverridingEmbeddingConfiguration<Self>.Overriding()
+        update(&overrides)
+        return .init(overriding: self, with: overrides)
     }
 }
 
