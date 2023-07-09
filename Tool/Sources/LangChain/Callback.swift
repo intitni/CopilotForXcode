@@ -31,26 +31,3 @@ public struct CallbackManager {
         }
     }
 }
-
-public extension CallbackEvents {
-    struct AgentDidFinish: CallbackEvent {
-        public let info: AgentFinish
-    }
-
-    struct AgentActionDidStart: CallbackEvent {
-        public let info: AgentAction
-    }
-
-    struct AgentActionDidEnd: CallbackEvent {
-        public let info: AgentAction
-    }
-
-    struct LLMDidProduceNewToken: CallbackEvent {
-        public let info: String
-    }
-
-    struct ChainDidStart<T: Chain>: CallbackEvent {
-        public let info: (type: T.Type, input: T.Input)
-    }
-}
-

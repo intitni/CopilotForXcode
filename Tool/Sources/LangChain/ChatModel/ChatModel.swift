@@ -23,3 +23,9 @@ public struct ChatMessage {
         self.content = content
     }
 }
+
+public extension CallbackEvents {
+    struct LLMDidProduceNewToken: CallbackEvent {
+        public let info: String
+    }
+}

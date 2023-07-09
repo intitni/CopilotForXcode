@@ -8,6 +8,9 @@ public protocol Chain {
 }
 
 public extension Chain {
+    typealias ChainDidStart = CallbackEvents.ChainDidStart<Self>
+    typealias ChainDidEnd = CallbackEvents.ChainDidEnd<Self>
+    
     func run(_ input: Input, callbackManagers: [CallbackManager] = []) async throws -> String {
         let output = try await call(input, callbackManagers: callbackManagers)
         return parseOutput(output)
@@ -18,7 +21,23 @@ public extension Chain {
             callbackManager
                 .send(CallbackEvents.ChainDidStart(info: (type: Self.self, input: input)))
         }
+        defer {
+            for callbackManager in callbackManagers {
+                callbackManager
+                    .send(CallbackEvents.ChainDidEnd(info: (type: Self.self, input: input)))
+            }
+        }
         return try await callLogic(input, callbackManagers: callbackManagers)
+    }
+}
+
+public extension CallbackEvents {
+    struct ChainDidStart<T: Chain>: CallbackEvent {
+        public let info: (type: T.Type, input: T.Input)
+    }
+
+    struct ChainDidEnd<T: Chain>: CallbackEvent {
+        public let info: (type: T.Type, input: T.Input)
     }
 }
 
