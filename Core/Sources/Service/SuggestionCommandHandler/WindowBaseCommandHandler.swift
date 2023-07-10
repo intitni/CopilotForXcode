@@ -237,8 +237,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
+        Task { @MainActor in
             let viewStore = GraphicalUserInterfaceController.shared.viewStore
+            viewStore.send(.createChatGPTChatTabIfNeeded)
             viewStore.send(.openChatPanel(forceDetach: false))
         }
         return nil
