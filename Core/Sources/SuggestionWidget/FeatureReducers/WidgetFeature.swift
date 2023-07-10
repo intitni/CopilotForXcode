@@ -49,9 +49,7 @@ public struct WidgetFeature: ReducerProtocol {
                     isProcessingCounters: circularWidgetState.isProcessingCounters,
                     isProcessing: circularWidgetState.isProcessing,
                     isDisplayingContent: {
-                        if chatPanelState.isPanelDisplayed,
-                           !chatPanelState.chatTapGroup.tabs.isEmpty
-                        {
+                        if chatPanelState.isPanelDisplayed {
                             return true
                         }
                         if panelState.sharedPanelState.isPanelDisplayed,
@@ -69,8 +67,7 @@ public struct WidgetFeature: ReducerProtocol {
                     isContentEmpty: chatPanelState.chatTapGroup.tabs.isEmpty
                         && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
-                    isChatOpen: chatPanelState.isPanelDisplayed
-                        && !chatPanelState.chatTapGroup.tabs.isEmpty,
+                    isChatOpen: chatPanelState.isPanelDisplayed,
                     animationProgress: circularWidgetState.animationProgress
                 )
             }
