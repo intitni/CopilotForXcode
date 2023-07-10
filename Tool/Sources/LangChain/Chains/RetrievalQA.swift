@@ -6,8 +6,8 @@ public final class RetrievalQAChain: Chain {
     let chatModelFactory: () -> ChatModel
 
     public struct Output {
-        var answer: String
-        var sourceDocuments: [Document]
+        public var answer: String
+        public var sourceDocuments: [Document]
     }
 
     public init(
