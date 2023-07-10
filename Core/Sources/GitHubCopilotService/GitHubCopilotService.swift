@@ -165,13 +165,11 @@ public class GitHubCopilotBaseService {
 
         self.server = server
         localProcessServer = localServer
-        
+
         Task {
             try await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
         }
     }
-    
-    
 
     public static func createFoldersIfNeeded() throws -> (
         applicationSupportURL: URL,
@@ -313,6 +311,18 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                         return !completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
                     }
                     return true
+                }
+                .map {
+                    if UserDefaults.shared.value(for: \.gitHubCopilotIgnoreTrailingNewLines) {
+                        var updated = $0
+                        var text = updated.text[...]
+                        while text.hasSuffix("\n") {
+                            text = text.dropLast(1)
+                        }
+                        updated.text = String(text)
+                        return updated
+                    }
+                    return $0
                 }
             try Task.checkCancellation()
             return completions

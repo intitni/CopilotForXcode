@@ -5,12 +5,12 @@ public struct GitHubCopilotInstallationManager {
     private static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "1358e8e45ecedc53daf971924a0541ddf6224faf"
+        let commitHash = "a4a6d6b3f9e284e7f5c849619e06cd228cad8abd"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
 
-    static let latestSupportedVersion = "1.8.4"
+    static let latestSupportedVersion = "1.9.1"
 
     public init() {}
 
@@ -113,7 +113,7 @@ public struct GitHubCopilotInstallationManager {
                         includingPropertiesForKeys: nil,
                         options: []
                     )
-                    
+
                     defer {
                         for url in contentURLs {
                             try? FileManager.default.removeItem(at: url)
@@ -127,8 +127,18 @@ public struct GitHubCopilotInstallationManager {
                         return
                     }
 
-                    let lspURL = gitFolderURL.appendingPathComponent("copilot")
-                    let installationURL = urls.executableURL.appendingPathComponent("copilot")
+                    let lspURL = gitFolderURL.appendingPathComponent("dist")
+                    let copilotURL = urls.executableURL.appendingPathComponent("copilot")
+
+                    if !FileManager.default.fileExists(atPath: copilotURL.path) {
+                        try FileManager.default.createDirectory(
+                            at: copilotURL,
+                            withIntermediateDirectories: true,
+                            attributes: nil
+                        )
+                    }
+
+                    let installationURL = copilotURL.appendingPathComponent("dist")
                     try FileManager.default.copyItem(at: lspURL, to: installationURL)
 
                     // update permission 755

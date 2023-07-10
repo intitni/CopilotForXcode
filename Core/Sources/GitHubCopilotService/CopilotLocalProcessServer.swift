@@ -222,6 +222,13 @@ extension CustomJSONRPCLanguageServer {
             }
             block(nil)
             return true
+        case "featureFlagsNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+            }
+            block(nil)
+            return true
         default:
             return false
         }
