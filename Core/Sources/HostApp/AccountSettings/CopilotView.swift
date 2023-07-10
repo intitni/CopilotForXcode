@@ -18,7 +18,8 @@ struct CopilotView: View {
         @AppStorage(\.gitHubCopilotProxyUsername) var gitHubCopilotProxyUsername
         @AppStorage(\.gitHubCopilotProxyPassword) var gitHubCopilotProxyPassword
         @AppStorage(\.gitHubCopilotUseStrictSSL) var gitHubCopilotUseStrictSSL
-
+        @AppStorage(\.gitHubCopilotIgnoreTrailingNewLines)
+        var gitHubCopilotIgnoreTrailingNewLines
         init() {}
     }
 
@@ -229,13 +230,20 @@ struct CopilotView: View {
                 Divider()
 
                 Form {
+                    Toggle(
+                        "Ignore Trailing New Lines",
+                        isOn: $settings.gitHubCopilotIgnoreTrailingNewLines
+                    )
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
                 }
 
                 Divider()
 
                 Form {
-                    TextField(text: $settings.gitHubCopilotProxyHost, prompt: Text("xxx.xxx.xxx.xxx, leave it blank to disable proxy.")) {
+                    TextField(
+                        text: $settings.gitHubCopilotProxyHost,
+                        prompt: Text("xxx.xxx.xxx.xxx, leave it blank to disable proxy.")
+                    ) {
                         Text("Proxy Host")
                     }
                     TextField(text: $settings.gitHubCopilotProxyPort, prompt: Text("80")) {
