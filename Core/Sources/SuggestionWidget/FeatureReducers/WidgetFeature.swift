@@ -549,10 +549,6 @@ public struct WidgetFeature: ReducerProtocol {
                     suggestionWidgetControllerDependency.onOpenChatClicked()
                     return .none
 
-                case let .runCustomCommandButtonClicked(command):
-                    suggestionWidgetControllerDependency.onCustomCommandClicked(command)
-                    return .none
-
                 default:
                     return .none
                 }
