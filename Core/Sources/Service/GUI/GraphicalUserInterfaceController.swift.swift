@@ -74,8 +74,8 @@ struct GUI: ReducerProtocol {
 
                 if let activeTab = state.chatTabGroup.activeChatTab as? ChatGPTChatTab {
                     return .run { send in
-                        await stopAndHandleCommand(activeTab)
                         await send(.openChatPanel(forceDetach: false))
+                        await stopAndHandleCommand(activeTab)
                     }
                 }
 
@@ -85,15 +85,15 @@ struct GUI: ReducerProtocol {
                 }) as? ChatGPTChatTab {
                     state.chatTabGroup.selectedTabId = chatTab.id
                     return .run { send in
-                        await stopAndHandleCommand(chatTab)
                         await send(.openChatPanel(forceDetach: false))
+                        await stopAndHandleCommand(chatTab)
                     }
                 }
                 let chatTab = ChatGPTChatTab()
                 state.chatTabGroup.tabs.append(chatTab)
                 return .run { send in
-                    await stopAndHandleCommand(chatTab)
                     await send(.openChatPanel(forceDetach: false))
+                    await stopAndHandleCommand(chatTab)
                 }
 
             case .suggestionWidget:
