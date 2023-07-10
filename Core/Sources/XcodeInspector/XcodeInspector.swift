@@ -5,6 +5,8 @@ import AXNotificationStream
 import Combine
 import Foundation
 
+#warning("MUSTDO: - store(in:) thread safe crash")
+
 public final class XcodeInspector: ObservableObject {
     public static let shared = XcodeInspector()
 

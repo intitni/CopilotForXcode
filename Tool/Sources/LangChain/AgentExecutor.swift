@@ -1,13 +1,5 @@
 import Foundation
 
-public protocol ChainCallbackManager {
-    func onChainStart<T: Chain>(type: T.Type, input: T.Input)
-    func onAgentFinish(output: AgentFinish)
-    func onAgentActionStart(action: AgentAction)
-    func onAgentActionEnd(action: AgentAction)
-    func onLLMNewToken(token: String)
-}
-
 public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == String {
     public typealias Input = String
     public struct Output {
@@ -39,7 +31,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> Output {
         try agent.validateTools(tools: Array(tools.values))
 
@@ -89,7 +81,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
             }
             iterations += 1
         }
-        
+
         let output = try await agent.returnStoppedResponse(
             input: input,
             earlyStoppedHandleType: earlyStopHandleType,
@@ -106,7 +98,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain where InnerAgent.Input == S
     public nonisolated func parseOutput(_ output: Output) -> String {
         output.finalOutput
     }
-    
+
     public func cancel() {
         isCancelled = true
         earlyStopHandleType = .force
@@ -119,10 +111,10 @@ extension AgentExecutor {
     func end(
         output: AgentFinish,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) -> Output {
         for callbackManager in callbackManagers {
-            callbackManager.onAgentFinish(output: output)
+            callbackManager.send(CallbackEvents.AgentDidFinish(info: output))
         }
         let finalOutput = output.returnValue
         return .init(finalOutput: finalOutput, intermediateSteps: intermediateSteps)
@@ -131,7 +123,7 @@ extension AgentExecutor {
     func takeNextStep(
         input: Input,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> AgentNextStep {
         let output = try await agent.plan(
             input: input,
@@ -144,7 +136,8 @@ extension AgentExecutor {
             let completedActions = try await withThrowingTaskGroup(of: AgentAction.self) {
                 taskGroup in
                 for action in actions {
-                    callbackManagers.forEach { $0.onAgentActionStart(action: action) }
+                    callbackManagers
+                        .forEach { $0.send(CallbackEvents.AgentActionDidStart(info: action)) }
                     guard let tool = tools[action.toolName] else { throw InvalidToolError() }
                     taskGroup.addTask {
                         let observation = try await tool.run(input: action.toolInput)
@@ -154,7 +147,8 @@ extension AgentExecutor {
                 var completedActions = [AgentAction]()
                 for try await action in taskGroup {
                     completedActions.append(action)
-                    callbackManagers.forEach { $0.onAgentActionEnd(action: action) }
+                    callbackManagers
+                        .forEach { $0.send(CallbackEvents.AgentActionDidEnd(info: action)) }
                 }
                 return completedActions
             }

@@ -36,6 +36,10 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
         300
     }
 
+    public var runFunctionsAutomatically: Bool {
+        true
+    }
+
     public init() {}
 }
 
@@ -43,14 +47,15 @@ public class OverridingChatGPTConfiguration<
     Configuration: ChatGPTConfiguration
 >: ChatGPTConfiguration {
     public struct Overriding {
-        var featureProvider: ChatFeatureProvider?
-        var temperature: Double?
-        var model: String?
-        var endPoint: String?
-        var apiKey: String?
-        var stop: [String]?
-        var maxTokens: Int?
-        var minimumReplyTokens: Int?
+        public var featureProvider: ChatFeatureProvider?
+        public var temperature: Double?
+        public var model: String?
+        public var endPoint: String?
+        public var apiKey: String?
+        public var stop: [String]?
+        public var maxTokens: Int?
+        public var minimumReplyTokens: Int?
+        public var runFunctionsAutomatically: Bool?
 
         public init(
             temperature: Double? = nil,
@@ -60,7 +65,8 @@ public class OverridingChatGPTConfiguration<
             minimumReplyTokens: Int? = nil,
             featureProvider: ChatFeatureProvider? = nil,
             endPoint: String? = nil,
-            apiKey: String? = nil
+            apiKey: String? = nil,
+            runFunctionsAutomatically: Bool? = nil
         ) {
             self.temperature = temperature
             self.model = model
@@ -70,6 +76,7 @@ public class OverridingChatGPTConfiguration<
             self.featureProvider = featureProvider
             self.endPoint = endPoint
             self.apiKey = apiKey
+            self.runFunctionsAutomatically = runFunctionsAutomatically
         }
     }
 
@@ -77,7 +84,7 @@ public class OverridingChatGPTConfiguration<
     public var overriding = Overriding()
 
     public init(overriding configuration: Configuration, with overrides: Overriding = .init()) {
-        self.overriding = overrides
+        overriding = overrides
         self.configuration = configuration
     }
 
@@ -115,6 +122,10 @@ public class OverridingChatGPTConfiguration<
 
     public var minimumReplyTokens: Int {
         overriding.minimumReplyTokens ?? configuration.minimumReplyTokens
+    }
+    
+    public var runFunctionsAutomatically: Bool {
+        overriding.runFunctionsAutomatically ?? configuration.runFunctionsAutomatically
     }
 }
 

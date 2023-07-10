@@ -1,6 +1,7 @@
 import BingSearchService
 import Foundation
 import LangChain
+import OpenAIService
 
 enum SearchEvent {
     case startAction(String)
@@ -42,7 +43,10 @@ func search(_ query: String) async throws
         ),
     ]
 
-    let chatModel = OpenAIChat(temperature: 0, stream: true)
+    let chatModel = OpenAIChat(
+        configuration: UserPreferenceChatGPTConfiguration().overriding { $0.temperature = 0 },
+        stream: true
+    )
 
     let agentExecutor = AgentExecutor(
         agent: ChatAgent(
@@ -55,63 +59,37 @@ func search(_ query: String) async throws
         earlyStopHandleType: .generate
     )
 
-    class ResultCallbackManager: ChainCallbackManager {
+    return (AsyncThrowingStream<SearchEvent, Error> { continuation in
         var accumulation: String = ""
         var isGeneratingFinalAnswer = false
-        var onFinalAnswerToken: (String) -> Void
-        var onAgentActionStart: (String) -> Void
-        var onAgentActionEnd: (String) -> Void
 
-        init(
-            onFinalAnswerToken: @escaping (String) -> Void,
-            onAgentActionStart: @escaping (String) -> Void,
-            onAgentActionEnd: @escaping (String) -> Void
-        ) {
-            self.onFinalAnswerToken = onFinalAnswerToken
-            self.onAgentActionStart = onAgentActionStart
-            self.onAgentActionEnd = onAgentActionEnd
-        }
-
-        func onChainStart<T>(type: T.Type, input: T.Input) where T: LangChain.Chain {}
-
-        func onAgentFinish(output: LangChain.AgentFinish) {}
-
-        func onAgentActionStart(action: LangChain.AgentAction) {
-            onAgentActionStart("\(action.toolName): \(action.toolInput)")
-        }
-
-        func onAgentActionEnd(action: LangChain.AgentAction) {
-            onAgentActionEnd("\(action.toolName): \(action.toolInput)")
-        }
-
-        func onLLMNewToken(token: String) {
-            if isGeneratingFinalAnswer {
-                onFinalAnswerToken(token)
-                return
+        let callbackManager = CallbackManager { manager in
+            manager.on(CallbackEvents.AgentActionDidStart.self) {
+                continuation.yield(.startAction("\($0.toolName): \($0.toolInput)"))
             }
-            accumulation.append(token)
-            if accumulation.hasSuffix("Final Answer: ") {
-                isGeneratingFinalAnswer = true
-                accumulation = ""
+
+            manager.on(CallbackEvents.AgentActionDidEnd.self) {
+                continuation.yield(.endAction("\($0.toolName): \($0.toolInput)"))
+            }
+
+            manager.on(CallbackEvents.LLMDidProduceNewToken.self) {
+                if isGeneratingFinalAnswer {
+                    continuation.yield(.answerToken($0))
+                    return
+                }
+                accumulation.append($0)
+                if accumulation.hasSuffix("Final Answer: ") {
+                    isGeneratingFinalAnswer = true
+                    accumulation = ""
+                }
             }
         }
-    }
-
-    return (AsyncThrowingStream<SearchEvent, Error> { continuation in
-        let callback = ResultCallbackManager(
-            onFinalAnswerToken: {
-                continuation.yield(.answerToken($0))
-            },
-            onAgentActionStart: {
-                continuation.yield(.startAction($0))
-            },
-            onAgentActionEnd: {
-                continuation.yield(.endAction($0))
-            }
-        )
         Task {
             do {
-                let finalAnswer = try await agentExecutor.run(query, callbackManagers: [callback])
+                let finalAnswer = try await agentExecutor.run(
+                    query,
+                    callbackManagers: [callbackManager]
+                )
                 continuation.yield(.finishAnswer(finalAnswer, linkStorage.links))
                 continuation.finish()
             } catch {

@@ -2,26 +2,22 @@ import Foundation
 import OpenAIService
 
 public struct OpenAIChat: ChatModel {
-    public var temperature: Double
+    public var configuration: ChatGPTConfiguration
     public var stream: Bool
 
     public init(
-        temperature: Double = 0.7,
-        stream: Bool = false
+        configuration: ChatGPTConfiguration,
+        stream: Bool
     ) {
-        self.temperature = temperature
+        self.configuration = configuration
         self.stream = stream
     }
 
     public func generate(
         prompt: [ChatMessage],
         stops: [String],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> String {
-        let configuration = UserPreferenceChatGPTConfiguration().overriding(.init(
-            temperature: temperature,
-            stop: stops
-        ))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
             configuration: configuration,
@@ -47,7 +43,8 @@ public struct OpenAIChat: ChatModel {
             var message = ""
             for try await trunk in stream {
                 message.append(trunk)
-                callbackManagers.forEach { $0.onLLMNewToken(token: trunk) }
+                callbackManagers
+                    .forEach { $0.send(CallbackEvents.LLMDidProduceNewToken(info: trunk)) }
             }
             return message
         } else {

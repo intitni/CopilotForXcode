@@ -3,21 +3,37 @@ import Foundation
 public protocol Chain {
     associatedtype Input
     associatedtype Output
-    func callLogic(_ input: Input, callbackManagers: [ChainCallbackManager]) async throws -> Output
+    func callLogic(_ input: Input, callbackManagers: [CallbackManager]) async throws -> Output
     func parseOutput(_ output: Output) -> String
 }
 
 public extension Chain {
-    func run(_ input: Input, callbackManagers: [ChainCallbackManager] = []) async throws -> String {
+    typealias ChainDidStart = CallbackEvents.ChainDidStart<Self>
+    typealias ChainDidEnd = CallbackEvents.ChainDidEnd<Self>
+    
+    func run(_ input: Input, callbackManagers: [CallbackManager] = []) async throws -> String {
         let output = try await call(input, callbackManagers: callbackManagers)
         return parseOutput(output)
     }
 
-    func call(_ input: Input, callbackManagers: [ChainCallbackManager]) async throws -> Output {
-        for callbackManager in callbackManagers {
-            callbackManager.onChainStart(type: Self.self, input: input)
+    func call(_ input: Input, callbackManagers: [CallbackManager] = []) async throws -> Output {
+        callbackManagers
+            .send(CallbackEvents.ChainDidStart(info: (type: Self.self, input: input)))
+        defer {
+            callbackManagers
+                .send(CallbackEvents.ChainDidEnd(info: (type: Self.self, input: input)))
         }
         return try await callLogic(input, callbackManagers: callbackManagers)
+    }
+}
+
+public extension CallbackEvents {
+    struct ChainDidStart<T: Chain>: CallbackEvent {
+        public let info: (type: T.Type, input: T.Input)
+    }
+
+    struct ChainDidEnd<T: Chain>: CallbackEvent {
+        public let info: (type: T.Type, input: T.Input)
     }
 }
 
@@ -35,7 +51,7 @@ public struct SimpleChain<Input, Output>: Chain {
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> Output {
         return try await block(input)
     }
@@ -54,7 +70,7 @@ public struct ConnectedChain<A: Chain, B: Chain>: Chain where B.Input == A.Outpu
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager] = []
+        callbackManagers: [CallbackManager] = []
     ) async throws -> Output {
         let a = try await chainA.call(input, callbackManagers: callbackManagers)
         let b = try await chainB.call(a, callbackManagers: callbackManagers)
@@ -75,7 +91,7 @@ public struct PairedChain<A: Chain, B: Chain>: Chain {
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager] = []
+        callbackManagers: [CallbackManager] = []
     ) async throws -> Output {
         async let a = chainA.call(input.0, callbackManagers: callbackManagers)
         async let b = chainB.call(input.1, callbackManagers: callbackManagers)
@@ -96,7 +112,7 @@ public struct MappedChain<A: Chain, NewOutput>: Chain {
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> Output {
         let output = try await chain.call(input, callbackManagers: callbackManagers)
         return map(output)

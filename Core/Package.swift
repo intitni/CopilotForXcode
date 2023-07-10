@@ -42,14 +42,15 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
-        .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
+        // TODO: Update LanguageClient some day.
+        .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
+        .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
-//        .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
@@ -89,12 +90,10 @@ let package = Package(
                 "UserDefaultsObserver",
                 "ChatTab",
                 .product(name: "Logger", package: "Tool"),
-//                .product(name: "PythonHelper", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .testTarget(
@@ -210,7 +209,6 @@ let package = Package(
                 "Environment",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .target(
@@ -267,12 +265,22 @@ let package = Package(
 
         // MARK: - Helpers
 
-        .target(name: "CGEventObserver"),
+        .target(
+            name: "CGEventObserver",
+            dependencies: [
+                .product(name: "Logger", package: "Tool"),
+            ]
+        ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),
         .target(name: "ActiveApplicationMonitor"),
-        .target(name: "AXNotificationStream"),
+        .target(
+            name: "AXNotificationStream",
+            dependencies: [
+                .product(name: "Logger", package: "Tool"),
+            ]
+        ),
         .target(
             name: "UpdateChecker",
             dependencies: [
@@ -312,6 +320,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
+                .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
             ]
         ),
         .testTarget(
@@ -341,7 +350,6 @@ let package = Package(
                 "ChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
-//                .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/MathChatPlugin"
         ),

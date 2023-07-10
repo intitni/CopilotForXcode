@@ -10,6 +10,7 @@ public protocol ChatGPTConfiguration {
     var stop: [String] { get }
     var maxTokens: Int { get }
     var minimumReplyTokens: Int { get }
+    var runFunctionsAutomatically: Bool { get }
 }
 
 public extension ChatGPTConfiguration {
@@ -38,9 +39,17 @@ public extension ChatGPTConfiguration {
     }
 
     func overriding(
-        _ overrides: OverridingChatGPTConfiguration<Self>.Overriding = .init()
+        _ overrides: OverridingChatGPTConfiguration<Self>.Overriding
     ) -> OverridingChatGPTConfiguration<Self> {
         .init(overriding: self, with: overrides)
+    }
+
+    func overriding(
+        _ update: (inout OverridingChatGPTConfiguration<Self>.Overriding) -> Void = { _ in }
+    ) -> OverridingChatGPTConfiguration<Self> {
+        var overrides = OverridingChatGPTConfiguration<Self>.Overriding()
+        update(&overrides)
+        return .init(overriding: self, with: overrides)
     }
 }
 

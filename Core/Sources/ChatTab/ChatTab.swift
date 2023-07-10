@@ -62,11 +62,17 @@ open class BaseChatTab: Equatable {
 
     @ViewBuilder
     public var body: some View {
+        let id = "BaseChatTab\(info.id)"
         if let tab = self as? ChatTabType {
-            ContentView(info: info, buildView: tab.buildView).id(info.id)
+            ContentView(info: info, buildView: tab.buildView).id(id)
         } else {
-            EmptyView().id(info.id)
+            EmptyView().id(id)
         }
+    }
+    
+    @ViewBuilder
+    public var menu: some View {
+        EmptyView()
     }
 
     public static func == (lhs: BaseChatTab, rhs: BaseChatTab) -> Bool {

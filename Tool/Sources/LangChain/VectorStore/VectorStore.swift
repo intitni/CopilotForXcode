@@ -1,6 +1,6 @@
 import Foundation
 
-protocol VectorStore {
+public protocol VectorStore {
     func add(_ documents: [EmbeddedDocument]) async throws
     func set(_ documents: [EmbeddedDocument]) async throws
     func clear() async throws
@@ -8,7 +8,7 @@ protocol VectorStore {
         -> [(document: Document, distance: Float)]
 }
 
-extension VectorStore {
+public extension VectorStore {
     func search(embeddings: [Float], count: Int) async throws -> [Document] {
         try await searchWithDistance(embeddings: embeddings, count: count).map { $0.document }
     }
