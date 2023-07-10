@@ -170,8 +170,6 @@ public class GitHubCopilotBaseService {
             try await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
         }
     }
-    
-    
 
     public static func createFoldersIfNeeded() throws -> (
         applicationSupportURL: URL,
