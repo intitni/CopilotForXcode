@@ -45,7 +45,7 @@ public class ChatGPTChatTab: ChatTab {
             return nil
         }
 
-        return [Builder(title: "ChatGPT", customCommand: nil)] + customCommands
+        return [Builder(title: "New Chat", customCommand: nil)] + customCommands
     }
 
     public init(service: ChatService = .init()) {
