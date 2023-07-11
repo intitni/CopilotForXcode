@@ -105,7 +105,7 @@ final class Filespace {
         }
 
         // finished typing the whole suggestion when the suggestion has only one line
-        if editingLine == suggestionFirstLine, suggestionLines.count <= 1 {
+        if editingLine.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
             reset()
             return false
         }
