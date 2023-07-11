@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Preferences", targets: ["Preferences", "Configs"]),
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
+        .library(name: "ChatTab", targets: ["ChatTab"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -22,6 +23,10 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
         .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "0.55.0"
+        ),
     ],
     targets: [
         // MARK: - Helpers
@@ -85,6 +90,16 @@ let package = Package(
         .testTarget(
             name: "OpenAIServiceTests",
             dependencies: ["OpenAIService"]
+        ),
+
+        // MARK: - UI
+
+        .target(
+            name: "ChatTab",
+            dependencies: [.product(
+                name: "ComposableArchitecture",
+                package: "swift-composable-architecture"
+            )]
         ),
 
         // MARK: - Tests

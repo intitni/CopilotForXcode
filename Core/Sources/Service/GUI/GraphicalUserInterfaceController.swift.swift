@@ -1,4 +1,5 @@
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import Environment

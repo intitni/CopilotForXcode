@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import SwiftUI
@@ -31,9 +32,9 @@ struct ChatWindowView: View {
                     .fill(.tertiary)
                     .frame(width: 120, height: 4)
                     .frame(height: 16)
-                
+
                 Divider()
-                
+
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -50,7 +51,7 @@ struct ChatWindowView: View {
                 }
                 .opacity(0)
                 .keyboardShortcut("M", modifiers: [.command])
-                
+
                 Button(action: {
                     viewStore.send(.closeActiveTabClicked)
                 }) {

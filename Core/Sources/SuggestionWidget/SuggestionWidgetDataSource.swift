@@ -1,4 +1,3 @@
-import ChatTab
 import Foundation
 
 public protocol SuggestionWidgetDataSource {

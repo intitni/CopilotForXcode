@@ -1,6 +1,5 @@
 import ActiveApplicationMonitor
 import ChatService
-import ChatTab
 import ComposableArchitecture
 import Foundation
 import GitHubCopilotService

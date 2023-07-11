@@ -56,7 +56,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
-    ],
+    ].pro,
     targets: [
         // MARK: - Main
 
@@ -88,7 +88,8 @@ let package = Package(
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
-                "ChatTab",
+                "ChatGPTChatTab",
+                .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -223,12 +224,13 @@ let package = Package(
         ),
 
         .target(
-            name: "ChatTab",
+            name: "ChatGPTChatTab",
             dependencies: [
                 "SharedUIComponents",
                 "ChatService",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
+                .product(name: "ChatTab", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ]
         ),
@@ -248,13 +250,14 @@ let package = Package(
         .target(
             name: "SuggestionWidget",
             dependencies: [
-                "ChatTab",
+                "ChatGPTChatTab",
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
                 "Environment",
                 "UserDefaultsObserver",
                 "XcodeInspector",
                 "SharedUIComponents",
+                .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
@@ -390,4 +393,35 @@ let package = Package(
         ),
     ]
 )
+
+// MARK: - Pro
+
+extension [Target.Dependency] {
+    func pro(_ targetNames: [String]) -> [Target.Dependency] {
+        if isProIncluded() {
+            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
+        }
+        return self
+    }
+}
+
+extension [Package.Dependency] {
+    var pro: [Package.Dependency] {
+        if isProIncluded() {
+            return self + [.package(path: "../Pro")]
+        }
+        return self
+    }
+}
+
+import Foundation
+
+func isProIncluded(file: StaticString = #file) -> Bool {
+    let filePath = "\(file)"
+    let url = URL(fileURLWithPath: filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("Pro/Package.swift")
+    return FileManager.default.fileExists(atPath: url.path)
+}
 

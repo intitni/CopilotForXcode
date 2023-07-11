@@ -1,4 +1,5 @@
 import ChatService
+import ChatTab
 import Combine
 import Foundation
 import SwiftUI
@@ -17,7 +18,7 @@ public class ChatGPTChatTab: ChatTab {
         self.service = service
         provider = .init(service: service)
         super.init(id: "Chat-" + provider.id.uuidString, title: "Chat")
-        
+
         provider.$history.sink { [weak self] _ in
             if let title = self?.provider.title {
                 self?.title = title
