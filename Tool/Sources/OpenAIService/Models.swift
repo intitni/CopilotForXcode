@@ -16,8 +16,8 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     public struct FunctionCall: Codable, Equatable {
-        var name: String
-        var arguments: String
+        public var name: String
+        public var arguments: String
     }
 
     /// The role of a message.

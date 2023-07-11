@@ -49,9 +49,7 @@ public struct WidgetFeature: ReducerProtocol {
                     isProcessingCounters: circularWidgetState.isProcessingCounters,
                     isProcessing: circularWidgetState.isProcessing,
                     isDisplayingContent: {
-                        if chatPanelState.isPanelDisplayed,
-                           !chatPanelState.chatTapGroup.tabs.isEmpty
-                        {
+                        if chatPanelState.isPanelDisplayed {
                             return true
                         }
                         if panelState.sharedPanelState.isPanelDisplayed,
@@ -69,8 +67,7 @@ public struct WidgetFeature: ReducerProtocol {
                     isContentEmpty: chatPanelState.chatTapGroup.tabs.isEmpty
                         && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
-                    isChatOpen: chatPanelState.isPanelDisplayed
-                        && !chatPanelState.chatTapGroup.tabs.isEmpty,
+                    isChatOpen: chatPanelState.isPanelDisplayed,
                     animationProgress: circularWidgetState.animationProgress
                 )
             }
@@ -227,7 +224,7 @@ public struct WidgetFeature: ReducerProtocol {
                                     // clicked
                                     // before the completion panel updates the location of the
                                     // suggestion panel
-                                    try await Task.sleep(nanoseconds: 200_000_000)
+                                    try await Task.sleep(nanoseconds: 400_000_000)
                                 }
                                 continuation.yield()
                             }
@@ -253,7 +250,7 @@ public struct WidgetFeature: ReducerProtocol {
                         else { continue }
                         guard await windows.fullscreenDetector.isOnActiveSpace else { continue }
                         let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                        if let window = app.focusedWindow, window.isFullScreen {
+                        if let window = app.focusedWindow {
                             await windows.orderFront()
                         }
                     }
@@ -547,10 +544,6 @@ public struct WidgetFeature: ReducerProtocol {
                 switch action {
                 case .openChatButtonClicked:
                     suggestionWidgetControllerDependency.onOpenChatClicked()
-                    return .none
-
-                case let .runCustomCommandButtonClicked(command):
-                    suggestionWidgetControllerDependency.onCustomCommandClicked(command)
                     return .none
 
                 default:

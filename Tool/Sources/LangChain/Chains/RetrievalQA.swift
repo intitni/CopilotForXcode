@@ -27,7 +27,7 @@ public final class RetrievalQAChain: Chain {
         let embeddedQuestion = try await embedding.embed(query: input)
         let documents = try await vectorStore.searchWithDistance(
             embeddings: embeddedQuestion,
-            count: 10
+            count: 5
         )
         let refinementChain = RefineDocumentChain(chatModelFactory: chatModelFactory)
         let answer = try await refinementChain.run(

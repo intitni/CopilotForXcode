@@ -231,7 +231,7 @@ struct CopilotView: View {
 
                 Form {
                     Toggle(
-                        "Ignore Trailing New Lines",
+                        "Ignore Trailing New Lines and Whitespaces",
                         isOn: $settings.gitHubCopilotIgnoreTrailingNewLines
                     )
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
