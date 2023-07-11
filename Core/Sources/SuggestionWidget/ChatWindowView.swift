@@ -78,6 +78,9 @@ struct ChatTabBar: View {
         var selectedTabId: String
     }
 
+    @State var isHoveringCreateButton = false
+    @State var isHoveringMenuButton = false
+
     var body: some View {
         WithViewStore(
             store,
@@ -110,13 +113,87 @@ struct ChatTabBar: View {
 
                 Divider()
 
-                Button(action: {
-                    store.send(.createNewTapButtonClicked(type: ""))
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(.secondary)
-                        .padding(8)
-                }.buttonStyle(.plain)
+                createButton
+            }
+        }
+    }
+
+    @ViewBuilder
+    var createButton: some View {
+        HStack(spacing: 0) {
+            Button(action: {
+                store.send(.createNewTapButtonClicked(kind: nil))
+            }) {
+                Image(systemName: "plus")
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 8)
+                    .padding(.trailing, 4)
+                    .frame(maxHeight: .infinity)
+            }
+            .buttonStyle(.plain)
+            .background {
+                if isHoveringCreateButton {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(nsColor: .controlTextColor).opacity(0.1))
+                }
+            }
+            .onHover { isHoveringCreateButton = $0 }
+
+            Menu {
+                WithViewStore(store, observe: { $0.chatTapGroup.tabCollection }) { viewStore in
+                    ForEach(0..<viewStore.state.endIndex, id: \.self) { index in
+                        switch viewStore.state[index] {
+                        case let .kind(kind):
+                            Button(action: {
+                                store.send(.createNewTapButtonClicked(kind: kind))
+                            }) {
+                                Text(kind.title)
+                            }
+                        case let .folder(title, list):
+                            Menu {
+                                ForEach(0..<list.endIndex, id: \.self) { index in
+                                    Button(action: {
+                                        store
+                                            .send(
+                                                .createNewTapButtonClicked(
+                                                    kind: list[index]
+                                                )
+                                            )
+                                    }) {
+                                        Text(list[index].title)
+                                    }
+                                }
+                            } label: {
+                                Text(title)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                // SwiftUI Menu in macOS is...
+                Button("   ", action: {})
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .frame(maxHeight: .infinity)
+            .fixedSize(horizontal: true, vertical: false)
+            .overlay {
+                Image(systemName: "chevron.down")
+                    .resizable()
+                    .frame(width: 7, height: 4)
+                    .foregroundColor(.secondary)
+            }
+            .background {
+                if isHoveringMenuButton {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(nsColor: .controlTextColor).opacity(0.1))
+                }
+            }
+            .onHover { isHoveringMenuButton = $0 }
+        }
+        .onHover { isHovering in
+            if isHovering {
+                store.send(.createNewTapButtonHovered)
             }
         }
     }
@@ -201,31 +278,54 @@ struct ChatTabContainer: View {
     }
 }
 
-struct ChatWindowView_Previews: PreviewProvider {
-    class FakeChatTab: ChatTab {
-        func buildMenu() -> any View {
-            Text("Menu Item")
-            Text("Menu Item")
-            Text("Menu Item")
-        }
-        
-        func buildView() -> any View {
-            ChatPanel(
-                chat: .init(
-                    history: [
-                        .init(id: "1", role: .assistant, text: "Hello World"),
-                    ],
-                    isReceivingMessage: false
-                ),
-                typedMessage: "Hello World!"
-            )
-        }
+struct CreateOtherChatTabMenuStyle: MenuStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Image(systemName: "chevron.down")
+            .resizable()
+            .frame(width: 7, height: 4)
+            .frame(maxHeight: .infinity)
+            .padding(.leading, 4)
+            .padding(.trailing, 8)
+            .foregroundColor(.secondary)
+    }
+}
 
-        override init(id: String, title: String) {
-            super.init(id: id, title: title)
+class FakeChatTab: ChatTab {
+    static var name: String { "Fake" }
+    static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] { [Builder()] }
+
+    struct Builder: ChatTabBuilder {
+        var title: String = "Title"
+
+        func build() -> any ChatTab {
+            return FakeChatTab(id: "id", title: "Title")
         }
     }
 
+    func buildMenu() -> any View {
+        Text("Menu Item")
+        Text("Menu Item")
+        Text("Menu Item")
+    }
+
+    func buildView() -> any View {
+        ChatPanel(
+            chat: .init(
+                history: [
+                    .init(id: "1", role: .assistant, text: "Hello World"),
+                ],
+                isReceivingMessage: false
+            ),
+            typedMessage: "Hello World!"
+        )
+    }
+
+    override init(id: String, title: String) {
+        super.init(id: id, title: title)
+    }
+}
+
+struct ChatWindowView_Previews: PreviewProvider {
     static var previews: some View {
         ChatWindowView(
             store: .init(

@@ -14,10 +14,22 @@ let package = Package(
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
         .library(name: "ChatTab", targets: ["ChatTab"]),
+        .library(name: "Environment", targets: ["Environment"]),
+        .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
+        .library(
+            name: "AppMonitoring",
+            targets: [
+                "XcodeInspector",
+                "ActiveApplicationMonitor",
+                "AXExtension",
+                "AXNotificationStream",
+            ]
+        ),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
         .package(url: "https://github.com/intitni/Tiktoken", branch: "main"),
+        .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
@@ -41,6 +53,17 @@ let package = Package(
 
         .target(name: "ObjectiveCExceptionHandling"),
 
+        .target(
+            name: "Environment",
+            dependencies: [
+                "ActiveApplicationMonitor",
+                "AXExtension",
+                "Preferences",
+            ]
+        ),
+
+        .target(name: "ActiveApplicationMonitor"),
+
         .target(name: "USearchIndex", dependencies: [
             "ObjectiveCExceptionHandling",
             .product(name: "USearch", package: "usearch"),
@@ -58,6 +81,37 @@ let package = Package(
         .testTarget(
             name: "TokenEncoderTests",
             dependencies: ["TokenEncoder"]
+        ),
+
+        .target(
+            name: "SuggestionModel",
+            dependencies: ["LanguageClient"]
+        ),
+        
+            .testTarget(
+                name: "SuggestionModelTests",
+                dependencies: ["SuggestionModel"]
+            ),
+
+        .target(name: "AXExtension"),
+
+        .target(
+            name: "AXNotificationStream",
+            dependencies: [
+                "Logger",
+            ]
+        ),
+
+        .target(
+            name: "XcodeInspector",
+            dependencies: [
+                "AXExtension",
+                "SuggestionModel",
+                "Environment",
+                "AXNotificationStream",
+                "Logger",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+            ]
         ),
 
         // MARK: - Services

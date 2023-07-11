@@ -4,22 +4,40 @@ import ChatTab
 import ComposableArchitecture
 import SwiftUI
 
+public enum ChatTabBuilderCollection: Equatable {
+    case folder(title: String, kinds: [ChatTabKind])
+    case kind(ChatTabKind)
+}
+
+public struct ChatTabKind: Equatable {
+    public var builder: any ChatTabBuilder
+    var title: String { builder.title }
+
+    public init(_ builder: any ChatTabBuilder) {
+        self.builder = builder
+    }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.title == rhs.title
+    }
+}
+
 public struct ChatPanelFeature: ReducerProtocol {
     public struct ChatTabGroup: Equatable {
         public var tabs: [BaseChatTab]
-        public var tabTypes: [String]
         public var tabInfo: [ChatTabInfo]
+        public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
 
         init(
             tabs: [BaseChatTab] = [],
-            tabTypes: [String] = [],
             tabInfo: [ChatTabInfo] = [],
+            tabCollection: [ChatTabBuilderCollection] = [],
             selectedTabId: String? = nil
         ) {
             self.tabs = tabs
-            self.tabTypes = tabTypes
             self.tabInfo = tabInfo
+            self.tabCollection = tabCollection
             self.selectedTabId = selectedTabId
         }
 
@@ -48,8 +66,9 @@ public struct ChatPanelFeature: ReducerProtocol {
 
         // Tabs
         case updateChatTabInfo([ChatTabInfo])
+        case createNewTapButtonHovered
         case closeTabButtonClicked(id: String)
-        case createNewTapButtonClicked(type: String)
+        case createNewTapButtonClicked(kind: ChatTabKind?)
         case tabClicked(id: String)
         case appendAndSelectTab(BaseChatTab)
     }
@@ -58,6 +77,7 @@ public struct ChatPanelFeature: ReducerProtocol {
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.activatePreviouslyActiveXcode) var activatePreviouslyActiveXcode
     @Dependency(\.activateExtensionService) var activateExtensionService
+    @Dependency(\.chatTabBuilderCollection) var chatTabBuilderCollection
 
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -68,17 +88,17 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .run { _ in
                     await activatePreviouslyActiveXcode()
                 }
-                
+
             case .closeActiveTabClicked:
                 if let id = state.chatTapGroup.selectedTabId {
                     return .run { send in
                         await send(.closeTabButtonClicked(id: id))
                     }
                 }
-                
+
                 state.isPanelDisplayed = false
                 return .none
-                
+
             case .toggleChatPanelDetachedButtonClicked:
                 state.chatPanelInASeparateWindow.toggle()
                 return .none
@@ -125,6 +145,10 @@ public struct ChatPanelFeature: ReducerProtocol {
                 if state.chatTapGroup.tabs.isEmpty {
                     state.isPanelDisplayed = false
                 }
+                return .none
+                
+            case .createNewTapButtonHovered:
+                state.chatTapGroup.tabCollection = chatTabBuilderCollection()
                 return .none
 
             case .createNewTapButtonClicked:

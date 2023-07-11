@@ -2,20 +2,50 @@ import ChatService
 import ChatTab
 import Combine
 import Foundation
+import Preferences
 import SwiftUI
 
 /// A chat tab that provides a context aware chat bot, powered by ChatGPT.
 public class ChatGPTChatTab: ChatTab {
+    public static var name: String { "Chat" }
+
     public let service: ChatService
     public let provider: ChatProvider
     private var cancellable = Set<AnyCancellable>()
 
+    struct Builder: ChatTabBuilder {
+        var title: String
+        var customCommand: CustomCommand?
+
+        func build() -> any ChatTab {
+            let tab = ChatGPTChatTab()
+            Task {
+                if let customCommand {
+                    try await tab.service.handleCustomCommand(customCommand)
+                }
+            }
+            return tab
+        }
+    }
+
     public func buildView() -> any View {
         ChatPanel(chat: provider)
     }
-    
+
     public func buildMenu() -> any View {
         ChatContextMenu(chat: provider)
+    }
+
+    public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
+        let customCommands = UserDefaults.shared.value(for: \.customCommands).compactMap {
+            command in
+            if case .customChat = command.feature {
+                return Builder(title: command.name, customCommand: command)
+            }
+            return nil
+        }
+
+        return [Builder(title: "ChatGPT", customCommand: nil)] + customCommands
     }
 
     public init(service: ChatService = .init()) {
