@@ -62,7 +62,7 @@ open class BaseChatTab: Equatable {
 
     @ViewBuilder
     public var body: some View {
-        let id = "BaseChatTab\(info.id)"
+        let id = "ChatTabBody\(info.id)"
         if let tab = self as? ChatTabType {
             ContentView(info: info, buildView: tab.buildView).id(id)
         } else {
@@ -72,7 +72,12 @@ open class BaseChatTab: Equatable {
     
     @ViewBuilder
     public var menu: some View {
-        EmptyView()
+        let id = "ChatTabMenu\(info.id)"
+        if let tab = self as? ChatTabType {
+            ContentView(info: info, buildView: tab.buildMenu).id(id)
+        } else {
+            EmptyView().id(id)
+        }
     }
 
     public static func == (lhs: BaseChatTab, rhs: BaseChatTab) -> Bool {
@@ -83,6 +88,8 @@ open class BaseChatTab: Equatable {
 public protocol ChatTabType {
     @ViewBuilder
     func buildView() -> any View
+    @ViewBuilder
+    func buildMenu() -> any View
 }
 
 public class EmptyChatTab: ChatTab {
@@ -91,6 +98,10 @@ public class EmptyChatTab: ChatTab {
             Text("Empty-\(id)")
         }
         .background(Color.blue)
+    }
+    
+    public func buildMenu() -> any View {
+        EmptyView()
     }
 
     public init(id: String = UUID().uuidString) {

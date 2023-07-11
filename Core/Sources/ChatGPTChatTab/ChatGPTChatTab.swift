@@ -13,6 +13,10 @@ public class ChatGPTChatTab: ChatTab {
     public func buildView() -> any View {
         ChatPanel(chat: provider)
     }
+    
+    public func buildMenu() -> any View {
+        ChatContextMenu(chat: provider)
+    }
 
     public init(service: ChatService = .init()) {
         self.service = service

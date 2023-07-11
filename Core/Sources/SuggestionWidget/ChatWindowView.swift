@@ -73,6 +73,7 @@ struct ChatTabBar: View {
     let store: StoreOf<ChatPanelFeature>
 
     struct TabBarState: Equatable {
+        var tabs: [BaseChatTab]
         var tabInfo: [ChatTabInfo]
         var selectedTabId: String
     }
@@ -81,6 +82,7 @@ struct ChatTabBar: View {
         WithViewStore(
             store,
             observe: { TabBarState(
+                tabs: $0.chatTapGroup.tabs,
                 tabInfo: $0.chatTapGroup.tabInfo,
                 selectedTabId: $0.chatTapGroup.selectedTabId
                     ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
@@ -95,6 +97,13 @@ struct ChatTabBar: View {
                                 info: info,
                                 isSelected: info.id == viewStore.state.selectedTabId
                             )
+                            .contextMenu {
+                                if let tab = viewStore.state.tabs
+                                    .first(where: { $0.id == info.id })
+                                {
+                                    tab.menu
+                                }
+                            }
                         }
                     }
                 }
@@ -194,6 +203,12 @@ struct ChatTabContainer: View {
 
 struct ChatWindowView_Previews: PreviewProvider {
     class FakeChatTab: ChatTab {
+        func buildMenu() -> any View {
+            Text("Menu Item")
+            Text("Menu Item")
+            Text("Menu Item")
+        }
+        
         func buildView() -> any View {
             ChatPanel(
                 chat: .init(
