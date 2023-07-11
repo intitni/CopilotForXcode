@@ -43,27 +43,57 @@ struct PseudoCommandHandler {
         // Can't use handler if content is not available.
         guard
             let editor = await getEditorContent(sourceEditor: sourceEditor),
-            let filespace = await getFilespace()
-        else { return }
+            let filespace = await getFilespace(),
+            let (workspace, _) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: filespace.fileURL) else { return }
 
+        let fileURL = filespace.fileURL
+        let presenter = PresentInWindowSuggestionPresenter()
+
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        // Check if the current suggestion is still valid.
         if await filespace.validateSuggestions(
             lines: editor.lines,
             cursorPosition: editor.cursorPosition
         ) {
             return
         } else {
-            PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: filespace.fileURL)
+            presenter.discardSuggestion(fileURL: filespace.fileURL)
         }
+        
+        let snapshot = Filespace.Snapshot(
+            linesHash: editor.lines.hashValue,
+            cursorPosition: editor.cursorPosition
+        )
+        
+        guard await filespace.suggestionSourceSnapshot != snapshot else { return }
 
-        // Otherwise, get it from pseudo handler directly.
-        let handler = WindowBaseCommandHandler()
-        _ = try? await handler.generateRealtimeSuggestions(editor: editor)
+        do {
+            try await workspace.generateSuggestions(
+                forFileAt: fileURL,
+                editor: editor
+            )
+            if let sourceEditor {
+                _ = await filespace.validateSuggestions(
+                    lines: sourceEditor.content.lines,
+                    cursorPosition: sourceEditor.content.cursorPosition
+                )
+            }
+            if await filespace.presentingSuggestion != nil {
+                presenter.presentSuggestion(fileURL: fileURL)
+            } else {
+                presenter.discardSuggestion(fileURL: fileURL)
+            }
+        } catch {
+            return
+        }
     }
 
-    func invalidateRealtimeSuggestionsIfNeeded(sourceEditor: SourceEditor) async {
-        guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-              let (_, filespace) = try? await Workspace
-              .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
+    func invalidateRealtimeSuggestionsIfNeeded(fileURL: URL, sourceEditor: SourceEditor) async {
+        guard let (_, filespace) = try? await Workspace
+            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
 
         if await !filespace.validateSuggestions(
             lines: sourceEditor.content.lines,
@@ -94,7 +124,7 @@ struct PseudoCommandHandler {
             }
             switch command.feature {
             // editor content is not required.
-            case .customChat, .chatWithSelection:
+            case .customChat, .chatWithSelection, .singleRoundDialog:
                 return .init(
                     content: "",
                     lines: [],

@@ -11,14 +11,19 @@ enum Tab: Int, CaseIterable, Equatable {
     case debug
 }
 
+@MainActor
+let globalToastController = ToastController(messages: [])
+
 public struct TabContainer: View {
-    @StateObject var toastController = ToastController(messages: [])
+    @ObservedObject var toastController: ToastController
     @State var tab = Tab.general
 
-    public init() {}
+    public init() {
+        self.toastController = globalToastController
+    }
 
     init(toastController: ToastController) {
-        _toastController = StateObject(wrappedValue: toastController)
+        self.toastController = toastController
     }
 
     public var body: some View {
@@ -37,7 +42,7 @@ public struct TabContainer: View {
                 case .feature:
                     FeatureSettingsView()
                 case .customCommand:
-                    CustomCommandView()
+                    CustomCommandView(store: customCommandStore)
                 case .debug:
                     DebugSettingsView()
                 }

@@ -9,10 +9,11 @@ struct OpenAIView: View {
     final class Settings: ObservableObject {
         @AppStorage(\.openAIAPIKey) var openAIAPIKey: String
         @AppStorage(\.chatGPTModel) var chatGPTModel: String
+        @AppStorage(\.embeddingModel) var embeddingModel: String
         @AppStorage(\.openAIBaseURL) var openAIBaseURL: String
         init() {}
     }
-    
+
     let apiKeyURL = URL(string: "https://platform.openai.com/account/api-keys")!
     let modelURL = URL(
         string: "https://platform.openai.com/docs/models/model-endpoint-compatibility"
@@ -49,7 +50,11 @@ struct OpenAIView: View {
                         isTesting = true
                         defer { isTesting = false }
                         do {
-                            let reply = try await ChatGPTService(designatedProvider: .openAI)
+                            let reply =
+                                try await ChatGPTService(
+                                    configuration: UserPreferenceChatGPTConfiguration()
+                                        .overriding(.init(featureProvider: .openAI))
+                                )
                                 .sendAndWait(content: "Hello", summary: nil)
                             toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
                         } catch {
@@ -71,6 +76,26 @@ struct OpenAIView: View {
                     }
                 } label: {
                     Text("ChatGPT Model")
+                }.pickerStyle(.menu)
+                Button(action: {
+                    openURL(modelURL)
+                }) {
+                    Image(systemName: "questionmark.circle.fill")
+                }.buttonStyle(.plain)
+            }
+            
+            HStack {
+                Picker(selection: $settings.embeddingModel) {
+                    if !settings.embeddingModel.isEmpty,
+                       OpenAIEmbeddingModel(rawValue: settings.embeddingModel) == nil
+                    {
+                        Text(settings.embeddingModel).tag(settings.embeddingModel)
+                    }
+                    ForEach(OpenAIEmbeddingModel.allCases, id: \.self) { model in
+                        Text(model.rawValue).tag(model.rawValue)
+                    }
+                } label: {
+                    Text("Embedding Model")
                 }.pickerStyle(.menu)
                 Button(action: {
                     openURL(modelURL)

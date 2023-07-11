@@ -11,7 +11,7 @@ public final class ScheduledCleaner {
         Task { @ServiceActor in
             while !Task.isCancelled {
                 try await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
-                cleanUp()
+                await cleanUp()
             }
         }
 
@@ -20,14 +20,14 @@ public final class ScheduledCleaner {
             for await app in ActiveApplicationMonitor.createStream() {
                 try Task.checkCancellation()
                 if let app, !app.isXcode {
-                    cleanUp()
+                    await cleanUp()
                 }
             }
         }
     }
 
     @ServiceActor
-    func cleanUp() {
+    func cleanUp() async {
         let workspaceInfos = XcodeInspector.shared.xcodes.reduce(
             into: [
                 XcodeAppInstanceInspector.WorkspaceIdentifier:
@@ -47,7 +47,7 @@ public final class ScheduledCleaner {
             if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
                 for url in workspace.filespaces.keys {
-                    WidgetDataSource.shared.cleanup(for: url)
+                    await GraphicalUserInterfaceController.shared.widgetDataSource.cleanup(for: url)
                 }
                 workspace.cleanUp(availableTabs: [])
                 workspaces[url] = nil
@@ -62,7 +62,8 @@ public final class ScheduledCleaner {
                         availableTabs: tabs
                     ) {
                         Logger.service.info("Remove idle filespace")
-                        WidgetDataSource.shared.cleanup(for: url)
+                        await GraphicalUserInterfaceController.shared.widgetDataSource
+                            .cleanup(for: url)
                     }
                 }
                 // cleanup workspace
@@ -70,7 +71,7 @@ public final class ScheduledCleaner {
             }
         }
     }
-    
+
     @ServiceActor
     public func closeAllChildProcesses() async {
         for (_, workspace) in workspaces {

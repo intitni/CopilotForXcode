@@ -1,6 +1,7 @@
 import Foundation
 import PythonKit
 
+/// A special thread that has a larger stack size.
 final class PythonThread: Thread {
     static let shared = {
         let thread = PythonThread(

@@ -2,7 +2,8 @@ import AsyncAlgorithms
 import Foundation
 import Preferences
 
-typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody) -> CompletionStreamAPI
+typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody)
+    -> CompletionStreamAPI
 
 protocol CompletionStreamAPI {
     func callAsFunction() async throws -> (
@@ -12,10 +13,64 @@ protocol CompletionStreamAPI {
 }
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionRequestBody: Codable, Equatable {
+struct CompletionRequestBody: Encodable, Equatable {
     struct Message: Codable, Equatable {
+        /// The role of the message.
         var role: ChatMessage.Role
+        /// The content of the message.
         var content: String
+        /// When we want to reply to a function call with the result, we have to provide the
+        /// name of the function call, and include the result in `content`.
+        ///
+        /// - important: It's required when the role is `function`.
+        var name: String?
+        /// When the bot wants to call a function, it will reply with a function call in format:
+        /// ```json
+        /// {
+        ///   "name": "weather",
+        ///   "arguments": "{ \"location\": \"earth\" }"
+        /// }
+        /// ```
+        var function_call: MessageFunctionCall?
+    }
+
+    struct MessageFunctionCall: Codable, Equatable {
+        /// The name of the
+        var name: String
+        /// A JSON string.
+        var arguments: String?
+    }
+
+    enum FunctionCallStrategy: Encodable, Equatable {
+        /// Forbid the bot to call any function.
+        case none
+        /// Let the bot choose what function to call.
+        case auto
+        /// Force the bot to call a function with the given name.
+        case name(String)
+
+        struct CallFunctionNamed: Codable {
+            var name: String
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .none:
+                try container.encode("none")
+            case .auto:
+                try container.encode("auto")
+            case let .name(name):
+                try container.encode(CallFunctionNamed(name: name))
+            }
+        }
+    }
+
+    struct Function: Codable {
+        var name: String
+        var description: String
+        /// JSON schema.
+        var arguments: String
     }
 
     var model: String
@@ -30,6 +85,41 @@ struct CompletionRequestBody: Codable, Equatable {
     var frequency_penalty: Double?
     var logit_bias: [String: Double]?
     var user: String?
+    /// Pass nil to let the bot decide.
+    var function_call: FunctionCallStrategy?
+    var functions: [ChatGPTFunctionSchema]?
+
+    init(
+        model: String,
+        messages: [Message],
+        temperature: Double? = nil,
+        top_p: Double? = nil,
+        n: Double? = nil,
+        stream: Bool? = nil,
+        stop: [String]? = nil,
+        max_tokens: Int? = nil,
+        presence_penalty: Double? = nil,
+        frequency_penalty: Double? = nil,
+        logit_bias: [String: Double]? = nil,
+        user: String? = nil,
+        function_call: FunctionCallStrategy? = nil,
+        functions: [ChatGPTFunctionSchema] = []
+    ) {
+        self.model = model
+        self.messages = messages
+        self.temperature = temperature
+        self.top_p = top_p
+        self.n = n
+        self.stream = stream
+        self.stop = stop
+        self.max_tokens = max_tokens
+        self.presence_penalty = presence_penalty
+        self.frequency_penalty = frequency_penalty
+        self.logit_bias = logit_bias
+        self.user = user
+        self.function_call = function_call
+        self.functions = functions.isEmpty ? nil : functions
+    }
 }
 
 struct CompletionStreamDataTrunk: Codable {
@@ -45,8 +135,14 @@ struct CompletionStreamDataTrunk: Codable {
         var finish_reason: String?
 
         struct Delta: Codable {
+            struct FunctionCall: Codable {
+                var name: String?
+                var arguments: String?
+            }
+
             var role: ChatMessage.Role?
             var content: String?
+            var function_call: FunctionCall?
         }
     }
 }

@@ -1,15 +1,12 @@
 import AsyncAlgorithms
 import Foundation
-import GPTEncoder
 import Preferences
 
-public protocol ChatGPTServiceType: ObservableObject {
-    var history: [ChatMessage] { get async }
+public protocol ChatGPTServiceType {
+    var memory: ChatGPTMemory { get set }
+    var configuration: ChatGPTConfiguration { get set }
     func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
     func stopReceivingMessage() async
-    func clearHistory() async
-    func mutateSystemPrompt(_ newPrompt: String) async
-    func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -54,79 +51,92 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
     }
 }
 
-public actor ChatGPTService: ChatGPTServiceType {
-    public var systemPrompt: String
+public class ChatGPTService: ChatGPTServiceType {
+    public var memory: ChatGPTMemory
+    public var configuration: ChatGPTConfiguration
+    public var functionProvider: ChatGPTFunctionProvider
 
-    public var defaultTemperature: Double {
-        min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
-    }
-
-    var temperature: Double?
-
-    public var model: String {
-        let value = UserDefaults.shared.value(for: \.chatGPTModel)
-        if value.isEmpty { return "gpt-3.5-turbo" }
-        return value
-    }
-
-    var designatedProvider: ChatFeatureProvider?
-
-    public var endpoint: String {
-        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
-        case .openAI:
-            let baseURL = UserDefaults.shared.value(for: \.openAIBaseURL)
-            if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
-            return "\(baseURL)/v1/chat/completions"
-        case .azureOpenAI:
-            let baseURL = UserDefaults.shared.value(for: \.azureOpenAIBaseURL)
-            let deployment = UserDefaults.shared.value(for: \.azureChatGPTDeployment)
-            let version = "2023-05-15"
-            if baseURL.isEmpty { return "" }
-            return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
-        }
-    }
-
-    public var apiKey: String {
-        switch designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider) {
-        case .openAI:
-            return UserDefaults.shared.value(for: \.openAIAPIKey)
-        case .azureOpenAI:
-            return UserDefaults.shared.value(for: \.azureOpenAIAPIKey)
-        }
-    }
-
-    public var maxToken: Int {
-        UserDefaults.shared.value(for: \.chatGPTMaxToken)
-    }
-
-    public var history: [ChatMessage] = [] {
-        didSet { objectWillChange.send() }
-    }
-
-    var stop: [String]
     var uuidGenerator: () -> String = { UUID().uuidString }
     var cancelTask: Cancellable?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
     var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
 
     public init(
-        systemPrompt: String = "",
-        temperature: Double? = nil,
-        stop: [String] = [],
-        designatedProvider: ChatFeatureProvider? = nil
+        memory: ChatGPTMemory = AutoManagedChatGPTMemory(
+            systemPrompt: "",
+            configuration: UserPreferenceChatGPTConfiguration(),
+            functionProvider: NoChatGPTFunctionProvider()
+        ),
+        configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()
     ) {
-        self.systemPrompt = systemPrompt
-        self.temperature = temperature
-        self.stop = stop
-        self.designatedProvider = designatedProvider
+        self.memory = memory
+        self.configuration = configuration
+        self.functionProvider = functionProvider
     }
 
+    /// Send a message and stream the reply.
     public func send(
         content: String,
         summary: String? = nil
     ) async throws -> AsyncThrowingStream<String, Error> {
-        guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        
+        if !content.isEmpty || summary != nil {
+            let newMessage = ChatMessage(
+                id: uuidGenerator(),
+                role: .user,
+                content: content,
+                name: nil,
+                functionCall: nil,
+                summary: summary
+            )
+            await memory.appendMessage(newMessage)
+        }
+
+        return AsyncThrowingStream<String, Error> { continuation in
+            Task(priority: .userInitiated) {
+                do {
+                    var functionCall: ChatMessage.FunctionCall?
+                    var functionCallMessageID = ""
+                    var isInitialCall = true
+                    loop: while functionCall != nil || isInitialCall {
+                        isInitialCall = false
+                        if let call = functionCall {
+                            if !configuration.runFunctionsAutomatically {
+                                break loop
+                            }
+                            functionCall = nil
+                            await runFunctionCall(call, messageId: functionCallMessageID)
+                        }
+                        let stream = try await sendMemory()
+                        for try await content in stream {
+                            switch content {
+                            case let .text(text):
+                                continuation.yield(text)
+                            case let .functionCall(call):
+                                if functionCall == nil {
+                                    functionCallMessageID = uuidGenerator()
+                                    functionCall = call
+                                } else {
+                                    functionCall?.name.append(call.name)
+                                    functionCall?.arguments.append(call.arguments)
+                                }
+                                await prepareFunctionCall(call, messageId: functionCallMessageID)
+                            }
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// Send a message and get the reply in return.
+    public func sendAndWait(
+        content: String,
+        summary: String? = nil
+    ) async throws -> String? {
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
                 id: uuidGenerator(),
@@ -134,28 +144,85 @@ public actor ChatGPTService: ChatGPTServiceType {
                 content: content,
                 summary: summary
             )
-            history.append(newMessage)
+            await memory.appendMessage(newMessage)
         }
 
-        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        let message = try await sendMemoryAndWait()
+        var finalResult = message?.content
+        var functionCall = message?.functionCall
+        while let call = functionCall {
+            if !configuration.runFunctionsAutomatically {
+                break
+            }
+            functionCall = nil
+            await runFunctionCall(call)
+            guard let nextMessage = try await sendMemoryAndWait() else { break }
+            finalResult = nextMessage.content
+            functionCall = nextMessage.functionCall
+        }
+
+        return finalResult
+    }
+
+    public func stopReceivingMessage() {
+        cancelTask?()
+        cancelTask = nil
+    }
+}
+
+// - MARK: Internal
+
+extension ChatGPTService {
+    enum StreamContent {
+        case text(String)
+        case functionCall(ChatMessage.FunctionCall)
+    }
+
+    /// Send the memory as prompt to ChatGPT, with stream enabled.
+    func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
+        guard let url = URL(string: configuration.endpoint)
+        else { throw ChatGPTServiceError.endpointIncorrect }
+
+        let messages = await memory.messages.map {
+            CompletionRequestBody.Message(
+                role: $0.role,
+                content: $0.content ?? "",
+                name: $0.name,
+                function_call: $0.functionCall.map {
+                    .init(name: $0.name, arguments: $0.arguments)
+                }
+            )
+        }
+        let remainingTokens = await memory.remainingTokens
 
         let requestBody = CompletionRequestBody(
-            model: model,
+            model: configuration.model,
             messages: messages,
-            temperature: temperature ?? defaultTemperature,
+            temperature: configuration.temperature,
             stream: true,
-            stop: stop.isEmpty ? nil : stop,
-            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
+            stop: configuration.stop.isEmpty ? nil : configuration.stop,
+            max_tokens: maxTokenForReply(
+                model: configuration.model,
+                remainingTokens: remainingTokens
+            ),
+            function_call: nil,
+            functions: functionProvider.functions.map {
+                ChatGPTFunctionSchema(
+                    name: $0.name,
+                    description: $0.description,
+                    parameters: $0.argumentSchema
+                )
+            }
         )
 
         let api = buildCompletionStreamAPI(
-            apiKey,
-            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            configuration.apiKey,
+            configuration.featureProvider,
             url,
             requestBody
         )
 
-        return AsyncThrowingStream<String, Error> { continuation in
+        return AsyncThrowingStream<StreamContent, Error> { continuation in
             Task {
                 do {
                     let (trunks, cancel) = try await api()
@@ -163,26 +230,33 @@ public actor ChatGPTService: ChatGPTServiceType {
                     for try await trunk in trunks {
                         guard let delta = trunk.choices.first?.delta else { continue }
 
-                        if history.last?.id == trunk.id {
-                            if let role = delta.role {
-                                history[history.endIndex - 1].role = role
-                            }
-                            if let content = delta.content {
-                                history[history.endIndex - 1].content.append(content)
-                            }
-                        } else {
-                            history.append(.init(
-                                id: trunk.id,
-                                role: delta.role ?? .assistant,
-                                content: delta.content ?? ""
-                            ))
+                        // The api will always return a function call with JSON object.
+                        // The first round will contain the function name and an empty argument.
+                        // e.g. {"name":"weather","arguments":""}
+                        // The other rounds will contain part of the arguments.
+                        let functionCall = delta.function_call.map {
+                            ChatMessage.FunctionCall(
+                                name: $0.name ?? "",
+                                arguments: $0.arguments ?? ""
+                            )
+                        }
+
+                        await memory.streamMessage(
+                            id: trunk.id,
+                            role: delta.role,
+                            content: delta.content,
+                            functionCall: functionCall
+                        )
+
+                        if let functionCall {
+                            continuation.yield(.functionCall(functionCall))
                         }
 
                         if let content = delta.content {
-                            continuation.yield(content)
+                            continuation.yield(.text(content))
                         }
-                        
-                        try await Task.sleep(nanoseconds: 3_500_000)
+
+                        try await Task.sleep(nanoseconds: 3_000_000)
                     }
 
                     continuation.finish()
@@ -191,7 +265,7 @@ public actor ChatGPTService: ChatGPTServiceType {
                 } catch let error as NSError where error.code == NSURLErrorCancelled {
                     continuation.finish(throwing: error)
                 } catch {
-                    history.append(.init(
+                    await memory.appendMessage(.init(
                         role: .assistant,
                         content: error.localizedDescription
                     ))
@@ -201,70 +275,138 @@ public actor ChatGPTService: ChatGPTServiceType {
         }
     }
 
-    public func sendAndWait(
-        content: String,
-        summary: String? = nil
-    ) async throws -> String? {
-        guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
-        
-        if !content.isEmpty || summary != nil {
-            let newMessage = ChatMessage(
-                id: uuidGenerator(),
-                role: .user,
-                content: content,
-                summary: summary
-            )
-            history.append(newMessage)
-        }
+    /// Send the memory as prompt to ChatGPT, with stream disabled.
+    func sendMemoryAndWait() async throws -> ChatMessage? {
+        guard let url = URL(string: configuration.endpoint)
+        else { throw ChatGPTServiceError.endpointIncorrect }
 
-        let (messages, remainingTokens) = combineHistoryWithSystemPrompt()
+        let messages = await memory.messages.map {
+            CompletionRequestBody.Message(
+                role: $0.role,
+                content: $0.content ?? "",
+                name: $0.name,
+                function_call: $0.functionCall.map {
+                    .init(name: $0.name, arguments: $0.arguments)
+                }
+            )
+        }
+        let remainingTokens = await memory.remainingTokens
 
         let requestBody = CompletionRequestBody(
-            model: model,
+            model: configuration.model,
             messages: messages,
-            temperature: temperature ?? defaultTemperature,
+            temperature: configuration.temperature,
             stream: true,
-            stop: stop.isEmpty ? nil : stop,
-            max_tokens: maxTokenForReply(model: model, remainingTokens: remainingTokens)
+            stop: configuration.stop.isEmpty ? nil : configuration.stop,
+            max_tokens: maxTokenForReply(
+                model: configuration.model,
+                remainingTokens: remainingTokens
+            ),
+            function_call: nil,
+            functions: functionProvider.functions.map {
+                ChatGPTFunctionSchema(
+                    name: $0.name,
+                    description: $0.description,
+                    parameters: $0.argumentSchema
+                )
+            }
         )
 
         let api = buildCompletionAPI(
-            apiKey,
-            designatedProvider ?? UserDefaults.shared.value(for: \.chatFeatureProvider),
+            configuration.apiKey,
+            configuration.featureProvider,
             url,
             requestBody
         )
         let response = try await api()
 
-        if let choice = response.choices.first {
-            history.append(.init(
-                id: response.id,
-                role: choice.message.role,
-                content: choice.message.content
-            ))
+        guard let choice = response.choices.first else { return nil }
+        let message = ChatMessage(
+            id: response.id,
+            role: choice.message.role,
+            content: choice.message.content,
+            name: choice.message.name,
+            functionCall: choice.message.function_call.map {
+                ChatMessage.FunctionCall(name: $0.name, arguments: $0.arguments ?? "")
+            }
+        )
+        await memory.appendMessage(message)
+        return message
+    }
 
-            return choice.message.content
+    /// When a function call is detected, but arguments are not yet ready, we can call this
+    /// to insert a message placeholder in memory.
+    func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
+        guard var function = functionProvider.function(named: call.name) else { return }
+        let responseMessage = ChatMessage(
+            id: messageId,
+            role: .function,
+            content: nil,
+            name: call.name
+        )
+        await memory.appendMessage(responseMessage)
+        function.reportProgress = { [weak self] summary in
+            await self?.memory.updateMessage(id: messageId) { message in
+                message.summary = summary
+            }
+        }
+        await function.prepare()
+    }
+
+    /// Run a function call from the bot, and insert the result in memory.
+    @discardableResult
+    func runFunctionCall(
+        _ call: ChatMessage.FunctionCall,
+        messageId: String? = nil
+    ) async -> String {
+        let messageId = messageId ?? uuidGenerator()
+
+        guard var function = functionProvider.function(named: call.name) else {
+            let content = "Error: function not found"
+            let responseMessage = ChatMessage(
+                id: messageId,
+                role: .function,
+                content: content,
+                name: call.name,
+                summary: "Function `\(call.name)` not found."
+            )
+            await memory.appendMessage(responseMessage)
+            return content
         }
 
-        return nil
-    }
+        // Insert the chat message into memory to indicate the start of the function.
+        let responseMessage = ChatMessage(
+            id: messageId,
+            role: .function,
+            content: nil,
+            name: call.name
+        )
 
-    public func stopReceivingMessage() {
-        cancelTask?()
-        cancelTask = nil
-    }
+        await memory.appendMessage(responseMessage)
 
-    public func clearHistory() {
-        stopReceivingMessage()
-        history = []
-    }
+        function.reportProgress = { [weak self] summary in
+            await self?.memory.updateMessage(id: messageId) { message in
+                message.summary = summary
+            }
+        }
 
-    public func mutateSystemPrompt(_ newPrompt: String) {
-        systemPrompt = newPrompt
-    }
+        do {
+            // Run the function
+            let result = try await function.call(argumentsJsonString: call.arguments)
 
-    public func mutateHistory(_ mutate: (inout [ChatMessage]) -> Void) async {
-        mutate(&history)
+            await memory.updateMessage(id: messageId) { message in
+                message.content = result.botReadableContent
+            }
+
+            return result.botReadableContent
+        } catch {
+            // For errors, use the error message as the result.
+            let content = "Error: \(error.localizedDescription)"
+            await memory.updateMessage(id: messageId) { message in
+                message.content = content
+            }
+            return content
+        }
     }
 }
 
@@ -276,43 +418,10 @@ extension ChatGPTService {
     func changeUUIDGenerator(_ generator: @escaping () -> String) {
         uuidGenerator = generator
     }
-
-    func combineHistoryWithSystemPrompt(
-        minimumReplyTokens: Int = 300,
-        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        maxTokens: Int = UserDefaults.shared.value(for: \.chatGPTMaxToken),
-        encoder: TokenEncoder = GPTEncoder()
-    )
-        -> (messages: [CompletionRequestBody.Message], remainingTokens: Int)
-    {
-        var all: [CompletionRequestBody.Message] = []
-        var allTokensCount = encoder.encode(text: systemPrompt).count
-        for (index, message) in history.enumerated().reversed() {
-            if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
-            if message.content.isEmpty { continue }
-            let tokensCount = message.tokensCount ?? encoder.encode(text: message.content).count
-            history[index].tokensCount = tokensCount
-            if tokensCount + allTokensCount > maxTokens - minimumReplyTokens {
-                break
-            }
-            allTokensCount += tokensCount
-            all.append(.init(role: message.role, content: message.content))
-        }
-
-        if !systemPrompt.isEmpty {
-            all.append(.init(role: .system, content: systemPrompt))
-        }
-        return (all.reversed(), max(minimumReplyTokens, maxTokens - allTokensCount))
-    }
 }
 
-protocol TokenEncoder {
-    func encode(text: String) -> [Int]
-}
-
-extension GPTEncoder: TokenEncoder {}
-
-func maxTokenForReply(model: String, remainingTokens: Int) -> Int {
+func maxTokenForReply(model: String, remainingTokens: Int?) -> Int? {
+    guard let remainingTokens else { return nil }
     guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
     return min(model.maxToken / 2, remainingTokens)
 }

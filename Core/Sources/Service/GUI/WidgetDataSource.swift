@@ -1,5 +1,7 @@
 import ActiveApplicationMonitor
 import ChatService
+import ChatTab
+import ComposableArchitecture
 import Foundation
 import GitHubCopilotService
 import OpenAIService
@@ -7,19 +9,8 @@ import PromptToCodeService
 import SuggestionModel
 import SuggestionWidget
 
-@ServiceActor
+@MainActor
 final class WidgetDataSource {
-    static let shared = WidgetDataSource()
-
-    final class Chat {
-        let chatService: ChatService
-        let provider: ChatProvider
-        public init(chatService: ChatService, provider: ChatProvider) {
-            self.chatService = chatService
-            self.provider = provider
-        }
-    }
-
     final class PromptToCode {
         let promptToCodeService: PromptToCodeService
         let provider: PromptToCodeProvider
@@ -31,60 +22,10 @@ final class WidgetDataSource {
             self.provider = provider
         }
     }
-
-    private(set) var globalChat: Chat?
-    private(set) var chats = [URL: Chat]()
+ 
     private(set) var promptToCodes = [URL: PromptToCode]()
 
-    private init() {}
-
-    @discardableResult
-    func createChatIfNeeded(for url: URL) -> ChatService {
-        let build = {
-            let service = ChatService(chatGPTService: ChatGPTService())
-            let provider = ChatProvider(
-                service: service,
-                fileURL: url,
-                onCloseChat: { [weak self] in
-                    if UserDefaults.shared.value(for: \.useGlobalChat) {
-                        self?.globalChat = nil
-                    } else {
-                        self?.removeChat(for: url)
-                    }
-                    let presenter = PresentInWindowSuggestionPresenter()
-                    presenter.closeChatRoom(fileURL: url)
-                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
-                        app.activate()
-                    }
-                },
-                onSwitchContext: { [weak self] in
-                    let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
-                    UserDefaults.shared.set(!useGlobalChat, for: \.useGlobalChat)
-                    self?.createChatIfNeeded(for: url)
-                    let presenter = PresentInWindowSuggestionPresenter()
-                    presenter.presentChatRoom(fileURL: url)
-                }
-            )
-            return Chat(chatService: service, provider: provider)
-        }
-
-        let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
-        if useGlobalChat {
-            if let globalChat {
-                return globalChat.chatService
-            }
-            let newChat = build()
-            globalChat = newChat
-            return newChat.chatService
-        } else {
-            if let chat = chats[url] {
-                return chat.chatService
-            }
-            let newChat = build()
-            chats[url] = newChat
-            return newChat.chatService
-        }
-    }
+    init() {}
 
     @discardableResult
     func createPromptToCode(
@@ -121,7 +62,10 @@ final class WidgetDataSource {
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
                     if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
-                        app.activate()
+                        Task { @MainActor in
+                            try await Task.sleep(nanoseconds: 200_000_000)
+                            app.activate()
+                        }
                     }
                 }
             )
@@ -133,27 +77,22 @@ final class WidgetDataSource {
         return newPromptToCode.promptToCodeService
     }
 
-    func removeChat(for url: URL) {
-        chats[url] = nil
-    }
-
     func removePromptToCode(for url: URL) {
         promptToCodes[url] = nil
     }
 
     func cleanup(for url: URL) {
-        removeChat(for: url)
         removePromptToCode(for: url)
     }
 }
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider? {
-        for workspace in workspaces.values {
-            if let filespace = workspace.filespaces[url],
-               let suggestion = filespace.presentingSuggestion
+        for workspace in await workspaces.values {
+            if let filespace = await workspace.filespaces[url],
+               let suggestion = await filespace.presentingSuggestion
             {
-                return .init(
+                return await .init(
                     code: suggestion.text,
                     language: filespace.language,
                     startLineIndex: suggestion.position.line,
@@ -178,6 +117,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                             if let app = ActiveApplicationMonitor.previousActiveApplication,
                                app.isXcode
                             {
+                                try await Task.sleep(nanoseconds: 200_000_000)
                                 app.activate()
                             }
                         }
@@ -189,6 +129,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                             if let app = ActiveApplicationMonitor.previousActiveApplication,
                                app.isXcode
                             {
+                                try await Task.sleep(nanoseconds: 200_000_000)
                                 app.activate()
                             }
                         }
@@ -196,21 +137,6 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                 )
             }
         }
-        return nil
-    }
-
-    func chatForFile(at url: URL) async -> ChatProvider? {
-        let useGlobalChat = UserDefaults.shared.value(for: \.useGlobalChat)
-        if useGlobalChat {
-            if let globalChat {
-                return globalChat.provider
-            }
-        } else {
-            if let chat = chats[url] {
-                return chat.provider
-            }
-        }
-
         return nil
     }
 

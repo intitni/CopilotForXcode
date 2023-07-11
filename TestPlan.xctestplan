@@ -77,6 +77,27 @@
         "identifier" : "OpenAIServiceTests",
         "name" : "OpenAIServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ChatServiceTests",
+        "name" : "ChatServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "SharedUIComponentsTests",
+        "name" : "SharedUIComponentsTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "TokenEncoderTests",
+        "name" : "TokenEncoderTests"
+      }
     }
   ],
   "version" : 1

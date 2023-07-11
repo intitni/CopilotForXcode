@@ -1,9 +1,8 @@
 import SwiftUI
 
 struct ErrorPanel: View {
-    var viewModel: SharedPanelViewModel
-    var displayController: SharedPanelDisplayController
     var description: String
+    var onCloseButtonTap: () -> Void
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -15,10 +14,7 @@ struct ErrorPanel: View {
                 .background(Color.red)
             
             // close button
-            Button(action: {
-                displayController.isPanelDisplayed = false
-                viewModel.content = nil
-            }) {
+            Button(action: onCloseButtonTap) {
                 Image(systemName: "xmark")
                     .padding([.leading, .bottom], 16)
                     .padding([.top, .trailing], 8)

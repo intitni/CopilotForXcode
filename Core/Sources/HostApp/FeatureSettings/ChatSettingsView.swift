@@ -21,6 +21,8 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatGPTModel) var chatGPTModel
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
+        
+        @AppStorage(\.embeddingFeatureProvider) var embeddingFeatureProvider
 
         init() {}
     }
@@ -46,11 +48,19 @@ struct ChatSettingsView: View {
     var chatSettingsForm: some View {
         Form {
             Picker(
-                "Feature Provider",
+                "Chat Feature Provider",
                 selection: $settings.chatFeatureProvider
             ) {
                 Text("OpenAI").tag(ChatFeatureProvider.openAI)
                 Text("Azure OpenAI").tag(ChatFeatureProvider.azureOpenAI)
+            }
+            
+            Picker(
+                "Embedding Feature Provider",
+                selection: $settings.embeddingFeatureProvider
+            ) {
+                Text("OpenAI").tag(EmbeddingFeatureProvider.openAI)
+                Text("Azure OpenAI").tag(EmbeddingFeatureProvider.azureOpenAI)
             }
 
             if #available(macOS 13.0, *) {

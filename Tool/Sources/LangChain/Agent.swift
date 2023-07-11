@@ -20,6 +20,20 @@ public struct AgentAction: Equatable {
     }
 }
 
+public extension CallbackEvents {
+    struct AgentDidFinish: CallbackEvent {
+        public let info: AgentFinish
+    }
+
+    struct AgentActionDidStart: CallbackEvent {
+        public let info: AgentAction
+    }
+
+    struct AgentActionDidEnd: CallbackEvent {
+        public let info: AgentAction
+    }
+}
+
 public struct AgentFinish: Equatable {
     public var returnValue: String
     public var log: String
@@ -38,12 +52,12 @@ public enum AgentNextStep: Equatable {
 public enum AgentScratchPad: Equatable {
     case text(String)
     case messages([String])
-    
+
     var isEmpty: Bool {
         switch self {
-        case .text(let text):
+        case let .text(text):
             return text.isEmpty
-        case .messages(let messages):
+        case let .messages(messages):
             return messages.isEmpty
         }
     }
@@ -86,7 +100,7 @@ public extension Agent {
     func plan(
         input: Input,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> AgentNextStep {
         let input = getFullInputs(input: input, intermediateSteps: intermediateSteps)
         let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
@@ -97,7 +111,7 @@ public extension Agent {
         input: Input,
         earlyStoppedHandleType: AgentEarlyStopHandleType,
         intermediateSteps: [AgentAction],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> AgentFinish {
         switch earlyStoppedHandleType {
         case .force:
@@ -108,7 +122,7 @@ public extension Agent {
         case .generate:
             var thoughts = constructBaseScratchpad(intermediateSteps: intermediateSteps)
             thoughts += """
-            
+
             \(llmPrefix)I now need to return a final answer based on the previous steps:
             (Please continue with `Final Answer:`)
             """

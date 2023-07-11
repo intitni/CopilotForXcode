@@ -42,15 +42,20 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
-        .package(url: "https://github.com/ChimeHQ/LanguageClient", from: "0.3.1"),
+        // TODO: Update LanguageClient some day.
+        .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
+        .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
         .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
-        .package(url: "https://github.com/pvieito/PythonKit.git", branch: "master"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
+        .package(
+            url: "https://github.com/pointfreeco/swift-composable-architecture",
+            from: "0.55.0"
+        ),
     ],
     targets: [
         // MARK: - Main
@@ -80,14 +85,15 @@ let package = Package(
                 "SuggestionWidget",
                 "AXExtension",
                 "ChatService",
-                .product(name: "Logger", package: "Tool"),
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "UserDefaultsObserver",
+                "ChatTab",
+                .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
-                .product(name: "PythonKit", package: "PythonKit"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(
@@ -99,6 +105,7 @@ let package = Package(
                 "SuggestionInjector",
                 "XPCShared",
                 "Environment",
+                "SuggestionModel",
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -121,8 +128,10 @@ let package = Package(
                 "CodeiumService",
                 "SuggestionModel",
                 "LaunchAgentManager",
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 
@@ -185,17 +194,21 @@ let package = Package(
                 "SearchChatPlugin",
                 "ShortcutChatPlugin",
 
+                // context collectors
+                "WebChatContextCollector",
+
+                .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
+        .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
             name: "ChatPlugin",
             dependencies: [
                 "Environment",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
-                .product(name: "PythonKit", package: "PythonKit"),
             ]
         ),
         .target(
@@ -209,33 +222,65 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "ChatTab",
+            dependencies: [
+                "SharedUIComponents",
+                "ChatService",
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "Logger", package: "Tool"),
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+            ]
+        ),
+
         // MARK: - UI
+
+        .target(
+            name: "SharedUIComponents",
+            dependencies: [
+                "Highlightr",
+                "Splash",
+                .product(name: "Preferences", package: "Tool"),
+            ]
+        ),
+        .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
 
         .target(
             name: "SuggestionWidget",
             dependencies: [
+                "ChatTab",
                 "ActiveApplicationMonitor",
                 "AXNotificationStream",
                 "Environment",
-                "Highlightr",
-                "Splash",
                 "UserDefaultsObserver",
                 "XcodeInspector",
+                "SharedUIComponents",
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "SuggestionWidgetTests", dependencies: ["SuggestionWidget"]),
 
         // MARK: - Helpers
 
-        .target(name: "CGEventObserver"),
+        .target(
+            name: "CGEventObserver",
+            dependencies: [
+                .product(name: "Logger", package: "Tool"),
+            ]
+        ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),
         .target(name: "ActiveApplicationMonitor"),
-        .target(name: "AXNotificationStream"),
+        .target(
+            name: "AXNotificationStream",
+            dependencies: [
+                .product(name: "Logger", package: "Tool"),
+            ]
+        ),
         .target(
             name: "UpdateChecker",
             dependencies: [
@@ -275,6 +320,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
+                .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
             ]
         ),
         .testTarget(
@@ -304,7 +350,6 @@ let package = Package(
                 "ChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
-                .product(name: "PythonKit", package: "PythonKit"),
             ],
             path: "Sources/ChatPlugins/MathChatPlugin"
         ),
@@ -315,7 +360,7 @@ let package = Package(
                 "ChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
-                .product(name: "PythonKit", package: "PythonKit"),
+                .product(name: "ExternalServices", package: "Tool"),
             ],
             path: "Sources/ChatPlugins/SearchChatPlugin"
         ),
@@ -328,6 +373,20 @@ let package = Package(
                 .product(name: "Terminal", package: "Tool"),
             ],
             path: "Sources/ChatPlugins/ShortcutChatPlugin"
+        ),
+
+        // MAKR: - Chat Context Collector
+
+        .target(
+            name: "WebChatContextCollector",
+            dependencies: [
+                "ChatContextCollector",
+                .product(name: "LangChain", package: "Tool"),
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "ExternalServices", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+            ],
+            path: "Sources/ChatContextCollectors/WebChatContextCollector"
         ),
     ]
 )

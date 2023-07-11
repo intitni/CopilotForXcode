@@ -19,7 +19,7 @@ public class ChatModelChain<Input>: Chain {
 
     public func callLogic(
         _ input: Input,
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> Output {
         let prompt = promptTemplate(input)
         let output = try await chatModel.generate(

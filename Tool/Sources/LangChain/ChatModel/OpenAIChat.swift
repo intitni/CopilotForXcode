@@ -2,44 +2,49 @@ import Foundation
 import OpenAIService
 
 public struct OpenAIChat: ChatModel {
-    public var temperature: Double
+    public var configuration: ChatGPTConfiguration
     public var stream: Bool
 
     public init(
-        temperature: Double = 0.7,
-        stream: Bool = false
+        configuration: ChatGPTConfiguration,
+        stream: Bool
     ) {
-        self.temperature = temperature
+        self.configuration = configuration
         self.stream = stream
     }
 
     public func generate(
         prompt: [ChatMessage],
         stops: [String],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> String {
-        let service = ChatGPTService(temperature: temperature, stop: stops)
-        await service.mutateHistory { history in
-            for message in prompt {
-                let role: OpenAIService.ChatMessage.Role = {
-                    switch message.role {
-                    case .system:
-                        return .system
-                    case .user:
-                        return .user
-                    case .assistant:
-                        return .assistant
-                    }
-                }()
-                history.append(.init(role: role, content: message.content))
-            }
+        let memory = AutoManagedChatGPTMemory(
+            systemPrompt: "",
+            configuration: configuration,
+            functionProvider: NoChatGPTFunctionProvider()
+        )
+        let service = ChatGPTService(memory: memory, configuration: configuration)
+        for message in prompt {
+            let role: OpenAIService.ChatMessage.Role = {
+                switch message.role {
+                case .system:
+                    return .system
+                case .user:
+                    return .user
+                case .assistant:
+                    return .assistant
+                }
+            }()
+            await memory.appendMessage(.init(role: role, content: message.content))
         }
+
         if stream {
             let stream = try await service.send(content: "")
             var message = ""
             for try await trunk in stream {
                 message.append(trunk)
-                callbackManagers.forEach { $0.onLLMNewToken(token: trunk) }
+                callbackManagers
+                    .forEach { $0.send(CallbackEvents.LLMDidProduceNewToken(info: trunk)) }
             }
             return message
         } else {

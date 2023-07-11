@@ -1,9 +1,10 @@
 import AppKit
 import MarkdownUI
+import SharedUIComponents
 import SwiftUI
 
 enum Style {
-    static let panelHeight: Double = 500
+    static let panelHeight: Double = 560
     static let panelWidth: Double = 454
     static let inlineSuggestionMinWidth: Double = 540
     static let inlineSuggestionMaxHeight: Double = 400
@@ -89,7 +90,36 @@ extension MarkdownUI.Theme {
                         }
                     }
                 }
-                .markdownMargin(top: 0, bottom: 16)
+                .markdownMargin(top: 4, bottom: 16)
+        }
+    }
+
+    static func functionCall(fontSize: Double) -> MarkdownUI.Theme {
+        .gitHub.text {
+            ForegroundColor(.secondary)
+            BackgroundColor(Color.clear)
+            FontSize(fontSize - 1)
+        }
+        .list { configuration in
+            configuration.label
+                .markdownMargin(top: 4, bottom: 4)
+        }
+        .paragraph { configuration in
+            configuration.label
+                .markdownMargin(top: 0, bottom: 4)
+        }
+        .codeBlock { configuration in
+            configuration.label
+                .relativeLineSpacing(.em(0.225))
+                .markdownTextStyle {
+                    FontFamilyVariant(.monospaced)
+                    FontSize(.em(0.85))
+                }
+                .padding(16)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .markdownMargin(top: 4, bottom: 4)
         }
     }
 }
+

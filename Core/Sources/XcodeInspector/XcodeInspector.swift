@@ -226,22 +226,26 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     uiElement: window
                 )
                 focusedWindow = window
-                focusedWindowObservations.forEach { $0.cancel() }
-                focusedWindowObservations.removeAll()
 
-                documentURL = window.documentURL
-                projectURL = window.projectURL
+                // should find a better solution to do this thread safe
+                Task { @MainActor in
+                    focusedWindowObservations.forEach { $0.cancel() }
+                    focusedWindowObservations.removeAll()
 
-                window.$documentURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .sink { [weak self] url in
-                        self?.documentURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$projectURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .sink { [weak self] url in
-                        self?.projectURL = url
-                    }.store(in: &focusedWindowObservations)
+                    documentURL = window.documentURL
+                    projectURL = window.projectURL
+
+                    window.$documentURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .sink { [weak self] url in
+                            self?.documentURL = url
+                        }.store(in: &focusedWindowObservations)
+                    window.$projectURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .sink { [weak self] url in
+                            self?.projectURL = url
+                        }.store(in: &focusedWindowObservations)
+                }
             } else {
                 let window = XcodeWindowInspector(uiElement: window)
                 focusedWindow = window

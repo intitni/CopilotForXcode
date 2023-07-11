@@ -42,23 +42,17 @@ public actor ShortcutChatPlugin: ChatPlugin {
         guard let shortcutName, !shortcutName.isEmpty else {
             message.content =
                 "Please provide the shortcut name in format: `/\(Self.command)(shortcut name)`."
-            await chatGPTService.mutateHistory { history in
-                history.append(message)
-            }
+            await chatGPTService.memory.appendMessage(message)
             return
         }
 
         var input = String(content).trimmingCharacters(in: .whitespacesAndNewlines)
         if input.isEmpty {
             // if no input detected, use the previous message as input
-            input = await chatGPTService.history.last?.content ?? ""
-            await chatGPTService.mutateHistory { history in
-                history.append(.init(role: .user, content: originalMessage))
-            }
+            input = await chatGPTService.memory.messages.last?.content ?? ""
+            await chatGPTService.memory.appendMessage(.init(role: .user, content: originalMessage))
         } else {
-            await chatGPTService.mutateHistory { history in
-                history.append(.init(role: .user, content: originalMessage))
-            }
+            await chatGPTService.memory.appendMessage(.init(role: .user, content: originalMessage))
         }
 
         do {
@@ -71,7 +65,7 @@ public actor ShortcutChatPlugin: ChatPlugin {
                 .appendingPathComponent("\(id)-input.txt")
             let temporaryOutputFileURL = temporaryURL
                 .appendingPathComponent("\(id)-output")
-            
+
             try input.write(to: temporaryInputFileURL, atomically: true, encoding: .utf8)
 
             let command = """
@@ -86,7 +80,7 @@ public actor ShortcutChatPlugin: ChatPlugin {
                 currentDirectoryPath: "/",
                 environment: [:]
             )
-            
+
             await Task.yield()
 
             if FileManager.default.fileExists(atPath: temporaryOutputFileURL.path) {
@@ -96,33 +90,25 @@ public actor ShortcutChatPlugin: ChatPlugin {
                     if text.isEmpty {
                         message.content = "Finished"
                     }
-                    await chatGPTService.mutateHistory { history in
-                        history.append(message)
-                    }
+                    await chatGPTService.memory.appendMessage(message)
                 } else {
                     message.content = """
                     [View File](\(temporaryOutputFileURL))
                     """
-                    await chatGPTService.mutateHistory { history in
-                        history.append(message)
-                    }
+                    await chatGPTService.memory.appendMessage(message)
                 }
-                
+
                 return
             }
-            
+
             message.content = "Finished"
-            await chatGPTService.mutateHistory { history in
-                history.append(message)
-            }
+            await chatGPTService.memory.appendMessage(message)
         } catch {
             message.content = error.localizedDescription
             if error.localizedDescription.isEmpty {
                 message.content = "Error"
             }
-            await chatGPTService.mutateHistory { history in
-                history.append(message)
-            }
+            await chatGPTService.memory.appendMessage(message)
         }
     }
 

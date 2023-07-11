@@ -68,31 +68,50 @@ final class Filespace {
         lastSuggestionUpdateTime = Environment.now()
     }
 
+    /// Validate the suggestion is still valid.
+    /// - Parameters:
+    ///    - lines: lines of the file
+    ///    - cursorPosition: cursor position
+    /// - Returns: `true` if the suggestion is still valid
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
-        if cursorPosition.line != suggestionSourceSnapshot.cursorPosition.line {
+        guard let presentingSuggestion else { return false }
+
+        // cursor has moved to another line
+        if cursorPosition.line != presentingSuggestion.position.line {
             reset()
             return false
         }
 
+        // the cursor position is valid
         guard cursorPosition.line >= 0, cursorPosition.line < lines.count else {
             reset()
             return false
         }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
-        let suggestionLines = presentingSuggestion?.text.split(separator: "\n") ?? []
+        let suggestionLines = presentingSuggestion.text.split(separator: "\n")
         let suggestionFirstLine = suggestionLines.first ?? ""
-        if !suggestionFirstLine.hasPrefix(editingLine) {
-            reset()
-            return false
-        }
-        
-        if editingLine == suggestionFirstLine, suggestionLines.count <= 1 {
+
+        // the line content doesn't match the suggestion
+        if cursorPosition.character > 0,
+           !suggestionFirstLine.hasPrefix(editingLine[..<(editingLine.index(
+               editingLine.startIndex,
+               offsetBy: cursorPosition.character,
+               limitedBy: editingLine.endIndex
+           ) ?? editingLine.endIndex)])
+        {
             reset()
             return false
         }
 
-        if editingLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        // finished typing the whole suggestion when the suggestion has only one line
+        if editingLine.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
+            reset()
+            return false
+        }
+
+        // undo to a state before the suggestion was generated
+        if editingLine.count < presentingSuggestion.position.character {
             reset()
             return false
         }
@@ -281,10 +300,6 @@ extension Workspace {
         refreshUpdateTime()
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
-
-        if filespaces[fileURL] == nil {
-            filespaces[fileURL] = filespace
-        }
 
         if !editor.uti.isEmpty {
             filespace.uti = editor.uti

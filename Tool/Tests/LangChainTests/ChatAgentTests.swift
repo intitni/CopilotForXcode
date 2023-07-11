@@ -5,7 +5,7 @@ private struct FakeChatModel: ChatModel {
     func generate(
         prompt: [LangChain.ChatMessage],
         stops: [String],
-        callbackManagers: [LangChain.ChainCallbackManager]
+        callbackManagers: [LangChain.CallbackManager]
     ) async throws -> String {
         return "New Message"
     }

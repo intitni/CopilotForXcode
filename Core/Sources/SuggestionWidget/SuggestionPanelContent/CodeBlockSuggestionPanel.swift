@@ -1,3 +1,4 @@
+import SharedUIComponents
 import SwiftUI
 
 struct CodeBlockSuggestionPanel: View {
@@ -174,3 +175,4 @@ struct CodeBlockSuggestionPanel_Bright_Objc_Preview: PreviewProvider {
         }
     }
 }
+

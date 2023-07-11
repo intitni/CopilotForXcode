@@ -4,7 +4,7 @@ public protocol ChatModel {
     func generate(
         prompt: [ChatMessage],
         stops: [String],
-        callbackManagers: [ChainCallbackManager]
+        callbackManagers: [CallbackManager]
     ) async throws -> String
 }
 
@@ -21,5 +21,11 @@ public struct ChatMessage {
     public init(role: Role, content: String) {
         self.role = role
         self.content = content
+    }
+}
+
+public extension CallbackEvents {
+    struct LLMDidProduceNewToken: CallbackEvent {
+        public let info: String
     }
 }
