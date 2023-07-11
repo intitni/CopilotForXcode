@@ -316,7 +316,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                     if UserDefaults.shared.value(for: \.gitHubCopilotIgnoreTrailingNewLines) {
                         var updated = $0
                         var text = updated.text[...]
-                        while text.hasSuffix("\n") {
+                        while let last = text.last, last.isNewline || last.isWhitespace {
                             text = text.dropLast(1)
                         }
                         updated.text = String(text)
