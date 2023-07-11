@@ -224,7 +224,7 @@ public struct WidgetFeature: ReducerProtocol {
                                     // clicked
                                     // before the completion panel updates the location of the
                                     // suggestion panel
-                                    try await Task.sleep(nanoseconds: 200_000_000)
+                                    try await Task.sleep(nanoseconds: 400_000_000)
                                 }
                                 continuation.yield()
                             }
