@@ -28,9 +28,14 @@ public final class WebChatContextCollector: ChatContextCollector {
 
 extension WebChatContextCollector {
     static func detectLinks(from messages: [ChatMessage]) -> [String] {
-        return messages.lazy.compactMap(\.content).map(detectLinks(from:)).flatMap { $0 }
+        return messages.lazy
+            .compactMap {
+                $0.content ?? $0.functionCall?.arguments
+            }
+            .map(detectLinks(from:))
+            .flatMap { $0 }
     }
-    
+
     static func detectLinks(from content: String) -> [String] {
         var links = [String]()
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
