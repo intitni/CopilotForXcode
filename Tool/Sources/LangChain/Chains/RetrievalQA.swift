@@ -183,16 +183,17 @@ public final class RefineDocumentChain: Chain {
             output = try await refinementChatModel.call(
                 .init(
                     question: input.question,
-                    previousAnswer: output,
+                    previousAnswer: content,
                     document: document.document.pageContent,
                     distance: document.distance
                 ),
                 callbackManagers: callbackManagers
             )
+            content = output.content ?? ""
             callbackManagers
-                .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
+                .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: content))
         }
-        return output
+        return content
     }
 
     public func parseOutput(_ output: String) -> String {
