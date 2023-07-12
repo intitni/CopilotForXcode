@@ -10,7 +10,25 @@ protocol CompletionAPI {
 
 /// https://platform.openai.com/docs/api-reference/chat/create
 struct CompletionResponseBody: Codable, Equatable {
-    typealias Message = CompletionRequestBody.Message
+    struct Message: Codable, Equatable {
+        /// The role of the message.
+        var role: ChatMessage.Role
+        /// The content of the message.
+        var content: String?
+        /// When we want to reply to a function call with the result, we have to provide the
+        /// name of the function call, and include the result in `content`.
+        ///
+        /// - important: It's required when the role is `function`.
+        var name: String?
+        /// When the bot wants to call a function, it will reply with a function call in format:
+        /// ```json
+        /// {
+        ///   "name": "weather",
+        ///   "arguments": "{ \"location\": \"earth\" }"
+        /// }
+        /// ```
+        var function_call: CompletionRequestBody.MessageFunctionCall?
+    }
 
     struct Choice: Codable, Equatable {
         var message: Message
@@ -89,7 +107,12 @@ struct OpenAICompletionAPI: CompletionAPI {
                 .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
         }
 
-        return try JSONDecoder().decode(CompletionResponseBody.self, from: result)
+        do {
+            return try JSONDecoder().decode(CompletionResponseBody.self, from: result)
+        } catch {
+            dump(error)
+            fatalError()
+        }
     }
 }
 

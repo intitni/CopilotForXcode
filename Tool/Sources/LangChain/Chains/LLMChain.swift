@@ -1,7 +1,7 @@
 import Foundation
 
 public class ChatModelChain<Input>: Chain {
-    public typealias Output = String
+    public typealias Output = ChatMessage
 
     var chatModel: ChatModel
     var promptTemplate: (Input) -> [ChatMessage]
@@ -31,7 +31,13 @@ public class ChatModelChain<Input>: Chain {
     }
 
     public func parseOutput(_ output: Output) -> String {
-        output
+        if let content = output.content {
+            return content
+        } else if let functionCall = output.functionCall {
+            return "\(functionCall.name): \(functionCall.arguments)"
+        }
+        
+        return ""
     }
 }
 

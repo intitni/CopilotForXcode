@@ -21,7 +21,7 @@ public actor TemporaryUSearch: VectorStore {
     public init(identifier: String) {
         self.identifier = calculateMD5Hash(identifier)
         index = .init(
-            metric: .cos,
+            metric: .IP,
             dimensions: 1536, // text-embedding-ada-002
             connectivity: 16,
             quantization: .F32

@@ -1,9 +1,9 @@
 import Foundation
+import OpenAIService
 
 public final class RetrievalQAChain: Chain {
     let vectorStore: VectorStore
     let embedding: Embeddings
-    let chatModelFactory: () -> ChatModel
 
     public struct Output {
         public var answer: String
@@ -12,12 +12,10 @@ public final class RetrievalQAChain: Chain {
 
     public init(
         vectorStore: VectorStore,
-        embedding: Embeddings,
-        chatModelFactory: @escaping () -> ChatModel
+        embedding: Embeddings
     ) {
         self.vectorStore = vectorStore
         self.embedding = embedding
-        self.chatModelFactory = chatModelFactory
     }
 
     public func callLogic(
@@ -29,7 +27,10 @@ public final class RetrievalQAChain: Chain {
             embeddings: embeddedQuestion,
             count: 5
         )
-        let refinementChain = RefineDocumentChain(chatModelFactory: chatModelFactory)
+
+        callbackManagers.send(CallbackEvents.RetrievalQADidExtractRelevantContent(info: documents))
+
+        let refinementChain = RefineDocumentChain()
         let answer = try await refinementChain.run(
             .init(question: input, documents: documents),
             callbackManagers: callbackManagers
@@ -45,7 +46,11 @@ public final class RetrievalQAChain: Chain {
 
 public extension CallbackEvents {
     struct RetrievalQADidGenerateIntermediateAnswer: CallbackEvent {
-        public let info: String
+        public let info: RefineDocumentChain.IntermediateAnswer
+    }
+
+    struct RetrievalQADidExtractRelevantContent: CallbackEvent {
+        public let info: [(document: Document, distance: Float)]
     }
 }
 
@@ -55,87 +60,182 @@ public final class RefineDocumentChain: Chain {
         var documents: [(document: Document, distance: Float)]
     }
 
-    struct InitialInput {
-        var question: String
-        var document: String
-        var distance: Float
-    }
-
     struct RefinementInput {
+        var index: Int
+        var totalCount: Int
         var question: String
-        var previousAnswer: String
+        var previousAnswer: String?
         var document: String
         var distance: Float
     }
 
-    let initialChatModel: ChatModelChain<InitialInput>
-    let refinementChatModel: ChatModelChain<RefinementInput>
+    public struct IntermediateAnswer: Decodable {
+        public var answer: String
+        public var usefulness: Double
+        public var more: Bool
 
-    public init(chatModelFactory: () -> ChatModel) {
-        initialChatModel = .init(
-            chatModel: chatModelFactory(),
+        public enum CodingKeys: String, CodingKey {
+            case answer
+            case usefulness
+            case more
+        }
+
+        init(answer: String, usefulness: Double, more: Bool) {
+            self.answer = answer
+            self.usefulness = usefulness
+            self.more = more
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            answer = try container.decode(String.self, forKey: .answer)
+            usefulness = (try? container.decode(Double.self, forKey: .usefulness)) ?? 0
+            more = (try? container.decode(Bool.self, forKey: .more)) ?? true
+        }
+    }
+
+    class FunctionProvider: ChatGPTFunctionProvider {
+        var functionCallStrategy: FunctionCallStrategy? = .name("respond")
+        var functions: [any ChatGPTFunction] = [RespondFunction()]
+    }
+
+    struct RespondFunction: ChatGPTFunction {
+        typealias Arguments = IntermediateAnswer
+
+        struct Result: ChatGPTFunctionResult {
+            var botReadableContent: String { "" }
+        }
+
+        var reportProgress: (String) async -> Void = { _ in }
+
+        var name: String = "respond"
+        var description: String = "Respond with the refined answer"
+        var argumentSchema: JSONSchemaValue {
+            return [
+                .type: "object",
+                .properties: [
+                    "answer": [
+                        .type: "string",
+                        .description: "The refined answer",
+                    ],
+                    "usefulness": [
+                        .type: "number",
+                        .description: "How useful the page of document is in generating the answer, the higher the better. 0 to 10",
+                    ],
+                    "more": [
+                        .type: "boolean",
+                        .description: "Whether you want to read the next page. The next page maybe less relevant to the question",
+                    ],
+                ],
+                .required: ["answer", "more", "usefulness"],
+            ]
+        }
+
+        func prepare() async {}
+
+        func call(arguments: Arguments) async throws -> Result {
+            return Result()
+        }
+    }
+
+    func buildChatModel() -> ChatModelChain<RefinementInput> {
+        .init(
+            chatModel: OpenAIChat(
+                configuration: UserPreferenceChatGPTConfiguration().overriding {
+                    $0.temperature = 0
+                    $0.runFunctionsAutomatically = false
+                },
+                memory: EmptyChatGPTMemory(),
+                functionProvider: FunctionProvider(),
+                stream: false
+            ),
             promptTemplate: { input in [
-                .init(role: .system, content: """
-                The user will send you a question, you must answer it at your best.
-                You can use the following document as a reference:###
-                \(input.document)
-                ###
-                """),
-                .init(role: .user, content: input.question),
-            ] }
-        )
-        refinementChatModel = .init(
-            chatModel: chatModelFactory(),
-            promptTemplate: { input in [
-                .init(role: .system, content: """
-                The user will send you a question, you must refine your previous answer to it at your best.
-                You should focus on answering the question, there is no need to add extra details in other topics.
-                Previous answer:###
-                \(input.previousAnswer)
-                ###
-                You can use the following document as a reference:###
-                \(input.document)
-                ###
-                """),
+                .init(
+                    role: .system,
+                    content: {
+                        if let previousAnswer = input.previousAnswer {
+                            return """
+                            The user will send you a question about a document, you must refine your previous answer to it only according to the document.
+                            Previous answer:###
+                            \(previousAnswer)
+                            ###
+                            Page \(input.index) of \(input.totalCount) of the document:###
+                            \(input.document)
+                            ###
+                            """
+                        } else {
+                            return """
+                            The user will send you a question about a document, you must answer it only according to the document.
+                            Page \(input.index) of \(input.totalCount) of the document:###
+                            \(input.document)
+                            ###
+                            """
+                        }
+                    }()
+
+                ),
                 .init(role: .user, content: input.question),
             ] }
         )
     }
+
+    public init() {}
 
     public func callLogic(
         _ input: Input,
         callbackManagers: [CallbackManager]
     ) async throws -> String {
-        guard let firstDocument = input.documents.first else {
-            return ""
-        }
-        var output = try await initialChatModel.call(
-            .init(
-                question: input.question,
-                document: firstDocument.document.pageContent,
-                distance: firstDocument.distance
-            ),
-            callbackManagers: callbackManagers
-        )
-        callbackManagers.send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
-        for document in input.documents.dropFirst(1) {
-            output = try await refinementChatModel.call(
+        var intermediateAnswer: IntermediateAnswer?
+
+        for (index, document) in input.documents.enumerated() {
+            if let intermediateAnswer, !intermediateAnswer.more { break }
+
+            let output = try await buildChatModel().call(
                 .init(
+                    index: index,
+                    totalCount: input.documents.count,
                     question: input.question,
-                    previousAnswer: output,
+                    previousAnswer: intermediateAnswer?.answer,
                     document: document.document.pageContent,
                     distance: document.distance
                 ),
                 callbackManagers: callbackManagers
             )
-            callbackManagers
-                .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
+            intermediateAnswer = extractAnswer(output)
+            
+            if let intermediateAnswer {
+                callbackManagers.send(
+                    CallbackEvents
+                        .RetrievalQADidGenerateIntermediateAnswer(info: intermediateAnswer)
+                )
+            }
         }
-        return output
+
+        return intermediateAnswer?.answer ?? "None"
     }
 
     public func parseOutput(_ output: String) -> String {
         return output
+    }
+
+    func extractAnswer(_ chatMessage: ChatMessage) -> IntermediateAnswer {
+        if let functionCall = chatMessage.functionCall {
+            do {
+                let intermediateAnswer = try JSONDecoder().decode(
+                    IntermediateAnswer.self,
+                    from: functionCall.arguments.data(using: .utf8) ?? Data()
+                )
+                return intermediateAnswer
+            } catch {
+                let intermediateAnswer = IntermediateAnswer(
+                    answer: functionCall.arguments,
+                    usefulness: 0,
+                    more: true
+                )
+                return intermediateAnswer
+            }
+        }
+        return .init(answer: chatMessage.content ?? "", usefulness: 0, more: true)
     }
 }
 

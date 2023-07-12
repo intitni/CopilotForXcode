@@ -3,13 +3,19 @@ import OpenAIService
 
 public struct OpenAIChat: ChatModel {
     public var configuration: ChatGPTConfiguration
+    public var memory: ChatGPTMemory
+    public var functionProvider: ChatGPTFunctionProvider
     public var stream: Bool
 
     public init(
-        configuration: ChatGPTConfiguration,
+        configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        memory: ChatGPTMemory = ConversationChatGPTMemory(systemPrompt: ""),
+        functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider(),
         stream: Bool
     ) {
         self.configuration = configuration
+        self.memory = memory
+        self.functionProvider = functionProvider
         self.stream = stream
     }
 
@@ -17,25 +23,14 @@ public struct OpenAIChat: ChatModel {
         prompt: [ChatMessage],
         stops: [String],
         callbackManagers: [CallbackManager]
-    ) async throws -> String {
-        let memory = AutoManagedChatGPTMemory(
-            systemPrompt: "",
+    ) async throws -> ChatMessage {
+        let service = ChatGPTService(
+            memory: memory,
             configuration: configuration,
-            functionProvider: NoChatGPTFunctionProvider()
+            functionProvider: functionProvider
         )
-        let service = ChatGPTService(memory: memory, configuration: configuration)
         for message in prompt {
-            let role: OpenAIService.ChatMessage.Role = {
-                switch message.role {
-                case .system:
-                    return .system
-                case .user:
-                    return .user
-                case .assistant:
-                    return .assistant
-                }
-            }()
-            await memory.appendMessage(.init(role: role, content: message.content))
+            await memory.appendMessage(message)
         }
 
         if stream {
@@ -43,12 +38,12 @@ public struct OpenAIChat: ChatModel {
             var message = ""
             for try await trunk in stream {
                 message.append(trunk)
-                callbackManagers
-                    .forEach { $0.send(CallbackEvents.LLMDidProduceNewToken(info: trunk)) }
+                callbackManagers.send(CallbackEvents.LLMDidProduceNewToken(info: trunk))
             }
-            return message
+            return await memory.messages.last ?? .init(role: .assistant, content: "")
         } else {
-            return try await service.sendAndWait(content: "") ?? ""
+            let _ = try await service.sendAndWait(content: "")
+            return await memory.messages.last ?? .init(role: .assistant, content: "")
         }
     }
 }
