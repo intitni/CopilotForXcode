@@ -3,5 +3,6 @@
     <pages>
         <page name='RetrievalQAChain'/>
         <page name='WebScrapper'/>
+        <page name='ASTParsing'/>
     </pages>
 </playground>

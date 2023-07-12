@@ -208,6 +208,15 @@
       }
     },
     {
+      "identity" : "swifttreesitter",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ChimeHQ/SwiftTreeSitter",
+      "state" : {
+        "revision" : "df25a52f72ebc5b50ae20d26d1363793408bb28b",
+        "version" : "0.7.1"
+      }
+    },
+    {
       "identity" : "swiftui-navigation",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swiftui-navigation",
@@ -223,6 +232,24 @@
       "state" : {
         "branch" : "main",
         "revision" : "6a2ac324c6daec167ca95268d5a487e6de6a1cea"
+      }
+    },
+    {
+      "identity" : "tree-sitter-objc",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/lukepistrol/tree-sitter-objc",
+      "state" : {
+        "branch" : "feature/spm",
+        "revision" : "1b54ef0b5efddddf393b45e173788499cc572048"
+      }
+    },
+    {
+      "identity" : "tree-sitter-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alex-pinkus/tree-sitter-swift",
+      "state" : {
+        "branch" : "with-generated-files",
+        "revision" : "eda05af7ac41adb4eb19c346883c0fa32fe3bdd8"
       }
     },
     {
