@@ -204,14 +204,19 @@ enum ChatTabFactory {
 
 enum ChatTabFactory {
     static var chatTabBuilderCollection: [ChatTabBuilderCollection] {
-        func folderIfNeeded(_ builders: [any ChatTabBuilder]) -> ChatTabBuilderCollection? {
-            if builders.count > 1 { return .folder(builders) }
-            if let first = builders.first { return .type(first) }
+        func folderIfNeeded(
+            _ builders: [any ChatTabBuilder],
+            title: String
+        ) -> ChatTabBuilderCollection? {
+            if builders.count > 1 {
+                return .folder(title: title, kinds: builders.map(ChatTabKind.init))
+            }
+            if let first = builders.first { return .kind(ChatTabKind(first)) }
             return nil
         }
 
         return [
-            folderIfNeeded(ChatGPTChatTab.chatBuilders()),
+            folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
         ].compactMap { $0 }
     }
 }
