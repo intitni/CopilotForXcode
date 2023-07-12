@@ -205,7 +205,7 @@ extension ChatGPTService {
                 model: configuration.model,
                 remainingTokens: remainingTokens
             ),
-            function_call: nil,
+            function_call: functionProvider.functionCallStrategy,
             functions: functionProvider.functions.map {
                 ChatGPTFunctionSchema(
                     name: $0.name,
@@ -302,7 +302,7 @@ extension ChatGPTService {
                 model: configuration.model,
                 remainingTokens: remainingTokens
             ),
-            function_call: nil,
+            function_call: functionProvider.functionCallStrategy,
             functions: functionProvider.functions.map {
                 ChatGPTFunctionSchema(
                     name: $0.name,
@@ -318,6 +318,7 @@ extension ChatGPTService {
             url,
             requestBody
         )
+
         let response = try await api()
 
         guard let choice = response.choices.first else { return nil }

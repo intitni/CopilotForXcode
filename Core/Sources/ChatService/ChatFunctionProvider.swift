@@ -15,5 +15,9 @@ final class ChatFunctionProvider {
     }
 }
 
-extension ChatFunctionProvider: ChatGPTFunctionProvider {}
+extension ChatFunctionProvider: ChatGPTFunctionProvider {
+    var functionCallStrategy: OpenAIService.FunctionCallStrategy? {
+        nil
+    }
+}
 

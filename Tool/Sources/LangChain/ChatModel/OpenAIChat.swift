@@ -38,8 +38,7 @@ public struct OpenAIChat: ChatModel {
             var message = ""
             for try await trunk in stream {
                 message.append(trunk)
-                callbackManagers
-                    .forEach { $0.send(CallbackEvents.LLMDidProduceNewToken(info: trunk)) }
+                callbackManagers.send(CallbackEvents.LLMDidProduceNewToken(info: trunk))
             }
             return await memory.messages.last ?? .init(role: .assistant, content: "")
         } else {

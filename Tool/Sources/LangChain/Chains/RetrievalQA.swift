@@ -43,7 +43,7 @@ public final class RetrievalQAChain: Chain {
 
 public extension CallbackEvents {
     struct RetrievalQADidGenerateIntermediateAnswer: CallbackEvent {
-        public let info: String
+        public let info: RefineDocumentChain.IntermediateAnswer
     }
 }
 
@@ -66,16 +66,38 @@ public final class RefineDocumentChain: Chain {
         var distance: Float
     }
 
+    public struct IntermediateAnswer: Decodable {
+        public var answer: String
+        public var score: Double
+        public var more: Bool
+
+        public enum CodingKeys: String, CodingKey {
+            case answer
+            case score
+            case more
+        }
+
+        init(answer: String, score: Double, more: Bool) {
+            self.answer = answer
+            self.score = score
+            self.more = more
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            answer = try container.decode(String.self, forKey: .answer)
+            score = (try? container.decode(Double.self, forKey: .score)) ?? 0
+            more = (try? container.decode(Bool.self, forKey: .more)) ?? (score < 6)
+        }
+    }
+
     class FunctionProvider: ChatGPTFunctionProvider {
-        var functions: [any ChatGPTFunction] = []
+        var functionCallStrategy: FunctionCallStrategy? = .name("respond")
+        var functions: [any ChatGPTFunction] = [RespondFunction()]
     }
 
     struct RespondFunction: ChatGPTFunction {
-        struct Arguments: Codable {
-            var answer: String
-            var score: Double
-            var more: Bool
-        }
+        typealias Arguments = IntermediateAnswer
 
         struct Result: ChatGPTFunctionResult {
             var botReadableContent: String { "" }
@@ -91,17 +113,18 @@ public final class RefineDocumentChain: Chain {
                 .properties: [
                     "answer": [
                         .type: "string",
-                        .description: "The answer",
+                        .description: "The refined answer",
                     ],
                     "score": [
                         .type: "number",
-                        .description: "The score of the answer, the higher the better",
+                        .description: "The score of the answer, the higher the better. 0 to 10.",
                     ],
                     "more": [
                         .type: "boolean",
                         .description: "Whether more information is needed to complete the answer",
                     ],
                 ],
+                .required: ["answer", "score", "more"],
             ]
         }
 
@@ -114,18 +137,16 @@ public final class RefineDocumentChain: Chain {
 
     let initialChatModel: ChatModelChain<InitialInput>
     let refinementChatModel: ChatModelChain<RefinementInput>
-    let initialChatMemory: ChatGPTMemory
-    let refinementChatMemory: ChatGPTMemory
 
     public init() {
-        initialChatMemory = ConversationChatGPTMemory(systemPrompt: "")
-        refinementChatMemory = ConversationChatGPTMemory(systemPrompt: "")
-
         initialChatModel = .init(
             chatModel: OpenAIChat(
-                configuration: UserPreferenceChatGPTConfiguration()
-                    .overriding(.init(temperature: 0)),
-                memory: initialChatMemory,
+                configuration: UserPreferenceChatGPTConfiguration().overriding {
+                    $0.temperature = 0
+                    $0.runFunctionsAutomatically = false
+                },
+                memory: EmptyChatGPTMemory(),
+                functionProvider: FunctionProvider(),
                 stream: false
             ),
             promptTemplate: { input in [
@@ -140,9 +161,12 @@ public final class RefineDocumentChain: Chain {
         )
         refinementChatModel = .init(
             chatModel: OpenAIChat(
-                configuration: UserPreferenceChatGPTConfiguration()
-                    .overriding(.init(temperature: 0)),
-                memory: refinementChatMemory,
+                configuration: UserPreferenceChatGPTConfiguration().overriding {
+                    $0.temperature = 0
+                    $0.runFunctionsAutomatically = false
+                },
+                memory: EmptyChatGPTMemory(),
+                functionProvider: FunctionProvider(),
                 stream: false
             ),
             promptTemplate: { input in [
@@ -168,6 +192,26 @@ public final class RefineDocumentChain: Chain {
         guard let firstDocument = input.documents.first else {
             return ""
         }
+
+        func extractAnswer(_ chatMessage: ChatMessage) -> IntermediateAnswer {
+            if let functionCall = chatMessage.functionCall {
+                do {
+                    let intermediateAnswer = try JSONDecoder().decode(
+                        IntermediateAnswer.self,
+                        from: functionCall.arguments.data(using: .utf8) ?? Data()
+                    )
+                    return intermediateAnswer
+                } catch {
+                    let intermediateAnswer = IntermediateAnswer(
+                        answer: functionCall.arguments,
+                        score: 0,
+                        more: true
+                    )
+                    return intermediateAnswer
+                }
+            }
+            return .init(answer: chatMessage.content ?? "", score: 0, more: true)
+        }
         var output = try await initialChatModel.call(
             .init(
                 question: input.question,
@@ -176,24 +220,27 @@ public final class RefineDocumentChain: Chain {
             ),
             callbackManagers: callbackManagers
         )
-        guard var content = output.content else { return "" }
-        callbackManagers
-            .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: content))
-        for document in input.documents.dropFirst(1) {
+        var intermediateAnswer = extractAnswer(output)
+        callbackManagers.send(
+            CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: intermediateAnswer)
+        )
+
+        for document in input.documents.dropFirst(1) where intermediateAnswer.more {
             output = try await refinementChatModel.call(
                 .init(
                     question: input.question,
-                    previousAnswer: content,
+                    previousAnswer: intermediateAnswer.answer,
                     document: document.document.pageContent,
                     distance: document.distance
                 ),
                 callbackManagers: callbackManagers
             )
-            content = output.content ?? ""
-            callbackManagers
-                .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: content))
+            intermediateAnswer = extractAnswer(output)
+            callbackManagers.send(
+                CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: intermediateAnswer)
+            )
         }
-        return content
+        return intermediateAnswer.answer
     }
 
     public func parseOutput(_ output: String) -> String {

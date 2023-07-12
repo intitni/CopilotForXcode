@@ -5,7 +5,7 @@ import PlaygroundSupport
 import SwiftUI
 
 struct QAForm: View {
-    @State var intermediateAnswers = [String]()
+    @State var intermediateAnswers = [RefineDocumentChain.IntermediateAnswer]()
     @State var answer: String = ""
     @State var question: String = "What is Swift macros?"
     @State var isProcessing: Bool = false
@@ -31,9 +31,14 @@ struct QAForm: View {
                 Text(answer)
             }
             Section(header: Text("Intermediate Answers")) {
-                ForEach(intermediateAnswers, id: \.self) { answer in
-                    Text(answer)
-                    Divider()
+                ForEach(0..<intermediateAnswers.endIndex, id: \.self) { index in
+                    let answer = intermediateAnswers[index]
+                    VStack {
+                        Text(answer.answer)
+                        Text("Score: \(answer.score)")
+                        Text("Needs more context: \(answer.more ? "Yes" : "No")")
+                        Divider()
+                    }
                 }
             }
         }
@@ -48,8 +53,6 @@ struct QAForm: View {
             answer = "Invalid URL"
             return
         }
-        let chatGPTConfiguration = UserPreferenceChatGPTConfiguration()
-            .overriding { $0.temperature = 0 }
         let embeddingConfiguration = UserPreferenceEmbeddingConfiguration().overriding()
         let embedding = OpenAIEmbedding(configuration: embeddingConfiguration)
         let store: VectorStore = try await {
@@ -72,8 +75,7 @@ struct QAForm: View {
 
         let qa = RetrievalQAChain(
             vectorStore: store,
-            embedding: embedding,
-            chatModelFactory: { OpenAIChat(configuration: chatGPTConfiguration, stream: false) }
+            embedding: embedding
         )
         answer = try await qa.run(
             question,
