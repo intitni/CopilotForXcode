@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import SwiftUI
@@ -31,9 +32,9 @@ struct ChatWindowView: View {
                     .fill(.tertiary)
                     .frame(width: 120, height: 4)
                     .frame(height: 16)
-                
+
                 Divider()
-                
+
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -50,7 +51,7 @@ struct ChatWindowView: View {
                 }
                 .opacity(0)
                 .keyboardShortcut("M", modifiers: [.command])
-                
+
                 Button(action: {
                     viewStore.send(.closeActiveTabClicked)
                 }) {
@@ -72,6 +73,7 @@ struct ChatTabBar: View {
     let store: StoreOf<ChatPanelFeature>
 
     struct TabBarState: Equatable {
+        var tabs: [BaseChatTab]
         var tabInfo: [ChatTabInfo]
         var selectedTabId: String
     }
@@ -80,6 +82,7 @@ struct ChatTabBar: View {
         WithViewStore(
             store,
             observe: { TabBarState(
+                tabs: $0.chatTapGroup.tabs,
                 tabInfo: $0.chatTapGroup.tabInfo,
                 selectedTabId: $0.chatTapGroup.selectedTabId
                     ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
@@ -94,19 +97,68 @@ struct ChatTabBar: View {
                                 info: info,
                                 isSelected: info.id == viewStore.state.selectedTabId
                             )
+                            .contextMenu {
+                                if let tab = viewStore.state.tabs
+                                    .first(where: { $0.id == info.id })
+                                {
+                                    tab.menu
+                                }
+                            }
                         }
                     }
                 }
 
                 Divider()
 
-                Button(action: {
-                    store.send(.createNewTapButtonClicked(type: ""))
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(.secondary)
-                        .padding(8)
-                }.buttonStyle(.plain)
+                createButton
+            }
+        }
+    }
+
+    @ViewBuilder
+    var createButton: some View {
+        Menu {
+            WithViewStore(store, observe: { $0.chatTapGroup.tabCollection }) { viewStore in
+                ForEach(0..<viewStore.state.endIndex, id: \.self) { index in
+                    switch viewStore.state[index] {
+                    case let .kind(kind):
+                        Button(action: {
+                            store.send(.createNewTapButtonClicked(kind: kind))
+                        }) {
+                            Text(kind.title)
+                        }
+                    case let .folder(title, list):
+                        Menu {
+                            ForEach(0..<list.endIndex, id: \.self) { index in
+                                Button(action: {
+                                    store
+                                        .send(
+                                            .createNewTapButtonClicked(
+                                                kind: list[index]
+                                            )
+                                        )
+                                }) {
+                                    Text(list[index].title)
+                                }
+                            }
+                        } label: {
+                            Text(title)
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "plus")
+        } primaryAction: {
+            store.send(.createNewTapButtonClicked(kind: nil))
+        }
+        .foregroundColor(.secondary)
+        .menuStyle(.borderedButton)
+        .padding(.horizontal, 4)
+        .fixedSize(horizontal: true, vertical: false)
+        .onHover { isHovering in
+            if isHovering {
+                store.send(.createNewTapButtonHovered)
             }
         }
     }
@@ -191,25 +243,54 @@ struct ChatTabContainer: View {
     }
 }
 
-struct ChatWindowView_Previews: PreviewProvider {
-    class FakeChatTab: ChatTab {
-        func buildView() -> any View {
-            ChatPanel(
-                chat: .init(
-                    history: [
-                        .init(id: "1", role: .assistant, text: "Hello World"),
-                    ],
-                    isReceivingMessage: false
-                ),
-                typedMessage: "Hello World!"
-            )
-        }
+struct CreateOtherChatTabMenuStyle: MenuStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Image(systemName: "chevron.down")
+            .resizable()
+            .frame(width: 7, height: 4)
+            .frame(maxHeight: .infinity)
+            .padding(.leading, 4)
+            .padding(.trailing, 8)
+            .foregroundColor(.secondary)
+    }
+}
 
-        override init(id: String, title: String) {
-            super.init(id: id, title: title)
+class FakeChatTab: ChatTab {
+    static var name: String { "Fake" }
+    static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] { [Builder()] }
+
+    struct Builder: ChatTabBuilder {
+        var title: String = "Title"
+
+        func build() -> any ChatTab {
+            return FakeChatTab(id: "id", title: "Title")
         }
     }
 
+    func buildMenu() -> any View {
+        Text("Menu Item")
+        Text("Menu Item")
+        Text("Menu Item")
+    }
+
+    func buildView() -> any View {
+        ChatPanel(
+            chat: .init(
+                history: [
+                    .init(id: "1", role: .assistant, text: "Hello World"),
+                ],
+                isReceivingMessage: false
+            ),
+            typedMessage: "Hello World!"
+        )
+    }
+
+    override init(id: String, title: String) {
+        super.init(id: id, title: title)
+    }
+}
+
+struct ChatWindowView_Previews: PreviewProvider {
     static var previews: some View {
         ChatWindowView(
             store: .init(

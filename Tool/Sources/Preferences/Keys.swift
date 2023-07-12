@@ -9,11 +9,21 @@ public protocol UserDefaultPreferenceKey {
 public struct PreferenceKey<T>: UserDefaultPreferenceKey {
     public let defaultValue: T
     public let key: String
+    
+    public init(defaultValue: T, key: String) {
+        self.defaultValue = defaultValue
+        self.key = key
+    }
 }
 
 public struct FeatureFlag: UserDefaultPreferenceKey {
     public let defaultValue: Bool
     public let key: String
+    
+    public init(defaultValue: Bool, key: String) {
+        self.defaultValue = defaultValue
+        self.key = key
+    }
 }
 
 public struct UserDefaultPreferenceKeys {

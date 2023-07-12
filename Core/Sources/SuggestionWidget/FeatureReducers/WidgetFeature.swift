@@ -1,7 +1,6 @@
 import ActiveApplicationMonitor
 import AsyncAlgorithms
 import AXNotificationStream
-import ChatTab
 import ComposableArchitecture
 import Environment
 import Foundation
@@ -250,7 +249,7 @@ public struct WidgetFeature: ReducerProtocol {
                         else { continue }
                         guard await windows.fullscreenDetector.isOnActiveSpace else { continue }
                         let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                        if let window = app.focusedWindow {
+                        if let _ = app.focusedWindow {
                             await windows.orderFront()
                         }
                     }

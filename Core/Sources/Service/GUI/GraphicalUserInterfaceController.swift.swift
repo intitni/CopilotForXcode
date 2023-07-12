@@ -1,9 +1,12 @@
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import Environment
 import Preferences
+import SuggestionModel
 import SuggestionWidget
+import XcodeInspector
 
 struct GUI: ReducerProtocol {
     struct State: Equatable {
@@ -34,9 +37,8 @@ struct GUI: ReducerProtocol {
         ) {
             Reduce { _, action in
                 switch action {
-                case let .createNewTapButtonClicked(type):
-                    _ = type // always ChatGPTChatTab at the moment.
-                    let chatTap = ChatGPTChatTab()
+                case let .createNewTapButtonClicked(kind):
+                    let chatTap = kind?.builder.build() ?? ChatGPTChatTab()
                     return .run { send in
                         await send(.appendAndSelectTab(chatTap))
                     }
@@ -113,24 +115,31 @@ public final class GraphicalUserInterfaceController {
 
     private init() {
         let suggestionDependency = SuggestionWidgetControllerDependency()
+        let setupDependency: (inout DependencyValues) -> Void = { dependencies in
+                dependencies.suggestionWidgetControllerDependency = suggestionDependency
+                dependencies.suggestionWidgetUserDefaultsObservers = .init()
+                dependencies.chatTabBuilderCollection = {
+                    ChatTabFactory.chatTabBuilderCollection
+                }
+        }
         let store = StoreOf<GUI>(
             initialState: .init(),
-            reducer: GUI()
-        ) { dependencies in
-            dependencies.suggestionWidgetControllerDependency = suggestionDependency
-            dependencies.suggestionWidgetUserDefaultsObservers = .init()
-        }
+            reducer: GUI(),
+            prepareDependencies: setupDependency
+        )
         self.store = store
         viewStore = ViewStore(store)
         widgetDataSource = .init()
 
-        widgetController = SuggestionWidgetController(
-            store: store.scope(
-                state: \.suggestionWidgetState,
-                action: GUI.Action.suggestionWidget
-            ),
-            dependency: suggestionDependency
-        )
+        widgetController = withDependencies(setupDependency) {
+            SuggestionWidgetController(
+                store: store.scope(
+                    state: \.suggestionWidgetState,
+                    action: GUI.Action.suggestionWidget
+                ),
+                dependency: suggestionDependency
+            )
+        }
 
         suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
@@ -154,4 +163,63 @@ public final class GraphicalUserInterfaceController {
         }
     }
 }
+
+#if canImport(ProChatTabs)
+import ProChatTabs
+
+enum ChatTabFactory {
+    static var chatTabBuilderCollection: [ChatTabBuilderCollection] {
+        func folderIfNeeded(
+            _ builders: [any ChatTabBuilder],
+            title: String
+        ) -> ChatTabBuilderCollection? {
+            if builders.count > 1 {
+                return .folder(title: title, kinds: builders.map(ChatTabKind.init))
+            }
+            if let first = builders.first { return .kind(ChatTabKind(first)) }
+            return nil
+        }
+
+        let collection = [
+            folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
+            folderIfNeeded(BrowserChatTab.chatBuilders(externalDependency: .init(getEditorContent: {
+                guard let editor = XcodeInspector.shared.focusedEditor else {
+                    return .init(selectedText: "", language: "", fileContent: "")
+                }
+                let content = editor.content
+                return .init(
+                    selectedText: content.selectedContent,
+                    language: languageIdentifierFromFileURL(XcodeInspector.shared.activeDocumentURL)
+                        .rawValue,
+                    fileContent: content.content
+                )
+            })), title: BrowserChatTab.name),
+        ].compactMap { $0 }
+        
+        return collection
+    }
+}
+
+#else
+
+enum ChatTabFactory {
+    static var chatTabBuilderCollection: [ChatTabBuilderCollection] {
+        func folderIfNeeded(
+            _ builders: [any ChatTabBuilder],
+            title: String
+        ) -> ChatTabBuilderCollection? {
+            if builders.count > 1 {
+                return .folder(title: title, kinds: builders.map(ChatTabKind.init))
+            }
+            if let first = builders.first { return .kind(ChatTabKind(first)) }
+            return nil
+        }
+
+        return [
+            folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
+        ].compactMap { $0 }
+    }
+}
+
+#endif
 

@@ -72,6 +72,12 @@ struct ActiveApplicationMonitorKey: DependencyKey {
     static let liveValue = ActiveApplicationMonitor.self
 }
 
+struct ChatTabBuilderCollectionKey: DependencyKey {
+    static let liveValue: () -> [ChatTabBuilderCollection] = {
+        [.folder(title: "A", kinds: FakeChatTab.chatBuilders().map(ChatTabKind.init))]
+    }
+}
+
 struct ActivatePreviouslyActiveXcodeKey: DependencyKey {
     static let liveValue = { @MainActor in
         @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
@@ -98,6 +104,11 @@ public extension DependencyValues {
     var suggestionWidgetUserDefaultsObservers: WidgetUserDefaultsObservers {
         get { self[UserDefaultsDependencyKey.self] }
         set { self[UserDefaultsDependencyKey.self] = newValue }
+    }
+
+    var chatTabBuilderCollection: () -> [ChatTabBuilderCollection] {
+        get { self[ChatTabBuilderCollectionKey.self] }
+        set { self[ChatTabBuilderCollectionKey.self] = newValue }
     }
 }
 
