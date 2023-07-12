@@ -150,7 +150,6 @@
 		C8216B72298036EC00AD38C7 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		C8216B772980370100AD38C7 /* ReloadLaunchAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadLaunchAgent.swift; sourceTree = "<group>"; };
 		C82E38492A1F025F00D4EADF /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
-		C83E3F3E2A38C66D0071506D /* Python */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Python; sourceTree = "<group>"; };
 		C83E5DED2A38CD8C0071506D /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -255,7 +254,6 @@
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
-				C83E3F3E2A38C66D0071506D /* Python */,
 				C81D181E2A1B509B006C1B70 /* Tool */,
 				C8189B282938979000C9DCDA /* Core */,
 				C87903302A5D2E6400FE6F42 /* Pro */,
