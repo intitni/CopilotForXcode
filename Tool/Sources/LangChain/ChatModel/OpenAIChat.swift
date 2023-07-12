@@ -23,24 +23,14 @@ public struct OpenAIChat: ChatModel {
         prompt: [ChatMessage],
         stops: [String],
         callbackManagers: [CallbackManager]
-    ) async throws -> String {
+    ) async throws -> ChatMessage {
         let service = ChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider
         )
         for message in prompt {
-            let role: OpenAIService.ChatMessage.Role = {
-                switch message.role {
-                case .system:
-                    return .system
-                case .user:
-                    return .user
-                case .assistant:
-                    return .assistant
-                }
-            }()
-            await memory.appendMessage(.init(role: role, content: message.content))
+            await memory.appendMessage(message)
         }
 
         if stream {
@@ -51,9 +41,10 @@ public struct OpenAIChat: ChatModel {
                 callbackManagers
                     .forEach { $0.send(CallbackEvents.LLMDidProduceNewToken(info: trunk)) }
             }
-            return message
+            return await memory.messages.last ?? .init(role: .assistant, content: "")
         } else {
-            return try await service.sendAndWait(content: "") ?? ""
+            let _ = try await service.sendAndWait(content: "")
+            return await memory.messages.last ?? .init(role: .assistant, content: "")
         }
     }
 }

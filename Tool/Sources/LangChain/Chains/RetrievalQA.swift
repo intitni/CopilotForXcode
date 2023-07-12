@@ -1,9 +1,9 @@
 import Foundation
+import OpenAIService
 
 public final class RetrievalQAChain: Chain {
     let vectorStore: VectorStore
     let embedding: Embeddings
-    let chatModelFactory: () -> ChatModel
 
     public struct Output {
         public var answer: String
@@ -12,12 +12,10 @@ public final class RetrievalQAChain: Chain {
 
     public init(
         vectorStore: VectorStore,
-        embedding: Embeddings,
-        chatModelFactory: @escaping () -> ChatModel
+        embedding: Embeddings
     ) {
         self.vectorStore = vectorStore
         self.embedding = embedding
-        self.chatModelFactory = chatModelFactory
     }
 
     public func callLogic(
@@ -29,7 +27,7 @@ public final class RetrievalQAChain: Chain {
             embeddings: embeddedQuestion,
             count: 5
         )
-        let refinementChain = RefineDocumentChain(chatModelFactory: chatModelFactory)
+        let refinementChain = RefineDocumentChain()
         let answer = try await refinementChain.run(
             .init(question: input, documents: documents),
             callbackManagers: callbackManagers
@@ -68,12 +66,68 @@ public final class RefineDocumentChain: Chain {
         var distance: Float
     }
 
+    class FunctionProvider: ChatGPTFunctionProvider {
+        var functions: [any ChatGPTFunction] = []
+    }
+
+    struct RespondFunction: ChatGPTFunction {
+        struct Arguments: Codable {
+            var answer: String
+            var score: Double
+            var more: Bool
+        }
+
+        struct Result: ChatGPTFunctionResult {
+            var botReadableContent: String { "" }
+        }
+
+        var reportProgress: (String) async -> Void = { _ in }
+
+        var name: String = "respond"
+        var description: String = "Respond with the refined answer"
+        var argumentSchema: JSONSchemaValue {
+            return [
+                .type: "object",
+                .properties: [
+                    "answer": [
+                        .type: "string",
+                        .description: "The answer",
+                    ],
+                    "score": [
+                        .type: "number",
+                        .description: "The score of the answer, the higher the better",
+                    ],
+                    "more": [
+                        .type: "boolean",
+                        .description: "Whether more information is needed to complete the answer",
+                    ],
+                ],
+            ]
+        }
+
+        func prepare() async {}
+
+        func call(arguments: Arguments) async throws -> Result {
+            return Result()
+        }
+    }
+
     let initialChatModel: ChatModelChain<InitialInput>
     let refinementChatModel: ChatModelChain<RefinementInput>
+    let initialChatMemory: ChatGPTMemory
+    let refinementChatMemory: ChatGPTMemory
 
-    public init(chatModelFactory: () -> ChatModel) {
+    public init() {
+        initialChatMemory = ConversationChatGPTMemory(systemPrompt: "")
+        refinementChatMemory = ConversationChatGPTMemory(systemPrompt: "")
+
         initialChatModel = .init(
-            chatModel: chatModelFactory(),
+            chatModel: OpenAIChat(
+                configuration: UserPreferenceChatGPTConfiguration()
+                    .overriding(.init(temperature: 0)),
+                memory: initialChatMemory,
+                stream: false
+            ),
             promptTemplate: { input in [
                 .init(role: .system, content: """
                 The user will send you a question, you must answer it at your best.
@@ -85,7 +139,12 @@ public final class RefineDocumentChain: Chain {
             ] }
         )
         refinementChatModel = .init(
-            chatModel: chatModelFactory(),
+            chatModel: OpenAIChat(
+                configuration: UserPreferenceChatGPTConfiguration()
+                    .overriding(.init(temperature: 0)),
+                memory: refinementChatMemory,
+                stream: false
+            ),
             promptTemplate: { input in [
                 .init(role: .system, content: """
                 The user will send you a question, you must refine your previous answer to it at your best.
@@ -117,7 +176,9 @@ public final class RefineDocumentChain: Chain {
             ),
             callbackManagers: callbackManagers
         )
-        callbackManagers.send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: output))
+        guard var content = output.content else { return "" }
+        callbackManagers
+            .send(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer(info: content))
         for document in input.documents.dropFirst(1) {
             output = try await refinementChatModel.call(
                 .init(

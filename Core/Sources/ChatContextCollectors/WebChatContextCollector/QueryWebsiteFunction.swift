@@ -64,13 +64,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         
                         if let database = await TemporaryUSearch.view(identifier: urlString) {
                             await reportProgress("Generating answers..")
-                            let qa = RetrievalQAChain(vectorStore: database, embedding: embedding) {
-                                OpenAIChat(
-                                    configuration: UserPreferenceChatGPTConfiguration()
-                                        .overriding(.init(temperature: 0)),
-                                    stream: true
-                                )
-                            }
+                            let qa = RetrievalQAChain(vectorStore: database, embedding: embedding)
                             return try await qa.call(.init(arguments.query)).answer
                         }
                         let loader = WebLoader(urls: [url])
@@ -89,13 +83,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         try await database.set(embeddedDocuments)
                         // 4. generate answer
                         await reportProgress("Generating answers..")
-                        let qa = RetrievalQAChain(vectorStore: database, embedding: embedding) {
-                            OpenAIChat(
-                                configuration: UserPreferenceChatGPTConfiguration()
-                                    .overriding(.init(temperature: 0)),
-                                stream: true
-                            )
-                        }
+                        let qa = RetrievalQAChain(vectorStore: database, embedding: embedding)
                         let result = try await qa.call(.init(arguments.query))
                         return result.answer
                     }
