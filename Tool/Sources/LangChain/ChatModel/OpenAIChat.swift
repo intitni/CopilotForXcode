@@ -3,13 +3,19 @@ import OpenAIService
 
 public struct OpenAIChat: ChatModel {
     public var configuration: ChatGPTConfiguration
+    public var memory: ChatGPTMemory
+    public var functionProvider: ChatGPTFunctionProvider
     public var stream: Bool
 
     public init(
-        configuration: ChatGPTConfiguration,
+        configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        memory: ChatGPTMemory = ConversationChatGPTMemory(systemPrompt: ""),
+        functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider(),
         stream: Bool
     ) {
         self.configuration = configuration
+        self.memory = memory
+        self.functionProvider = functionProvider
         self.stream = stream
     }
 
@@ -18,12 +24,11 @@ public struct OpenAIChat: ChatModel {
         stops: [String],
         callbackManagers: [CallbackManager]
     ) async throws -> String {
-        let memory = AutoManagedChatGPTMemory(
-            systemPrompt: "",
+        let service = ChatGPTService(
+            memory: memory,
             configuration: configuration,
-            functionProvider: NoChatGPTFunctionProvider()
+            functionProvider: functionProvider
         )
-        let service = ChatGPTService(memory: memory, configuration: configuration)
         for message in prompt {
             let role: OpenAIService.ChatMessage.Role = {
                 switch message.role {
