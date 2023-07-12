@@ -179,9 +179,10 @@ struct ChatTabBarButton: View {
                     .font(.callout)
                     .lineLimit(1)
                     .frame(maxWidth: 120)
+                    .padding(.horizontal, 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 32)
 
             .overlay(alignment: .leading) {
                 Button(action: {
