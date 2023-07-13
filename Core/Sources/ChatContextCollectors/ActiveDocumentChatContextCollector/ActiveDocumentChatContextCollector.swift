@@ -3,6 +3,7 @@ import OpenAIService
 import Preferences
 import SuggestionModel
 import XcodeInspector
+import ChatContextCollector
 
 public struct ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
