@@ -3,7 +3,7 @@ import ChatContextCollector
 import WebChatContextCollector
 
 let allContextCollectors: [any ChatContextCollector] = [
-    ActiveDocumentChatContextCollector(),
+    LegacyActiveDocumentChatContextCollector(),
     WebChatContextCollector(),
 ]
 
