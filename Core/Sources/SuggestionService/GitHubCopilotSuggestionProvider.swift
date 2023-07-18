@@ -42,7 +42,9 @@ extension GitHubCopilotSuggestionProvider {
             tabSize: tabSize,
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
+            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions,
+            ignoreTrailingNewLinesAndSpaces: UserDefaults.shared
+                .value(for: \.gitHubCopilotIgnoreTrailingNewLines)
         )
     }
 
@@ -73,12 +75,12 @@ extension GitHubCopilotSuggestionProvider {
         try await (try? createGitHubCopilotServiceIfNeeded())?
             .notifySaveTextDocument(fileURL: fileURL)
     }
-    
+
     func cancelRequest() async {
         await (try? createGitHubCopilotServiceIfNeeded())?
             .cancelRequest()
     }
-    
+
     func terminate() async {
         await (try? createGitHubCopilotServiceIfNeeded())?.terminate()
     }
