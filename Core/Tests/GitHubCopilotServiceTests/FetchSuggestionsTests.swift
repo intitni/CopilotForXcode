@@ -4,7 +4,7 @@ import XCTest
 @testable import GitHubCopilotService
 
 final class FetchSuggestionTests: XCTestCase {
-    func test_process_sugestions_from_server() async throws {
+    func test_process_suggestions_from_server() async throws {
         struct TestServer: GitHubCopilotLSP {
             func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
                 fatalError()
@@ -44,7 +44,8 @@ final class FetchSuggestionTests: XCTestCase {
             tabSize: 4,
             indentSize: 4,
             usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: false
+            ignoreSpaceOnlySuggestions: false,
+            ignoreTrailingNewLinesAndSpaces: false
         )
         XCTAssertEqual(completions.count, 3)
     }
@@ -89,7 +90,8 @@ final class FetchSuggestionTests: XCTestCase {
             tabSize: 4,
             indentSize: 4,
             usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: true
+            ignoreSpaceOnlySuggestions: true,
+            ignoreTrailingNewLinesAndSpaces: false
         )
         XCTAssertEqual(completions.count, 1)
         XCTAssertEqual(completions.first?.text, "Hello World\n")
@@ -128,9 +130,10 @@ final class FetchSuggestionTests: XCTestCase {
             tabSize: 4,
             indentSize: 4,
             usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: false
+            ignoreSpaceOnlySuggestions: false,
+            ignoreTrailingNewLinesAndSpaces: true
         )
         XCTAssertEqual(completions.count, 1)
-        XCTAssertEqual(completions.first?.text, "Hello World\n")
+        XCTAssertEqual(completions.first?.text, "Hello World")
     }
 }

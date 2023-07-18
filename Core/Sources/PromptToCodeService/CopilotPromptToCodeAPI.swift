@@ -70,7 +70,8 @@ final class CopilotPromptToCodeAPI: PromptToCodeAPI {
                         tabSize: indentSize,
                         indentSize: indentSize,
                         usesTabsForIndentation: usesTabsForIndentation,
-                        ignoreSpaceOnlySuggestions: true
+                        ignoreSpaceOnlySuggestions: true,
+                        ignoreTrailingNewLinesAndSpaces: false
                     )
                     try Task.checkCancellation()
                     guard let first = result.first else { throw CancellationError() }

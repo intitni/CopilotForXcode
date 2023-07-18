@@ -54,7 +54,7 @@ final class ChatGPTStreamTests: XCTestCase {
             .init(id: "1", role: .assistant, content: "hellomyfriends"),
         ], "History is not updated")
 
-        XCTAssertEqual(requestBody?.functions, [], "Function schema is not submitted")
+        XCTAssertEqual(requestBody?.functions, nil, "Function schema is not submitted")
     }
 
     func test_handling_function_call() async throws {
@@ -128,7 +128,7 @@ final class ChatGPTStreamTests: XCTestCase {
                 role: .function,
                 content: "Function is called.",
                 name: "function",
-                summary: "running"
+                summary: nil
             ),
             .init(id: "3", role: .assistant, content: "hellomyfriends"),
         ], "History is not updated")
@@ -216,7 +216,7 @@ final class ChatGPTStreamTests: XCTestCase {
                 role: .function,
                 content: "Function is called.",
                 name: "function",
-                summary: "running"
+                summary: nil
             ),
             .init(
                 id: "3",
@@ -229,7 +229,7 @@ final class ChatGPTStreamTests: XCTestCase {
                 role: .function,
                 content: "Function is called.",
                 name: "function",
-                summary: "running"
+                summary: nil
             ),
             .init(id: "5", role: .assistant, content: "hellomyfriends"),
         ], "History is not updated")
