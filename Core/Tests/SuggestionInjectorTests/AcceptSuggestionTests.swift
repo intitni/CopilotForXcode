@@ -26,7 +26,7 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 1)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -69,7 +69,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 12)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -112,7 +112,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 1, character: 12)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -155,7 +155,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 1, character: 12)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -177,27 +177,25 @@ final class AcceptSuggestionTests: XCTestCase {
     
     func test_accept_suggestion_overlap_continue_typing_has_suffix_typed() async throws {
         let content = """
-        struct Cat {
-            var n: String
-        }
+        print("")
         """
         let text = """
-            var name: String
+        print("Hello World!")
         """
         let suggestion = CodeSuggestion(
             text: text,
-            position: .init(line: 1, character: 9),
+            position: .init(line: 0, character: 6),
             uuid: "",
             range: .init(
-                start: .init(line: 1, character: 0),
-                end: .init(line: 1, character: 9)
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 6)
             ),
             displayText: ""
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 7)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -208,11 +206,54 @@ final class AcceptSuggestionTests: XCTestCase {
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
         XCTAssertNil(extraInfo.suggestionRange)
         XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
-        XCTAssertEqual(cursor, .init(line: 1, character: 20))
+        XCTAssertEqual(cursor, .init(line: 0, character: 21))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        print("Hello World!")
+        
+        """)
+    }
+    
+    func test_accept_suggestion_overlap_continue_typing_has_suffix_typed_suggestion_has_multiple_lines() async throws {
+        let content = """
+        struct Cat {}
+        """
+        let text = """
+        struct Cat {
+            var name: String
+            var kind: String
+        }
+        """
+        let suggestion = CodeSuggestion(
+            text: text,
+            position: .init(line: 0, character: 6),
+            uuid: "",
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 6)
+            ),
+            displayText: ""
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 12)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 3, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
         struct Cat {
             var name: String
+            var kind: String
         }
+        
         """)
     }
 
@@ -240,7 +281,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 18)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -287,7 +328,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 18)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -337,7 +378,7 @@ final class AcceptSuggestionTests: XCTestCase {
         
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 0, character: 7)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -384,7 +425,7 @@ final class AcceptSuggestionTests: XCTestCase {
         
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
-        var cursor = CursorPosition(line: 0, character: 0)
+        var cursor = CursorPosition(line: 5, character: 34)
         SuggestionInjector().acceptSuggestion(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
