@@ -58,7 +58,7 @@ final class TextSplitterTests: XCTestCase {
 
         XCTAssertEqual(
             result,
-            ["Madam Speaker,", " Madam Vice", " President, our", " our First"]
+            ["Madam Speaker,", "Madam Vice", "President, our", "our First"]
         )
         XCTAssertTrue(result.allSatisfy { $0.count <= 15 })
     }
