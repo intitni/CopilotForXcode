@@ -174,6 +174,47 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """)
     }
+    
+    func test_accept_suggestion_overlap_continue_typing_has_suffix_typed() async throws {
+        let content = """
+        struct Cat {
+            var n: String
+        }
+        """
+        let text = """
+            var name: String
+        """
+        let suggestion = CodeSuggestion(
+            text: text,
+            position: .init(line: 1, character: 9),
+            uuid: "",
+            range: .init(
+                start: .init(line: 1, character: 0),
+                end: .init(line: 1, character: 9)
+            ),
+            displayText: ""
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 0)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 1, character: 20))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct Cat {
+            var name: String
+        }
+        """)
+    }
 
     func test_propose_suggestion_partial_overlap() async throws {
         let content = "func quickSort() {}}\n"
@@ -308,7 +349,7 @@ final class AcceptSuggestionTests: XCTestCase {
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
         XCTAssertNil(extraInfo.suggestionRange)
         XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
-        XCTAssertEqual(cursor, .init(line: 4, character: 1))
+        XCTAssertEqual(cursor, .init(line: 4, character: 0))
         XCTAssertEqual(lines.joined(separator: ""), text)
     }
     
