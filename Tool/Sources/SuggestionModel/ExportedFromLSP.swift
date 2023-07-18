@@ -8,7 +8,7 @@ public extension CursorPosition {
 }
 
 public struct CursorRange: Codable, Hashable, Sendable {
-    static let zero = CursorRange(start: .zero, end: .zero)
+    public static let zero = CursorRange(start: .zero, end: .zero)
 
     public var start: CursorPosition
     public var end: CursorPosition

@@ -7,8 +7,13 @@ public extension ASTTree {
         var result = ""
 
         let appendNode: (_ level: Int, _ node: Node) -> Void = { level, node in
+            let range = node.pointRange
+            let lowerBoundL = range.lowerBound.row
+            let lowerBoundC = range.lowerBound.column / 2
+            let upperBoundL = range.upperBound.row
+            let upperBoundC = range.upperBound.column / 2
             let line =
-                "\(String(repeating: "  ", count: level))\(node.nodeType ?? "N/A") \(node.pointRange)"
+                "\(String(repeating: "  ", count: level))\(node.nodeType ?? "N/A") [\(lowerBoundL), \(lowerBoundC)] - [\(upperBoundL), \(upperBoundC)]"
             result += line + "\n"
         }
 
@@ -17,7 +22,7 @@ public extension ASTTree {
         appendNode(0, node)
 
         let cursor = node.treeCursor
-        let level = 1
+        let level = 0
 
         if cursor.goToFirstChild(for: node.byteRange.lowerBound) == false {
             return result
@@ -27,7 +32,7 @@ public extension ASTTree {
             appendNode(level, node)
         }
 
-        while cursor.gotoNextSibling() {
+        while cursor.goToNextSibling() {
             guard let node = cursor.currentNode else {
                 assertionFailure("no current node when gotoNextSibling succeeded")
                 break
@@ -59,7 +64,7 @@ private extension TreeCursor {
 
         try enumerateCurrentAndDescendents(level: level + 1, block: block)
 
-        while gotoNextSibling() {
+        while goToNextSibling() {
             try enumerateCurrentAndDescendents(level: level + 1, block: block)
         }
 

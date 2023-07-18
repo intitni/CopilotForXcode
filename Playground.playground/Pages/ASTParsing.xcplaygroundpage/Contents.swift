@@ -26,6 +26,7 @@ struct ParsingForm: View {
             Section("Result") {
                 Text(result)
                     .fontDesign(.monospaced)
+                    .textSelection(.enabled)
             }
         }
         .formStyle(.grouped)
@@ -35,3 +36,5 @@ struct ParsingForm: View {
 
 PlaygroundPage.current.needsIndefiniteExecution = true
 PlaygroundPage.current.setLiveView(NSHostingController(rootView: ParsingForm()))
+// protocol_declaration, class_declaration, function_declaration, property_declaration, computed_property
+// type_identifier, simple_identifier (for variables and funcs)

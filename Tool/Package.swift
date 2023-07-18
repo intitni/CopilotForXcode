@@ -157,6 +157,8 @@ let package = Package(
             .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
         ]),
 
+        .testTarget(name: "ASTParserTests", dependencies: ["ASTParser"]),
+
         // MARK: - Services
 
         .target(
