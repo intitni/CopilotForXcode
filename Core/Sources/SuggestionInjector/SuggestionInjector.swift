@@ -176,19 +176,28 @@ public struct SuggestionInjector {
 
         // appending suffix text not in range if needed.
         let skipAppendingDueToContinueTyping = {
-            guard let first = toBeInserted.first?.dropLast(1), !first.isEmpty else { return false }
-            let droppedLast = lastRemovedLine?.dropLast(1)
+            guard let first = toBeInserted.first?
+                .dropLast((toBeInserted.first?.hasSuffix("\n") ?? false) ? 1 : 0),
+                !first.isEmpty else { return false }
+            guard let last = toBeInserted.last?
+                .dropLast((toBeInserted.last?.hasSuffix("\n") ?? false) ? 1 : 0),
+                !last.isEmpty else { return false }
+            let droppedLast = lastRemovedLine?
+                .dropLast((lastRemovedLine?.hasSuffix("\n") ?? false) ? 1 : 0)
             guard let droppedLast, !droppedLast.isEmpty else { return false }
             // case 1: user keeps typing as the suggestion suggests.
             if first.hasPrefix(droppedLast) {
                 return true
             }
             // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
-            if end.character < droppedLast.count - 1 {
-                let splitIndex = droppedLast.index(droppedLast.startIndex, offsetBy: end.character)
+            if cursorPosition.character < droppedLast.count {
+                let splitIndex = droppedLast.index(
+                    droppedLast.startIndex,
+                    offsetBy: cursorPosition.character
+                )
                 let prefix = droppedLast[..<splitIndex]
                 let suffix = droppedLast[splitIndex...]
-                if first.hasPrefix(prefix), first.hasSuffix(suffix) {
+                if first.hasPrefix(prefix), last.hasSuffix(suffix) {
                     return true
                 }
             }
