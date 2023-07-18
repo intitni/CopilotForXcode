@@ -1,5 +1,5 @@
-import SuggestionModel
 import Foundation
+import SuggestionModel
 
 let suggestionStart = "/*========== Copilot Suggestion"
 let suggestionEnd = "*///======== End of Copilot Suggestion"
@@ -141,8 +141,6 @@ public struct SuggestionInjector {
         let end = completion.range.end
         let suggestionContent = completion.text
 
-        let _ = start.line < content.endIndex ? content[start.line] : nil
-
         let firstRemovedLine = content[safe: start.line]
         let lastRemovedLine = content[safe: end.line]
         let startLine = max(0, start.line)
@@ -177,12 +175,24 @@ public struct SuggestionInjector {
         }
 
         // appending suffix text not in range if needed.
-        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
         let skipAppendingDueToContinueTyping = {
             guard let first = toBeInserted.first?.dropLast(1), !first.isEmpty else { return false }
             let droppedLast = lastRemovedLine?.dropLast(1)
             guard let droppedLast, !droppedLast.isEmpty else { return false }
-            return first.hasPrefix(droppedLast)
+            // case 1: user keeps typing as the suggestion suggests.
+            if first.hasPrefix(droppedLast) {
+                return true
+            }
+            // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
+            if end.character < droppedLast.count - 1 {
+                let splitIndex = droppedLast.index(droppedLast.startIndex, offsetBy: end.character)
+                let prefix = droppedLast[..<splitIndex]
+                let suffix = droppedLast[splitIndex...]
+                if first.hasPrefix(prefix), first.hasSuffix(suffix) {
+                    return true
+                }
+            }
+            return false
         }()
         if let lastRemovedLine,
            !skipAppendingDueToContinueTyping,
@@ -200,11 +210,12 @@ public struct SuggestionInjector {
                 toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
             }
             let leftover = lastRemovedLine[leftoverRange]
-            
+
             toBeInserted[toBeInserted.endIndex - 1]
                 .append(contentsOf: leftover)
         }
 
+        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
         let insertingIndex = min(start.line, content.endIndex)
         content.insert(contentsOf: toBeInserted, at: insertingIndex)
         extraInfo.modifications.append(.inserted(insertingIndex, toBeInserted))
@@ -270,3 +281,4 @@ extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
+

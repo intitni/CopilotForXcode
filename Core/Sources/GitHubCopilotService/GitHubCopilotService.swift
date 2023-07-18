@@ -23,7 +23,8 @@ public protocol GitHubCopilotSuggestionServiceType {
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
+        ignoreSpaceOnlySuggestions: Bool,
+        ignoreTrailingNewLinesAndSpaces: Bool
     ) async throws -> [CodeSuggestion]
     func notifyAccepted(_ completion: CodeSuggestion) async
     func notifyRejected(_ completions: [CodeSuggestion]) async
@@ -269,7 +270,8 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
+        ignoreSpaceOnlySuggestions: Bool,
+        ignoreTrailingNewLinesAndSpaces: Bool
     ) async throws -> [CodeSuggestion] {
         let languageId = languageIdentifierFromFileURL(fileURL)
 
@@ -313,7 +315,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                     return true
                 }
                 .map {
-                    if UserDefaults.shared.value(for: \.gitHubCopilotIgnoreTrailingNewLines) {
+                    if ignoreTrailingNewLinesAndSpaces {
                         var updated = $0
                         var text = updated.text[...]
                         while let last = text.last, last.isNewline || last.isWhitespace {
