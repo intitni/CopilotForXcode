@@ -213,6 +213,43 @@ final class AcceptSuggestionTests: XCTestCase {
         """)
     }
     
+    func test_accept_suggestion_overlap_continue_typing_suggestion_in_the_middle() async throws {
+        let content = """
+        print("He")
+        """
+        let text = """
+        print("Hello World!
+        """
+        let suggestion = CodeSuggestion(
+            text: text,
+            position: .init(line: 0, character: 6),
+            uuid: "",
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 6)
+            ),
+            displayText: ""
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakLines()
+        var cursor = CursorPosition(line: 0, character: 7)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 0, character: 20))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        print("Hello World!")
+        """)
+    }
+    
     func test_accept_suggestion_overlap_continue_typing_has_suffix_typed_suggestion_has_multiple_lines() async throws {
         let content = """
         struct Cat {}
