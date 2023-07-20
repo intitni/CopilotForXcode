@@ -175,36 +175,52 @@ public struct SuggestionInjector {
         }
 
         // appending suffix text not in range if needed.
-        let skipAppendingDueToContinueTyping = {
+        let leftoverCount: Int = {
+            let maxCount = lastRemovedLine?.count ?? 0
             guard let first = toBeInserted.first?
                 .dropLast((toBeInserted.first?.hasSuffix("\n") ?? false) ? 1 : 0),
-                !first.isEmpty else { return false }
+                  !first.isEmpty else { return maxCount }
             guard let last = toBeInserted.last?
                 .dropLast((toBeInserted.last?.hasSuffix("\n") ?? false) ? 1 : 0),
-                !last.isEmpty else { return false }
+                !last.isEmpty else { return maxCount }
             let droppedLast = lastRemovedLine?
                 .dropLast((lastRemovedLine?.hasSuffix("\n") ?? false) ? 1 : 0)
-            guard let droppedLast, !droppedLast.isEmpty else { return false }
+            guard let droppedLast, !droppedLast.isEmpty else { return maxCount }
             // case 1: user keeps typing as the suggestion suggests.
             if first.hasPrefix(droppedLast) {
-                return true
+                return 0
             }
             // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
-            if cursorPosition.character < droppedLast.count {
-                let splitIndex = droppedLast.index(
-                    droppedLast.startIndex,
-                    offsetBy: cursorPosition.character
-                )
-                let prefix = droppedLast[..<splitIndex]
-                let suffix = droppedLast[splitIndex...]
-                if first.hasPrefix(prefix), last.hasSuffix(suffix) {
-                    return true
+            if end.character < droppedLast.count {
+                // locate the split index, the prefix of which matches the suggestion prefix.
+                var splitIndex: String.Index? = nil
+                for offset in end.character..<droppedLast.count {
+                    let proposedIndex = droppedLast.index(
+                        droppedLast.startIndex,
+                        offsetBy: offset
+                    )
+                    let prefix = droppedLast[..<proposedIndex]
+                    if first.hasPrefix(prefix) {
+                        splitIndex = proposedIndex
+                    }
+                }
+                
+                // then check how many characters are not in the suffix of the suggestion.
+                if let splitIndex {
+                    let suffix = droppedLast[splitIndex...]
+                    if last.hasSuffix(suffix) {
+                        return 0
+                    }
+                    return suffix.count
                 }
             }
-            return false
+            
+            return maxCount
         }()
+        
+        // appending suffix text not in range if needed.
         if let lastRemovedLine,
-           !skipAppendingDueToContinueTyping,
+           leftoverCount > 0,
            !lastRemovedLine.isEmptyOrNewLine,
            end.character >= 0,
            end.character - 1 < lastRemovedLine.count,
@@ -218,10 +234,9 @@ public struct SuggestionInjector {
             if toBeInserted[toBeInserted.endIndex - 1].hasSuffix("\n") {
                 toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
             }
-            let leftover = lastRemovedLine[leftoverRange]
+            let leftover = lastRemovedLine[leftoverRange].suffix(leftoverCount)
 
-            toBeInserted[toBeInserted.endIndex - 1]
-                .append(contentsOf: leftover)
+            toBeInserted[toBeInserted.endIndex - 1].append(contentsOf: leftover)
         }
 
         let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
