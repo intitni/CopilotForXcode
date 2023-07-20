@@ -15,10 +15,15 @@ struct ParsingForm: View {
                 Button("Parse") {
                     result = ""
                     Task {
-                        let fileContent = try String(contentsOfFile: filePath)
-                        let parser = ASTParser(language: .swift)
-                        let tree = parser.parse(fileContent)
-                        result = tree?.dump() ?? "N/A"
+                        do {
+                            let fileContent = try String(contentsOfFile: filePath)
+                            let parser = ASTParser(language: .swift)
+                            let tree = parser.parse(fileContent)
+                            result = tree?.dump() ?? "N/A"
+                            print(result)
+                        } catch {
+                            result = error.localizedDescription
+                        }
                     }
                 }
             }

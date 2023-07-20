@@ -51,6 +51,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -360,6 +361,7 @@ let package = Package(
                     .product(name: "OpenAIService", package: "Tool"),
                     .product(name: "Preferences", package: "Tool"),
                     .product(name: "ASTParser", package: "Tool"),
+                    .product(name: "SwiftSyntax", package: "swift-syntax"),
                 ],
                 path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
             ),

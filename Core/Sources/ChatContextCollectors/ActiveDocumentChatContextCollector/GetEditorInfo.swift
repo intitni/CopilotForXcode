@@ -10,6 +10,31 @@ struct EditorInformation {
     let projectURL: URL
     let relativePath: String
     let language: CodeLanguage
+
+    func code(in range: CursorRange) -> String {
+        return EditorInformation.code(in: selectedLines, inside: range).code
+    }
+
+    static func lines(in code: [String], containing range: CursorRange) -> [String] {
+        let startIndex = min(max(0, range.start.line), code.endIndex - 1)
+        let endIndex = min(max(startIndex, range.end.line), code.endIndex - 1)
+        let selectedLines = code[startIndex...endIndex]
+        return Array(selectedLines)
+    }
+
+    static func code(in code: [String], inside range: CursorRange) -> (code: String, lines: [String]) {
+        let rangeLines = lines(in: code, containing: range)
+        var selectedContent = rangeLines
+        if !selectedContent.isEmpty {
+            selectedContent[0] = String(selectedContent[0].dropFirst(range.start.character))
+            selectedContent[selectedContent.endIndex - 1] = String(
+                selectedContent[selectedContent.endIndex - 1].dropLast(
+                    selectedContent[selectedContent.endIndex - 1].count - range.end.character
+                )
+            )
+        }
+        return (selectedContent.joined(), rangeLines)
+    }
 }
 
 func getEditorInformation() -> EditorInformation {
@@ -21,28 +46,14 @@ func getEditorInformation() -> EditorInformation {
         .replacingOccurrences(of: projectURL.path, with: "")
 
     if let editorContent, let range = editorContent.selections.first {
-        let startIndex = min(
-            max(0, range.start.line),
-            editorContent.lines.endIndex - 1
+        let (selectedContent, selectedLines) = EditorInformation.code(
+            in: editorContent.lines,
+            inside: range
         )
-        let endIndex = min(
-            max(startIndex, range.end.line),
-            editorContent.lines.endIndex - 1
-        )
-        let selectedLines = editorContent.lines[startIndex...endIndex]
-        var selectedContent = selectedLines
-        if selectedContent.count > 0 {
-            selectedContent[0] = String(selectedContent[0].dropFirst(range.start.character))
-            selectedContent[selectedContent.endIndex - 1] = String(
-                selectedContent[selectedContent.endIndex - 1].dropLast(
-                    selectedContent[selectedContent.endIndex - 1].count - range.end.character
-                )
-            )
-        }
         return .init(
             editorContent: editorContent,
-            selectedContent: selectedContent.joined(),
-            selectedLines: Array(selectedLines),
+            selectedContent: selectedContent,
+            selectedLines: selectedLines,
             documentURL: documentURL,
             projectURL: projectURL,
             relativePath: relativePath,

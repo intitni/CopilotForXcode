@@ -14,27 +14,22 @@ struct GetCodeFunction: ChatGPTFunction {
     }
 
     struct Result: ChatGPTFunctionResult {
-        struct Context {
-            var parentName: String
-            var parentType: String
-        }
-
         var relativePath: String
         var code: String
         var range: CursorRange
-        var context: Context
+        var context: CodeContext
         var type: CodeType
         var language: String
 
         var botReadableContent: String {
             """
-            The \(type.rawValue) code is a part of `\(context.parentType) \(context.parentName)` \
-            in file \(relativePath).
-            Range [\(range.start.line), \(range.start.character)] - \
-            [\(range.end.line), \(range.end.character)]
+            File: \(relativePath)
+            Range: \(range)
+            \(type.rawValue) code
             ```\(language)
             \(code)
             ```
+            \(context)
             """
         }
     }
@@ -74,10 +69,6 @@ struct GetCodeFunction: ChatGPTFunction {
         let type = CodeType.selected
         let relativePath = content.documentURL.path
             .replacingOccurrences(of: content.projectURL.path, with: "")
-        let context = Result.Context(
-            parentName: content.documentURL.lastPathComponent,
-            parentType: "File"
-        )
         let range = selectionRange
 
         await reportProgress("Finish reading code..")
@@ -85,7 +76,7 @@ struct GetCodeFunction: ChatGPTFunction {
             relativePath: relativePath,
             code: editorContent,
             range: range,
-            context: context,
+            context: .top,
             type: type,
             language: language
         )
@@ -99,20 +90,34 @@ struct GetCodeResultParser {
         let language = editorInformation.language.rawValue
         let relativePath = editorInformation.relativePath
         let selectionRange = editorInformation.editorContent?.selections.first
+        let code = {
+            if editorInformation.selectedContent.isEmpty {
+                return editorInformation.selectedLines.first ?? ""
+            }
+            return editorInformation.selectedContent
+        }()
 
-        if let selectionRange, let node = findSmallestScopeContainingRange(selectionRange) {
-            let code = {
-                if editorInformation.selectedContent.isEmpty {
-                    return editorInformation.selectedLines.first ?? ""
-                }
-                return editorInformation.selectedContent
-            }()
+        guard let astReader = createASTReader() else {
+            return .init(
+                relativePath: relativePath,
+                code: code,
+                range: selectionRange ?? .zero,
+                context: .top,
+                type: .selected,
+                language: language
+            )
+        }
 
+        if let selectionRange {
+            let context = astReader.contextContainingRange(
+                selectionRange,
+                in: editorInformation.editorContent?.content ?? ""
+            )
             return .init(
                 relativePath: relativePath,
                 code: code,
                 range: selectionRange,
-                context: .init(parentName: "", parentType: ""),
+                context: .top,
                 type: .selected,
                 language: language
             )
@@ -122,30 +127,20 @@ struct GetCodeResultParser {
             relativePath: relativePath,
             code: "",
             range: selectionRange ?? .zero,
-            context: .init(parentName: "", parentType: ""),
+            context: .top,
             type: .focused,
             language: language
         )
     }
 
-    func findSmallestScopeContainingRange(_ range: CursorRange) -> ASTNode? {
-        guard let language = {
-            switch editorInformation.language {
-            case .builtIn(.swift):
-                return ParsableLanguage.swift
-            case .builtIn(.objc), .builtIn(.objcpp):
-                return ParsableLanguage.objectiveC
-            default:
-                return nil
-            }
-        }() else { return nil }
-
-        let parser = ASTParser(language: language)
-        guard let tree = parser.parse(editorInformation.editorContent?.content ?? "")
-        else { return nil }
-
-        return tree.smallestNodeContainingRange(range) { node in
-            ScopeType.allCases.map { $0.rawValue }.contains(node.nodeType)
+    func createASTReader() -> ASTReader? {
+        switch editorInformation.language {
+        case .builtIn(.swift):
+            return SwiftASTReader()
+        case .builtIn(.objc), .builtIn(.objcpp):
+            return SwiftASTReader()
+        default:
+            return nil
         }
     }
 }

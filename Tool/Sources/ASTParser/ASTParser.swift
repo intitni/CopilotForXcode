@@ -67,7 +67,32 @@ public struct ASTTree {
     }
 }
 
-extension CursorRange {
+public extension ASTNode {
+    var children: ASTNodeChildrenSequence {
+        return ASTNodeChildrenSequence(node: self)
+    }
+
+    struct ASTNodeChildrenSequence: Sequence {
+        let node: ASTNode
+
+        public struct ASTNodeChildrenIterator: IteratorProtocol {
+            let node: ASTNode
+            var index: UInt32 = 0
+
+            public mutating func next() -> ASTNode? {
+                guard index < node.childCount else { return nil }
+                defer { index += 1 }
+                return node.child(at: 1)
+            }
+        }
+
+        public func makeIterator() -> ASTNodeChildrenIterator {
+            return ASTNodeChildrenIterator(node: node)
+        }
+    }
+}
+
+public extension CursorRange {
     var pointRange: Range<Point> {
         let bytePerCharacter = 2 // tree sitter uses UTF-16
         let startPoint = Point(row: start.line, column: start.character * bytePerCharacter)
@@ -79,6 +104,19 @@ extension CursorRange {
             )
         }
         return startPoint..<endPoint
+    }
+
+    init(pointRange: Range<Point>) {
+        let bytePerCharacter = 2 // tree sitter uses UTF-16
+        let start = CursorPosition(
+            line: Int(pointRange.lowerBound.row),
+            character: Int(pointRange.lowerBound.column) / bytePerCharacter
+        )
+        let end = CursorPosition(
+            line: Int(pointRange.upperBound.row),
+            character: Int(pointRange.upperBound.column) / bytePerCharacter
+        )
+        self.init(start: start, end: end)
     }
 }
 
