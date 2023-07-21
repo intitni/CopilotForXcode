@@ -17,9 +17,14 @@ public final class ChatProvider: ObservableObject {
             .last?
             .text else { return defaultTitle }
         if lastMessageText.isEmpty { return defaultTitle }
-        return lastMessageText
+        let trimmed = lastMessageText
             .trimmingCharacters(in: .punctuationCharacters)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.starts(with: "```") {
+            return "Code Block"
+        } else {
+            return trimmed
+        }
     }
 
     public var extraSystemPrompt = ""
