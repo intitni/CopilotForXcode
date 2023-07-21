@@ -362,6 +362,7 @@ let package = Package(
                     .product(name: "Preferences", package: "Tool"),
                     .product(name: "ASTParser", package: "Tool"),
                     .product(name: "SwiftSyntax", package: "swift-syntax"),
+                    .product(name: "SwiftParser", package: "swift-syntax"),
                 ],
                 path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
             ),

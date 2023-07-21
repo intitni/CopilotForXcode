@@ -19,12 +19,16 @@ public struct CursorRange: Codable, Hashable, Sendable {
     }
 
     public init(startPair: (Int, Int), endPair: (Int, Int)) {
-        self.start = Position(startPair)
-        self.end = Position(endPair)
+        start = CursorPosition(startPair)
+        end = CursorPosition(endPair)
     }
 
-    public func contains(_ position: Position) -> Bool {
+    public func contains(_ position: CursorPosition) -> Bool {
         return position > start && position < end
+    }
+
+    public func contains(_ range: CursorRange) -> Bool {
+        return range.start > start && range.end < end
     }
 
     public func intersects(_ other: LSPRange) -> Bool {
@@ -42,3 +46,4 @@ public extension CursorRange {
         return .init(start: position, end: position)
     }
 }
+
