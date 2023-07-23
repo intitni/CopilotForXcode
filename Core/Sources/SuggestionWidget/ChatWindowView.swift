@@ -113,6 +113,14 @@ struct ChatTabBar: View {
                 createButton
             }
         }
+        .background {
+            Button(action: { store.send(.switchToNextTab) }) { EmptyView() }
+                .opacity(0)
+                .keyboardShortcut("]", modifiers: [.command, .shift])
+            Button(action: { store.send(.switchToPreviousTab) }) { EmptyView() }
+                .opacity(0)
+                .keyboardShortcut("[", modifiers: [.command, .shift])
+        }
     }
 
     @ViewBuilder
