@@ -5,9 +5,13 @@ public typealias CursorPosition = LanguageServerProtocol.Position
 public extension CursorPosition {
     static let zero = CursorPosition(line: 0, character: 0)
     static var outOfScope: CursorPosition { .init(line: -1, character: -1) }
+    
+    var readableText: String {
+        return "[\(line), \(character)]"
+    }
 }
 
-public struct CursorRange: Codable, Hashable, Sendable {
+public struct CursorRange: Codable, Hashable, Sendable, Equatable, CustomStringConvertible {
     public static let zero = CursorRange(start: .zero, end: .zero)
 
     public var start: CursorPosition
@@ -24,10 +28,14 @@ public struct CursorRange: Codable, Hashable, Sendable {
     }
 
     public func contains(_ position: CursorPosition) -> Bool {
-        return position > start && position < end
+        return position >= start && position <= end
     }
 
     public func contains(_ range: CursorRange) -> Bool {
+        return range.start >= start && range.end <= end
+    }
+    
+    public func strictlyContains(_ range: CursorRange) -> Bool {
         return range.start > start && range.end < end
     }
 
@@ -37,6 +45,14 @@ public struct CursorRange: Codable, Hashable, Sendable {
 
     public var isEmpty: Bool {
         return start == end
+    }
+    
+    public static func == (lhs: CursorRange, rhs: CursorRange) -> Bool {
+        return lhs.start == rhs.start && lhs.end == rhs.end
+    }
+    
+    public var description: String {
+        return "\(start.readableText) - \(end.readableText)"
     }
 }
 

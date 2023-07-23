@@ -1,6 +1,13 @@
 import Foundation
+import Parsing
 
 public struct EditorInformation {
+    public struct LineAnnotation {
+        public var type: String
+        public var line: Int
+        public var message: String
+    }
+
     public struct SourceEditorContent {
         /// The content of the source editor.
         public var content: String
@@ -11,7 +18,7 @@ public struct EditorInformation {
         /// The cursor position of the source editor.
         public var cursorPosition: CursorPosition
         /// Line annotations of the source editor.
-        public var lineAnnotations: [String]
+        public var lineAnnotations: [LineAnnotation]
 
         public var selectedContent: String {
             if let range = selections.first {
@@ -40,7 +47,7 @@ public struct EditorInformation {
             self.lines = lines
             self.selections = selections
             self.cursorPosition = cursorPosition
-            self.lineAnnotations = lineAnnotations
+            self.lineAnnotations = lineAnnotations.map(EditorInformation.parseLineAnnotation)
         }
     }
 
@@ -71,7 +78,7 @@ public struct EditorInformation {
     }
 
     public func code(in range: CursorRange) -> String {
-        return EditorInformation.code(in: selectedLines, inside: range).code
+        return EditorInformation.code(in: editorContent?.lines ?? [], inside: range).code
     }
 
     public static func lines(in code: [String], containing range: CursorRange) -> [String] {
@@ -86,16 +93,41 @@ public struct EditorInformation {
         inside range: CursorRange
     ) -> (code: String, lines: [String]) {
         let rangeLines = lines(in: code, containing: range)
-        var selectedContent = rangeLines
-        if !selectedContent.isEmpty {
-            selectedContent[0] = String(selectedContent[0].dropFirst(range.start.character))
-            selectedContent[selectedContent.endIndex - 1] = String(
-                selectedContent[selectedContent.endIndex - 1].dropLast(
-                    selectedContent[selectedContent.endIndex - 1].count - range.end.character
+        var content = rangeLines
+        if !content.isEmpty {
+            content[content.endIndex - 1] = String(
+                content[content.endIndex - 1].dropLast(
+                    content[content.endIndex - 1].count - range.end.character
                 )
             )
+            content[0] = String(content[0].dropFirst(range.start.character))
         }
-        return (selectedContent.joined(), rangeLines)
+        return (content.joined(), rangeLines)
+    }
+
+    /// Error Line 25: FileName.swift:25 Cannot convert Type
+    static func parseLineAnnotation(_ annotation: String) -> LineAnnotation {
+        let lineAnnotationParser = Parse(input: Substring.self) {
+            PrefixUpTo(":")
+            ":"
+            PrefixUpTo(":")
+            ":"
+            Int.parser()
+            Prefix(while: { _ in true })
+        }.map { (prefix: Substring, _: Substring, line: Int, message: Substring) in
+            let type = String(prefix.split(separator: " ").first ?? prefix)
+            return LineAnnotation(
+                type: type.trimmingCharacters(in: .whitespacesAndNewlines),
+                line: line,
+                message: message.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }
+
+        do {
+            return try lineAnnotationParser.parse(annotation[...])
+        } catch {
+            return .init(type: "", line: 0, message: annotation)
+        }
     }
 }
 

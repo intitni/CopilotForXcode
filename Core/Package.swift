@@ -352,20 +352,25 @@ let package = Package(
             ],
             path: "Sources/ChatContextCollectors/WebChatContextCollector"
         ),
-        
-            .target(
-                name: "ActiveDocumentChatContextCollector",
-                dependencies: [
-                    "ChatContextCollector",
-                    .product(name: "LangChain", package: "Tool"),
-                    .product(name: "OpenAIService", package: "Tool"),
-                    .product(name: "Preferences", package: "Tool"),
-                    .product(name: "ASTParser", package: "Tool"),
-                    .product(name: "SwiftSyntax", package: "swift-syntax"),
-                    .product(name: "SwiftParser", package: "swift-syntax"),
-                ],
-                path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
-            ),
+
+        .target(
+            name: "ActiveDocumentChatContextCollector",
+            dependencies: [
+                "ChatContextCollector",
+                .product(name: "LangChain", package: "Tool"),
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "ASTParser", package: "Tool"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+            ],
+            path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
+        ),
+
+        .testTarget(
+            name: "ActiveDocumentChatContextCollectorTests",
+            dependencies: ["ActiveDocumentChatContextCollector"]
+        ),
     ]
 )
 

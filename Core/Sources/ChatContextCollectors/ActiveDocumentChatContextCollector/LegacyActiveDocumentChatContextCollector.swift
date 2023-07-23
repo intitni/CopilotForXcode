@@ -13,9 +13,8 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String
     ) -> ChatContext? {
-        let content = getEditorInformation()
-        let relativePath = content.documentURL.path
-            .replacingOccurrences(of: content.projectURL.path, with: "")
+        guard let content = getEditorInformation() else { return nil }
+        let relativePath = content.relativePath
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
             if scopes.contains("file") || scopes.contains("f") {

@@ -22,6 +22,10 @@ protocol Cursor {
 }
 
 extension TreeCursor: Cursor {
+    func goToNextSibling() -> Bool {
+        gotoNextSibling()
+    }
+    
     func goToParent() -> Bool {
         gotoParent()
     }

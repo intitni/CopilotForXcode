@@ -2,7 +2,9 @@ import Foundation
 import SuggestionModel
 import XcodeInspector
 
-func getEditorInformation() -> EditorInformation {
+func getEditorInformation() -> EditorInformation? {
+    guard !XcodeInspector.shared.xcodes.isEmpty else { return nil }
+    
     let editorContent = XcodeInspector.shared.focusedEditor?.content
     let documentURL = XcodeInspector.shared.activeDocumentURL
     let projectURL = XcodeInspector.shared.activeProjectURL

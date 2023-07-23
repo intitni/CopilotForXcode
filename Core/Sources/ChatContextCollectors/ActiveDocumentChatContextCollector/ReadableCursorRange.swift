@@ -1,13 +1,13 @@
 import SuggestionModel
 
-extension CursorPosition: CustomStringConvertible {
-    var description: String {
+extension CursorPosition {
+    var text: String {
         "[\(line), \(character)]"
     }
 }
 
-extension CursorRange: CustomStringConvertible {
-    var description: String {
+extension CursorRange {
+    var text: String {
         "\(start.description) - \(end.description)"
     }
 }

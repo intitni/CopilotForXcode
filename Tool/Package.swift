@@ -112,7 +112,10 @@ let package = Package(
 
         .target(
             name: "SuggestionModel",
-            dependencies: ["LanguageClient"]
+            dependencies: [
+                "LanguageClient",
+                .product(name: "Parsing", package: "swift-parsing"),
+            ]
         ),
 
         .testTarget(
@@ -140,7 +143,7 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
-
+        
         .target(
             name: "SharedUIComponents",
             dependencies: [
@@ -152,6 +155,7 @@ let package = Package(
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
 
         .target(name: "ASTParser", dependencies: [
+            "SuggestionModel",
             .product(name: "SwiftTreeSitter", package: "SwiftTreeSitter"),
             .product(name: "TreeSitterObjC", package: "tree-sitter-objc"),
             .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),

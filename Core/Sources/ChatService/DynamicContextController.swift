@@ -34,7 +34,13 @@ final class DynamicContextController {
 
     func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         var content = content
-        let scopes = Self.parseScopes(&content)
+        var scopes = Self.parseScopes(&content)
+        if UserDefaults.shared.value(for: \.useSelectionScopeByDefaultInChatContext) {
+            scopes.insert("code")
+        } else {
+            scopes.insert("file")
+        }
+        
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history
