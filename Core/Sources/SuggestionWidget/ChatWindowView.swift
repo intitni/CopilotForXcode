@@ -52,6 +52,7 @@ struct ChatWindowView: View {
 struct ChatTitleBar: View {
     let store: StoreOf<ChatPanelFeature>
     @State var isHovering = false
+    @Environment(\.controlActiveState) var controlActiveState
 
     var body: some View {
         HStack(spacing: 4) {
@@ -59,46 +60,53 @@ struct ChatTitleBar: View {
                 store.send(.hideButtonClicked)
             }) {
                 Circle()
-                    .fill(Color(nsColor: .systemRed))
+                    .fill(
+                        controlActiveState == .key
+                            ? Color(nsColor: .systemOrange)
+                            : Color(nsColor: .disabledControlTextColor)
+                    )
                     .frame(width: 10, height: 10)
                     .overlay {
-                        Circle().strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                        Circle().strokeBorder(.secondary.opacity(0.2), lineWidth: 1)
                     }
                     .overlay {
                         if isHovering {
-                            Image(systemName: "xmark")
+                            Image(systemName: "minus")
                                 .resizable()
                                 .foregroundStyle(.secondary)
                                 .font(Font.title.weight(.heavy))
-                                .frame(width: 5, height: 5)
+                                .frame(width: 5, height: 1)
                         }
                     }
             }
-            
+
             WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
-                if viewStore.state {
-                    Button(action: {
-                        store.send(.attachChatPanel)
-                    }) {
-                        Circle()
-                            .fill(.indigo)
-                            .frame(width: 10, height: 10)
-                            .overlay {
-                                Circle().strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                Button(action: {
+                    store.send(.toggleChatPanelDetachedButtonClicked)
+                }) {
+                    Circle()
+                        .fill(
+                            controlActiveState == .key && viewStore.state
+                                ? Color(nsColor: .systemIndigo)
+                                : Color(nsColor: .disabledControlTextColor)
+                        )
+                        .frame(width: 10, height: 10)
+                        .overlay {
+                            Circle().strokeBorder(.secondary.opacity(0.2), lineWidth: 1)
+                        }
+                        .disabled(!viewStore.state)
+                        .overlay {
+                            if isHovering {
+                                Image(systemName: "pin")
+                                    .resizable()
+                                    .foregroundStyle(.secondary)
+                                    .font(Font.title.weight(.heavy))
+                                    .frame(width: 5, height: 5)
                             }
-                            .overlay {
-                                if isHovering {
-                                    Image(systemName: "pin")
-                                        .resizable()
-                                        .foregroundStyle(.secondary)
-                                        .font(Font.title.weight(.heavy))
-                                        .frame(width: 5, height: 5)
-                                }
-                            }
-                    }
+                        }
                 }
             }
-            
+
             Button(action: {
                 store.send(.closeActiveTabClicked)
             }) {
