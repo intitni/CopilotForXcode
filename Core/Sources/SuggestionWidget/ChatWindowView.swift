@@ -99,25 +99,33 @@ struct ChatTabBar: View {
             ) }
         ) { viewStore in
             HStack(spacing: 0) {
-                ScrollView(.horizontal) {
-                    HStack(spacing: 0) {
-                        ForEach(viewStore.state.tabInfo, id: \.id) { info in
-                            ChatTabBarButton(
-                                store: store,
-                                info: info,
-                                isSelected: info.id == viewStore.state.selectedTabId
-                            )
-                            .contextMenu {
-                                if let tab = viewStore.state.tabs
-                                    .first(where: { $0.id == info.id })
-                                {
-                                    tab.menu
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 0) {
+                            ForEach(viewStore.state.tabInfo, id: \.id) { info in
+                                ChatTabBarButton(
+                                    store: store,
+                                    info: info,
+                                    isSelected: info.id == viewStore.state.selectedTabId
+                                )
+                                .id(info.id)
+                                .contextMenu {
+                                    if let tab = viewStore.state.tabs
+                                        .first(where: { $0.id == info.id })
+                                    {
+                                        tab.menu
+                                    }
                                 }
                             }
                         }
                     }
+                    .hideScrollIndicator()
+                    .onChange(of: viewStore.selectedTabId) { id in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(id)
+                        }
+                    }
                 }
-                .hideScrollIndicator()
 
                 Divider()
 
