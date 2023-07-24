@@ -71,6 +71,8 @@ public struct ChatPanelFeature: ReducerProtocol {
         case createNewTapButtonClicked(kind: ChatTabKind?)
         case tabClicked(id: String)
         case appendAndSelectTab(BaseChatTab)
+        case switchToNextTab
+        case switchToPreviousTab
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
@@ -146,7 +148,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                     state.isPanelDisplayed = false
                 }
                 return .none
-                
+
             case .createNewTapButtonHovered:
                 state.chatTapGroup.tabCollection = chatTabBuilderCollection()
                 return .none
@@ -167,6 +169,32 @@ public struct ChatPanelFeature: ReducerProtocol {
                 else { return .none }
                 state.chatTapGroup.tabs.append(tab)
                 state.chatTapGroup.selectedTabId = tab.id
+                return .none
+
+            case .switchToNextTab:
+                let selectedId = state.chatTapGroup.selectedTabId
+                guard let index = state.chatTapGroup.tabInfo
+                    .firstIndex(where: { $0.id == selectedId })
+                else { return .none }
+                let nextIndex = index + 1
+                if nextIndex >= state.chatTapGroup.tabInfo.endIndex {
+                    return .none
+                }
+                let targetId = state.chatTapGroup.tabInfo[nextIndex].id
+                state.chatTapGroup.selectedTabId = targetId
+                return .none
+
+            case .switchToPreviousTab:
+                let selectedId = state.chatTapGroup.selectedTabId
+                guard let index = state.chatTapGroup.tabInfo
+                    .firstIndex(where: { $0.id == selectedId })
+                else { return .none }
+                let previousIndex = index - 1
+                if previousIndex < 0 || previousIndex >= state.chatTapGroup.tabInfo.endIndex {
+                    return .none
+                }
+                let targetId = state.chatTapGroup.tabInfo[previousIndex].id
+                state.chatTapGroup.selectedTabId = targetId
                 return .none
             }
         }
