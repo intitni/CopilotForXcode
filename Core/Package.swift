@@ -153,7 +153,6 @@ let package = Package(
         .target(
             name: "PromptToCodeService",
             dependencies: [
-                "GitHubCopilotService",
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
