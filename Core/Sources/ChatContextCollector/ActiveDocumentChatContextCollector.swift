@@ -17,7 +17,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
             .replacingOccurrences(of: content.projectURL.path, with: "")
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
-            if scopes.contains("file") {
+            if scopes.contains("file") || scopes.contains("f") {
                 return """
                 File Content:```\(content.language.rawValue)
                 \(content.editorContent?.content ?? "")
@@ -57,7 +57,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                 """
             }
 
-            if scopes.contains("selection") {
+            if scopes.contains("selection") || scopes.contains("s") {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
