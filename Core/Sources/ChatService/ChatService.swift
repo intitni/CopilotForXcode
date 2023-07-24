@@ -231,5 +231,20 @@ public final class ChatService: ObservableObject {
         }
         return try await sendAndWait(content: templateProcessor.process(prompt))
     }
+
+    public func processMessage(
+        systemPrompt: String?,
+        extraSystemPrompt: String?,
+        prompt: String
+    ) async throws -> String {
+        let templateProcessor = CustomCommandTemplateProcessor()
+        if let systemPrompt {
+            mutateSystemPrompt(templateProcessor.process(systemPrompt))
+        }
+        if let extraSystemPrompt {
+            mutateExtraSystemPrompt(templateProcessor.process(extraSystemPrompt))
+        }
+        return try await sendAndWait(content: templateProcessor.process(prompt))
+    }
 }
 

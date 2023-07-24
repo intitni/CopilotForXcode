@@ -1,5 +1,4 @@
 import SuggestionModel
-import GitHubCopilotService
 import Foundation
 import OpenAIService
 
