@@ -28,10 +28,7 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(.tertiary)
-                    .frame(width: 120, height: 4)
-                    .frame(height: 16)
+                ChatTitleBar(store: store)
 
                 Divider()
 
@@ -43,29 +40,94 @@ struct ChatWindowView: View {
                 ChatTabContainer(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background {
-                Button(action: {
-                    viewStore.send(.hideButtonClicked)
-                }) {
-                    EmptyView()
-                }
-                .opacity(0)
-                .keyboardShortcut("M", modifiers: [.command])
-
-                Button(action: {
-                    viewStore.send(.closeActiveTabClicked)
-                }) {
-                    EmptyView()
-                }
-                .opacity(0)
-                .keyboardShortcut("W", modifiers: [.command])
-            }
             .background(.regularMaterial)
             .xcodeStyleFrame()
             .opacity(viewStore.state.isPanelDisplayed ? 1 : 0)
             .frame(minWidth: Style.panelWidth, minHeight: Style.panelHeight)
             .preferredColorScheme(viewStore.state.colorScheme)
         }
+    }
+}
+
+struct ChatTitleBar: View {
+    let store: StoreOf<ChatPanelFeature>
+    @State var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button(action: {
+                store.send(.hideButtonClicked)
+            }) {
+                Circle()
+                    .fill(Color(nsColor: .systemRed))
+                    .frame(width: 10, height: 10)
+                    .overlay {
+                        Circle().strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                    }
+                    .overlay {
+                        if isHovering {
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .foregroundStyle(.secondary)
+                                .font(Font.title.weight(.heavy))
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+            }
+            
+            WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
+                if viewStore.state {
+                    Button(action: {
+                        store.send(.attachChatPanel)
+                    }) {
+                        Circle()
+                            .fill(.indigo)
+                            .frame(width: 10, height: 10)
+                            .overlay {
+                                Circle().strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                            }
+                            .overlay {
+                                if isHovering {
+                                    Image(systemName: "pin")
+                                        .resizable()
+                                        .foregroundStyle(.secondary)
+                                        .font(Font.title.weight(.heavy))
+                                        .frame(width: 5, height: 5)
+                                }
+                            }
+                    }
+                }
+            }
+            
+            Button(action: {
+                store.send(.closeActiveTabClicked)
+            }) {
+                EmptyView()
+            }
+            .opacity(0)
+            .keyboardShortcut("W", modifiers: [.command])
+
+            Spacer()
+        }
+        .buttonStyle(.plain)
+        .overlay {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(.tertiary)
+                .frame(width: 120, height: 4)
+                .background {
+                    if isHovering {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(.tertiary.opacity(0.3))
+                            .frame(width: 128, height: 12)
+                    }
+                }
+        }
+        .padding(.horizontal, 6)
+        .frame(maxWidth: .infinity)
+        .frame(height: 16)
+        .onHover(perform: { hovering in
+            isHovering = hovering
+        })
     }
 }
 
