@@ -1,9 +1,11 @@
 import AppKit
 import ChatGPTChatTab
+import ChatService
 import ChatTab
 import ComposableArchitecture
 import Environment
 import Preferences
+import PromptToCodeService
 import SuggestionModel
 import SuggestionWidget
 import XcodeInspector
@@ -116,11 +118,11 @@ public final class GraphicalUserInterfaceController {
     private init() {
         let suggestionDependency = SuggestionWidgetControllerDependency()
         let setupDependency: (inout DependencyValues) -> Void = { dependencies in
-                dependencies.suggestionWidgetControllerDependency = suggestionDependency
-                dependencies.suggestionWidgetUserDefaultsObservers = .init()
-                dependencies.chatTabBuilderCollection = {
-                    ChatTabFactory.chatTabBuilderCollection
-                }
+            dependencies.suggestionWidgetControllerDependency = suggestionDependency
+            dependencies.suggestionWidgetUserDefaultsObservers = .init()
+            dependencies.chatTabBuilderCollection = {
+                ChatTabFactory.chatTabBuilderCollection
+            }
         }
         let store = StoreOf<GUI>(
             initialState: .init(),
@@ -182,20 +184,71 @@ enum ChatTabFactory {
 
         let collection = [
             folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
-            folderIfNeeded(BrowserChatTab.chatBuilders(externalDependency: .init(getEditorContent: {
-                guard let editor = XcodeInspector.shared.focusedEditor else {
-                    return .init(selectedText: "", language: "", fileContent: "")
-                }
-                let content = editor.content
-                return .init(
-                    selectedText: content.selectedContent,
-                    language: languageIdentifierFromFileURL(XcodeInspector.shared.activeDocumentURL)
+            folderIfNeeded(BrowserChatTab.chatBuilders(externalDependency: .init(
+                getEditorContent: {
+                    guard let editor = XcodeInspector.shared.focusedEditor else {
+                        return .init(selectedText: "", language: "", fileContent: "")
+                    }
+                    let content = editor.content
+                    return .init(
+                        selectedText: content.selectedContent,
+                        language: languageIdentifierFromFileURL(
+                            XcodeInspector.shared
+                                .activeDocumentURL
+                        )
                         .rawValue,
-                    fileContent: content.content
-                )
-            })), title: BrowserChatTab.name),
+                        fileContent: content.content
+                    )
+                },
+                handleCustomCommand: { command, prompt in
+                    switch command.feature {
+                    case let .chatWithSelection(extraSystemPrompt, _, useExtraSystemPrompt):
+                        let service = ChatService()
+                        return try await service.processMessage(
+                            systemPrompt: nil,
+                            extraSystemPrompt: (useExtraSystemPrompt ?? false) ? extraSystemPrompt :
+                                nil,
+                            prompt: prompt
+                        )
+                    case let .customChat(systemPrompt, _):
+                        let service = ChatService()
+                        return try await service.processMessage(
+                            systemPrompt: systemPrompt,
+                            extraSystemPrompt: nil,
+                            prompt: prompt
+                        )
+                    case let .singleRoundDialog(
+                        systemPrompt,
+                        overwriteSystemPrompt,
+                        _,
+                        _
+                    ):
+                        let service = ChatService()
+                        return try await service.handleSingleRoundDialogCommand(
+                            systemPrompt: systemPrompt,
+                            overwriteSystemPrompt: overwriteSystemPrompt ?? false,
+                            prompt: prompt
+                        )
+                    case let .promptToCode(extraSystemPrompt, instruction, _, _):
+                        let service = PromptToCodeService(
+                            code: prompt,
+                            selectionRange: .outOfScope,
+                            language: .plaintext,
+                            identSize: 4,
+                            usesTabsForIndentation: true,
+                            projectRootURL: .init(fileURLWithPath: "/"),
+                            fileURL: .init(fileURLWithPath: "/"),
+                            allCode: prompt,
+                            extraSystemPrompt: extraSystemPrompt,
+                            generateDescriptionRequirement: false
+                        )
+                        try await service.modifyCode(prompt: instruction ?? "Modify content.")
+                        return service.code
+                    }
+                }
+            )), title: BrowserChatTab.name),
         ].compactMap { $0 }
-        
+
         return collection
     }
 }
