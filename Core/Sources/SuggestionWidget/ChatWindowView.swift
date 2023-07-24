@@ -69,6 +69,16 @@ struct ChatWindowView: View {
     }
 }
 
+private extension View {
+    func hideScrollIndicator() -> some View {
+        if #available(macOS 13.0, *) {
+            return scrollIndicators(.hidden)
+        } else {
+            return self
+        }
+    }
+}
+
 struct ChatTabBar: View {
     let store: StoreOf<ChatPanelFeature>
 
@@ -107,6 +117,7 @@ struct ChatTabBar: View {
                         }
                     }
                 }
+                .hideScrollIndicator()
 
                 Divider()
 
@@ -308,6 +319,11 @@ struct ChatWindowView_Previews: PreviewProvider {
                         tabs: [
                             FakeChatTab(id: "1", title: "Hello I am a chatbot"),
                             EmptyChatTab(id: "2"),
+                            EmptyChatTab(id: "3"),
+                            EmptyChatTab(id: "4"),
+                            EmptyChatTab(id: "5"),
+                            EmptyChatTab(id: "6"),
+                            EmptyChatTab(id: "7"),
                         ],
                         selectedTabId: "1"
                     ),
