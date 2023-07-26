@@ -16,7 +16,7 @@ jobs: # a basic unit of work in a run
       - checkout  # pull down code from your version control system.
       - run:
           name: Run Unit Tests
-          command: xcodebuild test -scheme Core
+          command: xcodebuild test -scheme CopilotModelTests
 
   build: 
     macos:
@@ -36,6 +36,10 @@ jobs: # a basic unit of work in a run
           destination: app
           
 workflows:
-  test_build:
+  test_configure_macOS_app_build:
     jobs:
       - findSchemeName
+      - test
+      - build:
+          requires:
+            - test
