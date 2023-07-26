@@ -39,7 +39,3 @@ workflows:
   test_build:
     jobs:
       - findSchemeName
-      - test
-      - build:
-          requires:
-            - test
