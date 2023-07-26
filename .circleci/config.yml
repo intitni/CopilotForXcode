@@ -1,6 +1,14 @@
 version: 2.1
 
 jobs: # a basic unit of work in a run
+  findSchemeName:
+    macos:
+      xcode: 14.2.0
+    steps:
+      - checkout
+      - run:
+          name: Find Available scheme names
+          command: xcodebuild -list
   test: # your job name
     macos:
       xcode: 14.2.0 # indicate your selected version of Xcode
@@ -30,6 +38,7 @@ jobs: # a basic unit of work in a run
 workflows:
   test_build:
     jobs:
+      - findSchemeName
       - test
       - build:
           requires:
