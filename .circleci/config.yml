@@ -1,42 +1,36 @@
 version: 2.1
-jobs:
-  # running commands on a basic image
-  Hello-World:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
+
+jobs: # a basic unit of work in a run
+  test: # your job name
+    macos:
+      xcode: 14.2.0 # indicate your selected version of Xcode
+    steps: # a series of commands to run
+      - checkout  # pull down code from your version control system.
       - run:
-          name: Saying Hello
-          command: |
-            echo 'Hello World!'
-            echo 'This is the delivery pipeline'
-  # fetching code from the repo
-  Fetch-Code:
-    docker:
-      - image: cimg/base:2021.04
-    steps:
+          name: Run Unit Tests
+          command: xcodebuild test -scheme Core
+
+  build: 
+    macos:
+      xcode: 14.2.0 # indicate your selected version of Xcode
+    steps: 
       - checkout
       - run:
-          name: Getting the Code
-          command: |
-            ls -al
-            echo '^^^Your repo files^^^'
-  # running a node container
-  Using-Node:
-    docker:
-      - image: cimg/node:17.2
-    steps:
+          # build our application
+          name: Build Application
+          command: xcodebuild
       - run:
-          name: Running the Node Container
-          command: |
-            node -v
+          # compress Xcode's build output so that it can be stored as an artifact
+          name: Compress app for storage
+          command: zip -r app.zip build/Release/circleci-demo-macos.app
+      - store_artifacts: # store this build output. Read more: https://circleci.com/docs/2.0/artifacts/
+          path: app.zip
+          destination: app
+          
 workflows:
-  Example-Workflow:
+  test_build:
     jobs:
-      - Hello-World
-      - Fetch-Code:
+      - test
+      - build:
           requires:
-            - Hello-World
-      - Using-Node:
-          requires:
-            - Fetch-Code
+            - test
