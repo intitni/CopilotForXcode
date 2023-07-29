@@ -1,20 +1,26 @@
 import Client
+import ComposableArchitecture
 import LaunchAgentManager
 import Preferences
 import SwiftUI
 
 struct GeneralView: View {
+    let store: StoreOf<General>
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 AppInfoView()
                 Divider()
-                ExtensionServiceView()
+                ExtensionServiceView(store: store)
                 Divider()
                 LaunchAgentView()
                 Divider()
                 GeneralSettingsView()
             }
+        }
+        .onAppear {
+            store.send(.appear)
         }
     }
 }
@@ -74,24 +80,28 @@ struct AppInfoView: View {
 }
 
 struct ExtensionServiceView: View {
-    @Environment(\.toast) var toast
-    @State var xpcServiceVersion: String?
-    @State var isAccessibilityPermissionGranted: Bool?
-    @State var isRunningAction = false
+    let store: StoreOf<General>
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Extension Service Version: \(xpcServiceVersion ?? "Loading..")")
-            let grantedStatus: String = {
-                guard let isAccessibilityPermissionGranted else { return "Loading.." }
-                return isAccessibilityPermissionGranted ? "Granted" : "Not Granted"
-            }()
-            Text("Accessibility Permission: \(grantedStatus)")
+            WithViewStore(store, observe: { $0.xpcServiceVersion }) { viewStore in
+                Text("Extension Service Version: \(viewStore.state ?? "Loading..")")
+            }
+            
+            WithViewStore(store, observe: { $0.isAccessibilityPermissionGranted }) { viewStore in
+                let grantedStatus: String = {
+                    guard let granted = viewStore.state else { return "Loading.." }
+                    return granted ? "Granted" : "Not Granted"
+                }()
+                Text("Accessibility Permission: \(grantedStatus)")
+            }
 
             HStack {
-                Button(action: { checkStatus() }) {
-                    Text("Refresh")
-                }.disabled(isRunningAction)
+                WithViewStore(store, observe: { $0.isReloading }) { viewStore in
+                    Button(action: { viewStore.send(.reloadStatus) }) {
+                        Text("Refresh")
+                    }.disabled(viewStore.state)
+                }
 
                 Button(action: {
                     Task {
@@ -126,25 +136,6 @@ struct ExtensionServiceView: View {
             }
         }
         .padding()
-        .onAppear {
-            checkStatus()
-        }
-    }
-
-    func checkStatus() {
-        Task {
-            try await Task.sleep(nanoseconds: 2_000_000_000)
-            isRunningAction = true
-            defer { isRunningAction = false }
-            do {
-                let service = try getService()
-                xpcServiceVersion = try await service.getXPCServiceVersion().version
-                isAccessibilityPermissionGranted = try await service
-                    .getXPCServiceAccessibilityPermission()
-            } catch {
-                toast(Text(error.localizedDescription), .error)
-            }
-        }
     }
 }
 
@@ -298,7 +289,7 @@ struct GeneralSettingsView: View {
 
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {
-        GeneralView()
+        GeneralView(store: .init(initialState: .init(), reducer: General()))
     }
 }
 

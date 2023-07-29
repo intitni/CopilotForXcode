@@ -9,7 +9,6 @@ struct CustomCommandFeature: ReducerProtocol {
     }
     
     let settings: CustomCommandView.Settings
-    let toast: (Text, ToastType) -> Void
     
     enum Action: Equatable {
         case createNewCommand
@@ -17,6 +16,8 @@ struct CustomCommandFeature: ReducerProtocol {
         case editCustomCommand(EditCustomCommand.Action)
         case deleteCommand(CustomCommand)
     }
+    
+    @Dependency(\.toastController) var toastController
     
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -43,7 +44,7 @@ struct CustomCommandFeature: ReducerProtocol {
                 
             }
         }.ifLet(\.editCustomCommand, action: /Action.editCustomCommand) {
-            EditCustomCommand(settings: settings, toast: toast)
+            EditCustomCommand(settings: settings)
         }
     }
 }

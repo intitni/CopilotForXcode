@@ -243,8 +243,7 @@ struct EditCustomCommandView_Preview: PreviewProvider {
                     settings: .init(customCommands: .init(
                         wrappedValue: [],
                         "CustomCommandView_Preview"
-                    )),
-                    toast: { _, _ in }
+                    ))
                 )
             )
         )

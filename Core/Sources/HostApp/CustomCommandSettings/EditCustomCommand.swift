@@ -84,7 +84,8 @@ struct EditCustomCommand: ReducerProtocol {
     }
 
     let settings: CustomCommandView.Settings
-    let toast: (Text, ToastType) -> Void
+
+    @Dependency(\.toastController) var toastController
 
     var body: some ReducerProtocol<State, Action> {
         Scope(state: \.sendMessage, action: /Action.sendMessage) {
@@ -109,7 +110,10 @@ struct EditCustomCommand: ReducerProtocol {
             switch action {
             case .saveCommand:
                 guard !state.name.isEmpty else {
-                    toast(Text("Command name cannot be empty."), .error)
+                    toastController.toast(
+                        content: Text("Command name cannot be empty."),
+                        type: .error
+                    )
                     return .none
                 }
 
@@ -154,7 +158,7 @@ struct EditCustomCommand: ReducerProtocol {
                 if state.isNewCommand {
                     settings.customCommands.append(newCommand)
                     state.isNewCommand = false
-                    toast(Text("The command is created."), .info)
+                    toastController.toast(content: Text("The command is created."), type: .info)
                 } else {
                     if let index = settings.customCommands.firstIndex(where: {
                         $0.id == newCommand.id
@@ -163,7 +167,7 @@ struct EditCustomCommand: ReducerProtocol {
                     } else {
                         settings.customCommands.append(newCommand)
                     }
-                    toast(Text("The command is updated."), .info)
+                    toastController.toast(content: Text("The command is updated."), type: .info)
                 }
 
                 return .none

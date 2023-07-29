@@ -1,52 +1,76 @@
+import ComposableArchitecture
+import Dependencies
 import Foundation
 import LaunchAgentManager
 import SwiftUI
 import UpdateChecker
 
-enum Tab: Int, CaseIterable, Equatable {
-    case general
-    case service
-    case feature
-    case customCommand
-    case debug
+struct ToastControllerDependencyKey: DependencyKey {
+    static let liveValue = ToastController(messages: [])
+}
+
+extension DependencyValues {
+    var toastController: ToastController {
+        get { self[ToastControllerDependencyKey.self] }
+        set { self[ToastControllerDependencyKey.self] = newValue }
+    }
 }
 
 @MainActor
-let globalToastController = ToastController(messages: [])
+let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: HostApp())
 
 public struct TabContainer: View {
+    let store: StoreOf<HostApp>
     @ObservedObject var toastController: ToastController
-    @State var tab = Tab.general
+    @State private var tabBarItems = [TabBarItem]()
+    @State var tag: Int = 0
 
     public init() {
-        self.toastController = globalToastController
+        toastController = ToastControllerDependencyKey.liveValue
+        store = hostAppStore
     }
 
-    init(toastController: ToastController) {
+    init(store: StoreOf<HostApp>, toastController: ToastController) {
+        self.store = store
         self.toastController = toastController
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            TabBar(tab: $tab)
+            TabBar(tag: $tag, tabBarItems: tabBarItems)
                 .padding(.bottom, 8)
 
             Divider()
 
-            Group {
-                switch tab {
-                case .general:
-                    GeneralView()
-                case .service:
-                    ServiceView()
-                case .feature:
-                    FeatureSettingsView()
-                case .customCommand:
-                    CustomCommandView(store: customCommandStore)
-                case .debug:
-                    DebugSettingsView()
-                }
+            ZStack(alignment: .center) {
+                GeneralView(store: store.scope(state: \.general, action: HostApp.Action.general))
+                    .tabBarItem(
+                        tag: 0,
+                        title: "General",
+                        image: "app.gift"
+                    )
+                ServiceView().tabBarItem(
+                    tag: 1,
+                    title: "Service",
+                    image: "globe"
+                )
+                FeatureSettingsView().tabBarItem(
+                    tag: 2,
+                    title: "Feature",
+                    image: "star.square"
+                )
+                CustomCommandView(store: customCommandStore).tabBarItem(
+                    tag: 3,
+                    title: "Custom Command",
+                    image: "command.square"
+                )
+                DebugSettingsView().tabBarItem(
+                    tag: 4,
+                    title: "Advanced",
+                    image: "gearshape.2"
+                )
             }
+            .environment(\.tabBarTabTag, tag)
             .frame(minHeight: 400)
             .overlay(alignment: .bottom) {
                 VStack(spacing: 4) {
@@ -73,76 +97,43 @@ public struct TabContainer: View {
         .environment(\.toast) { [toastController] content, type in
             toastController.toast(content: content, type: type)
         }
+        .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
+            tabBarItems = items
+        }
         .onAppear {
-            #if DEBUG
-            // do not auto install on debug build
-            #else
-            Task {
-                do {
-                    try await LaunchAgentManager()
-                        .setupLaunchAgentForTheFirstTimeIfNeeded()
-                } catch {
-                    toastController.toast(content: Text(error.localizedDescription), type: .error)
-                }
-            }
-            #endif
+            store.send(.appear)
         }
     }
 }
 
 struct TabBar: View {
-    @Binding var tab: Tab
+    @Binding var tag: Int
+    fileprivate var tabBarItems: [TabBarItem]
 
     var body: some View {
         HStack {
-            ForEach(Tab.allCases, id: \.self) { tab in
-                switch tab {
-                case .general:
-                    TabBarButton(
-                        currentTab: $tab,
-                        title: "General",
-                        image: "app.gift",
-                        tab: tab
-                    )
-                case .service:
-                    TabBarButton(currentTab: $tab, title: "Service", image: "globe", tab: tab)
-                case .feature:
-                    TabBarButton(
-                        currentTab: $tab,
-                        title: "Feature",
-                        image: "star.square",
-                        tab: tab
-                    )
-                case .customCommand:
-                    TabBarButton(
-                        currentTab: $tab,
-                        title: "Custom Command",
-                        image: "command.square",
-                        tab: tab
-                    )
-                case .debug:
-                    TabBarButton(
-                        currentTab: $tab,
-                        title: "Advanced",
-                        image: "gearshape.2",
-                        tab: tab
-                    )
-                }
+            ForEach(tabBarItems) { tab in
+                TabBarButton(
+                    currentTag: $tag,
+                    tag: tab.tag,
+                    title: tab.title,
+                    image: tab.image
+                )
             }
         }
     }
 }
 
 struct TabBarButton: View {
-    @Binding var currentTab: Tab
+    @Binding var currentTag: Int
     @State var isHovered = false
+    var tag: Int
     var title: String
     var image: String
-    var tab: Tab
 
     var body: some View {
         Button(action: {
-            self.currentTab = tab
+            self.currentTag = tag
         }) {
             VStack(spacing: 2) {
                 Image(systemName: image)
@@ -156,7 +147,7 @@ struct TabBarButton: View {
             .padding(.vertical, 4)
             .padding(.top, 4)
             .background(
-                tab == currentTab
+                tag == currentTag
                     ? Color(nsColor: .textColor).opacity(0.1)
                     : Color.clear,
                 in: RoundedRectangle(cornerRadius: 8)
@@ -175,7 +166,67 @@ struct TabBarButton: View {
     }
 }
 
-// MARK: - Environment Keys
+private struct TabBarTabViewWrapper<Content: View>: View {
+    @Environment(\.tabBarTabTag) var tabBarTabTag
+    var tag: Int
+    var title: String
+    var image: String
+    var content: () -> Content
+
+    var body: some View {
+        Group {
+            if tag == tabBarTabTag {
+                content()
+            } else {
+                Color.clear
+            }
+        }
+        .preference(
+            key: TabBarItemPreferenceKey.self,
+            value: [.init(tag: tag, title: title, image: image)]
+        )
+    }
+}
+
+private extension View {
+    func tabBarItem(
+        tag: Int,
+        title: String,
+        image: String
+    ) -> some View {
+        TabBarTabViewWrapper(
+            tag: tag,
+            title: title,
+            image: image,
+            content: { self }
+        )
+    }
+}
+
+private struct TabBarItem: Identifiable, Equatable {
+    var id: Int { tag }
+    var tag: Int
+    var title: String
+    var image: String
+}
+
+private struct TabBarItemPreferenceKey: PreferenceKey {
+    static var defaultValue: [TabBarItem] = []
+    static func reduce(value: inout [TabBarItem], nextValue: () -> [TabBarItem]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private struct TabBarTabTagKey: EnvironmentKey {
+    static var defaultValue: Int = 0
+}
+
+private extension EnvironmentValues {
+    var tabBarTabTag: Int {
+        get { self[TabBarTabTagKey.self] }
+        set { self[TabBarTabTagKey.self] = newValue }
+    }
+}
 
 struct UpdateCheckerKey: EnvironmentKey {
     static var defaultValue: UpdateChecker = .init(hostBundle: nil)
@@ -185,54 +236,6 @@ public extension EnvironmentValues {
     var updateChecker: UpdateChecker {
         get { self[UpdateCheckerKey.self] }
         set { self[UpdateCheckerKey.self] = newValue }
-    }
-}
-
-enum ToastType {
-    case info
-    case warning
-    case error
-}
-
-struct ToastKey: EnvironmentKey {
-    static var defaultValue: (Text, ToastType) -> Void = { _, _ in }
-}
-
-extension EnvironmentValues {
-    var toast: (Text, ToastType) -> Void {
-        get { self[ToastKey.self] }
-        set { self[ToastKey.self] = newValue }
-    }
-}
-
-@MainActor
-class ToastController: ObservableObject {
-    struct Message: Identifiable {
-        var id: UUID
-        var type: ToastType
-        var content: Text
-    }
-
-    @Published var messages: [Message] = []
-
-    init(messages: [Message]) {
-        self.messages = messages
-    }
-
-    func toast(content: Text, type: ToastType) {
-        let id = UUID()
-        let message = Message(id: id, type: type, content: content)
-
-        Task { @MainActor in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                messages.append(message)
-                messages = messages.suffix(3)
-            }
-            try await Task.sleep(nanoseconds: 4_000_000_000)
-            withAnimation(.easeInOut(duration: 0.2)) {
-                messages.removeAll { $0.id == id }
-            }
-        }
     }
 }
 
@@ -247,11 +250,14 @@ struct TabContainer_Previews: PreviewProvider {
 
 struct TabContainer_Toasts_Previews: PreviewProvider {
     static var previews: some View {
-        TabContainer(toastController: .init(messages: [
-            .init(id: UUID(), type: .info, content: Text("info")),
-            .init(id: UUID(), type: .error, content: Text("error")),
-            .init(id: UUID(), type: .warning, content: Text("warning")),
-        ]))
+        TabContainer(
+            store: .init(initialState: .init(), reducer: HostApp()),
+            toastController: .init(messages: [
+                .init(id: UUID(), type: .info, content: Text("info")),
+                .init(id: UUID(), type: .error, content: Text("error")),
+                .init(id: UUID(), type: .warning, content: Text("warning")),
+            ])
+        )
         .frame(width: 800)
     }
 }

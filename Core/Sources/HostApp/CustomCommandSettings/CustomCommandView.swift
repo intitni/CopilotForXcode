@@ -17,12 +17,7 @@ extension List {
 let customCommandStore = StoreOf<CustomCommandFeature>(
     initialState: .init(),
     reducer: CustomCommandFeature(
-        settings: .init(),
-        toast: { content, type in
-            Task { @MainActor in
-                globalToastController.toast(content: content, type: type)
-            }
-        }
+        settings: .init()
     )
 )
 
@@ -247,10 +242,7 @@ struct CustomCommandView_Preview: PreviewProvider {
                         )
                     )))
                 ),
-                reducer: CustomCommandFeature(
-                    settings: settings,
-                    toast: { _, _ in }
-                )
+                reducer: CustomCommandFeature(settings: settings)
             ),
             settings: settings
         )
@@ -286,10 +278,7 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                 initialState: .init(
                     editCustomCommand: nil
                 ),
-                reducer: CustomCommandFeature(
-                    settings: settings,
-                    toast: { _, _ in }
-                )
+                reducer: CustomCommandFeature(settings: settings)
             ),
             settings: settings
         )
