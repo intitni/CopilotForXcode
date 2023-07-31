@@ -18,7 +18,7 @@ public extension EmbeddingConfiguration {
             return "\(baseURL)/v1/embeddings"
         case .azureOpenAI:
             let baseURL = UserDefaults.shared.value(for: \.azureOpenAIBaseURL)
-            let deployment = UserDefaults.shared.value(for: \.azureChatGPTDeployment)
+            let deployment = UserDefaults.shared.value(for: \.azureEmbeddingDeployment)
             let version = "2023-07-01-preview"
             if baseURL.isEmpty { return "" }
             return "\(baseURL)/openai/deployments/\(deployment)/embeddings?api-version=\(version)"
