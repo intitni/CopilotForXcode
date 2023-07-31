@@ -154,7 +154,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().setupLaunchAgent()
                             isDidSetupLaunchAgentAlertPresented = true
                         } catch {
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }) {
@@ -176,7 +176,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().removeLaunchAgent()
                             isDidRemoveLaunchAgentAlertPresented = true
                         } catch {
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }) {
@@ -195,7 +195,7 @@ struct LaunchAgentView: View {
                             try await LaunchAgentManager().reloadLaunchAgent()
                             isDidRestartLaunchAgentAlertPresented = true
                         } catch {
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }) {

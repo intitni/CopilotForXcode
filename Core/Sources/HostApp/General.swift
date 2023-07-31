@@ -60,10 +60,7 @@ struct General: ReducerProtocol {
                             permissionGranted: isAccessibilityPermissionGranted
                         ))
                     } catch {
-                        toastController.toast(
-                            content: Text(error.localizedDescription),
-                            type: .error
-                        )
+                        toastController.toast(content: error.localizedDescription, type: .error)
                         await send(.failedReloading)
                     }
                 }
@@ -73,7 +70,7 @@ struct General: ReducerProtocol {
                 state.isAccessibilityPermissionGranted = granted
                 state.isReloading = false
                 return .none
-                
+
             case .failedReloading:
                 state.isReloading = false
                 return .none

@@ -41,7 +41,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(19)
+        it.level = .floating
         it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
@@ -67,7 +67,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(19)
+        it.level = .floating
         it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
@@ -91,7 +91,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.level = .init(NSWindow.Level.floating.rawValue + 2)
         it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
@@ -127,7 +127,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
+        it.level = .init(NSWindow.Level.floating.rawValue + 2)
         it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(
@@ -156,7 +156,7 @@ public final class SuggestionWidgetController: NSObject {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
+        it.level = .init(NSWindow.Level.floating.rawValue + 1)
         it.collectionBehavior = [.fullScreenAuxiliary, .transient]
         it.hasShadow = true
         it.contentView = NSHostingView(

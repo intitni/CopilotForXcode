@@ -3,18 +3,12 @@ import Dependencies
 import Foundation
 import LaunchAgentManager
 import SwiftUI
+import Toast
 import UpdateChecker
 
-struct ToastControllerDependencyKey: DependencyKey {
-    static let liveValue = ToastController(messages: [])
-}
-
-extension DependencyValues {
-    var toastController: ToastController {
-        get { self[ToastControllerDependencyKey.self] }
-        set { self[ToastControllerDependencyKey.self] = newValue }
-    }
-}
+#if canImport(ProHostApp)
+import ProHostApp
+#endif
 
 @MainActor
 let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: HostApp())
@@ -64,6 +58,13 @@ public struct TabContainer: View {
                     title: "Custom Command",
                     image: "command.square"
                 )
+                #if canImport(ProHostApp)
+                PlusView().tabBarItem(
+                    tag: 5,
+                    title: "Plus",
+                    image: "plus.diamond"
+                )
+                #endif
                 DebugSettingsView().tabBarItem(
                     tag: 4,
                     title: "Advanced",
@@ -94,6 +95,8 @@ public struct TabContainer: View {
         }
         .focusable(false)
         .padding(.top, 8)
+        .background(.ultraThinMaterial.opacity(0.01))
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
         .environment(\.toast) { [toastController] content, type in
             toastController.toast(content: content, type: type)
         }

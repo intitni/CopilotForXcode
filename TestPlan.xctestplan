@@ -59,13 +59,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "SuggestionModelTests",
-        "name" : "SuggestionModelTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "LangChainTests",
         "name" : "LangChainTests"
@@ -97,6 +90,20 @@
         "containerPath" : "container:Tool",
         "identifier" : "TokenEncoderTests",
         "name" : "TokenEncoderTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Pro",
+        "identifier" : "LicenseManagementTests",
+        "name" : "LicenseManagementTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionModelTests",
+        "name" : "SuggestionModelTests"
       }
     }
   ],

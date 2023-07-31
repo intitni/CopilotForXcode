@@ -2,23 +2,24 @@ import ComposableArchitecture
 import Foundation
 import Preferences
 import SwiftUI
+import Toast
 
 struct CustomCommandFeature: ReducerProtocol {
     struct State: Equatable {
         var editCustomCommand: EditCustomCommand.State?
     }
-    
+
     let settings: CustomCommandView.Settings
-    
+
     enum Action: Equatable {
         case createNewCommand
         case editCommand(CustomCommand)
         case editCustomCommand(EditCustomCommand.Action)
         case deleteCommand(CustomCommand)
     }
-    
+
     @Dependency(\.toastController) var toastController
-    
+
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
@@ -41,10 +42,10 @@ struct CustomCommandFeature: ReducerProtocol {
                 return .none
             case .editCustomCommand:
                 return .none
-                
             }
         }.ifLet(\.editCustomCommand, action: /Action.editCustomCommand) {
             EditCustomCommand(settings: settings)
         }
     }
 }
+

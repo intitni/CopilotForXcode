@@ -51,9 +51,9 @@ struct AzureView: View {
                                         .overriding(.init(featureProvider: .azureOpenAI))
                                 )
                                 .sendAndWait(content: "Hello", summary: nil)
-                            toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
+                            toast("ChatGPT replied: \(reply ?? "N/A")", .info)
                         } catch {
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }
