@@ -360,6 +360,8 @@ extension ChatGPTStreamTests {
     }
 
     struct FunctionProvider: ChatGPTFunctionProvider {
+        var functionCallStrategy: OpenAIService.FunctionCallStrategy? { nil }
+        
         var functions: [any ChatGPTFunction] { [EmptyFunction()] }
     }
 }

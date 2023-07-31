@@ -117,26 +117,29 @@ let package = Package(
                 "GitHubCopilotService",
                 "CodeiumService",
                 "LaunchAgentManager",
+                .product(name: "Toast", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-            ]
+            ].pro([
+                "ProHostApp",
+            ])
         ),
 
         // MARK: - XPC Related
 
         .target(
             name: "XPCShared",
-            dependencies: [.product(name: "SuggestionModel", package: "Tool"),]
+            dependencies: [.product(name: "SuggestionModel", package: "Tool")]
         ),
 
         // MARK: - Suggestion Service
 
         .target(
             name: "SuggestionInjector",
-            dependencies: [.product(name: "SuggestionModel", package: "Tool"),]
+            dependencies: [.product(name: "SuggestionModel", package: "Tool")]
         ),
         .testTarget(
             name: "SuggestionInjectorTests",

@@ -16,6 +16,7 @@ let package = Package(
         .library(name: "ChatTab", targets: ["ChatTab"]),
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
+        .library(name: "Toast", targets: ["Toast"]),
         .library(
             name: "AppMonitoring",
             targets: [
@@ -54,6 +55,14 @@ let package = Package(
         .target(name: "ObjectiveCExceptionHandling"),
 
         .target(
+            name: "Toast",
+            dependencies: [.product(
+                name: "ComposableArchitecture",
+                package: "swift-composable-architecture"
+            )]
+        ),
+
+        .target(
             name: "Environment",
             dependencies: [
                 "ActiveApplicationMonitor",
@@ -87,11 +96,11 @@ let package = Package(
             name: "SuggestionModel",
             dependencies: ["LanguageClient"]
         ),
-        
-            .testTarget(
-                name: "SuggestionModelTests",
-                dependencies: ["SuggestionModel"]
-            ),
+
+        .testTarget(
+            name: "SuggestionModelTests",
+            dependencies: ["SuggestionModel"]
+        ),
 
         .target(name: "AXExtension"),
 

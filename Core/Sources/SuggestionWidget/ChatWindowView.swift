@@ -67,7 +67,7 @@ struct ChatTitleBar: View {
                     )
                     .frame(width: 10, height: 10)
                     .overlay {
-                        Circle().strokeBorder(.secondary.opacity(0.2), lineWidth: 1)
+                        Circle().strokeBorder(.black.opacity(0.2), lineWidth: 1)
                     }
                     .overlay {
                         if isHovering {
@@ -92,7 +92,7 @@ struct ChatTitleBar: View {
                         )
                         .frame(width: 10, height: 10)
                         .overlay {
-                            Circle().strokeBorder(.secondary.opacity(0.2), lineWidth: 1)
+                            Circle().strokeBorder(.black.opacity(0.2), lineWidth: 1)
                         }
                         .disabled(!viewStore.state)
                         .overlay {
@@ -101,7 +101,7 @@ struct ChatTitleBar: View {
                                     .resizable()
                                     .foregroundStyle(.secondary)
                                     .font(Font.title.weight(.heavy))
-                                    .frame(width: 5, height: 5)
+                                    .frame(width: 3, height: 5)
                             }
                         }
                 }
@@ -131,6 +131,7 @@ struct ChatTitleBar: View {
                 }
         }
         .padding(.horizontal, 6)
+        .padding(.top, 1)
         .frame(maxWidth: .infinity)
         .frame(height: 16)
         .onHover(perform: { hovering in
@@ -410,6 +411,7 @@ struct ChatWindowView_Previews: PreviewProvider {
                 reducer: ChatPanelFeature()
             )
         )
+        .xcodeStyleFrame()
         .padding()
     }
 }

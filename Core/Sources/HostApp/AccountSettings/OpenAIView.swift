@@ -56,9 +56,9 @@ struct OpenAIView: View {
                                         .overriding(.init(featureProvider: .openAI))
                                 )
                                 .sendAndWait(content: "Hello", summary: nil)
-                            toast(Text("ChatGPT replied: \(reply ?? "N/A")"), .info)
+                            toast("ChatGPT replied: \(reply ?? "N/A")", .info)
                         } catch {
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }.disabled(isTesting)
