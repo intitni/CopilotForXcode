@@ -6,7 +6,7 @@ import SwiftUI
 
 struct GeneralView: View {
     let store: StoreOf<General>
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -87,7 +87,7 @@ struct ExtensionServiceView: View {
             WithViewStore(store, observe: { $0.xpcServiceVersion }) { viewStore in
                 Text("Extension Service Version: \(viewStore.state ?? "Loading..")")
             }
-            
+
             WithViewStore(store, observe: { $0.isAccessibilityPermissionGranted }) { viewStore in
                 let grantedStatus: String = {
                     guard let granted = viewStore.state else { return "Loading.." }
@@ -222,6 +222,8 @@ struct GeneralSettingsView: View {
         var widgetColorScheme
         @AppStorage(\.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         var preferWidgetToStayInsideEditorWhenWidthGreaterThan
+        @AppStorage(\.hideCircularWidget)
+        var hideCircularWidget
     }
 
     @StateObject var settings = Settings()
@@ -283,13 +285,84 @@ struct GeneralSettingsView: View {
 
                 Text("pt")
             }
+
+            Toggle(isOn: $settings.hideCircularWidget) {
+                Text("Hide circular widget")
+            }
         }.padding()
+    }
+}
+
+struct WidgetPositionIcon: View {
+    var position: SuggestionWidgetPositionMode
+    var isSelected: Bool
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color(nsColor: .textBackgroundColor))
+            Rectangle()
+                .fill(Color.accentColor.opacity(0.2))
+                .frame(width: 120, height: 20)
+        }
+        .frame(width: 120, height: 80)
+    }
+}
+
+struct LargeIconPicker<
+    Data: RandomAccessCollection,
+    ID: Hashable,
+    Content: View,
+    Label: View
+>: View {
+    @Binding var selection: Data.Element
+    var data: Data
+    var id: KeyPath<Data.Element, ID>
+    var builder: (Data.Element, _ isSelected: Bool) -> Content
+    var label: () -> Label
+
+    @ViewBuilder
+    var content: some View {
+        HStack {
+            ForEach(data, id: id) { item in
+                let isSelected = selection[keyPath: id] == item[keyPath: id]
+                Button(action: {
+                    selection = item
+                }) {
+                    builder(item, isSelected)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(
+                                    isSelected ? Color.accentColor : Color.primary.opacity(0.1),
+                                    style: .init(lineWidth: 2)
+                                )
+                        }
+                }.buttonStyle(.plain)
+            }
+        }
+    }
+    
+    var body: some View {
+        if #available(macOS 13.0, *) {
+            LabeledContent {
+                content
+            } label: {
+                label()
+            }
+        } else {
+            VStack {
+                label()
+                content
+            }
+        }
     }
 }
 
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {
         GeneralView(store: .init(initialState: .init(), reducer: General()))
+            .frame(height: 800)
     }
 }
 
