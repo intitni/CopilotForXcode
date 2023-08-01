@@ -50,4 +50,6 @@ public protocol XPCServiceProtocol {
 
     func getXPCServiceVersion(withReply reply: @escaping (String, String) -> Void)
     func getXPCServiceAccessibilityPermission(withReply reply: @escaping (Bool) -> Void)
+    func postNotification(name: String, withReply reply: @escaping () -> Void)
+    func performAction(name: String, arguments: String, withReply reply: @escaping (String) -> Void)
 }
