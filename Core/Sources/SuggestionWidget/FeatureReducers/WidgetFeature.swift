@@ -496,7 +496,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = noFocus ? 0 : 1
+                            windows.tabWindow.alphaValue = 0
 
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
@@ -520,7 +520,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = noFocus ? 0 : 1
+                            windows.tabWindow.alphaValue = 0
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
                             } else {
