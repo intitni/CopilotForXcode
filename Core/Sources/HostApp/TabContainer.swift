@@ -59,7 +59,9 @@ public struct TabContainer: View {
                     image: "command.square"
                 )
                 #if canImport(ProHostApp)
-                PlusView().tabBarItem(
+                PlusView(onLicenseKeyChanged: {
+                    store.send(.informExtensionServiceAboutLicenseKeyChange)
+                }).tabBarItem(
                     tag: 5,
                     title: "Plus",
                     image: "plus.diamond"

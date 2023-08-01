@@ -41,7 +41,8 @@ struct GUI: ReducerProtocol {
             Reduce { _, action in
                 switch action {
                 case let .createNewTapButtonClicked(kind):
-                    let chatTap = kind?.builder.build() ?? ChatGPTChatTab()
+                    guard let builder = kind?.builder, builder.buildable else { return .none }
+                    let chatTap = builder.build()
                     return .run { send in
                         await send(.appendAndSelectTab(chatTap))
                     }

@@ -15,6 +15,7 @@ public class ChatGPTChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         var title: String
+        var buildable: Bool { true }
         var customCommand: CustomCommand?
 
         func build() -> any ChatTab {

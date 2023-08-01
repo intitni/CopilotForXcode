@@ -18,12 +18,16 @@ struct CustomCommandFeature: ReducerProtocol {
         case deleteCommand(CustomCommand)
     }
 
-    @Dependency(\.toastController) var toastController
+    @Dependency(\.toast) var toast
 
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
             case .createNewCommand:
+                if settings.customCommands.count >= 10 {
+                    toast("Upgrade to Plus to add more commands", .info)
+                    return .none
+                }
                 state.editCustomCommand = EditCustomCommand.State(nil)
                 return .none
             case let .editCommand(command):

@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import MarkdownUI
+import PlusFeatureFlag
 import Preferences
 import SwiftUI
 
@@ -72,7 +73,12 @@ struct CustomCommandView: View {
             Button(action: {
                 store.send(.createNewCommand)
             }) {
-                Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+                if isFeatureAvailable(\.unlimitedCustomCommands) {
+                    Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+                } else {
+                    Text(Image(systemName: "plus.circle.fill")) +
+                        Text(" New Command (\(settings.customCommands.count)/10)")
+                }
             }
             .buttonStyle(.plain)
             .padding()
