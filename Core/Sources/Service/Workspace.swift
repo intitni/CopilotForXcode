@@ -129,6 +129,13 @@ final class Workspace {
             "Suggestion feature is disabled for this project."
         }
     }
+    
+    struct UnsupportedFileError: Error, LocalizedError {
+        var extensionName: String
+        var errorDescription: String? {
+            "File type \(extensionName) unsupported."
+        }
+    }
 
     let projectRootURL: URL
     let openedFileRecoverableStorage: OpenedFileRecoverableStorage
@@ -223,6 +230,11 @@ final class Workspace {
     static func fetchOrCreateWorkspaceIfNeeded(fileURL: URL) async throws
         -> (workspace: Workspace, filespace: Filespace)
     {
+        let ignoreFileExtensions = ["mlmodel"]
+        if ignoreFileExtensions.contains(fileURL.pathExtension) {
+            throw UnsupportedFileError(extensionName: fileURL.pathExtension)
+        }
+        
         // If we know which project is opened.
         if let currentProjectURL = try await Environment.fetchCurrentProjectRootURLFromXcode() {
             if let existed = workspaces[currentProjectURL] {
@@ -401,6 +413,13 @@ extension Workspace {
         refreshUpdateTime()
         openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
+            // check if file size is larger than 15MB, if so, return immediately
+            if let attrs = try? FileManager.default
+                .attributesOfItem(atPath: filespace.fileURL.path),
+                let fileSize = attrs[FileAttributeKey.size] as? UInt64,
+                fileSize > 15 * 1024 * 1024
+            { return } 
+            
             try await suggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
                 content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
