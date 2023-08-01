@@ -9,7 +9,7 @@ public protocol UserDefaultPreferenceKey {
 public struct PreferenceKey<T>: UserDefaultPreferenceKey {
     public let defaultValue: T
     public let key: String
-    
+
     public init(defaultValue: T, key: String) {
         self.defaultValue = defaultValue
         self.key = key
@@ -19,7 +19,7 @@ public struct PreferenceKey<T>: UserDefaultPreferenceKey {
 public struct FeatureFlag: UserDefaultPreferenceKey {
     public let defaultValue: Bool
     public let key: String
-    
+
     public init(defaultValue: Bool, key: String) {
         self.defaultValue = defaultValue
         self.key = key
@@ -69,6 +69,13 @@ public struct UserDefaultPreferenceKeys {
     public let preferWidgetToStayInsideEditorWhenWidthGreaterThan = PreferenceKey(
         defaultValue: 1400 as Double,
         key: "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
+    )
+
+    // MARK: Hide Circular Widget
+
+    public let hideCircularWidget = PreferenceKey(
+        defaultValue: false,
+        key: "HideCircularWidget"
     )
 }
 
@@ -170,7 +177,7 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWith: PreferenceKey<NodeRunner> {
         .init(defaultValue: .env, key: "RunNodeWith")
     }
-    
+
     var gitHubCopilotIgnoreTrailingNewLines: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotIgnoreTrailingNewLines")
     }
@@ -246,7 +253,7 @@ public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
-    
+
     var embeddingFeatureProvider: PreferenceKey<EmbeddingFeatureProvider> {
         .init(defaultValue: .openAI, key: "EmbeddingFeatureProvider")
     }

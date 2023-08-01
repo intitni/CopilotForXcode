@@ -20,6 +20,7 @@ enum UpdateLocationStrategy {
             mainScreen: NSScreen,
             activeScreen: NSScreen,
             editor: AXUIElement,
+            hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget),
             preferredInsideEditorMinWidth: Double = UserDefaults.shared
                 .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         ) -> WidgetLocation {
@@ -33,7 +34,8 @@ enum UpdateLocationStrategy {
                 return FixedToBottom().framesForWindows(
                     editorFrame: editorFrame,
                     mainScreen: mainScreen,
-                    activeScreen: activeScreen
+                    activeScreen: activeScreen,
+                    hideCircularWidget: hideCircularWidget
                 )
             }
             var frame: CGRect = .zero
@@ -42,7 +44,8 @@ enum UpdateLocationStrategy {
                 return FixedToBottom().framesForWindows(
                     editorFrame: editorFrame,
                     mainScreen: mainScreen,
-                    activeScreen: activeScreen
+                    activeScreen: activeScreen,
+                    hideCircularWidget: hideCircularWidget
                 )
             }
             return HorizontalMovable().framesForWindows(
@@ -51,7 +54,8 @@ enum UpdateLocationStrategy {
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
                 activeScreen: activeScreen,
-                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth
+                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth,
+                hideCircularWidget: hideCircularWidget
             )
         }
     }
@@ -61,6 +65,7 @@ enum UpdateLocationStrategy {
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen,
+            hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget),
             preferredInsideEditorMinWidth: Double = UserDefaults.shared
                 .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         ) -> WidgetLocation {
@@ -70,7 +75,8 @@ enum UpdateLocationStrategy {
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
                 activeScreen: activeScreen,
-                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth
+                preferredInsideEditorMinWidth: preferredInsideEditorMinWidth,
+                hideCircularWidget: hideCircularWidget
             )
         }
     }
@@ -82,7 +88,8 @@ enum UpdateLocationStrategy {
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen,
-            preferredInsideEditorMinWidth: Double
+            preferredInsideEditorMinWidth: Double,
+            hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget)
         ) -> WidgetLocation {
             let maxY = max(
                 y,
@@ -96,12 +103,23 @@ enum UpdateLocationStrategy {
                     .widgetPadding
             )
 
-            let proposedAnchorFrameOnTheRightSide = CGRect(
-                x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
-                y: y,
-                width: Style.widgetWidth,
-                height: Style.widgetHeight
-            )
+            let proposedAnchorFrameOnTheRightSide = {
+                if hideCircularWidget {
+                    return CGRect(
+                        x: editorFrame.maxX,
+                        y: y,
+                        width: 0,
+                        height: 0
+                    )
+                } else {
+                    return CGRect(
+                        x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
+                        y: y,
+                        width: Style.widgetWidth,
+                        height: Style.widgetHeight
+                    )
+                }
+            }()
 
             let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
                 .widgetPadding * 2
@@ -139,12 +157,23 @@ enum UpdateLocationStrategy {
                     suggestionPanelLocation: nil
                 )
             } else {
-                let proposedAnchorFrameOnTheLeftSide = CGRect(
-                    x: editorFrame.minX + Style.widgetPadding,
-                    y: proposedAnchorFrameOnTheRightSide.origin.y,
-                    width: Style.widgetWidth,
-                    height: Style.widgetHeight
-                )
+                let proposedAnchorFrameOnTheLeftSide = {
+                    if hideCircularWidget {
+                        return CGRect(
+                            x: editorFrame.minX,
+                            y: proposedAnchorFrameOnTheRightSide.origin.y,
+                            width: 0,
+                            height: 0
+                        )
+                    } else {
+                        return CGRect(
+                            x: editorFrame.minX + Style.widgetPadding,
+                            y: proposedAnchorFrameOnTheRightSide.origin.y,
+                            width: Style.widgetWidth,
+                            height: Style.widgetHeight
+                        )
+                    }
+                }()
                 let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
                     .widgetPadding * 2 - Style.panelWidth
                 let putAnchorToTheLeft = {

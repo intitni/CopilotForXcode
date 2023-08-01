@@ -222,6 +222,8 @@ struct GeneralSettingsView: View {
         var widgetColorScheme
         @AppStorage(\.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
         var preferWidgetToStayInsideEditorWhenWidthGreaterThan
+        @AppStorage(\.hideCircularWidget)
+        var hideCircularWidget
     }
 
     @StateObject var settings = Settings()
@@ -282,6 +284,10 @@ struct GeneralSettingsView: View {
                 .textFieldStyle(.roundedBorder)
 
                 Text("pt")
+            }
+            
+            Toggle(isOn: $settings.hideCircularWidget) {
+                Text("Hide circular widget")
             }
         }.padding()
     }
