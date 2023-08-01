@@ -123,9 +123,8 @@ struct CompletionRequestBody: Encodable, Equatable {
 }
 
 struct CompletionStreamDataTrunk: Codable {
-    var id: String
+    var id: String?
     var object: String
-    var created: Int
     var model: String
     var choices: [Choice]
 
