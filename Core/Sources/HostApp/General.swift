@@ -19,7 +19,7 @@ struct General: ReducerProtocol {
         case failedReloading
     }
 
-    @Dependency(\.toastController) var toastController
+    @Dependency(\.toast) var toast
 
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -38,10 +38,7 @@ struct General: ReducerProtocol {
                             try await LaunchAgentManager()
                                 .setupLaunchAgentForTheFirstTimeIfNeeded()
                         } catch {
-                            toastController.toast(
-                                content: Text(error.localizedDescription),
-                                type: .error
-                            )
+                            toast(error.localizedDescription, .error)
                         }
                     }
                     #endif
@@ -60,7 +57,7 @@ struct General: ReducerProtocol {
                             permissionGranted: isAccessibilityPermissionGranted
                         ))
                     } catch {
-                        toastController.toast(content: error.localizedDescription, type: .error)
+                        toast(error.localizedDescription, .error)
                         await send(.failedReloading)
                     }
                 }
