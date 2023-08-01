@@ -3,6 +3,7 @@ import ChatGPTChatTab
 import ChatService
 import ChatTab
 import ComposableArchitecture
+import Dependencies
 import Environment
 import Preferences
 import PromptToCodeService
@@ -133,15 +134,13 @@ public final class GraphicalUserInterfaceController {
         viewStore = ViewStore(store)
         widgetDataSource = .init()
 
-        widgetController = withDependencies(setupDependency) {
-            SuggestionWidgetController(
-                store: store.scope(
-                    state: \.suggestionWidgetState,
-                    action: GUI.Action.suggestionWidget
-                ),
-                dependency: suggestionDependency
-            )
-        }
+        widgetController = SuggestionWidgetController(
+            store: store.scope(
+                state: \.suggestionWidgetState,
+                action: GUI.Action.suggestionWidget
+            ),
+            dependency: suggestionDependency
+        )
 
         suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in

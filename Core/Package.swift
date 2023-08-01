@@ -43,12 +43,11 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
         .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
-        .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
-        .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "0.5.1"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
@@ -90,6 +89,7 @@ let package = Package(
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
             ].pro([
                 "ProChatTabs",
             ])
@@ -209,8 +209,8 @@ let package = Package(
         .target(
             name: "ChatGPTChatTab",
             dependencies: [
-                "SharedUIComponents",
                 "ChatService",
+                .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
@@ -221,21 +221,11 @@ let package = Package(
         // MARK: - UI
 
         .target(
-            name: "SharedUIComponents",
-            dependencies: [
-                "Highlightr",
-                "Splash",
-                .product(name: "Preferences", package: "Tool"),
-            ]
-        ),
-        .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
-
-        .target(
             name: "SuggestionWidget",
             dependencies: [
                 "ChatGPTChatTab",
                 "UserDefaultsObserver",
-                "SharedUIComponents",
+                .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
