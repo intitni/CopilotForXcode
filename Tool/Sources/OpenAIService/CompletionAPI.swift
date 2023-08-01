@@ -42,9 +42,8 @@ struct CompletionResponseBody: Codable, Equatable {
         var total_tokens: Int
     }
 
-    var id: String
+    var id: String?
     var object: String
-    var created: Int
     var model: String
     var usage: Usage
     var choices: [Choice]
