@@ -401,6 +401,13 @@ extension Workspace {
         refreshUpdateTime()
         openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
+            // check if file size is larger than 15MB, if so, return immediately
+            if let attrs = try? FileManager.default
+                .attributesOfItem(atPath: filespace.fileURL.path),
+                let fileSize = attrs[FileAttributeKey.size] as? UInt64,
+                fileSize > 15 * 1024 * 1024
+            { return } 
+            
             try await suggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
                 content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
