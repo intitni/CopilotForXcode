@@ -224,7 +224,7 @@ struct ChatTabBar: View {
                             store.send(.createNewTapButtonClicked(kind: kind))
                         }) {
                             Text(kind.title)
-                        }
+                        }.disabled(!kind.builder.buildable)
                     case let .folder(title, list):
                         Menu {
                             ForEach(0..<list.endIndex, id: \.self) { index in
@@ -360,6 +360,7 @@ class FakeChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         var title: String = "Title"
+        var buildable: Bool { true }
 
         func build() -> any ChatTab {
             return FakeChatTab(id: "id", title: "Title")

@@ -94,8 +94,22 @@ open class BaseChatTab: Equatable {
 public protocol ChatTabBuilder {
     /// A visible title for user.
     var title: String { get }
+    /// whether the chat tab is buildable.
+    var buildable: Bool { get }
     /// Build the chat tab.
     func build() -> any ChatTab
+}
+
+public struct DisabledChatTabBuilder: ChatTabBuilder {
+    public var title: String
+    public var buildable: Bool { false }
+    public func build() -> any ChatTab {
+        EmptyChatTab(id: UUID().uuidString)
+    }
+
+    public init(title: String) {
+        self.title = title
+    }
 }
 
 public protocol ChatTabType {
@@ -127,6 +141,7 @@ public class EmptyChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         let title: String
+        var buildable: Bool { true }
         func build() -> any ChatTab {
             EmptyChatTab()
         }

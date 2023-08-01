@@ -263,6 +263,12 @@ let package = Package(
             ]
         ),
         .target(name: "UserDefaultsObserver"),
+        .target(
+            name: "PlusFeatureFlag",
+            dependencies: [
+                .product(name: "LicenseManagement", package: "Tool"),
+            ]
+        ),
 
         // MARK: - GitHub Copilot
 
