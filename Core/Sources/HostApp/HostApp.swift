@@ -29,8 +29,8 @@ struct HostApp: ReducerProtocol {
             case .appear:
                 return .none
             case .informExtensionServiceAboutLicenseKeyChange:
+                #if canImport(LicenseManagement)
                 return .run { _ in
-                    #if canImport(LicenseManagement)
                     let service = try getService()
                     do {
                         try await service
@@ -38,8 +38,10 @@ struct HostApp: ReducerProtocol {
                     } catch {
                         toast(error.localizedDescription, .error)
                     }
-                    #endif
                 }
+                #else
+                return .none
+                #endif
             case .general:
                 return .none
             }

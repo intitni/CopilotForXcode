@@ -117,6 +117,7 @@ let package = Package(
                 "GitHubCopilotService",
                 "CodeiumService",
                 "LaunchAgentManager",
+                "PlusFeatureFlag",
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
@@ -266,8 +267,9 @@ let package = Package(
         .target(
             name: "PlusFeatureFlag",
             dependencies: [
-                .product(name: "LicenseManagement", package: "Tool"),
-            ]
+            ].pro([
+                "LicenseManagement"
+            ])
         ),
 
         // MARK: - GitHub Copilot
