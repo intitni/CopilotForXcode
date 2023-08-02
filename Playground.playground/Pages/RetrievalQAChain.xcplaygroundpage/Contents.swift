@@ -4,12 +4,14 @@ import LangChain
 import OpenAIService
 import PlaygroundSupport
 import SwiftUI
+import TokenEncoder
 
 struct QAForm: View {
-    @State var intermediateAnswers = [RefineDocumentChain.IntermediateAnswer]()
+    @State var relevantInformation = [String]()
     @State var relevantDocuments = [(document: Document, distance: Float)]()
     @State var duration: TimeInterval = 0
     @State var answer: String = ""
+    @State var tokenCount: Int = 0
     @State var question: String = "What is Swift macros?"
     @State var isProcessing: Bool = false
     @State var url: String = "https://developer.apple.com/documentation/swift/applying-macros"
@@ -36,23 +38,14 @@ struct QAForm: View {
                             Text("\(duration) seconds")
                         }
                     }
-                    Section(header: Text("Answer")) {
+                    Section(header: Text("All Relevant Information (\(tokenCount) words)")) {
                         Text(answer)
                     }
-                    Section(header: Text("Intermediate Answers")) {
-                        ForEach(0..<intermediateAnswers.endIndex, id: \.self) { index in
-                            let answer = intermediateAnswers[index]
+                    Section(header: Text("Relevant Information")) {
+                        ForEach(0..<relevantInformation.endIndex, id: \.self) { index in
+                            let information = relevantInformation[index]
                             VStack(alignment: .leading) {
-                                Text(answer.answer)
-                                VStack(alignment: .leading) {
-                                    Text("Usefulness: \(answer.usefulness)")
-                                    Text("Needs more context: \(answer.more ? "Yes" : "No")")
-                                }
-                                .padding()
-                                .background {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color(NSColor.textBackgroundColor))
-                                }
+                                Text(information)
                                 Divider()
                             }
                             .textSelection(.enabled)
@@ -84,8 +77,9 @@ struct QAForm: View {
         let start = Date().timeIntervalSince1970
         answer = ""
         relevantDocuments = []
-        intermediateAnswers = []
+        relevantInformation = []
         duration = 0
+        tokenCount = 0
         isProcessing = true
         defer { isProcessing = false }
         guard let url = URL(string: url) else {
@@ -112,7 +106,7 @@ struct QAForm: View {
             }
         }()
 
-        let qa = RetrievalQAChain(
+        let qa = QAInformationRetrievalChain(
             vectorStore: store,
             embedding: embedding
         )
@@ -120,15 +114,16 @@ struct QAForm: View {
             question,
             callbackManagers: [
                 .init {
-                    $0.on(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer.self) {
-                        intermediateAnswers.append($0)
+                    $0.on(\.relevantInformationExtractionChainDidExtractPartialRelevantContent) {
+                        relevantInformation.append($0)
                     }
-                    $0.on(CallbackEvents.RetrievalQADidExtractRelevantContent.self) {
+                    $0.on(\.retrievalQADidExtractRelevantContent) {
                         relevantDocuments = $0
                     }
                 },
             ]
         )
+        tokenCount = answer.split(separator: " ").count
         duration = Date().timeIntervalSince1970 - start
     }
 }
