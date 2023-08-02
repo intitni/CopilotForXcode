@@ -9,9 +9,9 @@ import LicenseManagement
 
 public typealias PlusFeatureFlag = Int
 
+@dynamicMemberLookup
 public struct PlusFeatureFlags {
-    public let browserTab = 1
-    public let unlimitedCustomCommands = 1
+    public subscript(dynamicMember dynamicMember: String) -> PlusFeatureFlag { return 0 }
     init() {}
 }
 
