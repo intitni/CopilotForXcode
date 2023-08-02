@@ -1,12 +1,12 @@
 import Foundation
 import OpenAIService
 
-public final class RetrievalQAChain: Chain {
+public final class QAInformationRetrievalChain: Chain {
     let vectorStore: VectorStore
     let embedding: Embeddings
 
     public struct Output {
-        public var answer: String
+        public var information: String
         public var sourceDocuments: [Document]
     }
 
@@ -26,7 +26,9 @@ public final class RetrievalQAChain: Chain {
         let documents = try await vectorStore.searchWithDistance(
             embeddings: embeddedQuestion,
             count: 5
-        )
+        ).filter { item in
+            item.distance < 0.31
+        }
 
         callbackManagers.send(CallbackEvents.RetrievalQADidExtractRelevantContent(info: documents))
 
@@ -36,11 +38,11 @@ public final class RetrievalQAChain: Chain {
             callbackManagers: callbackManagers
         )
 
-        return .init(answer: relevantInformation, sourceDocuments: documents.map(\.document))
+        return .init(information: relevantInformation, sourceDocuments: documents.map(\.document))
     }
 
     public func parseOutput(_ output: Output) -> String {
-        return output.answer
+        return output.information
     }
 }
 
@@ -48,12 +50,9 @@ public extension CallbackEvents {
     struct RetrievalQADidExtractRelevantContent: CallbackEvent {
         public let info: [(document: Document, distance: Float)]
     }
-    
+
     var retrievalQADidExtractRelevantContent: RetrievalQADidExtractRelevantContent.Type {
         RetrievalQADidExtractRelevantContent.self
     }
 }
-
-
-
 

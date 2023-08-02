@@ -106,7 +106,7 @@ struct QAForm: View {
             }
         }()
 
-        let qa = RetrievalQAChain(
+        let qa = QAInformationRetrievalChain(
             vectorStore: store,
             embedding: embedding
         )
