@@ -1,6 +1,6 @@
 import Foundation
+import ServiceManagement
 
-#warning("TODO: Migrate to SMAppService")
 public struct LaunchAgentManager {
     let lastLaunchAgentVersionKey = "LastLaunchAgentVersion"
     let serviceIdentifier: String
@@ -23,67 +23,96 @@ public struct LaunchAgentManager {
     }
 
     public func setupLaunchAgentForTheFirstTimeIfNeeded() async throws {
-        if UserDefaults.standard.integer(forKey: lastLaunchAgentVersionKey) < 40 {
+        if #available(macOS 13, *) {
+            await removeObsoleteLaunchAgent()
             try await setupLaunchAgent()
-            return
+        } else {
+            if UserDefaults.standard.integer(forKey: lastLaunchAgentVersionKey) < 40 {
+                try await setupLaunchAgent()
+                return
+            }
+            guard !FileManager.default.fileExists(atPath: launchAgentPath) else { return }
+            try await setupLaunchAgent()
+            await removeObsoleteLaunchAgent()
         }
-        guard !FileManager.default.fileExists(atPath: launchAgentPath) else { return }
-        try await setupLaunchAgent()
-        await removeObsoleteLaunchAgent()
     }
 
     public func setupLaunchAgent() async throws {
-        let content = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>Label</key>
-            <string>\(serviceIdentifier)</string>
-            <key>Program</key>
-            <string>\(executablePath)</string>
-            <key>MachServices</key>
+        if #available(macOS 13, *) {
+            let launchAgent = SMAppService.agent(plistName: "launchAgent.plist")
+            try launchAgent.register()
+        } else {
+            let content = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
             <dict>
-                <key>\(serviceIdentifier)</key>
-                <true/>
-            </dict>
-            <key>AssociatedBundleIdentifiers</key>
-            <array>
-                <string>\(bundleIdentifier)</string>
+                <key>Label</key>
                 <string>\(serviceIdentifier)</string>
-            </array>
-        </dict>
-        </plist>
-        """
-        if !FileManager.default.fileExists(atPath: launchAgentDirURL.path) {
-            try FileManager.default.createDirectory(
-                at: launchAgentDirURL,
-                withIntermediateDirectories: false
+                <key>Program</key>
+                <string>\(executablePath)</string>
+                <key>MachServices</key>
+                <dict>
+                    <key>\(serviceIdentifier)</key>
+                    <true/>
+                </dict>
+                <key>AssociatedBundleIdentifiers</key>
+                <array>
+                    <string>\(bundleIdentifier)</string>
+                    <string>\(serviceIdentifier)</string>
+                </array>
+            </dict>
+            </plist>
+            """
+            if !FileManager.default.fileExists(atPath: launchAgentDirURL.path) {
+                try FileManager.default.createDirectory(
+                    at: launchAgentDirURL,
+                    withIntermediateDirectories: false
+                )
+            }
+            FileManager.default.createFile(
+                atPath: launchAgentPath,
+                contents: content.data(using: .utf8)
             )
+            try await launchctl("load", launchAgentPath)
         }
-        FileManager.default.createFile(
-            atPath: launchAgentPath,
-            contents: content.data(using: .utf8)
-        )
+
         let buildNumber = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String)
             .flatMap(Int.init)
         UserDefaults.standard.set(buildNumber, forKey: lastLaunchAgentVersionKey)
-        try await launchctl("load", launchAgentPath)
     }
 
     public func removeLaunchAgent() async throws {
-        try await launchctl("unload", launchAgentPath)
-        try FileManager.default.removeItem(atPath: launchAgentPath)
+        if #available(macOS 13, *) {
+            let launchAgent = SMAppService.agent(plistName: "launchAgent.plist")
+            try await launchAgent.unregister()
+        } else {
+            try await launchctl("unload", launchAgentPath)
+            try FileManager.default.removeItem(atPath: launchAgentPath)
+        }
     }
 
     public func reloadLaunchAgent() async throws {
-        try await helper("reload-launch-agent", "--service-identifier", serviceIdentifier)
+        if #unavailable(macOS 13) {
+            try await helper("reload-launch-agent", "--service-identifier", serviceIdentifier)
+        }
     }
 
     public func removeObsoleteLaunchAgent() async {
-        let path = launchAgentPath.replacingOccurrences(of: "ExtensionService", with: "XPCService")
-        if FileManager.default.fileExists(atPath: path) {
-            try? FileManager.default.removeItem(atPath: path)
+        if #available(macOS 13, *) {
+            let path = launchAgentPath
+            if FileManager.default.fileExists(atPath: path) {
+                try? await launchctl("unload", path)
+                try? FileManager.default.removeItem(atPath: path)
+            }
+        } else {
+            let path = launchAgentPath.replacingOccurrences(
+                of: "ExtensionService",
+                with: "XPCService"
+            )
+            if FileManager.default.fileExists(atPath: path) {
+                try? FileManager.default.removeItem(atPath: path)
+            }
         }
     }
 }
@@ -144,3 +173,4 @@ private func launchctl(_ args: String...) async throws {
 struct E: Error, LocalizedError {
     var errorDescription: String?
 }
+
