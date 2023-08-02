@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.intii.CopilotForXcode.ExtensionService</string>
+	<key>Program</key>
+	<string>/Applications/Copilot for Xcode.app/Contents/Applications/CopilotForXcodeExtensionService.app/Contents/MacOS/CopilotForXcodeExtensionService</string>
+	<key>MachServices</key>
+	<dict>
+		<key>com.intii.CopilotForXcode.ExtensionService</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

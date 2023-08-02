@@ -41,6 +41,7 @@
 		C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
+		C8F1032B2A7A39D700D28F4F /* launchAgent.plist in Copy Launch Agent */ = {isa = PBXBuildFile; fileRef = C8F103292A7A365000D28F4F /* launchAgent.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -121,6 +122,17 @@
 			name = "Embed Service";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8F1032A2A7A38D200D28F4F /* Copy Launch Agent */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = Contents/Library/LaunchAgents;
+			dstSubfolderSpec = 1;
+			files = (
+				C8F1032B2A7A39D700D28F4F /* launchAgent.plist in Copy Launch Agent */,
+			);
+			name = "Copy Launch Agent";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -171,6 +183,7 @@
 		C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Menu.swift"; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
+		C8F103292A7A365000D28F4F /* launchAgent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = launchAgent.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -250,6 +263,7 @@
 				C8520308293D805800460097 /* README.md */,
 				C82E38492A1F025F00D4EADF /* LICENSE */,
 				C83E5DED2A38CD8C0071506D /* Makefile */,
+				C8F103292A7A365000D28F4F /* launchAgent.plist */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
@@ -354,6 +368,7 @@
 				C814589F2939EFDC00135263 /* Embed Foundation Extensions */,
 				C8520306293CF0EF00460097 /* Embed XPCService */,
 				C8C8B60829AFA32800034BEE /* Embed Service */,
+				C8F1032A2A7A38D200D28F4F /* Copy Launch Agent */,
 			);
 			buildRules = (
 			);
