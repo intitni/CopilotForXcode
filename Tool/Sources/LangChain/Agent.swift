@@ -24,13 +24,25 @@ public extension CallbackEvents {
     struct AgentDidFinish: CallbackEvent {
         public let info: AgentFinish
     }
+    
+    var agentDidFinish: AgentDidFinish.Type {
+        AgentDidFinish.self
+    }
 
     struct AgentActionDidStart: CallbackEvent {
         public let info: AgentAction
     }
+    
+    var agentActionDidStart: AgentActionDidStart.Type {
+        AgentActionDidStart.self
+    }
 
     struct AgentActionDidEnd: CallbackEvent {
         public let info: AgentAction
+    }
+    
+    var agentActionDidEnd: AgentActionDidEnd.Type {
+        AgentActionDidEnd.self
     }
 }
 

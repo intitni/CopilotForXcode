@@ -15,4 +15,8 @@ public extension CallbackEvents {
     struct LLMDidProduceNewToken: CallbackEvent {
         public let info: String
     }
+    
+    var llmDidProduceNewToken: LLMDidProduceNewToken.Type {
+        LLMDidProduceNewToken.self
+    }
 }

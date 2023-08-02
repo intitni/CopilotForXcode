@@ -5,7 +5,9 @@ public protocol CallbackEvent {
     var info: Info { get }
 }
 
-public enum CallbackEvents {}
+public struct CallbackEvents {
+    private init() {}
+}
 
 public struct CallbackManager {
     fileprivate var observers = [Any]()
@@ -25,19 +27,39 @@ public struct CallbackManager {
         observers.append(handler)
     }
 
+    public mutating func on<Event: CallbackEvent>(
+        _: KeyPath<CallbackEvents, Event.Type>,
+        _ handler: @escaping (Event.Info) -> Void
+    ) {
+        observers.append(handler)
+    }
+
     public func send<Event: CallbackEvent>(_ event: Event) {
         for case let observer as ((Event.Info) -> Void) in observers {
             observer(event.info)
+        }
+    }
+
+    func send<Event: CallbackEvent>(
+        _: KeyPath<CallbackEvents, Event.Type>,
+        _ info: Event.Info
+    ) {
+        for case let observer as ((Event.Info) -> Void) in observers {
+            observer(info)
         }
     }
 }
 
 public extension [CallbackManager] {
     func send<Event: CallbackEvent>(_ event: Event) {
-        for cb in self {
-            for case let observer as ((Event.Info) -> Void) in cb.observers {
-                observer(event.info)
-            }
-        }
+        for cb in self { cb.send(event) }
+    }
+
+    func send<Event: CallbackEvent>(
+        _ keyPath: KeyPath<CallbackEvents, Event.Type>,
+        _ info: Event.Info
+    ) {
+        for cb in self { cb.send(keyPath, info) }
     }
 }
+
