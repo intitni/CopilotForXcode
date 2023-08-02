@@ -143,7 +143,7 @@ struct CopilotView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Form {
                     TextField(text: $settings.nodePath, prompt: Text("node")) {
-                        Text("Path to Node")
+                        Text("Path to Node (v17+)")
                     }
 
                     Picker(selection: $settings.runNodeWith) {
