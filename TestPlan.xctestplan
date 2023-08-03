@@ -87,13 +87,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Pro",
-        "identifier" : "LicenseManagementTests",
-        "name" : "LicenseManagementTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "SuggestionModelTests",
         "name" : "SuggestionModelTests"
@@ -104,6 +97,13 @@
         "containerPath" : "container:Tool",
         "identifier" : "SharedUIComponentsTests",
         "name" : "SharedUIComponentsTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Pro",
+        "identifier" : "LicenseManagementTests",
+        "name" : "LicenseManagementTests"
       }
     }
   ],
