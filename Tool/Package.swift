@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "Toast", targets: ["Toast"]),
+        .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
         .library(
             name: "AppMonitoring",
@@ -56,6 +57,11 @@ let package = Package(
         .target(name: "Logger"),
 
         .target(name: "ObjectiveCExceptionHandling"),
+
+        .target(
+            name: "Keychain",
+            dependencies: ["Configs"]
+        ),
 
         .target(
             name: "Toast",

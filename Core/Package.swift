@@ -45,7 +45,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
-        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "0.5.1"),
         .package(
@@ -297,7 +296,7 @@ let package = Package(
             name: "CodeiumService",
             dependencies: [
                 "LanguageClient",
-                "KeychainAccess",
+                .product(name: "Keychain", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
