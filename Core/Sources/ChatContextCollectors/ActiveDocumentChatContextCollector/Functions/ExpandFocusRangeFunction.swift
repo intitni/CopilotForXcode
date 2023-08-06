@@ -10,7 +10,7 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
         var text: String
 
         var botReadableContent: String {
-            text
+            "User Editing Document Context is updated"
         }
     }
 
@@ -21,7 +21,7 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
     }
 
     var description: String {
-        "When you need more context from the code, you can call it to expand focus range to context range in user editing document context"
+        "Call when User Editing Document Context provides too little context to answer a question."
     }
 
     var argumentSchema: JSONSchemaValue { [

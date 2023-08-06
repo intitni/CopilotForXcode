@@ -38,7 +38,7 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
             // search up and down for up to 7 lines.
             let lines = activeDocumentContext.lines
             var startLineIndex = max(containingRange.start.line - 3, 0)
-            var endLineIndex = min(containingRange.start.line + 3, lines.count - 1)
+            let endLineIndex = min(containingRange.start.line + 3, lines.count - 1)
             if endLineIndex - startLineIndex <= 6, startLineIndex > 0 {
                 startLineIndex = max(startLineIndex - (6 - (endLineIndex - startLineIndex)), 0)
             }

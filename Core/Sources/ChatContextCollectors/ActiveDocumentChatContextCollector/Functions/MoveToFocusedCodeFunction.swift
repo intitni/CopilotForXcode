@@ -10,7 +10,7 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
         var text: String
 
         var botReadableContent: String {
-            text
+            "User Editing Document Context is updated"
         }
     }
 

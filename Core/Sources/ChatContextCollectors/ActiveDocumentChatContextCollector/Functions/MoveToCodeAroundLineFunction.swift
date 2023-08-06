@@ -12,7 +12,7 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
         var text: String
 
         var botReadableContent: String {
-            text
+            "User Editing Document Context is updated"
         }
     }
 
@@ -28,7 +28,13 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
 
     var argumentSchema: JSONSchemaValue { [
         .type: "object",
-        .properties: [:],
+        .properties: [
+            "line": [
+                .type: "number",
+                .description: "The line number to move to",
+            ]
+        ],
+        .required: ["line"],
     ] }
 
     weak var contextCollector: ActiveDocumentChatContextCollector?

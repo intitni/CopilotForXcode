@@ -90,9 +90,13 @@ public struct EditorInformation {
 
     public static func code(
         in code: [String],
-        inside range: CursorRange
+        inside range: CursorRange,
+        ignoreColumns: Bool = false
     ) -> (code: String, lines: [String]) {
         let rangeLines = lines(in: code, containing: range)
+        if ignoreColumns {
+            return (rangeLines.joined(), rangeLines)
+        }
         var content = rangeLines
         if !content.isEmpty {
             content[content.endIndex - 1] = String(

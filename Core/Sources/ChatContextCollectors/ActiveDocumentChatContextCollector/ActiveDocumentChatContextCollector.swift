@@ -70,6 +70,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     func getActiveDocumentContext(_ info: EditorInformation) -> ActiveDocumentContext {
         var activeDocumentContext = activeDocumentContext ?? .init(
+            filePath: "",
             relativePath: "",
             language: .builtIn(.swift),
             fileContent: "",
@@ -85,16 +86,19 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
     }
 
     func extractSystemPrompt(_ context: ActiveDocumentContext) -> String {
-        let start = "User Editing Document Context:###"
+        let start = """
+        User Editing Document Context:###
+        (The context may change during the conversation, so it may not match our conversation.)
+        """
         let end = "###"
         let relativePath = "Document Relative Path: \(context.relativePath)"
-        let language = "Language: \(context.language)"
+        let language = "Language: \(context.language.rawValue)"
 
         if let focusedContext = context.focusedContext {
-            let codeContext = "\(focusedContext.contextRange) \(focusedContext.context)"
+            let codeContext = "Focused Context:\(focusedContext.contextRange) \(focusedContext.context)"
             let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
             let code = """
-            Focused Code (start from line \(focusedContext.codeRange.start.line)):
+            Focused Code (start from line \(focusedContext.codeRange.start.line), call `expandFocusRange` if you need more context):
             ```\(context.language.rawValue)
             \(focusedContext.code)
             ```
@@ -104,6 +108,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 : """
                 File Annotations:
                 \(focusedContext.otherLineAnnotations.map { "  - \($0)" }.joined(separator: "\n"))
+                (call `moveToCodeAroundLine` if you context about the line annotations here)
                 """
             let codeAnnotations = focusedContext.lineAnnotations.isEmpty
                 ? ""
@@ -148,6 +153,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 }
 
 struct ActiveDocumentContext {
+    var filePath: String
     var relativePath: String
     var language: CodeLanguage
     var fileContent: String
@@ -243,6 +249,7 @@ struct ActiveDocumentContext {
             return false
         }()
 
+        filePath = info.documentURL.path
         relativePath = info.relativePath
         language = info.language
         fileContent = info.editorContent?.content ?? ""

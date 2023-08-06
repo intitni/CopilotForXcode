@@ -6,48 +6,95 @@ import SwiftSyntax
 
 struct SwiftFocusedCodeFinder: FocusedCodeFinder {
     func findFocusedCode(
-        containingRange: CursorRange,
+        containingRange range: CursorRange,
         activeDocumentContext: ActiveDocumentContext
     ) -> CodeContext {
         let source = activeDocumentContext.fileContent
         let tree = Parser.parse(source: source)
+
+        let locationConverter = SourceLocationConverter(
+            file: activeDocumentContext.filePath,
+            tree: tree
+        )
+
         let visitor = SwiftScopeHierarchySyntaxVisitor(
             tree: tree,
             code: source,
-            range: containingRange
+            range: range,
+            locationConverter: locationConverter
         )
+
         var nodes = visitor.findScopeHierarchy()
 
-        let code = EditorInformation.code(in: activeDocumentContext.lines, inside: containingRange)
-            .code
+        let code: String
+        let codeRange: CursorRange
+
+        func convertRange(_ node: SyntaxProtocol) -> CursorRange {
+            .init(sourceRange: node.sourceRange(converter: locationConverter))
+        }
+
+        if range.isEmpty {
+            // use the first scope as code, the second as context
+            var focusedNode: SyntaxProtocol?
+            while let node = nodes.first {
+                nodes.removeFirst()
+                let (context, _) = contextContainingNode(
+                    node,
+                    parentNodes: nodes,
+                    tree: tree,
+                    activeDocumentContext: activeDocumentContext,
+                    locationConverter: locationConverter
+                )
+                if context?.canBeUsedAsCodeRange ?? false {
+                    focusedNode = node
+                    break
+                }
+            }
+            guard let focusedNode else {
+                var result = UnknownLanguageFocusedCodeFinder().findFocusedCode(
+                    containingRange: range,
+                    activeDocumentContext: activeDocumentContext
+                )
+                result.imports = visitor.imports
+                return result
+            }
+            nodes.removeFirst()
+            codeRange = convertRange(focusedNode)
+        } else {
+            codeRange = range
+        }
+
+        code = EditorInformation
+            .code(in: activeDocumentContext.lines, inside: codeRange, ignoreColumns: true).code
+
+        var contextRange = CursorRange.zero
+        var signature = [String]()
 
         while let node = nodes.first {
             nodes.removeFirst()
-            if var context = contextContainingNode(
+            let (context, more) = contextContainingNode(
                 node,
                 parentNodes: nodes,
                 tree: tree,
-                activeDocumentContext: activeDocumentContext
-            ) {
-                if code.isEmpty {
-                    context.focusedRange = context.contextRange
-                    context.focusedCode = EditorInformation.code(
-                        in: activeDocumentContext.lines,
-                        inside: context.contextRange
-                    ).code
-                } else {
-                    context.focusedRange = containingRange
-                    context.focusedCode = code
-                }
+                activeDocumentContext: activeDocumentContext,
+                locationConverter: locationConverter
+            )
 
-                context.imports = visitor.imports
-                return context
+            if let context {
+                contextRange = context.contextRange
+                signature.insert(context.signature, at: 0)
+            }
+
+            if !more {
+                break
             }
         }
+
         return .init(
-            scope: .file,
-            contextRange: .zero,
-            focusedRange: containingRange,
+            scope: signature
+                .isEmpty ? .file : .scope(signature: signature.joined(separator: " > ")),
+            contextRange: contextRange,
+            focusedRange: codeRange,
             focusedCode: code,
             imports: visitor.imports
         )
@@ -55,16 +102,21 @@ struct SwiftFocusedCodeFinder: FocusedCodeFinder {
 }
 
 extension SwiftFocusedCodeFinder {
+    struct ContextInfo {
+        var signature: String
+        var contextRange: CursorRange
+        var canBeUsedAsCodeRange: Bool = true
+    }
+
     func contextContainingNode(
         _ node: SyntaxProtocol,
         parentNodes: [SyntaxProtocol],
         tree: SourceFileSyntax,
-        activeDocumentContext: ActiveDocumentContext
-    ) -> CodeContext? {
-        let source = activeDocumentContext.fileContent
-
+        activeDocumentContext: ActiveDocumentContext,
+        locationConverter: SourceLocationConverter
+    ) -> (context: ContextInfo?, more: Bool) {
         func convertRange(_ node: SyntaxProtocol) -> CursorRange {
-            .init(sourceRange: node.sourceRange(converter: .init(file: source, tree: tree)))
+            .init(sourceRange: node.sourceRange(converter: locationConverter))
         }
 
         func extractText(_ node: SyntaxProtocol) -> String {
@@ -75,168 +127,103 @@ extension SwiftFocusedCodeFinder {
         case let node as StructDeclSyntax:
             let type = node.structKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as ClassDeclSyntax:
             let type = node.classKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as EnumDeclSyntax:
             let type = node.enumKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as ActorDeclSyntax:
             let type = node.actorKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as MacroDeclSyntax:
             let type = node.macroKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as ProtocolDeclSyntax:
             let type = node.protocolKeyword.text
             let name = node.identifier.text
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as ExtensionDeclSyntax:
             let type = node.extensionKeyword.text
             let name = node.extendedType.trimmedDescription
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                        .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText))
+                    .suffixedInheritance(node.inheritanceClauseTexts(extractText)),
+                contextRange: convertRange(node)
+            ), false)
 
         case let node as FunctionDeclSyntax:
             let type = node.funcKeyword.text
             let name = node.identifier.text
             let signature = node.signature.trimmedDescription
 
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)\(signature)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)\(signature)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as VariableDeclSyntax:
             let type = node.bindingSpecifier.trimmedDescription
             let name = node.bindings.first?.pattern.trimmedDescription ?? ""
-            let signature = node.bindings.first?.initializer?.value.trimmedDescription ?? ""
+            let signature = node.bindings.first?.typeAnnotation?.trimmedDescription ?? ""
 
-            return .init(
-                scope: .scope(
-                    signature: "\(type) \(name)\(signature)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(type) \(name)\(signature.isEmpty ? "" : ": \(signature)")"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as AccessorDeclSyntax:
             let keyword = node.accessorSpecifier.text
-            var signature = keyword
+            let signature = keyword
 
-            for node in parentNodes {
-                if let (type, name, sig) = findAssigningToVariable(node) {
-                    signature = "\(keyword) of \(type) \(name):\(sig)"
-                    break
-                }
-
-                if let node = node as? SubscriptDeclSyntax {
-                    let genericPClause = node.genericWhereClause?.trimmedDescription ?? ""
-                    let pClause = node.parameterClause.trimmedDescription
-                    let whereClause = node.genericWhereClause?.trimmedDescription ?? ""
-                    signature = "\(keyword) of subscript\(genericPClause)(\(pClause))\(whereClause)"
-                    break
-                }
-            }
-
-            return .init(
-                scope: .scope(
-                    signature: signature
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: signature
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as SubscriptDeclSyntax:
             let genericPClause = node.genericWhereClause?.trimmedDescription ?? ""
@@ -244,103 +231,57 @@ extension SwiftFocusedCodeFinder {
             let whereClause = node.genericWhereClause?.trimmedDescription ?? ""
             let signature = "subscript\(genericPClause)(\(pClause))\(whereClause)"
 
-            return .init(
-                scope: .scope(
-                    signature: signature
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: signature
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as InitializerDeclSyntax:
-            var signature = "init"
-            for node in parentNodes {
-                if let typeName = findTypeNameFromNode(node) {
-                    signature = "\(typeName).init"
-                    break
-                }
-            }
+            let signature = "init"
 
-            return .init(
-                scope: .scope(
-                    signature: "\(signature)"
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: "\(signature)"
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as DeinitializerDeclSyntax:
-            var signature = "deinit"
-            for node in parentNodes {
-                if let typeName = findTypeNameFromNode(node) {
-                    signature = "\(typeName).deinit"
-                    break
-                }
-            }
+            let signature = "deinit"
 
-            return .init(
-                scope: .scope(
-                    signature: signature
-                        .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                ),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: signature
+                    .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as ClosureExprSyntax:
-            var signature = "anonymous closure"
+            let signature = "closure"
 
-            for node in parentNodes {
-                if let (type, name, sig) = findAssigningToVariable(node) {
-                    signature = "closure assigned to \(type) \(name)\(sig)"
-                    break
-                }
-            }
-
-            return .init(
-                scope: .scope(signature: signature),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: signature,
+                contextRange: convertRange(node)
+            ), true)
 
         case let node as FunctionCallExprSyntax:
-            var signature = "anonymous function call"
-            for node in parentNodes {
-                if let (type, name, sig) = findAssigningToVariable(node) {
-                    signature = "function call assigned to \(type) \(name)\(sig)"
-                    break
-                }
-            }
+            let signature = "function call"
 
-            return .init(
-                scope: .scope(signature: signature),
+            return (.init(
+                signature: signature,
                 contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+                canBeUsedAsCodeRange: false
+            ), true)
 
         case let node as SwitchCaseSyntax:
-            return .init(
-                scope: .scope(signature: node.trimmedDescription),
-                contextRange: convertRange(node),
-                focusedRange: .zero,
-                focusedCode: "",
-                imports: []
-            )
+            return (.init(
+                signature: node.trimmedDescription,
+                contextRange: convertRange(node)
+            ), true)
 
         default:
-            return nil
+            return (nil, true)
         }
     }
 
@@ -465,6 +406,8 @@ extension SwiftFocusedCodeFinder {
         let tree: SyntaxProtocol
         let code: String
         let range: CursorRange
+        let locationConverter: SourceLocationConverter
+
         var imports: [String] = []
         private var _scopeHierarchy: [SyntaxProtocol] = []
 
@@ -480,26 +423,34 @@ extension SwiftFocusedCodeFinder {
             return _scopeHierarchy.sorted { $0.position.utf8Offset > $1.position.utf8Offset }
         }
 
-        init(tree: SyntaxProtocol, code: String, range: CursorRange) {
+        init(
+            tree: SyntaxProtocol,
+            code: String,
+            range: CursorRange,
+            locationConverter: SourceLocationConverter
+        ) {
             self.tree = tree
             self.code = code
             self.range = range
-            super.init(viewMode: .all)
+            self.locationConverter = locationConverter
+            super.init(viewMode: .sourceAccurate)
         }
 
         func skipChildrenIfPossible(_ node: SyntaxProtocol) -> SyntaxVisitorContinueKind {
+            if _scopeHierarchy.count > 5 { return .skipChildren }
             if !nodeContainsRange(node) { return .skipChildren }
             return .visitChildren
         }
 
         func captureNodeIfPossible(_ node: SyntaxProtocol) -> SyntaxVisitorContinueKind {
+            if _scopeHierarchy.count > 5 { return .skipChildren }
             if !nodeContainsRange(node) { return .skipChildren }
             _scopeHierarchy.append(node)
             return .visitChildren
         }
 
         func nodeContainsRange(_ node: SyntaxProtocol) -> Bool {
-            let sourceRange = node.sourceRange(converter: .init(file: code, tree: tree))
+            let sourceRange = node.sourceRange(converter: locationConverter)
             let cursorRange = CursorRange(sourceRange: sourceRange)
             return cursorRange.strictlyContains(range)
         }
