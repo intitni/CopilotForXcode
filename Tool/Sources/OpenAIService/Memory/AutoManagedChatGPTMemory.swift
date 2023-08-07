@@ -1,11 +1,12 @@
 import Foundation
+import Logger
 import Preferences
 import TokenEncoder
 
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public private(set) var messages: [ChatMessage] = []
-    public private(set) var remainingTokens: Int? = nil
+    public private(set) var remainingTokens: Int?
 
     public var systemPrompt: ChatMessage
     public var history: [ChatMessage] = [] {
@@ -44,7 +45,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             await setOnHistoryChangeBlock(onChange)
         }
     }
-    
+
     public func refresh() async {
         messages = generateSendingHistory()
         remainingTokens = generateRemainingTokens()
@@ -74,7 +75,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             }
             partial += count
         }
-        var allTokensCount = functionTokenCount + 3 // every reply is primed with <|start|>assistant<|message|>
+        var allTokensCount = functionTokenCount +
+            3 // every reply is primed with <|start|>assistant<|message|>
         allTokensCount += systemPrompt.isEmpty ? 0 : systemMessageTokenCount
 
         for (index, message) in history.enumerated().reversed() {
@@ -93,6 +95,17 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         if !systemPrompt.isEmpty {
             all.append(systemPrompt)
         }
+
+        #if DEBUG
+        Logger.service.info("""
+        Sending tokens count
+        - system prompt: \(systemMessageTokenCount)
+        - functions: \(functionTokenCount)
+        - total: \(allTokensCount)
+        
+        """)
+        #endif
+
         return all.reversed()
     }
 

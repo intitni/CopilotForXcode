@@ -1,4 +1,5 @@
 import Foundation
+import Logger
 
 public struct EmbeddingResponse: Decodable {
     public struct Object: Decodable {
@@ -74,9 +75,19 @@ public struct EmbeddingService {
                 .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
         }
 
-        return try JSONDecoder().decode(EmbeddingResponse.self, from: result)
+        let embeddingResponse = try JSONDecoder().decode(EmbeddingResponse.self, from: result)
+        #if DEBUG
+        Logger.service.info("""
+        Embedding usage
+        - number of strings: \(text.count)
+        - prompt tokens: \(embeddingResponse.usage.prompt_tokens)
+        - total tokens: \(embeddingResponse.usage.total_tokens)
+
+        """)
+        #endif
+        return embeddingResponse
     }
-    
+
     public func embed(tokens: [[Int]]) async throws -> EmbeddingResponse {
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
@@ -112,7 +123,17 @@ public struct EmbeddingService {
                 .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
         }
 
-        return try JSONDecoder().decode(EmbeddingResponse.self, from: result)
+        let embeddingResponse = try JSONDecoder().decode(EmbeddingResponse.self, from: result)
+        #if DEBUG
+        Logger.service.info("""
+        Embedding usage
+        - number of strings: \(tokens.count)
+        - prompt tokens: \(embeddingResponse.usage.prompt_tokens)
+        - total tokens: \(embeddingResponse.usage.total_tokens)
+
+        """)
+        #endif
+        return embeddingResponse
     }
 }
 
