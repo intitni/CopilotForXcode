@@ -62,8 +62,6 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
         }
 
-        print(extractSystemPrompt(context))
-
         return .init(
             systemPrompt: extractSystemPrompt(context),
             functions: functions
