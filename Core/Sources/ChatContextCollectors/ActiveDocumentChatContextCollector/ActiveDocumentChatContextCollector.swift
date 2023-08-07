@@ -62,6 +62,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
         }
 
+        print(extractSystemPrompt(context))
+
         return .init(
             systemPrompt: extractSystemPrompt(context),
             functions: functions
@@ -87,55 +89,84 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     func extractSystemPrompt(_ context: ActiveDocumentContext) -> String {
         let start = """
-        User Editing Document Context:###
-        (The context may change during the conversation, so it may not match our conversation.)
+        ## File and Code Scope
+
+        You can use the following context to answer user's questions about the editing document or code. The context shows only a part of the code in the editing document, and will change during the conversation, so it may not match our conversation.
+
+        User Editing Document Context: ###
         """
         let end = "###"
         let relativePath = "Document Relative Path: \(context.relativePath)"
         let language = "Language: \(context.language.rawValue)"
 
         if let focusedContext = context.focusedContext {
-            let codeContext = "Focused Context:\(focusedContext.contextRange) \(focusedContext.context)"
+            let codeContext = focusedContext.context.isEmpty
+                ? ""
+                : """
+                Focused Context:
+                ```
+                \(focusedContext.context.joined(separator: "\n"))
+                ```
+                """
+
             let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
+
             let code = """
-            Focused Code (start from line \(focusedContext.codeRange.start.line), call `expandFocusRange` if you need more context):
+            Focused Code (start from line \(
+                focusedContext.codeRange.start
+                    .line
+            )):
             ```\(context.language.rawValue)
             \(focusedContext.code)
             ```
             """
+
             let fileAnnotations = focusedContext.otherLineAnnotations.isEmpty
                 ? ""
                 : """
-                File Annotations:
-                \(focusedContext.otherLineAnnotations.map { "  - \($0)" }.joined(separator: "\n"))
-                (call `moveToCodeAroundLine` if you context about the line annotations here)
+                Other Annotations:\"""
+                (They are not inside the focused code. You don't known how to handle them until you get the code at the line)
+                \(
+                    focusedContext.otherLineAnnotations
+                        .map(convertAnnotationToText)
+                        .joined(separator: "\n")
+                )
+                \"""
                 """
+
             let codeAnnotations = focusedContext.lineAnnotations.isEmpty
                 ? ""
                 : """
-                Code Annotations:
-                \(focusedContext.lineAnnotations.map { "  - \($0)" }.joined(separator: "\n"))
+                Annotations Inside Focused Range:\"""
+                \(
+                    focusedContext.lineAnnotations
+                        .map(convertAnnotationToText)
+                        .joined(separator: "\n")
+                )
+                \"""
                 """
+
             return [
                 start,
                 relativePath,
                 language,
-                fileAnnotations,
                 codeContext,
                 codeRange,
-                codeAnnotations,
                 code,
+                codeAnnotations,
+                fileAnnotations,
                 end,
             ]
             .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+            .joined(separator: "\n\n")
         } else {
             let selectionRange = "Selection Range [line, character]: \(context.selectionRange)"
             let lineAnnotations = context.lineAnnotations.isEmpty
                 ? ""
                 : """
-                Line Annotations:
-                \(context.lineAnnotations.map { "  - \($0)" }.joined(separator: "\n"))
+                Line Annotations:\"""
+                \(context.lineAnnotations.map(convertAnnotationToText).joined(separator: "\n"))
+                \"""
                 """
 
             return [
@@ -149,6 +180,10 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
         }
+    }
+
+    func convertAnnotationToText(_ annotation: EditorInformation.LineAnnotation) -> String {
+        return "- Line \(annotation.line), \(annotation.type): \(annotation.message)"
     }
 }
 
@@ -164,7 +199,7 @@ struct ActiveDocumentContext {
     var imports: [String]
 
     struct FocusedContext {
-        var context: String
+        var context: [String]
         var contextRange: CursorRange
         var codeRange: CursorRange
         var code: String
@@ -206,30 +241,21 @@ struct ActiveDocumentContext {
         )
 
         imports = codeContext.imports
-        
+
         let startLine = codeContext.focusedRange.start.line
         let endLine = codeContext.focusedRange.end.line
         var matchedAnnotations = [EditorInformation.LineAnnotation]()
         var otherAnnotations = [EditorInformation.LineAnnotation]()
         for annotation in lineAnnotations {
-            if annotation.line >= startLine && annotation.line <= endLine {
+            if annotation.line >= startLine, annotation.line <= endLine {
                 matchedAnnotations.append(annotation)
             } else {
                 otherAnnotations.append(annotation)
             }
         }
-        
+
         focusedContext = .init(
-            context: {
-                switch codeContext.scope {
-                case .file:
-                    return "File"
-                case .top:
-                    return "Top level of the file"
-                case let .scope(signature):
-                    return signature
-                }
-            }(),
+            context: codeContext.scopeSignatures,
             contextRange: codeContext.contextRange,
             codeRange: codeContext.focusedRange,
             code: codeContext.focusedCode,
@@ -258,7 +284,7 @@ struct ActiveDocumentContext {
         selectionRange = info.editorContent?.selections.first ?? .zero
         lineAnnotations = info.editorContent?.lineAnnotations ?? []
         imports = []
-
+        
         if changed {
             moveToFocusedCode()
         }

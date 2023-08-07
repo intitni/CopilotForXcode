@@ -9,5 +9,7 @@ public actor EmptyChatGPTMemory: ChatGPTMemory {
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
         update(&messages)
     }
+    
+    public func refresh() async {}
 }
 

@@ -19,11 +19,11 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
     var reportProgress: (String) async -> Void = { _ in }
 
     var name: String {
-        "moveToCodeAroundLine"
+        "getCodeAtLine"
     }
 
     var description: String {
-        "Move user editing document context to code around a line when you need to answer a question the code in the line"
+        "Get the code at the given line, so you can answer the question about the code at that line."
     }
 
     var argumentSchema: JSONSchemaValue { [
@@ -31,7 +31,7 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
         .properties: [
             "line": [
                 .type: "number",
-                .description: "The line number to move to",
+                .description: "The line number in the file",
             ]
         ],
         .required: ["line"],
@@ -55,7 +55,7 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
             await reportProgress(progress)
             return .init(text: progress)
         }
-        let progress = "Looking at \(newContext.codeRange) inside \(newContext.context)"
+        let progress = "Looking at \(newContext.codeRange)"
         await reportProgress(progress)
         return .init(text: progress)
     }

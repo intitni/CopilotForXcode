@@ -5,9 +5,19 @@ struct CodeContext: Equatable {
     enum Scope: Equatable {
         case file
         case top
-        case scope(signature: String)
+        case scope(signature: [String])
     }
 
+    var scopeSignatures: [String] {
+        switch scope {
+        case .file:
+            return []
+        case .top:
+            return ["Top level of the file"]
+        case .scope(let signature):
+            return signature
+        }
+    }
     var scope: Scope
     var contextRange: CursorRange
     var focusedRange: CursorRange

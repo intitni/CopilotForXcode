@@ -4,8 +4,8 @@ import TokenEncoder
 
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
-    public var messages: [ChatMessage] { generateSendingHistory() }
-    public var remainingTokens: Int? { generateRemainingTokens() }
+    public private(set) var messages: [ChatMessage] = []
+    public private(set) var remainingTokens: Int? = nil
 
     public var systemPrompt: ChatMessage
     public var history: [ChatMessage] = [] {
@@ -43,6 +43,11 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         Task {
             await setOnHistoryChangeBlock(onChange)
         }
+    }
+    
+    public func refresh() async {
+        messages = generateSendingHistory()
+        remainingTokens = generateRemainingTokens()
     }
 
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -97,12 +102,6 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     ) -> Int? {
         // It should be fine to just let OpenAI decide.
         return nil
-//        let tokensCount = generateSendingHistory(
-//            maxNumberOfMessages: maxNumberOfMessages,
-//            encoder: encoder
-//        )
-//        .reduce(0) { $0 + ($1.tokensCount ?? 0) }
-//        return max(configuration.minimumReplyTokens, configuration.maxTokens - tokensCount)
     }
 
     func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
