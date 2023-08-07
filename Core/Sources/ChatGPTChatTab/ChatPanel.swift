@@ -105,54 +105,75 @@ private struct StopRespondingButton: View {
 
 private struct Instruction: View {
     @AppStorage(\.useSelectionScopeByDefaultInChatContext)
-    var useSelectionScopeByDefaultInChatContext
-    @AppStorage(\.chatFontSize) var chatFontSize
+    var useCodeScopeByDefaultInChatContext
 
     var body: some View {
         Group {
-            if useSelectionScopeByDefaultInChatContext {
-                Markdown(
-                    """
-                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-
-                    Currently, I have the ability to read the following details from the active editor:
-                    - The **selected code**.
-                    - The **relative path** of the file.
-                    - The **error and warning** labels.
-                    - The text cursor location.
-
-                    If you'd like me to examine the entire file, simply add `@file` to the beginning of your message.
-
-                    To use plugins, you can start a message with `/pluginName`.
-                    """
+            Markdown(
+                """
+                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+                                
+                \(
+                    useCodeScopeByDefaultInChatContext
+                        ? "Scope **`@code`** is enabled by default."
+                        : "Scope **`@file`** is enabled by default."
                 )
-            } else {
-                Markdown(
-                    """
-                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+                """
+            )
+            .modifier(InstructionModifier())
 
-                    Currently, I have the ability to read the following details from the active editor:
-                    - The **relative path** of the file.
-                    - The **error and warning** labels.
-                    - The text cursor location.
+            Markdown(
+                """
+                You can use scopes to give the bot extra abilities.
 
-                    If you would like me to examine the selected code, please prefix your message with `@selection`. If you would like me to examine the entire file, please prefix your message with `@file`.
+                | Scope Name | Abilities |
+                | --- | --- |
+                | `@file` | Read the metadata of the editing file |
+                | `@code` | Read the code and metadata in the editing file |
+                | `@web` (beta) | Search on Bing or query from a web page |
 
-                    To use plugins, you can start a message with `/pluginName`.
-                    """
-                )
-            }
+                To use scopes, you can prefix a message with `@code`.
+
+                You can use shorthand to represent a scope, such as `@c`, and enable multiple scopes with `@c+web`.
+                """
+            )
+            .modifier(InstructionModifier())
+
+            Markdown(
+                """
+                You can use plugins to perform various tasks.
+
+                | Plugin Name | Description |
+                | --- | --- |
+                | `/run` | Runs a command under the project root |
+                | `/math` | Solves a math problem in natural language |
+                | `/search` | Searches on Bing and summarizes the results |
+                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
+                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
+
+                To use plugins, you can prefix a message with `/pluginName`.
+                """
+            )
+            .modifier(InstructionModifier())
         }
-        .textSelection(.enabled)
-        .markdownTheme(.custom(fontSize: chatFontSize))
-        .opacity(0.8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+    }
+
+    struct InstructionModifier: ViewModifier {
+        @AppStorage(\.chatFontSize) var chatFontSize
+
+        func body(content: Content) -> some View {
+            content
+                .textSelection(.enabled)
+                .markdownTheme(.custom(fontSize: chatFontSize))
+                .opacity(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+                .scaleEffect(x: -1, y: -1, anchor: .center)
         }
-        .scaleEffect(x: -1, y: -1, anchor: .center)
     }
 }
 
