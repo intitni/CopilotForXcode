@@ -7,11 +7,15 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
     struct Arguments: Codable {}
 
     struct Result: ChatGPTFunctionResult {
-        var text: String
+        var range: CursorRange
 
         var botReadableContent: String {
-            "User Editing Document Context is updated"
+            "User Editing Document Context is updated to display code at \(range)."
         }
+    }
+    
+    struct E: Error, LocalizedError {
+        var errorDescription: String?
     }
 
     var reportProgress: (String) async -> Void = { _ in }
@@ -43,12 +47,12 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
         await reportProgress("Finding the focused code..")
         contextCollector?.activeDocumentContext?.expandFocusedRangeToContextRange()
         guard let newContext = contextCollector?.activeDocumentContext?.focusedContext else {
-            let progress = "Failed to move to focused code."
+            let progress = "Failed to expand focused code."
             await reportProgress(progress)
-            return .init(text: progress)
+            throw E(errorDescription: progress)
         }
-        let progress = "Looking at \(newContext.codeRange) inside \(newContext.context)"
+        let progress = "Looking at \(newContext.codeRange)."
         await reportProgress(progress)
-        return .init(text: progress)
+        return .init(range: newContext.codeRange)
     }
 }
