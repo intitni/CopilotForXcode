@@ -22,7 +22,6 @@ public actor MathChatPlugin: ChatPlugin {
         delegate?.pluginDidStartResponding(self)
 
         let id = "\(Self.command)-\(UUID().uuidString)"
-        async let translatedAnswer = translate(text: "Answer:")
         var reply = ChatMessage(id: id, role: .assistant, content: "")
 
         await chatGPTService.memory.mutateHistory { history in
@@ -31,7 +30,7 @@ public actor MathChatPlugin: ChatPlugin {
 
         do {
             let result = try await solveMathProblem(content)
-            let formattedResult = "\(await translatedAnswer) \(result)"
+            let formattedResult = "Answer: \(result)"
             if !isCancelled {
                 await chatGPTService.memory.mutateHistory { history in
                     if history.last?.id == id {
