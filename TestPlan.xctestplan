@@ -105,6 +105,20 @@
         "identifier" : "LicenseManagementTests",
         "name" : "LicenseManagementTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ActiveDocumentChatContextCollectorTests",
+        "name" : "ActiveDocumentChatContextCollectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "ASTParserTests",
+        "name" : "ASTParserTests"
+      }
     }
   ],
   "version" : 1
