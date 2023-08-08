@@ -51,6 +51,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -178,6 +179,7 @@ let package = Package(
 
                 // context collectors
                 "WebChatContextCollector",
+                "ActiveDocumentChatContextCollector",
 
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
@@ -349,6 +351,25 @@ let package = Package(
                 .product(name: "Preferences", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/WebChatContextCollector"
+        ),
+
+        .target(
+            name: "ActiveDocumentChatContextCollector",
+            dependencies: [
+                "ChatContextCollector",
+                .product(name: "LangChain", package: "Tool"),
+                .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "ASTParser", package: "Tool"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+            ],
+            path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
+        ),
+
+        .testTarget(
+            name: "ActiveDocumentChatContextCollectorTests",
+            dependencies: ["ActiveDocumentChatContextCollector"]
         ),
     ]
 )

@@ -182,6 +182,8 @@ extension ChatGPTService {
     func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
         guard let url = URL(string: configuration.endpoint)
         else { throw ChatGPTServiceError.endpointIncorrect }
+        
+        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
@@ -280,6 +282,8 @@ extension ChatGPTService {
     func sendMemoryAndWait() async throws -> ChatMessage? {
         guard let url = URL(string: configuration.endpoint)
         else { throw ChatGPTServiceError.endpointIncorrect }
+        
+        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(

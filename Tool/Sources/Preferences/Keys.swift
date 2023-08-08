@@ -274,11 +274,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
 
-    var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
+    var maxFocusedCodeLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
 
-    var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
+    var useCodeScopeByDefaultInChatContext: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
     }
 
@@ -291,7 +291,7 @@ public extension UserDefaultPreferenceKeys {
             You MUST embed every code you provide in a markdown code block.
             You MUST add the programming language name at the start of the markdown code block.
             If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
-            If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
+            If you are asked to explain code, you MUST explain it step-by-step in a ordered list concisely.
             Make your answer short and structured.
             """,
             key: "DefaultChatSystemPrompt"

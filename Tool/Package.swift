@@ -16,6 +16,7 @@ let package = Package(
         .library(name: "ChatTab", targets: ["ChatTab"]),
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
+        .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
@@ -44,6 +45,14 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+
+        // TreeSitter
+        .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.7.1"),
+        .package(
+            url: "https://github.com/alex-pinkus/tree-sitter-swift",
+            branch: "with-generated-files"
+        ),
+        .package(url: "https://github.com/lukepistrol/tree-sitter-objc", branch: "feature/spm"),
     ],
     targets: [
         // MARK: - Helpers
@@ -103,7 +112,10 @@ let package = Package(
 
         .target(
             name: "SuggestionModel",
-            dependencies: ["LanguageClient"]
+            dependencies: [
+                "LanguageClient",
+                .product(name: "Parsing", package: "swift-parsing"),
+            ]
         ),
 
         .testTarget(
@@ -131,7 +143,7 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
-
+        
         .target(
             name: "SharedUIComponents",
             dependencies: [
@@ -141,6 +153,15 @@ let package = Package(
             ]
         ),
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
+
+        .target(name: "ASTParser", dependencies: [
+            "SuggestionModel",
+            .product(name: "SwiftTreeSitter", package: "SwiftTreeSitter"),
+            .product(name: "TreeSitterObjC", package: "tree-sitter-objc"),
+            .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
+        ]),
+
+        .testTarget(name: "ASTParserTests", dependencies: ["ASTParser"]),
 
         // MARK: - Services
 

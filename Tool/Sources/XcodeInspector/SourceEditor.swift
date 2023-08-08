@@ -5,34 +5,7 @@ import SuggestionModel
 
 /// Representing a source editor inside Xcode.
 public class SourceEditor {
-    public struct Content {
-        /// The content of the source editor.
-        public var content: String
-        /// The content of the source editor in lines.
-        public var lines: [String]
-        /// The selection ranges of the source editor.
-        public var selections: [CursorRange]
-        /// The cursor position of the source editor.
-        public var cursorPosition: CursorPosition
-        /// Line annotations of the source editor.
-        public var lineAnnotations: [String]
-
-        public var selectedContent: String {
-            if let range = selections.first {
-                let startIndex = min(
-                    max(0, range.start.line),
-                    lines.endIndex - 1
-                )
-                let endIndex = min(
-                    max(startIndex, range.end.line),
-                    lines.endIndex - 1
-                )
-                let selectedContent = lines[startIndex...endIndex]
-                return selectedContent.joined()
-            }
-            return ""
-        }
-    }
+    public typealias Content = EditorInformation.SourceEditorContent
 
     let runningApplication: NSRunningApplication
     public let element: AXUIElement
