@@ -5,6 +5,12 @@ import SwiftParser
 import SwiftSyntax
 
 struct SwiftFocusedCodeFinder: FocusedCodeFinder {
+    let maxFocusedCodeLineCount: Int
+
+    init(maxFocusedCodeLineCount: Int = UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)) {
+        self.maxFocusedCodeLineCount = maxFocusedCodeLineCount
+    }
+
     func findFocusedCode(
         containingRange range: CursorRange,
         activeDocumentContext: ActiveDocumentContext
@@ -27,8 +33,7 @@ struct SwiftFocusedCodeFinder: FocusedCodeFinder {
 
         var nodes = visitor.findScopeHierarchy()
 
-        let code: String
-        let codeRange: CursorRange
+        var codeRange: CursorRange
 
         func convertRange(_ node: SyntaxProtocol) -> CursorRange {
             .init(sourceRange: node.sourceRange(converter: locationConverter))
@@ -52,10 +57,11 @@ struct SwiftFocusedCodeFinder: FocusedCodeFinder {
                 }
             }
             guard let focusedNode else {
-                var result = UnknownLanguageFocusedCodeFinder().findFocusedCode(
-                    containingRange: range,
-                    activeDocumentContext: activeDocumentContext
-                )
+                var result = UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
+                    .findFocusedCode(
+                        containingRange: range,
+                        activeDocumentContext: activeDocumentContext
+                    )
                 result.imports = visitor.imports
                 return result
             }
@@ -64,8 +70,26 @@ struct SwiftFocusedCodeFinder: FocusedCodeFinder {
             codeRange = range
         }
 
-        code = EditorInformation
-            .code(in: activeDocumentContext.lines, inside: codeRange, ignoreColumns: true).code
+        let result = EditorInformation
+            .code(in: activeDocumentContext.lines, inside: codeRange, ignoreColumns: true)
+
+        var code = result.code
+
+        if range.isEmpty, result.lines.count > maxFocusedCodeLineCount {
+            // if the focused code is too long, truncate it to be shorter
+            let centerLine = range.start.line
+            let relativeCenterLine = centerLine - codeRange.start.line
+            let startLine = max(0, relativeCenterLine - maxFocusedCodeLineCount / 2)
+            let endLine = min(result.lines.count - 1, startLine + maxFocusedCodeLineCount)
+            code = result.lines[startLine...endLine].joined(separator: "\n")
+            codeRange = .init(
+                start: .init(line: startLine + codeRange.start.line, character: 0),
+                end: .init(
+                    line: endLine + codeRange.start.line,
+                    character: result.lines[endLine].count
+                )
+            )
+        }
 
         var contextRange = CursorRange.zero
         var signature = [String]()
@@ -219,7 +243,7 @@ extension SwiftFocusedCodeFinder {
             let signature = node.bindings.first?.typeAnnotation?.trimmedDescription ?? ""
 
             return (.init(
-                signature: "\(type) \(name)\(signature.isEmpty ? "" : ": \(signature)")"
+                signature: "\(type) \(name)\(signature.isEmpty ? "" : "\(signature)")"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 contextRange: convertRange(node)
@@ -471,10 +495,6 @@ extension SwiftFocusedCodeFinder {
 
         // skip if possible
 
-        override func visit(_ node: CodeBlockItemSyntax) -> SyntaxVisitorContinueKind {
-            skipChildrenIfPossible(node)
-        }
-
         override func visit(_ node: MemberDeclBlockSyntax) -> SyntaxVisitorContinueKind {
             skipChildrenIfPossible(node)
         }
@@ -486,7 +506,7 @@ extension SwiftFocusedCodeFinder {
         // capture if possible
 
         override func visit(_ node: ImportDeclSyntax) -> SyntaxVisitorContinueKind {
-            imports.append(node.trimmedDescription)
+            imports.append(node.path.trimmedDescription)
             return .skipChildren
         }
 

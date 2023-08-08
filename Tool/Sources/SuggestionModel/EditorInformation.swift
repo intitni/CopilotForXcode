@@ -11,7 +11,7 @@ public struct EditorInformation {
     public struct SourceEditorContent {
         /// The content of the source editor.
         public var content: String
-        /// The content of the source editor in lines.
+        /// The content of the source editor in lines. Every line should ends with `\n`.
         public var lines: [String]
         /// The selection ranges of the source editor.
         public var selections: [CursorRange]

@@ -14,10 +14,11 @@ struct CodeContext: Equatable {
             return []
         case .top:
             return ["Top level of the file"]
-        case .scope(let signature):
+        case let .scope(signature):
             return signature
         }
     }
+
     var scope: Scope
     var contextRange: CursorRange
     var focusedRange: CursorRange
@@ -37,6 +38,12 @@ protocol FocusedCodeFinder {
 }
 
 struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
+    let proposedSearchRange: Int
+
+    init(proposedSearchRange: Int) {
+        self.proposedSearchRange = proposedSearchRange
+    }
+
     func findFocusedCode(
         containingRange: CursorRange,
         activeDocumentContext: ActiveDocumentContext
@@ -45,25 +52,32 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
 
         // when user is not selecting any code.
         if containingRange.start == containingRange.end {
-            // search up and down for up to 7 lines.
+            // search up and down for up to `proposedSearchRange * 2 + 1` lines.
             let lines = activeDocumentContext.lines
-            var startLineIndex = max(containingRange.start.line - 3, 0)
-            let endLineIndex = min(containingRange.start.line + 3, lines.count - 1)
-            if endLineIndex - startLineIndex <= 6, startLineIndex > 0 {
-                startLineIndex = max(startLineIndex - (6 - (endLineIndex - startLineIndex)), 0)
+            let proposedLineCount = proposedSearchRange * 2 + 1
+            var startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
+            let endLineIndex = min(containingRange.start.line + proposedSearchRange, lines.count - 1)
+            if endLineIndex - startLineIndex < proposedLineCount, startLineIndex > 0 {
+                startLineIndex = max(
+                    startLineIndex - ((proposedSearchRange * 2) - (endLineIndex - startLineIndex)),
+                    0
+                )
             }
             let focusedLines = lines[startLineIndex...endLineIndex]
 
-            let contextStartLine = max(startLineIndex - 3, 0)
-            let contextEndLine = min(endLineIndex + 3, lines.count - 1)
+            let contextStartLine = max(startLineIndex - 5, 0)
+            let contextEndLine = min(endLineIndex + 5, lines.count - 1)
 
             return .init(
                 scope: .top,
                 contextRange: .init(
                     start: .init(line: contextStartLine, character: 0),
-                    end: .init(line: contextEndLine, character: 0)
+                    end: .init(line: contextEndLine, character: lines[contextEndLine].count)
                 ),
-                focusedRange: containingRange,
+                focusedRange: .init(
+                    start: .init(line: startLineIndex, character: 0),
+                    end: .init(line: endLineIndex, character: lines[endLineIndex].count)
+                ),
                 focusedCode: focusedLines.joined(separator: "\n"),
                 imports: []
             )
@@ -82,7 +96,10 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
             scope: .top,
             contextRange: .init(
                 start: .init(line: contextStartLine, character: 0),
-                end: .init(line: contextEndLine, character: 0)
+                end: .init(
+                    line: contextEndLine,
+                    character: activeDocumentContext.lines[contextEndLine].count
+                )
             ),
             focusedRange: containingRange,
             focusedCode: focusedLines.joined(separator: "\n"),

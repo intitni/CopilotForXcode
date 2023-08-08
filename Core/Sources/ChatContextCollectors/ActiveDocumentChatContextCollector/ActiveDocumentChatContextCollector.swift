@@ -229,7 +229,7 @@ struct ActiveDocumentContext {
             case .builtIn(.swift):
                 return SwiftFocusedCodeFinder()
             default:
-                return UnknownLanguageFocusedCodeFinder()
+                return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
             }
         }()
 
