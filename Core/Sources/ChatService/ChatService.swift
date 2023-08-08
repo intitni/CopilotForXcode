@@ -49,9 +49,20 @@ public final class ChatService: ObservableObject {
                 functionProvider: memory.functionProvider
             )
         )
+        
+        resetDefaultScopes()
 
+        memory.chatService = self
         memory.observeHistoryChange { [weak self] in
             self?.objectWillChange.send()
+        }
+    }
+    
+    public func resetDefaultScopes() {
+        if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
+            memory.contextController.defaultScopes = ["code"]
+        } else {
+            memory.contextController.defaultScopes = ["file"]
         }
     }
 
@@ -101,6 +112,7 @@ public final class ChatService: ObservableObject {
     public func resetPrompt() async {
         systemPrompt = UserDefaults.shared.value(for: \.defaultChatSystemPrompt)
         extraSystemPrompt = ""
+        resetDefaultScopes()
     }
 
     public func deleteMessage(id: String) async {
@@ -161,6 +173,7 @@ public final class ChatService: ObservableObject {
                     name: command.name
                 )
             case let .customChat(systemPrompt, prompt):
+                memory.contextController.defaultScopes = []
                 return .init(
                     specifiedSystemPrompt: systemPrompt,
                     extraSystemPrompt: "",
