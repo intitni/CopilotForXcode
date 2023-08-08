@@ -67,13 +67,13 @@ struct ChatTitleBar: View {
                     )
                     .frame(width: 10, height: 10)
                     .overlay {
-                        Circle().strokeBorder(.black.opacity(0.2), lineWidth: 1)
+                        Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
                     }
                     .overlay {
                         if isHovering {
                             Image(systemName: "minus")
                                 .resizable()
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.black.opacity(0.7))
                                 .font(Font.title.weight(.heavy))
                                 .frame(width: 5, height: 1)
                         }
@@ -87,21 +87,22 @@ struct ChatTitleBar: View {
                     Circle()
                         .fill(
                             controlActiveState == .key && viewStore.state
-                                ? Color(nsColor: .systemIndigo)
+                                ? Color(nsColor: .systemCyan)
                                 : Color(nsColor: .disabledControlTextColor)
                         )
                         .frame(width: 10, height: 10)
                         .overlay {
-                            Circle().strokeBorder(.black.opacity(0.2), lineWidth: 1)
+                            Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
                         }
                         .disabled(!viewStore.state)
                         .overlay {
                             if isHovering {
                                 Image(systemName: "pin")
                                     .resizable()
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.black.opacity(0.7))
                                     .font(Font.title.weight(.heavy))
-                                    .frame(width: 3, height: 5)
+                                    .frame(width: 4, height: 6)
+                                    .transformEffect(.init(translationX: 0, y: 0.5))
                             }
                         }
                 }
