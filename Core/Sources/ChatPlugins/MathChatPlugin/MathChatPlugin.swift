@@ -26,7 +26,7 @@ public actor MathChatPlugin: ChatPlugin {
         var reply = ChatMessage(id: id, role: .assistant, content: "")
 
         await chatGPTService.memory.mutateHistory { history in
-            history.append(.init(role: .user, content: originalMessage, summary: content))
+            history.append(.init(role: .user, content: originalMessage))
         }
 
         do {
