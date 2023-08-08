@@ -80,8 +80,12 @@ struct SwiftFocusedCodeFinder: FocusedCodeFinder {
             let centerLine = range.start.line
             let relativeCenterLine = centerLine - codeRange.start.line
             let startLine = max(0, relativeCenterLine - maxFocusedCodeLineCount / 2)
-            let endLine = min(result.lines.count - 1, startLine + maxFocusedCodeLineCount)
-            code = result.lines[startLine...endLine].joined(separator: "\n")
+            let endLine = max(
+                startLine,
+                min(result.lines.count - 1, startLine + maxFocusedCodeLineCount - 1)
+            )
+
+            code = result.lines[startLine...endLine].joined()
             codeRange = .init(
                 start: .init(line: startLine + codeRange.start.line, character: 0),
                 end: .init(

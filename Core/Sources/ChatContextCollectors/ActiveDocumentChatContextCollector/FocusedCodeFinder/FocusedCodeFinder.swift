@@ -55,14 +55,12 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
             // search up and down for up to `proposedSearchRange * 2 + 1` lines.
             let lines = activeDocumentContext.lines
             let proposedLineCount = proposedSearchRange * 2 + 1
-            var startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
-            let endLineIndex = min(containingRange.start.line + proposedSearchRange, lines.count - 1)
-            if endLineIndex - startLineIndex < proposedLineCount, startLineIndex > 0 {
-                startLineIndex = max(
-                    startLineIndex - ((proposedSearchRange * 2) - (endLineIndex - startLineIndex)),
-                    0
-                )
-            }
+            let startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
+            let endLineIndex = max(
+                startLineIndex,
+                min(startLineIndex + proposedLineCount - 1, lines.count - 1)
+            )
+
             let focusedLines = lines[startLineIndex...endLineIndex]
 
             let contextStartLine = max(startLineIndex - 5, 0)
@@ -78,7 +76,7 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
                     start: .init(line: startLineIndex, character: 0),
                     end: .init(line: endLineIndex, character: lines[endLineIndex].count)
                 ),
-                focusedCode: focusedLines.joined(separator: "\n"),
+                focusedCode: focusedLines.joined(),
                 imports: []
             )
         }
@@ -102,7 +100,7 @@ struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
                 )
             ),
             focusedRange: containingRange,
-            focusedCode: focusedLines.joined(separator: "\n"),
+            focusedCode: focusedLines.joined(),
             imports: []
         )
     }

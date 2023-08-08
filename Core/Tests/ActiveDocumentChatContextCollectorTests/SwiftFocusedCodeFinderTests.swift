@@ -340,21 +340,33 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
             case d
             case e
         }
+        
+        func hello() {
+            print("hello")
+            print("hello")
+        }
         """
         let range = CursorRange(startPair: (0, 0), endPair: (0, 0))
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 1000).findFocusedCode(
             containingRange: range,
             activeDocumentContext: context(code: code)
         )
         XCTAssertEqual(context, .init(
             scope: .top,
-            contextRange: .init(startPair: (0, 0), endPair: (6, 11)),
-            focusedRange: .init(startPair: (0, 0), endPair: (3, 11)),
+            contextRange: .init(startPair: (0, 0), endPair: (13, 2)),
+            focusedRange: .init(startPair: (0, 0), endPair: (10, 15)),
             focusedCode: """
             @MainActor
             public
             indirect enum A {
                 case a
+                case b
+                case c
+                case d
+                case e
+            }
+            
+            func hello() {
             
             """,
             imports: []
@@ -374,7 +386,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         }
         """
         let range = CursorRange(startPair: (3, 0), endPair: (3, 0))
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 1000).findFocusedCode(
             containingRange: range,
             activeDocumentContext: context(code: code)
         )
@@ -392,6 +404,37 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
                 case d
                 case e
             }
+            
+            """,
+            imports: []
+        ))
+    }
+    
+    func test_get_focused_code_inside_enum_with_limited_max_line_count() {
+        let code = """
+        @MainActor
+        public
+        indirect enum A {
+            case a
+            case b
+            case c
+            case d
+            case e
+        }
+        """
+        let range = CursorRange(startPair: (3, 0), endPair: (3, 0))
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 3).findFocusedCode(
+            containingRange: range,
+            activeDocumentContext: context(code: code)
+        )
+        XCTAssertEqual(context, .init(
+            scope: .file,
+            contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            focusedRange: .init(startPair: (2, 0), endPair: (4, 11)),
+            focusedCode: """
+            indirect enum A {
+                case a
+                case b
             
             """,
             imports: []
