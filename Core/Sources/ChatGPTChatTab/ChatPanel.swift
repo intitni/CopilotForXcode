@@ -104,7 +104,7 @@ private struct StopRespondingButton: View {
 }
 
 private struct Instruction: View {
-    @AppStorage(\.useSelectionScopeByDefaultInChatContext)
+    @AppStorage(\.useCodeScopeByDefaultInChatContext)
     var useCodeScopeByDefaultInChatContext
 
     var body: some View {

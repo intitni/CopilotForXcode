@@ -30,7 +30,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
             {
                 let lines = content.editorContent?.lines.count ?? 0
                 let maxLine = UserDefaults.shared
-                    .value(for: \.maxEmbeddableFileInChatContextLineCount)
+                    .value(for: \.maxFocusedCodeLineCount)
                 if lines <= maxLine {
                     return """
                     File Content:```\(content.language.rawValue)
@@ -48,7 +48,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
                 }
             }
 
-            if UserDefaults.shared.value(for: \.useSelectionScopeByDefaultInChatContext) {
+            if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)

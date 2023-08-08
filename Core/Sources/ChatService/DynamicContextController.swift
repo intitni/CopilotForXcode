@@ -35,7 +35,7 @@ final class DynamicContextController {
     func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         var content = content
         var scopes = Self.parseScopes(&content)
-        if UserDefaults.shared.value(for: \.useSelectionScopeByDefaultInChatContext) {
+        if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
             scopes.insert("code")
         } else {
             scopes.insert("file")

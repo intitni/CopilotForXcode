@@ -274,11 +274,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
 
-    var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
+    var maxFocusedCodeLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
 
-    var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
+    var useCodeScopeByDefaultInChatContext: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
     }
 
