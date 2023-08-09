@@ -13,7 +13,7 @@ body:
     id: before-reporting
     attributes:
       label: Before Reporting
-      description: Before reporting the bug, we suggestion that you first refer to the [FAQ](https://github.com/intitni/CopilotForXcode/issues/65) to check if it may address your issue. And search for existing issues to avoid duplication.
+      description: Before reporting the bug, we suggestion that you first refer to the [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions) to check if it may address your issue. And search for existing issues to avoid duplication.
       options:
         - label: I have checked FAQ, and there is no solution to my issue
           required: true
