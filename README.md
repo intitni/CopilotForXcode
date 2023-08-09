@@ -6,6 +6,8 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
+[Get a Plus License Key to unlock more features and support this project](https://intii.lemonsqueezy.com/checkout/buy/298a8d4c-11fb-4ecd-b328-049589645449)
+
 ## Features
 
 - Code Suggestions (powered by GitHub Copilot and Codeium).
@@ -28,12 +30,15 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - [Update](#update)
 - [Feature](#feature)
 - [Key Bindings](#key-bindings)
+- [Plus Features](#plus-features)
 - [Limitations](#limitations)
 - [License](#license)
 
-For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/issues/65).
+For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions).
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
+
+For more information, check the [wiki](https://github.com/intitni/CopilotForXcode/wiki)
 
 ## Prerequisites
 
@@ -295,6 +300,25 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
 Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
+
+## Plus Features
+
+The pre-built binary contains a set of exclusive features that can only be accessed with a Plus license key. To obtain a license key, please visit [this link](https://intii.lemonsqueezy.com/checkout/buy/298a8d4c-11fb-4ecd-b328-049589645449).
+
+These features are included in another repo, and are not open sourced.
+
+The currently available Plus features include:
+
+- Browser tap in chat panel.
+- Unlimited custom commands.
+
+Since the app needs to manage license keys, it will send network request to `https://copilotforxcode-license.intii.com`,
+- when you activate the license key
+- when you deactivate the license key
+- when you opened the host app or the service app if a license key is available
+- every 24 hours if a license key is available
+
+The request contains only the license key, the email address (only on activation), and an instance id. You are free to MITM the request to see what data is sent.
 
 ## Limitations
 

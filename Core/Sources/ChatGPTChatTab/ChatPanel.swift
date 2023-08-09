@@ -412,8 +412,9 @@ struct ChatPanelInputArea: View {
         let plugins = chat.pluginIdentifiers.map { "/\($0)" }
         let availableFeatures = plugins + [
             "/exit",
-            "@selection",
+            "@code",
             "@file",
+            "@web",
         ]
 
         let result: [String] = availableFeatures

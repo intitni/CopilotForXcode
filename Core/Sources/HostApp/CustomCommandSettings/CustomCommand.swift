@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import PlusFeatureFlag
 import Preferences
 import SwiftUI
 import Toast
@@ -24,7 +25,9 @@ struct CustomCommandFeature: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case .createNewCommand:
-                if settings.customCommands.count >= 10 {
+                if !isFeatureAvailable(\.unlimitedCustomCommands),
+                   settings.customCommands.count >= 10
+                {
                     toast("Upgrade to Plus to add more commands", .info)
                     return .none
                 }
