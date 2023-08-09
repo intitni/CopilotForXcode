@@ -107,7 +107,6 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 
 | Command             | Key Binding |
 | ------------------- | ----------- |
-| Get Suggestions     | `⌥?`        |
 | Accept Suggestions  | `⌥}`        |
 | Reject Suggestion   | `⌥{`        |
 | Next Suggestion     | `⌥>`        |
