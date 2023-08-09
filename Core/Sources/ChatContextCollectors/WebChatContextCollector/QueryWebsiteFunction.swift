@@ -63,7 +63,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         await reportProgress("Loading \(url)..")
                         
                         if let database = await TemporaryUSearch.view(identifier: urlString) {
-                            await reportProgress("Generating answers..")
+                            await reportProgress("Getting relevant information..")
                             let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
                             return try await qa.call(.init(arguments.query)).information
                         }
@@ -82,7 +82,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         let database = TemporaryUSearch(identifier: urlString)
                         try await database.set(embeddedDocuments)
                         // 4. generate answer
-                        await reportProgress("Generating answers..")
+                        await reportProgress("Getting relevant information..")
                         let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
                         let result = try await qa.call(.init(arguments.query))
                         return result.information
