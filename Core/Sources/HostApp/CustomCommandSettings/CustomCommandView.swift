@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import MarkdownUI
+import PlusFeatureFlag
 import Preferences
 import SwiftUI
 
@@ -17,12 +18,7 @@ extension List {
 let customCommandStore = StoreOf<CustomCommandFeature>(
     initialState: .init(),
     reducer: CustomCommandFeature(
-        settings: .init(),
-        toast: { content, type in
-            Task { @MainActor in
-                globalToastController.toast(content: content, type: type)
-            }
-        }
+        settings: .init()
     )
 )
 
@@ -77,7 +73,12 @@ struct CustomCommandView: View {
             Button(action: {
                 store.send(.createNewCommand)
             }) {
-                Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+                if isFeatureAvailable(\.unlimitedCustomCommands) {
+                    Text(Image(systemName: "plus.circle.fill")) + Text(" New Command")
+                } else {
+                    Text(Image(systemName: "plus.circle.fill")) +
+                        Text(" New Command (\(settings.customCommands.count)/10)")
+                }
             }
             .buttonStyle(.plain)
             .padding()
@@ -247,10 +248,7 @@ struct CustomCommandView_Preview: PreviewProvider {
                         )
                     )))
                 ),
-                reducer: CustomCommandFeature(
-                    settings: settings,
-                    toast: { _, _ in }
-                )
+                reducer: CustomCommandFeature(settings: settings)
             ),
             settings: settings
         )
@@ -286,10 +284,7 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                 initialState: .init(
                     editCustomCommand: nil
                 ),
-                reducer: CustomCommandFeature(
-                    settings: settings,
-                    toast: { _, _ in }
-                )
+                reducer: CustomCommandFeature(settings: settings)
             ),
             settings: settings
         )

@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import SwiftUI
@@ -27,13 +28,10 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(.tertiary)
-                    .frame(width: 120, height: 4)
-                    .frame(height: 16)
-                
+                ChatTitleBar(store: store)
+
                 Divider()
-                
+
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -41,23 +39,6 @@ struct ChatWindowView: View {
 
                 ChatTabContainer(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .background {
-                Button(action: {
-                    viewStore.send(.hideButtonClicked)
-                }) {
-                    EmptyView()
-                }
-                .opacity(0)
-                .keyboardShortcut("M", modifiers: [.command])
-                
-                Button(action: {
-                    viewStore.send(.closeActiveTabClicked)
-                }) {
-                    EmptyView()
-                }
-                .opacity(0)
-                .keyboardShortcut("W", modifiers: [.command])
             }
             .background(.regularMaterial)
             .xcodeStyleFrame()
@@ -68,10 +49,113 @@ struct ChatWindowView: View {
     }
 }
 
+struct ChatTitleBar: View {
+    let store: StoreOf<ChatPanelFeature>
+    @State var isHovering = false
+    @Environment(\.controlActiveState) var controlActiveState
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button(action: {
+                store.send(.hideButtonClicked)
+            }) {
+                Circle()
+                    .fill(
+                        controlActiveState == .key
+                            ? Color(nsColor: .systemOrange)
+                            : Color(nsColor: .disabledControlTextColor)
+                    )
+                    .frame(width: 10, height: 10)
+                    .overlay {
+                        Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
+                    }
+                    .overlay {
+                        if isHovering {
+                            Image(systemName: "minus")
+                                .resizable()
+                                .foregroundStyle(.black.opacity(0.7))
+                                .font(Font.title.weight(.heavy))
+                                .frame(width: 5, height: 1)
+                        }
+                    }
+            }
+
+            WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
+                Button(action: {
+                    store.send(.toggleChatPanelDetachedButtonClicked)
+                }) {
+                    Circle()
+                        .fill(
+                            controlActiveState == .key && viewStore.state
+                                ? Color(nsColor: .systemCyan)
+                                : Color(nsColor: .disabledControlTextColor)
+                        )
+                        .frame(width: 10, height: 10)
+                        .overlay {
+                            Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
+                        }
+                        .disabled(!viewStore.state)
+                        .overlay {
+                            if isHovering {
+                                Image(systemName: "pin")
+                                    .resizable()
+                                    .foregroundStyle(.black.opacity(0.7))
+                                    .font(Font.title.weight(.heavy))
+                                    .frame(width: 4, height: 6)
+                                    .transformEffect(.init(translationX: 0, y: 0.5))
+                            }
+                        }
+                }
+            }
+
+            Button(action: {
+                store.send(.closeActiveTabClicked)
+            }) {
+                EmptyView()
+            }
+            .opacity(0)
+            .keyboardShortcut("W", modifiers: [.command])
+
+            Spacer()
+        }
+        .buttonStyle(.plain)
+        .overlay {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(.tertiary)
+                .frame(width: 120, height: 4)
+                .background {
+                    if isHovering {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(.tertiary.opacity(0.3))
+                            .frame(width: 128, height: 12)
+                    }
+                }
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 1)
+        .frame(maxWidth: .infinity)
+        .frame(height: 16)
+        .onHover(perform: { hovering in
+            isHovering = hovering
+        })
+    }
+}
+
+private extension View {
+    func hideScrollIndicator() -> some View {
+        if #available(macOS 13.0, *) {
+            return scrollIndicators(.hidden)
+        } else {
+            return self
+        }
+    }
+}
+
 struct ChatTabBar: View {
     let store: StoreOf<ChatPanelFeature>
 
     struct TabBarState: Equatable {
+        var tabs: [BaseChatTab]
         var tabInfo: [ChatTabInfo]
         var selectedTabId: String
     }
@@ -80,33 +164,100 @@ struct ChatTabBar: View {
         WithViewStore(
             store,
             observe: { TabBarState(
+                tabs: $0.chatTapGroup.tabs,
                 tabInfo: $0.chatTapGroup.tabInfo,
                 selectedTabId: $0.chatTapGroup.selectedTabId
                     ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
             ) }
         ) { viewStore in
             HStack(spacing: 0) {
-                ScrollView(.horizontal) {
-                    HStack(spacing: 0) {
-                        ForEach(viewStore.state.tabInfo, id: \.id) { info in
-                            ChatTabBarButton(
-                                store: store,
-                                info: info,
-                                isSelected: info.id == viewStore.state.selectedTabId
-                            )
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 0) {
+                            ForEach(viewStore.state.tabInfo, id: \.id) { info in
+                                ChatTabBarButton(
+                                    store: store,
+                                    info: info,
+                                    isSelected: info.id == viewStore.state.selectedTabId
+                                )
+                                .id(info.id)
+                                .contextMenu {
+                                    if let tab = viewStore.state.tabs
+                                        .first(where: { $0.id == info.id })
+                                    {
+                                        tab.menu
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .hideScrollIndicator()
+                    .onChange(of: viewStore.selectedTabId) { id in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(id)
                         }
                     }
                 }
 
                 Divider()
 
-                Button(action: {
-                    store.send(.createNewTapButtonClicked(type: ""))
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(.secondary)
-                        .padding(8)
-                }.buttonStyle(.plain)
+                createButton
+            }
+        }
+        .background {
+            Button(action: { store.send(.switchToNextTab) }) { EmptyView() }
+                .opacity(0)
+                .keyboardShortcut("]", modifiers: [.command, .shift])
+            Button(action: { store.send(.switchToPreviousTab) }) { EmptyView() }
+                .opacity(0)
+                .keyboardShortcut("[", modifiers: [.command, .shift])
+        }
+    }
+
+    @ViewBuilder
+    var createButton: some View {
+        Menu {
+            WithViewStore(store, observe: { $0.chatTapGroup.tabCollection }) { viewStore in
+                ForEach(0..<viewStore.state.endIndex, id: \.self) { index in
+                    switch viewStore.state[index] {
+                    case let .kind(kind):
+                        Button(action: {
+                            store.send(.createNewTapButtonClicked(kind: kind))
+                        }) {
+                            Text(kind.title)
+                        }.disabled(!kind.builder.buildable)
+                    case let .folder(title, list):
+                        Menu {
+                            ForEach(0..<list.endIndex, id: \.self) { index in
+                                Button(action: {
+                                    store
+                                        .send(
+                                            .createNewTapButtonClicked(
+                                                kind: list[index]
+                                            )
+                                        )
+                                }) {
+                                    Text(list[index].title)
+                                }
+                            }
+                        } label: {
+                            Text(title)
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "plus")
+        } primaryAction: {
+            store.send(.createNewTapButtonClicked(kind: nil))
+        }
+        .foregroundColor(.secondary)
+        .menuStyle(.borderedButton)
+        .padding(.horizontal, 4)
+        .fixedSize(horizontal: true, vertical: false)
+        .onHover { isHovering in
+            if isHovering {
+                store.send(.createNewTapButtonHovered)
             }
         }
     }
@@ -192,25 +343,55 @@ struct ChatTabContainer: View {
     }
 }
 
-struct ChatWindowView_Previews: PreviewProvider {
-    class FakeChatTab: ChatTab {
-        func buildView() -> any View {
-            ChatPanel(
-                chat: .init(
-                    history: [
-                        .init(id: "1", role: .assistant, text: "Hello World"),
-                    ],
-                    isReceivingMessage: false
-                ),
-                typedMessage: "Hello World!"
-            )
-        }
+struct CreateOtherChatTabMenuStyle: MenuStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Image(systemName: "chevron.down")
+            .resizable()
+            .frame(width: 7, height: 4)
+            .frame(maxHeight: .infinity)
+            .padding(.leading, 4)
+            .padding(.trailing, 8)
+            .foregroundColor(.secondary)
+    }
+}
 
-        override init(id: String, title: String) {
-            super.init(id: id, title: title)
+class FakeChatTab: ChatTab {
+    static var name: String { "Fake" }
+    static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] { [Builder()] }
+
+    struct Builder: ChatTabBuilder {
+        var title: String = "Title"
+        var buildable: Bool { true }
+
+        func build() -> any ChatTab {
+            return FakeChatTab(id: "id", title: "Title")
         }
     }
 
+    func buildMenu() -> any View {
+        Text("Menu Item")
+        Text("Menu Item")
+        Text("Menu Item")
+    }
+
+    func buildView() -> any View {
+        ChatPanel(
+            chat: .init(
+                history: [
+                    .init(id: "1", role: .assistant, text: "Hello World"),
+                ],
+                isReceivingMessage: false
+            ),
+            typedMessage: "Hello World!"
+        )
+    }
+
+    override init(id: String, title: String) {
+        super.init(id: id, title: title)
+    }
+}
+
+struct ChatWindowView_Previews: PreviewProvider {
     static var previews: some View {
         ChatWindowView(
             store: .init(
@@ -219,6 +400,11 @@ struct ChatWindowView_Previews: PreviewProvider {
                         tabs: [
                             FakeChatTab(id: "1", title: "Hello I am a chatbot"),
                             EmptyChatTab(id: "2"),
+                            EmptyChatTab(id: "3"),
+                            EmptyChatTab(id: "4"),
+                            EmptyChatTab(id: "5"),
+                            EmptyChatTab(id: "6"),
+                            EmptyChatTab(id: "7"),
                         ],
                         selectedTabId: "1"
                     ),
@@ -227,6 +413,7 @@ struct ChatWindowView_Previews: PreviewProvider {
                 reducer: ChatPanelFeature()
             )
         )
+        .xcodeStyleFrame()
         .padding()
     }
 }

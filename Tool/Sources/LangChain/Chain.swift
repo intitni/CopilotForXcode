@@ -10,7 +10,7 @@ public protocol Chain {
 public extension Chain {
     typealias ChainDidStart = CallbackEvents.ChainDidStart<Self>
     typealias ChainDidEnd = CallbackEvents.ChainDidEnd<Self>
-    
+
     func run(_ input: Input, callbackManagers: [CallbackManager] = []) async throws -> String {
         let output = try await call(input, callbackManagers: callbackManagers)
         return parseOutput(output)

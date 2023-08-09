@@ -9,6 +9,7 @@ final class DynamicContextController {
     let contextCollectors: [ChatContextCollector]
     let memory: AutoManagedChatGPTMemory
     let functionProvider: ChatFunctionProvider
+    var defaultScopes = [] as Set<String>
 
     convenience init(
         memory: AutoManagedChatGPTMemory,
@@ -34,7 +35,9 @@ final class DynamicContextController {
 
     func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
         var content = content
-        let scopes = Self.parseScopes(&content)
+        var scopes = Self.parseScopes(&content)
+        scopes.formUnion(defaultScopes)
+        
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history

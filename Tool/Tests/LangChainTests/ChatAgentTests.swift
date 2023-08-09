@@ -6,8 +6,8 @@ private struct FakeChatModel: ChatModel {
         prompt: [LangChain.ChatMessage],
         stops: [String],
         callbackManagers: [LangChain.CallbackManager]
-    ) async throws -> String {
-        return "New Message"
+    ) async throws -> LangChain.ChatMessage {
+        return .init(role: .assistant, content: "New Message")
     }
 }
 

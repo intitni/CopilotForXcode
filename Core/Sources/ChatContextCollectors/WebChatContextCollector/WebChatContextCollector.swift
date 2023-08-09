@@ -12,7 +12,7 @@ public final class WebChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String
     ) -> ChatContext? {
-        guard scopes.contains("web") else { return nil }
+        guard scopes.contains("web") || scopes.contains("w") else { return nil }
         let links = Self.detectLinks(from: history) + Self.detectLinks(from: content)
         let functions: [(any ChatGPTFunction)?] = [
             SearchFunction(),

@@ -1,27 +1,36 @@
 import ComposableArchitecture
 import Foundation
+import PlusFeatureFlag
 import Preferences
 import SwiftUI
+import Toast
 
 struct CustomCommandFeature: ReducerProtocol {
     struct State: Equatable {
         var editCustomCommand: EditCustomCommand.State?
     }
-    
+
     let settings: CustomCommandView.Settings
-    let toast: (Text, ToastType) -> Void
-    
+
     enum Action: Equatable {
         case createNewCommand
         case editCommand(CustomCommand)
         case editCustomCommand(EditCustomCommand.Action)
         case deleteCommand(CustomCommand)
     }
-    
+
+    @Dependency(\.toast) var toast
+
     var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
             case .createNewCommand:
+                if !isFeatureAvailable(\.unlimitedCustomCommands),
+                   settings.customCommands.count >= 10
+                {
+                    toast("Upgrade to Plus to add more commands", .info)
+                    return .none
+                }
                 state.editCustomCommand = EditCustomCommand.State(nil)
                 return .none
             case let .editCommand(command):
@@ -40,10 +49,10 @@ struct CustomCommandFeature: ReducerProtocol {
                 return .none
             case .editCustomCommand:
                 return .none
-                
             }
         }.ifLet(\.editCustomCommand, action: /Action.editCustomCommand) {
-            EditCustomCommand(settings: settings, toast: toast)
+            EditCustomCommand(settings: settings)
         }
     }
 }
+

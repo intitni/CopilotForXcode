@@ -41,6 +41,7 @@
 		C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
+		C8F1032B2A7A39D700D28F4F /* launchAgent.plist in Copy Launch Agent */ = {isa = PBXBuildFile; fileRef = C8F103292A7A365000D28F4F /* launchAgent.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -121,6 +122,17 @@
 			name = "Embed Service";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8F1032A2A7A38D200D28F4F /* Copy Launch Agent */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = Contents/Library/LaunchAgents;
+			dstSubfolderSpec = 1;
+			files = (
+				C8F1032B2A7A39D700D28F4F /* launchAgent.plist in Copy Launch Agent */,
+			);
+			name = "Copy Launch Agent";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -161,6 +173,7 @@
 		C861E61F2994F6390056CB02 /* ServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDelegate.swift; sourceTree = "<group>"; };
 		C8758E6F29F04BFF00D29C1C /* CustomCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCommand.swift; sourceTree = "<group>"; };
 		C8758E7129F04CF100D29C1C /* SeparatorCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeparatorCommand.swift; sourceTree = "<group>"; };
+		C87903302A5D2E6400FE6F42 /* Pro */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Pro; sourceTree = "<group>"; };
 		C87B03A3293B24AB00C77EAE /* Copilot-for-Xcode-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Copilot-for-Xcode-Info.plist"; sourceTree = SOURCE_ROOT; };
 		C87B03A4293B261200C77EAE /* AcceptSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptSuggestionCommand.swift; sourceTree = "<group>"; };
 		C87B03A6293B261900C77EAE /* RejectSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RejectSuggestionCommand.swift; sourceTree = "<group>"; };
@@ -170,6 +183,7 @@
 		C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Menu.swift"; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
+		C8F103292A7A365000D28F4F /* launchAgent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = launchAgent.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -249,12 +263,14 @@
 				C8520308293D805800460097 /* README.md */,
 				C82E38492A1F025F00D4EADF /* LICENSE */,
 				C83E5DED2A38CD8C0071506D /* Makefile */,
+				C8F103292A7A365000D28F4F /* launchAgent.plist */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,
 				C81458AD293A009600135263 /* Config.xcconfig */,
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
 				C81D181E2A1B509B006C1B70 /* Tool */,
 				C8189B282938979000C9DCDA /* Core */,
+				C87903302A5D2E6400FE6F42 /* Pro */,
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
 				C81458922939EFDC00135263 /* EditorExtension */,
 				C8216B71298036EC00AD38C7 /* Helper */,
@@ -352,6 +368,7 @@
 				C814589F2939EFDC00135263 /* Embed Foundation Extensions */,
 				C8520306293CF0EF00460097 /* Embed XPCService */,
 				C8C8B60829AFA32800034BEE /* Embed Service */,
+				C8F1032A2A7A38D200D28F4F /* Copy Launch Agent */,
 			);
 			buildRules = (
 			);

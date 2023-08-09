@@ -1,6 +1,8 @@
 import AppKit
+import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
+import Dependencies
 import Environment
 import Preferences
 import SuggestionWidget
@@ -34,9 +36,15 @@ struct GUI: ReducerProtocol {
         ) {
             Reduce { _, action in
                 switch action {
-                case let .createNewTapButtonClicked(type):
-                    _ = type // always ChatGPTChatTab at the moment.
-                    let chatTap = ChatGPTChatTab()
+                case let .createNewTapButtonClicked(kind):
+                    guard let builder = kind?.builder else {
+                        let chatTap = ChatGPTChatTab()
+                        return .run { send in
+                            await send(.appendAndSelectTab(chatTap))
+                        }
+                    }
+                    guard builder.buildable else { return .none }
+                    let chatTap = builder.build()
                     return .run { send in
                         await send(.appendAndSelectTab(chatTap))
                     }
@@ -113,13 +121,18 @@ public final class GraphicalUserInterfaceController {
 
     private init() {
         let suggestionDependency = SuggestionWidgetControllerDependency()
-        let store = StoreOf<GUI>(
-            initialState: .init(),
-            reducer: GUI()
-        ) { dependencies in
+        let setupDependency: (inout DependencyValues) -> Void = { dependencies in
             dependencies.suggestionWidgetControllerDependency = suggestionDependency
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
+            dependencies.chatTabBuilderCollection = {
+                ChatTabFactory.chatTabBuilderCollection
+            }
         }
+        let store = StoreOf<GUI>(
+            initialState: .init(),
+            reducer: GUI(),
+            prepareDependencies: setupDependency
+        )
         self.store = store
         viewStore = ViewStore(store)
         widgetDataSource = .init()

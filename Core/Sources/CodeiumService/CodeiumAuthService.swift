@@ -1,25 +1,19 @@
 import Configs
 import Foundation
-import KeychainAccess
+import Keychain
 
 public final class CodeiumAuthService {
     public init() {}
     let codeiumKeyKey = "codeiumAuthKey"
-    let keychain: Keychain = {
-        let info = Bundle.main.infoDictionary
-        return Keychain(service: keychainService, accessGroup: keychainAccessGroup)
-            .attributes([
-                kSecUseDataProtectionKeychain as String: true,
-            ])
-    }()
+    let keychain = Keychain()
 
-    var key: String? { try? keychain.getString(codeiumKeyKey) }
+    var key: String? { try? keychain.get(codeiumKeyKey) }
 
     public var isSignedIn: Bool { return key != nil }
 
     public func signIn(token: String) async throws {
         let key = try await generate(token: token)
-        try keychain.set(key, key: codeiumKeyKey)
+        try keychain.update(key, key: codeiumKeyKey)
     }
 
     public func signOut() async throws {

@@ -24,13 +24,25 @@ public extension CallbackEvents {
     struct AgentDidFinish: CallbackEvent {
         public let info: AgentFinish
     }
+    
+    var agentDidFinish: AgentDidFinish.Type {
+        AgentDidFinish.self
+    }
 
     struct AgentActionDidStart: CallbackEvent {
         public let info: AgentAction
     }
+    
+    var agentActionDidStart: AgentActionDidStart.Type {
+        AgentActionDidStart.self
+    }
 
     struct AgentActionDidEnd: CallbackEvent {
         public let info: AgentAction
+    }
+    
+    var agentActionDidEnd: AgentActionDidEnd.Type {
+        AgentActionDidEnd.self
     }
 }
 
@@ -104,7 +116,7 @@ public extension Agent {
     ) async throws -> AgentNextStep {
         let input = getFullInputs(input: input, intermediateSteps: intermediateSteps)
         let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
-        return parseOutput(output)
+        return parseOutput(output.content ?? "")
     }
 
     func returnStoppedResponse(
@@ -128,12 +140,13 @@ public extension Agent {
             """
             let input = AgentInput(input: input, thoughts: .text(thoughts))
             let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
-            let nextAction = parseOutput(output)
+            let reply = output.content ?? ""
+            let nextAction = parseOutput(reply)
             switch nextAction {
             case let .finish(finish):
                 return finish
             case .actions:
-                return AgentFinish(returnValue: output, log: output)
+                return AgentFinish(returnValue: reply, log: reply)
             }
         }
     }

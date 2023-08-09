@@ -1,7 +1,6 @@
 import Configs
 import Foundation
 import GitHubCopilotService
-import KeychainAccess
 import Preferences
 
 extension UserDefaultPreferenceKeys {
@@ -27,10 +26,6 @@ public struct ServiceUpdateMigrator {
         guard let old = Int(oldVersion) else { return }
         if old <= 135 {
             try migrateFromLowerThanOrEqualToVersion135()
-        }
-
-        if old < 170 {
-            try migrateFromLowerThanOrEqualToVersion170()
         }
     }
 }
@@ -77,18 +72,5 @@ func migrateFromLowerThanOrEqualToVersion135() throws {
         [.posixPermissions: 0o755],
         ofItemAtPath: copilotFolderURL.path
     )
-}
-
-func migrateFromLowerThanOrEqualToVersion170() throws {
-    let oldKeychain = Keychain(service: keychainService, accessGroup: keychainAccessGroup)
-    let newKeychain = oldKeychain.attributes([
-        kSecUseDataProtectionKeychain as String: true,
-    ])
-
-    if (try? oldKeychain.contains("codeiumKey")) ?? false,
-       let key = try? oldKeychain.getString("codeiumKey")
-    {
-        try newKeychain.set(key, key: "codeiumAuthKey")
-    }
 }
 

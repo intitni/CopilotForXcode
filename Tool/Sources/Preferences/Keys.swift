@@ -9,11 +9,21 @@ public protocol UserDefaultPreferenceKey {
 public struct PreferenceKey<T>: UserDefaultPreferenceKey {
     public let defaultValue: T
     public let key: String
+
+    public init(defaultValue: T, key: String) {
+        self.defaultValue = defaultValue
+        self.key = key
+    }
 }
 
 public struct FeatureFlag: UserDefaultPreferenceKey {
     public let defaultValue: Bool
     public let key: String
+
+    public init(defaultValue: Bool, key: String) {
+        self.defaultValue = defaultValue
+        self.key = key
+    }
 }
 
 public struct UserDefaultPreferenceKeys {
@@ -59,6 +69,13 @@ public struct UserDefaultPreferenceKeys {
     public let preferWidgetToStayInsideEditorWhenWidthGreaterThan = PreferenceKey(
         defaultValue: 1400 as Double,
         key: "PreferWidgetToStayInsideEditorWhenWidthGreaterThan"
+    )
+
+    // MARK: Hide Circular Widget
+
+    public let hideCircularWidget = PreferenceKey(
+        defaultValue: false,
+        key: "HideCircularWidget"
     )
 }
 
@@ -160,7 +177,7 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWith: PreferenceKey<NodeRunner> {
         .init(defaultValue: .env, key: "RunNodeWith")
     }
-    
+
     var gitHubCopilotIgnoreTrailingNewLines: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotIgnoreTrailingNewLines")
     }
@@ -236,7 +253,7 @@ public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
-    
+
     var embeddingFeatureProvider: PreferenceKey<EmbeddingFeatureProvider> {
         .init(defaultValue: .openAI, key: "EmbeddingFeatureProvider")
     }
@@ -257,11 +274,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: false, key: "EmbedFileContentInChatContextIfNoSelection")
     }
 
-    var maxEmbeddableFileInChatContextLineCount: PreferenceKey<Int> {
+    var maxFocusedCodeLineCount: PreferenceKey<Int> {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
 
-    var useSelectionScopeByDefaultInChatContext: PreferenceKey<Bool> {
+    var useCodeScopeByDefaultInChatContext: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
     }
 
@@ -274,7 +291,7 @@ public extension UserDefaultPreferenceKeys {
             You MUST embed every code you provide in a markdown code block.
             You MUST add the programming language name at the start of the markdown code block.
             If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
-            If you are asked to explain code, you MUST explain it step-by-step in a ordered list.
+            If you are asked to explain code, you MUST explain it step-by-step in a ordered list concisely.
             Make your answer short and structured.
             """,
             key: "DefaultChatSystemPrompt"

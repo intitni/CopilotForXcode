@@ -89,7 +89,7 @@ struct CodeiumView: View {
                 do {
                     try await viewModel.install()
                 } catch {
-                    toast(Text(error.localizedDescription), .error)
+                    toast(error.localizedDescription, .error)
                 }
             }
         }) {
@@ -104,7 +104,7 @@ struct CodeiumView: View {
                 do {
                     try await viewModel.install()
                 } catch {
-                    toast(Text(error.localizedDescription), .error)
+                    toast(error.localizedDescription, .error)
                 }
             }
         }) {
@@ -158,7 +158,7 @@ struct CodeiumView: View {
                             do {
                                 try await viewModel.signOut()
                             } catch {
-                                toast(Text(error.localizedDescription), .error)
+                                toast(error.localizedDescription, .error)
                             }
                         }
                     }) {
@@ -187,13 +187,13 @@ struct CodeiumView: View {
                 if let step = newValue {
                     switch step {
                     case .downloading:
-                        toast(Text("Downloading.."), .info)
+                        toast("Downloading..", .info)
                     case .uninstalling:
-                        toast(Text("Uninstalling old version.."), .info)
+                        toast("Uninstalling old version..", .info)
                     case .decompressing:
-                        toast(Text("Decompressing.."), .info)
+                        toast("Decompressing..", .info)
                     case .done:
-                        toast(Text("Done!"), .info)
+                        toast("Done!", .info)
                     }
                 }
             }
@@ -249,7 +249,7 @@ struct CodeiumSignInView: View {
                             isPresented = false
                         } catch {
                             isGeneratingKey = false
-                            toast(Text(error.localizedDescription), .error)
+                            toast(error.localizedDescription, .error)
                         }
                     }
                 }) {

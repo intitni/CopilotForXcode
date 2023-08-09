@@ -6,6 +6,8 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
+[Get a Plus License Key to unlock more features and support this project](https://intii.lemonsqueezy.com/checkout/buy/298a8d4c-11fb-4ecd-b328-049589645449)
+
 ## Features
 
 - Code Suggestions (powered by GitHub Copilot and Codeium).
@@ -28,12 +30,15 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - [Update](#update)
 - [Feature](#feature)
 - [Key Bindings](#key-bindings)
+- [Plus Features](#plus-features)
 - [Limitations](#limitations)
 - [License](#license)
 
-For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/issues/65).
+For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions).
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
+
+For more information, check the [wiki](https://github.com/intitni/CopilotForXcode/wiki)
 
 ## Prerequisites
 
@@ -148,6 +153,7 @@ If you find that some of the features are no longer working, please first try re
 The app can provide real-time code suggestions based on the files you have opened. It's powered by GitHub Copilot and Codeium.
 
 The feature provides two presentation modes:
+
 - Nearby Text Cursor: This mode shows suggestions based on the position of the text cursor.
 - Floating Widget: This mode shows suggestions next to the circular widget.
 
@@ -186,24 +192,33 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 #### Commands
 
-- Open Chat: Open a chat window.
+- Open Chat: Open a chat tab.
 
 #### Keyboard Shortcuts
 
 | Shortcut | Description                                                                                         |
 | :------: | --------------------------------------------------------------------------------------------------- |
-|   `⌘W`   | Close the chat.                                                                                     |
+|   `⌘W`   | Close the chat tab.                                                                                 |
 |   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
-|   `⇧↩︎`   | Add new line.                                                                                       |
+|  `⇧↩︎`   | Add new line.                                                                                       |
+|  `⇧⌘]`   | Move to next tab                                                                                    |
+|  `⇧⌘[`   | Move to previous tab                                                                                |
 
 #### Chat Scope
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
-|    Scope     | Description                                                                                                                                                                                                                                                       |
-| :----------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@selection` | Inject the selected code from the active editor into the conversation. This scope will be applied to any message automatically. If you don't want this to be the default behavior, you can turn off the option `Use selection scope by default in chat context.`. |
-|   `@file`    | Inject the content of the file into the conversation. Keep in mind that you may not have enough tokens to inject large files.                                                                                                                                     |
+|  Scope  | Description                                                                              |
+| :-----: | ---------------------------------------------------------------------------------------- |
+| `@file` | Includes the metadata of the editing document and line annotations in the system prompt. |
+| `@code` | Includes the focused/selected code and everything from `@file` in the system prompt.     |
+| `@web`  | Allow the bot to search on Bing or query from a web page                                 |
+
+`@code` is on by default, if `Use @code scope by default in chat context.` is on. Otherwise, `@file` will be on by default.
+
+To use scopes, you can prefix a message with `@code`.
+
+You can use shorthand to represent a scope, such as `@c`, and enable multiple scopes with `@c+web`.
 
 #### Chat Plugins
 
@@ -219,14 +234,16 @@ If you need to end a plugin, you can just type
 /exit
 ```
 
-|          Command           | Description                                                                                                                                                                                                               |
-| :------------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|           `/run`           | Runs the command under the project root. You can also use environment variable `PROJECT_ROOT` to get the project root and `FILE_PATH` to get the editing file path.                                                       |
-|          `/airun`          | Creates a command with natural language. You can ask to modify the command if it is not what you want. After confirming, the command will be executed by calling the `/run` plugin.                                       |
-|          `/math`           | Solves a math problem in natural language                                                                                                                                                                                 |
-|         `/search`          | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                                                                                                          |
-| `/shortcut(shortcut name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input. If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot. |
-| `/shortcutInput(shortcut name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input. If the message is empty, it will use the previous message as input. The output of the shortcut will be send to the bot as a user message. |
+|        Command         | Description                                                                                                                               |
+| :--------------------: | ----------------------------------------------------------------------------------------------------------------------------------------- |
+|         `/run`         | Runs the command under the project root.                                                                                                  |
+|                        | Environment variable: <br>- `PROJECT_ROOT` to get the project root. <br>- `FILE_PATH` to get the editing file path.                       |
+|        `/math`         | Solves a math problem in natural language                                                                                                 |
+|       `/search`        | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                          |
+|   `/shortcut(name)`    | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
+|                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot.   |
+| `/shortcutInput(name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
+|                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be send to the bot as a user message. |
 
 ### Prompt to Code
 
@@ -283,6 +300,25 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
 Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
+
+## Plus Features
+
+The pre-built binary contains a set of exclusive features that can only be accessed with a Plus license key. To obtain a license key, please visit [this link](https://intii.lemonsqueezy.com/checkout/buy/298a8d4c-11fb-4ecd-b328-049589645449).
+
+These features are included in another repo, and are not open sourced.
+
+The currently available Plus features include:
+
+- Browser tap in chat panel.
+- Unlimited custom commands.
+
+Since the app needs to manage license keys, it will send network request to `https://copilotforxcode-license.intii.com`,
+- when you activate the license key
+- when you deactivate the license key
+- when you opened the host app or the service app if a license key is available
+- every 24 hours if a license key is available
+
+The request contains only the license key, the email address (only on activation), and an instance id. You are free to MITM the request to see what data is sent.
 
 ## Limitations
 

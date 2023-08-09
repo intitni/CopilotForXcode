@@ -182,6 +182,8 @@ extension ChatGPTService {
     func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
         guard let url = URL(string: configuration.endpoint)
         else { throw ChatGPTServiceError.endpointIncorrect }
+        
+        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
@@ -205,7 +207,7 @@ extension ChatGPTService {
                 model: configuration.model,
                 remainingTokens: remainingTokens
             ),
-            function_call: nil,
+            function_call: functionProvider.functionCallStrategy,
             functions: functionProvider.functions.map {
                 ChatGPTFunctionSchema(
                     name: $0.name,
@@ -227,6 +229,7 @@ extension ChatGPTService {
                 do {
                     let (trunks, cancel) = try await api()
                     cancelTask = cancel
+                    let proposedId = UUID().uuidString
                     for try await trunk in trunks {
                         guard let delta = trunk.choices.first?.delta else { continue }
 
@@ -242,7 +245,7 @@ extension ChatGPTService {
                         }
 
                         await memory.streamMessage(
-                            id: trunk.id,
+                            id: trunk.id ?? proposedId,
                             role: delta.role,
                             content: delta.content,
                             functionCall: functionCall
@@ -279,6 +282,8 @@ extension ChatGPTService {
     func sendMemoryAndWait() async throws -> ChatMessage? {
         guard let url = URL(string: configuration.endpoint)
         else { throw ChatGPTServiceError.endpointIncorrect }
+        
+        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
@@ -302,7 +307,7 @@ extension ChatGPTService {
                 model: configuration.model,
                 remainingTokens: remainingTokens
             ),
-            function_call: nil,
+            function_call: functionProvider.functionCallStrategy,
             functions: functionProvider.functions.map {
                 ChatGPTFunctionSchema(
                     name: $0.name,
@@ -318,11 +323,12 @@ extension ChatGPTService {
             url,
             requestBody
         )
+
         let response = try await api()
 
         guard let choice = response.choices.first else { return nil }
         let message = ChatMessage(
-            id: response.id,
+            id: response.id ?? UUID().uuidString,
             role: choice.message.role,
             content: choice.message.content,
             name: choice.message.name,
@@ -424,5 +430,5 @@ func maxTokenForReply(model: String, remainingTokens: Int?) -> Int? {
     guard let remainingTokens else { return nil }
     guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
     return min(model.maxToken / 2, remainingTokens)
-}
+}      
 

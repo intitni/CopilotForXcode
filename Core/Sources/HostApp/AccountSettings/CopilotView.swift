@@ -105,7 +105,7 @@ struct CopilotView: View {
                 do {
                     try await viewModel.install()
                 } catch {
-                    toast(Text(error.localizedDescription), .error)
+                    toast(error.localizedDescription, .error)
                 }
             }
         }) {
@@ -120,7 +120,7 @@ struct CopilotView: View {
                 do {
                     try await viewModel.install()
                 } catch {
-                    toast(Text(error.localizedDescription), .error)
+                    toast(error.localizedDescription, .error)
                 }
             }
         }) {
@@ -143,7 +143,7 @@ struct CopilotView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Form {
                     TextField(text: $settings.nodePath, prompt: Text("node")) {
-                        Text("Path to Node")
+                        Text("Path to Node (v17+)")
                     }
 
                     Picker(selection: $settings.runNodeWith) {
@@ -270,13 +270,13 @@ struct CopilotView: View {
             if let step = newValue {
                 switch step {
                 case .downloading:
-                    toast(Text("Downloading.."), .info)
+                    toast("Downloading..", .info)
                 case .uninstalling:
-                    toast(Text("Uninstalling old version.."), .info)
+                    toast("Uninstalling old version..", .info)
                 case .decompressing:
-                    toast(Text("Decompressing.."), .info)
+                    toast("Decompressing..", .info)
                 case .done:
-                    toast(Text("Done!"), .info)
+                    toast("Done!", .info)
                     checkStatus()
                 }
             }
@@ -295,14 +295,13 @@ struct CopilotView: View {
 
                 if status != .ok, status != .notSignedIn {
                     toast(
-                        Text(
-                            "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription."
-                        ),
+                        "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription.",
+
                         .error
                     )
                 }
             } catch {
-                toast(Text(error.localizedDescription), .error)
+                toast(error.localizedDescription, .error)
             }
         }
     }
@@ -316,17 +315,17 @@ struct CopilotView: View {
                 let (uri, userCode) = try await service.signInInitiate()
                 self.userCode = userCode
                 guard let url = URL(string: uri) else {
-                    toast(Text("Verification URI is incorrect."), .error)
+                    toast("Verification URI is incorrect.", .error)
                     return
                 }
                 let pasteboard = NSPasteboard.general
                 pasteboard.declareTypes([NSPasteboard.PasteboardType.string], owner: nil)
                 pasteboard.setString(userCode, forType: NSPasteboard.PasteboardType.string)
-                toast(Text("Usercode \(userCode) already copied!"), .info)
+                toast("Usercode \(userCode) already copied!", .info)
                 openURL(url)
                 isUserCodeCopiedAlertPresented = true
             } catch {
-                toast(Text(error.localizedDescription), .error)
+                toast(error.localizedDescription, .error)
             }
         }
     }
@@ -338,14 +337,14 @@ struct CopilotView: View {
             do {
                 let service = try getGitHubCopilotAuthService()
                 guard let userCode else {
-                    toast(Text("Usercode is empty."), .error)
+                    toast("Usercode is empty.", .error)
                     return
                 }
                 let (username, status) = try await service.signInConfirm(userCode: userCode)
                 self.settings.username = username
                 self.status = status
             } catch {
-                toast(Text(error.localizedDescription), .error)
+                toast(error.localizedDescription, .error)
             }
         }
     }
@@ -358,7 +357,7 @@ struct CopilotView: View {
                 let service = try getGitHubCopilotAuthService()
                 status = try await service.signOut()
             } catch {
-                toast(Text(error.localizedDescription), .error)
+                toast(error.localizedDescription, .error)
             }
         }
     }

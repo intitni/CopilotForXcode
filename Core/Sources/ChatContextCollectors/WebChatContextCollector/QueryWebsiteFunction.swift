@@ -63,15 +63,9 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         await reportProgress("Loading \(url)..")
                         
                         if let database = await TemporaryUSearch.view(identifier: urlString) {
-                            await reportProgress("Generating answers..")
-                            let qa = RetrievalQAChain(vectorStore: database, embedding: embedding) {
-                                OpenAIChat(
-                                    configuration: UserPreferenceChatGPTConfiguration()
-                                        .overriding(.init(temperature: 0)),
-                                    stream: true
-                                )
-                            }
-                            return try await qa.call(.init(arguments.query)).answer
+                            await reportProgress("Getting relevant information..")
+                            let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
+                            return try await qa.call(.init(arguments.query)).information
                         }
                         let loader = WebLoader(urls: [url])
                         let documents = try await loader.load()
@@ -88,16 +82,10 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         let database = TemporaryUSearch(identifier: urlString)
                         try await database.set(embeddedDocuments)
                         // 4. generate answer
-                        await reportProgress("Generating answers..")
-                        let qa = RetrievalQAChain(vectorStore: database, embedding: embedding) {
-                            OpenAIChat(
-                                configuration: UserPreferenceChatGPTConfiguration()
-                                    .overriding(.init(temperature: 0)),
-                                stream: true
-                            )
-                        }
+                        await reportProgress("Getting relevant information..")
+                        let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
                         let result = try await qa.call(.init(arguments.query))
-                        return result.answer
+                        return result.information
                     }
                 }
 

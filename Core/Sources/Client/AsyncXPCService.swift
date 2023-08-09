@@ -134,6 +134,24 @@ public struct AsyncXPCService {
             { service in { service.customCommand(id: id, editorContent: $0, withReply: $1) } }
         )
     }
+    
+    public func postNotification(name: String) async throws {
+        try await withXPCServiceConnected(connection: connection) {
+            service, continuation in
+            service.postNotification(name: name) {
+                continuation.resume(())
+            }
+        }
+    }
+    
+    public func performAction(name: String, arguments: String) async throws -> String {
+        try await withXPCServiceConnected(connection: connection) {
+            service, continuation in
+            service.performAction(name: name, arguments: arguments) {
+                continuation.resume($0)
+            }
+        }
+    }
 }
 
 struct AutoFinishContinuation<T> {

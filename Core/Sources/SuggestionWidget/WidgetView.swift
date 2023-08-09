@@ -164,15 +164,6 @@ struct WidgetContextMenu: View {
                 }
 
                 Button(action: {
-                    useGlobalChat.toggle()
-                }) {
-                    Text("Use Shared Conversation")
-                    if useGlobalChat {
-                        Image(systemName: "checkmark")
-                    }
-                }
-
-                Button(action: {
                     realtimeSuggestionToggle.toggle()
                 }) {
                     Text("Realtime Suggestion")

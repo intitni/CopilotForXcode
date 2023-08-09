@@ -12,6 +12,31 @@ protocol CompletionStreamAPI {
     )
 }
 
+public enum FunctionCallStrategy: Encodable, Equatable {
+    /// Forbid the bot to call any function.
+    case none
+    /// Let the bot choose what function to call.
+    case auto
+    /// Force the bot to call a function with the given name.
+    case name(String)
+
+    struct CallFunctionNamed: Codable {
+        var name: String
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .none:
+            try container.encode("none")
+        case .auto:
+            try container.encode("auto")
+        case let .name(name):
+            try container.encode(CallFunctionNamed(name: name))
+        }
+    }
+}
+
 /// https://platform.openai.com/docs/api-reference/chat/create
 struct CompletionRequestBody: Encodable, Equatable {
     struct Message: Codable, Equatable {
@@ -31,7 +56,7 @@ struct CompletionRequestBody: Encodable, Equatable {
         ///   "arguments": "{ \"location\": \"earth\" }"
         /// }
         /// ```
-        var function_call: MessageFunctionCall?
+        var function_call: CompletionRequestBody.MessageFunctionCall?
     }
 
     struct MessageFunctionCall: Codable, Equatable {
@@ -39,31 +64,6 @@ struct CompletionRequestBody: Encodable, Equatable {
         var name: String
         /// A JSON string.
         var arguments: String?
-    }
-
-    enum FunctionCallStrategy: Encodable, Equatable {
-        /// Forbid the bot to call any function.
-        case none
-        /// Let the bot choose what function to call.
-        case auto
-        /// Force the bot to call a function with the given name.
-        case name(String)
-
-        struct CallFunctionNamed: Codable {
-            var name: String
-        }
-
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .none:
-                try container.encode("none")
-            case .auto:
-                try container.encode("auto")
-            case let .name(name):
-                try container.encode(CallFunctionNamed(name: name))
-            }
-        }
     }
 
     struct Function: Codable {
@@ -123,9 +123,8 @@ struct CompletionRequestBody: Encodable, Equatable {
 }
 
 struct CompletionStreamDataTrunk: Codable {
-    var id: String
+    var id: String?
     var object: String
-    var created: Int
     var model: String
     var choices: [Choice]
 

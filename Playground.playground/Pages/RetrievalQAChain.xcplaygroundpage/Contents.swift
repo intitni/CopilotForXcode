@@ -1,55 +1,91 @@
 import AppKit
+import Foundation
 import LangChain
 import OpenAIService
 import PlaygroundSupport
 import SwiftUI
+import TokenEncoder
 
 struct QAForm: View {
-    @State var intermediateAnswers = [String]()
+    @State var relevantInformation = [String]()
+    @State var relevantDocuments = [(document: Document, distance: Float)]()
+    @State var duration: TimeInterval = 0
     @State var answer: String = ""
+    @State var tokenCount: Int = 0
     @State var question: String = "What is Swift macros?"
     @State var isProcessing: Bool = false
     @State var url: String = "https://developer.apple.com/documentation/swift/applying-macros"
 
     var body: some View {
-        Form {
-            Section(header: Text("Input")) {
-                TextField("URL", text: $url)
-                TextField("Question", text: $question)
-                Button("Ask") {
-                    Task {
-                        do {
-                            try await ask()
-                        } catch {
-                            answer = error.localizedDescription
+        HStack(spacing: 0) {
+            ScrollView {
+                Form {
+                    Section(header: Text("Input")) {
+                        TextField("URL", text: $url)
+                        TextField("Question", text: $question)
+                        HStack {
+                            Button("Ask") {
+                                Task {
+                                    do {
+                                        try await ask()
+                                    } catch {
+                                        answer = error.localizedDescription
+                                    }
+                                }
+                            }
+                            .disabled(isProcessing)
+                            
+                            Text("\(duration) seconds")
+                        }
+                    }
+                    Section(header: Text("All Relevant Information (\(tokenCount) words)")) {
+                        Text(answer)
+                    }
+                    Section(header: Text("Relevant Information")) {
+                        ForEach(0..<relevantInformation.endIndex, id: \.self) { index in
+                            let information = relevantInformation[index]
+                            VStack(alignment: .leading) {
+                                Text(information)
+                                Divider()
+                            }
+                            .textSelection(.enabled)
                         }
                     }
                 }
-                .disabled(isProcessing)
+                .formStyle(.grouped)
             }
-            Section(header: Text("Answer")) {
-                Text(answer)
-            }
-            Section(header: Text("Intermediate Answers")) {
-                ForEach(intermediateAnswers, id: \.self) { answer in
-                    Text(answer)
-                    Divider()
-                }
+
+            ScrollView {
+                Form {
+                    Section(header: Text("Relevant Documents")) {
+                        ForEach(0..<relevantDocuments.endIndex, id: \.self) { index in
+                            let document = relevantDocuments[index]
+                            VStack(alignment: .leading) {
+                                Text("\(document.distance)")
+                                Text(document.document.pageContent)
+                                Divider()
+                            }
+                            .textSelection(.enabled)
+                        }
+                    }
+                }.formStyle(.grouped)
             }
         }
-        .formStyle(.grouped)
     }
 
     func ask() async throws {
-        intermediateAnswers = []
+        let start = Date().timeIntervalSince1970
+        answer = ""
+        relevantDocuments = []
+        relevantInformation = []
+        duration = 0
+        tokenCount = 0
         isProcessing = true
         defer { isProcessing = false }
         guard let url = URL(string: url) else {
             answer = "Invalid URL"
             return
         }
-        let chatGPTConfiguration = UserPreferenceChatGPTConfiguration()
-            .overriding { $0.temperature = 0 }
         let embeddingConfiguration = UserPreferenceEmbeddingConfiguration().overriding()
         let embedding = OpenAIEmbedding(configuration: embeddingConfiguration)
         let store: VectorStore = try await {
@@ -70,27 +106,31 @@ struct QAForm: View {
             }
         }()
 
-        let qa = RetrievalQAChain(
+        let qa = QAInformationRetrievalChain(
             vectorStore: store,
-            embedding: embedding,
-            chatModelFactory: { OpenAIChat(configuration: chatGPTConfiguration, stream: false) }
+            embedding: embedding
         )
         answer = try await qa.run(
             question,
             callbackManagers: [
                 .init {
-                    $0.on(CallbackEvents.RetrievalQADidGenerateIntermediateAnswer.self) {
-                        intermediateAnswers.append($0)
+                    $0.on(\.relevantInformationExtractionChainDidExtractPartialRelevantContent) {
+                        relevantInformation.append($0)
+                    }
+                    $0.on(\.retrievalQADidExtractRelevantContent) {
+                        relevantDocuments = $0
                     }
                 },
             ]
         )
+        tokenCount = answer.split(separator: " ").count
+        duration = Date().timeIntervalSince1970 - start
     }
 }
 
 let hostingView = NSHostingController(
     rootView: QAForm()
-        .frame(width: 600, height: 800)
+        .frame(width: 800, height: 800)
 )
 
 PlaygroundPage.current.needsIndefiniteExecution = true

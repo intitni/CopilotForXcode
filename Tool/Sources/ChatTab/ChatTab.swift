@@ -22,7 +22,9 @@ public struct ChatTabInfoPreferenceKey: PreferenceKey {
 /// Every chat tab should conform to this type.
 public typealias ChatTab = BaseChatTab & ChatTabType
 
+/// The base class for all chat tabs.
 open class BaseChatTab: Equatable {
+    /// To support dynamic update of title in view.
     final class InfoObservable: ObservableObject {
         @Published var id: String
         @Published var title: String
@@ -32,6 +34,7 @@ open class BaseChatTab: Equatable {
         }
     }
 
+    /// A wrapper to support dynamic update of title in view.
     struct ContentView: View {
         @ObservedObject var info: InfoObservable
         var buildView: () -> any View
@@ -60,19 +63,26 @@ open class BaseChatTab: Equatable {
         info = InfoObservable(id: id, title: title)
     }
 
+    /// The view for this chat tab.
     @ViewBuilder
     public var body: some View {
-        let id = "BaseChatTab\(info.id)"
-        if let tab = self as? ChatTabType {
+        let id = "ChatTabBody\(info.id)"
+        if let tab = self as? (any ChatTabType) {
             ContentView(info: info, buildView: tab.buildView).id(id)
         } else {
             EmptyView().id(id)
         }
     }
-    
+
+    /// The menu for this chat tab.
     @ViewBuilder
     public var menu: some View {
-        EmptyView()
+        let id = "ChatTabMenu\(info.id)"
+        if let tab = self as? (any ChatTabType) {
+            ContentView(info: info, buildView: tab.buildMenu).id(id)
+        } else {
+            EmptyView().id(id)
+        }
     }
 
     public static func == (lhs: BaseChatTab, rhs: BaseChatTab) -> Bool {
@@ -80,17 +90,76 @@ open class BaseChatTab: Equatable {
     }
 }
 
+/// A factory of a chat tab.
+public protocol ChatTabBuilder {
+    /// A visible title for user.
+    var title: String { get }
+    /// whether the chat tab is buildable.
+    var buildable: Bool { get }
+    /// Build the chat tab.
+    func build() -> any ChatTab
+}
+
+public struct DisabledChatTabBuilder: ChatTabBuilder {
+    public var title: String
+    public var buildable: Bool { false }
+    public func build() -> any ChatTab {
+        EmptyChatTab(id: UUID().uuidString)
+    }
+
+    public init(title: String) {
+        self.title = title
+    }
+}
+
 public protocol ChatTabType {
+    /// The type of the external dependency required by this chat tab.
+    associatedtype ExternalDependency
+    /// Build the view for this chat tab.
     @ViewBuilder
     func buildView() -> any View
+    /// Build the menu for this chat tab.
+    @ViewBuilder
+    func buildMenu() -> any View
+    /// The name of this chat tab.
+    static var name: String { get }
+    /// Available builders for this chat tab.
+    /// It's used to generate a list of tab types for user to create.
+    static func chatBuilders(externalDependency: ExternalDependency) -> [ChatTabBuilder]
+}
+
+public extension ChatTabType where ExternalDependency == Void {
+    /// Available builders for this chat tab.
+    /// It's used to generate a list of tab types for user to create.
+    static func chatBuilders() -> [ChatTabBuilder] {
+        chatBuilders(externalDependency: ())
+    }
 }
 
 public class EmptyChatTab: ChatTab {
+    public static var name: String { "Empty" }
+
+    struct Builder: ChatTabBuilder {
+        let title: String
+        var buildable: Bool { true }
+        func build() -> any ChatTab {
+            EmptyChatTab()
+        }
+    }
+
+    public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
+        [Builder(title: "Empty")]
+    }
+
     public func buildView() -> any View {
         VStack {
             Text("Empty-\(id)")
         }
         .background(Color.blue)
+    }
+
+    public func buildMenu() -> any View {
+        EmptyView()
     }
 
     public init(id: String = UUID().uuidString) {

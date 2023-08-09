@@ -3,8 +3,9 @@ import OpenAIService
 import Preferences
 import SuggestionModel
 import XcodeInspector
+import ChatContextCollector
 
-public struct ActiveDocumentChatContextCollector: ChatContextCollector {
+public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
     public func generateContext(
@@ -12,12 +13,11 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String
     ) -> ChatContext? {
-        let content = getEditorInformation()
-        let relativePath = content.documentURL.path
-            .replacingOccurrences(of: content.projectURL.path, with: "")
+        guard let content = getEditorInformation() else { return nil }
+        let relativePath = content.relativePath
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
-            if scopes.contains("file") {
+            if scopes.contains("file") || scopes.contains("f") {
                 return """
                 File Content:```\(content.language.rawValue)
                 \(content.editorContent?.content ?? "")
@@ -30,7 +30,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
             {
                 let lines = content.editorContent?.lines.count ?? 0
                 let maxLine = UserDefaults.shared
-                    .value(for: \.maxEmbeddableFileInChatContextLineCount)
+                    .value(for: \.maxFocusedCodeLineCount)
                 if lines <= maxLine {
                     return """
                     File Content:```\(content.language.rawValue)
@@ -48,7 +48,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                 }
             }
 
-            if UserDefaults.shared.value(for: \.useSelectionScopeByDefaultInChatContext) {
+            if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
@@ -57,7 +57,7 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
                 """
             }
 
-            if scopes.contains("selection") {
+            if scopes.contains("selection") || scopes.contains("s") {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
@@ -103,47 +103,4 @@ public struct ActiveDocumentChatContextCollector: ChatContextCollector {
     }
 }
 
-extension ActiveDocumentChatContextCollector {
-    struct Information {
-        let editorContent: SourceEditor.Content?
-        let selectedContent: String
-        let documentURL: URL
-        let projectURL: URL
-        let language: CodeLanguage
-    }
-
-    func getEditorInformation() -> Information {
-        let editorContent = XcodeInspector.shared.focusedEditor?.content
-        let documentURL = XcodeInspector.shared.activeDocumentURL
-        let projectURL = XcodeInspector.shared.activeProjectURL
-        let language = languageIdentifierFromFileURL(documentURL)
-
-        if let editorContent, let range = editorContent.selections.first {
-            let startIndex = min(
-                max(0, range.start.line),
-                editorContent.lines.endIndex - 1
-            )
-            let endIndex = min(
-                max(startIndex, range.end.line),
-                editorContent.lines.endIndex - 1
-            )
-            let selectedContent = editorContent.lines[startIndex...endIndex]
-            return .init(
-                editorContent: editorContent,
-                selectedContent: selectedContent.joined(),
-                documentURL: documentURL,
-                projectURL: projectURL,
-                language: language
-            )
-        }
-
-        return .init(
-            editorContent: editorContent,
-            selectedContent: "",
-            documentURL: documentURL,
-            projectURL: projectURL,
-            language: language
-        )
-    }
-}
 

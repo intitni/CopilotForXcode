@@ -46,8 +46,7 @@ public actor TerminalChatPlugin: ChatPlugin {
                 history.append(
                     .init(
                         role: .user,
-                        content: originalMessage,
-                        summary: "Run command: \(content)"
+                        content: originalMessage
                     )
                 )
             }

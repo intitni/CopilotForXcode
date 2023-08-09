@@ -253,16 +253,16 @@ extension ChatGPTStreamTests {
             return (
                 AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
                     let trunks: [CompletionStreamDataTrunk] = [
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(delta: .init(role: .assistant), index: 0, finish_reason: ""),
                         ]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(delta: .init(content: "hello"), index: 0, finish_reason: ""),
                         ]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(delta: .init(content: "my"), index: 0, finish_reason: ""),
                         ]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(delta: .init(content: "friends"), index: 0, finish_reason: ""),
                         ]),
                     ]
@@ -286,7 +286,7 @@ extension ChatGPTStreamTests {
             return (
                 AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
                     let trunks: [CompletionStreamDataTrunk] = [
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(
                                 delta: .init(
                                     role: .assistant,
@@ -295,7 +295,7 @@ extension ChatGPTStreamTests {
                                 index: 0,
                                 finish_reason: ""
                             )]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(
                                 delta: .init(
                                     role: .assistant,
@@ -304,7 +304,7 @@ extension ChatGPTStreamTests {
                                 index: 0,
                                 finish_reason: ""
                             )]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(
                                 delta: .init(
                                     role: .assistant,
@@ -313,7 +313,7 @@ extension ChatGPTStreamTests {
                                 index: 0,
                                 finish_reason: ""
                             )]),
-                        .init(id: id, object: "", created: 0, model: "", choices: [
+                        .init(id: id, object: "", model: "", choices: [
                             .init(
                                 delta: .init(
                                     role: .assistant,
@@ -360,6 +360,8 @@ extension ChatGPTStreamTests {
     }
 
     struct FunctionProvider: ChatGPTFunctionProvider {
+        var functionCallStrategy: OpenAIService.FunctionCallStrategy? { nil }
+        
         var functions: [any ChatGPTFunction] { [EmptyFunction()] }
     }
 }

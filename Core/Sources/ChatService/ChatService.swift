@@ -6,7 +6,7 @@ import OpenAIService
 import Preferences
 
 public final class ChatService: ObservableObject {
-    public let memory: AutoManagedChatGPTMemory
+    public let memory: ContextAwareAutoManagedChatGPTMemory
     public let configuration: OverridingChatGPTConfiguration<UserPreferenceChatGPTConfiguration>
     public let chatGPTService: any ChatGPTServiceType
     public var allPluginCommands: [String] { allPlugins.map { $0.command } }
@@ -16,28 +16,19 @@ public final class ChatService: ObservableObject {
     @Published public internal(set) var extraSystemPrompt = ""
 
     let pluginController: ChatPluginController
-    let contextController: DynamicContextController
-    let functionProvider: ChatFunctionProvider
     var cancellable = Set<AnyCancellable>()
 
     init<T: ChatGPTServiceType>(
-        memory: AutoManagedChatGPTMemory,
+        memory: ContextAwareAutoManagedChatGPTMemory,
         configuration: OverridingChatGPTConfiguration<UserPreferenceChatGPTConfiguration>,
-        functionProvider: ChatFunctionProvider,
         chatGPTService: T
     ) {
         self.memory = memory
         self.configuration = configuration
         self.chatGPTService = chatGPTService
-        self.functionProvider = functionProvider
         pluginController = ChatPluginController(
             chatGPTService: chatGPTService,
             plugins: allPlugins
-        )
-        contextController = DynamicContextController(
-            memory: memory,
-            functionProvider: functionProvider,
-            contextCollectors: allContextCollectors
         )
 
         pluginController.chatService = self
@@ -45,25 +36,33 @@ public final class ChatService: ObservableObject {
 
     public convenience init() {
         let configuration = UserPreferenceChatGPTConfiguration().overriding()
-        let functionProvider = ChatFunctionProvider()
-        let memory = AutoManagedChatGPTMemory(
-            systemPrompt: "",
+        let memory = ContextAwareAutoManagedChatGPTMemory(
             configuration: configuration,
-            functionProvider: functionProvider
+            functionProvider: ChatFunctionProvider()
         )
         self.init(
             memory: memory,
             configuration: configuration,
-            functionProvider: functionProvider,
             chatGPTService: ChatGPTService(
                 memory: memory,
                 configuration: configuration,
-                functionProvider: functionProvider
+                functionProvider: memory.functionProvider
             )
         )
+        
+        resetDefaultScopes()
 
+        memory.chatService = self
         memory.observeHistoryChange { [weak self] in
             self?.objectWillChange.send()
+        }
+    }
+    
+    public func resetDefaultScopes() {
+        if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
+            memory.contextController.defaultScopes = ["code"]
+        } else {
+            memory.contextController.defaultScopes = ["file"]
         }
     }
 
@@ -71,11 +70,7 @@ public final class ChatService: ObservableObject {
         guard !isReceivingMessage else { throw CancellationError() }
         let handledInPlugin = try await pluginController.handleContent(content)
         if handledInPlugin { return }
-        try await contextController.updatePromptToMatchContent(systemPrompt: """
-        \(systemPrompt)
-        \(extraSystemPrompt)
-        """, content: content)
-
+       
         let stream = try await chatGPTService.send(content: content, summary: nil)
         isReceivingMessage = true
         do {
@@ -117,6 +112,7 @@ public final class ChatService: ObservableObject {
     public func resetPrompt() async {
         systemPrompt = UserDefaults.shared.value(for: \.defaultChatSystemPrompt)
         extraSystemPrompt = ""
+        resetDefaultScopes()
     }
 
     public func deleteMessage(id: String) async {
@@ -177,6 +173,7 @@ public final class ChatService: ObservableObject {
                     name: command.name
                 )
             case let .customChat(systemPrompt, prompt):
+                memory.contextController.defaultScopes = []
                 return .init(
                     specifiedSystemPrompt: systemPrompt,
                     extraSystemPrompt: "",
@@ -228,6 +225,21 @@ public final class ChatService: ObservableObject {
             } else {
                 mutateExtraSystemPrompt(templateProcessor.process(systemPrompt))
             }
+        }
+        return try await sendAndWait(content: templateProcessor.process(prompt))
+    }
+
+    public func processMessage(
+        systemPrompt: String?,
+        extraSystemPrompt: String?,
+        prompt: String
+    ) async throws -> String {
+        let templateProcessor = CustomCommandTemplateProcessor()
+        if let systemPrompt {
+            mutateSystemPrompt(templateProcessor.process(systemPrompt))
+        }
+        if let extraSystemPrompt {
+            mutateExtraSystemPrompt(templateProcessor.process(extraSystemPrompt))
         }
         return try await sendAndWait(content: templateProcessor.process(prompt))
     }

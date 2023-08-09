@@ -1,7 +1,6 @@
 import ActiveApplicationMonitor
 import AsyncAlgorithms
 import AXNotificationStream
-import ChatTab
 import ComposableArchitecture
 import Environment
 import Foundation
@@ -250,7 +249,7 @@ public struct WidgetFeature: ReducerProtocol {
                         else { continue }
                         guard await windows.fullscreenDetector.isOnActiveSpace else { continue }
                         let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-                        if let window = app.focusedWindow {
+                        if let _ = app.focusedWindow {
                             await windows.orderFront()
                         }
                     }
@@ -497,7 +496,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = noFocus ? 0 : 1
+                            windows.tabWindow.alphaValue = 0
 
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
@@ -521,7 +520,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = noFocus ? 0 : 1
+                            windows.tabWindow.alphaValue = 0
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
                             } else {

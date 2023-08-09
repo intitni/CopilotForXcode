@@ -4,22 +4,40 @@ import ChatTab
 import ComposableArchitecture
 import SwiftUI
 
+public enum ChatTabBuilderCollection: Equatable {
+    case folder(title: String, kinds: [ChatTabKind])
+    case kind(ChatTabKind)
+}
+
+public struct ChatTabKind: Equatable {
+    public var builder: any ChatTabBuilder
+    var title: String { builder.title }
+
+    public init(_ builder: any ChatTabBuilder) {
+        self.builder = builder
+    }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.title == rhs.title
+    }
+}
+
 public struct ChatPanelFeature: ReducerProtocol {
     public struct ChatTabGroup: Equatable {
         public var tabs: [BaseChatTab]
-        public var tabTypes: [String]
         public var tabInfo: [ChatTabInfo]
+        public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
 
         init(
             tabs: [BaseChatTab] = [],
-            tabTypes: [String] = [],
             tabInfo: [ChatTabInfo] = [],
+            tabCollection: [ChatTabBuilderCollection] = [],
             selectedTabId: String? = nil
         ) {
             self.tabs = tabs
-            self.tabTypes = tabTypes
             self.tabInfo = tabInfo
+            self.tabCollection = tabCollection
             self.selectedTabId = selectedTabId
         }
 
@@ -48,16 +66,20 @@ public struct ChatPanelFeature: ReducerProtocol {
 
         // Tabs
         case updateChatTabInfo([ChatTabInfo])
+        case createNewTapButtonHovered
         case closeTabButtonClicked(id: String)
-        case createNewTapButtonClicked(type: String)
+        case createNewTapButtonClicked(kind: ChatTabKind?)
         case tabClicked(id: String)
         case appendAndSelectTab(BaseChatTab)
+        case switchToNextTab
+        case switchToPreviousTab
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.activatePreviouslyActiveXcode) var activatePreviouslyActiveXcode
     @Dependency(\.activateExtensionService) var activateExtensionService
+    @Dependency(\.chatTabBuilderCollection) var chatTabBuilderCollection
 
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -68,17 +90,17 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .run { _ in
                     await activatePreviouslyActiveXcode()
                 }
-                
+
             case .closeActiveTabClicked:
                 if let id = state.chatTapGroup.selectedTabId {
                     return .run { send in
                         await send(.closeTabButtonClicked(id: id))
                     }
                 }
-                
+
                 state.isPanelDisplayed = false
                 return .none
-                
+
             case .toggleChatPanelDetachedButtonClicked:
                 state.chatPanelInASeparateWindow.toggle()
                 return .none
@@ -127,6 +149,10 @@ public struct ChatPanelFeature: ReducerProtocol {
                 }
                 return .none
 
+            case .createNewTapButtonHovered:
+                state.chatTapGroup.tabCollection = chatTabBuilderCollection()
+                return .none
+
             case .createNewTapButtonClicked:
                 return .none // handled elsewhere
 
@@ -143,6 +169,32 @@ public struct ChatPanelFeature: ReducerProtocol {
                 else { return .none }
                 state.chatTapGroup.tabs.append(tab)
                 state.chatTapGroup.selectedTabId = tab.id
+                return .none
+
+            case .switchToNextTab:
+                let selectedId = state.chatTapGroup.selectedTabId
+                guard let index = state.chatTapGroup.tabInfo
+                    .firstIndex(where: { $0.id == selectedId })
+                else { return .none }
+                let nextIndex = index + 1
+                if nextIndex >= state.chatTapGroup.tabInfo.endIndex {
+                    return .none
+                }
+                let targetId = state.chatTapGroup.tabInfo[nextIndex].id
+                state.chatTapGroup.selectedTabId = targetId
+                return .none
+
+            case .switchToPreviousTab:
+                let selectedId = state.chatTapGroup.selectedTabId
+                guard let index = state.chatTapGroup.tabInfo
+                    .firstIndex(where: { $0.id == selectedId })
+                else { return .none }
+                let previousIndex = index - 1
+                if previousIndex < 0 || previousIndex >= state.chatTapGroup.tabInfo.endIndex {
+                    return .none
+                }
+                let targetId = state.chatTapGroup.tabInfo[previousIndex].id
+                state.chatTapGroup.selectedTabId = targetId
                 return .none
             }
         }

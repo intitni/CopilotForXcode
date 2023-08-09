@@ -7,6 +7,11 @@ public protocol ChatGPTMemory {
     var remainingTokens: Int? { get async }
     /// Update the message history.
     func mutateHistory(_ update: (inout [ChatMessage]) -> Void) async
+    /// Refresh `messages` and `remainingTokens`.
+    /// Sometimes the message history needs time to generate, in such case, you
+    /// can use this method to refresh the memory, instead of making variable
+    /// `messages` and `remainingTokens` computed.
+    func refresh() async
 }
 
 public extension ChatGPTMemory {

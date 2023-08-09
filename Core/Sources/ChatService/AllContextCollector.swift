@@ -1,3 +1,4 @@
+import ActiveDocumentChatContextCollector
 import ChatContextCollector
 import WebChatContextCollector
 
