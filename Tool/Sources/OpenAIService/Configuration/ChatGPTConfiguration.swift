@@ -39,15 +39,15 @@ public extension ChatGPTConfiguration {
     }
 
     func overriding(
-        _ overrides: OverridingChatGPTConfiguration<Self>.Overriding
-    ) -> OverridingChatGPTConfiguration<Self> {
+        _ overrides: OverridingChatGPTConfiguration.Overriding
+    ) -> OverridingChatGPTConfiguration {
         .init(overriding: self, with: overrides)
     }
 
     func overriding(
-        _ update: (inout OverridingChatGPTConfiguration<Self>.Overriding) -> Void = { _ in }
-    ) -> OverridingChatGPTConfiguration<Self> {
-        var overrides = OverridingChatGPTConfiguration<Self>.Overriding()
+        _ update: (inout OverridingChatGPTConfiguration.Overriding) -> Void = { _ in }
+    ) -> OverridingChatGPTConfiguration {
+        var overrides = OverridingChatGPTConfiguration.Overriding()
         update(&overrides)
         return .init(overriding: self, with: overrides)
     }
