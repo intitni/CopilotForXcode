@@ -217,6 +217,10 @@ public extension UserDefaultPreferenceKeys {
     var realtimeSuggestionToggle: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "RealtimeSuggestionToggle")
     }
+    
+    var suggestionDisplayCompactMode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionDisplayCompactMode")
+    }
 
     var suggestionCodeFontSize: PreferenceKey<Double> {
         .init(defaultValue: 13, key: "SuggestionCodeFontSize")
