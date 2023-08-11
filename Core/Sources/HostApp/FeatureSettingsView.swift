@@ -6,9 +6,8 @@ struct FeatureSettingsView: View {
     var body: some View {
         SidebarTabView(tag: $tag) { 
             ScrollView {
-                SuggestionSettingsView()
+                SuggestionSettingsView().padding()
             }
-            .padding()
             .sidebarItem(
                 tag: 0,
                 title: "Suggestion",
@@ -17,9 +16,8 @@ struct FeatureSettingsView: View {
             )
 
             ScrollView {
-                ChatSettingsView()
+                ChatSettingsView().padding()
             }
-            .padding()
             .sidebarItem(
                 tag: 1,
                 title: "Chat",
@@ -28,9 +26,8 @@ struct FeatureSettingsView: View {
             )
 
             ScrollView {
-                PromptToCodeSettingsView()
+                PromptToCodeSettingsView().padding()
             }
-            .padding()
             .sidebarItem(
                 tag: 2,
                 title: "Prompt to Code",
