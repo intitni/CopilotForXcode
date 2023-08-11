@@ -30,10 +30,10 @@
     {
       "identity" : "highlightr",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/raspu/Highlightr",
+      "location" : "https://github.com/intitni/Highlightr",
       "state" : {
-        "revision" : "93199b9e434f04bda956a613af8f571933f9f037",
-        "version" : "2.1.2"
+        "branch" : "bump-highlight-js-version",
+        "revision" : "4ffbb1b0b721378263297cafea6f2838044eb1eb"
       }
     },
     {
