@@ -119,13 +119,21 @@ public final class GraphicalUserInterfaceController {
     let widgetDataSource: WidgetDataSource
     let viewStore: ViewStoreOf<GUI>
 
+    class WeakStoreHolder {
+        weak var store: StoreOf<GUI>?
+    }
+
     private init() {
+        let weakStoreHolder = WeakStoreHolder()
         let suggestionDependency = SuggestionWidgetControllerDependency()
         let setupDependency: (inout DependencyValues) -> Void = { dependencies in
             dependencies.suggestionWidgetControllerDependency = suggestionDependency
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabBuilderCollection = {
-                ChatTabFactory.chatTabBuilderCollection
+                ChatTabFactory.chatTabBuilderCollection { tab in
+                    weakStoreHolder.store?
+                        .send(.suggestionWidget(.chatPanel(.appendAndSelectTab(tab))))
+                }
             }
         }
         let store = StoreOf<GUI>(
@@ -133,6 +141,7 @@ public final class GraphicalUserInterfaceController {
             reducer: GUI(),
             prepareDependencies: setupDependency
         )
+        weakStoreHolder.store = store
         self.store = store
         viewStore = ViewStore(store)
         widgetDataSource = .init()
