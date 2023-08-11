@@ -91,15 +91,6 @@
       }
     },
     {
-      "identity" : "splash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JohnSundell/Splash",
-      "state" : {
-        "branch" : "master",
-        "revision" : "2e3f17c2d09689c8bf175c4a84ff7f2ad3353301"
-      }
-    },
-    {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",

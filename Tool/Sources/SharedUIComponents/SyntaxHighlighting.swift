@@ -1,7 +1,6 @@
 import AppKit
 import Foundation
 import Highlightr
-import Splash
 import SwiftUI
 
 public func highlightedCodeBlock(
