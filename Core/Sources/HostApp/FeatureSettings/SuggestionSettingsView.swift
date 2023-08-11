@@ -19,6 +19,8 @@ struct SuggestionSettingsView: View {
         var suggestionCodeFontSize
         @AppStorage(\.suggestionFeatureProvider)
         var suggestionFeatureProvider
+        @AppStorage(\.suggestionDisplayCompactMode)
+        var suggestionDisplayCompactMode
         init() {}
     }
 
@@ -105,6 +107,10 @@ struct SuggestionSettingsView: View {
             }
 
             Group {
+                Toggle(isOn: $settings.suggestionDisplayCompactMode) {
+                    Text("Hide Buttons")
+                }
+                
                 Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
                     Text("Hide Common Preceding Spaces")
                 }

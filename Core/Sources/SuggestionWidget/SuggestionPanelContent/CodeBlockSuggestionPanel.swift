@@ -5,6 +5,7 @@ struct CodeBlockSuggestionPanel: View {
     @ObservedObject var suggestion: SuggestionProvider
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFontSize) var fontSize
+    @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
 
     struct ToolBar: View {
         @ObservedObject var suggestion: SuggestionProvider
@@ -48,6 +49,37 @@ struct CodeBlockSuggestionPanel: View {
         }
     }
 
+    struct CompactToolBar: View {
+        @ObservedObject var suggestion: SuggestionProvider
+
+        var body: some View {
+            HStack {
+                Button(action: {
+                    suggestion.selectPreviousSuggestion()
+                }) {
+                    Image(systemName: "chevron.left")
+                }.buttonStyle(.plain)
+
+                Text(
+                    "\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)"
+                )
+                .monospacedDigit()
+
+                Button(action: {
+                    suggestion.selectNextSuggestion()
+                }) {
+                    Image(systemName: "chevron.right")
+                }.buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(4)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .background(.regularMaterial)
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             CustomScrollView {
@@ -62,7 +94,11 @@ struct CodeBlockSuggestionPanel: View {
             }
             .background(Color.contentBackground)
 
-            ToolBar(suggestion: suggestion)
+            if suggestionDisplayCompactMode {
+                CompactToolBar(suggestion: suggestion)
+            } else {
+                ToolBar(suggestion: suggestion)
+            }
         }
         .xcodeStyleFrame()
     }
@@ -113,6 +149,44 @@ struct CodeBlockSuggestionPanel_Bright_Preview: PreviewProvider {
             startLineIndex: 8,
             suggestionCount: 2,
             currentSuggestionIndex: 0
+        ))
+        .preferredColorScheme(.light)
+        .frame(width: 450, height: 400)
+        .background {
+            HStack {
+                Color.red
+                Color.green
+                Color.blue
+            }
+        }
+    }
+}
+
+struct CodeBlockSuggestionPanel_CompactToolBar_Preview: PreviewProvider {
+    static let userDefault = {
+        let userDefault = UserDefaults(suiteName: "CodeBlockSuggestionPanel_CompactToolBar_Preview")
+        userDefault?.set(true, for: \.suggestionDisplayCompactMode)
+        return userDefault!
+    }()
+
+    static var previews: some View {
+        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+            code: """
+            LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+                Text(viewModel.suggestion[index])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+            }
+            """,
+            language: "swift",
+            startLineIndex: 8,
+            suggestionCount: 2,
+            currentSuggestionIndex: 0
+        ), suggestionDisplayCompactMode: .init(
+            wrappedValue: true,
+            "suggestionDisplayCompactMode",
+            store: Self.userDefault
         ))
         .preferredColorScheme(.light)
         .frame(width: 450, height: 400)
