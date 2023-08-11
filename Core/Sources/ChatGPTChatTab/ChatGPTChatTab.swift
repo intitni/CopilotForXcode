@@ -2,6 +2,7 @@ import ChatService
 import ChatTab
 import Combine
 import Foundation
+import OpenAIService
 import Preferences
 import SwiftUI
 
@@ -12,6 +13,11 @@ public class ChatGPTChatTab: ChatTab {
     public let service: ChatService
     public let provider: ChatProvider
     private var cancellable = Set<AnyCancellable>()
+
+    struct RestorableState: Codable {
+        var history: [OpenAIService.ChatMessage]
+        var configuration: OverridingChatGPTConfiguration.Overriding
+    }
 
     struct Builder: ChatTabBuilder {
         var title: String
@@ -35,6 +41,28 @@ public class ChatGPTChatTab: ChatTab {
 
     public func buildMenu() -> any View {
         ChatContextMenu(chat: provider)
+    }
+
+    public func restorableState() async -> Data {
+        let state = RestorableState(
+            history: await service.memory.history,
+            configuration: service.configuration.overriding
+        )
+        return (try? JSONEncoder().encode(state)) ?? Data()
+    }
+
+    public static func restore(
+        from data: Data,
+        externalDependency: Void
+    ) async throws -> any ChatTab {
+        let state = try JSONDecoder().decode(RestorableState.self, from: data)
+        let tab = ChatGPTChatTab()
+        tab.service.configuration.overriding = state.configuration
+        await tab.service.memory.mutateHistory { history in
+            history = state.history
+        }
+
+        return tab
     }
 
     public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {

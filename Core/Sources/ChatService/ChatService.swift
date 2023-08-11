@@ -7,7 +7,7 @@ import Preferences
 
 public final class ChatService: ObservableObject {
     public let memory: ContextAwareAutoManagedChatGPTMemory
-    public let configuration: ChatGPTConfiguration
+    public let configuration: OverridingChatGPTConfiguration
     public let chatGPTService: any ChatGPTServiceType
     public var allPluginCommands: [String] { allPlugins.map { $0.command } }
     @Published public internal(set) var isReceivingMessage = false
@@ -20,7 +20,7 @@ public final class ChatService: ObservableObject {
 
     init<T: ChatGPTServiceType>(
         memory: ContextAwareAutoManagedChatGPTMemory,
-        configuration: ChatGPTConfiguration,
+        configuration: OverridingChatGPTConfiguration,
         chatGPTService: T
     ) {
         self.memory = memory

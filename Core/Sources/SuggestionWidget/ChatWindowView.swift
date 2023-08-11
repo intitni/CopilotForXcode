@@ -386,6 +386,14 @@ class FakeChatTab: ChatTab {
         )
     }
 
+    func restorableState() async -> Data {
+        return Data()
+    }
+
+    static func restore(from data: Data, externalDependency: ()) async throws -> any ChatTab {
+        return FakeChatTab(id: "id", title: "Title")
+    }
+
     override init(id: String, title: String) {
         super.init(id: id, title: title)
     }

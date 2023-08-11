@@ -2,6 +2,10 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
+public extension Notification.Name {
+    static let chatTabDidChange = Notification.Name("chatTabDidChange")
+}
+
 public struct ChatTabInfo: Identifiable, Equatable {
     public var id: String
     public var title: String
@@ -126,6 +130,15 @@ public protocol ChatTabType {
     /// Available builders for this chat tab.
     /// It's used to generate a list of tab types for user to create.
     static func chatBuilders(externalDependency: ExternalDependency) -> [ChatTabBuilder]
+    /// Restorable state
+    func restorableState() async -> Data
+    /// Restore state
+    static func restore(from data: Data, externalDependency: ExternalDependency) async throws
+        -> any ChatTab
+}
+
+public extension ChatTabType {
+    var name: String { Self.name }
 }
 
 public extension ChatTabType where ExternalDependency == Void {
@@ -164,6 +177,17 @@ public class EmptyChatTab: ChatTab {
 
     public init(id: String = UUID().uuidString) {
         super.init(id: id, title: "Empty")
+    }
+
+    public func restorableState() async -> Data {
+        return Data()
+    }
+
+    public static func restore(
+        from data: Data,
+        externalDependency: Void
+    ) async throws -> any ChatTab {
+        return Builder(title: "Empty").build()
     }
 }
 

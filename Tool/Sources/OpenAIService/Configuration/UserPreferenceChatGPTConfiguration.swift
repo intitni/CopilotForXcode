@@ -44,7 +44,7 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
 }
 
 public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
-    public struct Overriding {
+    public struct Overriding: Codable {
         public var featureProvider: ChatFeatureProvider?
         public var temperature: Double?
         public var model: String?
