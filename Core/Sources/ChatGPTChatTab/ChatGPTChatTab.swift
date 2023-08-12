@@ -1,6 +1,7 @@
 import ChatService
 import ChatTab
 import Combine
+import ComposableArchitecture
 import Foundation
 import OpenAIService
 import Preferences
@@ -24,8 +25,8 @@ public class ChatGPTChatTab: ChatTab {
         var buildable: Bool { true }
         var customCommand: CustomCommand?
 
-        func build() -> any ChatTab {
-            let tab = ChatGPTChatTab()
+        func build(store: StoreOf<ChatTabItem>) -> any ChatTab {
+            let tab = ChatGPTChatTab(store: store)
             Task {
                 if let customCommand {
                     try await tab.service.handleCustomCommand(customCommand)
@@ -53,10 +54,11 @@ public class ChatGPTChatTab: ChatTab {
 
     public static func restore(
         from data: Data,
+        store: StoreOf<ChatTabItem>,
         externalDependency: Void
     ) async throws -> any ChatTab {
         let state = try JSONDecoder().decode(RestorableState.self, from: data)
-        let tab = ChatGPTChatTab()
+        let tab = ChatGPTChatTab(store: store)
         tab.service.configuration.overriding = state.configuration
         await tab.service.memory.mutateHistory { history in
             history = state.history
@@ -77,14 +79,19 @@ public class ChatGPTChatTab: ChatTab {
         return [Builder(title: "New Chat", customCommand: nil)] + customCommands
     }
 
-    public init(service: ChatService = .init()) {
+    public init(service: ChatService = .init(), store: StoreOf<ChatTabItem>) {
         self.service = service
         provider = .init(service: service)
-        super.init(id: "Chat-" + provider.id.uuidString, title: "Chat")
-
+        super.init(store: store)
+    }
+    
+    public func start() {
+        chatTabViewStore.send(.updateTitle("Chat"))
         provider.$history.sink { [weak self] _ in
-            if let title = self?.provider.title {
-                self?.title = title
+            Task { @MainActor [weak self] in
+                if let title = self?.provider.title {
+                    self?.chatTabViewStore.send(.updateTitle(title))
+                }
             }
         }.store(in: &cancellable)
     }

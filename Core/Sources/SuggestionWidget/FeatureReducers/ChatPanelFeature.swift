@@ -24,27 +24,23 @@ public struct ChatTabKind: Equatable {
 
 public struct ChatPanelFeature: ReducerProtocol {
     public struct ChatTabGroup: Equatable {
-        public var tabs: [BaseChatTab]
-        public var tabInfo: [ChatTabInfo]
+        public var tabInfo: IdentifiedArray<String, ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
+        
+        public var selectedTabInfo: ChatTabInfo? {
+            guard let id = selectedTabId else { return tabInfo.first }
+            return tabInfo[id: id]
+        }
 
         init(
-            tabs: [BaseChatTab] = [],
-            tabInfo: [ChatTabInfo] = [],
+            tabInfo: IdentifiedArray<String, ChatTabInfo> = [],
             tabCollection: [ChatTabBuilderCollection] = [],
             selectedTabId: String? = nil
         ) {
-            self.tabs = tabs
             self.tabInfo = tabInfo
             self.tabCollection = tabCollection
             self.selectedTabId = selectedTabId
-        }
-
-        public var activeChatTab: BaseChatTab? {
-            guard let id = selectedTabId else { return tabs.first }
-            guard let tab = tabs.first(where: { $0.id == id }) else { return tabs.first }
-            return tab
         }
     }
 
@@ -65,14 +61,16 @@ public struct ChatPanelFeature: ReducerProtocol {
         case presentChatPanel(forceDetach: Bool)
 
         // Tabs
-        case updateChatTabInfo([ChatTabInfo])
+        case updateChatTabInfo(IdentifiedArray<String, ChatTabInfo>)
         case createNewTapButtonHovered
         case closeTabButtonClicked(id: String)
         case createNewTapButtonClicked(kind: ChatTabKind?)
         case tabClicked(id: String)
-        case appendAndSelectTab(BaseChatTab)
+        case appendAndSelectTab(ChatTabInfo)
         case switchToNextTab
         case switchToPreviousTab
+        
+        case chatTab(id: String, action: ChatTabItem.Action)
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
@@ -143,9 +141,20 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .none
 
             case let .closeTabButtonClicked(id):
-                state.chatTapGroup.tabs.removeAll { $0.id == id }
-                if state.chatTapGroup.tabs.isEmpty {
+                let firstIndex = state.chatTapGroup.tabInfo.firstIndex { $0.id == id }
+                let nextIndex = {
+                    guard let firstIndex else { return 0 }
+                    let nextIndex = firstIndex - 1
+                    return max(nextIndex, 0)
+                }()
+                state.chatTapGroup.tabInfo.removeAll { $0.id == id }
+                if state.chatTapGroup.tabInfo.isEmpty {
                     state.isPanelDisplayed = false
+                }
+                if nextIndex < state.chatTapGroup.tabInfo.count {
+                    state.chatTapGroup.selectedTabId = state.chatTapGroup.tabInfo[nextIndex].id
+                } else {
+                    state.chatTapGroup.selectedTabId = nil
                 }
                 return .none
 
@@ -167,7 +176,7 @@ public struct ChatPanelFeature: ReducerProtocol {
             case let .appendAndSelectTab(tab):
                 guard !state.chatTapGroup.tabInfo.contains(where: { $0.id == tab.id })
                 else { return .none }
-                state.chatTapGroup.tabs.append(tab)
+                state.chatTapGroup.tabInfo.append(tab)
                 state.chatTapGroup.selectedTabId = tab.id
                 return .none
 
@@ -196,7 +205,12 @@ public struct ChatPanelFeature: ReducerProtocol {
                 let targetId = state.chatTapGroup.tabInfo[previousIndex].id
                 state.chatTapGroup.selectedTabId = targetId
                 return .none
+                
+            case .chatTab:
+                return .none
             }
+        }.forEach(\.chatTapGroup.tabInfo, action: /Action.chatTab) {
+            ChatTabItem()
         }
     }
 }

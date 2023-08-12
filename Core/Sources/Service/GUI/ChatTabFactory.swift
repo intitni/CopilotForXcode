@@ -11,9 +11,7 @@ import XcodeInspector
 import ProChatTabs
 
 enum ChatTabFactory {
-    static func chatTabBuilderCollection(
-        openTab: @escaping (any ChatTab) -> Void
-    ) -> [ChatTabBuilderCollection] {
+    static func chatTabBuilderCollection() -> [ChatTabBuilderCollection] {
         func folderIfNeeded(
             _ builders: [any ChatTabBuilder],
             title: String
@@ -88,8 +86,7 @@ enum ChatTabFactory {
                         try await service.modifyCode(prompt: instruction ?? "Modify content.")
                         return service.code
                     }
-                },
-                handleNewTab: openTab
+                }
             )), title: BrowserChatTab.name),
         ].compactMap { $0 }
 
@@ -100,9 +97,7 @@ enum ChatTabFactory {
 #else
 
 enum ChatTabFactory {
-    static func chatTabBuilderCollection(
-        openTab: @escaping (any ChatTab) -> Void
-    ) -> [ChatTabBuilderCollection] {
+    static func chatTabBuilderCollection() -> [ChatTabBuilderCollection] {
         func folderIfNeeded(
             _ builders: [any ChatTabBuilder],
             title: String

@@ -1,9 +1,11 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatTab
 import ComposableArchitecture
 import Dependencies
 import Foundation
 import Preferences
+import SwiftUI
 import UserDefaultsObserver
 import XcodeInspector
 
@@ -133,4 +135,3 @@ extension DependencyValues {
         set { self[ActivateExtensionServiceKey.self] = newValue }
     }
 }
-

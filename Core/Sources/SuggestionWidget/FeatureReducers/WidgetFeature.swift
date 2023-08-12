@@ -63,7 +63,7 @@ public struct WidgetFeature: ReducerProtocol {
                         }
                         return false
                     }(),
-                    isContentEmpty: chatPanelState.chatTapGroup.tabs.isEmpty
+                    isContentEmpty: chatPanelState.chatTapGroup.tabInfo.isEmpty
                         && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
                     isChatOpen: chatPanelState.isPanelDisplayed,
@@ -485,7 +485,7 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .updateWindowOpacity:
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-                let hasChat = !state.chatPanelState.chatTapGroup.tabs.isEmpty
+                let hasChat = !state.chatPanelState.chatTapGroup.tabInfo.isEmpty
 
                 return .run { _ in
                     Task { @MainActor in
@@ -539,15 +539,8 @@ public struct WidgetFeature: ReducerProtocol {
                     }
                 }
 
-            case let .circularWidget(action):
-                switch action {
-                case .openChatButtonClicked:
-                    suggestionWidgetControllerDependency.onOpenChatClicked()
-                    return .none
-
-                default:
-                    return .none
-                }
+            case .circularWidget:
+                return .none
 
             case .panel:
                 return .none
