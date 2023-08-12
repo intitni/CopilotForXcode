@@ -22,16 +22,15 @@ public class ChatGPTChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         var title: String
-        var buildable: Bool { true }
         var customCommand: CustomCommand?
+        var afterBuild: (ChatGPTChatTab) async -> Void = { _ in }
 
-        func build(store: StoreOf<ChatTabItem>) -> any ChatTab {
+        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
             let tab = ChatGPTChatTab(store: store)
-            Task {
-                if let customCommand {
-                    try await tab.service.handleCustomCommand(customCommand)
-                }
+            if let customCommand {
+                try? await tab.service.handleCustomCommand(customCommand)
             }
+            await afterBuild(tab)
             return tab
         }
     }
@@ -54,17 +53,16 @@ public class ChatGPTChatTab: ChatTab {
 
     public static func restore(
         from data: Data,
-        store: StoreOf<ChatTabItem>,
         externalDependency: Void
-    ) async throws -> any ChatTab {
+    ) async throws -> any ChatTabBuilder {
         let state = try JSONDecoder().decode(RestorableState.self, from: data)
-        let tab = ChatGPTChatTab(store: store)
-        tab.service.configuration.overriding = state.configuration
-        await tab.service.memory.mutateHistory { history in
-            history = state.history
+        let builder = Builder(title: "Chat") { @MainActor tab in
+            tab.service.configuration.overriding = state.configuration
+            await tab.service.memory.mutateHistory { history in
+                history = state.history
+            }
         }
-
-        return tab
+        return builder
     }
 
     public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
@@ -84,7 +82,7 @@ public class ChatGPTChatTab: ChatTab {
         provider = .init(service: service)
         super.init(store: store)
     }
-    
+
     public func start() {
         chatTabViewStore.send(.updateTitle("Chat"))
         provider.$history.sink { [weak self] _ in

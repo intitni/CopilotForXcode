@@ -7,6 +7,10 @@ import Environment
 import Preferences
 import SuggestionWidget
 
+#if canImport(ChatTabPersistent)
+import ChatTabPersistent
+#endif
+
 struct GUI: ReducerProtocol {
     struct State: Equatable {
         var suggestionWidgetState = WidgetFeature.State()
@@ -15,6 +19,17 @@ struct GUI: ReducerProtocol {
             get { suggestionWidgetState.chatPanelState.chatTapGroup }
             set { suggestionWidgetState.chatPanelState.chatTapGroup = newValue }
         }
+
+        #if canImport(ChatTabPersistent)
+        var persistentState: ChatTabPersistent.State {
+            get {
+                .init(chatTabInfo: suggestionWidgetState.chatPanelState.chatTapGroup.tabInfo)
+            }
+            set {
+                suggestionWidgetState.chatPanelState.chatTapGroup.tabInfo = newValue.chatTabInfo
+            }
+        }
+        #endif
     }
 
     enum Action {
@@ -23,6 +38,10 @@ struct GUI: ReducerProtocol {
         case sendCustomCommandToActiveChat(CustomCommand)
 
         case suggestionWidget(WidgetFeature.Action)
+
+        #if canImport(ChatTabPersistent)
+        case persistent(ChatTabPersistent.Action)
+        #endif
     }
 
     @Dependency(\.chatTabPool) var chatTabPool: ChatTabPool
@@ -64,6 +83,12 @@ struct GUI: ReducerProtocol {
                 }
             }
         }
+
+        #if canImport(ChatTabPersistent)
+        Scope(state: \.persistentState, action: /Action.persistent) {
+            ChatTabPersistent()
+        }
+        #endif
 
         Reduce { state, action in
             switch action {
@@ -126,8 +151,22 @@ struct GUI: ReducerProtocol {
                     }
                 }
 
+            case .suggestionWidget(.chatPanel(.chatTab(_, .tabContentUpdated))):
+                #if canImport(ChatTabPersistent)
+                return .run { send in
+                    await send(.persistent(.persistChatTabs))
+                }
+                #else
+                return .none
+                #endif
+
             case .suggestionWidget:
                 return .none
+
+            #if canImport(ChatTabPersistent)
+            case .persistent:
+                return .none
+            #endif
             }
         }
     }
@@ -213,11 +252,10 @@ extension ChatTabPool {
     @MainActor
     func createTab(
         from builder: ChatTabBuilder
-    ) -> (any ChatTab, ChatTabInfo)? {
+    ) async -> (any ChatTab, ChatTabInfo)? {
         let id = UUID().uuidString
         let info = ChatTabInfo(id: id, title: "")
-        guard builder.buildable else { return nil }
-        let chatTap = builder.build(store: createStore(id))
+        guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
         setTab(chatTap)
         return (chatTap, info)
     }
@@ -225,7 +263,7 @@ extension ChatTabPool {
     @MainActor
     func createTab(
         for kind: ChatTabKind?
-    ) -> (any ChatTab, ChatTabInfo)? {
+    ) async -> (any ChatTab, ChatTabInfo)? {
         let id = UUID().uuidString
         let info = ChatTabInfo(id: id, title: "")
         guard let builder = kind?.builder else {
@@ -233,8 +271,8 @@ extension ChatTabPool {
             setTab(chatTap)
             return (chatTap, info)
         }
-        guard builder.buildable else { return nil }
-        let chatTap = builder.build(store: createStore(id))
+
+        guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
         setTab(chatTap)
         return (chatTap, info)
     }

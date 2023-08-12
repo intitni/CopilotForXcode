@@ -225,7 +225,7 @@ struct ChatTabBar: View {
                             store.send(.createNewTapButtonClicked(kind: kind))
                         }) {
                             Text(kind.title)
-                        }.disabled(!kind.builder.buildable)
+                        }.disabled(kind.builder is DisabledChatTabBuilder)
                     case let .folder(title, list):
                         Menu {
                             ForEach(0..<list.endIndex, id: \.self) { index in
@@ -364,9 +364,8 @@ class FakeChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         var title: String = "Title"
-        var buildable: Bool { true }
 
-        func build(store: StoreOf<ChatTabItem>) -> any ChatTab {
+        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
             return FakeChatTab(store: store)
         }
     }
@@ -395,10 +394,9 @@ class FakeChatTab: ChatTab {
 
     static func restore(
         from data: Data,
-        store: StoreOf<ChatTabItem>,
         externalDependency: ()
-    ) async throws -> any ChatTab {
-        return FakeChatTab(store: store)
+    ) async throws -> any ChatTabBuilder {
+        return Builder()
     }
 
     convenience init(id: String, title: String) {

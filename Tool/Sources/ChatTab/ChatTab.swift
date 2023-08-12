@@ -36,9 +36,8 @@ public protocol ChatTabType {
     /// Restore state
     static func restore(
         from data: Data,
-        store: StoreOf<ChatTabItem>,
         externalDependency: ExternalDependency
-    ) async throws -> any ChatTab
+    ) async throws -> any ChatTabBuilder
     /// Whenever the body or menu is accessed, this method will be called.
     /// It will be called only once so long as you don't call it yourself.
     /// It will be called from MainActor.
@@ -57,8 +56,11 @@ open class BaseChatTab {
 
     public var id: String { chatTabViewStore.id }
     public var title: String { chatTabViewStore.title }
+    /// The store for chat tab info. You should only access it after `start` is called.
     public let chatTabStore: StoreOf<ChatTabItem>
+    /// The view store for chat tab info. You should only access it after `start` is called.
     public let chatTabViewStore: ViewStoreOf<ChatTabItem>
+    
     private var didStart = false
 
     public init(store: StoreOf<ChatTabItem>) {
@@ -109,18 +111,15 @@ open class BaseChatTab {
 public protocol ChatTabBuilder {
     /// A visible title for user.
     var title: String { get }
-    /// whether the chat tab is buildable.
-    var buildable: Bool { get }
     /// Build the chat tab.
-    func build(store: StoreOf<ChatTabItem>) -> any ChatTab
+    func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)?
 }
 
 /// A chat tab builder that doesn't build.
 public struct DisabledChatTabBuilder: ChatTabBuilder {
     public var title: String
-    public var buildable: Bool { false }
-    public func build(store: StoreOf<ChatTabItem>) -> any ChatTab {
-        EmptyChatTab(store: store)
+    public func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
+        return nil
     }
 
     public init(title: String) {
@@ -147,8 +146,7 @@ public class EmptyChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         let title: String
-        var buildable: Bool { true }
-        func build(store: StoreOf<ChatTabItem>) -> any ChatTab {
+        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
             EmptyChatTab(store: store)
         }
     }
@@ -174,10 +172,9 @@ public class EmptyChatTab: ChatTab {
 
     public static func restore(
         from data: Data,
-        store: StoreOf<ChatTabItem>,
         externalDependency: Void
-    ) async throws -> any ChatTab {
-        return Builder(title: "Empty").build(store: store)
+    ) async throws -> any ChatTabBuilder {
+        return Builder(title: "Empty")
     }
 
     public convenience init(id: String) {

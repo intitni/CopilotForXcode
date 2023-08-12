@@ -19,6 +19,7 @@ public struct ChatTabItem: ReducerProtocol {
     public enum Action: Equatable {
         case updateTitle(String)
         case openNewTab(AnyChatTabBuilder)
+        case tabContentUpdated
     }
 
     public init() {}
@@ -30,6 +31,8 @@ public struct ChatTabItem: ReducerProtocol {
                 state.title = title
                 return .none
             case .openNewTab:
+                return .none
+            case .tabContentUpdated:
                 return .none
             }
         }
