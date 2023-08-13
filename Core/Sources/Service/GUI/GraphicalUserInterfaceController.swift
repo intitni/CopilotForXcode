@@ -151,10 +151,21 @@ struct GUI: ReducerProtocol {
                     }
                 }
 
-            case .suggestionWidget(.chatPanel(.chatTab(_, .tabContentUpdated))):
+            case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
                 #if canImport(ChatTabPersistent)
+                // when a tab is updated, persist it.
                 return .run { send in
-                    await send(.persistent(.persistChatTabs))
+                    await send(.persistent(.chatTabUpdated(id: id)))
+                }
+                #else
+                return .none
+                #endif
+
+            case let .suggestionWidget(.chatPanel(.closeTabButtonClicked(id))):
+                #if canImport(ChatTabPersistent)
+                // when a tab is closed, remove it from persistence.
+                return .run { send in
+                    await send(.persistent(.chatTabClosed(id: id)))
                 }
                 #else
                 return .none
@@ -193,6 +204,10 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
+
+            #if canImport(ChatTabPersistent) && canImport(ProChatTab)
+            dependencies.restoreChatTabInPool = chatTabPool.restore
+            #endif
         }
         let store = StoreOf<GUI>(
             initialState: .init(),
@@ -276,5 +291,37 @@ extension ChatTabPool {
         setTab(chatTap)
         return (chatTap, info)
     }
+
+    #if canImport(ChatTabPersistent) && canImport(ProChatTab)
+    @MainActor
+    func restore(
+        _ data: ChatTabPersistent.RestorableTabData
+    ) async throws -> (any ChatTab, ChatTabInfo)? {
+        let info = ChatTabInfo(id: data.id, title: "")
+        switch data.name {
+        case ChatGPTChatTab.name:
+            guard let builder = try? await ChatGPTChatTab.restore(
+                from: data.data,
+                externalDependency: ()
+            ) else { break }
+            return createTab(from: builder)
+        case BrowserChatTab.name:
+            guard let builder = try? await BrowserChatTab.restore(
+                from: data.data,
+                externalDependency: ()
+            ) else { break }
+            return createTab(from: builder)
+        default:
+            break
+        }
+
+        guard let builder = try? await EmptyChatTab.restore(
+            from: data.data, externalDependency: ()
+        ) else {
+            return nil
+        }
+        return createTab(for: builder)
+    }
+    #endif
 }
 

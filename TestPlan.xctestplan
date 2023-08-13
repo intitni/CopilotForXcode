@@ -119,6 +119,13 @@
         "identifier" : "ASTParserTests",
         "name" : "ASTParserTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Pro",
+        "identifier" : "ChatTabPersistentTests",
+        "name" : "ChatTabPersistentTests"
+      }
     }
   ],
   "version" : 1
