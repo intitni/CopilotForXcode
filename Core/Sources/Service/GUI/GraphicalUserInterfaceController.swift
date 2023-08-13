@@ -7,6 +7,10 @@ import Environment
 import Preferences
 import SuggestionWidget
 
+#if canImport(ProChatTabs)
+import ProChatTabs
+#endif
+
 #if canImport(ChatTabPersistent)
 import ChatTabPersistent
 #endif
@@ -33,6 +37,7 @@ struct GUI: ReducerProtocol {
     }
 
     enum Action {
+        case start
         case openChatPanel(forceDetach: Bool)
         case createChatGPTChatTabIfNeeded
         case sendCustomCommandToActiveChat(CustomCommand)
@@ -92,6 +97,13 @@ struct GUI: ReducerProtocol {
 
         Reduce { state, action in
             switch action {
+            case .start:
+                return .run { send in
+                    #if canImport(ChatTabPersistent)
+                    await send(.persistent(.restoreChatTabs))
+                    #endif
+                }
+
             case let .openChatPanel(forceDetach):
                 return .run { send in
                     await send(
@@ -205,8 +217,10 @@ public final class GraphicalUserInterfaceController {
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
 
-            #if canImport(ChatTabPersistent) && canImport(ProChatTab)
-            dependencies.restoreChatTabInPool = chatTabPool.restore
+            #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
+            dependencies.restoreChatTabInPool = {
+                await chatTabPool.restore($0)
+            }
             #endif
         }
         let store = StoreOf<GUI>(
@@ -253,6 +267,8 @@ public final class GraphicalUserInterfaceController {
                 await commandHandler.handleCustomCommand(command)
             }
         }
+
+        store.send(.start)
     }
 
     public func openGlobalChat() {
@@ -266,9 +282,10 @@ public final class GraphicalUserInterfaceController {
 extension ChatTabPool {
     @MainActor
     func createTab(
+        id: String = UUID().uuidString,
         from builder: ChatTabBuilder
     ) async -> (any ChatTab, ChatTabInfo)? {
-        let id = UUID().uuidString
+        let id = id
         let info = ChatTabInfo(id: id, title: "")
         guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
         setTab(chatTap)
@@ -292,34 +309,40 @@ extension ChatTabPool {
         return (chatTap, info)
     }
 
-    #if canImport(ChatTabPersistent) && canImport(ProChatTab)
+    #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
     @MainActor
     func restore(
         _ data: ChatTabPersistent.RestorableTabData
-    ) async throws -> (any ChatTab, ChatTabInfo)? {
-        let info = ChatTabInfo(id: data.id, title: "")
-        
-        let chatTapTypes: [any ChatTab.Type] = [
-            ChatGPTChatTab.self,
-            BrowserChatTab.self,
-            EmptyChatTab.self
-        ]
-        
-        for type in chatTapTypes {
-            guard data.name == type.name else { continue }
+    ) async -> (any ChatTab, ChatTabInfo)? {
+        switch data.name {
+        case ChatGPTChatTab.name:
             guard let builder = try? await ChatGPTChatTab.restore(
                 from: data.data,
                 externalDependency: ()
             ) else { break }
-            return createTab(from: builder)
+            return await createTab(id: data.id, from: builder)
+        case EmptyChatTab.name:
+            guard let builder = try? await EmptyChatTab.restore(
+                from: data.data,
+                externalDependency: ()
+            ) else { break }
+            return await createTab(id: data.id, from: builder)
+        case BrowserChatTab.name:
+            guard let builder = try? BrowserChatTab.restore(
+                from: data.data,
+                externalDependency: ChatTabFactory.externalDependenciesForBrowserChatTab()
+            ) else { break }
+            return await createTab(id: data.id, from: builder)
+        default:
+            break
         }
-        
+
         guard let builder = try? await EmptyChatTab.restore(
             from: data.data, externalDependency: ()
         ) else {
             return nil
         }
-        return createTab(for: builder)
+        return await createTab(from: builder)
     }
     #endif
 }
