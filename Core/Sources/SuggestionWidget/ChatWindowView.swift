@@ -114,7 +114,7 @@ struct ChatTitleBar: View {
                 EmptyView()
             }
             .opacity(0)
-            .keyboardShortcut("W", modifiers: [.command])
+            .keyboardShortcut("w", modifiers: [.command])
 
             Spacer()
         }
