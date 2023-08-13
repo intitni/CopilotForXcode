@@ -63,7 +63,7 @@ public struct WidgetFeature: ReducerProtocol {
                         }
                         return false
                     }(),
-                    isContentEmpty: chatPanelState.chatTapGroup.tabInfo.isEmpty
+                    isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
                         && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
                     isChatOpen: chatPanelState.isPanelDisplayed,
@@ -485,7 +485,7 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .updateWindowOpacity:
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-                let hasChat = !state.chatPanelState.chatTapGroup.tabInfo.isEmpty
+                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
 
                 return .run { _ in
                     Task { @MainActor in

@@ -23,7 +23,7 @@ struct ChatWindowView: View {
                 OverallState(
                     isPanelDisplayed: $0.isPanelDisplayed,
                     colorScheme: $0.colorScheme,
-                    selectedTabId: $0.chatTapGroup.selectedTabId
+                    selectedTabId: $0.chatTabGroup.selectedTabId
                 )
             }
         ) { viewStore in
@@ -165,9 +165,9 @@ struct ChatTabBar: View {
         WithViewStore(
             store,
             observe: { TabBarState(
-                tabInfo: $0.chatTapGroup.tabInfo,
-                selectedTabId: $0.chatTapGroup.selectedTabId
-                    ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
+                tabInfo: $0.chatTabGroup.tabInfo,
+                selectedTabId: $0.chatTabGroup.selectedTabId
+                    ?? $0.chatTabGroup.tabInfo.first?.id ?? ""
             ) }
         ) { viewStore in
             HStack(spacing: 0) {
@@ -217,7 +217,7 @@ struct ChatTabBar: View {
     @ViewBuilder
     var createButton: some View {
         Menu {
-            WithViewStore(store, observe: { $0.chatTapGroup.tabCollection }) { viewStore in
+            WithViewStore(store, observe: { $0.chatTabGroup.tabCollection }) { viewStore in
                 ForEach(0..<viewStore.state.endIndex, id: \.self) { index in
                     switch viewStore.state[index] {
                     case let .kind(kind):
@@ -321,9 +321,9 @@ struct ChatTabContainer: View {
             store,
             observe: {
                 TabContainerState(
-                    tabInfo: $0.chatTapGroup.tabInfo,
-                    selectedTabId: $0.chatTapGroup.selectedTabId
-                        ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
+                    tabInfo: $0.chatTabGroup.tabInfo,
+                    selectedTabId: $0.chatTabGroup.selectedTabId
+                        ?? $0.chatTabGroup.tabInfo.first?.id ?? ""
                 )
             }
         ) { viewStore in
@@ -424,7 +424,7 @@ struct ChatWindowView_Previews: PreviewProvider {
         ChatWindowView(
             store: .init(
                 initialState: .init(
-                    chatTapGroup: .init(
+                    chatTabGroup: .init(
                         tabInfo: [
                             .init(id: "1", title: "Fake"),
                             .init(id: "2", title: "Empty-2"),

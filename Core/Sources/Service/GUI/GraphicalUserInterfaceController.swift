@@ -16,17 +16,17 @@ struct GUI: ReducerProtocol {
         var suggestionWidgetState = WidgetFeature.State()
 
         var chatTabGroup: ChatPanelFeature.ChatTabGroup {
-            get { suggestionWidgetState.chatPanelState.chatTapGroup }
-            set { suggestionWidgetState.chatPanelState.chatTapGroup = newValue }
+            get { suggestionWidgetState.chatPanelState.chatTabGroup }
+            set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
 
         #if canImport(ChatTabPersistent)
         var persistentState: ChatTabPersistent.State {
             get {
-                .init(chatTabInfo: suggestionWidgetState.chatPanelState.chatTapGroup.tabInfo)
+                .init(chatTabInfo: chatTabGroup.tabInfo)
             }
             set {
-                suggestionWidgetState.chatPanelState.chatTapGroup.tabInfo = newValue.chatTabInfo
+                chatTabGroup.tabInfo = newValue.chatTabInfo
             }
         }
         #endif
