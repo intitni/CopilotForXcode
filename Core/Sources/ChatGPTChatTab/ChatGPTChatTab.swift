@@ -18,6 +18,8 @@ public class ChatGPTChatTab: ChatTab {
     struct RestorableState: Codable {
         var history: [OpenAIService.ChatMessage]
         var configuration: OverridingChatGPTConfiguration.Overriding
+        var systemPrompt: String
+        var extraSystemPrompt: String
     }
 
     struct Builder: ChatTabBuilder {
@@ -46,7 +48,9 @@ public class ChatGPTChatTab: ChatTab {
     public func restorableState() async -> Data {
         let state = RestorableState(
             history: await service.memory.history,
-            configuration: service.configuration.overriding
+            configuration: service.configuration.overriding,
+            systemPrompt: service.systemPrompt,
+            extraSystemPrompt: service.extraSystemPrompt
         )
         return (try? JSONEncoder().encode(state)) ?? Data()
     }
@@ -58,6 +62,8 @@ public class ChatGPTChatTab: ChatTab {
         let state = try JSONDecoder().decode(RestorableState.self, from: data)
         let builder = Builder(title: "Chat") { @MainActor tab in
             tab.service.configuration.overriding = state.configuration
+            tab.service.mutateSystemPrompt(state.systemPrompt)
+            tab.service.mutateExtraSystemPrompt(state.extraSystemPrompt)
             await tab.service.memory.mutateHistory { history in
                 history = state.history
             }
@@ -85,11 +91,25 @@ public class ChatGPTChatTab: ChatTab {
 
     public func start() {
         chatTabViewStore.send(.updateTitle("Chat"))
+        
+        service.$systemPrompt.removeDuplicates().sink { _ in
+            Task { @MainActor [weak self] in
+                self?.chatTabViewStore.send(.tabContentUpdated)
+            }
+        }.store(in: &cancellable)
+        
+        service.$extraSystemPrompt.removeDuplicates().sink { _ in
+            Task { @MainActor [weak self] in
+                self?.chatTabViewStore.send(.tabContentUpdated)
+            }
+        }.store(in: &cancellable)
+        
         provider.$history.sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 if let title = self?.provider.title {
                     self?.chatTabViewStore.send(.updateTitle(title))
                 }
+                self?.chatTabViewStore.send(.tabContentUpdated)
             }
         }.store(in: &cancellable)
     }
