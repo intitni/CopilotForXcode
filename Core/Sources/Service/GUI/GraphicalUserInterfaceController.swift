@@ -298,23 +298,22 @@ extension ChatTabPool {
         _ data: ChatTabPersistent.RestorableTabData
     ) async throws -> (any ChatTab, ChatTabInfo)? {
         let info = ChatTabInfo(id: data.id, title: "")
-        switch data.name {
-        case ChatGPTChatTab.name:
+        
+        let chatTapTypes: [any ChatTab.Type] = [
+            ChatGPTChatTab.self,
+            BrowserChatTab.self,
+            EmptyChatTab.self
+        ]
+        
+        for type in chatTapTypes {
+            guard data.name == type.name else { continue }
             guard let builder = try? await ChatGPTChatTab.restore(
                 from: data.data,
                 externalDependency: ()
             ) else { break }
             return createTab(from: builder)
-        case BrowserChatTab.name:
-            guard let builder = try? await BrowserChatTab.restore(
-                from: data.data,
-                externalDependency: ()
-            ) else { break }
-            return createTab(from: builder)
-        default:
-            break
         }
-
+        
         guard let builder = try? await EmptyChatTab.restore(
             from: data.data, externalDependency: ()
         ) else {
