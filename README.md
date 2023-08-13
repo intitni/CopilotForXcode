@@ -23,13 +23,13 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
   - [Install](#install)
   - [Enable the Extension](#enable-the-extension)
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
+  - [Setting Up Key Bindings](#setting-up-key-bindings)
   - [Setting Up GitHub Copilot](#setting-up-github-copilot)
   - [Setting Up Codeium](#setting-up-codeium)
   - [Setting Up OpenAI API Key](#setting-up-openai-api-key)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
 - [Feature](#feature)
-- [Key Bindings](#key-bindings)
 - [Plus Features](#plus-features)
 - [Limitations](#limitations)
 - [License](#license)
@@ -96,6 +96,27 @@ Alternatively, you may manually grant the required permissions by navigating to 
 <img alt="Accessibility API" src="/accessibility_api_permission.png" width="500px">
 
 If you encounter an alert requesting permission that you have previously granted, please remove the permission from the list and add it again to re-grant the necessary permissions.
+
+### Setting Up Key Bindings
+
+The extension will work better if you use key bindings.
+
+It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`. You can filter the list by typing `copilot` in the search bar.
+
+A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that should cause no conflict is
+
+| Command             | Key Binding |
+| ------------------- | ----------- |
+| Accept Suggestions  | `⌥}`        |
+| Reject Suggestion   | `⌥{`        |
+| Next Suggestion     | `⌥>`        |
+| Previous Suggestion | `⌥<`        |
+| Open Chat           | `⌥"`        |
+| Explain Selection   | `⌥\|`       |
+
+Essentially using `⌥⇧` as the "access" key combination for all bindings.
+
+Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
 ### Setting Up GitHub Copilot
 
@@ -280,26 +301,6 @@ For Send Message, Single Round Dialog and Custom Chat commands, you can use the 
 | `{{active_editor_language}}`  | The programming language of the active editor. |
 | `{{active_editor_file_url}}`  | The URL of the active file in the editor.      |
 | `{{active_editor_file_name}}` | The name of the active file in the editor.     |
-
-## Key Bindings
-
-It looks like there is no way to add default key bindings to commands, but you can set them up in `Xcode settings > Key Bindings`. You can filter the list by typing `copilot` in the search bar.
-
-A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that should cause no conflict is
-
-| Command             | Key Binding |
-| ------------------- | ----------- |
-| Get Suggestions     | `⌥?`        |
-| Accept Suggestions  | `⌥}`        |
-| Reject Suggestion   | `⌥{`        |
-| Next Suggestion     | `⌥>`        |
-| Previous Suggestion | `⌥<`        |
-| Open Chat           | `⌥"`        |
-| Explain Selection   | `⌥\|`       |
-
-Essentially using `⌥⇧` as the "access" key combination for all bindings.
-
-Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
 ## Plus Features
 

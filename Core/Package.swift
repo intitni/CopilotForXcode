@@ -269,7 +269,7 @@ let package = Package(
             name: "PlusFeatureFlag",
             dependencies: [
             ].pro([
-                "LicenseManagement"
+                "LicenseManagement",
             ])
         ),
 
@@ -398,10 +398,18 @@ import Foundation
 
 func isProIncluded(file: StaticString = #file) -> Bool {
     let filePath = "\(file)"
-    let url = URL(fileURLWithPath: filePath)
+    let fileURL = URL(fileURLWithPath: filePath)
+    let rootURL = fileURL
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-        .appendingPathComponent("Pro/Package.swift")
-    return FileManager.default.fileExists(atPath: url.path)
+    let folderURL = rootURL.appendingPathComponent("Pro")
+    if !FileManager.default.fileExists(atPath: folderURL.path) {
+        return false
+    }
+    let packageManifestURL = folderURL.appendingPathComponent("Package.swift")
+    if !FileManager.default.fileExists(atPath: packageManifestURL.path) {
+        return false
+    }
+    return true
 }
 
