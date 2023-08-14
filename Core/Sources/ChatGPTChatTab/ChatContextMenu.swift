@@ -3,7 +3,7 @@ import SharedUIComponents
 import SwiftUI
 
 struct ChatContextMenu: View {
-    let chat: ChatProvider
+    @ObservedObject var chat: ChatProvider
     @AppStorage(\.customCommands) var customCommands
 
     var body: some View {
