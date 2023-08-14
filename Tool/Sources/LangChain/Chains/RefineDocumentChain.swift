@@ -102,7 +102,7 @@ public final class RefineDocumentChain: Chain {
                     content: {
                         if let previousAnswer = input.previousAnswer {
                             return """
-                            The user will send you a question about a document, you must refine your previous answer to it only according to the document.
+                            I will send you a question about a document, you must refine your previous answer to it only according to the document.
                             Previous answer:###
                             \(previousAnswer)
                             ###
@@ -112,7 +112,7 @@ public final class RefineDocumentChain: Chain {
                             """
                         } else {
                             return """
-                            The user will send you a question about a document, you must answer it only according to the document.
+                            I will send you a question about a document, you must answer it only according to the document.
                             Page \(input.index) of \(input.totalCount) of the document:###
                             \(input.document)
                             ###

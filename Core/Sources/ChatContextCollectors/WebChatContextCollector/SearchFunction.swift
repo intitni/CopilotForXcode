@@ -51,7 +51,7 @@ struct SearchFunction: ChatGPTFunction {
                 "freshness": [
                     .type: "string",
                     .description: .string(
-                        "limit the search result to a specific range, use only when user ask the question about current events. Today is \(today). Format: yyyy-MM-dd..yyyy-MM-dd"
+                        "limit the search result to a specific range, use only when I ask the question about current events. Today is \(today). Format: yyyy-MM-dd..yyyy-MM-dd"
                     ),
                     .examples: ["1919-10-20..1988-10-20"],
                 ],
