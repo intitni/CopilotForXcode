@@ -117,8 +117,13 @@ struct CompletionRequestBody: Encodable, Equatable {
         self.frequency_penalty = frequency_penalty
         self.logit_bias = logit_bias
         self.user = user
-        self.function_call = function_call
-        self.functions = functions.isEmpty ? nil : functions
+        if UserDefaults.shared.value(for: \.disableFunctionCalling) {
+            self.function_call = nil
+            self.functions = nil
+        } else {
+            self.function_call = function_call
+            self.functions = functions.isEmpty ? nil : functions
+        }
     }
 }
 
