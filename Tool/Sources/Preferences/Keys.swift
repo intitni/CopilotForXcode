@@ -405,5 +405,9 @@ public extension UserDefaultPreferenceKeys {
     var enableXcodeInspectorDebugMenu: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-EnableXcodeInspectorDebugMenu")
     }
+    
+    var disableFunctionCalling: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-DisableFunctionCalling")
+    }
 }
 
