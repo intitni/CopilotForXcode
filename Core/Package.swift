@@ -15,7 +15,6 @@ let package = Package(
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
-                "UserDefaultsObserver",
             ]
         ),
         .library(
@@ -78,8 +77,8 @@ let package = Package(
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
-                "UserDefaultsObserver",
                 "ChatGPTChatTab",
+                .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
@@ -149,7 +148,7 @@ let package = Package(
         .target(name: "SuggestionService", dependencies: [
             "GitHubCopilotService",
             "CodeiumService",
-            "UserDefaultsObserver",
+            .product(name: "UserDefaultsObserver", package: "Tool"),
         ]),
 
         // MARK: - Prompt To Code
@@ -226,7 +225,7 @@ let package = Package(
             name: "SuggestionWidget",
             dependencies: [
                 "ChatGPTChatTab",
-                "UserDefaultsObserver",
+                .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
@@ -264,7 +263,6 @@ let package = Package(
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
-        .target(name: "UserDefaultsObserver"),
         .target(
             name: "PlusFeatureFlag",
             dependencies: [
