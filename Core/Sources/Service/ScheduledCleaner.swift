@@ -29,7 +29,7 @@ public final class ScheduledCleaner {
 
         // cleanup when Xcode becomes inactive
         Task { @ServiceActor in
-            for await app in ActiveApplicationMonitor.createStream() {
+            for await app in ActiveApplicationMonitor.shared.createStream() {
                 try Task.checkCancellation()
                 if let app, !app.isXcode {
                     await cleanUp()

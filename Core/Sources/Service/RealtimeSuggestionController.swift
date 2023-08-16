@@ -26,21 +26,21 @@ public class RealtimeSuggestionController {
     
     func start() {
         Task { [weak self] in
-            if let app = ActiveApplicationMonitor.activeXcode {
+            if let app = ActiveApplicationMonitor.shared.activeXcode {
                 self?.handleXcodeChanged(app)
                 self?.startHIDObservation()
             }
-            var previousApp = ActiveApplicationMonitor.activeXcode
-            for await app in ActiveApplicationMonitor.createStream() {
+            var previousApp = ActiveApplicationMonitor.shared.activeXcode
+            for await app in ActiveApplicationMonitor.shared.createStream() {
                 guard let self else { return }
                 try Task.checkCancellation()
                 defer { previousApp = app }
 
-                if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
+                if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
                     self.handleXcodeChanged(app)
                 }
 
-                if ActiveApplicationMonitor.activeXcode != nil {
+                if ActiveApplicationMonitor.shared.activeXcode != nil {
                     startHIDObservation()
                 } else {
                     stopHIDObservation()
@@ -91,7 +91,7 @@ public class RealtimeSuggestionController {
     }
 
     private func handleFocusElementChange() {
-        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return }
+        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
@@ -226,7 +226,7 @@ public class RealtimeSuggestionController {
     /// Looks like the Xcode will keep the panel around until content is changed,
     /// not sure how to observe that it's hidden.
     func isCompletionPanelPresenting() -> Bool {
-        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
+        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return false }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
     }

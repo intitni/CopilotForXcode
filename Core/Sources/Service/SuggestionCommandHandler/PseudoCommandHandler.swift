@@ -168,8 +168,8 @@ struct PseudoCommandHandler {
             }
             try await Environment.triggerAction("Accept Suggestion")
         } catch {
-            guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor
-                .latestXcode else { return }
+            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
@@ -260,8 +260,8 @@ extension PseudoCommandHandler {
             cursorPosition: CursorPosition
         )?
     {
-        guard let xcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode else { return nil }
+        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         guard let focusElement = sourceEditor ?? application.focusedElement,
               focusElement.description == "Source Editor"
@@ -282,7 +282,7 @@ extension PseudoCommandHandler {
         guard
             let fileURL = await getFileURL(),
             let (_, filespace) = try? await Service.shared.workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return nil }
         return filespace
     }

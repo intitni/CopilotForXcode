@@ -60,7 +60,7 @@ final class WidgetDataSource {
                     self?.removePromptToCode(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
-                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                    if let app = ActiveApplicationMonitor.shared.previousApp, app.isXcode {
                         Task { @MainActor in
                             try await Task.sleep(nanoseconds: 200_000_000)
                             app.activate()
@@ -113,7 +113,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
-                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                            if let app = ActiveApplicationMonitor.shared.previousApp,
                                app.isXcode
                             {
                                 try await Task.sleep(nanoseconds: 200_000_000)
@@ -125,7 +125,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
-                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                            if let app = ActiveApplicationMonitor.shared.previousApp,
                                app.isXcode
                             {
                                 try await Task.sleep(nanoseconds: 200_000_000)
