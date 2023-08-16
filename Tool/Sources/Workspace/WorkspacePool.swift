@@ -1,9 +1,23 @@
 import Environment
 import Foundation
 
+@globalActor public enum WorkspaceActor {
+    public actor TheActor {}
+    public static let shared = TheActor()
+}
+
+@WorkspaceActor
 public class WorkspacePool {
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
+
+    public init(
+        workspaces: [URL: Workspace] = [:],
+        plugins: [ObjectIdentifier: (Workspace) -> WorkspacePlugin] = [:]
+    ) {
+        self.workspaces = workspaces
+        self.plugins = plugins
+    }
 
     public func registerPlugin<Plugin: WorkspacePlugin>(_ plugin: @escaping (Workspace) -> Plugin) {
         let id = ObjectIdentifier(Plugin.self)
@@ -18,7 +32,7 @@ public class WorkspacePool {
     public func unregisterPlugin<Plugin: WorkspacePlugin>(_: Plugin.Type) {
         let id = ObjectIdentifier(Plugin.self)
         plugins[id] = nil
-        
+
         for workspace in workspaces.values {
             removePlugin(id: id, from: workspace)
         }
@@ -78,6 +92,10 @@ public class WorkspacePool {
         workspace.refreshUpdateTime()
         return (workspace, filespace)
     }
+    
+    public func removeWorkspace(url: URL) {
+        workspaces[url] = nil
+    }
 }
 
 extension WorkspacePool {
@@ -93,7 +111,7 @@ extension WorkspacePool {
     func removePlugin(id: ObjectIdentifier, from workspace: Workspace) {
         workspace.plugins[id] = nil
     }
-    
+
     func createNewWorkspace(projectRootURL: URL) -> Workspace {
         let new = Workspace(projectRootURL: projectRootURL)
         for (id, plugin) in plugins {
@@ -102,3 +120,4 @@ extension WorkspacePool {
         return new
     }
 }
+
