@@ -36,7 +36,6 @@ public final class Service {
                 }
             }
         )
-        DependencyUpdater().update()
     }
     
     @MainActor
@@ -45,6 +44,7 @@ public final class Service {
         realtimeSuggestionController.start()
         guiController.start()
         keyBindingManager.start()
+        DependencyUpdater().update()
     }
 }
 
