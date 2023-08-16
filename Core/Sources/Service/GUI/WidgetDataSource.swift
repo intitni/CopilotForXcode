@@ -21,7 +21,7 @@ final class WidgetDataSource {
             self.provider = provider
         }
     }
- 
+
     private(set) var promptToCodes = [URL: PromptToCode]()
 
     init() {}
@@ -87,7 +87,7 @@ final class WidgetDataSource {
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider? {
-        for workspace in await workspaces.values {
+        for workspace in await Service.shared.workspacePool.workspaces.values {
             if let filespace = await workspace.filespaces[url],
                let suggestion = await filespace.presentingSuggestion
             {
@@ -98,19 +98,19 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                     suggestionCount: filespace.suggestions.count,
                     currentSuggestionIndex: filespace.suggestionIndex,
                     onSelectPreviousSuggestionTapped: {
-                        Task { @ServiceActor in
+                        Task {
                             let handler = PseudoCommandHandler()
                             await handler.presentPreviousSuggestion()
                         }
                     },
                     onSelectNextSuggestionTapped: {
-                        Task { @ServiceActor in
+                        Task {
                             let handler = PseudoCommandHandler()
                             await handler.presentNextSuggestion()
                         }
                     },
                     onRejectSuggestionTapped: {
-                        Task { @ServiceActor in
+                        Task {
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
                             if let app = ActiveApplicationMonitor.previousActiveApplication,
@@ -122,7 +122,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         }
                     },
                     onAcceptSuggestionTapped: {
-                        Task { @ServiceActor in
+                        Task {
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
                             if let app = ActiveApplicationMonitor.previousActiveApplication,

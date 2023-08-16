@@ -2,6 +2,7 @@ import SuggestionModel
 import Foundation
 import SuggestionInjector
 import XPCShared
+import Workspace
 
 struct PresentInCommentSuggestionPresenter {
     func presentSuggestion(

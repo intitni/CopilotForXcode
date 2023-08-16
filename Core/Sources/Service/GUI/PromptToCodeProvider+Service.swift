@@ -56,7 +56,7 @@ extension PromptToCodeProvider {
         }
 
         onAcceptSuggestionTapped = {
-            Task { @ServiceActor in
+            Task { 
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
                 if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {

@@ -7,14 +7,6 @@ import Logger
 import Preferences
 import XPCShared
 
-@globalActor public enum ServiceActor {
-    public actor TheActor {}
-    public static let shared = TheActor()
-}
-
-@ServiceActor
-var workspaces = [URL: Workspace]()
-
 public class XPCService: NSObject, XPCServiceProtocol {
     // MARK: - Service
 
@@ -61,7 +53,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
 
         Task {
-            await RealtimeSuggestionController.shared.cancelInFlightTasks(excluding: task)
+            await Service.shared.realtimeSuggestionController.cancelInFlightTasks(excluding: task)
         }
         return task
     }
@@ -176,7 +168,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
             return
         }
         Task { @ServiceActor in
-            await RealtimeSuggestionController.shared.cancelInFlightTasks()
+            await Service.shared.realtimeSuggestionController.cancelInFlightTasks()
             UserDefaults.shared.set(
                 !UserDefaults.shared.value(for: \.realtimeSuggestionToggle),
                 for: \.realtimeSuggestionToggle
@@ -184,13 +176,17 @@ public class XPCService: NSObject, XPCServiceProtocol {
             reply(nil)
         }
     }
-    
+
     public func postNotification(name: String, withReply reply: @escaping () -> Void) {
         reply()
         NSWorkspace.shared.notificationCenter.post(name: .init(name), object: nil)
     }
-    
-    public func performAction(name: String, arguments: String, withReply reply: @escaping (String) -> Void) {
+
+    public func performAction(
+        name: String,
+        arguments: String,
+        withReply reply: @escaping (String) -> Void
+    ) {
         reply("None")
     }
 }

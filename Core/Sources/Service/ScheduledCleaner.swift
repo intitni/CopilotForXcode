@@ -3,10 +3,20 @@ import AppKit
 import AXExtension
 import Foundation
 import Logger
+import Workspace
 import XcodeInspector
 
 public final class ScheduledCleaner {
-    public init() {
+    let workspacePool: WorkspacePool
+    let guiController: GraphicalUserInterfaceController
+
+    init(
+        workspacePool: WorkspacePool,
+        guiController: GraphicalUserInterfaceController
+    ) {
+        self.workspacePool = workspacePool
+        self.guiController = guiController
+    
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
@@ -43,38 +53,37 @@ public final class ScheduledCleaner {
                 }
             }
         }
-        for (url, workspace) in workspaces {
-            if workspace.isExpired, workspaceInfos[.url(url)] == nil {
+        for (url, workspace) in await workspacePool.workspaces {
+            if await workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
-                for url in workspace.filespaces.keys {
-                    await GraphicalUserInterfaceController.shared.widgetDataSource.cleanup(for: url)
+                for url in await workspace.filespaces.keys {
+                    await guiController.widgetDataSource.cleanup(for: url)
                 }
-                workspace.cleanUp(availableTabs: [])
-                workspaces[url] = nil
+                await workspace.cleanUp(availableTabs: [])
+                await workspacePool.removeWorkspace(url: url)
             } else {
                 let tabs = (workspaceInfos[.url(url)]?.tabs ?? [])
                     .union(workspaceInfos[.unknown]?.tabs ?? [])
                 // cleanup chats for unused files
-                let filespaces = workspace.filespaces
+                let filespaces = await workspace.filespaces
                 for (url, _) in filespaces {
-                    if workspace.isFilespaceExpired(
+                    if await workspace.isFilespaceExpired(
                         fileURL: url,
                         availableTabs: tabs
                     ) {
                         Logger.service.info("Remove idle filespace")
-                        await GraphicalUserInterfaceController.shared.widgetDataSource
-                            .cleanup(for: url)
+                        await guiController.widgetDataSource.cleanup(for: url)
                     }
                 }
                 // cleanup workspace
-                workspace.cleanUp(availableTabs: tabs)
+                await workspace.cleanUp(availableTabs: tabs)
             }
         }
     }
 
     @ServiceActor
     public func closeAllChildProcesses() async {
-        for (_, workspace) in workspaces {
+        for (_, workspace) in await workspacePool.workspaces {
             await workspace.terminateSuggestionService()
         }
     }

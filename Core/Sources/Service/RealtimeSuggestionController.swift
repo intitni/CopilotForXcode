@@ -9,11 +9,11 @@ import Foundation
 import Logger
 import Preferences
 import QuartzCore
+import Workspace
 import XcodeInspector
 
-@ServiceActor
+@WorkspaceActor
 public class RealtimeSuggestionController {
-    public nonisolated static let shared = RealtimeSuggestionController()
     var eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [
         .keyUp,
         .keyDown,
@@ -28,12 +28,11 @@ public class RealtimeSuggestionController {
     private var focusedUIElement: AXUIElement?
     private var sourceEditor: SourceEditor?
 
-    private nonisolated init() {
+    init() {
         Task { [weak self] in
-
             if let app = ActiveApplicationMonitor.activeXcode {
-                await self?.handleXcodeChanged(app)
-                await self?.startHIDObservation(by: 1)
+                self?.handleXcodeChanged(app)
+                self?.startHIDObservation(by: 1)
             }
             var previousApp = ActiveApplicationMonitor.activeXcode
             for await app in ActiveApplicationMonitor.createStream() {
@@ -42,13 +41,13 @@ public class RealtimeSuggestionController {
                 defer { previousApp = app }
 
                 if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
-                    await self.handleXcodeChanged(app)
+                    self.handleXcodeChanged(app)
                 }
 
                 if ActiveApplicationMonitor.activeXcode != nil {
-                    await startHIDObservation(by: 1)
+                    startHIDObservation(by: 1)
                 } else {
-                    await stopHIDObservation(by: 1)
+                    stopHIDObservation(by: 1)
                 }
             }
         }
@@ -104,11 +103,12 @@ public class RealtimeSuggestionController {
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
         focusedUIElement = focusElement
-        
+
         Task { // Notify suggestion service for open file.
             try await Task.sleep(nanoseconds: 500_000_000)
             let fileURL = try await Environment.fetchCurrentFileURL()
-            _ = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            _ = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         }
 
         guard focusElementType == "Source Editor" else { return }
@@ -154,21 +154,21 @@ public class RealtimeSuggestionController {
             }
         }
 
-        Task { // Get cache ready for real-time suggestions.
+        Task { @WorkspaceActor in // Get cache ready for real-time suggestions.
             guard UserDefaults.shared.value(for: \.preCacheOnFileOpen) else { return }
             let fileURL = try await Environment.fetchCurrentFileURL()
-            let (_, filespace) = try await Workspace
-                .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            let (_, filespace) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
-            if filespace.uti == nil {
+            if filespace.codeMetadata.uti == nil {
                 Logger.service.info("Generate cache for file.")
                 // avoid the command get called twice
-                filespace.uti = ""
+                filespace.codeMetadata.uti = ""
                 do {
                     try await Environment.triggerAction("Real-time Suggestions")
                 } catch {
-                    if filespace.uti?.isEmpty ?? true {
-                        filespace.uti = nil
+                    if filespace.codeMetadata.uti?.isEmpty ?? true {
+                        filespace.codeMetadata.uti = nil
                     }
                 }
             }
@@ -191,7 +191,7 @@ public class RealtimeSuggestionController {
     }
 
     func triggerPrefetchDebounced(force: Bool = false) {
-        inflightPrefetchTask = Task { @ServiceActor in
+        inflightPrefetchTask = Task { @WorkspaceActor in
             try? await Task.sleep(nanoseconds: UInt64((
                 UserDefaults.shared.value(for: \.realtimeSuggestionDebounce)
             ) * 1_000_000_000))
@@ -201,8 +201,8 @@ public class RealtimeSuggestionController {
 
             if UserDefaults.shared.value(for: \.disableSuggestionFeatureGlobally),
                let fileURL = try? await Environment.fetchCurrentFileURL(),
-               let (workspace, _) = try? await Workspace
-               .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+               let (workspace, _) = try? await Service.shared.workspacePool
+               .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
             {
                 let isEnabled = workspace.isSuggestionFeatureEnabled
                 if !isEnabled { return }
@@ -221,7 +221,7 @@ public class RealtimeSuggestionController {
 
         // cancel in-flight tasks
         await withTaskGroup(of: Void.self) { group in
-            for (_, workspace) in workspaces {
+            for (_, workspace) in Service.shared.workspacePool.workspaces {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }
@@ -240,10 +240,10 @@ public class RealtimeSuggestionController {
 
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-              let (workspace, filespace) = try? await Workspace
-              .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+              let (workspace, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
-        workspace.notifyUpdateFile(filespace: filespace, content: editor.value)
+        workspace.suggestionPlugin?.notifyUpdateFile(filespace: filespace, content: editor.value)
     }
 }
 

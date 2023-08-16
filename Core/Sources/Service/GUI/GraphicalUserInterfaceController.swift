@@ -197,7 +197,6 @@ struct GUI: ReducerProtocol {
 
 @MainActor
 public final class GraphicalUserInterfaceController {
-    public static let shared = GraphicalUserInterfaceController()
     private let store: StoreOf<GUI>
     let widgetController: SuggestionWidgetController
     let widgetDataSource: WidgetDataSource
@@ -208,7 +207,7 @@ public final class GraphicalUserInterfaceController {
         weak var store: StoreOf<GUI>?
     }
 
-    private init() {
+    init() {
         let chatTabPool = ChatTabPool()
         let suggestionDependency = SuggestionWidgetControllerDependency()
         let setupDependency: (inout DependencyValues) -> Void = { dependencies in
