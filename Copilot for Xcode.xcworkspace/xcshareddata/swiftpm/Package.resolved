@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "cgeventoverride",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/intitni/CGEventOverride",
+      "state" : {
+        "revision" : "40b29e804204c461253a52b77adea9c055184aad",
+        "version" : "1.2.0"
+      }
+    },
+    {
       "identity" : "combine-schedulers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/combine-schedulers",
