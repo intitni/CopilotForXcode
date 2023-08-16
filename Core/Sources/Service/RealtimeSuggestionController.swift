@@ -12,14 +12,8 @@ import QuartzCore
 import Workspace
 import XcodeInspector
 
-@WorkspaceActor
 public class RealtimeSuggestionController {
-    var eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [
-        .keyUp,
-        .keyDown,
-        .rightMouseDown,
-        .leftMouseDown,
-    ])
+    let eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [.keyDown])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
     private var windowChangeObservationTask: Task<Void, Error>?
@@ -28,11 +22,13 @@ public class RealtimeSuggestionController {
     private var focusedUIElement: AXUIElement?
     private var sourceEditor: SourceEditor?
 
-    init() {
+    init() {}
+    
+    func start() {
         Task { [weak self] in
             if let app = ActiveApplicationMonitor.activeXcode {
                 self?.handleXcodeChanged(app)
-                self?.startHIDObservation(by: 1)
+                self?.startHIDObservation()
             }
             var previousApp = ActiveApplicationMonitor.activeXcode
             for await app in ActiveApplicationMonitor.createStream() {
@@ -45,17 +41,15 @@ public class RealtimeSuggestionController {
                 }
 
                 if ActiveApplicationMonitor.activeXcode != nil {
-                    startHIDObservation(by: 1)
+                    startHIDObservation()
                 } else {
-                    stopHIDObservation(by: 1)
+                    stopHIDObservation()
                 }
             }
         }
     }
 
-    private func startHIDObservation(by listener: AnyHashable) {
-        Logger.service.info("Add auto trigger listener: \(listener).")
-
+    private func startHIDObservation() {
         if task == nil {
             task = Task { [weak self, eventObserver] in
                 for await event in eventObserver.createStream() {
@@ -67,8 +61,7 @@ public class RealtimeSuggestionController {
         eventObserver.activateIfPossible()
     }
 
-    private func stopHIDObservation(by listener: AnyHashable) {
-        Logger.service.info("Remove auto trigger listener: \(listener).")
+    private func stopHIDObservation() {
         task?.cancel()
         task = nil
         eventObserver.deactivate()
@@ -241,7 +234,7 @@ public class RealtimeSuggestionController {
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
               let (workspace, filespace) = try? await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+              .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
         workspace.suggestionPlugin?.notifyUpdateFile(filespace: filespace, content: editor.value)
     }

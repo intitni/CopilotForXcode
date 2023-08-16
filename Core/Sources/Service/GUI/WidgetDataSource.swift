@@ -87,11 +87,11 @@ final class WidgetDataSource {
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider? {
-        for workspace in await Service.shared.workspacePool.workspaces.values {
-            if let filespace = await workspace.filespaces[url],
-               let suggestion = await filespace.presentingSuggestion
+        for workspace in Service.shared.workspacePool.workspaces.values {
+            if let filespace = workspace.filespaces[url],
+               let suggestion = filespace.presentingSuggestion
             {
-                return await .init(
+                return .init(
                     code: suggestion.text,
                     language: filespace.language,
                     startLineIndex: suggestion.position.line,

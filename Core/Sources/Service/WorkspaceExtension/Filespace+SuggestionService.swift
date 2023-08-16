@@ -2,20 +2,9 @@ import Foundation
 import SuggestionModel
 import Workspace
 
-struct FilespaceCodeMetadata: Equatable {
-    var uti: String?
-    var tabSize: Int?
-    var indentSize: Int?
-    var usesTabsForIndentation: Bool?
-}
-
 struct FilespaceSuggestionSnapshot: Equatable {
     var linesHash: Int
     var cursorPosition: CursorPosition
-}
-
-struct FilespaceCodeMetadataKey: FilespacePropertyKey {
-    static func createDefaultValue() -> FilespaceCodeMetadata { .init() }
 }
 
 struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
@@ -24,11 +13,6 @@ struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
 }
 
 extension FilespacePropertyValues {
-    var codeMetadata: FilespaceCodeMetadata {
-        get { self[FilespaceCodeMetadataKey.self] }
-        set { self[FilespaceCodeMetadataKey.self] = newValue }
-    }
-
     var suggestionSourceSnapshot: FilespaceSuggestionSnapshot {
         get { self[FilespaceSuggestionSnapshotKey.self] }
         set { self[FilespaceSuggestionSnapshotKey.self] = newValue }
@@ -47,6 +31,7 @@ extension Filespace {
     ///    - lines: lines of the file
     ///    - cursorPosition: cursor position
     /// - Returns: `true` if the suggestion is still valid
+    @WorkspaceActor
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
         guard let presentingSuggestion else { return false }
 

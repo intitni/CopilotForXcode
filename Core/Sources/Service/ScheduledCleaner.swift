@@ -16,7 +16,9 @@ public final class ScheduledCleaner {
     ) {
         self.workspacePool = workspacePool
         self.guiController = guiController
+    }
     
+    func start() {
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
@@ -53,21 +55,21 @@ public final class ScheduledCleaner {
                 }
             }
         }
-        for (url, workspace) in await workspacePool.workspaces {
-            if await workspace.isExpired, workspaceInfos[.url(url)] == nil {
+        for (url, workspace) in workspacePool.workspaces {
+            if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
-                for url in await workspace.filespaces.keys {
+                for url in workspace.filespaces.keys {
                     await guiController.widgetDataSource.cleanup(for: url)
                 }
                 await workspace.cleanUp(availableTabs: [])
-                await workspacePool.removeWorkspace(url: url)
+                workspacePool.removeWorkspace(url: url)
             } else {
                 let tabs = (workspaceInfos[.url(url)]?.tabs ?? [])
                     .union(workspaceInfos[.unknown]?.tabs ?? [])
                 // cleanup chats for unused files
-                let filespaces = await workspace.filespaces
+                let filespaces = workspace.filespaces
                 for (url, _) in filespaces {
-                    if await workspace.isFilespaceExpired(
+                    if workspace.isFilespaceExpired(
                         fileURL: url,
                         availableTabs: tabs
                     ) {
@@ -83,7 +85,7 @@ public final class ScheduledCleaner {
 
     @ServiceActor
     public func closeAllChildProcesses() async {
-        for (_, workspace) in await workspacePool.workspaces {
+        for (_, workspace) in workspacePool.workspaces {
             await workspace.terminateSuggestionService()
         }
     }

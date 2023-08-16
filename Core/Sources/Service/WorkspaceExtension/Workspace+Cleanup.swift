@@ -3,6 +3,7 @@ import Workspace
 import SuggestionService
 
 extension Workspace {
+    @WorkspaceActor
     func cleanUp(availableTabs: Set<String>) {
         for (fileURL, _) in filespaces {
             if isFilespaceExpired(fileURL: fileURL, availableTabs: availableTabs) {

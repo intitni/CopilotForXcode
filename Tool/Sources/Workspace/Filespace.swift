@@ -7,7 +7,6 @@ public protocol FilespacePropertyKey {
     static func createDefaultValue() -> Value
 }
 
-@WorkspaceActor
 public final class FilespacePropertyValues {
     var storage: [ObjectIdentifier: Any] = [:]
 
@@ -26,16 +25,35 @@ public final class FilespacePropertyValues {
     }
 }
 
-@WorkspaceActor
+public struct FilespaceCodeMetadata: Equatable {
+    public var uti: String?
+    public var tabSize: Int?
+    public var indentSize: Int?
+    public var usesTabsForIndentation: Bool?
+
+    init(
+        uti: String? = nil,
+        tabSize: Int? = nil,
+        indentSize: Int? = nil,
+        usesTabsForIndentation: Bool? = nil
+    ) {
+        self.uti = uti
+        self.tabSize = tabSize
+        self.indentSize = indentSize
+        self.usesTabsForIndentation = usesTabsForIndentation
+    }
+}
+
 @dynamicMemberLookup
 public final class Filespace {
     public let fileURL: URL
     public private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
-    public var suggestions: [CodeSuggestion] = [] {
+    public var codeMetadata: FilespaceCodeMetadata = .init()
+    public private(set) var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }
     }
 
-    public var suggestionIndex: Int = 0
+    public private(set) var suggestionIndex: Int = 0
 
     public var presentingSuggestion: CodeSuggestion? {
         guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
@@ -45,7 +63,7 @@ public final class Filespace {
     public var isExpired: Bool {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 3
     }
-    
+
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
     var additionalProperties = FilespacePropertyValues()
     let fileSaveWatcher: FileSaveWatcher
@@ -68,7 +86,7 @@ public final class Filespace {
             onSave(self)
         }
     }
-    
+
     public subscript<K>(
         dynamicMember dynamicMember: WritableKeyPath<FilespacePropertyValues, K>
     ) -> K {
@@ -76,6 +94,7 @@ public final class Filespace {
         set { additionalProperties[keyPath: dynamicMember] = newValue }
     }
 
+    @WorkspaceActor
     public func reset() {
         suggestions = []
         suggestionIndex = 0
@@ -83,6 +102,28 @@ public final class Filespace {
 
     public func refreshUpdateTime() {
         lastSuggestionUpdateTime = Environment.now()
+    }
+
+    @WorkspaceActor
+    public func setSuggestions(_ suggestions: [CodeSuggestion]) {
+        self.suggestions = suggestions
+        suggestionIndex = 0
+    }
+
+    @WorkspaceActor
+    public func nextSuggestion() {
+        suggestionIndex += 1
+        if suggestionIndex >= suggestions.endIndex {
+            suggestionIndex = 0
+        }
+    }
+
+    @WorkspaceActor
+    public func previousSuggestion() {
+        suggestionIndex -= 1
+        if suggestionIndex < 0 {
+            suggestionIndex = suggestions.endIndex - 1
+        }
     }
 }
 
