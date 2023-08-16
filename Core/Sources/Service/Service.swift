@@ -1,4 +1,5 @@
 import Foundation
+import KeyBindingManager
 import Workspace
 
 @globalActor public enum ServiceActor {
@@ -18,15 +19,32 @@ public final class Service {
         }
         return it
     }()
+
     @MainActor
     public let guiController = GraphicalUserInterfaceController()
-    @WorkspaceActor
     public let realtimeSuggestionController = RealtimeSuggestionController()
     public let scheduledCleaner: ScheduledCleaner
+    let keyBindingManager: KeyBindingManager
 
     private init() {
         scheduledCleaner = .init(workspacePool: workspacePool, guiController: guiController)
+        keyBindingManager = .init(
+            workspacePool: workspacePool,
+            acceptSuggestion: {
+                Task {
+                    await PseudoCommandHandler().acceptSuggestion()
+                }
+            }
+        )
         DependencyUpdater().update()
+    }
+    
+    @MainActor
+    public func start() {
+        scheduledCleaner.start()
+        realtimeSuggestionController.start()
+        guiController.start()
+        keyBindingManager.start()
     }
 }
 

@@ -30,6 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
         _ = XcodeInspector.shared
+        service.start()
         AXIsProcessTrustedWithOptions([
             kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
         ] as CFDictionary)

@@ -266,7 +266,9 @@ public final class GraphicalUserInterfaceController {
                 await commandHandler.handleCustomCommand(command)
             }
         }
-
+    }
+    
+    func start() {
         store.send(.start)
     }
 
