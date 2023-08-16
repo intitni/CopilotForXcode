@@ -71,13 +71,13 @@ let package = Package(
                 "SuggestionService",
                 "GitHubCopilotService",
                 "XPCShared",
-                "CGEventObserver",
                 "DisplayLink",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
+                .product(name: "CGEventObserver", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
@@ -91,7 +91,7 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
             ].pro([
-                "ProChatTabs",
+                "ProService",
             ])
         ),
         .testTarget(
@@ -241,12 +241,6 @@ let package = Package(
 
         // MARK: - Helpers
 
-        .target(
-            name: "CGEventObserver",
-            dependencies: [
-                .product(name: "Logger", package: "Tool"),
-            ]
-        ),
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
         .target(name: "DisplayLink"),

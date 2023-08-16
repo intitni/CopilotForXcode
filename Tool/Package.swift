@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
         .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
+        .library(name: "CGEventObserver", targets: ["CGEventObserver"]),
         .library(name: "Workspace", targets: ["Workspace"]),
         .library(
             name: "AppMonitoring",
@@ -173,6 +174,13 @@ let package = Package(
                 "Environment",
                 "Logger",
                 "Preferences",
+            ]
+        ),
+
+        .target(
+            name: "CGEventObserver",
+            dependencies: [
+                "Logger",
             ]
         ),
 
