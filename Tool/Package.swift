@@ -20,6 +20,8 @@ let package = Package(
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
+        .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
+        .library(name: "Workspace", targets: ["Workspace"]),
         .library(
             name: "AppMonitoring",
             targets: [
@@ -142,7 +144,9 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
-        
+
+        .target(name: "UserDefaultsObserver"),
+
         .target(
             name: "SharedUIComponents",
             dependencies: [
@@ -160,6 +164,17 @@ let package = Package(
         ]),
 
         .testTarget(name: "ASTParserTests", dependencies: ["ASTParser"]),
+
+        .target(
+            name: "Workspace",
+            dependencies: [
+                "UserDefaultsObserver",
+                "SuggestionModel",
+                "Environment",
+                "Logger",
+                "Preferences",
+            ]
+        ),
 
         // MARK: - Services
 

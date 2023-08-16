@@ -9,9 +9,9 @@ import SuggestionInjector
 import SuggestionModel
 import SuggestionWidget
 import UserNotifications
+import Workspace
 import XPCShared
 
-@ServiceActor
 struct WindowBaseCommandHandler: SuggestionCommandHandler {
     nonisolated init() {}
 
@@ -31,18 +31,19 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    @WorkspaceActor
     private func _presentSuggestions(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer {
             presenter.markAsProcessing(false)
         }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
         try Task.checkCancellation()
 
-        let snapshot = Filespace.Snapshot(
+        let snapshot = FilespaceSuggestionSnapshot(
             linesHash: editor.lines.hashValue,
             cursorPosition: editor.cursorPosition
         )
@@ -75,12 +76,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    @WorkspaceActor
     private func _presentNextSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectNextSuggestion(forFileAt: fileURL)
 
         if filespace.presentingSuggestion != nil {
@@ -101,12 +103,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    @WorkspaceActor
     private func _presentPreviousSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, filespace) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectPreviousSuggestion(forFileAt: fileURL)
 
         if filespace.presentingSuggestion != nil {
@@ -127,12 +130,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    @WorkspaceActor
     private func _rejectSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
 
-        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+        let dataSource = Service.shared.guiController.widgetDataSource
 
         if await dataSource.promptToCodes[fileURL]?.promptToCodeService != nil {
             await dataSource.removePromptToCode(for: fileURL)
@@ -140,24 +144,27 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             return
         }
 
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
         presenter.discardSuggestion(fileURL: fileURL)
     }
 
+    @WorkspaceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace.fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
         let injector = SuggestionInjector()
         var lines = editor.lines
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+        let dataSource = Service.shared.guiController.widgetDataSource
 
         if let service = await dataSource.promptToCodes[fileURL]?.promptToCodeService {
             let suggestion = CodeSuggestion(
@@ -221,14 +228,15 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    @WorkspaceActor
     func prepareCache(editor: EditorContent) async throws -> UpdatedContent? {
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (_, filespace) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        filespace.uti = editor.uti
-        filespace.tabSize = editor.tabSize
-        filespace.indentSize = editor.indentSize
-        filespace.usesTabsForIndentation = editor.usesTabsForIndentation
+        let (_, filespace) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+        filespace.codeMetadata.uti = editor.uti
+        filespace.codeMetadata.tabSize = editor.tabSize
+        filespace.codeMetadata.indentSize = editor.indentSize
+        filespace.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         return nil
     }
 
@@ -238,7 +246,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
         Task { @MainActor in
-            let viewStore = GraphicalUserInterfaceController.shared.viewStore
+            let viewStore = Service.shared.guiController.viewStore
             viewStore.send(.createChatGPTChatTabIfNeeded)
             viewStore.send(.openChatPanel(forceDetach: false))
         }
@@ -288,7 +296,7 @@ extension WindowBaseCommandHandler {
         switch command.feature {
         case .chatWithSelection, .customChat:
             Task { @MainActor in
-                GraphicalUserInterfaceController.shared.viewStore
+                Service.shared.guiController.viewStore
                     .send(.sendCustomCommandToActiveChat(command))
             }
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
@@ -315,6 +323,7 @@ extension WindowBaseCommandHandler {
         }
     }
 
+    @WorkspaceActor
     func presentPromptToCode(
         editor: EditorContent,
         extraSystemPrompt: String?,
@@ -326,9 +335,9 @@ extension WindowBaseCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
-        guard workspace.isSuggestionFeatureEnabled else {
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+        guard workspace.suggestionPlugin?.isSuggestionFeatureEnabled ?? false else {
             presenter.presentErrorMessage("Prompt to code is disabled for this project")
             return
         }
@@ -369,7 +378,7 @@ extension WindowBaseCommandHandler {
             )
         }() as (String, CursorRange)
 
-        let dataSource = GraphicalUserInterfaceController.shared.widgetDataSource
+        let dataSource = Service.shared.guiController.widgetDataSource
 
         let promptToCode = await dataSource.createPromptToCode(
             for: fileURL,

@@ -2,10 +2,10 @@ import CodeiumService
 import GitHubCopilotService
 import Logger
 
-public struct DependencyUpdater {
-    public init() {}
+struct DependencyUpdater {
+    init() {}
 
-    public func update() {
+    func update() {
         Task {
             await withTaskGroup(of: Void.self) { taskGroup in
                 let gitHubCopilot = GitHubCopilotInstallationManager()
