@@ -16,7 +16,7 @@ struct WidgetView: View {
     var body: some View {
         WithViewStore(store, observe: { $0.isProcessing }) { viewStore in
             Circle()
-                .fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
+                .fill(isHovering ? .white.opacity(0.5) : .white.opacity(0.15))
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         store.send(.widgetClicked)
@@ -34,6 +34,11 @@ struct WidgetView: View {
                     if !hideCircularWidget { return 1 }
                     return viewStore.state ? 1 : 0
                 }())
+                .animation(
+                    featureFlag: \.animationCCrashSuggestion,
+                    .easeInOut(duration: 0.2),
+                    value: viewStore.state
+                )
         }
     }
 
