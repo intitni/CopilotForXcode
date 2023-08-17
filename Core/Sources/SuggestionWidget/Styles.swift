@@ -8,7 +8,7 @@ enum Style {
     static let panelWidth: Double = 454
     static let inlineSuggestionMinWidth: Double = 540
     static let inlineSuggestionMaxHeight: Double = 400
-    static let widgetHeight: Double = 24
+    static let widgetHeight: Double = 20
     static var widgetWidth: Double { widgetHeight }
     static let widgetPadding: Double = 4
 }

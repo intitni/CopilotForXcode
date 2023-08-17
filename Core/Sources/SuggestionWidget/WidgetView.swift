@@ -10,23 +10,36 @@ struct WidgetView: View {
     @State var isHovering: Bool = false
     var onOpenChatClicked: () -> Void = {}
     var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
+    
+    @AppStorage(\.hideCircularWidget) var hideCircularWidget
 
     var body: some View {
-        Circle()
-            .fill(isHovering ? .white.opacity(0.8) : .white.opacity(0.3))
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    store.send(.widgetClicked)
+        WithViewStore(store, observe: { $0.isProcessing }) { viewStore in
+            Circle()
+                .fill(isHovering ? .white.opacity(0.5) : .white.opacity(0.15))
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        store.send(.widgetClicked)
+                    }
                 }
-            }
-            .overlay { overlayCircle }
-            .onHover { yes in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isHovering = yes
+                .overlay { overlayCircle }
+                .onHover { yes in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHovering = yes
+                    }
+                }.contextMenu {
+                    WidgetContextMenu(store: store)
                 }
-            }.contextMenu {
-                WidgetContextMenu(store: store)
-            }
+                .opacity({
+                    if !hideCircularWidget { return 1 }
+                    return viewStore.state ? 1 : 0
+                }())
+                .animation(
+                    featureFlag: \.animationCCrashSuggestion,
+                    .easeInOut(duration: 0.2),
+                    value: viewStore.state
+                )
+        }
     }
 
     struct OverlayCircleState: Equatable {
