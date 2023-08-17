@@ -102,21 +102,21 @@ enum UpdateLocationStrategy {
                 mainScreen.frame.height - editorFrame.minY - Style.widgetHeight - Style
                     .widgetPadding
             )
-            
+
             var proposedAnchorFrameOnTheRightSide = CGRect(
-                x: editorFrame.maxX,
+                x: editorFrame.maxX - Style.widgetPadding,
                 y: y,
                 width: 0,
                 height: 0
             )
-            
+
             let widgetFrameOnTheRightSide = CGRect(
                 x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
                 y: y,
                 width: Style.widgetWidth,
                 height: Style.widgetHeight
             )
-            
+
             if !hideCircularWidget {
                 proposedAnchorFrameOnTheRightSide = widgetFrameOnTheRightSide
             }
@@ -158,23 +158,23 @@ enum UpdateLocationStrategy {
                 )
             } else {
                 var proposedAnchorFrameOnTheLeftSide = CGRect(
-                    x: editorFrame.minX,
+                    x: editorFrame.minX + Style.widgetPadding,
                     y: proposedAnchorFrameOnTheRightSide.origin.y,
                     width: 0,
                     height: 0
                 )
-                
+
                 let widgetFrameOnTheLeftSide = CGRect(
                     x: editorFrame.minX + Style.widgetPadding,
                     y: proposedAnchorFrameOnTheRightSide.origin.y,
                     width: Style.widgetWidth,
                     height: Style.widgetHeight
                 )
-            
+
                 if !hideCircularWidget {
                     proposedAnchorFrameOnTheLeftSide = widgetFrameOnTheLeftSide
                 }
-                
+
                 let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
                     .widgetPadding * 2 - Style.panelWidth
                 let putAnchorToTheLeft = {
