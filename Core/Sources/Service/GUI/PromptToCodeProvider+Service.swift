@@ -55,11 +55,14 @@ extension PromptToCodeProvider {
             service.stopResponding()
         }
 
-        onAcceptSuggestionTapped = {
-            Task { 
+        onAcceptSuggestionTapped = { [weak self] in
+            Task { [weak self] in
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
-                if let app = ActiveApplicationMonitor.shared.previousApp, app.isXcode {
+                if let app = ActiveApplicationMonitor.shared.previousApp,
+                    app.isXcode,
+                   !(self?.isContinuous ?? false)
+                {
                     try await Task.sleep(nanoseconds: 200_000_000)
                     app.activate()
                 }
