@@ -1,6 +1,10 @@
 import Preferences
 import SwiftUI
 
+#if canImport(ProHostApp)
+import ProHostApp
+#endif
+
 struct SuggestionSettingsView: View {
     final class Settings: ObservableObject {
         @AppStorage(\.realtimeSuggestionToggle)
@@ -21,6 +25,8 @@ struct SuggestionSettingsView: View {
         var suggestionFeatureProvider
         @AppStorage(\.suggestionDisplayCompactMode)
         var suggestionDisplayCompactMode
+        @AppStorage(\.acceptSuggestionWithTab)
+        var acceptSuggestionWithTab
         init() {}
     }
 
@@ -58,8 +64,16 @@ struct SuggestionSettingsView: View {
                 }
 
                 Toggle(isOn: $settings.realtimeSuggestionToggle) {
-                    Text("Real-time suggestion")
+                    Text("Real-time Suggestion")
                 }
+
+                #if canImport(ProHostApp)
+                WithFeatureEnabled(\.tabToAcceptSuggestion) {
+                    Toggle(isOn: $settings.acceptSuggestionWithTab) {
+                        Text("Accept Suggestion with Tab")
+                    }
+                }
+                #endif
 
                 HStack {
                     Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
@@ -74,7 +88,7 @@ struct SuggestionSettingsView: View {
                         isOpen: $isSuggestionFeatureEnabledListPickerOpen
                     )
                 }
-                
+
                 HStack {
                     Button("Disabled Language List") {
                         isSuggestionFeatureDisabledLanguageListViewOpen = true
@@ -110,7 +124,7 @@ struct SuggestionSettingsView: View {
                 Toggle(isOn: $settings.suggestionDisplayCompactMode) {
                     Text("Hide Buttons")
                 }
-                
+
                 Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
                     Text("Hide Common Preceding Spaces")
                 }

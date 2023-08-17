@@ -50,6 +50,8 @@ public final class ActiveApplicationMonitor {
         .init { continuation in
             let id = UUID()
             Task { @MainActor in
+                // not sure why,
+                // but we need to wrap the addContinuation in this task to make it not crash
                 continuation.onTermination = { _ in
                     self.removeContinuation(id: id)
                 }
