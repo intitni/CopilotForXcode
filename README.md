@@ -310,13 +310,15 @@ These features are included in another repo, and are not open sourced.
 
 The currently available Plus features include:
 
-- Browser tap in chat panel.
+- Tab to accept suggestions.
+- Persisted chat panel.
+- Browser tab in chat panel.
 - Unlimited custom commands.
 
 Since the app needs to manage license keys, it will send network request to `https://copilotforxcode-license.intii.com`,
 - when you activate the license key
 - when you deactivate the license key
-- when you opened the host app or the service app if a license key is available
+- when you open the host app or the service app if a license key is available
 - every 24 hours if a license key is available
 
 The request contains only the license key, the email address (only on activation), and an instance id. You are free to MITM the request to see what data is sent.
