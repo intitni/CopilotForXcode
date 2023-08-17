@@ -12,14 +12,8 @@ import QuartzCore
 import Workspace
 import XcodeInspector
 
-@WorkspaceActor
 public class RealtimeSuggestionController {
-    var eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [
-        .keyUp,
-        .keyDown,
-        .rightMouseDown,
-        .leftMouseDown,
-    ])
+    let eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [.keyDown])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
     private var windowChangeObservationTask: Task<Void, Error>?
@@ -28,34 +22,34 @@ public class RealtimeSuggestionController {
     private var focusedUIElement: AXUIElement?
     private var sourceEditor: SourceEditor?
 
-    init() {
+    init() {}
+    
+    func start() {
         Task { [weak self] in
-            if let app = ActiveApplicationMonitor.activeXcode {
+            if let app = ActiveApplicationMonitor.shared.activeXcode {
                 self?.handleXcodeChanged(app)
-                self?.startHIDObservation(by: 1)
+                self?.startHIDObservation()
             }
-            var previousApp = ActiveApplicationMonitor.activeXcode
-            for await app in ActiveApplicationMonitor.createStream() {
+            var previousApp = ActiveApplicationMonitor.shared.activeXcode
+            for await app in ActiveApplicationMonitor.shared.createStream() {
                 guard let self else { return }
                 try Task.checkCancellation()
                 defer { previousApp = app }
 
-                if let app = ActiveApplicationMonitor.activeXcode, app != previousApp {
+                if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
                     self.handleXcodeChanged(app)
                 }
 
-                if ActiveApplicationMonitor.activeXcode != nil {
-                    startHIDObservation(by: 1)
+                if ActiveApplicationMonitor.shared.activeXcode != nil {
+                    startHIDObservation()
                 } else {
-                    stopHIDObservation(by: 1)
+                    stopHIDObservation()
                 }
             }
         }
     }
 
-    private func startHIDObservation(by listener: AnyHashable) {
-        Logger.service.info("Add auto trigger listener: \(listener).")
-
+    private func startHIDObservation() {
         if task == nil {
             task = Task { [weak self, eventObserver] in
                 for await event in eventObserver.createStream() {
@@ -67,8 +61,7 @@ public class RealtimeSuggestionController {
         eventObserver.activateIfPossible()
     }
 
-    private func stopHIDObservation(by listener: AnyHashable) {
-        Logger.service.info("Remove auto trigger listener: \(listener).")
+    private func stopHIDObservation() {
         task?.cancel()
         task = nil
         eventObserver.deactivate()
@@ -98,7 +91,7 @@ public class RealtimeSuggestionController {
     }
 
     private func handleFocusElementChange() {
-        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return }
+        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         guard let focusElement = application.focusedElement else { return }
         let focusElementType = focusElement.description
@@ -233,7 +226,7 @@ public class RealtimeSuggestionController {
     /// Looks like the Xcode will keep the panel around until content is changed,
     /// not sure how to observe that it's hidden.
     func isCompletionPanelPresenting() -> Bool {
-        guard let activeXcode = ActiveApplicationMonitor.activeXcode else { return false }
+        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return false }
         let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
         return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
     }
@@ -241,7 +234,7 @@ public class RealtimeSuggestionController {
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
               let (workspace, filespace) = try? await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+              .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
         workspace.suggestionPlugin?.notifyUpdateFile(filespace: filespace, content: editor.value)
     }

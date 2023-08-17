@@ -6,7 +6,6 @@ import Foundation
     public static let shared = TheActor()
 }
 
-@WorkspaceActor
 public class WorkspacePool {
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
@@ -37,7 +36,17 @@ public class WorkspacePool {
             removePlugin(id: id, from: workspace)
         }
     }
+    
+    public func fetchFilespaceIfExisted(fileURL: URL) -> Filespace? {
+        for workspace in workspaces.values {
+            if let filespace = workspace.filespaces[fileURL] {
+                return filespace
+            }
+        }
+        return nil
+    }
 
+    @WorkspaceActor
     public func fetchOrCreateWorkspaceAndFilespace(fileURL: URL) async throws
         -> (workspace: Workspace, filespace: Filespace)
     {

@@ -60,7 +60,7 @@ final class WidgetDataSource {
                     self?.removePromptToCode(for: url)
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
-                    if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                    if let app = ActiveApplicationMonitor.shared.previousApp, app.isXcode {
                         Task { @MainActor in
                             try await Task.sleep(nanoseconds: 200_000_000)
                             app.activate()
@@ -87,11 +87,11 @@ final class WidgetDataSource {
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider? {
-        for workspace in await Service.shared.workspacePool.workspaces.values {
-            if let filespace = await workspace.filespaces[url],
-               let suggestion = await filespace.presentingSuggestion
+        for workspace in Service.shared.workspacePool.workspaces.values {
+            if let filespace = workspace.filespaces[url],
+               let suggestion = filespace.presentingSuggestion
             {
-                return await .init(
+                return .init(
                     code: suggestion.text,
                     language: filespace.language,
                     startLineIndex: suggestion.position.line,
@@ -113,7 +113,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
-                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                            if let app = ActiveApplicationMonitor.shared.previousApp,
                                app.isXcode
                             {
                                 try await Task.sleep(nanoseconds: 200_000_000)
@@ -125,7 +125,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
-                            if let app = ActiveApplicationMonitor.previousActiveApplication,
+                            if let app = ActiveApplicationMonitor.shared.previousApp,
                                app.isXcode
                             {
                                 try await Task.sleep(nanoseconds: 200_000_000)

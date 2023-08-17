@@ -59,7 +59,7 @@ extension PromptToCodeProvider {
             Task { 
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
-                if let app = ActiveApplicationMonitor.previousActiveApplication, app.isXcode {
+                if let app = ActiveApplicationMonitor.shared.previousApp, app.isXcode {
                     try await Task.sleep(nanoseconds: 200_000_000)
                     app.activate()
                 }

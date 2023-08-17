@@ -149,7 +149,7 @@ public struct WidgetFeature: ReducerProtocol {
                 }
                 return .run { _ in
                     guard isDisplayingContent else { return }
-                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+                    if let app = activeApplicationMonitor.previousApp, app.isXcode {
                         try await Task.sleep(nanoseconds: 200_000_000)
                         app.activate()
                     }

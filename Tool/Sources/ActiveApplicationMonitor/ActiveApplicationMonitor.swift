@@ -1,11 +1,14 @@
 import AppKit
 
 public final class ActiveApplicationMonitor {
-    static let shared = ActiveApplicationMonitor()
-    var latestXcode: NSRunningApplication? = NSWorkspace.shared.runningApplications
+    public static let shared = ActiveApplicationMonitor()
+    public private(set) var latestXcode: NSRunningApplication? = NSWorkspace.shared
+        .runningApplications
         .first(where: \.isXcode)
-    var previousApp: NSRunningApplication?
-    var activeApplication = NSWorkspace.shared.runningApplications.first(where: \.isActive) {
+    public private(set) var previousApp: NSRunningApplication?
+    public private(set) var activeApplication = NSWorkspace.shared.runningApplications
+        .first(where: \.isActive)
+    {
         didSet {
             if activeApplication?.isXcode ?? false {
                 latestXcode = activeApplication
@@ -36,27 +39,25 @@ public final class ActiveApplicationMonitor {
         }
     }
 
-    public static var activeApplication: NSRunningApplication? { shared.activeApplication }
-    
-    public static var previousActiveApplication: NSRunningApplication? { shared.previousApp }
-
-    public static var activeXcode: NSRunningApplication? {
+    public var activeXcode: NSRunningApplication? {
         if activeApplication?.isXcode ?? false {
             return activeApplication
         }
         return nil
     }
 
-    public static var latestXcode: NSRunningApplication? { shared.latestXcode }
-
-    public static func createStream() -> AsyncStream<NSRunningApplication?> {
+    public func createStream() -> AsyncStream<NSRunningApplication?> {
         .init { continuation in
             let id = UUID()
-            ActiveApplicationMonitor.shared.addContinuation(continuation, id: id)
-            continuation.onTermination = { _ in
-                ActiveApplicationMonitor.shared.removeContinuation(id: id)
+            Task { @MainActor in
+                // not sure why,
+                // but we need to wrap the addContinuation in this task to make it not crash
+                continuation.onTermination = { _ in
+                    self.removeContinuation(id: id)
+                }
+                addContinuation(continuation, id: id)
+                continuation.yield(activeApplication)
             }
-            continuation.yield(activeApplication)
         }
     }
 

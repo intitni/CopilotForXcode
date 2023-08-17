@@ -9,7 +9,6 @@ public protocol WorkspacePropertyKey {
     static func createDefaultValue() -> Value
 }
 
-@WorkspaceActor
 public class WorkspacePropertyValues {
     var storage: [ObjectIdentifier: Any] = [:]
 
@@ -28,7 +27,6 @@ public class WorkspacePropertyValues {
     }
 }
 
-@WorkspaceActor
 open class WorkspacePlugin {
     public private(set) weak var workspace: Workspace?
     public var projectRootURL: URL { workspace?.projectRootURL ?? URL(fileURLWithPath: "/") }
@@ -43,7 +41,6 @@ open class WorkspacePlugin {
     open func didCloseFilespace(_: URL) {}
 }
 
-@WorkspaceActor
 @dynamicMemberLookup
 public final class Workspace {
     public struct UnsupportedFileError: Error, LocalizedError {
@@ -51,7 +48,7 @@ public final class Workspace {
         public var errorDescription: String? {
             "File type \(extensionName) unsupported."
         }
-        
+
         public init(extensionName: String) {
             self.extensionName = extensionName
         }
@@ -81,7 +78,7 @@ public final class Workspace {
         get { additionalProperties[keyPath: dynamicMember] }
         set { additionalProperties[keyPath: dynamicMember] = newValue }
     }
-    
+
     public func plugin<P: WorkspacePlugin>(for type: P.Type) -> P? {
         plugins[ObjectIdentifier(type)] as? P
     }
@@ -90,8 +87,10 @@ public final class Workspace {
         self.projectRootURL = projectRootURL
         openedFileRecoverableStorage = .init(projectRootURL: projectRootURL)
         let openedFiles = openedFileRecoverableStorage.openedFiles
-        for fileURL in openedFiles {
-            _ = createFilespaceIfNeeded(fileURL: fileURL)
+        Task { @WorkspaceActor in
+            for fileURL in openedFiles {
+                _ = createFilespaceIfNeeded(fileURL: fileURL)
+            }
         }
     }
 
@@ -99,6 +98,7 @@ public final class Workspace {
         lastSuggestionUpdateTime = Environment.now()
     }
 
+    @WorkspaceActor
     public func createFilespaceIfNeeded(fileURL: URL) -> Filespace {
         let existedFilespace = filespaces[fileURL]
         let filespace = existedFilespace ?? .init(
@@ -128,7 +128,8 @@ public final class Workspace {
         }
         return filespace
     }
-    
+
+    @WorkspaceActor
     public func closeFilespace(fileURL: URL) {
         filespaces[fileURL] = nil
     }

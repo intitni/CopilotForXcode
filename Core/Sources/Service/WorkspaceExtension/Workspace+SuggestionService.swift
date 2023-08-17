@@ -25,6 +25,7 @@ extension Workspace {
 }
 
 extension Workspace {
+    @WorkspaceActor
     @discardableResult
     func generateSuggestions(
         forFileAt fileURL: URL,
@@ -58,35 +59,31 @@ extension Workspace {
             usesTabsForIndentation: editor.usesTabsForIndentation,
             ignoreSpaceOnlySuggestions: true
         )
-
-        filespace.suggestions = completions
-        filespace.suggestionIndex = 0
+        
+        filespace.setSuggestions(completions)
 
         return completions
     }
 
+    @WorkspaceActor
     func selectNextSuggestion(forFileAt fileURL: URL) {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
         else { return }
-        filespace.suggestionIndex += 1
-        if filespace.suggestionIndex >= filespace.suggestions.endIndex {
-            filespace.suggestionIndex = 0
-        }
+        filespace.nextSuggestion()
     }
 
+    @WorkspaceActor
     func selectPreviousSuggestion(forFileAt fileURL: URL) {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
               filespace.suggestions.count > 1
         else { return }
-        filespace.suggestionIndex -= 1
-        if filespace.suggestionIndex < 0 {
-            filespace.suggestionIndex = filespace.suggestions.endIndex - 1
-        }
+        filespace.previousSuggestion()
     }
 
+    @WorkspaceActor
     func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
         refreshUpdateTime()
 
@@ -102,6 +99,7 @@ extension Workspace {
         filespaces[fileURL]?.reset()
     }
 
+    @WorkspaceActor
     func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CodeSuggestion? {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL],
