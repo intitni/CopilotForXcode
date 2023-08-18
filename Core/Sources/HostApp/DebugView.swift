@@ -12,6 +12,8 @@ final class DebugSettings: ObservableObject {
     var alwaysAcceptSuggestionWithAccessibilityAPI
     @AppStorage(\.enableXcodeInspectorDebugMenu) var enableXcodeInspectorDebugMenu
     @AppStorage(\.disableFunctionCalling) var disableFunctionCalling
+    @AppStorage(\.disableGitHubCopilotSettingsAutoRefreshOnAppear)
+    var disableGitHubCopilotSettingsAutoRefreshOnAppear
     init() {}
 }
 
@@ -48,6 +50,9 @@ struct DebugSettingsView: View {
                 Toggle(isOn: $settings.disableFunctionCalling) {
                     Text("Disable function calling for chat feature")
                 }
+                Toggle(isOn: $settings.disableGitHubCopilotSettingsAutoRefreshOnAppear) {
+                    Text("Disable GitHub Copilot settings auto refresh status on appear")
+                }
             }
             .padding()
         }
@@ -59,4 +64,5 @@ struct DebugSettingsView_Preview: PreviewProvider {
         DebugSettingsView()
     }
 }
+
 
