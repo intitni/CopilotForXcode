@@ -413,5 +413,9 @@ public extension UserDefaultPreferenceKeys {
     var disableFunctionCalling: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DisableFunctionCalling")
     }
+    
+    var disableGitHubCopilotSettingsAutoRefreshOnAppear: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-DisableGitHubCopilotSettingsAutoRefreshOnAppear")
+    }
 }
 

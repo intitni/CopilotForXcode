@@ -20,19 +20,19 @@ struct CopilotView: View {
         @AppStorage(\.gitHubCopilotUseStrictSSL) var gitHubCopilotUseStrictSSL
         @AppStorage(\.gitHubCopilotIgnoreTrailingNewLines)
         var gitHubCopilotIgnoreTrailingNewLines
+        @AppStorage(\.disableGitHubCopilotSettingsAutoRefreshOnAppear)
+        var disableGitHubCopilotSettingsAutoRefreshOnAppear
         init() {}
     }
 
     class ViewModel: ObservableObject {
         let installationManager = GitHubCopilotInstallationManager()
 
-        @Published var installationStatus: GitHubCopilotInstallationManager.InstallationStatus
+        @Published var installationStatus: GitHubCopilotInstallationManager.InstallationStatus?
         @Published var installationStep: GitHubCopilotInstallationManager.InstallationStep?
 
-        init() {
-            installationStatus = installationManager.checkInstallation()
-        }
-
+        init() {}
+        
         init(
             installationStatus: GitHubCopilotInstallationManager.InstallationStatus,
             installationStep: GitHubCopilotInstallationManager.InstallationStep?
@@ -172,6 +172,8 @@ struct CopilotView: View {
                 VStack(alignment: .leading) {
                     HStack {
                         switch viewModel.installationStatus {
+                        case .none:
+                            Text("Copilot.Vim Version: Loading..")
                         case .notInstalled:
                             Text("Copilot.Vim Version: Not Installed")
                             installButton
@@ -194,7 +196,10 @@ struct CopilotView: View {
                     Text("Status: \(status?.description ?? "Loading..")")
 
                     HStack(alignment: .center) {
-                        Button("Refresh") { checkStatus() }
+                        Button("Refresh") {
+                            viewModel.refreshInstallationStatus()
+                            checkStatus()
+                        }
                         if status == .notSignedIn {
                             Button("Sign In") { signIn() }
                                 .alert(isPresented: $isUserCodeCopiedAlertPresented) {
@@ -261,6 +266,8 @@ struct CopilotView: View {
             Spacer()
         }.onAppear {
             if isPreview { return }
+            if settings.disableGitHubCopilotSettingsAutoRefreshOnAppear { return }
+            viewModel.refreshInstallationStatus()
             checkStatus()
         }.onChange(of: settings.runNodeWith) { _ in
             Self.copilotAuthService = nil

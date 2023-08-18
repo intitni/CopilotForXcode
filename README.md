@@ -105,14 +105,14 @@ It looks like there is no way to add default key bindings to commands, but you c
 
 A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that should cause no conflict is
 
-| Command             | Key Binding |
-| ------------------- | ----------- |
-| Accept Suggestions  | `⌥}`        |
-| Reject Suggestion   | `⌥{`        |
-| Next Suggestion     | `⌥>`        |
-| Previous Suggestion | `⌥<`        |
-| Open Chat           | `⌥"`        |
-| Explain Selection   | `⌥\|`       |
+| Command             | Key Binding                                            |
+| ------------------- | ------------------------------------------------------ |
+| Accept Suggestions  | `⌥}` (Or accept with Tab if Plus license is available) |
+| Reject Suggestion   | `⌥{`                                                   |
+| Next Suggestion     | `⌥>`                                                   |
+| Previous Suggestion | `⌥<`                                                   |
+| Open Chat           | `⌥"`                                                   |
+| Explain Selection   | `⌥\|`                                                  |
 
 Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
@@ -316,6 +316,7 @@ The currently available Plus features include:
 - Unlimited custom commands.
 
 Since the app needs to manage license keys, it will send network request to `https://copilotforxcode-license.intii.com`,
+
 - when you activate the license key
 - when you deactivate the license key
 - when you open the host app or the service app if a license key is available
