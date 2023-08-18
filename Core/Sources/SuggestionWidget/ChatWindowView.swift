@@ -23,7 +23,7 @@ struct ChatWindowView: View {
                 OverallState(
                     isPanelDisplayed: $0.isPanelDisplayed,
                     colorScheme: $0.colorScheme,
-                    selectedTabId: $0.chatTapGroup.selectedTabId
+                    selectedTabId: $0.chatTabGroup.selectedTabId
                 )
             }
         ) { viewStore in
@@ -155,19 +155,19 @@ struct ChatTabBar: View {
     let store: StoreOf<ChatPanelFeature>
 
     struct TabBarState: Equatable {
-        var tabs: [BaseChatTab]
-        var tabInfo: [ChatTabInfo]
+        var tabInfo: IdentifiedArray<String, ChatTabInfo>
         var selectedTabId: String
     }
+
+    @Environment(\.chatTabPool) var chatTabPool
 
     var body: some View {
         WithViewStore(
             store,
             observe: { TabBarState(
-                tabs: $0.chatTapGroup.tabs,
-                tabInfo: $0.chatTapGroup.tabInfo,
-                selectedTabId: $0.chatTapGroup.selectedTabId
-                    ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
+                tabInfo: $0.chatTabGroup.tabInfo,
+                selectedTabId: $0.chatTabGroup.selectedTabId
+                    ?? $0.chatTabGroup.tabInfo.first?.id ?? ""
             ) }
         ) { viewStore in
             HStack(spacing: 0) {
@@ -182,10 +182,10 @@ struct ChatTabBar: View {
                                 )
                                 .id(info.id)
                                 .contextMenu {
-                                    if let tab = viewStore.state.tabs
-                                        .first(where: { $0.id == info.id })
-                                    {
+                                    if let tab = chatTabPool.getTab(of: info.id) {
                                         tab.menu
+                                    } else {
+                                        EmptyView()
                                     }
                                 }
                             }
@@ -217,7 +217,7 @@ struct ChatTabBar: View {
     @ViewBuilder
     var createButton: some View {
         Menu {
-            WithViewStore(store, observe: { $0.chatTapGroup.tabCollection }) { viewStore in
+            WithViewStore(store, observe: { $0.chatTabGroup.tabCollection }) { viewStore in
                 ForEach(0..<viewStore.state.endIndex, id: \.self) { index in
                     switch viewStore.state[index] {
                     case let .kind(kind):
@@ -225,7 +225,7 @@ struct ChatTabBar: View {
                             store.send(.createNewTapButtonClicked(kind: kind))
                         }) {
                             Text(kind.title)
-                        }.disabled(!kind.builder.buildable)
+                        }.disabled(kind.builder is DisabledChatTabBuilder)
                     case let .folder(title, list):
                         Menu {
                             ForEach(0..<list.endIndex, id: \.self) { index in
@@ -310,35 +310,38 @@ struct ChatTabContainer: View {
     let store: StoreOf<ChatPanelFeature>
 
     struct TabContainerState: Equatable {
-        var tabs: [BaseChatTab]
+        var tabInfo: IdentifiedArray<String, ChatTabInfo>
         var selectedTabId: String?
     }
+
+    @Environment(\.chatTabPool) var chatTabPool
 
     var body: some View {
         WithViewStore(
             store,
             observe: {
                 TabContainerState(
-                    tabs: $0.chatTapGroup.tabs,
-                    selectedTabId: $0.chatTapGroup.selectedTabId
-                        ?? $0.chatTapGroup.tabInfo.first?.id ?? ""
+                    tabInfo: $0.chatTabGroup.tabInfo,
+                    selectedTabId: $0.chatTabGroup.selectedTabId
+                        ?? $0.chatTabGroup.tabInfo.first?.id ?? ""
                 )
             }
         ) { viewStore in
             ZStack {
-                if viewStore.state.tabs.isEmpty {
+                if viewStore.state.tabInfo.isEmpty {
                     Text("Empty")
                 } else {
-                    ForEach(viewStore.state.tabs, id: \.id) { tab in
-                        tab.body
-                            .opacity(tab.id == viewStore.state.selectedTabId ? 1 : 0)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ForEach(viewStore.state.tabInfo) { tabInfo in
+                        if let tab = chatTabPool.getTab(of: tabInfo.id) {
+                            tab.body
+                                .opacity(tab.id == viewStore.state.selectedTabId ? 1 : 0)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            EmptyView()
+                        }
                     }
                 }
             }
-        }
-        .onPreferenceChange(ChatTabInfoPreferenceKey.self) { items in
-            store.send(.updateChatTabInfo(items))
         }
     }
 }
@@ -361,10 +364,9 @@ class FakeChatTab: ChatTab {
 
     struct Builder: ChatTabBuilder {
         var title: String = "Title"
-        var buildable: Bool { true }
 
-        func build() -> any ChatTab {
-            return FakeChatTab(id: "id", title: "Title")
+        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
+            return FakeChatTab(store: store)
         }
     }
 
@@ -386,25 +388,51 @@ class FakeChatTab: ChatTab {
         )
     }
 
-    override init(id: String, title: String) {
-        super.init(id: id, title: title)
+    func restorableState() async -> Data {
+        return Data()
     }
+
+    static func restore(
+        from data: Data,
+        externalDependency: ()
+    ) async throws -> any ChatTabBuilder {
+        return Builder()
+    }
+
+    convenience init(id: String, title: String) {
+        self.init(store: .init(
+            initialState: .init(id: id, title: title),
+            reducer: ChatTabItem()
+        ))
+    }
+
+    func start() {}
 }
 
 struct ChatWindowView_Previews: PreviewProvider {
+    static let pool = ChatTabPool([
+        "1": FakeChatTab(id: "1", title: "Hello I am a chatbot"),
+        "2": EmptyChatTab(id: "2"),
+        "3": EmptyChatTab(id: "3"),
+        "4": EmptyChatTab(id: "4"),
+        "5": EmptyChatTab(id: "5"),
+        "6": EmptyChatTab(id: "6"),
+        "7": EmptyChatTab(id: "7"),
+    ])
+
     static var previews: some View {
         ChatWindowView(
             store: .init(
                 initialState: .init(
-                    chatTapGroup: .init(
-                        tabs: [
-                            FakeChatTab(id: "1", title: "Hello I am a chatbot"),
-                            EmptyChatTab(id: "2"),
-                            EmptyChatTab(id: "3"),
-                            EmptyChatTab(id: "4"),
-                            EmptyChatTab(id: "5"),
-                            EmptyChatTab(id: "6"),
-                            EmptyChatTab(id: "7"),
+                    chatTabGroup: .init(
+                        tabInfo: [
+                            .init(id: "1", title: "Fake"),
+                            .init(id: "2", title: "Empty-2"),
+                            .init(id: "3", title: "Empty-3"),
+                            .init(id: "4", title: "Empty-4"),
+                            .init(id: "5", title: "Empty-5"),
+                            .init(id: "6", title: "Empty-6"),
+                            .init(id: "7", title: "Empty-7"),
                         ],
                         selectedTabId: "1"
                     ),
@@ -415,6 +443,7 @@ struct ChatWindowView_Previews: PreviewProvider {
         )
         .xcodeStyleFrame()
         .padding()
+        .environment(\.chatTabPool, pool)
     }
 }
 

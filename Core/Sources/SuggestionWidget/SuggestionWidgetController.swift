@@ -2,6 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
 import AXNotificationStream
+import ChatTab
 import Combine
 import ComposableArchitecture
 import Environment
@@ -166,6 +167,7 @@ public final class SuggestionWidgetController: NSObject {
                     action: WidgetFeature.Action.chatPanel
                 )
             )
+            .environment(\.chatTabPool, chatTabPool)
         )
         it.setIsVisible(true)
         it.delegate = self
@@ -174,16 +176,19 @@ public final class SuggestionWidgetController: NSObject {
 
     let store: StoreOf<WidgetFeature>
     let viewStore: ViewStoreOf<WidgetFeature>
+    let chatTabPool: ChatTabPool
     private var cancellable = Set<AnyCancellable>()
 
     public let dependency: SuggestionWidgetControllerDependency
 
     public init(
         store: StoreOf<WidgetFeature>,
+        chatTabPool: ChatTabPool,
         dependency: SuggestionWidgetControllerDependency
     ) {
         self.dependency = dependency
         self.store = store
+        self.chatTabPool = chatTabPool
         viewStore = .init(store, observe: { $0 })
 
         super.init()

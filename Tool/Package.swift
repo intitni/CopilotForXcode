@@ -20,6 +20,9 @@ let package = Package(
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
+        .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
+        .library(name: "CGEventObserver", targets: ["CGEventObserver"]),
+        .library(name: "Workspace", targets: ["Workspace"]),
         .library(
             name: "AppMonitoring",
             targets: [
@@ -39,8 +42,7 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
         .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
-        .package(url: "https://github.com/raspu/Highlightr", from: "2.1.0"),
-        .package(url: "https://github.com/JohnSundell/Splash", branch: "master"),
+        .package(url: "https://github.com/intitni/Highlightr", branch: "bump-highlight-js-version"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
@@ -143,12 +145,13 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
-        
+
+        .target(name: "UserDefaultsObserver"),
+
         .target(
             name: "SharedUIComponents",
             dependencies: [
                 "Highlightr",
-                "Splash",
                 "Preferences",
             ]
         ),
@@ -162,6 +165,24 @@ let package = Package(
         ]),
 
         .testTarget(name: "ASTParserTests", dependencies: ["ASTParser"]),
+
+        .target(
+            name: "Workspace",
+            dependencies: [
+                "UserDefaultsObserver",
+                "SuggestionModel",
+                "Environment",
+                "Logger",
+                "Preferences",
+            ]
+        ),
+
+        .target(
+            name: "CGEventObserver",
+            dependencies: [
+                "Logger",
+            ]
+        ),
 
         // MARK: - Services
 

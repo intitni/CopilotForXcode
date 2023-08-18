@@ -103,23 +103,23 @@ enum UpdateLocationStrategy {
                     .widgetPadding
             )
 
-            let proposedAnchorFrameOnTheRightSide = {
-                if hideCircularWidget {
-                    return CGRect(
-                        x: editorFrame.maxX,
-                        y: y,
-                        width: 0,
-                        height: 0
-                    )
-                } else {
-                    return CGRect(
-                        x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
-                        y: y,
-                        width: Style.widgetWidth,
-                        height: Style.widgetHeight
-                    )
-                }
-            }()
+            var proposedAnchorFrameOnTheRightSide = CGRect(
+                x: editorFrame.maxX - Style.widgetPadding,
+                y: y,
+                width: 0,
+                height: 0
+            )
+
+            let widgetFrameOnTheRightSide = CGRect(
+                x: editorFrame.maxX - Style.widgetPadding - Style.widgetWidth,
+                y: y,
+                width: Style.widgetWidth,
+                height: Style.widgetHeight
+            )
+
+            if !hideCircularWidget {
+                proposedAnchorFrameOnTheRightSide = widgetFrameOnTheRightSide
+            }
 
             let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
                 .widgetPadding * 2
@@ -148,7 +148,7 @@ enum UpdateLocationStrategy {
                 )
 
                 return .init(
-                    widgetFrame: anchorFrame,
+                    widgetFrame: widgetFrameOnTheRightSide,
                     tabFrame: tabFrame,
                     defaultPanelLocation: .init(
                         frame: panelFrame,
@@ -157,23 +157,24 @@ enum UpdateLocationStrategy {
                     suggestionPanelLocation: nil
                 )
             } else {
-                let proposedAnchorFrameOnTheLeftSide = {
-                    if hideCircularWidget {
-                        return CGRect(
-                            x: editorFrame.minX,
-                            y: proposedAnchorFrameOnTheRightSide.origin.y,
-                            width: 0,
-                            height: 0
-                        )
-                    } else {
-                        return CGRect(
-                            x: editorFrame.minX + Style.widgetPadding,
-                            y: proposedAnchorFrameOnTheRightSide.origin.y,
-                            width: Style.widgetWidth,
-                            height: Style.widgetHeight
-                        )
-                    }
-                }()
+                var proposedAnchorFrameOnTheLeftSide = CGRect(
+                    x: editorFrame.minX + Style.widgetPadding,
+                    y: proposedAnchorFrameOnTheRightSide.origin.y,
+                    width: 0,
+                    height: 0
+                )
+
+                let widgetFrameOnTheLeftSide = CGRect(
+                    x: editorFrame.minX + Style.widgetPadding,
+                    y: proposedAnchorFrameOnTheRightSide.origin.y,
+                    width: Style.widgetWidth,
+                    height: Style.widgetHeight
+                )
+
+                if !hideCircularWidget {
+                    proposedAnchorFrameOnTheLeftSide = widgetFrameOnTheLeftSide
+                }
+
                 let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
                     .widgetPadding * 2 - Style.panelWidth
                 let putAnchorToTheLeft = {
@@ -204,7 +205,7 @@ enum UpdateLocationStrategy {
                         height: Style.widgetHeight
                     )
                     return .init(
-                        widgetFrame: anchorFrame,
+                        widgetFrame: widgetFrameOnTheLeftSide,
                         tabFrame: tabFrame,
                         defaultPanelLocation: .init(
                             frame: panelFrame,
@@ -229,7 +230,7 @@ enum UpdateLocationStrategy {
                         height: Style.widgetHeight
                     )
                     return .init(
-                        widgetFrame: anchorFrame,
+                        widgetFrame: widgetFrameOnTheRightSide,
                         tabFrame: tabFrame,
                         defaultPanelLocation: .init(
                             frame: panelFrame,

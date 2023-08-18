@@ -12,7 +12,7 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
         var range: CursorRange
 
         var botReadableContent: String {
-            "User Editing Document Context is updated to display code at \(range)."
+            "Editing Document Context is updated to display code at \(range)."
         }
     }
     

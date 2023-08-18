@@ -89,9 +89,15 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         let start = """
         ## File and Code Scope
 
-        You can use the following context to answer user's questions about the editing document or code. The context shows only a part of the code in the editing document, and will change during the conversation, so it may not match our conversation.
+        You can use the following context to answer my questions about the editing document or code. The context shows only a part of the code in the editing document, and will change during the conversation, so it may not match our conversation.
 
-        User Editing Document Context: ###
+        \(
+            context.focusedContext == nil
+                ? ""
+                : "When you don't known what I am asking, I am probably referring to the code."
+        )
+
+        Editing Document Context: ###
         """
         let end = "###"
         let relativePath = "Document Relative Path: \(context.relativePath)"
@@ -110,10 +116,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
 
             let code = """
-            Focused Code (start from line \(
-                focusedContext.codeRange.start
-                    .line
-            )):
+            Focused Code (start from line \(focusedContext.codeRange.start.line + 1)):
             ```\(context.language.rawValue)
             \(focusedContext.code)
             ```
@@ -282,7 +285,7 @@ struct ActiveDocumentContext {
         selectionRange = info.editorContent?.selections.first ?? .zero
         lineAnnotations = info.editorContent?.lineAnnotations ?? []
         imports = []
-        
+
         if changed {
             moveToFocusedCode()
         }

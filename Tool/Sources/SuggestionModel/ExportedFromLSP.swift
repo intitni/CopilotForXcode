@@ -7,7 +7,7 @@ public extension CursorPosition {
     static var outOfScope: CursorPosition { .init(line: -1, character: -1) }
     
     var readableText: String {
-        return "[\(line), \(character)]"
+        return "[\(line + 1), \(character)]"
     }
 }
 

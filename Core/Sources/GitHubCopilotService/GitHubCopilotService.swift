@@ -178,13 +178,15 @@ public class GitHubCopilotBaseService {
         executableURL: URL,
         supportURL: URL
     ) {
-        let supportURL = FileManager.default.urls(
+        guard let supportURL = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first!.appendingPathComponent(
+        ).first?.appendingPathComponent(
             Bundle.main
                 .object(forInfoDictionaryKey: "APPLICATION_SUPPORT_FOLDER") as! String
-        )
+        ) else {
+            throw CancellationError()
+        }
 
         if !FileManager.default.fileExists(atPath: supportURL.path) {
             try? FileManager.default

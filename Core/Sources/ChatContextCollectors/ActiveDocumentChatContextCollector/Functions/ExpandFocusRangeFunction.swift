@@ -10,7 +10,7 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
         var range: CursorRange
 
         var botReadableContent: String {
-            "User Editing Document Context is updated to display code at \(range)."
+            "Editing Document Context is updated to display code at \(range)."
         }
     }
     
@@ -25,7 +25,7 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
     }
 
     var description: String {
-        "Call when User Editing Document Context provides too little context to answer a question."
+        "Call when Editing Document Context provides too little context to answer a question."
     }
 
     var argumentSchema: JSONSchemaValue { [

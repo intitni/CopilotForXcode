@@ -18,7 +18,7 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    let scheduledCleaner = ScheduledCleaner()
+    let service = Service.shared
     var statusBarItem: NSStatusItem!
     var xpcListener: (NSXPCListener, ServiceDelegate)?
     let updateChecker =
@@ -29,9 +29,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
-        _ = GraphicalUserInterfaceController.shared
-        _ = RealtimeSuggestionController.shared
         _ = XcodeInspector.shared
+        service.start()
         AXIsProcessTrustedWithOptions([
             kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
         ] as CFDictionary)
@@ -41,7 +40,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
-        DependencyUpdater().update()
 
         Task {
             do {
@@ -54,7 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func quit() {
         Task { @MainActor in
-            await scheduledCleaner.closeAllChildProcesses()
+            await service.scheduledCleaner.closeAllChildProcesses()
             exit(0)
         }
     }
@@ -71,7 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func openGlobalChat() {
         Task { @MainActor in
-            let serviceGUI = GraphicalUserInterfaceController.shared
+            let serviceGUI = Service.shared.guiController
             serviceGUI.openGlobalChat()
         }
     }

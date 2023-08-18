@@ -23,6 +23,7 @@ public struct WidgetFeature: ReducerProtocol {
     }
 
     public struct State: Equatable {
+        var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
 
         // MARK: Panels
@@ -63,7 +64,7 @@ public struct WidgetFeature: ReducerProtocol {
                         }
                         return false
                     }(),
-                    isContentEmpty: chatPanelState.chatTapGroup.tabs.isEmpty
+                    isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
                         && panelState.sharedPanelState.content == nil,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
                     isChatOpen: chatPanelState.isPanelDisplayed,
@@ -107,6 +108,7 @@ public struct WidgetFeature: ReducerProtocol {
 
         case updateWindowLocation(animated: Bool)
         case updateWindowOpacity
+        case updateFocusingDocumentURL
 
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
@@ -121,6 +123,11 @@ public struct WidgetFeature: ReducerProtocol {
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
     @Dependency(\.xcodeInspector) var xcodeInspector
+    @Dependency(\.mainQueue) var mainQueue
+
+    public enum DebounceKey: Hashable {
+        case updateWindowOpacity
+    }
 
     public init() {}
 
@@ -149,7 +156,7 @@ public struct WidgetFeature: ReducerProtocol {
                 }
                 return .run { _ in
                     guard isDisplayingContent else { return }
-                    if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+                    if let app = activeApplicationMonitor.previousApp, app.isXcode {
                         try await Task.sleep(nanoseconds: 200_000_000)
                         app.activate()
                     }
@@ -301,6 +308,8 @@ public struct WidgetFeature: ReducerProtocol {
             case .observeWindowChange:
                 guard let app = activeApplicationMonitor.activeApplication else { return .none }
                 guard app.isXcode else { return .none }
+                
+                let documentURL = state.focusingDocumentURL
 
                 return .run { send in
                     await send(.observeEditorChange)
@@ -319,17 +328,31 @@ public struct WidgetFeature: ReducerProtocol {
                         kAXWindowMiniaturizedNotification,
                         kAXWindowDeminiaturizedNotification
                     )
+
                     for await notification in notifications {
                         try Task.checkCancellation()
 
+                        // Hide the widgets before switching to another window/editor
+                        // so the transition looks better.
+                        if [
+                            kAXFocusedUIElementChangedNotification,
+                            kAXFocusedWindowChangedNotification,
+                        ].contains(notification.name) {
+                            let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                            if documentURL != newDocumentURL {
+                                await send(.panel(.removeDisplayedContent))
+                                await hidePanelWindows()
+                            }
+                            await send(.updateFocusingDocumentURL)
+                        }
+
+                        // update widgets.
                         if [
                             kAXFocusedUIElementChangedNotification,
                             kAXApplicationActivatedNotification,
                             kAXMainWindowChangedNotification,
                             kAXFocusedWindowChangedNotification,
                         ].contains(notification.name) {
-                            await hidePanelWindows()
-                            await send(.panel(.removeDisplayedContent))
                             await send(.updateWindowLocation(animated: false))
                             await send(.updateWindowOpacity)
                             await send(.observeEditorChange)
@@ -421,6 +444,10 @@ public struct WidgetFeature: ReducerProtocol {
                 state.panelState.suggestionPanelState.colorScheme = scheme
                 state.chatPanelState.colorScheme = scheme
                 return .none
+                
+            case .updateFocusingDocumentURL:
+                state.focusingDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                return .none
 
             case let .updateWindowLocation(animated):
                 guard let widgetLocation = generateWidgetLocation() else { return .none }
@@ -485,9 +512,9 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .updateWindowOpacity:
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-                let hasChat = !state.chatPanelState.chatTapGroup.tabs.isEmpty
-
+                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
                 return .run { _ in
+                    try await mainQueue.sleep(for: .seconds(0.2))
                     Task { @MainActor in
                         if let app = activeApplicationMonitor.activeApplication, app.isXcode {
                             let application = AXUIElementCreateApplication(app.processIdentifier)
@@ -538,16 +565,10 @@ public struct WidgetFeature: ReducerProtocol {
                         }
                     }
                 }
+                .cancellable(id: DebounceKey.updateWindowOpacity, cancelInFlight: true)
 
-            case let .circularWidget(action):
-                switch action {
-                case .openChatButtonClicked:
-                    suggestionWidgetControllerDependency.onOpenChatClicked()
-                    return .none
-
-                default:
-                    return .none
-                }
+            case .circularWidget:
+                return .none
 
             case .panel:
                 return .none

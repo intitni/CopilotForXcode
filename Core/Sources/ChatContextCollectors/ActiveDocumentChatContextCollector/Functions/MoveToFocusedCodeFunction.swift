@@ -10,7 +10,7 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
         var range: CursorRange
 
         var botReadableContent: String {
-            "User Editing Document Context is updated to display code at \(range)."
+            "Editing Document Context is updated to display code at \(range)."
         }
     }
     
@@ -25,7 +25,7 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
     }
 
     var description: String {
-        "Move user editing document context to the selected or focused code"
+        "Move editing document context to the selected or focused code"
     }
 
     var argumentSchema: JSONSchemaValue { [

@@ -43,10 +43,8 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     public init() {}
 }
 
-public class OverridingChatGPTConfiguration<
-    Configuration: ChatGPTConfiguration
->: ChatGPTConfiguration {
-    public struct Overriding {
+public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
+    public struct Overriding: Codable {
         public var featureProvider: ChatFeatureProvider?
         public var temperature: Double?
         public var model: String?
@@ -80,10 +78,13 @@ public class OverridingChatGPTConfiguration<
         }
     }
 
-    private let configuration: Configuration
+    private let configuration: ChatGPTConfiguration
     public var overriding = Overriding()
 
-    public init(overriding configuration: Configuration, with overrides: Overriding = .init()) {
+    public init(
+        overriding configuration: any ChatGPTConfiguration,
+        with overrides: Overriding = .init()
+    ) {
         overriding = overrides
         self.configuration = configuration
     }
@@ -123,7 +124,7 @@ public class OverridingChatGPTConfiguration<
     public var minimumReplyTokens: Int {
         overriding.minimumReplyTokens ?? configuration.minimumReplyTokens
     }
-    
+
     public var runFunctionsAutomatically: Bool {
         overriding.runFunctionsAutomatically ?? configuration.runFunctionsAutomatically
     }

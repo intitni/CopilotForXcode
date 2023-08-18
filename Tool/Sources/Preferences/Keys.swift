@@ -217,6 +217,10 @@ public extension UserDefaultPreferenceKeys {
     var realtimeSuggestionToggle: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "RealtimeSuggestionToggle")
     }
+    
+    var suggestionDisplayCompactMode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionDisplayCompactMode")
+    }
 
     var suggestionCodeFontSize: PreferenceKey<Double> {
         .init(defaultValue: 13, key: "SuggestionCodeFontSize")
@@ -244,6 +248,10 @@ public extension UserDefaultPreferenceKeys {
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
         .init(defaultValue: 0, key: "RealtimeSuggestionDebounce")
+    }
+    
+    var acceptSuggestionWithTab: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "AcceptSuggestionWithTab")
     }
 }
 
@@ -404,6 +412,10 @@ public extension UserDefaultPreferenceKeys {
     
     var disableFunctionCalling: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DisableFunctionCalling")
+    }
+    
+    var disableGitHubCopilotSettingsAutoRefreshOnAppear: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-DisableGitHubCopilotSettingsAutoRefreshOnAppear")
     }
 }
 

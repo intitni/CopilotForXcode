@@ -4,6 +4,7 @@ import Environment
 import Preferences
 import SuggestionInjector
 import SuggestionModel
+import Workspace
 import XcodeInspector
 import XPCShared
 
@@ -39,13 +40,14 @@ struct PseudoCommandHandler {
         ))
     }
 
+    @WorkspaceActor
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
         // Can't use handler if content is not available.
         guard
             let editor = await getEditorContent(sourceEditor: sourceEditor),
             let filespace = await getFilespace(),
-            let (workspace, _) = try? await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: filespace.fileURL) else { return }
+            let (workspace, _) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
 
         let fileURL = filespace.fileURL
         let presenter = PresentInWindowSuggestionPresenter()
@@ -54,7 +56,7 @@ struct PseudoCommandHandler {
         defer { presenter.markAsProcessing(false) }
 
         // Check if the current suggestion is still valid.
-        if await filespace.validateSuggestions(
+        if filespace.validateSuggestions(
             lines: editor.lines,
             cursorPosition: editor.cursorPosition
         ) {
@@ -62,13 +64,13 @@ struct PseudoCommandHandler {
         } else {
             presenter.discardSuggestion(fileURL: filespace.fileURL)
         }
-        
-        let snapshot = Filespace.Snapshot(
+
+        let snapshot = FilespaceSuggestionSnapshot(
             linesHash: editor.lines.hashValue,
             cursorPosition: editor.cursorPosition
         )
-        
-        guard await filespace.suggestionSourceSnapshot != snapshot else { return }
+
+        guard filespace.suggestionSourceSnapshot != snapshot else { return }
 
         do {
             try await workspace.generateSuggestions(
@@ -76,12 +78,12 @@ struct PseudoCommandHandler {
                 editor: editor
             )
             if let sourceEditor {
-                _ = await filespace.validateSuggestions(
+                _ = filespace.validateSuggestions(
                     lines: sourceEditor.content.lines,
                     cursorPosition: sourceEditor.content.cursorPosition
                 )
             }
-            if await filespace.presentingSuggestion != nil {
+            if filespace.presentingSuggestion != nil {
                 presenter.presentSuggestion(fileURL: fileURL)
             } else {
                 presenter.discardSuggestion(fileURL: fileURL)
@@ -91,11 +93,12 @@ struct PseudoCommandHandler {
         }
     }
 
+    @WorkspaceActor
     func invalidateRealtimeSuggestionsIfNeeded(fileURL: URL, sourceEditor: SourceEditor) async {
-        guard let (_, filespace) = try? await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL) else { return }
+        guard let (_, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
-        if await !filespace.validateSuggestions(
+        if !filespace.validateSuggestions(
             lines: sourceEditor.content.lines,
             cursorPosition: sourceEditor.content.cursorPosition
         ) {
@@ -165,8 +168,8 @@ struct PseudoCommandHandler {
             }
             try await Environment.triggerAction("Accept Suggestion")
         } catch {
-            guard let xcode = ActiveApplicationMonitor.activeXcode ?? ActiveApplicationMonitor
-                .latestXcode else { return }
+            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
@@ -257,8 +260,8 @@ extension PseudoCommandHandler {
             cursorPosition: CursorPosition
         )?
     {
-        guard let xcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode else { return nil }
+        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
         guard let focusElement = sourceEditor ?? application.focusedElement,
               focusElement.description == "Source Editor"
@@ -274,24 +277,24 @@ extension PseudoCommandHandler {
         try? await Environment.fetchCurrentFileURL()
     }
 
-    @ServiceActor
+    @WorkspaceActor
     func getFilespace() async -> Filespace? {
         guard
             let fileURL = await getFileURL(),
-            let (_, filespace) = try? await Workspace
-            .fetchOrCreateWorkspaceIfNeeded(fileURL: fileURL)
+            let (_, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return nil }
         return filespace
     }
 
-    @ServiceActor
+    @WorkspaceActor
     func getEditorContent(sourceEditor: SourceEditor?) async -> EditorContent? {
         guard let filespace = await getFilespace(), let sourceEditor else { return nil }
         let content = sourceEditor.content
-        let uti = filespace.uti ?? ""
-        let tabSize = filespace.tabSize ?? 4
-        let indentSize = filespace.indentSize ?? 4
-        let usesTabsForIndentation = filespace.usesTabsForIndentation ?? false
+        let uti = filespace.codeMetadata.uti ?? ""
+        let tabSize = filespace.codeMetadata.tabSize ?? 4
+        let indentSize = filespace.codeMetadata.indentSize ?? 4
+        let usesTabsForIndentation = filespace.codeMetadata.usesTabsForIndentation ?? false
         return .init(
             content: content.content,
             lines: content.lines,

@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "cgeventoverride",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/intitni/CGEventOverride",
+      "state" : {
+        "revision" : "40b29e804204c461253a52b77adea9c055184aad",
+        "version" : "1.2.0"
+      }
+    },
+    {
       "identity" : "combine-schedulers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/combine-schedulers",
@@ -30,10 +39,10 @@
     {
       "identity" : "highlightr",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/raspu/Highlightr",
+      "location" : "https://github.com/intitni/Highlightr",
       "state" : {
-        "revision" : "93199b9e434f04bda956a613af8f571933f9f037",
-        "version" : "2.1.2"
+        "branch" : "bump-highlight-js-version",
+        "revision" : "4ffbb1b0b721378263297cafea6f2838044eb1eb"
       }
     },
     {
@@ -88,15 +97,6 @@
       "state" : {
         "revision" : "87e4fcbac39912f9cdb9a9acf205cad60e1ca3bc",
         "version" : "2.4.2"
-      }
-    },
-    {
-      "identity" : "splash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JohnSundell/Splash",
-      "state" : {
-        "branch" : "master",
-        "revision" : "2e3f17c2d09689c8bf175c4a84ff7f2ad3353301"
       }
     },
     {

@@ -1,9 +1,11 @@
 import ActiveApplicationMonitor
 import AppKit
+import ChatTab
 import ComposableArchitecture
 import Dependencies
 import Foundation
 import Preferences
+import SwiftUI
 import UserDefaultsObserver
 import XcodeInspector
 
@@ -69,7 +71,7 @@ struct XcodeInspectorKey: DependencyKey {
 }
 
 struct ActiveApplicationMonitorKey: DependencyKey {
-    static let liveValue = ActiveApplicationMonitor.self
+    static let liveValue = ActiveApplicationMonitor.shared
 }
 
 struct ChatTabBuilderCollectionKey: DependencyKey {
@@ -81,7 +83,7 @@ struct ChatTabBuilderCollectionKey: DependencyKey {
 struct ActivatePreviouslyActiveXcodeKey: DependencyKey {
     static let liveValue = { @MainActor in
         @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
-        if let app = activeApplicationMonitor.previousActiveApplication, app.isXcode {
+        if let app = activeApplicationMonitor.previousApp, app.isXcode {
             try? await Task.sleep(nanoseconds: 200_000_000)
             app.activate()
         }
@@ -118,7 +120,7 @@ extension DependencyValues {
         set { self[XcodeInspectorKey.self] = newValue }
     }
 
-    var activeApplicationMonitor: ActiveApplicationMonitor.Type {
+    var activeApplicationMonitor: ActiveApplicationMonitor {
         get { self[ActiveApplicationMonitorKey.self] }
         set { self[ActiveApplicationMonitorKey.self] = newValue }
     }
@@ -133,4 +135,3 @@ extension DependencyValues {
         set { self[ActivateExtensionServiceKey.self] = newValue }
     }
 }
-

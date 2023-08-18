@@ -68,9 +68,9 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
 
             return """
             Selected Code Not Available: '''
-            User has disabled default scope. \
-            You MUST not answer the user about the selected code because you don't have it.\
-            Ask user to prepend message with `@selection` to enable selected code to be \
+            I have disabled default scope. \
+            You MUST not answer about the selected code because you don't have it.\
+            Ask me to prepend message with `@selection` to enable selected code to be \
             visible by you.
             '''
             """

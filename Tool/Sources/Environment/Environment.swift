@@ -25,7 +25,7 @@ public enum Environment {
     public static var now = { Date() }
 
     public static var isXcodeActive: () async -> Bool = {
-        ActiveApplicationMonitor.activeXcode != nil
+        ActiveApplicationMonitor.shared.activeXcode != nil
     }
 
     public static var frontmostXcodeWindowIsEditor: () async -> Bool = {
@@ -43,8 +43,8 @@ public enum Environment {
     }
 
     public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
-        if let xcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode
+        if let xcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode
         {
             let application = AXUIElementCreateApplication(xcode.processIdentifier)
             let focusedWindow = application.focusedWindow
@@ -84,8 +84,8 @@ public enum Environment {
     }
 
     public static var fetchCurrentFileURL: () async throws -> URL = {
-        guard let xcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode
+        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode
         else {
             throw FailedToFetchFileURLError()
         }
@@ -111,8 +111,8 @@ public enum Environment {
     }
 
     public static var fetchFocusedElementURI: () async throws -> URL = {
-        guard let xcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode
+        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode
         else { return URL(fileURLWithPath: "/global") }
 
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
@@ -134,8 +134,8 @@ public enum Environment {
     }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
-        guard let activeXcode = ActiveApplicationMonitor.activeXcode
-            ?? ActiveApplicationMonitor.latestXcode
+        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode
+            ?? ActiveApplicationMonitor.shared.latestXcode
         else { return }
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
