@@ -66,10 +66,6 @@ public class GitHubCopilotBaseService {
         self.projectRootURL = projectRootURL
         let (server, localServer) = try {
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
-            var userEnvPath = ProcessInfo.processInfo.userEnvironment["PATH"] ?? ""
-            if userEnvPath.isEmpty {
-                userEnvPath = "/usr/bin:/usr/local/bin" // fallback
-            }
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
 
@@ -95,7 +91,7 @@ public class GitHubCopilotBaseService {
                     )
                 }()
             case .shell:
-                let shell = ProcessInfo.processInfo.userEnvironment["SHELL"] ?? "/bin/bash"
+                let shell = ProcessInfo.processInfo.shellExecutablePath
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
@@ -111,6 +107,7 @@ public class GitHubCopilotBaseService {
                     )
                 }()
             case .env:
+                let userEnvPath = "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
                 executionParams = {
                     let nodePath = UserDefaults.shared.value(for: \.nodePath)
                     return Process.ExecutionParameters(
