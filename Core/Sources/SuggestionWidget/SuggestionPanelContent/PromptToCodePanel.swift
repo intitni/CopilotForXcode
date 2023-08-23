@@ -31,7 +31,7 @@ extension PromptToCodePanel {
         var body: some View {
             HStack {
                 Button(action: {
-                    provider.acceptSuggestion()
+                    provider.toggleAttachOrDetachToCode()
                 }) {
                     let attachedToRange = provider.attachedToRange
                     let isAttached = attachedToRange != nil

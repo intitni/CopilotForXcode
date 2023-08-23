@@ -167,11 +167,16 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let dataSource = Service.shared.guiController.widgetDataSource
 
         if let service = await dataSource.promptToCodes[fileURL]?.promptToCodeService {
+            let rangeStart = service.selectionRange?.start ?? editor.cursorPosition
+            
             let suggestion = CodeSuggestion(
                 text: service.code,
-                position: service.selectionRange.start,
+                position: rangeStart,
                 uuid: UUID().uuidString,
-                range: service.selectionRange,
+                range: service.selectionRange ?? .init(
+                    start: editor.cursorPosition,
+                    end: editor.cursorPosition
+                ),
                 displayText: service.code
             )
 
@@ -184,7 +189,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             if service.isContinuous {
                 service.selectionRange = .init(
-                    start: service.selectionRange.start,
+                    start: rangeStart,
                     end: cursorPosition
                 )
                 presenter.presentPromptToCode(fileURL: fileURL)
@@ -195,7 +200,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelection: .init(start: service.selectionRange.start, end: cursorPosition),
+                newSelection: .init(start: rangeStart, end: cursorPosition),
                 modifications: extraInfo.modifications
             )
         } else if let acceptedSuggestion = workspace.acceptSuggestion(

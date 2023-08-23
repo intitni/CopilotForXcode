@@ -24,6 +24,7 @@ public final class PromptToCodeProvider: ObservableObject {
     public var onAcceptSuggestionTapped: () -> Void
     public var onRequirementSent: (String) -> Void
     public var onContinuousToggleClick: () -> Void
+    public var onToggleAttachOrDetachToCode: () -> Void
 
     public init(
         code: String = "",
@@ -41,7 +42,8 @@ public final class PromptToCodeProvider: ObservableObject {
         onCancelTapped: @escaping () -> Void = {},
         onAcceptSuggestionTapped: @escaping () -> Void = {},
         onRequirementSent: @escaping (String) -> Void = { _ in },
-        onContinuousToggleClick: @escaping () -> Void = {}
+        onContinuousToggleClick: @escaping () -> Void = {},
+        onToggleAttachOrDetachToCode: @escaping () -> Void = {}
     ) {
         self.code = code
         self.language = language
@@ -59,6 +61,7 @@ public final class PromptToCodeProvider: ObservableObject {
         self.onAcceptSuggestionTapped = onAcceptSuggestionTapped
         self.onRequirementSent = onRequirementSent
         self.onContinuousToggleClick = onContinuousToggleClick
+        self.onToggleAttachOrDetachToCode = onToggleAttachOrDetachToCode
     }
 
     func revert() {
@@ -84,5 +87,7 @@ public final class PromptToCodeProvider: ObservableObject {
     func acceptSuggestion() { onAcceptSuggestionTapped() }
 
     func toggleContinuous() { onContinuousToggleClick() }
+    
+    func toggleAttachOrDetachToCode() { onToggleAttachOrDetachToCode() }
 }
 

@@ -39,8 +39,8 @@ public final class PromptToCodeService: ObservableObject {
     @Published public var isResponding: Bool = false
     @Published public var description: String = ""
     @Published public var isContinuous = false
+    @Published public var selectionRange: CursorRange?
     public var canRevert: Bool { history != .empty }
-    public var selectionRange: CursorRange
     public var language: CodeLanguage
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
@@ -52,7 +52,7 @@ public final class PromptToCodeService: ObservableObject {
 
     public init(
         code: String,
-        selectionRange: CursorRange,
+        selectionRange: CursorRange?,
         language: CodeLanguage,
         identSize: Int,
         usesTabsForIndentation: Bool,
@@ -120,16 +120,6 @@ public final class PromptToCodeService: ObservableObject {
         guard let (code, description) = history.pop() else { return }
         self.code = code
         self.description = description
-    }
-
-    public func generateCompletion() -> CodeSuggestion {
-        .init(
-            text: code,
-            position: selectionRange.start,
-            uuid: UUID().uuidString,
-            range: selectionRange,
-            displayText: code
-        )
     }
 
     public func stopResponding() {

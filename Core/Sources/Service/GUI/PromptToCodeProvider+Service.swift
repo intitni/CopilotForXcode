@@ -25,6 +25,7 @@ extension PromptToCodeProvider {
         service.$isContinuous.sink(receiveValue: set(\.isContinuous)).store(in: &cancellables)
         service.$history.map { $0 != .empty }
             .sink(receiveValue: set(\.canRevert)).store(in: &cancellables)
+        service.$selectionRange.sink(receiveValue: set(\.attachedToRange)).store(in: &cancellables)
 
         onCancelTapped = { [cancellables] in
             _ = cancellables
@@ -59,7 +60,7 @@ extension PromptToCodeProvider {
                 let handler = PseudoCommandHandler()
                 await handler.acceptSuggestion()
                 if let app = ActiveApplicationMonitor.shared.previousApp,
-                    app.isXcode,
+                   app.isXcode,
                    !(self?.isContinuous ?? false)
                 {
                     try await Task.sleep(nanoseconds: 200_000_000)
@@ -70,6 +71,14 @@ extension PromptToCodeProvider {
 
         onContinuousToggleClick = {
             service.isContinuous.toggle()
+        }
+        
+        onToggleAttachOrDetachToCode = {
+            if service.selectionRange != nil {
+                service.selectionRange = nil
+            } else {
+                // reset to selected or focused range.
+            }
         }
     }
 
