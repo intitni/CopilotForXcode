@@ -13,8 +13,7 @@ extension PromptToCodeProvider {
             code: service.code,
             language: service.language.rawValue,
             description: "",
-            startLineIndex: service.selectionRange.start.line,
-            startLineColumn: service.selectionRange.start.character,
+            attachedToRange: service.selectionRange,
             name: name
         )
 

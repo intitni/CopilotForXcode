@@ -97,7 +97,8 @@ struct SharedPanelView: View {
 }
 
 struct CommandButtonStyle: ButtonStyle {
-    let color: Color
+    var color: Color
+    var cornerRadius: Double = 4
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -105,12 +106,12 @@ struct CommandButtonStyle: ButtonStyle {
             .padding(.horizontal, 8)
             .foregroundColor(.white)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(color.opacity(configuration.isPressed ? 0.8 : 1))
                     .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
             }
     }

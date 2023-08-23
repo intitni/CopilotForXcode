@@ -1,16 +1,18 @@
 import Foundation
+import SuggestionModel
 import SwiftUI
 
 public final class PromptToCodeProvider: ObservableObject {
     let id = UUID()
     let name: String?
-    
+
     @Published public var code: String
     @Published public var language: String
     @Published public var description: String
     @Published public var isResponding: Bool
-    @Published public var startLineIndex: Int
-    @Published public var startLineColumn: Int
+    public var startLineIndex: Int { attachedToRange?.start.line ?? 0 }
+    public var startLineColumn: Int { attachedToRange?.start.character ?? 0 }
+    @Published public var attachedToRange: CursorRange?
     @Published public var requirement: String
     @Published public var errorMessage: String
     @Published public var canRevert: Bool
@@ -28,8 +30,7 @@ public final class PromptToCodeProvider: ObservableObject {
         language: String = "",
         description: String = "",
         isResponding: Bool = false,
-        startLineIndex: Int = 0,
-        startLineColumn: Int = 0,
+        attachedToRange: CursorRange? = nil,
         requirement: String = "",
         errorMessage: String = "",
         canRevert: Bool = false,
@@ -46,8 +47,7 @@ public final class PromptToCodeProvider: ObservableObject {
         self.language = language
         self.description = description
         self.isResponding = isResponding
-        self.startLineIndex = startLineIndex
-        self.startLineColumn = startLineColumn
+        self.attachedToRange = attachedToRange
         self.requirement = requirement
         self.errorMessage = errorMessage
         self.canRevert = canRevert
@@ -65,11 +65,14 @@ public final class PromptToCodeProvider: ObservableObject {
         onRevertTapped()
         errorMessage = ""
     }
+
     func stopResponding() {
         onStopRespondingTap()
         errorMessage = ""
     }
+
     func cancel() { onCancelTapped() }
+    
     func sendRequirement() {
         guard !isResponding else { return }
         guard !requirement.isEmpty else { return }
@@ -79,6 +82,7 @@ public final class PromptToCodeProvider: ObservableObject {
     }
 
     func acceptSuggestion() { onAcceptSuggestionTapped() }
-    
+
     func toggleContinuous() { onContinuousToggleClick() }
 }
+
