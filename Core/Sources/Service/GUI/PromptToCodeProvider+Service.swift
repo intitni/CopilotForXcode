@@ -58,7 +58,7 @@ extension PromptToCodeProvider {
         onAcceptSuggestionTapped = { [weak self] in
             Task { [weak self] in
                 let handler = PseudoCommandHandler()
-                await handler.acceptSuggestion()
+                await handler.acceptPromptToCode()
                 if let app = ActiveApplicationMonitor.shared.previousApp,
                    app.isXcode,
                    !(self?.isContinuous ?? false)

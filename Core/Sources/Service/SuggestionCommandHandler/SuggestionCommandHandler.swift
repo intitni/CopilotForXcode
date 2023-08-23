@@ -13,6 +13,8 @@ protocol SuggestionCommandHandler {
     @ServiceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
+    func acceptPromptToCode(editor: EditorContent) async throws -> UpdatedContent?
+    @ServiceActor
     func presentRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent?

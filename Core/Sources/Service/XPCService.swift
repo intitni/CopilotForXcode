@@ -102,6 +102,15 @@ public class XPCService: NSObject, XPCServiceProtocol {
             try await handler.acceptSuggestion(editor: editor)
         }
     }
+    
+    public func getPromptToCodeAcceptedCode(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    ) {
+        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
+            try await handler.acceptSuggestion(editor: editor)
+        }
+    }
 
     public func getRealtimeSuggestedCode(
         editorContent: Data,

@@ -85,6 +85,16 @@ public struct AsyncXPCService {
             { $0.getRealtimeSuggestedCode }
         )
     }
+    
+    public func getPromptToCodeAcceptedCode(editorContent: EditorContent) async throws
+        -> UpdatedContent?
+    {
+        try await suggestionRequest(
+            connection,
+            editorContent,
+            { $0.getPromptToCodeAcceptedCode }
+        )
+    }
 
     public func toggleRealtimeSuggestion() async throws {
         try await withXPCServiceConnected(connection: connection) {

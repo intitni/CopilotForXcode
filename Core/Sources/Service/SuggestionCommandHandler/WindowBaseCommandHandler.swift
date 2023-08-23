@@ -166,9 +166,45 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         let dataSource = Service.shared.guiController.widgetDataSource
 
+        if let acceptedSuggestion = workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor
+        ) {
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: acceptedSuggestion,
+                extraInfo: &extraInfo
+            )
+
+            presenter.discardSuggestion(fileURL: fileURL)
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .cursor(cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        }
+
+        return nil
+    }
+
+    func acceptPromptToCode(editor: EditorContent) async throws -> UpdatedContent? {
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        let fileURL = try await Environment.fetchCurrentFileURL()
+
+        let injector = SuggestionInjector()
+        var lines = editor.lines
+        var cursorPosition = editor.cursorPosition
+        var extraInfo = SuggestionInjector.ExtraInfo()
+
+        let dataSource = Service.shared.guiController.widgetDataSource
+
         if let service = await dataSource.promptToCodes[fileURL]?.promptToCodeService {
             let rangeStart = service.selectionRange?.start ?? editor.cursorPosition
-            
+
             let suggestion = CodeSuggestion(
                 text: service.code,
                 position: rangeStart,
@@ -201,24 +237,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             return .init(
                 content: String(lines.joined(separator: "")),
                 newSelection: .init(start: rangeStart, end: cursorPosition),
-                modifications: extraInfo.modifications
-            )
-        } else if let acceptedSuggestion = workspace.acceptSuggestion(
-            forFileAt: fileURL,
-            editor: editor
-        ) {
-            injector.acceptSuggestion(
-                intoContentWithoutSuggestion: &lines,
-                cursorPosition: &cursorPosition,
-                completion: acceptedSuggestion,
-                extraInfo: &extraInfo
-            )
-
-            presenter.discardSuggestion(fileURL: fileURL)
-
-            return .init(
-                content: String(lines.joined(separator: "")),
-                newSelection: .cursor(cursorPosition),
                 modifications: extraInfo.modifications
             )
         }
