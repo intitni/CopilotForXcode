@@ -360,12 +360,9 @@ let package = Package(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
                 "ChatContextCollector",
-                .product(name: "LangChain", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-                .product(name: "ASTParser", package: "Tool"),
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "FocusedCodeFinder", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),

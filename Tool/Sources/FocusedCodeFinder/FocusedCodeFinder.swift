@@ -1,14 +1,14 @@
 import Foundation
 import SuggestionModel
 
-struct CodeContext: Equatable {
-    enum Scope: Equatable {
+public struct CodeContext: Equatable {
+    public enum Scope: Equatable {
         case file
         case top
         case scope(signature: [String])
     }
 
-    var scopeSignatures: [String] {
+    public var scopeSignatures: [String] {
         switch scope {
         case .file:
             return []
@@ -19,32 +19,32 @@ struct CodeContext: Equatable {
         }
     }
 
-    var scope: Scope
-    var contextRange: CursorRange
-    var focusedRange: CursorRange
-    var focusedCode: String
-    var imports: [String]
+    public var scope: Scope
+    public var contextRange: CursorRange
+    public var focusedRange: CursorRange
+    public var focusedCode: String
+    public var imports: [String]
 
-    static var empty: CodeContext {
+    public static var empty: CodeContext {
         .init(scope: .file, contextRange: .zero, focusedRange: .zero, focusedCode: "", imports: [])
     }
 }
 
-protocol FocusedCodeFinder {
+public protocol FocusedCodeFinder {
     func findFocusedCode(
         containingRange: CursorRange,
         activeDocumentContext: ActiveDocumentContext
     ) -> CodeContext
 }
 
-struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
+public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
     let proposedSearchRange: Int
 
-    init(proposedSearchRange: Int) {
+    public init(proposedSearchRange: Int) {
         self.proposedSearchRange = proposedSearchRange
     }
 
-    func findFocusedCode(
+    public func findFocusedCode(
         containingRange: CursorRange,
         activeDocumentContext: ActiveDocumentContext
     ) -> CodeContext {
