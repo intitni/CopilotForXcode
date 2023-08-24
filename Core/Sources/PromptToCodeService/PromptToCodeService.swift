@@ -1,6 +1,8 @@
-import SuggestionModel
+import FocusedCodeFinder
 import Foundation
 import OpenAIService
+import SuggestionModel
+import XcodeInspector
 
 public final class PromptToCodeService: ObservableObject {
     var designatedPromptToCodeAPI: PromptToCodeAPI?
@@ -8,7 +10,7 @@ public final class PromptToCodeService: ObservableObject {
         if let designatedPromptToCodeAPI {
             return designatedPromptToCodeAPI
         }
-        
+
         return OpenAIPromptToCodeAPI()
     }
 
@@ -70,7 +72,7 @@ public final class PromptToCodeService: ObservableObject {
         self.projectRootURL = projectRootURL
         self.fileURL = fileURL
         self.allCode = allCode
-        self.history = .empty
+        history = .empty
         self.extraSystemPrompt = extraSystemPrompt
         self.generateDescriptionRequirement = generateDescriptionRequirement
     }
@@ -126,6 +128,48 @@ public final class PromptToCodeService: ObservableObject {
         runningAPI?.stopResponding()
         isResponding = false
     }
+
+    public func toggleAttachOrDetachToCode() {
+        if selectionRange != nil {
+            selectionRange = nil
+        } else {
+            let inspector = XcodeInspector.shared
+            guard let editor = XcodeInspector.shared.focusedEditorContent
+            else { return }
+            if let range = editor.editorContent?.selections.first, range.start != range.end {
+                selectionRange = range
+            } else {
+                let focusedCodeFinder: FocusedCodeFinder = {
+                    switch language {
+                    case .builtIn(.swift):
+                        return SwiftFocusedCodeFinder()
+                    default:
+                        return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 10)
+                    }
+                }()
+
+                let cursorPosition = editor.editorContent?.cursorPosition ?? .zero
+                let codeContext = focusedCodeFinder.findFocusedCode(
+                    containingRange: .init(start: cursorPosition, end: cursorPosition),
+                    activeDocumentContext: .init(
+                        filePath: editor.documentURL.path,
+                        relativePath: editor.relativePath,
+                        language: editor.language,
+                        fileContent: editor.editorContent?.content ?? "",
+                        lines: editor.editorContent?.lines ?? [],
+                        selectedCode: editor.editorContent?.selectedContent ?? "",
+                        selectionRange: editor.editorContent?.selections.first ?? .zero,
+                        lineAnnotations: [],
+                        imports: []
+                    )
+                )
+                
+                fileURL = editor.documentURL
+                projectRootURL = editor.projectURL
+                selectionRange = codeContext.contextRange
+            }
+        }
+    }
 }
 
 protocol PromptToCodeAPI {
@@ -144,3 +188,4 @@ protocol PromptToCodeAPI {
 
     func stopResponding()
 }
+

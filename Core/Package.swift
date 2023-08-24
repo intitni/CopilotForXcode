@@ -157,6 +157,7 @@ let package = Package(
         .target(
             name: "PromptToCodeService",
             dependencies: [
+                .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
