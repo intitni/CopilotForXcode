@@ -108,7 +108,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
         replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
-            try await handler.acceptSuggestion(editor: editor)
+            try await handler.acceptPromptToCode(editor: editor)
         }
     }
 

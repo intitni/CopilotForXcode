@@ -136,14 +136,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
 
-        let dataSource = Service.shared.guiController.widgetDataSource
-
-        if await dataSource.promptToCodes[fileURL]?.promptToCodeService != nil {
-            await dataSource.removePromptToCode(for: fileURL)
-            presenter.closePromptToCode(fileURL: fileURL)
-            return
-        }
-
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
@@ -163,8 +155,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var lines = editor.lines
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
-
-        let dataSource = Service.shared.guiController.widgetDataSource
 
         if let acceptedSuggestion = workspace.acceptSuggestion(
             forFileAt: fileURL,
@@ -202,7 +192,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         let dataSource = Service.shared.guiController.widgetDataSource
 
-        if let service = await dataSource.promptToCodes[fileURL]?.promptToCodeService {
+        if let service = await dataSource.promptToCode?.promptToCodeService {
             let rangeStart = service.selectionRange?.start ?? editor.cursorPosition
 
             let suggestion = CodeSuggestion(
@@ -230,7 +220,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 )
                 presenter.presentPromptToCode(fileURL: fileURL)
             } else {
-                await dataSource.removePromptToCode(for: fileURL)
+                await dataSource.removePromptToCode()
                 presenter.closePromptToCode(fileURL: fileURL)
             }
 

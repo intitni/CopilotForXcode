@@ -1,6 +1,7 @@
 import Foundation
 import SuggestionModel
 import XCTest
+import FocusedCodeFinder
 
 @testable import ActiveDocumentChatContextCollector
 

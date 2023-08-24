@@ -72,13 +72,9 @@ extension PromptToCodeProvider {
         onContinuousToggleClick = {
             service.isContinuous.toggle()
         }
-        
+
         onToggleAttachOrDetachToCode = {
-            if service.selectionRange != nil {
-                service.selectionRange = nil
-            } else {
-                // reset to selected or focused range.
-            }
+            service.toggleAttachOrDetachToCode()
         }
     }
 

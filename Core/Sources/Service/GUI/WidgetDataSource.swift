@@ -22,7 +22,7 @@ final class WidgetDataSource {
         }
     }
 
-    private(set) var promptToCodes = [URL: PromptToCode]()
+    private(set) var promptToCode: PromptToCode?
 
     init() {}
 
@@ -57,7 +57,7 @@ final class WidgetDataSource {
                 service: service,
                 name: name,
                 onClosePromptToCode: { [weak self] in
-                    self?.removePromptToCode(for: url)
+                    self?.removePromptToCode()
                     let presenter = PresentInWindowSuggestionPresenter()
                     presenter.closePromptToCode(fileURL: url)
                     if let app = ActiveApplicationMonitor.shared.previousApp, app.isXcode {
@@ -72,16 +72,16 @@ final class WidgetDataSource {
         }
 
         let newPromptToCode = build()
-        promptToCodes[url] = newPromptToCode
+        promptToCode = newPromptToCode
         return newPromptToCode.promptToCodeService
     }
 
-    func removePromptToCode(for url: URL) {
-        promptToCodes[url] = nil
+    func removePromptToCode() {
+        promptToCode = nil
     }
 
     func cleanup(for url: URL) {
-        removePromptToCode(for: url)
+//        removePromptToCode(for: url)
     }
 }
 
@@ -140,7 +140,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
     }
 
     func promptToCodeForFile(at url: URL) async -> PromptToCodeProvider? {
-        return promptToCodes[url]?.provider
+        return promptToCode?.provider
     }
 }
 

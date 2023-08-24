@@ -28,6 +28,20 @@ public struct CodeContext: Equatable {
     public static var empty: CodeContext {
         .init(scope: .file, contextRange: .zero, focusedRange: .zero, focusedCode: "", imports: [])
     }
+
+    public init(
+        scope: Scope,
+        contextRange: CursorRange,
+        focusedRange: CursorRange,
+        focusedCode: String,
+        imports: [String]
+    ) {
+        self.scope = scope
+        self.contextRange = contextRange
+        self.focusedRange = focusedRange
+        self.focusedCode = focusedCode
+        self.imports = imports
+    }
 }
 
 public protocol FocusedCodeFinder {
