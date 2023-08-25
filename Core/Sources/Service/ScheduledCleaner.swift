@@ -17,7 +17,7 @@ public final class ScheduledCleaner {
         self.workspacePool = workspacePool
         self.guiController = guiController
     }
-    
+
     func start() {
         // occasionally cleanup workspaces.
         Task { @ServiceActor in
@@ -58,9 +58,13 @@ public final class ScheduledCleaner {
         for (url, workspace) in workspacePool.workspaces {
             if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
-                for url in workspace.filespaces.keys {
-                    await guiController.widgetDataSource.cleanup(for: url)
-                }
+                _ = await Task { @MainActor in
+                    guiController.viewStore.send(
+                        .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: Array(
+                            workspace.filespaces.keys
+                        )))
+                    )
+                }.result
                 await workspace.cleanUp(availableTabs: [])
                 workspacePool.removeWorkspace(url: url)
             } else {
@@ -74,7 +78,11 @@ public final class ScheduledCleaner {
                         availableTabs: tabs
                     ) {
                         Logger.service.info("Remove idle filespace")
-                        await guiController.widgetDataSource.cleanup(for: url)
+                        _ = await Task { @MainActor in
+                            guiController.viewStore.send(
+                                .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: [url]))
+                            )
+                        }.result
                     }
                 }
                 // cleanup workspace

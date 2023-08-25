@@ -190,20 +190,24 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        let dataSource = Service.shared.guiController.widgetDataSource
+        let viewStore = Service.shared.guiController.viewStore
 
-        if let service = await dataSource.promptToCode?.promptToCodeService {
-            let rangeStart = service.selectionRange?.start ?? editor.cursorPosition
+        if let promptToCode = viewStore.state.promptToCodeGroup.activePromptToCode {
+            if promptToCode.isAttachedToSelectionRange, promptToCode.documentURL != fileURL {
+                return nil
+            }
+
+            let rangeStart = promptToCode.selectionRange?.start ?? editor.cursorPosition
 
             let suggestion = CodeSuggestion(
-                text: service.code,
+                text: promptToCode.code,
                 position: rangeStart,
                 uuid: UUID().uuidString,
-                range: service.selectionRange ?? .init(
+                range: promptToCode.selectionRange ?? .init(
                     start: editor.cursorPosition,
                     end: editor.cursorPosition
                 ),
-                displayText: service.code
+                displayText: promptToCode.code
             )
 
             injector.acceptSuggestion(
@@ -213,16 +217,19 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 extraInfo: &extraInfo
             )
 
-            if service.isContinuous {
-                service.selectionRange = .init(
-                    start: rangeStart,
-                    end: cursorPosition
+            _ = await Task { @MainActor [cursorPosition]  in
+                viewStore.send(
+                    .promptToCodeGroup(.updatePromptToCodeRange(
+                        id: promptToCode.id,
+                        range: .init(start: rangeStart, end: cursorPosition)
+                    ))
                 )
-                presenter.presentPromptToCode(fileURL: fileURL)
-            } else {
-                await dataSource.removePromptToCode()
-                presenter.closePromptToCode(fileURL: fileURL)
-            }
+                viewStore.send(
+                    .promptToCodeGroup(.discardAcceptedPromptToCodeIfNotContinuous(
+                        id: promptToCode.id
+                    ))
+                )
+            }.result
 
             return .init(
                 content: String(lines.joined(separator: "")),
@@ -348,7 +355,7 @@ extension WindowBaseCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
         let fileURL = try await Environment.fetchCurrentFileURL()
-        let (workspace, _) = try await Service.shared.workspacePool
+        let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         guard workspace.suggestionPlugin?.isSuggestionFeatureEnabled ?? false else {
             presenter.presentErrorMessage("Prompt to code is disabled for this project")
@@ -391,26 +398,25 @@ extension WindowBaseCommandHandler {
             )
         }() as (String, CursorRange)
 
-        let dataSource = Service.shared.guiController.widgetDataSource
+        let viewStore = Service.shared.guiController.viewStore
 
-        let promptToCode = await dataSource.createPromptToCode(
-            for: fileURL,
-            projectURL: workspace.projectRootURL,
-            selectedCode: code,
-            allCode: editor.content,
-            selectionRange: selection,
-            language: codeLanguage,
-            extraSystemPrompt: extraSystemPrompt,
-            generateDescriptionRequirement: generateDescription,
-            name: name
-        )
-
-        promptToCode.isContinuous = isContinuous
-        if let prompt, !prompt.isEmpty {
-            Task { try await promptToCode.modifyCode(prompt: prompt) }
-        }
-
-        presenter.presentPromptToCode(fileURL: fileURL)
+        _ = await Task { @MainActor in
+            viewStore.send(.promptToCodeGroup(.createPromptToCode(.init(
+                code: code,
+                selectionRange: selection,
+                language: codeLanguage,
+                identSize: filespace.codeMetadata.indentSize ?? 4,
+                usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
+                documentURL: fileURL,
+                projectRootURL: workspace.projectRootURL,
+                allCode: editor.content,
+                isContinuous: isContinuous,
+                commandName: name,
+                defaultPrompt: prompt ?? "",
+                extraSystemPrompt: extraSystemPrompt,
+                generateDescriptionRequirement: generateDescription
+            ))))
+        }.result
     }
 
     func executeSingleRoundDialog(

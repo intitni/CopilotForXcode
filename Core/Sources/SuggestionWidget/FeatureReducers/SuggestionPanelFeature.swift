@@ -4,7 +4,7 @@ import SwiftUI
 
 public struct SuggestionPanelFeature: ReducerProtocol {
     public struct State: Equatable {
-        var content: SharedPanelFeature.Content?
+        var content: SuggestionProvider?
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
         var isPanelDisplayed: Bool = false

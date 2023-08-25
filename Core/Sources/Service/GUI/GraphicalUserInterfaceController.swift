@@ -24,6 +24,11 @@ struct GUI: ReducerProtocol {
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
 
+        var promptToCodeGroup: PromptToCodeGroup.State {
+            get { suggestionWidgetState.panelState.content.promptToCodeGroup }
+            set { suggestionWidgetState.panelState.content.promptToCodeGroup = newValue }
+        }
+
         #if canImport(ChatTabPersistent)
         var persistentState: ChatTabPersistent.State {
             get {
@@ -43,6 +48,10 @@ struct GUI: ReducerProtocol {
         case sendCustomCommandToActiveChat(CustomCommand)
 
         case suggestionWidget(WidgetFeature.Action)
+
+        static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
+            .suggestionWidget(.panel(.sharedPanel(.promptToCodeGroup(action))))
+        }
 
         #if canImport(ChatTabPersistent)
         case persistent(ChatTabPersistent.Action)
@@ -267,7 +276,7 @@ public final class GraphicalUserInterfaceController {
             }
         }
     }
-    
+
     func start() {
         store.send(.start)
     }

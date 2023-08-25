@@ -27,7 +27,6 @@ struct SharedPanelView: View {
         var isPanelDisplayed: Bool
         var opacity: Double
         var colorScheme: ColorScheme
-        var contentHash: String
         var alignTopToAnchor: Bool
     }
 
@@ -38,42 +37,44 @@ struct SharedPanelView: View {
                 isPanelDisplayed: $0.isPanelDisplayed,
                 opacity: $0.opacity,
                 colorScheme: $0.colorScheme,
-                contentHash: $0.content?.contentHash ?? "",
                 alignTopToAnchor: $0.alignTopToAnchor
             ) }
         ) { viewStore in
             VStack(spacing: 0) {
-                if !viewStore.alignTopToAnchor {
+                if !viewStore.state.alignTopToAnchor {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
 
-                IfLetStore(store.scope(state: \.content, action: { $0 })) { store in
-                    WithViewStore(store) { viewStore in
-                        ZStack(alignment: .topLeading) {
-                            switch viewStore.state {
-                            case let .suggestion(suggestion):
-                                switch suggestionPresentationMode {
-                                case .nearbyTextCursor:
-                                    EmptyView()
-                                case .floatingWidget:
-                                    CodeBlockSuggestionPanel(suggestion: suggestion)
+                WithViewStore(store, observe: { $0.content }) { viewStore in
+                    ZStack(alignment: .topLeading) {
+                        if let error = viewStore.state.error {
+                            ErrorPanel(description: error) {
+                                viewStore.send(
+                                    .errorMessageCloseButtonTapped,
+                                    animation: .easeInOut(duration: 0.2)
+                                )
+                            }
+                        } else if let promptToCode = viewStore.state.promptToCode {
+                            PromptToCodePanel(store: store.scope(
+                                state: { _ in promptToCode },
+                                action: {
+                                    SharedPanelFeature.Action
+                                        .promptToCodeGroup(.promptToCode(promptToCode.id, $0))
                                 }
-                            case let .promptToCode(provider):
-                                PromptToCodePanel(provider: provider)
-                            case let .error(description):
-                                ErrorPanel(description: description) {
-                                    viewStore.send(
-                                        .closeButtonTapped,
-                                        animation: .easeInOut(duration: 0.2)
-                                    )
-                                }
+                            ))
+                        } else if let suggestion = viewStore.state.suggestion {
+                            switch suggestionPresentationMode {
+                            case .nearbyTextCursor:
+                                EmptyView()
+                            case .floatingWidget:
+                                CodeBlockSuggestionPanel(suggestion: suggestion)
                             }
                         }
-                        .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                        .fixedSize(horizontal: false, vertical: true)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
                 .allowsHitTesting(viewStore.isPanelDisplayed)
                 .frame(maxWidth: .infinity)
@@ -119,11 +120,11 @@ struct CommandButtonStyle: ButtonStyle {
 
 // MARK: - Previews
 
-struct SuggestionPanelView_Error_Preview: PreviewProvider {
+struct SharedPanelView_Error_Preview: PreviewProvider {
     static var previews: some View {
         SharedPanelView(store: .init(
             initialState: .init(
-                content: .error("This is an error\nerror"),
+                content: .init(error: "This is an error\nerror"),
                 colorScheme: .light,
                 isPanelDisplayed: true
             ),
@@ -133,12 +134,12 @@ struct SuggestionPanelView_Error_Preview: PreviewProvider {
     }
 }
 
-struct SuggestionPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
+struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
     static var previews: some View {
         SharedPanelView(store: .init(
             initialState: .init(
-                content: .suggestion(
-                    SuggestionProvider(
+                content: .init(
+                    suggestion: .init(
                         code: """
                         - (void)addSubview:(UIView *)view {
                             [self addSubview:view];
