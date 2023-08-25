@@ -1,4 +1,3 @@
-import FocusedCodeFinder
 import Foundation
 import OpenAIService
 import SuggestionModel
@@ -42,6 +41,7 @@ public final class PromptToCodeService: ObservableObject {
     @Published public var description: String = ""
     @Published public var isContinuous = false
     @Published public var selectionRange: CursorRange?
+    @Published public var isAttachedToSelectionRange: Bool
     public var canRevert: Bool { history != .empty }
     public var language: CodeLanguage
     public var indentSize: Int
@@ -73,6 +73,7 @@ public final class PromptToCodeService: ObservableObject {
         self.fileURL = fileURL
         self.allCode = allCode
         history = .empty
+        isAttachedToSelectionRange = true
         self.extraSystemPrompt = extraSystemPrompt
         self.generateDescriptionRequirement = generateDescriptionRequirement
     }
@@ -93,8 +94,12 @@ public final class PromptToCodeService: ObservableObject {
                 indentSize: indentSize,
                 usesTabsForIndentation: usesTabsForIndentation,
                 requirement: prompt,
-                projectRootURL: projectRootURL,
-                fileURL: fileURL,
+                projectRootURL: isAttachedToSelectionRange
+                    ? projectRootURL
+                    : XcodeInspector.shared.activeProjectURL,
+                fileURL: isAttachedToSelectionRange
+                    ? fileURL
+                    : XcodeInspector.shared.activeDocumentURL,
                 allCode: allCode,
                 extraSystemPrompt: extraSystemPrompt,
                 generateDescriptionRequirement: generateDescriptionRequirement
@@ -130,45 +135,7 @@ public final class PromptToCodeService: ObservableObject {
     }
 
     public func toggleAttachOrDetachToCode() {
-        if selectionRange != nil {
-            selectionRange = nil
-        } else {
-            let inspector = XcodeInspector.shared
-            guard let editor = XcodeInspector.shared.focusedEditorContent
-            else { return }
-            if let range = editor.editorContent?.selections.first, range.start != range.end {
-                selectionRange = range
-            } else {
-                let focusedCodeFinder: FocusedCodeFinder = {
-                    switch language {
-                    case .builtIn(.swift):
-                        return SwiftFocusedCodeFinder()
-                    default:
-                        return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 10)
-                    }
-                }()
-
-                let cursorPosition = editor.editorContent?.cursorPosition ?? .zero
-                let codeContext = focusedCodeFinder.findFocusedCode(
-                    containingRange: .init(start: cursorPosition, end: cursorPosition),
-                    activeDocumentContext: .init(
-                        filePath: editor.documentURL.path,
-                        relativePath: editor.relativePath,
-                        language: editor.language,
-                        fileContent: editor.editorContent?.content ?? "",
-                        lines: editor.editorContent?.lines ?? [],
-                        selectedCode: editor.editorContent?.selectedContent ?? "",
-                        selectionRange: editor.editorContent?.selections.first ?? .zero,
-                        lineAnnotations: [],
-                        imports: []
-                    )
-                )
-                
-                fileURL = editor.documentURL
-                projectRootURL = editor.projectURL
-                selectionRange = codeContext.contextRange
-            }
-        }
+        isAttachedToSelectionRange.toggle()
     }
 }
 
