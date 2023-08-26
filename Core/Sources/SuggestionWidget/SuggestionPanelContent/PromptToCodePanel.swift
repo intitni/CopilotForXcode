@@ -38,7 +38,9 @@ extension PromptToCodePanel {
         var body: some View {
             HStack {
                 Button(action: {
-                    store.send(.selectionRangeToggleTapped)
+                    withAnimation(.linear(duration: 0.1)) {
+                        store.send(.selectionRangeToggleTapped)
+                    }
                 }) {
                     WithViewStore(
                         store,
