@@ -29,6 +29,7 @@ Most of the logics are implemented inside the package `Core` and `Tool`.
 
 1. Update the xcconfig files, launchAgent.plist, and Tool/Configs/Configurations.swift.
 2. Build or archive the Copilot for Xcode target.
+3. If Xcode complains that the pro package doesn't exist, please remove the package from the project, and update the last function in Core/Package.swift to return false.
 
 ## Testing Extension
 
