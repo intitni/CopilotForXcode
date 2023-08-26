@@ -197,16 +197,25 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 return nil
             }
 
-            let rangeStart = promptToCode.selectionRange?.start ?? editor.cursorPosition
+            let range = {
+                if promptToCode.isAttachedToSelectionRange,
+                   let range = promptToCode.selectionRange
+                {
+                    return range
+                }
+                return editor.selections.first.map {
+                    CursorRange(start: $0.start, end: $0.end)
+                } ?? CursorRange(
+                    start: editor.cursorPosition,
+                    end: editor.cursorPosition
+                )
+            }()
 
             let suggestion = CodeSuggestion(
                 text: promptToCode.code,
-                position: rangeStart,
+                position: range.start,
                 uuid: UUID().uuidString,
-                range: promptToCode.selectionRange ?? .init(
-                    start: editor.cursorPosition,
-                    end: editor.cursorPosition
-                ),
+                range: range,
                 displayText: promptToCode.code
             )
 
@@ -217,11 +226,11 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 extraInfo: &extraInfo
             )
 
-            _ = await Task { @MainActor [cursorPosition]  in
+            _ = await Task { @MainActor [cursorPosition] in
                 viewStore.send(
                     .promptToCodeGroup(.updatePromptToCodeRange(
                         id: promptToCode.id,
-                        range: .init(start: rangeStart, end: cursorPosition)
+                        range: .init(start: range.start, end: cursorPosition)
                     ))
                 )
                 viewStore.send(
@@ -233,7 +242,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelection: .init(start: rangeStart, end: cursorPosition),
+                newSelection: .init(start: range.start, end: cursorPosition),
                 modifications: extraInfo.modifications
             )
         }
