@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import ChatGPTChatTab
 import ChatTab
@@ -24,6 +25,11 @@ struct GUI: ReducerProtocol {
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
 
+        var promptToCodeGroup: PromptToCodeGroup.State {
+            get { suggestionWidgetState.panelState.content.promptToCodeGroup }
+            set { suggestionWidgetState.panelState.content.promptToCodeGroup = newValue }
+        }
+
         #if canImport(ChatTabPersistent)
         var persistentState: ChatTabPersistent.State {
             get {
@@ -43,6 +49,10 @@ struct GUI: ReducerProtocol {
         case sendCustomCommandToActiveChat(CustomCommand)
 
         case suggestionWidget(WidgetFeature.Action)
+
+        static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
+            .suggestionWidget(.panel(.sharedPanel(.promptToCodeGroup(action))))
+        }
 
         #if canImport(ChatTabPersistent)
         case persistent(ChatTabPersistent.Action)
@@ -215,6 +225,19 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
+            dependencies.promptToCodeAcceptHandler = { promptToCode in
+                Task {
+                    let handler = PseudoCommandHandler()
+                    await handler.acceptPromptToCode()
+                    if let app = ActiveApplicationMonitor.shared.previousApp,
+                       app.isXcode,
+                       !promptToCode.isContinuous
+                    {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                        app.activate()
+                    }
+                }
+            }
 
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
@@ -267,7 +290,7 @@ public final class GraphicalUserInterfaceController {
             }
         }
     }
-    
+
     func start() {
         store.send(.start)
     }

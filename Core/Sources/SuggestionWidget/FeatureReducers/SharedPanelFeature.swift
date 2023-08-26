@@ -4,51 +4,53 @@ import Preferences
 import SwiftUI
 
 public struct SharedPanelFeature: ReducerProtocol {
-    public enum Content: Equatable {
-        case suggestion(SuggestionProvider)
-        case promptToCode(PromptToCodeProvider)
-        case error(String)
-
-        var contentHash: String {
-            switch self {
-            case let .error(e):
-                return "error: \(e)"
-            case let .suggestion(provider):
-                return "suggestion: \(provider.code.hashValue)"
-            case let .promptToCode(provider):
-                return "provider: \(provider.id)"
-            }
-        }
-
-        public static func == (lhs: Content, rhs: Content) -> Bool {
-            lhs.contentHash == rhs.contentHash
-        }
+    public struct Content: Equatable {
+        public var promptToCodeGroup = PromptToCodeGroup.State()
+        var suggestion: SuggestionProvider?
+        public var promptToCode: PromptToCode.State? { promptToCodeGroup.activePromptToCode }
+        var error: String?
     }
 
     public struct State: Equatable {
-        var content: Content?
+        var content: Content = .init()
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
         var isPanelDisplayed: Bool = false
+        var isEmpty: Bool {
+            if content.error != nil { return false }
+            if content.promptToCode != nil { return false }
+            if content.suggestion != nil,
+               UserDefaults.shared
+               .value(for: \.suggestionPresentationMode) == .floatingWidget { return false }
+            return true
+        }
+
         var opacity: Double {
             guard isPanelDisplayed else { return 0 }
-            guard content != nil else { return 0 }
+            guard !isEmpty else { return 0 }
             return 1
         }
     }
 
     public enum Action: Equatable {
-        case closeButtonTapped
+        case errorMessageCloseButtonTapped
+        case promptToCodeGroup(PromptToCodeGroup.Action)
     }
 
     public var body: some ReducerProtocol<State, Action> {
+        Scope(state: \.content.promptToCodeGroup, action: /Action.promptToCodeGroup) {
+            PromptToCodeGroup()
+        }
+
         Reduce { state, action in
             switch action {
-            case .closeButtonTapped:
-                state.content = nil
-                state.isPanelDisplayed = false
+            case .errorMessageCloseButtonTapped:
+                state.content.error = nil
+                return .none
+            case .promptToCodeGroup:
                 return .none
             }
         }
     }
 }
+

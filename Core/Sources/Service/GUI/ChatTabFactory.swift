@@ -83,20 +83,25 @@ enum ChatTabFactory {
                         prompt: prompt
                     )
                 case let .promptToCode(extraSystemPrompt, instruction, _, _):
-                    let service = PromptToCodeService(
+                    let service = OpenAIPromptToCodeService()
+
+                    let result = try await service.modifyCode(
                         code: prompt,
-                        selectionRange: .outOfScope,
                         language: .plaintext,
-                        identSize: 4,
+                        indentSize: 4,
                         usesTabsForIndentation: true,
+                        requirement: instruction ?? "Modify content.",
                         projectRootURL: .init(fileURLWithPath: "/"),
                         fileURL: .init(fileURLWithPath: "/"),
                         allCode: prompt,
                         extraSystemPrompt: extraSystemPrompt,
                         generateDescriptionRequirement: false
                     )
-                    try await service.modifyCode(prompt: instruction ?? "Modify content.")
-                    return service.code
+                    var code = ""
+                    for try await (newCode, _) in result {
+                        code = newCode
+                    }
+                    return code
                 }
             }
         )

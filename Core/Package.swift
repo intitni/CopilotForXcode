@@ -157,9 +157,11 @@ let package = Package(
         .target(
             name: "PromptToCodeService",
             dependencies: [
+                .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
@@ -226,6 +228,7 @@ let package = Package(
         .target(
             name: "SuggestionWidget",
             dependencies: [
+                "PromptToCodeService",
                 "ChatGPTChatTab",
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
@@ -360,12 +363,9 @@ let package = Package(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
                 "ChatContextCollector",
-                .product(name: "LangChain", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-                .product(name: "ASTParser", package: "Tool"),
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "FocusedCodeFinder", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),

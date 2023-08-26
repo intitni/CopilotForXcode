@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
+        .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
@@ -47,6 +48,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
 
         // TreeSitter
         .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.7.1"),
@@ -181,6 +183,16 @@ let package = Package(
             name: "CGEventObserver",
             dependencies: [
                 "Logger",
+            ]
+        ),
+
+        .target(
+            name: "FocusedCodeFinder",
+            dependencies: [
+                "Preferences",
+                "ASTParser",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
             ]
         ),
 

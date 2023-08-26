@@ -2,7 +2,6 @@ import Foundation
 
 public protocol SuggestionWidgetDataSource {
     func suggestionForFile(at url: URL) async -> SuggestionProvider?
-    func promptToCodeForFile(at url: URL) async -> PromptToCodeProvider?
 }
 
 struct MockWidgetDataSource: SuggestionWidgetDataSource {
@@ -20,10 +19,6 @@ struct MockWidgetDataSource: SuggestionWidgetDataSource {
             suggestionCount: 3,
             currentSuggestionIndex: 0
         )
-    }
-
-    func promptToCodeForFile(at url: URL) async -> PromptToCodeProvider? {
-        return nil
     }
 }
 
