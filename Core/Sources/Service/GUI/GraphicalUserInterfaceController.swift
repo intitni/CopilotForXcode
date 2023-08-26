@@ -98,11 +98,13 @@ struct GUI: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case .start:
+                #if canImport(ChatTabPersistent)
                 return .run { send in
-                    #if canImport(ChatTabPersistent)
                     await send(.persistent(.restoreChatTabs))
-                    #endif
                 }
+                #else
+                return .none
+                #endif
 
             case let .openChatPanel(forceDetach):
                 return .run { send in
