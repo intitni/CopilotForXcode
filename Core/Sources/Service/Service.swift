@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(KeyBindingManager)
 import KeyBindingManager
+#endif
 import Workspace
 
 @globalActor public enum ServiceActor {
@@ -24,10 +26,13 @@ public final class Service {
     public let guiController = GraphicalUserInterfaceController()
     public let realtimeSuggestionController = RealtimeSuggestionController()
     public let scheduledCleaner: ScheduledCleaner
+    #if canImport(KeyBindingManager)
     let keyBindingManager: KeyBindingManager
+    #endif
 
     private init() {
         scheduledCleaner = .init(workspacePool: workspacePool, guiController: guiController)
+        #if canImport(KeyBindingManager)
         keyBindingManager = .init(
             workspacePool: workspacePool,
             acceptSuggestion: {
@@ -36,14 +41,17 @@ public final class Service {
                 }
             }
         )
+        #endif
     }
-    
+
     @MainActor
     public func start() {
         scheduledCleaner.start()
         realtimeSuggestionController.start()
         guiController.start()
+        #if canImport(KeyBindingManager)
         keyBindingManager.start()
+        #endif
         DependencyUpdater().update()
     }
 }
