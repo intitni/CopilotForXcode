@@ -2,55 +2,8 @@ import AppKit
 import ComposableArchitecture
 import Dependencies
 import Foundation
+import PromptToCodeService
 import SuggestionModel
-
-protocol PromptToCodeService {
-    func modifyCode(
-        code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
-        extraSystemPrompt: String?,
-        generateDescriptionRequirement: Bool?
-    ) async throws -> AsyncThrowingStream<(code: String, description: String), Error>
-
-    func stopResponding()
-}
-
-struct PreviewPromptToCodeService: PromptToCodeService {
-    func modifyCode(
-        code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
-        extraSystemPrompt: String?,
-        generateDescriptionRequirement: Bool?
-    ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
-        return AsyncThrowingStream { continuation in
-            continuation.finish()
-        }
-    }
-
-    func stopResponding() {}
-}
-
-struct PromptToCodeServiceDependencyKey: DependencyKey {
-    static let liveValue: PromptToCodeService = PreviewPromptToCodeService()
-    static let previewValue: PromptToCodeService = PreviewPromptToCodeService()
-}
-
-struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
-    static let liveValue: () -> PromptToCodeService = { PreviewPromptToCodeService() }
-    static let previewValue: () -> PromptToCodeService = { PreviewPromptToCodeService() }
-}
 
 struct PromptToCodeAcceptHandlerDependencyKey: DependencyKey {
     static let liveValue: () -> Void = {}
@@ -58,16 +11,6 @@ struct PromptToCodeAcceptHandlerDependencyKey: DependencyKey {
 }
 
 extension DependencyValues {
-    var promptToCodeService: PromptToCodeService {
-        get { self[PromptToCodeServiceDependencyKey.self] }
-        set { self[PromptToCodeServiceDependencyKey.self] = newValue }
-    }
-
-    var promptToCodeServiceFactory: () -> PromptToCodeService {
-        get { self[PromptToCodeServiceFactoryDependencyKey.self] }
-        set { self[PromptToCodeServiceFactoryDependencyKey.self] = newValue }
-    }
-
     var promptToCodeAcceptHandler: () -> Void {
         get { self[PromptToCodeAcceptHandlerDependencyKey.self] }
         set { self[PromptToCodeAcceptHandlerDependencyKey.self] = newValue }
@@ -202,6 +145,7 @@ public struct PromptToCode: ReducerProtocol {
                 state.code = ""
                 state.description = ""
                 state.error = nil
+                state.prompt = ""
 
                 return .run { send in
                     do {
@@ -291,7 +235,7 @@ public struct PromptToCode: ReducerProtocol {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(state.code, forType: .string)
                 return .none
-                
+
             case .appendNewLineToPromptButtonTapped:
                 state.prompt += "\n"
                 return .none

@@ -161,6 +161,7 @@ let package = Package(
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
@@ -227,6 +228,7 @@ let package = Package(
         .target(
             name: "SuggestionWidget",
             dependencies: [
+                "PromptToCodeService",
                 "ChatGPTChatTab",
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),

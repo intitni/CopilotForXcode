@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import PromptToCodeService
 import SuggestionModel
 
 public struct PromptToCodeGroup: ReducerProtocol {

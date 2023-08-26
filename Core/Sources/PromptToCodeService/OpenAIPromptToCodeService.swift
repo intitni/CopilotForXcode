@@ -3,16 +3,16 @@ import OpenAIService
 import Preferences
 import SuggestionModel
 
-final class OpenAIPromptToCodeAPI: PromptToCodeAPI {
+public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
     var service: (any ChatGPTServiceType)?
+    
+    public init() {}
 
-    func stopResponding() {
-        Task {
-            await service?.stopReceivingMessage()
-        }
+    public func stopResponding() {
+        Task { await service?.stopReceivingMessage() }
     }
 
-    func modifyCode(
+    public func modifyCode(
         code: String,
         language: CodeLanguage,
         indentSize: Int,
