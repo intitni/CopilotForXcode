@@ -381,19 +381,19 @@ let package = Package(
 
 extension [Target.Dependency] {
     func pro(_ targetNames: [String]) -> [Target.Dependency] {
-        if isProIncluded() {
-            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
+        if !isProIncluded() {
+            return self
         }
-        return self
+        return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
     }
 }
 
 extension [Package.Dependency] {
     var pro: [Package.Dependency] {
-        if isProIncluded() {
-            return self + [.package(path: "../Pro")]
+        if !isProIncluded() {
+            return self
         }
-        return self
+        return self + [.package(path: "../Pro")]
     }
 }
 
