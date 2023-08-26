@@ -1,8 +1,8 @@
 import Foundation
 import SuggestionModel
-import Workspace
 import XCTest
 
+@testable import Workspace
 @testable import Service
 
 class FilespaceSuggestionInvalidationTests: XCTestCase {
@@ -33,7 +33,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 4)
         )
         XCTAssertTrue(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
     }
 
@@ -47,7 +47,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 4)
         )
         XCTAssertTrue(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
     }
 
@@ -61,7 +61,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 2, character: 0)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -75,7 +75,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 100, character: 4)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -89,7 +89,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 4)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -103,7 +103,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 100)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -117,7 +117,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 9)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -132,7 +132,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 9)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 
@@ -146,7 +146,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 9)
         )
         XCTAssertTrue(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
     }
 
@@ -161,7 +161,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 4)
         )
         XCTAssertFalse(isValid)
-        let suggestion = await filespace.presentingSuggestion
+        let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
     }
 }

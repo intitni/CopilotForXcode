@@ -49,7 +49,7 @@ public final class Filespace {
     public let fileURL: URL
     public private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
     public var codeMetadata: FilespaceCodeMetadata = .init()
-    public private(set) var suggestions: [CodeSuggestion] = [] {
+    public internal(set) var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }
     }
 
