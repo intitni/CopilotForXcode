@@ -275,16 +275,6 @@ extension PromptToCodePanel {
                             .scaleEffect(x: 1, y: -1, anchor: .center)
                         }
                     }
-
-                    WithViewStore(store, observe: { $0.commandName }) { viewStore in
-                        if let name = viewStore.state {
-                            Text(name)
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 12)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
-                        }
-                    }
                 }
             }
             .scaleEffect(x: 1, y: -1, anchor: .center)
@@ -300,8 +290,9 @@ extension PromptToCodePanel {
             var canRevert: Bool
         }
 
-        struct Prompt: Equatable {
+        struct InputFieldState: Equatable {
             @BindingViewState var prompt: String
+            var isResponding: Bool
         }
 
         var body: some View {
@@ -366,7 +357,10 @@ extension PromptToCodePanel {
         }
 
         var inputField: some View {
-            WithViewStore(store, observe: { Prompt(prompt: $0.$prompt) }) { viewStore in
+            WithViewStore(
+                store,
+                observe: { InputFieldState(prompt: $0.$prompt, isResponding: $0.isResponding) }
+            ) { viewStore in
                 ZStack(alignment: .center) {
                     // a hack to support dynamic height of TextEditor
                     Text(viewStore.state.prompt.isEmpty ? "Hi" : viewStore.state.prompt)
@@ -380,10 +374,13 @@ extension PromptToCodePanel {
                     CustomTextEditor(
                         text: viewStore.$prompt,
                         font: .systemFont(ofSize: 14),
+                        isEditable: !viewStore.state.isResponding,
                         onSubmit: { viewStore.send(.modifyCodeButtonTapped) }
                     )
                     .padding(.top, 1)
                     .padding(.bottom, -1)
+                    .opacity(viewStore.state.isResponding ? 0.5 : 1)
+                    .disabled(viewStore.state.isResponding)
                 }
             }
             .focused($isInputAreaFocused)

@@ -150,7 +150,6 @@ public struct PromptToCode: ReducerProtocol {
                 state.code = ""
                 state.description = ""
                 state.error = nil
-                state.prompt = ""
 
                 return .run { send in
                     do {
@@ -207,6 +206,7 @@ public struct PromptToCode: ReducerProtocol {
                 return .none
 
             case .modifyCodeFinished:
+                state.prompt = ""
                 state.isResponding = false
                 if state.code.isEmpty, state.description.isEmpty {
                     // if both code and description are empty, we treat it as failed
