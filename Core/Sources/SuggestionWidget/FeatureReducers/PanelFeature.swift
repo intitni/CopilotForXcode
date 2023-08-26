@@ -109,7 +109,9 @@ public struct PanelFeature: ReducerProtocol {
                 }
 
             case .removeDisplayedContent:
-//                state.content = nil
+                state.content.error = nil
+                state.content.promptToCodeGroup.activePromptToCode = nil
+                state.content.suggestion = nil
                 return .none
 
             case .sharedPanel(.promptToCodeGroup(.createPromptToCode)):
