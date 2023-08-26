@@ -5,13 +5,18 @@ import Foundation
 import PromptToCodeService
 import SuggestionModel
 
-struct PromptToCodeAcceptHandlerDependencyKey: DependencyKey {
-    static let liveValue: () -> Void = {}
-    static let previewValue: () -> Void = { print("Accept Prompt to Code") }
+public struct PromptToCodeAcceptHandlerDependencyKey: DependencyKey {
+    public static let liveValue: (PromptToCode.State) -> Void = { _ in
+        assertionFailure("Please provide a handler")
+    }
+
+    public static let previewValue: (PromptToCode.State) -> Void = { _ in
+        print("Accept Prompt to Code")
+    }
 }
 
-extension DependencyValues {
-    var promptToCodeAcceptHandler: () -> Void {
+public extension DependencyValues {
+    var promptToCodeAcceptHandler: (PromptToCode.State) -> Void {
         get { self[PromptToCodeAcceptHandlerDependencyKey.self] }
         set { self[PromptToCodeAcceptHandlerDependencyKey.self] = newValue }
     }
@@ -228,7 +233,7 @@ public struct PromptToCode: ReducerProtocol {
                 return .none
 
             case .acceptButtonTapped:
-                promptToCodeAcceptHandler()
+                promptToCodeAcceptHandler(state)
                 return .none
 
             case .copyCodeButtonTapped:

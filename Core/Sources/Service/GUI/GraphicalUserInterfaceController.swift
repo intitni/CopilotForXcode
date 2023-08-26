@@ -1,3 +1,4 @@
+import ActiveApplicationMonitor
 import AppKit
 import ChatGPTChatTab
 import ChatTab
@@ -224,6 +225,19 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
+            dependencies.promptToCodeAcceptHandler = { promptToCode in
+                Task {
+                    let handler = PseudoCommandHandler()
+                    await handler.acceptPromptToCode()
+                    if let app = ActiveApplicationMonitor.shared.previousApp,
+                       app.isXcode,
+                       !promptToCode.isContinuous
+                    {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                        app.activate()
+                    }
+                }
+            }
 
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
