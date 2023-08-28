@@ -10,6 +10,9 @@ struct CodeiumView: View {
         @Published var installationStatus: CodeiumInstallationManager.InstallationStatus
         @Published var installationStep: CodeiumInstallationManager.InstallationStep?
         @AppStorage(\.codeiumVerboseLog) var codeiumVerboseLog
+        @AppStorage(\.codeiumEnterpriseMode) var codeiumEnterpriseMode
+        @AppStorage(\.codeiumPortalUrl) var codeiumPortalUrl
+        @AppStorage(\.codeiumApiUrl) var codeiumApiUrl
 
         init() {
             isSignedIn = codeiumAuthService.isSignedIn
@@ -28,6 +31,13 @@ struct CodeiumView: View {
         }
 
         func generateAuthURL() -> URL {
+            if codeiumEnterpriseMode && (codeiumPortalUrl != "") {
+                return URL(
+                    string: codeiumPortalUrl +
+                        "/profile?response_type=token&redirect_uri=show-auth-token&state=\(UUID().uuidString)&scope=openid%20profile%20email&redirect_parameters_type=query"
+                )!
+            }
+
             return URL(
                 string: "https://www.codeium.com/profile?response_type=token&redirect_uri=show-auth-token&state=\(UUID().uuidString)&scope=openid%20profile%20email&redirect_parameters_type=query"
             )!
@@ -149,10 +159,10 @@ struct CodeiumView: View {
                         updateButton
                     }
                 }
-                
+
                 if viewModel.isSignedIn {
                     Text("Status: Signed In")
-                    
+
                     Button(action: {
                         Task {
                             do {
@@ -166,7 +176,7 @@ struct CodeiumView: View {
                     }
                 } else {
                     Text("Status: Not Signed In")
-                    
+
                     Button(action: {
                         isSignInPanelPresented = true
                     }) {
@@ -197,9 +207,23 @@ struct CodeiumView: View {
                     }
                 }
             }
-            
+
             Divider()
-            
+
+            Form {
+                Toggle("Codeium Enterprise Mode", isOn: $viewModel.codeiumEnterpriseMode)
+                TextField("Codeium Portal URL", text: $viewModel.codeiumPortalUrl)
+                TextField("Codeium API URL", text: $viewModel.codeiumApiUrl)
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+            }
+
+            Divider()
+
             Form {
                 Toggle("Verbose Log", isOn: $viewModel.codeiumVerboseLog)
             }
@@ -233,13 +257,13 @@ struct CodeiumSignInView: View {
 
             HStack {
                 Spacer()
-                
+
                 Button(action: {
                     isPresented = false
                 }) {
                     Text("Cancel")
                 }
-                
+
                 Button(action: {
                     isGeneratingKey = true
                     Task {

@@ -34,7 +34,14 @@ public final class CodeiumAuthService {
     }
 
     func generate(token: String) async throws -> String {
-        var request = URLRequest(url: URL(string: "https://api.codeium.com/register_user/")!)
+        var registerUserUrl = URL(string: "https://api.codeium.com/register_user/")
+        let apiUrl = UserDefaults.shared.value(for: \.codeiumApiUrl)
+        if UserDefaults.shared.value(for: \.codeiumEnterpriseMode), apiUrl != "" {
+            registerUserUrl =
+                URL(string: apiUrl + "/exa.api_server_pb.ApiServerService/RegisterUser")
+        }
+
+        var request = URLRequest(url: registerUserUrl!)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let requestBody = GenerateKeyRequestBody(firebase_id_token: token)
