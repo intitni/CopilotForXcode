@@ -72,6 +72,12 @@ struct CodeBlockSuggestionPanel: View {
                 }.buttonStyle(.plain)
 
                 Spacer()
+                
+                Button(action: {
+                    suggestion.rejectSuggestion()
+                }) {
+                    Image(systemName: "xmark")
+                }.buttonStyle(.plain)
             }
             .padding(4)
             .font(.caption)
