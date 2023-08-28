@@ -7,15 +7,21 @@ struct ChatContextMenu: View {
     @AppStorage(\.customCommands) var customCommands
 
     var body: some View {
-        Group {
-            currentSystemPrompt
-            currentExtraSystemPrompt
-            resetPrompt
+        Text(chat.title)
+            .contextMenu {
+                menu
+            }
+    }
+    
+    @ViewBuilder
+    var menu: some View {
+        currentSystemPrompt
+        currentExtraSystemPrompt
+        resetPrompt
 
-            Divider()
+        Divider()
 
-            customCommandMenu
-        }
+        customCommandMenu
     }
 
     @ViewBuilder

@@ -41,7 +41,7 @@ public class ChatGPTChatTab: ChatTab {
         ChatPanel(chat: provider)
     }
 
-    public func buildMenu() -> any View {
+    public func buildTabItem() -> any View {
         ChatContextMenu(chat: provider)
     }
 

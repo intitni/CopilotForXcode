@@ -175,18 +175,16 @@ struct ChatTabBar: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: 0) {
                             ForEach(viewStore.state.tabInfo, id: \.id) { info in
-                                ChatTabBarButton(
-                                    store: store,
-                                    info: info,
-                                    isSelected: info.id == viewStore.state.selectedTabId
-                                )
-                                .id(info.id)
-                                .contextMenu {
-                                    if let tab = chatTabPool.getTab(of: info.id) {
-                                        tab.menu
-                                    } else {
-                                        EmptyView()
-                                    }
+                                if let tab = chatTabPool.getTab(of: info.id) {
+                                    ChatTabBarButton(
+                                        store: store,
+                                        info: info,
+                                        content: { tab.tabItem },
+                                        isSelected: info.id == viewStore.state.selectedTabId
+                                    )
+                                    .id(info.id)
+                                } else {
+                                    EmptyView()
                                 }
                             }
                         }
@@ -263,9 +261,10 @@ struct ChatTabBar: View {
     }
 }
 
-struct ChatTabBarButton: View {
+struct ChatTabBarButton<Content: View>: View {
     let store: StoreOf<ChatPanelFeature>
     let info: ChatTabInfo
+    let content: () -> Content
     let isSelected: Bool
     @State var isHovered: Bool = false
 
@@ -274,7 +273,7 @@ struct ChatTabBarButton: View {
             Button(action: {
                 store.send(.tabClicked(id: info.id))
             }) {
-                Text(info.title)
+                content()
                     .font(.callout)
                     .lineLimit(1)
                     .frame(maxWidth: 120)
@@ -372,10 +371,12 @@ class FakeChatTab: ChatTab {
         }
     }
 
-    func buildMenu() -> any View {
-        Text("Menu Item")
-        Text("Menu Item")
-        Text("Menu Item")
+    func buildTabItem() -> any View {
+        Text("Fake")
+            .contextMenu {
+                Text("Menu Item")
+                Text("Menu Item")
+            }
     }
 
     func buildView() -> any View {
