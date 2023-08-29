@@ -182,6 +182,9 @@ struct ChatTabBar: View {
                                         content: { tab.tabItem },
                                         isSelected: info.id == viewStore.state.selectedTabId
                                     )
+                                    .contextMenu {
+                                        tab.menu
+                                    }
                                     .id(info.id)
                                 } else {
                                     EmptyView()
@@ -359,62 +362,8 @@ struct CreateOtherChatTabMenuStyle: MenuStyle {
     }
 }
 
-class FakeChatTab: ChatTab {
-    static var name: String { "Fake" }
-    static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] { [Builder()] }
-
-    struct Builder: ChatTabBuilder {
-        var title: String = "Title"
-
-        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
-            return FakeChatTab(store: store)
-        }
-    }
-
-    func buildTabItem() -> any View {
-        Text("Fake")
-            .contextMenu {
-                Text("Menu Item")
-                Text("Menu Item")
-            }
-    }
-
-    func buildView() -> any View {
-        ChatPanel(
-            chat: .init(
-                history: [
-                    .init(id: "1", role: .assistant, text: "Hello World"),
-                ],
-                isReceivingMessage: false
-            ),
-            typedMessage: "Hello World!"
-        )
-    }
-
-    func restorableState() async -> Data {
-        return Data()
-    }
-
-    static func restore(
-        from data: Data,
-        externalDependency: ()
-    ) async throws -> any ChatTabBuilder {
-        return Builder()
-    }
-
-    convenience init(id: String, title: String) {
-        self.init(store: .init(
-            initialState: .init(id: id, title: title),
-            reducer: ChatTabItem()
-        ))
-    }
-
-    func start() {}
-}
-
 struct ChatWindowView_Previews: PreviewProvider {
     static let pool = ChatTabPool([
-        "1": FakeChatTab(id: "1", title: "Hello I am a chatbot"),
         "2": EmptyChatTab(id: "2"),
         "3": EmptyChatTab(id: "3"),
         "4": EmptyChatTab(id: "4"),
@@ -423,30 +372,31 @@ struct ChatWindowView_Previews: PreviewProvider {
         "7": EmptyChatTab(id: "7"),
     ])
 
-    static var previews: some View {
-        ChatWindowView(
-            store: .init(
-                initialState: .init(
-                    chatTabGroup: .init(
-                        tabInfo: [
-                            .init(id: "1", title: "Fake"),
-                            .init(id: "2", title: "Empty-2"),
-                            .init(id: "3", title: "Empty-3"),
-                            .init(id: "4", title: "Empty-4"),
-                            .init(id: "5", title: "Empty-5"),
-                            .init(id: "6", title: "Empty-6"),
-                            .init(id: "7", title: "Empty-7"),
-                        ],
-                        selectedTabId: "1"
-                    ),
-                    isPanelDisplayed: true
+    static func createStore() -> StoreOf<ChatPanelFeature> {
+        StoreOf<ChatPanelFeature>(
+            initialState: .init(
+                chatTabGroup: .init(
+                    tabInfo: [
+                        .init(id: "2", title: "Empty-2"),
+                        .init(id: "3", title: "Empty-3"),
+                        .init(id: "4", title: "Empty-4"),
+                        .init(id: "5", title: "Empty-5"),
+                        .init(id: "6", title: "Empty-6"),
+                        .init(id: "7", title: "Empty-7"),
+                    ],
+                    selectedTabId: "2"
                 ),
-                reducer: ChatPanelFeature()
-            )
+                isPanelDisplayed: true
+            ),
+            reducer: ChatPanelFeature()
         )
-        .xcodeStyleFrame()
-        .padding()
-        .environment(\.chatTabPool, pool)
+    }
+
+    static var previews: some View {
+        ChatWindowView(store: createStore())
+            .xcodeStyleFrame()
+            .padding()
+            .environment(\.chatTabPool, pool)
     }
 }
 

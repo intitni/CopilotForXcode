@@ -2,19 +2,19 @@ import AppKit
 import SharedUIComponents
 import SwiftUI
 
+struct ChatTabItemView: View {
+    @ObservedObject var chat: ChatProvider
+    
+    var body: some View {
+        Text(chat.title)
+    }
+}
+
 struct ChatContextMenu: View {
     @ObservedObject var chat: ChatProvider
     @AppStorage(\.customCommands) var customCommands
 
     var body: some View {
-        Text(chat.title)
-            .contextMenu {
-                menu
-            }
-    }
-    
-    @ViewBuilder
-    var menu: some View {
         currentSystemPrompt
         currentExtraSystemPrompt
         resetPrompt
