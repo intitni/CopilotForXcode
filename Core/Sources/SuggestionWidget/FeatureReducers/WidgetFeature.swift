@@ -53,7 +53,7 @@ public struct WidgetFeature: ReducerProtocol {
                             return true
                         }
                         if panelState.sharedPanelState.isPanelDisplayed,
-                           panelState.sharedPanelState.content != nil
+                           !panelState.sharedPanelState.isEmpty
                         {
                             return true
                         }
@@ -65,7 +65,7 @@ public struct WidgetFeature: ReducerProtocol {
                         return false
                     }(),
                     isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
-                        && panelState.sharedPanelState.content == nil,
+                        && panelState.sharedPanelState.isEmpty,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
                     isChatOpen: chatPanelState.isPanelDisplayed,
                     animationProgress: circularWidgetState.animationProgress
@@ -311,7 +311,7 @@ public struct WidgetFeature: ReducerProtocol {
                 
                 let documentURL = state.focusingDocumentURL
 
-                return .run { send in
+                return .run { [app] send in
                     await send(.observeEditorChange)
 
                     let notifications = AXNotificationStream(
