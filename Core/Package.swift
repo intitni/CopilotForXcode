@@ -261,6 +261,13 @@ let package = Package(
             dependencies: [
                 "GitHubCopilotService",
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "Keychain", package: "Tool"),
+            ]
+        ),
+        .testTarget(
+            name: "ServiceUpdateMigrationTests",
+            dependencies: [
+                "ServiceUpdateMigration",
             ]
         ),
         .target(

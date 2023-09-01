@@ -2,19 +2,52 @@ import Configs
 import Foundation
 import Security
 
-public struct Keychain {
+public protocol KeychainType {
+    func getAll() throws -> [String: String]
+    func update(_ value: String, key: String) throws
+    func get(_ key: String) throws -> String?
+    func remove(_ key: String) throws
+}
+
+public final class FakeKeyChain: KeychainType {
+    var values: [String: String] = [:]
+
+    public init() {}
+
+    public func getAll() throws -> [String: String] {
+        values
+    }
+
+    public func update(_ value: String, key: String) throws {
+        values[key] = value
+    }
+
+    public func get(_ key: String) throws -> String? {
+        values[key]
+    }
+
+    public func remove(_ key: String) throws {
+        values[key] = nil
+    }
+}
+
+public struct Keychain: KeychainType {
     let service = keychainService
     let accessGroup = keychainAccessGroup
+    let scope: String
 
     public enum Error: Swift.Error {
         case failedToDeleteFromKeyChain
         case failedToUpdateOrSetItem
     }
 
-    public init() {}
-    
+    public init(scope: String = "") {
+        self.scope = scope
+    }
+
     func query(_ key: String) -> [String: Any] {
-        [
+        let key = scopeKey(key)
+        return [
             kSecClass as String: kSecClassGenericPassword as String,
             kSecAttrService as String: service,
             kSecAttrAccessGroup as String: accessGroup,
@@ -24,6 +57,7 @@ public struct Keychain {
     }
 
     func set(_ value: String, key: String) throws {
+        let key = scopeKey(key)
         let query = query(key).merging([
             kSecValueData as String: value.data(using: .utf8) ?? Data(),
         ], uniquingKeysWith: { _, b in b })
@@ -36,6 +70,54 @@ public struct Keychain {
         default:
             throw Error.failedToUpdateOrSetItem
         }
+    }
+
+    func scopeKey(_ key: String) -> String {
+        if scope.isEmpty {
+            return key
+        }
+        return "\(scope).\(key)"
+    }
+    
+    func escapeScope(_ key: String) -> String? {
+        if scope.isEmpty {
+            return key
+        }
+        if !key.hasPrefix("\(scope).") { return nil }
+        return key.replacingOccurrences(of: "\(scope).", with: "")
+    }
+
+    public func getAll() throws -> [String : String] {
+        let query = [
+            kSecClass as String: kSecClassGenericPassword as String,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup,
+            kSecReturnAttributes as String: true,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+        ] as [String: Any]
+
+        var result: AnyObject?
+        if SecItemCopyMatching(query as CFDictionary, &result) == noErr {
+            guard let items = result as? [[String: Any]] else {
+                return [:]
+            }
+
+            var dict = [String: String]()
+            for item in items {
+                guard let keyData = item[kSecAttrAccount as String] as? Data,
+                      let key = String(data: keyData, encoding: .utf8),
+                      let valueData = item[kSecValueData as String] as? Data,
+                      let value = String(data: valueData, encoding: .utf8),
+                      let escapedKey = escapeScope(key)
+                else {
+                    continue
+                }
+                dict[escapedKey] = value
+            }
+        }
+        
+        return [:]
     }
 
     public func update(_ value: String, key: String) throws {
@@ -87,3 +169,4 @@ public struct Keychain {
         throw Error.failedToDeleteFromKeyChain
     }
 }
+

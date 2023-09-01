@@ -1,5 +1,6 @@
-import Foundation
+import AIModel
 import Configs
+import Foundation
 
 public extension UserDefaults {
     static var shared = UserDefaults(suiteName: userDefaultSuiteName)!
@@ -13,12 +14,8 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.widgetColorScheme)
         shared.setupDefaultValue(for: \.customCommands)
         shared.setupDefaultValue(for: \.runNodeWith, defaultValue: .env)
-        shared.setupDefaultValue(for: \.openAIBaseURL, defaultValue: {
-            guard let url = URL(string: shared.value(for: \.chatGPTEndpoint)) else { return "" }
-            let scheme = url.scheme ?? "https"
-            guard let host = url.host else { return "" }
-            return "\(scheme)://\(host)"
-        }() as String)
+        shared.setupDefaultValue(for: \.chatModels)
+        shared.setupDefaultValue(for: \.embeddingModels)
     }
 }
 
@@ -52,7 +49,7 @@ extension Array: RawRepresentable where Element: Codable {
 }
 
 public extension UserDefaults {
-    // MARK: - Normal Types
+    // MARK: Normal Types
 
     func value<K: UserDefaultPreferenceKey>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
@@ -77,7 +74,7 @@ public extension UserDefaults {
             set(key.defaultValue, forKey: key.key)
         }
     }
-    
+
     func setupDefaultValue<K: UserDefaultPreferenceKey>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>,
         defaultValue: K.Value
@@ -88,7 +85,7 @@ public extension UserDefaults {
         }
     }
 
-    // MARK: - Raw Representable
+    // MARK: Raw Representable
 
     func value<K: UserDefaultPreferenceKey>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
@@ -146,3 +143,71 @@ public extension UserDefaults {
         }
     }
 }
+
+// MARK: - Deprecated Key Accessor
+
+public extension UserDefaults {
+    // MARK: Normal Types
+
+    func deprecatedValue<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: UserDefaultsStorable {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        return (value(forKey: key.key) as? K) ?? key.defaultValue
+    }
+
+    // MARK: Raw Representable
+
+    func deprecatedValue<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: RawRepresentable, K.RawValue == String {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        guard let rawValue = value(forKey: key.key) as? String else {
+            return key.defaultValue
+        }
+        return K(rawValue: rawValue) ?? key.defaultValue
+    }
+
+    func deprecatedValue<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: RawRepresentable, K.RawValue == Int {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        guard let rawValue = value(forKey: key.key) as? Int else {
+            return key.defaultValue
+        }
+        return K(rawValue: rawValue) ?? key.defaultValue
+    }
+}
+
+public extension UserDefaults {
+    @available(*, deprecated, message: "This preference key is deprecated.")
+    func value<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: UserDefaultsStorable {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        return (value(forKey: key.key) as? K) ?? key.defaultValue
+    }
+
+    @available(*, deprecated, message: "This preference key is deprecated.")
+    func value<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: RawRepresentable, K.RawValue == String {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        guard let rawValue = value(forKey: key.key) as? String else {
+            return key.defaultValue
+        }
+        return K(rawValue: rawValue) ?? key.defaultValue
+    }
+
+    @available(*, deprecated, message: "This preference key is deprecated.")
+    func value<K>(
+        for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>
+    ) -> K where K: RawRepresentable, K.RawValue == Int {
+        let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
+        guard let rawValue = value(forKey: key.key) as? Int else {
+            return key.defaultValue
+        }
+        return K(rawValue: rawValue) ?? key.defaultValue
+    }
+}
+

@@ -44,17 +44,18 @@ public struct EmbeddingService {
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
+        let model = configuration.model
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(EmbeddingRequestBody(
             input: text,
-            model: configuration.model
+            model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !configuration.apiKey.isEmpty {
-            switch configuration.featureProvider {
-            case .openAI:
+            switch model.format {
+            case .openAI, .openAIFormat:
                 request.setValue(
                     "Bearer \(configuration.apiKey)",
                     forHTTPHeaderField: "Authorization"
@@ -92,17 +93,18 @@ public struct EmbeddingService {
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
+        let model = configuration.model
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(EmbeddingFromTokensRequestBody(
             input: tokens,
-            model: configuration.model
+            model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !configuration.apiKey.isEmpty {
-            switch configuration.featureProvider {
-            case .openAI:
+            switch model.format {
+            case .openAI, .openAIFormat:
                 request.setValue(
                     "Bearer \(configuration.apiKey)",
                     forHTTPHeaderField: "Authorization"

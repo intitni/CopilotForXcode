@@ -196,15 +196,17 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
+        
+        let model = configuration.model
 
         let requestBody = CompletionRequestBody(
-            model: configuration.model,
+            model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
             stream: true,
             stop: configuration.stop.isEmpty ? nil : configuration.stop,
             max_tokens: maxTokenForReply(
-                model: configuration.model,
+                maxToken: model.info.maxTokens,
                 remainingTokens: remainingTokens
             ),
             function_call: functionProvider.functionCallStrategy,
@@ -219,7 +221,7 @@ extension ChatGPTService {
 
         let api = buildCompletionStreamAPI(
             configuration.apiKey,
-            configuration.featureProvider,
+            model,
             url,
             requestBody
         )
@@ -296,15 +298,17 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
+        
+        let model = configuration.model
 
         let requestBody = CompletionRequestBody(
-            model: configuration.model,
+            model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
             stream: true,
             stop: configuration.stop.isEmpty ? nil : configuration.stop,
             max_tokens: maxTokenForReply(
-                model: configuration.model,
+                maxToken: model.info.maxTokens,
                 remainingTokens: remainingTokens
             ),
             function_call: functionProvider.functionCallStrategy,
@@ -319,7 +323,7 @@ extension ChatGPTService {
 
         let api = buildCompletionAPI(
             configuration.apiKey,
-            configuration.featureProvider,
+            model,
             url,
             requestBody
         )
@@ -467,9 +471,8 @@ extension ChatGPTService {
     }
 }
 
-func maxTokenForReply(model: String, remainingTokens: Int?) -> Int? {
+func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
     guard let remainingTokens else { return nil }
-    guard let model = ChatGPTModel(rawValue: model) else { return remainingTokens }
-    return min(model.maxToken / 2, remainingTokens)
+    return min(maxToken / 2, remainingTokens)
 }
 

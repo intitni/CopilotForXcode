@@ -49,6 +49,7 @@ let package = Package(
             from: "0.55.0"
         ),
         .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
+        .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
 
         // TreeSitter
         .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.7.1"),
@@ -63,7 +64,7 @@ let package = Package(
 
         .target(name: "Configs"),
 
-        .target(name: "Preferences", dependencies: ["Configs"]),
+        .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
 
         .target(name: "Terminal"),
 
@@ -119,6 +120,13 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 .product(name: "Parsing", package: "swift-parsing"),
+            ]
+        ),
+
+        .target(
+            name: "AIModel",
+            dependencies: [
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
 
@@ -219,6 +227,7 @@ let package = Package(
                 "Logger",
                 "Preferences",
                 "TokenEncoder",
+                "Keychain",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
