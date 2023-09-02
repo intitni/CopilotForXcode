@@ -119,6 +119,7 @@ let package = Package(
                 "LaunchAgentManager",
                 "PlusFeatureFlag",
                 .product(name: "Toast", package: "Tool"),
+                .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
