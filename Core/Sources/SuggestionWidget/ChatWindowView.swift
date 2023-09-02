@@ -333,8 +333,10 @@ struct ChatTabContainer: View {
                 } else {
                     ForEach(viewStore.state.tabInfo) { tabInfo in
                         if let tab = chatTabPool.getTab(of: tabInfo.id) {
+                            let isActive = tab.id == viewStore.state.selectedTabId
                             tab.body
-                                .opacity(tab.id == viewStore.state.selectedTabId ? 1 : 0)
+                                .opacity(isActive ? 1 : 0)
+                                .disabled(!isActive)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             EmptyView()
