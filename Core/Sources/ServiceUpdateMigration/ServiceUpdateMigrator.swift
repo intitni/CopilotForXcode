@@ -26,8 +26,8 @@ public struct ServiceUpdateMigrator {
         if old <= 135 {
             try migrateFromLowerThanOrEqualToVersion135()
         }
-        if old <= 229 {
-            try migrateTo230()
+        if old < 240 {
+            try migrateTo240()
         }
     }
 }

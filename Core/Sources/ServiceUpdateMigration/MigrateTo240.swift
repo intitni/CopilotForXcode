@@ -3,9 +3,9 @@ import Foundation
 import Keychain
 import Preferences
 
-func migrateTo230(
+func migrateTo240(
     defaults: UserDefaults = .shared,
-    keychain: KeychainType = Keychain(scope: "apikey")
+    keychain: KeychainType = Keychain.apiKey
 ) throws {
     let key = UserDefaultPreferenceKeys().embeddingModels.key
     if defaults.value(forKey: key) != nil { return }

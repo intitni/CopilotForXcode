@@ -4,17 +4,17 @@ import XCTest
 
 @testable import ServiceUpdateMigration
 
-final class MigrateTo230Tests: XCTestCase {
-    let userDefaults = UserDefaults(suiteName: "MigrateTo230Tests")!
+final class MigrateTo240Tests: XCTestCase {
+    let userDefaults = UserDefaults(suiteName: "MigrateTo240Tests")!
     
     override func tearDown() async throws {
-        userDefaults.removePersistentDomain(forName: "MigrateTo230Tests")
+        userDefaults.removePersistentDomain(forName: "MigrateTo240Tests")
     }
     
-    func test_migrateTo230_no_data_to_migrate() async throws {
+    func test_migrateTo240_no_data_to_migrate() async throws {
         let keychain = FakeKeyChain()
 
-        try migrateTo230(defaults: userDefaults, keychain: keychain)
+        try migrateTo240(defaults: userDefaults, keychain: keychain)
 
         XCTAssertTrue(try keychain.getAll().isEmpty, "No api key to migrate")
 
@@ -70,7 +70,7 @@ final class MigrateTo230Tests: XCTestCase {
         }
     }
 
-    func test_migrateTo230_migrate_data_use_openAI() async throws {
+    func test_migrateTo240_migrate_data_use_openAI() async throws {
         let keychain = FakeKeyChain()
 
         userDefaults.set("Key1", forKey: "OpenAIAPIKey")
@@ -85,7 +85,7 @@ final class MigrateTo230Tests: XCTestCase {
         userDefaults.set("openAI", forKey: "ChatFeatureProvider")
         userDefaults.set("openAI", forKey: "EmbeddingFeatureProvider")
 
-        try migrateTo230(defaults: userDefaults, keychain: keychain)
+        try migrateTo240(defaults: userDefaults, keychain: keychain)
 
         XCTAssertEqual(try keychain.getAll(), [
             "OpenAI": "Key1",
@@ -156,7 +156,7 @@ final class MigrateTo230Tests: XCTestCase {
         }
     }
 
-    func test_migrateTo230_migrate_data_use_azureOpenAI() async throws {
+    func test_migrateTo240_migrate_data_use_azureOpenAI() async throws {
         let keychain = FakeKeyChain()
 
         userDefaults.set("Key1", forKey: "OpenAIAPIKey")
@@ -171,7 +171,7 @@ final class MigrateTo230Tests: XCTestCase {
         userDefaults.set("azureOpenAI", forKey: "ChatFeatureProvider")
         userDefaults.set("azureOpenAI", forKey: "EmbeddingFeatureProvider")
 
-        try migrateTo230(defaults: userDefaults, keychain: keychain)
+        try migrateTo240(defaults: userDefaults, keychain: keychain)
 
         let chatModels = userDefaults.value(for: \.chatModels)
         let embeddingModels = userDefaults.value(for: \.embeddingModels)
