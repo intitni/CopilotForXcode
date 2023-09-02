@@ -12,7 +12,7 @@ import QuartzCore
 import Workspace
 import XcodeInspector
 
-public class RealtimeSuggestionController {
+public actor RealtimeSuggestionController {
     let eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [.keyDown])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
@@ -23,12 +23,13 @@ public class RealtimeSuggestionController {
     private var sourceEditor: SourceEditor?
 
     init() {}
-    
+
+    nonisolated
     func start() {
         Task { [weak self] in
             if let app = ActiveApplicationMonitor.shared.activeXcode {
-                self?.handleXcodeChanged(app)
-                self?.startHIDObservation()
+                await self?.handleXcodeChanged(app)
+                await self?.startHIDObservation()
             }
             var previousApp = ActiveApplicationMonitor.shared.activeXcode
             for await app in ActiveApplicationMonitor.shared.createStream() {
@@ -37,13 +38,13 @@ public class RealtimeSuggestionController {
                 defer { previousApp = app }
 
                 if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
-                    self.handleXcodeChanged(app)
+                    await self.handleXcodeChanged(app)
                 }
 
                 if ActiveApplicationMonitor.shared.activeXcode != nil {
-                    startHIDObservation()
+                    await startHIDObservation()
                 } else {
-                    stopHIDObservation()
+                    await stopHIDObservation()
                 }
             }
         }
@@ -85,7 +86,7 @@ public class RealtimeSuggestionController {
             for await _ in notifications {
                 guard let self else { return }
                 try Task.checkCancellation()
-                self.handleFocusElementChange()
+                await self.handleFocusElementChange()
             }
         }
     }
@@ -112,7 +113,7 @@ public class RealtimeSuggestionController {
 
         editorObservationTask = Task { [weak self] in
             let fileURL = try await Environment.fetchCurrentFileURL()
-            if let sourceEditor = self?.sourceEditor {
+            if let sourceEditor = await self?.sourceEditor {
                 await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                     fileURL: fileURL,
                     sourceEditor: sourceEditor
@@ -132,10 +133,10 @@ public class RealtimeSuggestionController {
                 switch notification.name {
                 case kAXValueChangedNotification:
                     await cancelInFlightTasks()
-                    self.triggerPrefetchDebounced()
+                    await self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
-                    guard let sourceEditor else { continue }
+                    guard let sourceEditor = await sourceEditor else { continue }
                     let fileURL = XcodeInspector.shared.activeDocumentURL
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                         fileURL: fileURL,
