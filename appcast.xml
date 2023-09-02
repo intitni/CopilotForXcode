@@ -4,6 +4,18 @@
     <title>Copilot for Xcode</title>
 
     <item>
+      <title>0.22.3</title>
+      <pubDate>Sat, 02 Sep 2023 15:51:16 +0800</pubDate>
+      <sparkle:version>233</sparkle:version>
+      <sparkle:shortVersionString>0.22.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.22.3
+      </sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.22.3/Copilot.for.Xcode.app.zip" length="31397137" type="application/octet-stream" sparkle:edSignature="1wu9QYOxI9TkSY2/+JcRZFv/9WjvRwMZ0j1Hdt3x4hh0QSxP5xELKJZzMkf7yOTz0qyNM/5mbmAmCtO6nP4gAg=="/>
+    </item>
+
+    <item>
       <title>0.22.2</title>
       <pubDate>Sat, 19 Aug 2023 10:48:38 +0800</pubDate>
       <sparkle:version>232</sparkle:version>
