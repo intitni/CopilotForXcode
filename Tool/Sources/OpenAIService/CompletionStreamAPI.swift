@@ -182,7 +182,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
             switch model.format {
-            case .openAI, .openAIFormat:
+            case .openAI, .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")

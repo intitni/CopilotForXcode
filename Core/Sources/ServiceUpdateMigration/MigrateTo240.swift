@@ -7,8 +7,8 @@ func migrateTo240(
     defaults: UserDefaults = .shared,
     keychain: KeychainType = Keychain.apiKey
 ) throws {
-    let key = UserDefaultPreferenceKeys().embeddingModels.key
-    if defaults.value(forKey: key) != nil { return }
+    let finishedMigrationKey = "MigrateTo240Finished"
+    if defaults.bool(forKey: finishedMigrationKey) { return }
 
     let chatModelOpenAIId = UUID().uuidString
     let chatModelAzureOpenAIId = UUID().uuidString
@@ -105,5 +105,7 @@ func migrateTo240(
         }
         return embeddingModelOpenAIId
     }())
+    
+    defaults.set(true, forKey: finishedMigrationKey)
 }
 

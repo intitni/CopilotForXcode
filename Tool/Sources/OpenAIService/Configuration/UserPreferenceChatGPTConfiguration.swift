@@ -37,6 +37,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     public struct Overriding: Codable {
         public var temperature: Double?
         public var modelId: String?
+        public var model: ChatModel?
         public var stop: [String]?
         public var maxTokens: Int?
         public var minimumReplyTokens: Int?
@@ -45,6 +46,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         public init(
             temperature: Double? = nil,
             modelId: String? = nil,
+            model: ChatModel? = nil,
             stop: [String]? = nil,
             maxTokens: Int? = nil,
             minimumReplyTokens: Int? = nil,
@@ -52,6 +54,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         ) {
             self.temperature = temperature
             self.modelId = modelId
+            self.model = model
             self.stop = stop
             self.maxTokens = maxTokens
             self.minimumReplyTokens = minimumReplyTokens
@@ -75,6 +78,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     }
 
     public var model: ChatModel {
+        if let model = overriding.model { return model }
         let models = UserDefaults.shared.value(for: \.chatModels)
         guard let id = overriding.modelId,
               let model = models.first(where: { $0.id == id })

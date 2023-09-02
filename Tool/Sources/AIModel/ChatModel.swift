@@ -1,7 +1,7 @@
 import CodableWrappers
 import Foundation
 
-public struct ChatModel: Codable, Equatable {
+public struct ChatModel: Codable, Equatable, Identifiable {
     public var id: String
     public var name: String
     @FallbackDecoding<EmptyChatModelFormat>
@@ -16,10 +16,10 @@ public struct ChatModel: Codable, Equatable {
         self.info = info
     }
 
-    public enum Format: String, Codable, Equatable {
+    public enum Format: String, Codable, Equatable, CaseIterable {
         case openAI
-        case openAIFormat
         case azureOpenAI
+        case openAICompatible
     }
 
     public struct Info: Codable, Equatable {
@@ -55,7 +55,7 @@ public struct ChatModel: Codable, Equatable {
 
     public var endpoint: String {
         switch format {
-        case .openAI, .openAIFormat:
+        case .openAI, .openAICompatible:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
             return "\(baseURL)/v1/chat/completions"
