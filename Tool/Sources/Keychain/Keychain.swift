@@ -35,6 +35,10 @@ public struct Keychain: KeychainType {
     let service = keychainService
     let accessGroup = keychainAccessGroup
     let scope: String
+    
+    public static var apiKey: Keychain {
+        Keychain(scope: "apiKey")
+    }
 
     public enum Error: Swift.Error {
         case failedToDeleteFromKeyChain

@@ -16,7 +16,7 @@ public extension EmbeddingConfiguration {
     }
     
     var apiKey: String {
-        (try? Keychain(scope: "apikey").get(model.info.apiKeyName)) ?? ""
+        (try? Keychain.apiKey.get(model.info.apiKeyName)) ?? ""
     }
 
     func overriding(

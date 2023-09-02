@@ -19,7 +19,7 @@ public extension ChatGPTConfiguration {
     }
     
     var apiKey: String {
-        (try? Keychain(scope: "apikey").get(model.info.apiKeyName)) ?? ""
+        (try? Keychain.apiKey.get(model.info.apiKeyName)) ?? ""
     }
 
     func overriding(
