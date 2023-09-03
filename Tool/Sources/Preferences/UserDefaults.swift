@@ -2,6 +2,11 @@ import AIModel
 import Configs
 import Foundation
 
+public protocol UserDefaultsType {
+    func value(forKey: String) -> Any?
+    func set(_ value: Any?, forKey: String)
+}
+
 public extension UserDefaults {
     static var shared = UserDefaults(suiteName: userDefaultSuiteName)!
 
@@ -18,6 +23,8 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.embeddingModels)
     }
 }
+
+extension UserDefaults: UserDefaultsType {}
 
 public protocol UserDefaultsStorable {}
 
@@ -48,7 +55,7 @@ extension Array: RawRepresentable where Element: Codable {
     }
 }
 
-public extension UserDefaults {
+public extension UserDefaultsType {
     // MARK: Normal Types
 
     func value<K: UserDefaultPreferenceKey>(
@@ -146,7 +153,7 @@ public extension UserDefaults {
 
 // MARK: - Deprecated Key Accessor
 
-public extension UserDefaults {
+public extension UserDefaultsType {
     // MARK: Normal Types
 
     func deprecatedValue<K>(
@@ -179,7 +186,7 @@ public extension UserDefaults {
     }
 }
 
-public extension UserDefaults {
+public extension UserDefaultsType {
     @available(*, deprecated, message: "This preference key is deprecated.")
     func value<K>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, DeprecatedPreferenceKey<K>>

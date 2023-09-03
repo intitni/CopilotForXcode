@@ -5,7 +5,6 @@ import Preferences
 
 public protocol EmbeddingConfiguration {
     var model: EmbeddingModel { get }
-    var endpoint: String { get }
     var apiKey: String { get }
     var maxToken: Int { get }
 }

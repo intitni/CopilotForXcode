@@ -55,7 +55,7 @@ public struct EmbeddingService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !configuration.apiKey.isEmpty {
             switch model.format {
-            case .openAI, .openAIFormat:
+            case .openAI, .openAICompatible:
                 request.setValue(
                     "Bearer \(configuration.apiKey)",
                     forHTTPHeaderField: "Authorization"
@@ -104,7 +104,7 @@ public struct EmbeddingService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !configuration.apiKey.isEmpty {
             switch model.format {
-            case .openAI, .openAIFormat:
+            case .openAI, .openAICompatible:
                 request.setValue(
                     "Bearer \(configuration.apiKey)",
                     forHTTPHeaderField: "Authorization"

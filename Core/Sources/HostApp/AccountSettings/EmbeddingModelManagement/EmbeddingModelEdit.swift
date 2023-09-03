@@ -6,13 +6,12 @@ import OpenAIService
 import Preferences
 import SwiftUI
 
-struct ChatModelEdit: ReducerProtocol {
+struct EmbeddingModelEdit: ReducerProtocol {
     struct State: Equatable, Identifiable {
         var id: String
         @BindingState var name: String
-        @BindingState var format: ChatModel.Format
+        @BindingState var format: EmbeddingModel.Format
         @BindingState var maxTokens: Int = 4000
-        @BindingState var supportsFunctionCalling: Bool = true
         @BindingState var modelName: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
@@ -69,7 +68,7 @@ struct ChatModelEdit: ReducerProtocol {
             case .testButtonClicked:
                 guard !state.isTesting else { return .none }
                 state.isTesting = true
-                let model = ChatModel(
+                let model = EmbeddingModel(
                     id: state.id,
                     name: state.name,
                     format: state.format,
@@ -77,20 +76,19 @@ struct ChatModelEdit: ReducerProtocol {
                         apiKeyName: state.apiKeyName,
                         baseURL: state.baseURL,
                         maxTokens: state.maxTokens,
-                        supportsFunctionCalling: state.supportsFunctionCalling,
                         modelName: state.modelName
                     )
                 )
                 return .run { send in
                     do {
-                        let reply =
-                            try await ChatGPTService(
-                                configuration: UserPreferenceChatGPTConfiguration()
+                        let tokenUsage =
+                            try await EmbeddingService(
+                                configuration: UserPreferenceEmbeddingConfiguration()
                                     .overriding {
                                         $0.model = model
                                     }
-                            ).sendAndWait(content: "Hello")
-                        await send(.testSucceeded(reply ?? "No Message"))
+                            ).embed(text: "Hello").usage.total_tokens
+                        await send(.testSucceeded("Used \(tokenUsage) tokens."))
                     } catch {
                         await send(.testFailed(error.localizedDescription))
                     }
@@ -115,7 +113,7 @@ struct ChatModelEdit: ReducerProtocol {
 
             case .checkSuggestedMaxTokens:
                 guard state.format == .openAI,
-                      let knownModel = ChatGPTModel(rawValue: state.modelName)
+                      let knownModel = OpenAIEmbeddingModel(rawValue: state.modelName)
                 else {
                     state.suggestedMaxTokens = nil
                     return .none
@@ -147,14 +145,12 @@ struct ChatModelEdit: ReducerProtocol {
     }
 }
 
-extension ChatModelEdit.State {
-    init(model: ChatModel) {
+extension EmbeddingModelEdit.State {
+    init(model: EmbeddingModel) {
         self.init(
             id: model.id,
             name: model.name,
             format: model.format,
-            maxTokens: model.info.maxTokens,
-            supportsFunctionCalling: model.info.supportsFunctionCalling,
             modelName: model.info.modelName,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
@@ -165,8 +161,8 @@ extension ChatModelEdit.State {
     }
 }
 
-extension ChatModel {
-    init(state: ChatModelEdit.State) {
+extension EmbeddingModel {
+    init(state: EmbeddingModelEdit.State) {
         self.init(
             id: state.id,
             name: state.name,
@@ -175,7 +171,6 @@ extension ChatModel {
                 apiKeyName: state.apiKeyName,
                 baseURL: state.baseURL,
                 maxTokens: state.maxTokens,
-                supportsFunctionCalling: state.supportsFunctionCalling,
                 modelName: state.modelName
             )
         )

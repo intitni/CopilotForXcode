@@ -21,14 +21,17 @@ public class OverridingEmbeddingConfiguration<
     Configuration: EmbeddingConfiguration
 >: EmbeddingConfiguration {
     public struct Overriding {
-        var modelId: String?
-        var maxTokens: Int?
+        public var modelId: String?
+        public var model: EmbeddingModel?
+        public var maxTokens: Int?
 
         public init(
             modelId: String? = nil,
+            model: EmbeddingModel? = nil,
             maxTokens: Int? = nil
         ) {
             self.modelId = modelId
+            self.model = model
             self.maxTokens = maxTokens
         }
     }
@@ -42,6 +45,7 @@ public class OverridingEmbeddingConfiguration<
     }
 
     public var model: EmbeddingModel {
+        if let model = overriding.model { return model }
         let models = UserDefaults.shared.value(for: \.embeddingModels)
         guard let id = overriding.modelId,
               let model = models.first(where: { $0.id == id })

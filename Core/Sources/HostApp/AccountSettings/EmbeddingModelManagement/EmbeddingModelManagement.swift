@@ -4,7 +4,7 @@ import Keychain
 import Preferences
 import SwiftUI
 
-extension ChatModel: ManageableAIModel {
+extension EmbeddingModel: ManageableAIModel {
     var formatName: String {
         switch format {
         case .openAI: return "OpenAI"
@@ -27,32 +27,28 @@ extension ChatModel: ManageableAIModel {
         Text("\(info.maxTokens) tokens")
 
         Image(systemName: "line.diagonal")
-
-        Text(
-            "function calling \(info.supportsFunctionCalling ? Image(systemName: "checkmark.square") : Image(systemName: "xmark.square"))"
-        )
     }
 }
 
-struct ChatModelManagement: AIModelManagement {
-    typealias Model = ChatModel
+struct EmbeddingModelManagement: AIModelManagement {
+    typealias Model = EmbeddingModel
 
     struct State: Equatable, AIModelManagementState {
-        typealias Model = ChatModel
-        var models: IdentifiedArrayOf<ChatModel> = []
-        @PresentationState var editingModel: ChatModelEdit.State?
-        var selectedModelId: String? { editingModel?.id }
+        typealias Model = EmbeddingModel
+        var models: IdentifiedArrayOf<EmbeddingModel> = []
+        @PresentationState var editingModel: EmbeddingModelEdit.State?
+        var selectedModelId: Model.ID? { editingModel?.id }
     }
 
     enum Action: Equatable, AIModelManagementAction {
-        typealias Model = ChatModel
+        typealias Model = EmbeddingModel
         case appear
         case createModel
         case removeModel(id: Model.ID)
         case selectModel(id: Model.ID)
         case duplicateModel(id: Model.ID)
         case moveModel(from: IndexSet, to: Int)
-        case chatModelItem(PresentationAction<ChatModelEdit.Action>)
+        case embeddingModelItem(PresentationAction<EmbeddingModelEdit.Action>)
     }
 
     @Dependency(\.toast) var toast
@@ -64,7 +60,7 @@ struct ChatModelManagement: AIModelManagement {
             case .appear:
                 if isPreview { return .none }
                 state.models = .init(
-                    userDefaults.value(for: \.chatModels),
+                    userDefaults.value(for: \.embeddingModels),
                     id: \.id,
                     uniquingIDsWith: { a, _ in a }
                 )
@@ -107,7 +103,7 @@ struct ChatModelManagement: AIModelManagement {
                 persist(state)
                 return .none
 
-            case .chatModelItem(.presented(.saveButtonClicked)):
+            case .embeddingModelItem(.presented(.saveButtonClicked)):
                 guard let editingModel = state.editingModel, validateModel(editingModel)
                 else { return .none }
 
@@ -120,28 +116,28 @@ struct ChatModelManagement: AIModelManagement {
                 }
                 persist(state)
                 return .run { send in
-                    await send(.chatModelItem(.dismiss))
+                    await send(.embeddingModelItem(.dismiss))
                 }
 
-            case .chatModelItem(.presented(.cancelButtonClicked)):
+            case .embeddingModelItem(.presented(.cancelButtonClicked)):
                 return .run { send in
-                    await send(.chatModelItem(.dismiss))
+                    await send(.embeddingModelItem(.dismiss))
                 }
 
-            case .chatModelItem:
+            case .embeddingModelItem:
                 return .none
             }
-        }.ifLet(\.$editingModel, action: /Action.chatModelItem) {
-            ChatModelEdit()
+        }.ifLet(\.$editingModel, action: /Action.embeddingModelItem) {
+            EmbeddingModelEdit()
         }
     }
 
     func persist(_ state: State) {
         let models = state.models
-        userDefaults.set(Array(models), for: \.chatModels)
+        userDefaults.set(Array(models), for: \.embeddingModels)
     }
 
-    func validateModel(_ chatModel: ChatModelEdit.State) -> Bool {
+    func validateModel(_ chatModel: EmbeddingModelEdit.State) -> Bool {
         guard !chatModel.name.isEmpty else {
             toast("Model name cannot be empty", .error)
             return false

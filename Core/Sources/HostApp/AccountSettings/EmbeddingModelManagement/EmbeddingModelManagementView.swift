@@ -2,16 +2,16 @@ import AIModel
 import ComposableArchitecture
 import SwiftUI
 
-struct ChatModelManagementView: View {
-    let store: StoreOf<ChatModelManagement>
+struct EmbeddingModelManagementView: View {
+    let store: StoreOf<EmbeddingModelManagement>
 
     var body: some View {
-        AIModelManagementView<ChatModelManagement, _>(store: store)
+        AIModelManagementView<EmbeddingModelManagement, _>(store: store)
             .sheet(store: store.scope(
                 state: \.$editingModel,
-                action: ChatModelManagement.Action.chatModelItem
+                action: EmbeddingModelManagement.Action.embeddingModelItem
             )) { store in
-                ChatModelEditView(store: store)
+                EmbeddingModelEditView(store: store)
                     .frame(minWidth: 400)
             }
     }
@@ -19,13 +19,13 @@ struct ChatModelManagementView: View {
 
 // MARK: - Previews
 
-class ChatModelManagementView_Previews: PreviewProvider {
+class EmbeddingModelManagementView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatModelManagementView(
+        EmbeddingModelManagementView(
             store: .init(
                 initialState: .init(
-                    models: IdentifiedArray<String, ChatModel>(uniqueElements: [
-                        ChatModel(
+                    models: IdentifiedArray<String, EmbeddingModel>(uniqueElements: [
+                        EmbeddingModel(
                             id: "1",
                             name: "Test Model",
                             format: .openAI,
@@ -33,11 +33,10 @@ class ChatModelManagementView_Previews: PreviewProvider {
                                 apiKeyName: "key",
                                 baseURL: "google.com",
                                 maxTokens: 3000,
-                                supportsFunctionCalling: true,
                                 modelName: "gpt-3.5-turbo"
                             )
                         ),
-                        ChatModel(
+                        EmbeddingModel(
                             id: "2",
                             name: "Test Model 2",
                             format: .azureOpenAI,
@@ -45,11 +44,10 @@ class ChatModelManagementView_Previews: PreviewProvider {
                                 apiKeyName: "key",
                                 baseURL: "apple.com",
                                 maxTokens: 3000,
-                                supportsFunctionCalling: false,
                                 modelName: "gpt-3.5-turbo"
                             )
                         ),
-                        ChatModel(
+                        EmbeddingModel(
                             id: "3",
                             name: "Test Model 3",
                             format: .openAICompatible,
@@ -57,13 +55,12 @@ class ChatModelManagementView_Previews: PreviewProvider {
                                 apiKeyName: "key",
                                 baseURL: "apple.com",
                                 maxTokens: 3000,
-                                supportsFunctionCalling: false,
                                 modelName: "gpt-3.5-turbo"
                             )
                         ),
                     ]),
                     editingModel: .init(
-                        model: ChatModel(
+                        model: EmbeddingModel(
                             id: "3",
                             name: "Test Model 3",
                             format: .openAICompatible,
@@ -71,13 +68,12 @@ class ChatModelManagementView_Previews: PreviewProvider {
                                 apiKeyName: "key",
                                 baseURL: "apple.com",
                                 maxTokens: 3000,
-                                supportsFunctionCalling: false,
                                 modelName: "gpt-3.5-turbo"
                             )
                         )
                     )
                 ),
-                reducer: ChatModelManagement()
+                reducer: EmbeddingModelManagement()
             )
         )
     }

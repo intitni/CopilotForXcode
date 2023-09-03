@@ -1,7 +1,7 @@
 import Foundation
 import CodableWrappers
 
-public struct EmbeddingModel: Codable, Equatable {
+public struct EmbeddingModel: Codable, Equatable, Identifiable {
     public var id: String
     public var name: String
     @FallbackDecoding<EmptyEmbeddingModelFormat>
@@ -16,10 +16,10 @@ public struct EmbeddingModel: Codable, Equatable {
         self.info = info
     }
 
-    public enum Format: String, Codable, Equatable {
+    public enum Format: String, Codable, Equatable, CaseIterable {
         case openAI
         case azureOpenAI
-        case openAIFormat
+        case openAICompatible
     }
 
     public struct Info: Codable, Equatable {
@@ -51,7 +51,7 @@ public struct EmbeddingModel: Codable, Equatable {
     
     public var endpoint: String {
         switch format {
-        case .openAI, .openAIFormat:
+        case .openAI, .openAICompatible:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.openai.com/v1/embeddings" }
             return "\(baseURL)/v1/embeddings"
