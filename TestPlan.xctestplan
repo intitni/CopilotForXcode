@@ -133,6 +133,13 @@
         "identifier" : "ServiceUpdateMigrationTests",
         "name" : "ServiceUpdateMigrationTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "KeychainTests",
+        "name" : "KeychainTests"
+      }
     }
   ],
   "version" : 1
