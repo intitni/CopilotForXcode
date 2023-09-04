@@ -25,24 +25,20 @@ struct ServiceView: View {
                 image: "globe"
             )
             
-            ScrollView {
-                ChatModelManagementView(store: store.scope(
-                    state: \.chatModelManagement,
-                    action: HostApp.Action.chatModelManagement
-                )).padding()
-            }.sidebarItem(
+            ChatModelManagementView(store: store.scope(
+                state: \.chatModelManagement,
+                action: HostApp.Action.chatModelManagement
+            )).sidebarItem(
                 tag: 2,
                 title: "Chat Models",
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
             
-            ScrollView {
-                EmbeddingModelManagementView(store: store.scope(
-                    state: \.embeddingModelManagement,
-                    action: HostApp.Action.embeddingModelManagement
-                )).padding()
-            }.sidebarItem(
+            EmbeddingModelManagementView(store: store.scope(
+                state: \.embeddingModelManagement,
+                action: HostApp.Action.embeddingModelManagement
+            )).sidebarItem(
                 tag: 3,
                 title: "Embedding Models",
                 subtitle: "Chat, Prompt to Code",
