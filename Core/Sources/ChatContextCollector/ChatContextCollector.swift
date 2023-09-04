@@ -14,7 +14,8 @@ public protocol ChatContextCollector {
     func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext?
 }
 

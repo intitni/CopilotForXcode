@@ -28,6 +28,8 @@ struct SearchFunction: ChatGPTFunction {
             }.joined(separator: "\n")
         }
     }
+    
+    let maxTokens: Int
 
     var reportProgress: (String) async -> Void = { _ in }
 
@@ -73,11 +75,9 @@ struct SearchFunction: ChatGPTFunction {
                 searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
             )
             
-            #warning("request chat service to pass in the token length")
-            
             let result = try await bingSearch.search(
                 query: arguments.query,
-                numberOfResult: UserDefaults.shared.value(for: \.chatGPTMaxToken) > 5000 ? 5 : 3,
+                numberOfResult: maxTokens > 5000 ? 5 : 3,
                 freshness: arguments.freshness
             )
 

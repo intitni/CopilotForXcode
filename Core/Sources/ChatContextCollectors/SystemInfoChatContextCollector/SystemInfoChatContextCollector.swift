@@ -14,7 +14,8 @@ public final class SystemInfoChatContextCollector: ChatContextCollector {
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext? {
         return .init(
             systemPrompt: """
