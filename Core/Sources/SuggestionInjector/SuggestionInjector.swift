@@ -233,9 +233,24 @@ public struct SuggestionInjector {
 
         // then check how many characters are not in the suffix of the suggestion.
         guard let splitIndex else { return 0 }
-        
-        let suffix = lastRemovedLineCleaned[splitIndex...]
+
+        var suffix = String(lastRemovedLineCleaned[splitIndex...])
         if last.hasSuffix(suffix) { return 0 }
+
+        // remove the first adjacent placeholder in suffix which looks like `<#Hello#>`
+
+        let regex = try! NSRegularExpression(pattern: "<#.*?#>")
+
+        if let firstPlaceholderRange = regex.firstMatch(
+            in: suffix,
+            options: [],
+            range: NSRange(suffix.startIndex..., in: suffix)
+        )?.range,
+            firstPlaceholderRange.location <= 1,
+            let r = Range(firstPlaceholderRange, in: suffix)
+        {
+            suffix.removeSubrange(r)
+        }
 
         let lastInsertingLine = toBeInserted[toBeInserted.endIndex - 1]
             .droppedLineBreak()

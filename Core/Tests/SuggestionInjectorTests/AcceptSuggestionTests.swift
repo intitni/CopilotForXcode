@@ -541,6 +541,40 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
+    
+    func test_remove_the_first_adjacent_placeholder_in_the_last_line(
+    ) async throws {
+        let content = """
+        apiKeyName: <#T##value: BinaryInteger##BinaryInteger#> <#Hello#>,
+        """
+
+        let suggestion = CodeSuggestion(
+            text: "apiKeyName: azureOpenAIAPIKeyName",
+            position: .init(line: 0, character: 12),
+            uuid: "",
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 12)
+            ),
+            displayText: ""
+        )
+
+        var lines = content.breakIntoEditorStyleLines()
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var cursor = CursorPosition(line: 5, character: 34)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+
+        XCTAssertEqual(cursor, .init(line: 0, character: 33))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        apiKeyName: azureOpenAIAPIKeyName <#Hello#>,
+
+        """)
+    }
 }
 
 extension String {
