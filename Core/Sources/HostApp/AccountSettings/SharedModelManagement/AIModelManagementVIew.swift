@@ -40,13 +40,15 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
     let store: StoreOf<Management>
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack {
                 Spacer()
                 Button("Add Model") {
                     store.send(.createModel)
                 }
             }.padding(4)
+            
+            Divider()
 
             ModelList(store: store)
         }

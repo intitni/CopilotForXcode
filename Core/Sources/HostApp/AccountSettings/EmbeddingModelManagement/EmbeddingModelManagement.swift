@@ -25,8 +25,6 @@ extension EmbeddingModel: ManageableAIModel {
         Image(systemName: "line.diagonal")
 
         Text("\(info.maxTokens) tokens")
-
-        Image(systemName: "line.diagonal")
     }
 }
 
