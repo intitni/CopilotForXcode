@@ -196,7 +196,7 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
-        
+
         let model = configuration.model
 
         let requestBody = CompletionRequestBody(
@@ -209,14 +209,19 @@ extension ChatGPTService {
                 maxToken: model.info.maxTokens,
                 remainingTokens: remainingTokens
             ),
-            function_call: functionProvider.functionCallStrategy,
-            functions: functionProvider.functions.map {
-                ChatGPTFunctionSchema(
-                    name: $0.name,
-                    description: $0.description,
-                    parameters: $0.argumentSchema
-                )
-            }
+            function_call: model.info.supportsFunctionCalling
+                ? functionProvider.functionCallStrategy
+                : nil,
+            functions:
+            model.info.supportsFunctionCalling
+                ? functionProvider.functions.map {
+                    ChatGPTFunctionSchema(
+                        name: $0.name,
+                        description: $0.description,
+                        parameters: $0.argumentSchema
+                    )
+                }
+                : []
         )
 
         let api = buildCompletionStreamAPI(
@@ -298,7 +303,7 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
-        
+
         let model = configuration.model
 
         let requestBody = CompletionRequestBody(
@@ -311,14 +316,19 @@ extension ChatGPTService {
                 maxToken: model.info.maxTokens,
                 remainingTokens: remainingTokens
             ),
-            function_call: functionProvider.functionCallStrategy,
-            functions: functionProvider.functions.map {
-                ChatGPTFunctionSchema(
-                    name: $0.name,
-                    description: $0.description,
-                    parameters: $0.argumentSchema
-                )
-            }
+            function_call: model.info.supportsFunctionCalling
+                ? functionProvider.functionCallStrategy
+                : nil,
+            functions:
+            model.info.supportsFunctionCalling
+                ? functionProvider.functions.map {
+                    ChatGPTFunctionSchema(
+                        name: $0.name,
+                        description: $0.description,
+                        parameters: $0.argumentSchema
+                    )
+                }
+                : []
         )
 
         let api = buildCompletionAPI(
