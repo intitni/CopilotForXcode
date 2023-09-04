@@ -1,27 +1,19 @@
+import AIModel
 import Foundation
 import Preferences
 
 public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
-    public var featureProvider: EmbeddingFeatureProvider {
-        UserDefaults.shared.value(for: \.embeddingFeatureProvider)
-    }
-
-    public var model: String {
-        OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
-    }
-
-    public var endpoint: String {
-        endpoint(for: featureProvider)
-    }
-
-    public var apiKey: String {
-        apiKey(for: featureProvider)
+    public var model: EmbeddingModel {
+        let models = UserDefaults.shared.value(for: \.embeddingModels)
+        let id = UserDefaults.shared.value(for: \.defaultChatFeatureEmbeddingModelId)
+        return models.first { $0.id == id }
+            ?? models.first ?? .init(id: "", name: "", format: .openAI, info: .init())
     }
 
     public var maxToken: Int {
-        OpenAIEmbeddingModel.textEmbeddingAda002.maxToken
+        model.info.maxTokens
     }
-    
+
     public init() {}
 }
 
@@ -29,23 +21,17 @@ public class OverridingEmbeddingConfiguration<
     Configuration: EmbeddingConfiguration
 >: EmbeddingConfiguration {
     public struct Overriding {
-        var featureProvider: EmbeddingFeatureProvider?
-        var model: String?
-        var endPoint: String?
-        var apiKey: String?
-        var maxTokens: Int?
+        public var modelId: String?
+        public var model: EmbeddingModel?
+        public var maxTokens: Int?
 
         public init(
-            model: String? = nil,
-            featureProvider: EmbeddingFeatureProvider? = nil,
-            endPoint: String? = nil,
-            apiKey: String? = nil,
+            modelId: String? = nil,
+            model: EmbeddingModel? = nil,
             maxTokens: Int? = nil
         ) {
+            self.modelId = modelId
             self.model = model
-            self.featureProvider = featureProvider
-            self.endPoint = endPoint
-            self.apiKey = apiKey
             self.maxTokens = maxTokens
         }
     }
@@ -54,30 +40,19 @@ public class OverridingEmbeddingConfiguration<
     public var overriding = Overriding()
 
     public init(overriding configuration: Configuration, with overrides: Overriding = .init()) {
-        self.overriding = overrides
+        overriding = overrides
         self.configuration = configuration
     }
 
-    public var featureProvider: EmbeddingFeatureProvider {
-        overriding.featureProvider ?? configuration.featureProvider
-    }
-    
-    public var model: String {
-        overriding.model ?? configuration.model
-    }
-
-    public var endpoint: String {
-        overriding.endPoint
-            ?? overriding.featureProvider.map(endpoint(for:))
-            ?? configuration.endpoint
+    public var model: EmbeddingModel {
+        if let model = overriding.model { return model }
+        let models = UserDefaults.shared.value(for: \.embeddingModels)
+        guard let id = overriding.modelId,
+              let model = models.first(where: { $0.id == id })
+        else { return configuration.model }
+        return model
     }
 
-    public var apiKey: String {
-        overriding.apiKey
-            ?? overriding.featureProvider.map(apiKey(for:))
-            ?? configuration.apiKey
-    }
-    
     public var maxToken: Int {
         overriding.maxTokens ?? configuration.maxToken
     }

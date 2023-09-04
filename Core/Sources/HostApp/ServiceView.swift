@@ -1,7 +1,10 @@
 import SwiftUI
+import ComposableArchitecture
 
 struct ServiceView: View {
+    let store: StoreOf<HostApp>
     @State var tag = 0
+    
     var body: some View {
         SidebarTabView(tag: $tag) {
             ScrollView {
@@ -22,20 +25,22 @@ struct ServiceView: View {
                 image: "globe"
             )
             
-            ScrollView {
-                OpenAIView().padding()
-            }.sidebarItem(
+            ChatModelManagementView(store: store.scope(
+                state: \.chatModelManagement,
+                action: HostApp.Action.chatModelManagement
+            )).sidebarItem(
                 tag: 2,
-                title: "OpenAI",
+                title: "Chat Models",
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
             
-            ScrollView {
-                AzureView().padding()
-            }.sidebarItem(
+            EmbeddingModelManagementView(store: store.scope(
+                state: \.embeddingModelManagement,
+                action: HostApp.Action.embeddingModelManagement
+            )).sidebarItem(
                 tag: 3,
-                title: "Azure",
+                title: "Embedding Models",
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
@@ -54,6 +59,6 @@ struct ServiceView: View {
 
 struct AccountView_Previews: PreviewProvider {
     static var previews: some View {
-        ServiceView()
+        ServiceView(store: .init(initialState: .init(), reducer: HostApp()))
     }
 }

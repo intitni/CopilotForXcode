@@ -10,6 +10,15 @@
       }
     },
     {
+      "identity" : "codablewrappers",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/GottaGetSwifty/CodableWrappers",
+      "state" : {
+        "revision" : "4eb46a4c656333e8514db8aad204445741de7d40",
+        "version" : "2.0.7"
+      }
+    },
+    {
       "identity" : "combine-schedulers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/combine-schedulers",

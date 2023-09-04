@@ -126,6 +126,20 @@
         "identifier" : "ChatTabPersistentTests",
         "name" : "ChatTabPersistentTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ServiceUpdateMigrationTests",
+        "name" : "ServiceUpdateMigrationTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "KeychainTests",
+        "name" : "KeychainTests"
+      }
     }
   ],
   "version" : 1

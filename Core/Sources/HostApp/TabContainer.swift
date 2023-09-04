@@ -43,7 +43,7 @@ public struct TabContainer: View {
                         title: "General",
                         image: "app.gift"
                     )
-                ServiceView().tabBarItem(
+                ServiceView(store: store).tabBarItem(
                     tag: 1,
                     title: "Service",
                     image: "globe"

@@ -15,7 +15,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext? {
         guard let info = getEditorInformation() else { return nil }
         let context = getActiveDocumentContext(info)

@@ -326,6 +326,7 @@ struct CopilotView: View {
                 }
             }
         }
+        .textFieldStyle(.roundedBorder)
     }
 
     func checkStatus() {

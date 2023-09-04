@@ -35,6 +35,7 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
         contextController = DynamicContextController(
             memory: memory,
             functionProvider: functionProvider,
+            configuration: configuration,
             contextCollectors: allContextCollectors
         )
         self.functionProvider = functionProvider

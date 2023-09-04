@@ -1,3 +1,4 @@
+import AIModel
 import Foundation
 
 public protocol UserDefaultPreferenceKey {
@@ -7,6 +8,16 @@ public protocol UserDefaultPreferenceKey {
 }
 
 public struct PreferenceKey<T>: UserDefaultPreferenceKey {
+    public let defaultValue: T
+    public let key: String
+
+    public init(defaultValue: T, key: String) {
+        self.defaultValue = defaultValue
+        self.key = key
+    }
+}
+
+public struct DeprecatedPreferenceKey<T> {
     public let defaultValue: T
     public let key: String
 
@@ -82,40 +93,23 @@ public struct UserDefaultPreferenceKeys {
 // MARK: - OpenAI Account Settings
 
 public extension UserDefaultPreferenceKeys {
-    var openAIAPIKey: PreferenceKey<String> {
+    var openAIAPIKey: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "OpenAIAPIKey")
     }
 
-    @available(*, deprecated, message: "Use `openAIBaseURL` instead.")
-    var chatGPTEndpoint: PreferenceKey<String> {
-        .init(defaultValue: "", key: "ChatGPTEndpoint")
-    }
-
-    var openAIBaseURL: PreferenceKey<String> {
+    var openAIBaseURL: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "OpenAIBaseURL")
     }
 
-    var chatGPTModel: PreferenceKey<String> {
+    var chatGPTModel: DeprecatedPreferenceKey<String> {
         .init(defaultValue: ChatGPTModel.gpt35Turbo.rawValue, key: "ChatGPTModel")
     }
 
-    var chatGPTMaxToken: PreferenceKey<Int> {
+    var chatGPTMaxToken: DeprecatedPreferenceKey<Int> {
         .init(defaultValue: 4000, key: "ChatGPTMaxToken")
     }
 
-    var chatGPTLanguage: PreferenceKey<String> {
-        .init(defaultValue: "", key: "ChatGPTLanguage")
-    }
-
-    var chatGPTMaxMessageCount: PreferenceKey<Int> {
-        .init(defaultValue: 5, key: "ChatGPTMaxMessageCount")
-    }
-
-    var chatGPTTemperature: PreferenceKey<Double> {
-        .init(defaultValue: 0.7, key: "ChatGPTTemperature")
-    }
-
-    var embeddingModel: PreferenceKey<String> {
+    var embeddingModel: DeprecatedPreferenceKey<String> {
         .init(
             defaultValue: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue,
             key: "OpenAIEmbeddingModel"
@@ -126,19 +120,19 @@ public extension UserDefaultPreferenceKeys {
 // MARK: - Azure OpenAI Settings
 
 public extension UserDefaultPreferenceKeys {
-    var azureOpenAIAPIKey: PreferenceKey<String> {
+    var azureOpenAIAPIKey: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIAPIKey")
     }
 
-    var azureOpenAIBaseURL: PreferenceKey<String> {
+    var azureOpenAIBaseURL: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "AzureOpenAIBaseURL")
     }
 
-    var azureChatGPTDeployment: PreferenceKey<String> {
+    var azureChatGPTDeployment: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "AzureChatGPTDeployment")
     }
 
-    var azureEmbeddingDeployment: PreferenceKey<String> {
+    var azureEmbeddingDeployment: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "AzureEmbeddingDeployment")
     }
 }
@@ -200,6 +194,59 @@ public extension UserDefaultPreferenceKeys {
 
     var codeiumApiUrl: PreferenceKey<String> {
         .init(defaultValue: "", key: "CodeiumApiUrl")
+    }
+}
+
+// MARK: - Chat Models
+
+public extension UserDefaultPreferenceKeys {
+    var chatModels: PreferenceKey<[ChatModel]> {
+        .init(defaultValue: [
+            .init(
+                id: UUID().uuidString,
+                name: "OpenAI",
+                format: .openAI,
+                info: .init(
+                    apiKeyName: "",
+                    baseURL: "",
+                    maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
+                    supportsFunctionCalling: true,
+                    modelName: ChatGPTModel.gpt35Turbo.rawValue
+                )
+            ),
+        ], key: "ChatModels")
+    }
+
+    var chatGPTLanguage: PreferenceKey<String> {
+        .init(defaultValue: "", key: "ChatGPTLanguage")
+    }
+
+    var chatGPTMaxMessageCount: PreferenceKey<Int> {
+        .init(defaultValue: 5, key: "ChatGPTMaxMessageCount")
+    }
+
+    var chatGPTTemperature: PreferenceKey<Double> {
+        .init(defaultValue: 0.7, key: "ChatGPTTemperature")
+    }
+}
+
+// MARK: - Embedding Models
+
+public extension UserDefaultPreferenceKeys {
+    var embeddingModels: PreferenceKey<[EmbeddingModel]> {
+        .init(defaultValue: [
+            .init(
+                id: UUID().uuidString,
+                name: "OpenAI",
+                format: .openAI,
+                info: .init(
+                    apiKeyName: "",
+                    baseURL: "",
+                    maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
+                    modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
+                )
+            ),
+        ], key: "EmbeddingModels")
     }
 }
 
@@ -270,12 +317,20 @@ public extension UserDefaultPreferenceKeys {
 // MARK: - Chat
 
 public extension UserDefaultPreferenceKeys {
-    var chatFeatureProvider: PreferenceKey<ChatFeatureProvider> {
+    var chatFeatureProvider: DeprecatedPreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
 
-    var embeddingFeatureProvider: PreferenceKey<EmbeddingFeatureProvider> {
+    var defaultChatFeatureChatModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "DefaultChatFeatureChatModelId")
+    }
+
+    var embeddingFeatureProvider: DeprecatedPreferenceKey<EmbeddingFeatureProvider> {
         .init(defaultValue: .openAI, key: "EmbeddingFeatureProvider")
+    }
+
+    var defaultChatFeatureEmbeddingModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "DefaultChatFeatureEmbeddingModelId")
     }
 
     var chatFontSize: PreferenceKey<Double> {
@@ -424,6 +479,10 @@ public extension UserDefaultPreferenceKeys {
 
     var disableFunctionCalling: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DisableFunctionCalling")
+    }
+
+    var useUserDefaultsBaseAPIKeychain: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-UseUserDefaultsBaseAPIKeychain")
     }
 
     var disableGitHubCopilotSettingsAutoRefreshOnAppear: FeatureFlag {

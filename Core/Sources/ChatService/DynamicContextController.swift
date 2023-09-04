@@ -9,16 +9,19 @@ final class DynamicContextController {
     let contextCollectors: [ChatContextCollector]
     let memory: AutoManagedChatGPTMemory
     let functionProvider: ChatFunctionProvider
+    let configuration: ChatGPTConfiguration
     var defaultScopes = [] as Set<String>
 
     convenience init(
         memory: AutoManagedChatGPTMemory,
         functionProvider: ChatFunctionProvider,
+        configuration: ChatGPTConfiguration,
         contextCollectors: ChatContextCollector...
     ) {
         self.init(
             memory: memory,
             functionProvider: functionProvider,
+            configuration: configuration,
             contextCollectors: contextCollectors
         )
     }
@@ -26,10 +29,12 @@ final class DynamicContextController {
     init(
         memory: AutoManagedChatGPTMemory,
         functionProvider: ChatFunctionProvider,
+        configuration: ChatGPTConfiguration,
         contextCollectors: [ChatContextCollector]
     ) {
         self.memory = memory
         self.functionProvider = functionProvider
+        self.configuration = configuration
         self.contextCollectors = contextCollectors
     }
 
@@ -37,12 +42,17 @@ final class DynamicContextController {
         var content = content
         var scopes = Self.parseScopes(&content)
         scopes.formUnion(defaultScopes)
-        
+
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history
         let contexts = contextCollectors.compactMap {
-            $0.generateContext(history: oldMessages, scopes: scopes, content: content)
+            $0.generateContext(
+                history: oldMessages,
+                scopes: scopes,
+                content: content,
+                configuration: configuration
+            )
         }
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")

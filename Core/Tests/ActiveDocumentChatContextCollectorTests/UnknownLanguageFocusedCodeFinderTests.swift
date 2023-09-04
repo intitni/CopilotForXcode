@@ -1,5 +1,6 @@
 import XCTest
 import Foundation
+import FocusedCodeFinder
 
 @testable import ActiveDocumentChatContextCollector
 
