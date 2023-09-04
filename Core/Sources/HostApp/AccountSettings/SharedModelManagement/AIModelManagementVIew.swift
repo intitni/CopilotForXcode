@@ -1,5 +1,6 @@
 import AIModel
 import ComposableArchitecture
+import PlusFeatureFlag
 import SwiftUI
 
 protocol AIModelManagementAction {
@@ -43,8 +44,21 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
         VStack(spacing: 0) {
             HStack {
                 Spacer()
-                Button("Add Model") {
-                    store.send(.createModel)
+                if isFeatureAvailable(\.unlimitedChatAndEmbeddingModels) {
+                    Button("Add Model") {
+                        store.send(.createModel)
+                    }
+                } else {
+                    WithViewStore(store, observe: { $0.models.count }) { viewStore in
+                        Text("\(viewStore.state) / 2")
+                            .foregroundColor(.secondary)
+
+                        let disabled = viewStore.state >= 2
+                        
+                        Button(disabled ? "Add More Model (Plus)" : "Add Model") {
+                            store.send(.createModel)
+                        }.disabled(disabled)
+                    }
                 }
             }.padding(4)
 
