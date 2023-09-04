@@ -31,7 +31,7 @@ struct BaseURLSelection: ReducerProtocol {
             case .refreshAvailableBaseURLNames:
                 let chatModels = userDefaults.value(for: \.chatModels)
                 let embeddingModels = userDefaults.value(for: \.embeddingModels)
-                var allBaseURLs = Set(
+                let allBaseURLs = Set(
                     chatModels.map(\.info.baseURL) + embeddingModels.map(\.info.baseURL)
                 )
                 state.availableBaseURLs = Array(allBaseURLs).sorted()

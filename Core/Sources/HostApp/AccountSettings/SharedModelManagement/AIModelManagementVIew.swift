@@ -47,7 +47,7 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                     store.send(.createModel)
                 }
             }.padding(4)
-            
+
             Divider()
 
             ModelList(store: store)
@@ -92,6 +92,12 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                 .removeBackground()
                 .listStyle(.plain)
                 .listRowInsets(EdgeInsets())
+                .overlay {
+                    if viewStore.state.models.isEmpty {
+                        Text("No model found, please add a new one.")
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
         }
     }
@@ -159,72 +165,82 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
 
 // MARK: - Previews
 
- class AIModelManagement_Previews: PreviewProvider {
-     static var previews: some View {
-         AIModelManagementView<ChatModelManagement, _>(
-             store: .init(
-                 initialState: .init(
-                     models: IdentifiedArray<String, ChatModel>(uniqueElements: [
-                         ChatModel(
-                             id: "1",
-                             name: "Test Model",
-                             format: .openAI,
-                             info: .init(
-                                 apiKeyName: "key",
-                                 baseURL: "google.com",
-                                 maxTokens: 3000,
-                                 supportsFunctionCalling: true,
-                                 modelName: "gpt-3.5-turbo"
-                             )
-                         ),
-                         ChatModel(
-                             id: "2",
-                             name: "Test Model 2",
-                             format: .azureOpenAI,
-                             info: .init(
-                                 apiKeyName: "key",
-                                 baseURL: "apple.com",
-                                 maxTokens: 3000,
-                                 supportsFunctionCalling: false,
-                                 modelName: "gpt-3.5-turbo"
-                             )
-                         ),
-                         ChatModel(
-                             id: "3",
-                             name: "Test Model 3",
-                             format: .openAICompatible,
-                             info: .init(
-                                 apiKeyName: "key",
-                                 baseURL: "apple.com",
-                                 maxTokens: 3000,
-                                 supportsFunctionCalling: false,
-                                 modelName: "gpt-3.5-turbo"
-                             )
-                         ),
-                     ]),
-                     editingModel: .init(
-                         model: ChatModel(
-                             id: "3",
-                             name: "Test Model 3",
-                             format: .openAICompatible,
-                             info: .init(
-                                 apiKeyName: "key",
-                                 baseURL: "apple.com",
-                                 maxTokens: 3000,
-                                 supportsFunctionCalling: false,
-                                 modelName: "gpt-3.5-turbo"
-                             )
-                         )
-                     )
-                 ),
-                 reducer: ChatModelManagement()
-             )
-         )
-     }
- }
+class AIModelManagement_Previews: PreviewProvider {
+    static var previews: some View {
+        AIModelManagementView<ChatModelManagement, _>(
+            store: .init(
+                initialState: .init(
+                    models: IdentifiedArray<String, ChatModel>(uniqueElements: [
+                        ChatModel(
+                            id: "1",
+                            name: "Test Model",
+                            format: .openAI,
+                            info: .init(
+                                apiKeyName: "key",
+                                baseURL: "google.com",
+                                maxTokens: 3000,
+                                supportsFunctionCalling: true,
+                                modelName: "gpt-3.5-turbo"
+                            )
+                        ),
+                        ChatModel(
+                            id: "2",
+                            name: "Test Model 2",
+                            format: .azureOpenAI,
+                            info: .init(
+                                apiKeyName: "key",
+                                baseURL: "apple.com",
+                                maxTokens: 3000,
+                                supportsFunctionCalling: false,
+                                modelName: "gpt-3.5-turbo"
+                            )
+                        ),
+                        ChatModel(
+                            id: "3",
+                            name: "Test Model 3",
+                            format: .openAICompatible,
+                            info: .init(
+                                apiKeyName: "key",
+                                baseURL: "apple.com",
+                                maxTokens: 3000,
+                                supportsFunctionCalling: false,
+                                modelName: "gpt-3.5-turbo"
+                            )
+                        ),
+                    ]),
+                    editingModel: .init(
+                        model: ChatModel(
+                            id: "3",
+                            name: "Test Model 3",
+                            format: .openAICompatible,
+                            info: .init(
+                                apiKeyName: "key",
+                                baseURL: "apple.com",
+                                maxTokens: 3000,
+                                supportsFunctionCalling: false,
+                                modelName: "gpt-3.5-turbo"
+                            )
+                        )
+                    )
+                ),
+                reducer: ChatModelManagement()
+            )
+        )
+    }
+}
 
+class AIModelManagement_Empty_Previews: PreviewProvider {
+    static var previews: some View {
+        AIModelManagementView<ChatModelManagement, _>(
+            store: .init(
+                initialState: .init(models: []),
+                reducer: ChatModelManagement()
+            )
+        )
+    }
+}
 
- class AIModelManagement_Cell_Previews: PreviewProvider {
+class AIModelManagement_Cell_Previews: PreviewProvider {
     static var previews: some View {
         AIModelManagementView<ChatModelManagement, ChatModel>.Cell(model: ChatModel(
             id: "1",
@@ -239,6 +255,5 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
             )
         ), isSelected: false)
     }
- }
-
+}
 

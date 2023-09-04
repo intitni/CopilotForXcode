@@ -203,6 +203,9 @@ struct ChatModelEditView: View {
                         "",
                         selection: viewStore.$modelName,
                         content: {
+                            if ChatGPTModel(rawValue: viewStore.state.modelName) == nil {
+                                Text("Custom Model").tag(viewStore.state.modelName)
+                            }
                             ForEach(ChatGPTModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
                             }

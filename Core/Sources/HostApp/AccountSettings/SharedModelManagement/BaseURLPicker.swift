@@ -1,10 +1,10 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct BaseURLPicker: View {
     let prompt: Text?
     let store: StoreOf<BaseURLSelection>
-    
+
     var body: some View {
         WithViewStore(store) { viewStore in
             TextField("Base URL", text: viewStore.$baseURL, prompt: prompt)
@@ -13,6 +13,12 @@ struct BaseURLPicker: View {
                         "",
                         selection: viewStore.$baseURL,
                         content: {
+                            if !viewStore.state.availableBaseURLs
+                                .contains(viewStore.state.baseURL)
+                            {
+                                Text("Custom Value").tag(viewStore.state.baseURL)
+                            }
+
                             ForEach(viewStore.state.availableBaseURLs, id: \.self) { baseURL in
                                 Text(baseURL).tag(baseURL)
                             }
@@ -20,6 +26,10 @@ struct BaseURLPicker: View {
                     )
                     .frame(width: 20)
                 }
+                .onAppear {
+                    viewStore.send(.appear)
+                }
         }
     }
 }
+

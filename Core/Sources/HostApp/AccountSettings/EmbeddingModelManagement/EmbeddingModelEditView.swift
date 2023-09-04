@@ -191,7 +191,10 @@ struct EmbeddingModelEditView: View {
                         "",
                         selection: viewStore.$modelName,
                         content: {
-                            ForEach(ChatGPTModel.allCases, id: \.self) { model in
+                            if OpenAIEmbeddingModel(rawValue: viewStore.state.modelName) == nil {
+                                Text("Custom Model").tag(viewStore.state.modelName)
+                            }
+                            ForEach(OpenAIEmbeddingModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
                             }
                         }
