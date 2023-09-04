@@ -174,12 +174,16 @@ public struct SuggestionInjector {
             )
         }
 
-        // appending suffix text not in range if needed.
+        #warning(
+            "TODO: I feel like the implementation is doing a lot of receptive work to recover suffix."
+        )
+
+        /// The number of character that is in the last modified line but not included.
         let leftoverCount: Int = {
             let maxCount = lastRemovedLine?.count ?? 0
             guard let first = toBeInserted.first?
                 .dropLast((toBeInserted.first?.hasSuffix("\n") ?? false) ? 1 : 0),
-                  !first.isEmpty else { return maxCount }
+                !first.isEmpty else { return maxCount }
             guard let last = toBeInserted.last?
                 .dropLast((toBeInserted.last?.hasSuffix("\n") ?? false) ? 1 : 0),
                 !last.isEmpty else { return maxCount }
@@ -193,7 +197,7 @@ public struct SuggestionInjector {
             // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
             if end.character < droppedLast.count {
                 // locate the split index, the prefix of which matches the suggestion prefix.
-                var splitIndex: String.Index? = nil
+                var splitIndex: String.Index?
                 for offset in end.character..<droppedLast.count {
                     let proposedIndex = droppedLast.index(
                         droppedLast.startIndex,
@@ -204,7 +208,7 @@ public struct SuggestionInjector {
                         splitIndex = proposedIndex
                     }
                 }
-                
+
                 // then check how many characters are not in the suffix of the suggestion.
                 if let splitIndex {
                     let suffix = droppedLast[splitIndex...]
@@ -214,10 +218,13 @@ public struct SuggestionInjector {
                     return suffix.count
                 }
             }
-            
+
             return maxCount
         }()
-        
+
+        /// The number of characters appended to the last line.
+        var appenderCount = 0
+
         // appending suffix text not in range if needed.
         if let lastRemovedLine,
            leftoverCount > 0,
@@ -234,12 +241,23 @@ public struct SuggestionInjector {
             if toBeInserted[toBeInserted.endIndex - 1].hasSuffix("\n") {
                 toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
             }
-            let leftover = lastRemovedLine[leftoverRange].suffix(leftoverCount)
+            let leftover = {
+                if lastRemovedLine.hasSuffix("\n") {
+                    return lastRemovedLine[leftoverRange].dropLast(1).suffix(leftoverCount)
+                }
+                return lastRemovedLine[leftoverRange].suffix(leftoverCount)
+            }()
 
             toBeInserted[toBeInserted.endIndex - 1].append(contentsOf: leftover)
+
+            appenderCount = leftover.count
+
+            if !toBeInserted[toBeInserted.endIndex - 1].hasSuffix("\n") {
+                toBeInserted[toBeInserted.endIndex - 1].append("\n")
+            }
         }
 
-        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
+        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1 - appenderCount
         let insertingIndex = min(start.line, content.endIndex)
         content.insert(contentsOf: toBeInserted, at: insertingIndex)
         extraInfo.modifications.append(.inserted(insertingIndex, toBeInserted))
