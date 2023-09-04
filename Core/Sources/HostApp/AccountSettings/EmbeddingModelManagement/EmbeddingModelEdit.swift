@@ -11,7 +11,7 @@ struct EmbeddingModelEdit: ReducerProtocol {
         var id: String
         @BindingState var name: String
         @BindingState var format: EmbeddingModel.Format
-        @BindingState var maxTokens: Int = 4000
+        @BindingState var maxTokens: Int = 8191
         @BindingState var modelName: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
