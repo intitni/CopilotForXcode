@@ -173,10 +173,10 @@ extension ChatModel {
             format: state.format,
             info: .init(
                 apiKeyName: state.apiKeyName,
-                baseURL: state.baseURL,
+                baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
                 maxTokens: state.maxTokens,
                 supportsFunctionCalling: state.supportsFunctionCalling,
-                modelName: state.modelName
+                modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
             )
         )
     }

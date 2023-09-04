@@ -169,9 +169,9 @@ extension EmbeddingModel {
             format: state.format,
             info: .init(
                 apiKeyName: state.apiKeyName,
-                baseURL: state.baseURL,
+                baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
                 maxTokens: state.maxTokens,
-                modelName: state.modelName
+                modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
             )
         )
     }

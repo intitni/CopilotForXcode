@@ -32,7 +32,10 @@ struct APIKeySubmission: ReducerProtocol {
                     guard !state.name.isEmpty else { throw E.nameIsEmpty }
                     guard !state.key.isEmpty else { throw E.keyIsEmpty }
 
-                    try keychain.update(state.name, key: state.key)
+                    try keychain.update(
+                        state.key,
+                        key: state.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
                     return .run { send in
                         await send(.saveFinished)
                     }
