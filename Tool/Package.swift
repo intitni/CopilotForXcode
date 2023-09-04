@@ -77,6 +77,11 @@ let package = Package(
             dependencies: ["Configs"]
         ),
 
+        .testTarget(
+            name: "KeychainTests",
+            dependencies: ["Keychain"]
+        ),
+
         .target(
             name: "Toast",
             dependencies: [.product(

@@ -35,7 +35,7 @@ public struct Keychain: KeychainType {
     let service = keychainService
     let accessGroup = keychainAccessGroup
     let scope: String
-    
+
     public static var apiKey: Keychain {
         Keychain(scope: "apiKey")
     }
@@ -61,7 +61,6 @@ public struct Keychain: KeychainType {
     }
 
     func set(_ value: String, key: String) throws {
-        let key = scopeKey(key)
         let query = query(key).merging([
             kSecValueData as String: value.data(using: .utf8) ?? Data(),
         ], uniquingKeysWith: { _, b in b })
@@ -80,18 +79,18 @@ public struct Keychain: KeychainType {
         if scope.isEmpty {
             return key
         }
-        return "\(scope).\(key)"
+        return "\(scope)::\(key)"
     }
-    
+
     func escapeScope(_ key: String) -> String? {
         if scope.isEmpty {
             return key
         }
-        if !key.hasPrefix("\(scope).") { return nil }
-        return key.replacingOccurrences(of: "\(scope).", with: "")
+        if !key.hasPrefix("\(scope)::") { return nil }
+        return key.replacingOccurrences(of: "\(scope)::", with: "")
     }
 
-    public func getAll() throws -> [String : String] {
+    public func getAll() throws -> [String: String] {
         let query = [
             kSecClass as String: kSecClassGenericPassword as String,
             kSecAttrService as String: service,
@@ -109,18 +108,17 @@ public struct Keychain: KeychainType {
 
             var dict = [String: String]()
             for item in items {
-                guard let keyData = item[kSecAttrAccount as String] as? Data,
-                      let key = String(data: keyData, encoding: .utf8),
-                      let valueData = item[kSecValueData as String] as? Data,
-                      let value = String(data: valueData, encoding: .utf8),
+                guard let key = item[kSecAttrAccount as String] as? String,
                       let escapedKey = escapeScope(key)
-                else {
-                    continue
-                }
+                else { continue }
+                guard let valueData = item[kSecValueData as String] as? Data,
+                      let value = String(data: valueData, encoding: .utf8)
+                else { continue }
                 dict[escapedKey] = value
             }
+            return dict
         }
-        
+
         return [:]
     }
 
