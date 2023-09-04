@@ -74,7 +74,7 @@ let package = Package(
 
         .target(
             name: "Keychain",
-            dependencies: ["Configs"]
+            dependencies: ["Configs", "Preferences"]
         ),
 
         .testTarget(
