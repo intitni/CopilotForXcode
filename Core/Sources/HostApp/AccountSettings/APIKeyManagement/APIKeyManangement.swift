@@ -51,7 +51,7 @@ struct APIKeyManagement: ReducerProtocol {
             case .refreshAvailableAPIKeyNames:
                 do {
                     let pairs = try keychain.getAll()
-                    state.availableAPIKeyNames = Array(pairs.keys)
+                    state.availableAPIKeyNames = Array(pairs.keys).sorted()
                 } catch {
                     toast(error.localizedDescription, .error)
                 }
