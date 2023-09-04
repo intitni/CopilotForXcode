@@ -213,7 +213,7 @@ public extension UserDefaultPreferenceKeys {
                     supportsFunctionCalling: true,
                     modelName: ChatGPTModel.gpt35Turbo.rawValue
                 )
-            )
+            ),
         ], key: "ChatModels")
     }
 
@@ -245,7 +245,7 @@ public extension UserDefaultPreferenceKeys {
                     maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
                     modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
                 )
-            )
+            ),
         ], key: "EmbeddingModels")
     }
 }
@@ -320,7 +320,7 @@ public extension UserDefaultPreferenceKeys {
     var chatFeatureProvider: DeprecatedPreferenceKey<ChatFeatureProvider> {
         .init(defaultValue: .openAI, key: "ChatFeatureProvider")
     }
-    
+
     var defaultChatFeatureChatModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "DefaultChatFeatureChatModelId")
     }
@@ -328,7 +328,7 @@ public extension UserDefaultPreferenceKeys {
     var embeddingFeatureProvider: DeprecatedPreferenceKey<EmbeddingFeatureProvider> {
         .init(defaultValue: .openAI, key: "EmbeddingFeatureProvider")
     }
-    
+
     var defaultChatFeatureEmbeddingModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "DefaultChatFeatureEmbeddingModelId")
     }
@@ -479,6 +479,10 @@ public extension UserDefaultPreferenceKeys {
 
     var disableFunctionCalling: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DisableFunctionCalling")
+    }
+
+    var useUserDefaultsBaseAPIKeychain: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-UseUserDefaultsBaseAPIKeychain")
     }
 
     var disableGitHubCopilotSettingsAutoRefreshOnAppear: FeatureFlag {

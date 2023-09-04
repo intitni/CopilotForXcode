@@ -1,5 +1,6 @@
 import Configs
 import Foundation
+import Preferences
 import Security
 
 public protocol KeychainType {
@@ -31,13 +32,48 @@ public final class FakeKeyChain: KeychainType {
     }
 }
 
+public final class UserDefaultsBaseAPIKeychain: KeychainType {
+    let defaults = UserDefaults.shared
+    let scope: String
+    var key: String {
+        "UserDefaultsBaseAPIKeychain-\(scope)"
+    }
+    
+    init(scope: String) {
+        self.scope = scope
+    }
+    
+    public func getAll() throws -> [String : String] {
+        defaults.dictionary(forKey: key) as? [String: String] ?? [:]
+    }
+    
+    public func update(_ value: String, key: String) throws {
+        var dict = try getAll()
+        dict[key] = value
+        defaults.set(dict, forKey: self.key)
+    }
+    
+    public func get(_ key: String) throws -> String? {
+        try getAll()[key]
+    }
+    
+    public func remove(_ key: String) throws {
+        var dict = try getAll()
+        dict[key] = nil
+        defaults.set(dict, forKey: self.key)
+    }
+}
+
 public struct Keychain: KeychainType {
     let service = keychainService
     let accessGroup = keychainAccessGroup
     let scope: String
 
-    public static var apiKey: Keychain {
-        Keychain(scope: "apiKey")
+    public static var apiKey: KeychainType {
+        if UserDefaults.shared.value(for: \.useUserDefaultsBaseAPIKeychain) {
+            return UserDefaultsBaseAPIKeychain(scope: "apiKey")
+        }
+        return Keychain(scope: "apiKey")
     }
 
     public enum Error: Swift.Error {
