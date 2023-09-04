@@ -46,7 +46,7 @@ struct EmbeddingModelEdit: ReducerProtocol {
         Scope(state: \.apiKeySelection, action: /Action.apiKeySelection) {
             APIKeySelection()
         }
-        
+
         Scope(state: \.baseURLSelection, action: /Action.baseURLSelection) {
             BaseURLSelection()
         }
@@ -123,7 +123,7 @@ struct EmbeddingModelEdit: ReducerProtocol {
 
             case .apiKeySelection:
                 return .none
-                
+
             case .baseURLSelection:
                 return .none
 
@@ -151,6 +151,7 @@ extension EmbeddingModelEdit.State {
             id: model.id,
             name: model.name,
             format: model.format,
+            maxTokens: model.info.maxTokens,
             modelName: model.info.modelName,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
