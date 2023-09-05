@@ -31,7 +31,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             {
                 return ""
             }
-            return userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
+            return userPreferredLanguage.isEmpty ? "" : " in \(userPreferredLanguage)"
         }()
 
         let rule: String = {
