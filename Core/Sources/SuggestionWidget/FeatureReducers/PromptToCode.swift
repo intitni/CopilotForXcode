@@ -63,7 +63,8 @@ public struct PromptToCode: ReducerProtocol {
         @BindingState public var prompt: String
         @BindingState public var isContinuous: Bool
         @BindingState public var isAttachedToSelectionRange: Bool
-
+        
+        public var filename: String { documentURL.lastPathComponent }
         public var canRevert: Bool { history != .empty }
 
         public init(

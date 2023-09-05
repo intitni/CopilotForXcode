@@ -31,6 +31,7 @@ extension PromptToCodePanel {
         let store: StoreOf<PromptToCode>
 
         struct AttachButtonState: Equatable {
+            var attachedToFilename: String
             var isAttachedToSelectionRange: Bool
             var selectionRange: CursorRange?
         }
@@ -45,6 +46,7 @@ extension PromptToCodePanel {
                     WithViewStore(
                         store,
                         observe: { AttachButtonState(
+                            attachedToFilename: $0.filename,
                             isAttachedToSelectionRange: $0.isAttachedToSelectionRange,
                             selectionRange: $0.selectionRange
                         ) }
@@ -53,7 +55,7 @@ extension PromptToCodePanel {
                         let color: Color = isAttached ? .indigo : .secondary.opacity(0.6)
                         HStack(spacing: 4) {
                             Image(
-                                systemName: isAttached ? "bandage" : "character.cursor.ibeam"
+                                systemName: isAttached ? "link" : "character.cursor.ibeam"
                             )
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -68,13 +70,16 @@ extension PromptToCodePanel {
                                 )
                             )
 
-                            let text: String = {
-                                if isAttached, let range = viewStore.state.selectionRange {
-                                    return range.description
-                                }
-                                return "text cursor"
-                            }()
-                            Text(text).foregroundColor(.primary)
+                            if isAttached {
+                                HStack(spacing: 4) {
+                                    Text(viewStore.state.attachedToFilename)
+                                    if let range = viewStore.state.selectionRange {
+                                        Text(range.description)
+                                    }
+                                }.foregroundColor(.primary)
+                            } else {
+                                Text("text selection").foregroundColor(.secondary)
+                            }
                         }
                         .padding(2)
                         .padding(.trailing, 4)
@@ -422,8 +427,8 @@ struct PromptToCodePanel_Preview: PreviewProvider {
             language: .builtIn(.swift),
             indentSize: 4,
             usesTabsForIndentation: false,
-            projectRootURL: URL(fileURLWithPath: ""),
-            documentURL: URL(fileURLWithPath: ""),
+            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
             allCode: "",
             commandName: "Generate Code",
             description: "Hello world",
@@ -452,8 +457,8 @@ struct PromptToCodePanel_Error_Detached_Preview: PreviewProvider {
             language: .builtIn(.swift),
             indentSize: 4,
             usesTabsForIndentation: false,
-            projectRootURL: URL(fileURLWithPath: ""),
-            documentURL: URL(fileURLWithPath: ""),
+            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
             allCode: "",
             commandName: "Generate Code",
             description: "Hello world",
