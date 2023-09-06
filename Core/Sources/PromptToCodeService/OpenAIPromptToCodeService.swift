@@ -135,21 +135,30 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             }
         }()
 
+        let annotations = isDetached
+            ? []
+            : extractAnnotations(editorInformation: editor, source: source)
+
         let firstMessage: String? = {
             if code.isEmpty { return nil }
-            switch language {
             switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 return """
                 ```
                 \(code)
                 ```
+
+                line annotations found:
+                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
                 """
             default:
                 return """
                 ```
                 \(code)
                 ```
+
+                line annotations found:
+                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
                 """
             }
         }()
@@ -245,6 +254,21 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         let description = extractDescriptionFromMarkdown(content, startIndex: endIndex)
 
         return (code, description)
+    }
+    func extractAnnotations(
+        editorInformation: EditorInformation,
+        source: PromptToCodeSource
+    ) -> [String] {
+        guard let annotations = editorInformation.editorContent?.lineAnnotations else { return [] }
+        return annotations
+            .lazy
+            .filter { annotation in
+                annotation.line >= source.range.start.line + 1
+                    && annotation.line <= source.range.end.line + 1
+            }.map { annotation in
+                let relativeLine = annotation.line - source.range.start.line
+                return "line \(relativeLine): \(annotation.type) \(annotation.message)"
+            }
     }
 }
 
