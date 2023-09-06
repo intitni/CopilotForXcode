@@ -163,13 +163,16 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             }
         }()
 
+        let indentation = getCommonLeadingSpaceCount(code)
+
         let secondMessage = """
-        Requirements:###
-        \(requirement)
-        ###
+        I will update the code you just provided.
+        It looks like every line has an indentation of \(indentation) spaces, I will keep that.
+
+        What is your requirement?
         """
 
-        let configuration =  UserPreferenceChatGPTConfiguration()
+        let configuration = UserPreferenceChatGPTConfiguration()
             .overriding(.init(temperature: 0))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
@@ -255,6 +258,19 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
         return (code, description)
     }
+
+    func getCommonLeadingSpaceCount(_ code: String) -> Int {
+        let lines = code.split(separator: "\n")
+        guard !lines.isEmpty else { return 0 }
+        var commonCount = Int.max
+        for line in lines {
+            let count = line.prefix(while: { $0 == " " }).count
+            commonCount = min(commonCount, count)
+            if commonCount == 0 { break }
+        }
+        return commonCount
+    }
+
     func extractAnnotations(
         editorInformation: EditorInformation,
         source: PromptToCodeSource
