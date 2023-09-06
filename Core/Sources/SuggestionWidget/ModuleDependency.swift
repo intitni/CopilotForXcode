@@ -75,9 +75,7 @@ struct ActiveApplicationMonitorKey: DependencyKey {
 }
 
 struct ChatTabBuilderCollectionKey: DependencyKey {
-    static let liveValue: () -> [ChatTabBuilderCollection] = {
-        [.folder(title: "A", kinds: FakeChatTab.chatBuilders().map(ChatTabKind.init))]
-    }
+    static let liveValue: () -> [ChatTabBuilderCollection] = { [] }
 }
 
 struct ActivatePreviouslyActiveXcodeKey: DependencyKey {
@@ -135,3 +133,4 @@ extension DependencyValues {
         set { self[ActivateExtensionServiceKey.self] = newValue }
     }
 }
+

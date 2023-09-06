@@ -3,15 +3,19 @@ import Foundation
 import SuggestionModel
 import SwiftParser
 import SwiftSyntax
+import Preferences
 
-struct SwiftFocusedCodeFinder: FocusedCodeFinder {
-    let maxFocusedCodeLineCount: Int
+public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
+    public let maxFocusedCodeLineCount: Int
 
-    init(maxFocusedCodeLineCount: Int = UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)) {
+    public init(
+        maxFocusedCodeLineCount: Int = UserDefaults.shared
+            .value(for: \.maxFocusedCodeLineCount)
+    ) {
         self.maxFocusedCodeLineCount = maxFocusedCodeLineCount
     }
 
-    func findFocusedCode(
+    public func findFocusedCode(
         containingRange range: CursorRange,
         activeDocumentContext: ActiveDocumentContext
     ) -> CodeContext {

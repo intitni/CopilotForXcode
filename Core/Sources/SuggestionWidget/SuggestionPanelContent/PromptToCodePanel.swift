@@ -1,78 +1,141 @@
+import ComposableArchitecture
 import MarkdownUI
 import SharedUIComponents
+import SuggestionModel
 import SwiftUI
 
 struct PromptToCodePanel: View {
-    @ObservedObject var provider: PromptToCodeProvider
+    let store: StoreOf<PromptToCode>
 
     var body: some View {
         VStack(spacing: 0) {
-            PromptToCodePanelContent(provider: provider)
-                .overlay(alignment: .topTrailing) {
-                    if !provider.code.isEmpty {
-                        CopyButton {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(provider.code, forType: .string)
+            TopBar(store: store)
+
+            Content(store: store)
+                .overlay(alignment: .bottom) {
+                    ActionBar(store: store)
+                        .padding(.bottom, 8)
+                }
+
+            Divider()
+
+            Toolbar(store: store)
+        }
+        .background(.ultraThickMaterial)
+        .xcodeStyleFrame()
+    }
+}
+
+extension PromptToCodePanel {
+    struct TopBar: View {
+        let store: StoreOf<PromptToCode>
+
+        struct AttachButtonState: Equatable {
+            var attachedToFilename: String
+            var isAttachedToSelectionRange: Bool
+            var selectionRange: CursorRange?
+        }
+
+        var body: some View {
+            HStack {
+                Button(action: {
+                    withAnimation(.linear(duration: 0.1)) {
+                        store.send(.selectionRangeToggleTapped)
+                    }
+                }) {
+                    WithViewStore(
+                        store,
+                        observe: { AttachButtonState(
+                            attachedToFilename: $0.filename,
+                            isAttachedToSelectionRange: $0.isAttachedToSelectionRange,
+                            selectionRange: $0.selectionRange
+                        ) }
+                    ) { viewStore in
+                        let isAttached = viewStore.state.isAttachedToSelectionRange
+                        let color: Color = isAttached ? .indigo : .secondary.opacity(0.6)
+                        HStack(spacing: 4) {
+                            Image(
+                                systemName: isAttached ? "link" : "character.cursor.ibeam"
+                            )
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 14, height: 14)
+                            .frame(width: 20, height: 20, alignment: .center)
+                            .foregroundColor(.white)
+                            .background(
+                                color,
+                                in: RoundedRectangle(
+                                    cornerRadius: 4,
+                                    style: .continuous
+                                )
+                            )
+
+                            if isAttached {
+                                HStack(spacing: 4) {
+                                    Text(viewStore.state.attachedToFilename)
+                                    if let range = viewStore.state.selectionRange {
+                                        Text(range.description)
+                                    }
+                                }.foregroundColor(.primary)
+                            } else {
+                                Text("current selection").foregroundColor(.secondary)
+                            }
                         }
-                        .padding(.trailing, 2)
-                        .padding(.top, 2)
+                        .padding(2)
+                        .padding(.trailing, 4)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .stroke(color, lineWidth: 1)
+                        }
+                        .background {
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(color.opacity(0.2))
+                        }
+                        .padding(2)
                     }
                 }
-                .overlay(alignment: .bottom) {
-                    HStack {
-                        if provider.isResponding {
-                            Button(action: {
-                                provider.stopResponding()
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "stop.fill")
-                                    Text("Stop")
-                                }
-                                .padding(8)
-                                .background(
-                                    .regularMaterial,
-                                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                )
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                                }
-                            }
-                            .buttonStyle(.plain)
+                .keyboardShortcut("j", modifiers: [.command])
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                WithViewStore(store, observe: { $0.code }) { viewStore in
+                    if !viewStore.state.isEmpty {
+                        CopyButton {
+                            viewStore.send(.copyCodeButtonTapped)
                         }
+                    }
+                }
+            }
+            .padding(2)
+        }
+    }
 
-                        let isRespondingButCodeIsReady = provider.isResponding
-                            && !provider.code.isEmpty
-                            && !provider.description.isEmpty
+    struct ActionBar: View {
+        let store: StoreOf<PromptToCode>
 
-                        if !provider.isResponding || isRespondingButCodeIsReady {
-                            HStack {
-                                Toggle(
-                                    "Continuous Mode",
-                                    isOn: .init(
-                                        get: { provider.isContinuous },
-                                        set: { _ in provider.toggleContinuous() }
-                                    )
-                                )
-                                .toggleStyle(.checkbox)
+        struct ActionState: Equatable {
+            var isResponding: Bool
+            var isCodeEmpty: Bool
+            var isDescriptionEmpty: Bool
+            @BindingViewState var isContinuous: Bool
+            var isRespondingButCodeIsReady: Bool {
+                isResponding
+                    && !isCodeEmpty
+                    && !isDescriptionEmpty
+            }
+        }
 
-                                Button(action: {
-                                    provider.cancel()
-                                }) {
-                                    Text("Cancel")
-                                }
-                                .buttonStyle(CommandButtonStyle(color: .gray))
-                                .keyboardShortcut("w", modifiers: [.command])
-
-                                if !provider.code.isEmpty {
-                                    Button(action: {
-                                        provider.acceptSuggestion()
-                                    }) {
-                                        Text("Accept(⌘ + ⏎)")
-                                    }
-                                    .buttonStyle(CommandButtonStyle(color: .indigo))
-                                    .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
-                                }
+        var body: some View {
+            HStack {
+                WithViewStore(store, observe: { $0.isResponding }) { viewStore in
+                    if viewStore.state {
+                        Button(action: {
+                            viewStore.send(.stopRespondingButtonTapped)
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "stop.fill")
+                                Text("Stop")
                             }
                             .padding(8)
                             .background(
@@ -84,116 +147,231 @@ struct PromptToCodePanel: View {
                                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                             }
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.bottom, 8)
                 }
 
-            PromptToCodePanelToolbar(provider: provider)
-        }
-        .background(Color.contentBackground)
-        .xcodeStyleFrame()
-    }
-}
+                WithViewStore(store, observe: {
+                    ActionState(
+                        isResponding: $0.isResponding,
+                        isCodeEmpty: $0.code.isEmpty,
+                        isDescriptionEmpty: $0.description.isEmpty,
+                        isContinuous: $0.$isContinuous
+                    )
+                }) { viewStore in
+                    if !viewStore.state.isResponding || viewStore.state.isRespondingButCodeIsReady {
+                        HStack {
+                            Toggle("Continuous Mode", isOn: viewStore.$isContinuous)
+                                .toggleStyle(.checkbox)
 
-struct PromptToCodePanelContent: View {
-    @ObservedObject var provider: PromptToCodeProvider
-    @Environment(\.colorScheme) var colorScheme
-    @AppStorage(\.suggestionCodeFontSize) var fontSize
+                            Button(action: {
+                                viewStore.send(.cancelButtonTapped)
+                            }) {
+                                Text("Cancel")
+                            }
+                            .buttonStyle(CommandButtonStyle(color: .gray))
+                            .keyboardShortcut("w", modifiers: [.command])
 
-    var body: some View {
-        CustomScrollView {
-            VStack(spacing: 0) {
-                Spacer(minLength: 60)
-
-                if !provider.errorMessage.isEmpty {
-                    Text(provider.errorMessage)
-                        .multilineTextAlignment(.leading)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
+                            if !viewStore.state.isCodeEmpty {
+                                Button(action: {
+                                    viewStore.send(.acceptButtonTapped)
+                                }) {
+                                    Text("Accept(⌘ + ⏎)")
+                                }
+                                .buttonStyle(CommandButtonStyle(color: .indigo))
+                                .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
+                            }
+                        }
+                        .padding(8)
                         .background(
-                            Color.red,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .regularMaterial,
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
                         )
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
-                }
-
-                if !provider.description.isEmpty {
-                    Markdown(provider.description)
-                        .textSelection(.enabled)
-                        .markdownTheme(.gitHub.text {
-                            BackgroundColor(Color.clear)
-                        })
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
-                }
-
-                if provider.code.isEmpty {
-                    Text(
-                        provider.isResponding
-                            ? "Thinking..."
-                            : "Enter your requirement to generate code."
-                    )
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .scaleEffect(x: 1, y: -1, anchor: .center)
-                } else {
-                    CodeBlock(
-                        code: provider.code,
-                        language: provider.language,
-                        startLineIndex: provider.startLineIndex,
-                        colorScheme: colorScheme,
-                        firstLinePrecedingSpaceCount: provider.startLineColumn,
-                        fontSize: fontSize
-                    )
-                    .frame(maxWidth: .infinity)
-                    .scaleEffect(x: 1, y: -1, anchor: .center)
-                }
-
-                if let name = provider.name {
-                    Text(name)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 12)
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        }
+                    }
                 }
             }
         }
-        .scaleEffect(x: 1, y: -1, anchor: .center)
     }
-}
 
-struct PromptToCodePanelToolbar: View {
-    @ObservedObject var provider: PromptToCodeProvider
-    @FocusState var isInputAreaFocused: Bool
+    struct Content: View {
+        let store: StoreOf<PromptToCode>
+        @Environment(\.colorScheme) var colorScheme
+        @AppStorage(\.suggestionCodeFontSize) var fontSize
 
-    var body: some View {
-        HStack {
-            Button(action: {
-                provider.revert()
-            }) {
-                Group {
-                    Image(systemName: "arrow.uturn.backward")
+        struct CodeContent: Equatable {
+            var code: String
+            var language: String
+            var startLineIndex: Int
+            var firstLinePrecedingSpaceCount: Int
+            var isResponding: Bool
+        }
+
+        var body: some View {
+            CustomScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 60)
+
+                    WithViewStore(store, observe: { $0.error }) { viewStore in
+                        if let errorMessage = viewStore.state, !errorMessage.isEmpty {
+                            Text(errorMessage)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Color.red,
+                                    in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                )
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                                }
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                        }
+                    }
+
+                    WithViewStore(store, observe: { $0.description }) { viewStore in
+                        if !viewStore.state.isEmpty {
+                            Markdown(viewStore.state)
+                                .textSelection(.enabled)
+                                .markdownTheme(.gitHub.text {
+                                    BackgroundColor(Color.clear)
+                                })
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                        }
+                    }
+
+                    WithViewStore(store, observe: {
+                        CodeContent(
+                            code: $0.code,
+                            language: $0.language.rawValue,
+                            startLineIndex: $0.selectionRange?.start.line ?? 0,
+                            firstLinePrecedingSpaceCount: $0.selectionRange?.start
+                                .character ?? 0,
+                            isResponding: $0.isResponding
+                        )
+                    }) { viewStore in
+                        if viewStore.state.code.isEmpty {
+                            Text(
+                                viewStore.state.isResponding
+                                    ? "Thinking..."
+                                    : "Enter your requirement to generate code."
+                            )
+                            .foregroundColor(.secondary)
+                            .padding()
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                        } else {
+                            CodeBlock(
+                                code: viewStore.state.code,
+                                language: viewStore.state.language,
+                                startLineIndex: viewStore.state.startLineIndex,
+                                colorScheme: colorScheme,
+                                firstLinePrecedingSpaceCount: viewStore.state
+                                    .firstLinePrecedingSpaceCount,
+                                fontSize: fontSize
+                            )
+                            .frame(maxWidth: .infinity)
+                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                        }
+                    }
                 }
-                .padding(6)
+            }
+            .scaleEffect(x: 1, y: -1, anchor: .center)
+        }
+    }
+
+    struct Toolbar: View {
+        let store: StoreOf<PromptToCode>
+        @FocusState var isInputAreaFocused: Bool
+
+        struct RevertButtonState: Equatable {
+            var isResponding: Bool
+            var canRevert: Bool
+        }
+
+        struct InputFieldState: Equatable {
+            @BindingViewState var prompt: String
+            var isResponding: Bool
+        }
+
+        var body: some View {
+            HStack {
+                revertButton
+
+                HStack(spacing: 0) {
+                    inputField
+                    sendButton
+                }
+                .frame(maxWidth: .infinity)
                 .background {
-                    Circle().fill(Color(nsColor: .controlBackgroundColor))
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(nsColor: .controlBackgroundColor))
                 }
                 .overlay {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 6)
                         .stroke(Color(nsColor: .controlColor), lineWidth: 1)
                 }
+                .background {
+                    Button(action: { store.send(.appendNewLineToPromptButtonTapped) }) {
+                        EmptyView()
+                    }
+                    .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
+                }
+                .background {
+                    Button(action: { isInputAreaFocused = true }) {
+                        EmptyView()
+                    }
+                    .keyboardShortcut("l", modifiers: [.command])
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(provider.isResponding || !provider.canRevert)
+            .onAppear {
+                isInputAreaFocused = true
+            }
+            .padding(8)
+            .background(.ultraThickMaterial)
+        }
 
-            HStack(spacing: 0) {
+        var revertButton: some View {
+            WithViewStore(store, observe: {
+                RevertButtonState(isResponding: $0.isResponding, canRevert: $0.canRevert)
+            }) { viewStore in
+                Button(action: {
+                    viewStore.send(.revertButtonTapped)
+                }) {
+                    Group {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .padding(6)
+                    .background {
+                        Circle().fill(Color(nsColor: .controlBackgroundColor))
+                    }
+                    .overlay {
+                        Circle()
+                            .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(viewStore.state.isResponding || !viewStore.state.canRevert)
+            }
+        }
+
+        var inputField: some View {
+            WithViewStore(
+                store,
+                observe: { InputFieldState(prompt: $0.$prompt, isResponding: $0.isResponding) }
+            ) { viewStore in
                 ZStack(alignment: .center) {
                     // a hack to support dynamic height of TextEditor
-                    Text(provider.requirement.isEmpty ? "Hi" : provider.requirement).opacity(0)
+                    Text(viewStore.state.prompt.isEmpty ? "Hi" : viewStore.state.prompt)
+                        .opacity(0)
                         .font(.system(size: 14))
                         .frame(maxWidth: .infinity, maxHeight: 400)
                         .padding(.top, 1)
@@ -201,58 +379,43 @@ struct PromptToCodePanelToolbar: View {
                         .padding(.horizontal, 4)
 
                     CustomTextEditor(
-                        text: $provider.requirement,
+                        text: viewStore.$prompt,
                         font: .systemFont(ofSize: 14),
-                        onSubmit: { provider.sendRequirement() }
+                        isEditable: !viewStore.state.isResponding,
+                        onSubmit: { viewStore.send(.modifyCodeButtonTapped) }
                     )
                     .padding(.top, 1)
                     .padding(.bottom, -1)
+                    .opacity(viewStore.state.isResponding ? 0.5 : 1)
+                    .disabled(viewStore.state.isResponding)
                 }
-                .focused($isInputAreaFocused)
-                .padding(8)
-                .fixedSize(horizontal: false, vertical: true)
+            }
+            .focused($isInputAreaFocused)
+            .padding(8)
+            .fixedSize(horizontal: false, vertical: true)
+        }
 
+        var sendButton: some View {
+            WithViewStore(store, observe: { $0.isResponding }) { viewStore in
                 Button(action: {
-                    provider.sendRequirement()
+                    viewStore.send(.modifyCodeButtonTapped)
                 }) {
                     Image(systemName: "paperplane.fill")
                         .padding(8)
                 }
                 .buttonStyle(.plain)
-                .disabled(provider.isResponding)
+                .disabled(viewStore.state)
                 .keyboardShortcut(KeyEquivalent.return, modifiers: [])
             }
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-            }
-            .background {
-                Button(action: {
-                    provider.requirement += "\n"
-                }) {
-                    EmptyView()
-                }
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
-            }
         }
-        .onAppear {
-            isInputAreaFocused = true
-        }
-        .padding(8)
-        .background(.ultraThickMaterial)
     }
 }
 
 // MARK: - Previews
 
-struct PromptToCodePanel_Bright_Preview: PreviewProvider {
+struct PromptToCodePanel_Preview: PreviewProvider {
     static var previews: some View {
-        PromptToCodePanel(provider: PromptToCodeProvider(
+        PromptToCodePanel(store: .init(initialState: .init(
             code: """
             ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
                 Text(viewModel.suggestion[index])
@@ -260,19 +423,29 @@ struct PromptToCodePanel_Bright_Preview: PreviewProvider {
                     .multilineTextAlignment(.leading)
             }
             """,
-            language: "swift",
+            prompt: "",
+            language: .builtIn(.swift),
+            indentSize: 4,
+            usesTabsForIndentation: false,
+            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
+            allCode: "",
+            commandName: "Generate Code",
             description: "Hello world",
             isResponding: false,
-            startLineIndex: 8
-        ))
-        .preferredColorScheme(.light)
-        .frame(width: 450, height: 400)
+            isAttachedToSelectionRange: true,
+            selectionRange: .init(
+                start: .init(line: 8, character: 0),
+                end: .init(line: 12, character: 2)
+            )
+        ), reducer: PromptToCode()))
+            .frame(width: 450, height: 400)
     }
 }
 
-struct PromptToCodePanel_Error_Bright_Preview: PreviewProvider {
+struct PromptToCodePanel_Error_Detached_Preview: PreviewProvider {
     static var previews: some View {
-        PromptToCodePanel(provider: PromptToCodeProvider(
+        PromptToCodePanel(store: .init(initialState: .init(
             code: """
             ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
                 Text(viewModel.suggestion[index])
@@ -280,14 +453,24 @@ struct PromptToCodePanel_Error_Bright_Preview: PreviewProvider {
                     .multilineTextAlignment(.leading)
             }
             """,
-            language: "swift",
+            prompt: "",
+            language: .builtIn(.swift),
+            indentSize: 4,
+            usesTabsForIndentation: false,
+            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
+            allCode: "",
+            commandName: "Generate Code",
             description: "Hello world",
             isResponding: false,
-            startLineIndex: 8,
-            errorMessage: "Error"
-        ))
-        .preferredColorScheme(.light)
-        .frame(width: 450, height: 400)
+            isAttachedToSelectionRange: false,
+            error: "Error",
+            selectionRange: .init(
+                start: .init(line: 8, character: 0),
+                end: .init(line: 12, character: 2)
+            )
+        ), reducer: PromptToCode()))
+            .frame(width: 450, height: 400)
     }
 }
 

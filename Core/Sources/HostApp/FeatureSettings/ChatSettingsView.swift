@@ -5,7 +5,6 @@ struct ChatSettingsView: View {
     class Settings: ObservableObject {
         static let availableLocalizedLocales = Locale.availableLocalizedLocales
         @AppStorage(\.chatGPTLanguage) var chatGPTLanguage
-        @AppStorage(\.chatGPTMaxToken) var chatGPTMaxToken
         @AppStorage(\.chatGPTTemperature) var chatGPTTemperature
         @AppStorage(\.chatGPTMaxMessageCount) var chatGPTMaxMessageCount
         @AppStorage(\.chatFontSize) var chatFontSize
@@ -14,13 +13,12 @@ struct ChatSettingsView: View {
         var maxFocusedCodeLineCount
         @AppStorage(\.useCodeScopeByDefaultInChatContext)
         var useCodeScopeByDefaultInChatContext
-
-        @AppStorage(\.chatFeatureProvider) var chatFeatureProvider
-        @AppStorage(\.chatGPTModel) var chatGPTModel
+        @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
-        
-        @AppStorage(\.embeddingFeatureProvider) var embeddingFeatureProvider
+        @AppStorage(\.defaultChatFeatureEmbeddingModelId) var defaultChatFeatureEmbeddingModelId
+        @AppStorage(\.chatModels) var chatModels
+        @AppStorage(\.embeddingModels) var embeddingModels
 
         init() {}
     }
@@ -47,18 +45,34 @@ struct ChatSettingsView: View {
         Form {
             Picker(
                 "Chat Feature Provider",
-                selection: $settings.chatFeatureProvider
+                selection: $settings.defaultChatFeatureChatModelId
             ) {
-                Text("OpenAI").tag(ChatFeatureProvider.openAI)
-                Text("Azure OpenAI").tag(ChatFeatureProvider.azureOpenAI)
+                if !settings.chatModels
+                    .contains(where: { $0.id == settings.defaultChatFeatureChatModelId })
+                {
+                    Text(settings.chatModels.first?.name ?? "No Model Found")
+                        .tag(settings.defaultChatFeatureChatModelId)
+                }
+
+                ForEach(settings.chatModels, id: \.id) { chatModel in
+                    Text(chatModel.name).tag(chatModel.id)
+                }
             }
-            
+
             Picker(
                 "Embedding Feature Provider",
-                selection: $settings.embeddingFeatureProvider
+                selection: $settings.defaultChatFeatureEmbeddingModelId
             ) {
-                Text("OpenAI").tag(EmbeddingFeatureProvider.openAI)
-                Text("Azure OpenAI").tag(EmbeddingFeatureProvider.azureOpenAI)
+                if !settings.embeddingModels
+                    .contains(where: { $0.id == settings.defaultChatFeatureEmbeddingModelId })
+                {
+                    Text(settings.embeddingModels.first?.name ?? "No Model Found")
+                        .tag(settings.defaultChatFeatureEmbeddingModelId)
+                }
+
+                ForEach(settings.embeddingModels, id: \.id) { embeddingModel in
+                    Text(embeddingModel.name).tag(embeddingModel.id)
+                }
             }
 
             if #available(macOS 13.0, *) {
@@ -69,39 +83,6 @@ struct ChatSettingsView: View {
                 HStack {
                     Text("Reply in Language")
                     languagePicker
-                }
-            }
-
-            let binding = Binding(
-                get: { String(settings.chatGPTMaxToken) },
-                set: {
-                    if let selectionMaxToken = Int($0) {
-                        settings.chatGPTMaxToken = selectionMaxToken
-                    } else {
-                        settings.chatGPTMaxToken = 0
-                    }
-                }
-            )
-            HStack {
-                Stepper(
-                    value: $settings.chatGPTMaxToken,
-                    in: 0...Int.max,
-                    step: 1
-                ) {
-                    Text("Max Token (Including Reply)")
-                        .multilineTextAlignment(.trailing)
-                }
-                TextField(text: binding) {
-                    EmptyView()
-                }
-                .labelsHidden()
-                .textFieldStyle(.roundedBorder)
-                .foregroundColor(maxTokenOverLimit ? .red : .primary)
-
-                if let model = ChatGPTModel(rawValue: settings.chatGPTModel),
-                   settings.chatFeatureProvider == .openAI
-                {
-                    Text("Max: \(model.maxToken)")
                 }
             }
 
@@ -141,14 +122,6 @@ struct ChatSettingsView: View {
                     .lineLimit(6)
             }
             .padding(.vertical, 4)
-        }.onAppear {
-            checkMaxToken()
-        }.onChange(of: settings.chatFeatureProvider) { _ in
-            checkMaxToken()
-        }.onChange(of: settings.chatGPTModel) { _ in
-            checkMaxToken()
-        }.onChange(of: settings.chatGPTMaxToken) { _ in
-            checkMaxToken()
         }
     }
 
@@ -249,19 +222,6 @@ struct ChatSettingsView: View {
                     ? "Auto-detected by ChatGPT"
                     : settings.chatGPTLanguage
             )
-        }
-    }
-
-    func checkMaxToken() {
-        switch settings.chatFeatureProvider {
-        case .openAI:
-            if let model = ChatGPTModel(rawValue: settings.chatGPTModel) {
-                maxTokenOverLimit = model.maxToken < settings.chatGPTMaxToken
-            } else {
-                maxTokenOverLimit = false
-            }
-        case .azureOpenAI:
-            maxTokenOverLimit = false
         }
     }
 }

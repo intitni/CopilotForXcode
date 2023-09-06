@@ -11,21 +11,30 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             RejectSuggestionCommand(),
             NextSuggestionCommand(),
             PreviousSuggestionCommand(),
+            PromptToCodeCommand(),
+            AcceptPromptToCodeCommand(),
+            ChatWithSelectionCommand(),
+        ].map(makeCommandDefinition)
+    }
+    
+    var internalUse: [[XCSourceEditorCommandDefinitionKey: Any]] {
+        [
+            SeparatorCommand().named("------"),
             RealtimeSuggestionsCommand(),
             PrefetchSuggestionsCommand(),
-            ChatWithSelectionCommand(),
-            PromptToCodeCommand(),
-
-            SeparatorCommand().named("------"),
         ].map(makeCommandDefinition)
     }
 
     var custom: [[XCSourceEditorCommandDefinitionKey: Any]] {
-        customCommands()
+        let all = customCommands()
+        if all.isEmpty {
+            return []
+        }
+        return [SeparatorCommand().named("------")].map(makeCommandDefinition) + all
     }
 
     var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
-        return builtin + custom
+        return builtin + custom + internalUse
     }
 
     func extensionDidFinishLaunching() {

@@ -175,18 +175,19 @@ struct ChatTabBar: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: 0) {
                             ForEach(viewStore.state.tabInfo, id: \.id) { info in
-                                ChatTabBarButton(
-                                    store: store,
-                                    info: info,
-                                    isSelected: info.id == viewStore.state.selectedTabId
-                                )
-                                .id(info.id)
-                                .contextMenu {
-                                    if let tab = chatTabPool.getTab(of: info.id) {
+                                if let tab = chatTabPool.getTab(of: info.id) {
+                                    ChatTabBarButton(
+                                        store: store,
+                                        info: info,
+                                        content: { tab.tabItem },
+                                        isSelected: info.id == viewStore.state.selectedTabId
+                                    )
+                                    .contextMenu {
                                         tab.menu
-                                    } else {
-                                        EmptyView()
                                     }
+                                    .id(info.id)
+                                } else {
+                                    EmptyView()
                                 }
                             }
                         }
@@ -263,9 +264,10 @@ struct ChatTabBar: View {
     }
 }
 
-struct ChatTabBarButton: View {
+struct ChatTabBarButton<Content: View>: View {
     let store: StoreOf<ChatPanelFeature>
     let info: ChatTabInfo
+    let content: () -> Content
     let isSelected: Bool
     @State var isHovered: Bool = false
 
@@ -274,7 +276,7 @@ struct ChatTabBarButton: View {
             Button(action: {
                 store.send(.tabClicked(id: info.id))
             }) {
-                Text(info.title)
+                content()
                     .font(.callout)
                     .lineLimit(1)
                     .frame(maxWidth: 120)
@@ -360,60 +362,8 @@ struct CreateOtherChatTabMenuStyle: MenuStyle {
     }
 }
 
-class FakeChatTab: ChatTab {
-    static var name: String { "Fake" }
-    static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] { [Builder()] }
-
-    struct Builder: ChatTabBuilder {
-        var title: String = "Title"
-
-        func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
-            return FakeChatTab(store: store)
-        }
-    }
-
-    func buildMenu() -> any View {
-        Text("Menu Item")
-        Text("Menu Item")
-        Text("Menu Item")
-    }
-
-    func buildView() -> any View {
-        ChatPanel(
-            chat: .init(
-                history: [
-                    .init(id: "1", role: .assistant, text: "Hello World"),
-                ],
-                isReceivingMessage: false
-            ),
-            typedMessage: "Hello World!"
-        )
-    }
-
-    func restorableState() async -> Data {
-        return Data()
-    }
-
-    static func restore(
-        from data: Data,
-        externalDependency: ()
-    ) async throws -> any ChatTabBuilder {
-        return Builder()
-    }
-
-    convenience init(id: String, title: String) {
-        self.init(store: .init(
-            initialState: .init(id: id, title: title),
-            reducer: ChatTabItem()
-        ))
-    }
-
-    func start() {}
-}
-
 struct ChatWindowView_Previews: PreviewProvider {
     static let pool = ChatTabPool([
-        "1": FakeChatTab(id: "1", title: "Hello I am a chatbot"),
         "2": EmptyChatTab(id: "2"),
         "3": EmptyChatTab(id: "3"),
         "4": EmptyChatTab(id: "4"),
@@ -422,30 +372,31 @@ struct ChatWindowView_Previews: PreviewProvider {
         "7": EmptyChatTab(id: "7"),
     ])
 
-    static var previews: some View {
-        ChatWindowView(
-            store: .init(
-                initialState: .init(
-                    chatTabGroup: .init(
-                        tabInfo: [
-                            .init(id: "1", title: "Fake"),
-                            .init(id: "2", title: "Empty-2"),
-                            .init(id: "3", title: "Empty-3"),
-                            .init(id: "4", title: "Empty-4"),
-                            .init(id: "5", title: "Empty-5"),
-                            .init(id: "6", title: "Empty-6"),
-                            .init(id: "7", title: "Empty-7"),
-                        ],
-                        selectedTabId: "1"
-                    ),
-                    isPanelDisplayed: true
+    static func createStore() -> StoreOf<ChatPanelFeature> {
+        StoreOf<ChatPanelFeature>(
+            initialState: .init(
+                chatTabGroup: .init(
+                    tabInfo: [
+                        .init(id: "2", title: "Empty-2"),
+                        .init(id: "3", title: "Empty-3"),
+                        .init(id: "4", title: "Empty-4"),
+                        .init(id: "5", title: "Empty-5"),
+                        .init(id: "6", title: "Empty-6"),
+                        .init(id: "7", title: "Empty-7"),
+                    ],
+                    selectedTabId: "2"
                 ),
-                reducer: ChatPanelFeature()
-            )
+                isPanelDisplayed: true
+            ),
+            reducer: ChatPanelFeature()
         )
-        .xcodeStyleFrame()
-        .padding()
-        .environment(\.chatTabPool, pool)
+    }
+
+    static var previews: some View {
+        ChatWindowView(store: createStore())
+            .xcodeStyleFrame()
+            .padding()
+            .environment(\.chatTabPool, pool)
     }
 }
 

@@ -1,7 +1,11 @@
 import Foundation
 import SwiftUI
 
-public final class SuggestionProvider: ObservableObject {
+public final class SuggestionProvider: ObservableObject, Equatable {
+    public static func == (lhs: SuggestionProvider, rhs: SuggestionProvider) -> Bool {
+        lhs.code == rhs.code && lhs.language == rhs.language
+    }
+
     @Published public var code: String = ""
     @Published public var language: String = ""
     @Published public var startLineIndex: Int = 0
@@ -41,3 +45,4 @@ public final class SuggestionProvider: ObservableObject {
     func rejectSuggestion() { onRejectSuggestionTapped() }
     func acceptSuggestion() { onAcceptSuggestionTapped() }
 }
+

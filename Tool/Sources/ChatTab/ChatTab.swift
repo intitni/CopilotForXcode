@@ -23,6 +23,9 @@ public protocol ChatTabType {
     /// Build the view for this chat tab.
     @ViewBuilder
     func buildView() -> any View
+    /// Build the tabItem for this chat tab.
+    @ViewBuilder
+    func buildTabItem() -> any View
     /// Build the menu for this chat tab.
     @ViewBuilder
     func buildMenu() -> any View
@@ -82,7 +85,21 @@ open class BaseChatTab {
         }
     }
 
-    /// The menu for this chat tab.
+    /// The tab item for this chat tab.
+    @ViewBuilder
+    public var tabItem: some View {
+        let id = "ChatTabMenu\(id)"
+        if let tab = self as? (any ChatTabType) {
+            ContentView(buildView: tab.buildTabItem).id(id)
+                .onAppear {
+                    Task { @MainActor in self.startIfNotStarted() }
+                }
+        } else {
+            EmptyView().id(id)
+        }
+    }
+    
+    /// The tab item for this chat tab.
     @ViewBuilder
     public var menu: some View {
         let id = "ChatTabMenu\(id)"
@@ -162,8 +179,12 @@ public class EmptyChatTab: ChatTab {
         .background(Color.blue)
     }
 
+    public func buildTabItem() -> any View {
+        Text("Empty-\(id)")
+    }
+    
     public func buildMenu() -> any View {
-        EmptyView()
+        Text("Empty-\(id)")
     }
 
     public func restorableState() async -> Data {

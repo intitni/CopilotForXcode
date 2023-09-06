@@ -1,7 +1,8 @@
+import AIModel
 import Foundation
 import Preferences
 
-typealias CompletionAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody)
+typealias CompletionAPIBuilder = (String, ChatModel, URL, CompletionRequestBody)
     -> CompletionAPI
 
 protocol CompletionAPI {
@@ -66,11 +67,11 @@ struct OpenAICompletionAPI: CompletionAPI {
     var apiKey: String
     var endpoint: URL
     var requestBody: CompletionRequestBody
-    var provider: ChatFeatureProvider
+    var model: ChatModel
 
     init(
         apiKey: String,
-        provider: ChatFeatureProvider,
+        model: ChatModel,
         endpoint: URL,
         requestBody: CompletionRequestBody
     ) {
@@ -78,7 +79,7 @@ struct OpenAICompletionAPI: CompletionAPI {
         self.endpoint = endpoint
         self.requestBody = requestBody
         self.requestBody.stream = false
-        self.provider = provider
+        self.model = model
     }
 
     func callAsFunction() async throws -> CompletionResponseBody {
@@ -88,9 +89,10 @@ struct OpenAICompletionAPI: CompletionAPI {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
-            if provider == .openAI {
+            switch model.format {
+            case .openAI, .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            } else {
+            case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             }
         }

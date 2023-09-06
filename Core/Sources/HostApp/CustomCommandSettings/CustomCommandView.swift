@@ -9,8 +9,10 @@ extension List {
     func removeBackground() -> some View {
         if #available(macOS 13.0, *) {
             scrollContentBackground(.hidden)
+                .listRowBackground(EmptyView())
         } else {
             background(Color.clear)
+                .listRowBackground(EmptyView())
         }
     }
 }

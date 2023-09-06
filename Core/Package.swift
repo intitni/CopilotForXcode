@@ -50,7 +50,6 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -158,9 +157,11 @@ let package = Package(
         .target(
             name: "PromptToCodeService",
             dependencies: [
+                .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
@@ -227,6 +228,7 @@ let package = Package(
         .target(
             name: "SuggestionWidget",
             dependencies: [
+                "PromptToCodeService",
                 "ChatGPTChatTab",
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
@@ -258,6 +260,13 @@ let package = Package(
             dependencies: [
                 "GitHubCopilotService",
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "Keychain", package: "Tool"),
+            ]
+        ),
+        .testTarget(
+            name: "ServiceUpdateMigrationTests",
+            dependencies: [
+                "ServiceUpdateMigration",
             ]
         ),
         .target(
@@ -361,12 +370,9 @@ let package = Package(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
                 "ChatContextCollector",
-                .product(name: "LangChain", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-                .product(name: "ASTParser", package: "Tool"),
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
-                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "FocusedCodeFinder", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),

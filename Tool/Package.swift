@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
+        .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
@@ -47,6 +48,8 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
+        .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
 
         // TreeSitter
         .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.7.1"),
@@ -61,7 +64,7 @@ let package = Package(
 
         .target(name: "Configs"),
 
-        .target(name: "Preferences", dependencies: ["Configs"]),
+        .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
 
         .target(name: "Terminal"),
 
@@ -71,7 +74,12 @@ let package = Package(
 
         .target(
             name: "Keychain",
-            dependencies: ["Configs"]
+            dependencies: ["Configs", "Preferences"]
+        ),
+
+        .testTarget(
+            name: "KeychainTests",
+            dependencies: ["Keychain"]
         ),
 
         .target(
@@ -117,6 +125,13 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 .product(name: "Parsing", package: "swift-parsing"),
+            ]
+        ),
+
+        .target(
+            name: "AIModel",
+            dependencies: [
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
 
@@ -184,6 +199,16 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "FocusedCodeFinder",
+            dependencies: [
+                "Preferences",
+                "ASTParser",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+            ]
+        ),
+
         // MARK: - Services
 
         .target(
@@ -207,6 +232,7 @@ let package = Package(
                 "Logger",
                 "Preferences",
                 "TokenEncoder",
+                "Keychain",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]

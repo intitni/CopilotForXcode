@@ -10,12 +10,13 @@ public final class WebChatContextCollector: ChatContextCollector {
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext? {
         guard scopes.contains("web") || scopes.contains("w") else { return nil }
         let links = Self.detectLinks(from: history) + Self.detectLinks(from: content)
         let functions: [(any ChatGPTFunction)?] = [
-            SearchFunction(),
+            SearchFunction(maxTokens: configuration.maxTokens),
             // allow this function only when there is a link in the memory.
             links.isEmpty ? nil : QueryWebsiteFunction(),
         ]

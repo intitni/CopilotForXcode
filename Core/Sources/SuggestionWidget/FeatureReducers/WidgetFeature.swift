@@ -53,7 +53,7 @@ public struct WidgetFeature: ReducerProtocol {
                             return true
                         }
                         if panelState.sharedPanelState.isPanelDisplayed,
-                           panelState.sharedPanelState.content != nil
+                           !panelState.sharedPanelState.isEmpty
                         {
                             return true
                         }
@@ -65,7 +65,7 @@ public struct WidgetFeature: ReducerProtocol {
                         return false
                     }(),
                     isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
-                        && panelState.sharedPanelState.content == nil,
+                        && panelState.sharedPanelState.isEmpty,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
                     isChatOpen: chatPanelState.isPanelDisplayed,
                     animationProgress: circularWidgetState.animationProgress
@@ -79,6 +79,8 @@ public struct WidgetFeature: ReducerProtocol {
                 )
             }
         }
+        
+        var lastUpdateWindowOpacityTime = Date(timeIntervalSince1970: 0)
 
         public init() {}
     }
@@ -109,6 +111,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateWindowLocation(animated: Bool)
         case updateWindowOpacity
         case updateFocusingDocumentURL
+        case updateWindowOpacityFinished
 
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
@@ -311,7 +314,7 @@ public struct WidgetFeature: ReducerProtocol {
                 
                 let documentURL = state.focusingDocumentURL
 
-                return .run { send in
+                return .run { [app] send in
                     await send(.observeEditorChange)
 
                     let notifications = AXNotificationStream(
@@ -513,9 +516,12 @@ public struct WidgetFeature: ReducerProtocol {
             case .updateWindowOpacity:
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
                 let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
-                return .run { _ in
-                    try await mainQueue.sleep(for: .seconds(0.2))
-                    Task { @MainActor in
+                let shouldDebounce = Date().timeIntervalSince(state.lastUpdateWindowOpacityTime) < 1
+                return .run { send in
+                    if shouldDebounce {
+                        try await mainQueue.sleep(for: .seconds(0.2))
+                    }
+                    let task = Task { @MainActor in
                         if let app = activeApplicationMonitor.activeApplication, app.isXcode {
                             let application = AXUIElementCreateApplication(app.processIdentifier)
                             /// We need this to hide the windows when Xcode is minimized.
@@ -564,8 +570,14 @@ public struct WidgetFeature: ReducerProtocol {
                             }
                         }
                     }
+                    _ = await task.value
+                    await send(.updateWindowOpacityFinished)
                 }
                 .cancellable(id: DebounceKey.updateWindowOpacity, cancelInFlight: true)
+                
+            case .updateWindowOpacityFinished:
+                state.lastUpdateWindowOpacityTime = Date()
+                return .none
 
             case .circularWidget:
                 return .none

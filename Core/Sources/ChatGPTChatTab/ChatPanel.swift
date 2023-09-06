@@ -398,6 +398,13 @@ struct ChatPanelInputArea: View {
                 EmptyView()
             }
             .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
+            
+            Button(action: {
+                isInputAreaFocused = true
+            }) {
+                EmptyView()
+            }
+            .keyboardShortcut("l", modifiers: [.command])
         }
     }
 

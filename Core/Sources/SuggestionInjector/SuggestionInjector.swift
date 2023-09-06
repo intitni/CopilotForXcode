@@ -174,72 +174,13 @@ public struct SuggestionInjector {
             )
         }
 
-        // appending suffix text not in range if needed.
-        let leftoverCount: Int = {
-            let maxCount = lastRemovedLine?.count ?? 0
-            guard let first = toBeInserted.first?
-                .dropLast((toBeInserted.first?.hasSuffix("\n") ?? false) ? 1 : 0),
-                  !first.isEmpty else { return maxCount }
-            guard let last = toBeInserted.last?
-                .dropLast((toBeInserted.last?.hasSuffix("\n") ?? false) ? 1 : 0),
-                !last.isEmpty else { return maxCount }
-            let droppedLast = lastRemovedLine?
-                .dropLast((lastRemovedLine?.hasSuffix("\n") ?? false) ? 1 : 0)
-            guard let droppedLast, !droppedLast.isEmpty else { return maxCount }
-            // case 1: user keeps typing as the suggestion suggests.
-            if first.hasPrefix(droppedLast) {
-                return 0
-            }
-            // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
-            if end.character < droppedLast.count {
-                // locate the split index, the prefix of which matches the suggestion prefix.
-                var splitIndex: String.Index? = nil
-                for offset in end.character..<droppedLast.count {
-                    let proposedIndex = droppedLast.index(
-                        droppedLast.startIndex,
-                        offsetBy: offset
-                    )
-                    let prefix = droppedLast[..<proposedIndex]
-                    if first.hasPrefix(prefix) {
-                        splitIndex = proposedIndex
-                    }
-                }
-                
-                // then check how many characters are not in the suffix of the suggestion.
-                if let splitIndex {
-                    let suffix = droppedLast[splitIndex...]
-                    if last.hasSuffix(suffix) {
-                        return 0
-                    }
-                    return suffix.count
-                }
-            }
-            
-            return maxCount
-        }()
-        
-        // appending suffix text not in range if needed.
-        if let lastRemovedLine,
-           leftoverCount > 0,
-           !lastRemovedLine.isEmptyOrNewLine,
-           end.character >= 0,
-           end.character - 1 < lastRemovedLine.count,
-           !toBeInserted.isEmpty
-        {
-            let leftoverRange = (lastRemovedLine.index(
-                lastRemovedLine.startIndex,
-                offsetBy: end.character,
-                limitedBy: lastRemovedLine.endIndex
-            ) ?? lastRemovedLine.endIndex)..<lastRemovedLine.endIndex
-            if toBeInserted[toBeInserted.endIndex - 1].hasSuffix("\n") {
-                toBeInserted[toBeInserted.endIndex - 1].removeLast(1)
-            }
-            let leftover = lastRemovedLine[leftoverRange].suffix(leftoverCount)
+        let recoveredSuffixLength = recoverSuffixIfNeeded(
+            endOfReplacedContent: end,
+            toBeInserted: &toBeInserted,
+            lastRemovedLine: lastRemovedLine
+        )
 
-            toBeInserted[toBeInserted.endIndex - 1].append(contentsOf: leftover)
-        }
-
-        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1
+        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1 - recoveredSuffixLength
         let insertingIndex = min(start.line, content.endIndex)
         content.insert(contentsOf: toBeInserted, at: insertingIndex)
         extraInfo.modifications.append(.inserted(insertingIndex, toBeInserted))
@@ -247,6 +188,78 @@ public struct SuggestionInjector {
             line: startLine + toBeInserted.count - 1,
             character: max(0, cursorCol)
         )
+    }
+
+    func recoverSuffixIfNeeded(
+        endOfReplacedContent end: CursorPosition,
+        toBeInserted: inout [String],
+        lastRemovedLine: String?
+    ) -> Int {
+        // If there is no line removed, there is no need to recover anything.
+        guard let lastRemovedLine, !lastRemovedLine.isEmptyOrNewLine else { return 0 }
+
+        let lastRemovedLineCleaned = lastRemovedLine.droppedLineBreak()
+
+        // If the replaced range covers the whole line, return immediately.
+        guard end.character >= 0, end.character - 1 < lastRemovedLineCleaned.count else { return 0 }
+
+        // if we are not inserting anything, return immediately.
+        guard !toBeInserted.isEmpty,
+              let first = toBeInserted.first?.droppedLineBreak(), !first.isEmpty,
+              let last = toBeInserted.last?.droppedLineBreak(), !last.isEmpty
+        else { return 0 }
+
+        // case 1: user keeps typing as the suggestion suggests.
+
+        if first.hasPrefix(lastRemovedLineCleaned) {
+            return 0
+        }
+
+        // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
+
+        // locate the split index, the prefix of which matches the suggestion prefix.
+        var splitIndex: String.Index?
+
+        for offset in end.character..<lastRemovedLineCleaned.count {
+            let proposedIndex = lastRemovedLineCleaned.index(
+                lastRemovedLineCleaned.startIndex,
+                offsetBy: offset
+            )
+            let prefix = lastRemovedLineCleaned[..<proposedIndex]
+            if first.hasPrefix(prefix) {
+                splitIndex = proposedIndex
+            }
+        }
+
+        // then check how many characters are not in the suffix of the suggestion.
+        guard let splitIndex else { return 0 }
+
+        var suffix = String(lastRemovedLineCleaned[splitIndex...])
+        if last.hasSuffix(suffix) { return 0 }
+
+        // remove the first adjacent placeholder in suffix which looks like `<#Hello#>`
+
+        let regex = try! NSRegularExpression(pattern: "\\s+<#.*?#>")
+
+        if let firstPlaceholderRange = regex.firstMatch(
+            in: suffix,
+            options: [],
+            range: NSRange(suffix.startIndex..., in: suffix)
+        )?.range,
+            firstPlaceholderRange.location == 0,
+            let r = Range(firstPlaceholderRange, in: suffix)
+        {
+            suffix.removeSubrange(r)
+        }
+
+        let lastInsertingLine = toBeInserted[toBeInserted.endIndex - 1]
+            .droppedLineBreak()
+            .appending(suffix)
+            .recoveredLineBreak()
+
+        toBeInserted[toBeInserted.endIndex - 1] = lastInsertingLine
+
+        return suffix.count
     }
 }
 
@@ -283,6 +296,20 @@ extension String {
 
     var isEmptyOrNewLine: Bool {
         isEmpty || self == "\n"
+    }
+
+    func droppedLineBreak() -> String {
+        if hasSuffix("\n") {
+            return String(dropLast(1))
+        }
+        return self
+    }
+
+    func recoveredLineBreak() -> String {
+        if hasSuffix("\n") {
+            return self
+        }
+        return self + "\n"
     }
 }
 

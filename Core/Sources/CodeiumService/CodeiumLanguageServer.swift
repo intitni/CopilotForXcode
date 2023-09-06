@@ -42,12 +42,22 @@ final class CodeiumLanguageServer {
 
         process.executableURL = languageServerExecutableURL
 
+        let isEnterpriseMode = UserDefaults.shared.value(for: \.codeiumEnterpriseMode)
+        var apiServerUrl = "https://server.codeium.com"
+        if isEnterpriseMode, UserDefaults.shared.value(for: \.codeiumApiUrl) != "" {
+            apiServerUrl = UserDefaults.shared.value(for: \.codeiumApiUrl)
+        }
+
         process.arguments = [
             "--api_server_url",
-            "https://server.codeium.com",
+            apiServerUrl,
             "--manager_dir",
             managerDirectoryURL.path,
         ]
+
+        if isEnterpriseMode {
+            process.arguments?.append("--enterprise_mode")
+        }
 
         process.currentDirectoryURL = supportURL
 
@@ -120,7 +130,7 @@ final class CodeiumLanguageServer {
         self.port = port
         launchHandler?()
     }
-    
+
     func terminate() {
         process.terminationHandler = nil
         if process.isRunning {

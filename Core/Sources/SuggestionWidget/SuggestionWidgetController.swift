@@ -109,10 +109,7 @@ public final class SuggestionWidgetController: NSObject {
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in
             store.withState { state in
-                if case .promptToCode = state.panelState.sharedPanelState.content {
-                    return true
-                }
-                return false
+                state.panelState.sharedPanelState.content.promptToCode != nil
             }
         }
         return it
@@ -214,7 +211,7 @@ public extension SuggestionWidgetController {
     }
 
     func discardSuggestion() {
-        store.send(.panel(.discardPanelContent))
+        store.send(.panel(.discardSuggestion))
     }
 
     func markAsProcessing(_ isProcessing: Bool) {
@@ -239,14 +236,6 @@ public extension SuggestionWidgetController {
 
     func closeChatRoom() {
 //        store.send(.chatPanel(.closeChatPanel))
-    }
-
-    func presentPromptToCode() {
-        store.send(.panel(.presentPromptToCode))
-    }
-
-    func discardPromptToCode() {
-        store.send(.panel(.discardPanelContent))
     }
 }
 

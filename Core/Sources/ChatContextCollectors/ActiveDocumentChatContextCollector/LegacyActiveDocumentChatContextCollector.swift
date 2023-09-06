@@ -11,7 +11,8 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext? {
         guard let content = getEditorInformation() else { return nil }
         let relativePath = content.relativePath

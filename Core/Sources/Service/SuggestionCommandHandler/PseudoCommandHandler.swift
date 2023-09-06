@@ -161,6 +161,45 @@ struct PseudoCommandHandler {
         }
     }
 
+    func acceptPromptToCode() async {
+        do {
+            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                throw CancellationError()
+            }
+            try await Environment.triggerAction("Accept Prompt to Code")
+        } catch {
+            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            guard let focusElement = application.focusedElement,
+                  focusElement.description == "Source Editor"
+            else { return }
+            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
+            else {
+                PresentInWindowSuggestionPresenter()
+                    .presentErrorMessage("Unable to get file content.")
+                return
+            }
+            let handler = WindowBaseCommandHandler()
+            do {
+                guard let result = try await handler.acceptPromptToCode(editor: .init(
+                    content: content,
+                    lines: lines,
+                    uti: "",
+                    cursorPosition: cursorPosition,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )) else { return }
+
+                try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
+        }
+    }
+
     func acceptSuggestion() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
@@ -174,12 +213,7 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (
-                content,
-                lines,
-                _,
-                cursorPosition
-            ) = await getFileContent(sourceEditor: nil)
+            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -198,52 +232,7 @@ struct PseudoCommandHandler {
                     usesTabsForIndentation: false
                 )) else { return }
 
-                let oldPosition = focusElement.selectedTextRange
-                let oldScrollPosition = focusElement.parent?.verticalScrollBar?.doubleValue
-
-                let error = AXUIElementSetAttributeValue(
-                    focusElement,
-                    kAXValueAttribute as CFString,
-                    result.content as CFTypeRef
-                )
-
-                if error != AXError.success {
-                    PresentInWindowSuggestionPresenter()
-                        .presentErrorMessage("Fail to set editor content.")
-                }
-
-                if let selection = result.newSelection {
-                    var range = convertCursorRangeToRange(selection, in: result.content)
-                    if let value = AXValueCreate(.cfRange, &range) {
-                        AXUIElementSetAttributeValue(
-                            focusElement,
-                            kAXSelectedTextRangeAttribute as CFString,
-                            value
-                        )
-                    }
-                } else if let oldPosition {
-                    var range = CFRange(
-                        location: oldPosition.lowerBound,
-                        length: 0
-                    )
-                    if let value = AXValueCreate(.cfRange, &range) {
-                        AXUIElementSetAttributeValue(
-                            focusElement,
-                            kAXSelectedTextRangeAttribute as CFString,
-                            value
-                        )
-                    }
-                }
-
-                if let oldScrollPosition,
-                   let scrollBar = focusElement.parent?.verticalScrollBar
-                {
-                    AXUIElementSetAttributeValue(
-                        scrollBar,
-                        kAXValueAttribute as CFString,
-                        oldScrollPosition as CFTypeRef
-                    )
-                }
+                try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
             } catch {
                 PresentInWindowSuggestionPresenter().presentError(error)
             }
@@ -252,6 +241,64 @@ struct PseudoCommandHandler {
 }
 
 extension PseudoCommandHandler {
+    /// When Xcode commands are not available, we can fallback to directly
+    /// set the value of the editor with Accessibility API.
+    func injectUpdatedCodeWithAccessibilityAPI(
+        _ result: UpdatedContent,
+        focusElement: AXUIElement
+    ) throws {
+        let oldPosition = focusElement.selectedTextRange
+        let oldScrollPosition = focusElement.parent?.verticalScrollBar?.doubleValue
+
+        let error = AXUIElementSetAttributeValue(
+            focusElement,
+            kAXValueAttribute as CFString,
+            result.content as CFTypeRef
+        )
+
+        if error != AXError.success {
+            PresentInWindowSuggestionPresenter()
+                .presentErrorMessage("Fail to set editor content.")
+        }
+
+        // recover selection range
+
+        if let selection = result.newSelection {
+            var range = convertCursorRangeToRange(selection, in: result.content)
+            if let value = AXValueCreate(.cfRange, &range) {
+                AXUIElementSetAttributeValue(
+                    focusElement,
+                    kAXSelectedTextRangeAttribute as CFString,
+                    value
+                )
+            }
+        } else if let oldPosition {
+            var range = CFRange(
+                location: oldPosition.lowerBound,
+                length: 0
+            )
+            if let value = AXValueCreate(.cfRange, &range) {
+                AXUIElementSetAttributeValue(
+                    focusElement,
+                    kAXSelectedTextRangeAttribute as CFString,
+                    value
+                )
+            }
+        }
+
+        // recover scroll position
+
+        if let oldScrollPosition,
+           let scrollBar = focusElement.parent?.verticalScrollBar
+        {
+            AXUIElementSetAttributeValue(
+                scrollBar,
+                kAXValueAttribute as CFString,
+                oldScrollPosition as CFTypeRef
+            )
+        }
+    }
+
     func getFileContent(sourceEditor: AXUIElement?) async
         -> (
             content: String,

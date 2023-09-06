@@ -1,8 +1,9 @@
 import AsyncAlgorithms
 import Foundation
 import Preferences
+import AIModel
 
-typealias CompletionStreamAPIBuilder = (String, ChatFeatureProvider, URL, CompletionRequestBody)
+typealias CompletionStreamAPIBuilder = (String, ChatModel, URL, CompletionRequestBody)
     -> CompletionStreamAPI
 
 protocol CompletionStreamAPI {
@@ -129,13 +130,13 @@ struct CompletionRequestBody: Encodable, Equatable {
 
 struct CompletionStreamDataTrunk: Codable {
     var id: String?
-    var object: String
-    var model: String
-    var choices: [Choice]
+    var object: String?
+    var model: String?
+    var choices: [Choice]?
 
     struct Choice: Codable {
-        var delta: Delta
-        var index: Int
+        var delta: Delta?
+        var index: Int?
         var finish_reason: String?
 
         struct Delta: Codable {
@@ -155,11 +156,11 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
     var apiKey: String
     var endpoint: URL
     var requestBody: CompletionRequestBody
-    var provider: ChatFeatureProvider
+    var model: ChatModel
 
     init(
         apiKey: String,
-        provider: ChatFeatureProvider,
+        model: ChatModel,
         endpoint: URL,
         requestBody: CompletionRequestBody
     ) {
@@ -167,7 +168,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         self.endpoint = endpoint
         self.requestBody = requestBody
         self.requestBody.stream = true
-        self.provider = provider
+        self.model = model
     }
 
     func callAsFunction() async throws -> (
@@ -180,9 +181,10 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
-            if provider == .openAI {
+            switch model.format {
+            case .openAI, .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            } else {
+            case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             }
         }

@@ -7,18 +7,21 @@ public struct CustomTextEditor: NSViewRepresentable {
 
     @Binding public var text: String
     public let font: NSFont
+    public let isEditable: Bool
     public let onSubmit: () -> Void
     public var completions: (_ text: String, _ words: [String], _ range: NSRange) -> [String]
 
     public init(
         text: Binding<String>,
         font: NSFont,
+        isEditable: Bool = true,
         onSubmit: @escaping () -> Void,
         completions: @escaping (_ text: String, _ words: [String], _ range: NSRange)
             -> [String] = { _, _, _ in [] }
     ) {
         _text = text
         self.font = font
+        self.isEditable = isEditable
         self.onSubmit = onSubmit
         self.completions = completions
     }
@@ -41,6 +44,7 @@ public struct CustomTextEditor: NSViewRepresentable {
     public func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.completions = completions
         let textView = (context.coordinator.theTextView.documentView as! NSTextView)
+        textView.isEditable = isEditable
         guard textView.string != text else { return }
         textView.string = text
         textView.undoManager?.removeAllActions()

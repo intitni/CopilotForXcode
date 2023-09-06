@@ -300,7 +300,7 @@ enum UpdateLocationStrategy {
                     return .init(
                         frame: .init(
                             x: x,
-                            y: y + selectionFrame.height - Style.widgetPadding,
+                            y: y + selectionFrame.height + Style.widgetPadding,
                             width: Style.inlineSuggestionMinWidth,
                             height: Style.inlineSuggestionMaxHeight
                         ),

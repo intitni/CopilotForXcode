@@ -1,5 +1,6 @@
 import ASTParser
 import ChatContextCollector
+import FocusedCodeFinder
 import Foundation
 import OpenAIService
 import Preferences
@@ -14,7 +15,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
-        content: String
+        content: String,
+        configuration: ChatGPTConfiguration
     ) -> ChatContext? {
         guard let info = getEditorInformation() else { return nil }
         let context = getActiveDocumentContext(info)
@@ -185,110 +187,6 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     func convertAnnotationToText(_ annotation: EditorInformation.LineAnnotation) -> String {
         return "- Line \(annotation.line), \(annotation.type): \(annotation.message)"
-    }
-}
-
-struct ActiveDocumentContext {
-    var filePath: String
-    var relativePath: String
-    var language: CodeLanguage
-    var fileContent: String
-    var lines: [String]
-    var selectedCode: String
-    var selectionRange: CursorRange
-    var lineAnnotations: [EditorInformation.LineAnnotation]
-    var imports: [String]
-
-    struct FocusedContext {
-        var context: [String]
-        var contextRange: CursorRange
-        var codeRange: CursorRange
-        var code: String
-        var lineAnnotations: [EditorInformation.LineAnnotation]
-        var otherLineAnnotations: [EditorInformation.LineAnnotation]
-    }
-
-    var focusedContext: FocusedContext?
-
-    mutating func moveToFocusedCode() {
-        moveToCodeContainingRange(selectionRange)
-    }
-
-    mutating func moveToCodeAroundLine(_ line: Int) {
-        moveToCodeContainingRange(.init(
-            start: .init(line: line, character: 0),
-            end: .init(line: line, character: 0)
-        ))
-    }
-
-    mutating func expandFocusedRangeToContextRange() {
-        guard let focusedContext else { return }
-        moveToCodeContainingRange(focusedContext.contextRange)
-    }
-
-    mutating func moveToCodeContainingRange(_ range: CursorRange) {
-        let finder: FocusedCodeFinder = {
-            switch language {
-            case .builtIn(.swift):
-                return SwiftFocusedCodeFinder()
-            default:
-                return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
-            }
-        }()
-
-        let codeContext = finder.findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: self
-        )
-
-        imports = codeContext.imports
-
-        let startLine = codeContext.focusedRange.start.line
-        let endLine = codeContext.focusedRange.end.line
-        var matchedAnnotations = [EditorInformation.LineAnnotation]()
-        var otherAnnotations = [EditorInformation.LineAnnotation]()
-        for annotation in lineAnnotations {
-            if annotation.line >= startLine, annotation.line <= endLine {
-                matchedAnnotations.append(annotation)
-            } else {
-                otherAnnotations.append(annotation)
-            }
-        }
-
-        focusedContext = .init(
-            context: codeContext.scopeSignatures,
-            contextRange: codeContext.contextRange,
-            codeRange: codeContext.focusedRange,
-            code: codeContext.focusedCode,
-            lineAnnotations: matchedAnnotations,
-            otherLineAnnotations: otherAnnotations
-        )
-    }
-
-    mutating func update(_ info: EditorInformation) {
-        /// Whenever the file content, relative path, or selection range changes,
-        /// we should reset the context.
-        let changed: Bool = {
-            if info.relativePath != relativePath { return true }
-            if info.editorContent?.content != fileContent { return true }
-            if let range = info.editorContent?.selections.first,
-               range != selectionRange { return true }
-            return false
-        }()
-
-        filePath = info.documentURL.path
-        relativePath = info.relativePath
-        language = info.language
-        fileContent = info.editorContent?.content ?? ""
-        lines = info.editorContent?.lines ?? []
-        selectedCode = info.selectedContent
-        selectionRange = info.editorContent?.selections.first ?? .zero
-        lineAnnotations = info.editorContent?.lineAnnotations ?? []
-        imports = []
-
-        if changed {
-            moveToFocusedCode()
-        }
     }
 }
 

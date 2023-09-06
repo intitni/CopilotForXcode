@@ -10,7 +10,6 @@ struct SuggestionPanelView: View {
         var isPanelDisplayed: Bool
         var opacity: Double
         var colorScheme: ColorScheme
-        var contentHash: String
         var isPanelOutOfFrame: Bool
         var alignTopToAnchor: Bool
     }
@@ -22,7 +21,6 @@ struct SuggestionPanelView: View {
                 isPanelDisplayed: $0.isPanelDisplayed,
                 opacity: $0.opacity,
                 colorScheme: $0.colorScheme,
-                contentHash: $0.content?.contentHash ?? "",
                 isPanelOutOfFrame: $0.isPanelOutOfFrame,
                 alignTopToAnchor: $0.alignTopToAnchor
             ) }
@@ -37,15 +35,10 @@ struct SuggestionPanelView: View {
                 IfLetStore(store.scope(state: \.content, action: { $0 })) { store in
                     WithViewStore(store) { viewStore in
                         ZStack(alignment: .topLeading) {
-                            switch viewStore.state {
-                            case let .suggestion(suggestion):
-                                switch suggestionPresentationMode {
-                                case .nearbyTextCursor:
-                                    CodeBlockSuggestionPanel(suggestion: suggestion)
-                                case .floatingWidget:
-                                    EmptyView()
-                                }
-                            default:
+                            switch suggestionPresentationMode {
+                            case .nearbyTextCursor:
+                                CodeBlockSuggestionPanel(suggestion: viewStore.state)
+                            case .floatingWidget:
                                 EmptyView()
                             }
                         }

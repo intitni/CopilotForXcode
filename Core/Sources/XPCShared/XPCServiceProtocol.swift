@@ -27,6 +27,10 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
+    func getPromptToCodeAcceptedCode(
+        editorContent: Data,
+        withReply reply: @escaping (_ updatedContent: Data?, Error?) -> Void
+    )
     func chatWithSelection(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
