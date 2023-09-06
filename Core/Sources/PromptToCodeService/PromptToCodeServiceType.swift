@@ -5,18 +5,36 @@ import SuggestionModel
 public protocol PromptToCodeServiceType {
     func modifyCode(
         code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
         requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
+        source: PromptToCodeSource,
+        isDetached: Bool,
         extraSystemPrompt: String?,
         generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error>
 
     func stopResponding()
+}
+
+public struct PromptToCodeSource {
+    public var language: CodeLanguage
+    public var documentURL: URL
+    public var projectRootURL: URL
+    public var allCode: String
+    public var range: CursorRange
+
+    public init(
+        language: CodeLanguage,
+        documentURL: URL,
+        projectRootURL: URL,
+        allCode: String,
+        range: CursorRange
+    ) {
+        self.language = language
+        self.documentURL = documentURL
+        self.projectRootURL = projectRootURL
+        self.allCode = allCode
+        self.range = range
+    }
 }
 
 public struct PromptToCodeServiceDependencyKey: DependencyKey {

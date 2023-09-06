@@ -2,10 +2,11 @@ import Foundation
 import OpenAIService
 import Preferences
 import SuggestionModel
+import XcodeInspector
 
 public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
     var service: (any ChatGPTServiceType)?
-    
+
     public init() {}
 
     public func stopResponding() {
@@ -14,13 +15,9 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
     public func modifyCode(
         code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
         requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
+        source: PromptToCodeSource,
+        isDetached: Bool,
         extraSystemPrompt: String?,
         generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
@@ -34,6 +31,22 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             return userPreferredLanguage.isEmpty ? "" : " in \(userPreferredLanguage)"
         }()
 
+        let editor: EditorInformation = XcodeInspector.shared.focusedEditorContent ?? .init(
+            editorContent: .init(
+                content: source.allCode,
+                lines: [],
+                selections: [source.range],
+                cursorPosition: .outOfScope,
+                lineAnnotations: []
+            ),
+            selectedContent: code,
+            selectedLines: [],
+            documentURL: source.documentURL,
+            projectURL: source.projectRootURL,
+            relativePath: "",
+            language: source.language
+        )
+
         let rule: String = {
             func generateDescription(index: Int) -> String {
                 let generateDescription = generateDescriptionRequirement ?? UserDefaults.shared
@@ -46,7 +59,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                     """
                     : "\(index). Reply with the result."
             }
-            switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 if code.isEmpty {
                     return """
@@ -82,20 +95,20 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         }()
 
         let systemPrompt = {
-            switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 if code.isEmpty {
                     return """
-                    You are good at writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are good at writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
                     """
                 } else {
                     return """
-                    You are good at writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are good at writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
@@ -104,16 +117,16 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             default:
                 if code.isEmpty {
                     return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are a senior programer in writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
                     """
                 } else {
                     return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are a senior programer in writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
@@ -125,6 +138,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         let firstMessage: String? = {
             if code.isEmpty { return nil }
             switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 return """
                 ```
@@ -161,9 +175,10 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         if let firstMessage {
             await memory.mutateHistory { history in
                 history.append(.init(role: .user, content: firstMessage))
+                history.append(.init(role: .assistant, content: secondMessage))
             }
         }
-        let stream = try await chatGPTService.send(content: secondMessage)
+        let stream = try await chatGPTService.send(content: requirement)
         return .init { continuation in
             Task {
                 var content = ""

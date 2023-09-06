@@ -87,13 +87,15 @@ enum ChatTabFactory {
 
                     let result = try await service.modifyCode(
                         code: prompt,
-                        language: .plaintext,
-                        indentSize: 4,
-                        usesTabsForIndentation: true,
                         requirement: instruction ?? "Modify content.",
-                        projectRootURL: .init(fileURLWithPath: "/"),
-                        fileURL: .init(fileURLWithPath: "/"),
-                        allCode: prompt,
+                        source: .init(
+                            language: .plaintext,
+                            documentURL: .init(fileURLWithPath: "/"),
+                            projectRootURL: .init(fileURLWithPath: "/"),
+                            allCode: prompt,
+                            range: .outOfScope
+                        ),
+                        isDetached: true,
                         extraSystemPrompt: extraSystemPrompt,
                         generateDescriptionRequirement: false
                     )
