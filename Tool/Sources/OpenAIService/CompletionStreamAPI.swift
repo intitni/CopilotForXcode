@@ -130,13 +130,13 @@ struct CompletionRequestBody: Encodable, Equatable {
 
 struct CompletionStreamDataTrunk: Codable {
     var id: String?
-    var object: String
-    var model: String
-    var choices: [Choice]
+    var object: String?
+    var model: String?
+    var choices: [Choice]?
 
     struct Choice: Codable {
-        var delta: Delta
-        var index: Int
+        var delta: Delta?
+        var index: Int?
         var finish_reason: String?
 
         struct Delta: Codable {
