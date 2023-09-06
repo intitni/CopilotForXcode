@@ -24,9 +24,10 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
   - [Enable the Extension](#enable-the-extension)
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Setting Up Key Bindings](#setting-up-key-bindings)
-  - [Setting Up GitHub Copilot](#setting-up-github-copilot)
-  - [Setting Up Codeium](#setting-up-codeium)
-  - [Setting Up OpenAI API Key](#setting-up-openai-api-key)
+  - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
+      - [Setting Up GitHub Copilot](#setting-up-github-copilot)
+      - [Setting Up Codeium](#setting-up-codeium)
+  - [Setting Up Chat Feature](#setting-up-chat-feature)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
 - [Feature](#feature)
@@ -54,7 +55,8 @@ For suggestion features:
 
 For chat and prompt to code features:
 
-- Valid OpenAI API key.
+- A valid OpenAI API key.
+- Access to other LLMs, such as Azure OpenAI and LocalAI.
 
 ## Permissions Required
 
@@ -118,36 +120,45 @@ Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
 Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
-### Setting Up GitHub Copilot
+### Setting Up Suggestion Feature
 
-1. In the host app, switch to the service tab and click on GitHub Copilot to access your GitHub Copilot account settings.
-2. Click "Install" to install the language server.
-3. Optionally setup the path to Node. The default value is just `node`, Copilot for Xcode.app will try to find the Node from the PATH available in a login shell. If your Node is installed somewhere else, you can run `which node` from terminal to get the path.
-4. Click "Sign In", and you will be directed to a verification website provided by GitHub, and a user code will be pasted into your clipboard.
-5. After signing in, go back to the app and click "Confirm Sign-in" to finish.
+#### Setting Up GitHub Copilot
+
+1. In the host app, navigate to "Service - GitHub Copilot" to access your GitHub Copilot account settings.
+2. Click on "Install" to install the language server.
+3. Optionally, set up the path to Node. The default value is simply `node`. Copilot for Xcode.app will attempt to locate Node from the following directories: `/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`.
+    
+    If your Node installation is located elsewhere, you can run `which node` from the terminal to obtain the correct path.
+    
+    If you are using a node version manager that provides a shim executable, you will need to find the path to the actual executable. Please refer to the FAQ for more information.
+    
+4. Click on "Sign In", and you will be redirected to a verification website provided by GitHub. A user code will be copied to your clipboard.
+5. After signing in, return to the app and click on "Confirm Sign-in" to complete the process.
 6. Go to "Feature - Suggestion" and update the feature provider to "GitHub Copilot".
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/GitHub Copilot/executable/`.
 
-### Setting Up Codeium
+#### Setting Up Codeium
 
-1. In the host app, switch to the service tab and click Codeium to access the Codeium account settings.
-2. Click "Install" to install the language server.
-3. Click "Sign In", and you will be directed to codeium.com. After signing in, a token will be presented. You will need to paste the token back to the app to finish signing in.
+1. In the host app, navigate to "Service - Codeium" to access the Codeium account settings.
+2. Click on "Install" to install the language server.
+3. Click on "Sign In" and you will be redirected to codeium.com. After signing in, a token will be provided. You need to copy and paste this token back into the app to complete the sign-in process.
 4. Go to "Feature - Suggestion" and update the feature provider to "Codeium".
 
 > The key is stored in the keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password to access the keychain. Please select "Always Allow" to let the helper app access the key.
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
 
-### Setting Up OpenAI API Key
+### Setting Up Chat Feature
 
-1. In the host app, click OpenAI to enter the OpenAI account settings.
-2. Enter your api key to the text field.
+1. In the host app, navigate to "Service - Chat Model".
+2. Update the OpenAI model or create a new one if necessary. Use the test button to verify the model.
+3. Optionally, set up the embedding model in "Service - Embedding Model", which is required for a subset of the chat feature.
+4. Go to "Feature - Chat" and update the chat/embedding feature provider with the one you just updated/created.
 
 ### Managing `CopilotForXcodeExtensionService.app`
 
-This app runs whenever you open `Copilot for Xcode.app` or `Xcode.app`. You can quit it with its menu bar item that looks like a steering wheel.
+This app runs whenever you open `Copilot for Xcode.app` or `Xcode.app`. You can quit it with its menu bar item that looks like a tentacle.
 
 You can also set it to quit automatically when the above 2 apps are closed.
 
@@ -161,9 +172,7 @@ brew upgrade --cask copilot-for-xcode
 
 Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).
 
-After updating, please restart Xcode to allow the extension to reload.
-
-If you are upgrading from a version lower than **0.7.0**, please run `Copilot for Xcode.app` at least once to let it set up the new launch agent for you and re-grant the permissions according to the new rules.
+After updating, please open Copilot for Xcode.app once and restart Xcode to allow the extension to reload.
 
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
@@ -193,6 +202,9 @@ Whenever your code is updated, the app will automatically fetch suggestions for 
 - Previous Suggestion: If there is more than one suggestion, switch to the previous one.
 - Accept Suggestion: Add the suggestion to the code.
 - Reject Suggestion: Remove the suggestion comments.
+
+Commands called by the app:
+
 - Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
@@ -283,6 +295,7 @@ This feature is recommended when you need to update a specific piece of code. So
 #### Commands
 
 - Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
+- Accept Prompt to Code:  Accept the result of prompt to code.
 
 ### Custom Commands
 
@@ -310,6 +323,7 @@ These features are included in another repo, and are not open sourced.
 
 The currently available Plus features include:
 
+- Unlimited chat/embedding models.
 - Tab to accept suggestions.
 - Persisted chat panel.
 - Browser tab in chat panel.
@@ -326,7 +340,7 @@ The request contains only the license key, the email address (only on activation
 
 ## Limitations
 
-- The extension uses some dirty tricks to get the file and project/workspace paths. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
+- The extension utilizes various tricks to monitor the state of Xcode. It may fail, it may be incorrect, especially when you have multiple Xcode windows running, and maybe even worse when they are in different displays. I am not sure about that though.
 
 ## License
 

@@ -238,7 +238,7 @@ extension ChatGPTService {
                     cancelTask = cancel
                     let proposedId = UUID().uuidString
                     for try await trunk in trunks {
-                        guard let delta = trunk.choices.first?.delta else { continue }
+                        guard let delta = trunk.choices?.first?.delta else { continue }
 
                         // The api will always return a function call with JSON object.
                         // The first round will contain the function name and an empty argument.

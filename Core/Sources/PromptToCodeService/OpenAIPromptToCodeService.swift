@@ -136,7 +136,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         }()
 
         let annotations = isDetached
-            ? []
+            ? ""
             : extractAnnotations(editorInformation: editor, source: source)
 
         let firstMessage: String? = {
@@ -148,8 +148,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                 \(code)
                 ```
 
-                line annotations found:
-                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
+                \(annotations)
                 """
             default:
                 return """
@@ -157,8 +156,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                 \(code)
                 ```
 
-                line annotations found:
-                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
+                \(annotations)
                 """
             }
         }()
@@ -274,9 +272,9 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
     func extractAnnotations(
         editorInformation: EditorInformation,
         source: PromptToCodeSource
-    ) -> [String] {
-        guard let annotations = editorInformation.editorContent?.lineAnnotations else { return [] }
-        return annotations
+    ) -> String {
+        guard let annotations = editorInformation.editorContent?.lineAnnotations else { return "" }
+        let all = annotations
             .lazy
             .filter { annotation in
                 annotation.line >= source.range.start.line + 1
@@ -285,6 +283,11 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                 let relativeLine = annotation.line - source.range.start.line
                 return "line \(relativeLine): \(annotation.type) \(annotation.message)"
             }
+        guard !all.isEmpty else { return "" }
+        return """
+        line annotations found:
+        \(annotations.map { "- \($0)" }.joined(separator: "\n"))
+        """
     }
 }
 

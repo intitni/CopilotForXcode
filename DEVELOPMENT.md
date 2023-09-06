@@ -18,12 +18,10 @@ The `ExtensionService` is a program that operates in the background and performs
 
 Most of the logics are implemented inside the package `Core` and `Tool`.
 
-- The `CopilotService` is responsible for communicating with the GitHub Copilot LSP.
 - The `Service` is responsible for handling the requests from the `EditorExtension`, communicating with the `CopilotService`, update the code blocks and present the GUI.
 - The `Client` is basically just a wrapper around the XPCService
 - The `SuggestionInjector` is responsible for injecting the suggestions into the code. Used in comment mode to present the suggestions, and all modes to accept suggestions.
-- The `Environment` contains some swappable global functions. It is used to make testing easier.
-- The `SuggestionWidget` is responsible for presenting the suggestions in floating widget mode.
+- The `SuggestionWidget` is responsible for the UI of the widgets.
 
 ## Building and Archiving the App
 
@@ -31,9 +29,9 @@ Most of the logics are implemented inside the package `Core` and `Tool`.
 2. Build or archive the Copilot for Xcode target.
 3. If Xcode complains that the pro package doesn't exist, please remove the package from the project, and update the last function in Core/Package.swift to return false.
 
-## Testing Extension
+## Testing Source Editor Extension
 
-Just run both the `ExtensionService` and the `EditorExtension` Target.
+Just run both the `ExtensionService` and the `EditorExtension` Target. Read [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension) for more details.
 
 ## SwiftUI Previews
 

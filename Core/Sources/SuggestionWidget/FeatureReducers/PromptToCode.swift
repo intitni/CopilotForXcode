@@ -105,6 +105,10 @@ public struct PromptToCode: ReducerProtocol {
             self.generateDescriptionRequirement = generateDescriptionRequirement
             self.isAttachedToSelectionRange = isAttachedToSelectionRange
             self.commandName = commandName
+            
+            if selectionRange?.isEmpty ?? true {
+                self.isAttachedToSelectionRange = false
+            }
         }
     }
 

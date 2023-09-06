@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 import PromptToCodeService
 import SuggestionModel
+import Environment
 
 public struct PromptToCodeGroup: ReducerProtocol {
     public struct State: Equatable {
@@ -130,7 +131,9 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 switch action {
                 case .cancelButtonTapped:
                     state.promptToCodes.remove(id: id)
-                    return .none
+                    return .run { _ in
+                        try await Environment.makeXcodeActive()
+                    }
                 default:
                     return .none
                 }
