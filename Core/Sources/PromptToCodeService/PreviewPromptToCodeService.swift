@@ -6,13 +6,9 @@ public final class PreviewPromptToCodeService: PromptToCodeServiceType {
 
     public func modifyCode(
         code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
         requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
+        source: PromptToCodeSource,
+        isDetached: Bool,
         extraSystemPrompt: String?,
         generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {

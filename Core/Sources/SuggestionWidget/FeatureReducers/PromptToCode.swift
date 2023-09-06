@@ -63,7 +63,7 @@ public struct PromptToCode: ReducerProtocol {
         @BindingState public var prompt: String
         @BindingState public var isContinuous: Bool
         @BindingState public var isAttachedToSelectionRange: Bool
-        
+
         public var filename: String { documentURL.lastPathComponent }
         public var canRevert: Bool { history != .empty }
 
@@ -156,13 +156,15 @@ public struct PromptToCode: ReducerProtocol {
                     do {
                         let stream = try await promptToCodeService.modifyCode(
                             code: copiedState.code,
-                            language: copiedState.language,
-                            indentSize: copiedState.indentSize,
-                            usesTabsForIndentation: copiedState.usesTabsForIndentation,
                             requirement: copiedState.prompt,
-                            projectRootURL: copiedState.projectRootURL,
-                            fileURL: copiedState.documentURL,
-                            allCode: copiedState.allCode,
+                            source: .init(
+                                language: copiedState.language,
+                                documentURL: copiedState.documentURL,
+                                projectRootURL: copiedState.projectRootURL,
+                                allCode: copiedState.allCode,
+                                range: copiedState.selectionRange ?? .outOfScope
+                            ),
+                            isDetached: !copiedState.isAttachedToSelectionRange,
                             extraSystemPrompt: copiedState.extraSystemPrompt,
                             generateDescriptionRequirement: copiedState
                                 .generateDescriptionRequirement

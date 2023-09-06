@@ -2,10 +2,11 @@ import Foundation
 import OpenAIService
 import Preferences
 import SuggestionModel
+import XcodeInspector
 
 public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
     var service: (any ChatGPTServiceType)?
-    
+
     public init() {}
 
     public func stopResponding() {
@@ -14,13 +15,9 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
     public func modifyCode(
         code: String,
-        language: CodeLanguage,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
         requirement: String,
-        projectRootURL: URL,
-        fileURL: URL,
-        allCode: String,
+        source: PromptToCodeSource,
+        isDetached: Bool,
         extraSystemPrompt: String?,
         generateDescriptionRequirement: Bool?
     ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
@@ -31,8 +28,24 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             {
                 return ""
             }
-            return userPreferredLanguage.isEmpty ? "" : "in \(userPreferredLanguage)"
+            return userPreferredLanguage.isEmpty ? "" : " in \(userPreferredLanguage)"
         }()
+
+        let editor: EditorInformation = XcodeInspector.shared.focusedEditorContent ?? .init(
+            editorContent: .init(
+                content: source.allCode,
+                lines: [],
+                selections: [source.range],
+                cursorPosition: .outOfScope,
+                lineAnnotations: []
+            ),
+            selectedContent: code,
+            selectedLines: [],
+            documentURL: source.documentURL,
+            projectURL: source.projectRootURL,
+            relativePath: "",
+            language: source.language
+        )
 
         let rule: String = {
             func generateDescription(index: Int) -> String {
@@ -46,7 +59,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                     """
                     : "\(index). Reply with the result."
             }
-            switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 if code.isEmpty {
                     return """
@@ -82,20 +95,20 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         }()
 
         let systemPrompt = {
-            switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 if code.isEmpty {
                     return """
-                    You are good at writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are good at writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
                     """
                 } else {
                     return """
-                    You are good at writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are good at writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
@@ -104,16 +117,16 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             default:
                 if code.isEmpty {
                     return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are a senior programer in writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
                     """
                 } else {
                     return """
-                    You are a senior programer in writing in \(language.rawValue).
-                    The active file is: \(fileURL.lastPathComponent).
+                    You are a senior programer in writing in \(editor.language.rawValue).
+                    The active file is: \(editor.documentURL.lastPathComponent).
                     \(extraSystemPrompt ?? "")
 
                     \(rule)
@@ -121,32 +134,45 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                 }
             }
         }()
+
+        let annotations = isDetached
+            ? []
+            : extractAnnotations(editorInformation: editor, source: source)
 
         let firstMessage: String? = {
             if code.isEmpty { return nil }
-            switch language {
+            switch editor.language {
             case .builtIn(.markdown), .plaintext:
                 return """
                 ```
                 \(code)
                 ```
+
+                line annotations found:
+                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
                 """
             default:
                 return """
                 ```
                 \(code)
                 ```
+
+                line annotations found:
+                \(annotations.map { "- \($0)" }.joined(separator: "\n"))
                 """
             }
         }()
 
+        let indentation = getCommonLeadingSpaceCount(code)
+
         let secondMessage = """
-        Requirements:###
-        \(requirement)
-        ###
+        I will update the code you just provided.
+        It looks like every line has an indentation of \(indentation) spaces, I will keep that.
+
+        What is your requirement?
         """
 
-        let configuration =  UserPreferenceChatGPTConfiguration()
+        let configuration = UserPreferenceChatGPTConfiguration()
             .overriding(.init(temperature: 0))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
@@ -161,9 +187,10 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         if let firstMessage {
             await memory.mutateHistory { history in
                 history.append(.init(role: .user, content: firstMessage))
+                history.append(.init(role: .assistant, content: secondMessage))
             }
         }
-        let stream = try await chatGPTService.send(content: secondMessage)
+        let stream = try await chatGPTService.send(content: requirement)
         return .init { continuation in
             Task {
                 var content = ""
@@ -230,6 +257,34 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         let description = extractDescriptionFromMarkdown(content, startIndex: endIndex)
 
         return (code, description)
+    }
+
+    func getCommonLeadingSpaceCount(_ code: String) -> Int {
+        let lines = code.split(separator: "\n")
+        guard !lines.isEmpty else { return 0 }
+        var commonCount = Int.max
+        for line in lines {
+            let count = line.prefix(while: { $0 == " " }).count
+            commonCount = min(commonCount, count)
+            if commonCount == 0 { break }
+        }
+        return commonCount
+    }
+
+    func extractAnnotations(
+        editorInformation: EditorInformation,
+        source: PromptToCodeSource
+    ) -> [String] {
+        guard let annotations = editorInformation.editorContent?.lineAnnotations else { return [] }
+        return annotations
+            .lazy
+            .filter { annotation in
+                annotation.line >= source.range.start.line + 1
+                    && annotation.line <= source.range.end.line + 1
+            }.map { annotation in
+                let relativeLine = annotation.line - source.range.start.line
+                return "line \(relativeLine): \(annotation.type) \(annotation.message)"
+            }
     }
 }
 
