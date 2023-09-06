@@ -58,6 +58,17 @@ struct DebugSettingsView: View {
                     Toggle(isOn: $settings.useUserDefaultsBaseAPIKeychain) {
                         Text("Store API keys in UserDefaults")
                     }
+                    
+                    Button("Reset Migration Version to 0") {
+                        UserDefaults.shared.set(nil, forKey: "OldMigrationVersion")
+                    }
+                    
+                    Button("Reset 0.23.0 migration") {
+                        UserDefaults.shared.set("239", forKey: "OldMigrationVersion")
+                        UserDefaults.shared.set(nil, forKey: "MigrateTo240Finished")
+                        UserDefaults.shared.set(nil, forKey: "ChatModels")
+                        UserDefaults.shared.set(nil, forKey: "EmbeddingModels")
+                    }
                 }
             }
             .padding()

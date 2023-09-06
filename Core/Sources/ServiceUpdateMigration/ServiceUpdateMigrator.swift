@@ -22,7 +22,7 @@ public struct ServiceUpdateMigrator {
     }
 
     func migrate(from oldVersion: String, to currentVersion: String) async throws {
-        guard let old = Int(oldVersion) else { return }
+        guard let old = Int(oldVersion), old != 0 else { return }
         if old <= 135 {
             try migrateFromLowerThanOrEqualToVersion135()
         }
