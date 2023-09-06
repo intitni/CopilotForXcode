@@ -78,7 +78,7 @@ extension PromptToCodePanel {
                                     }
                                 }.foregroundColor(.primary)
                             } else {
-                                Text("text selection").foregroundColor(.secondary)
+                                Text("current selection").foregroundColor(.secondary)
                             }
                         }
                         .padding(2)
