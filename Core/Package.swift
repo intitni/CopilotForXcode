@@ -161,6 +161,7 @@ let package = Package(
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
+                .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),

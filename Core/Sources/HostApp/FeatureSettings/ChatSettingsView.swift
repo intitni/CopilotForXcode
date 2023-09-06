@@ -50,8 +50,11 @@ struct ChatSettingsView: View {
                 if !settings.chatModels
                     .contains(where: { $0.id == settings.defaultChatFeatureChatModelId })
                 {
-                    Text(settings.chatModels.first?.name ?? "No Model Found")
-                        .tag(settings.defaultChatFeatureChatModelId)
+                    Text(
+                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                            ?? "No Model Found"
+                    )
+                    .tag(settings.defaultChatFeatureChatModelId)
                 }
 
                 ForEach(settings.chatModels, id: \.id) { chatModel in
@@ -66,8 +69,11 @@ struct ChatSettingsView: View {
                 if !settings.embeddingModels
                     .contains(where: { $0.id == settings.defaultChatFeatureEmbeddingModelId })
                 {
-                    Text(settings.embeddingModels.first?.name ?? "No Model Found")
-                        .tag(settings.defaultChatFeatureEmbeddingModelId)
+                    Text(
+                        (settings.embeddingModels.first?.name).map { "\($0) (Default)" }
+                            ?? "No Model Found"
+                    )
+                    .tag(settings.defaultChatFeatureEmbeddingModelId)
                 }
 
                 ForEach(settings.embeddingModels, id: \.id) { embeddingModel in

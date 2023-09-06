@@ -239,7 +239,7 @@ public struct SuggestionInjector {
 
         // remove the first adjacent placeholder in suffix which looks like `<#Hello#>`
 
-        let regex = try! NSRegularExpression(pattern: "\\s+<#.*?#>")
+        let regex = try! NSRegularExpression(pattern: "\\s*?<#.*?#>")
 
         if let firstPlaceholderRange = regex.firstMatch(
             in: suffix,
