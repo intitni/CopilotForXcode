@@ -6,7 +6,7 @@ import SharedUIComponents
 import SuggestionModel
 import SwiftUI
 
-struct CopilotView: View {
+struct GitHubCopilotView: View {
     static var copilotAuthService: GitHubCopilotAuthServiceType?
 
     class Settings: ObservableObject {
@@ -76,7 +76,7 @@ struct CopilotView: View {
                 defer { refreshInstallationStatus() }
                 try await installationManager.uninstall()
                 Task { @MainActor in
-                    CopilotView.copilotAuthService = nil
+                    GitHubCopilotView.copilotAuthService = nil
                 }
             }
         }
@@ -191,14 +191,21 @@ struct CopilotView: View {
                     .foregroundColor(.secondary)
                     .font(.callout)
                     .dynamicHeightTextInFormWorkaround()
-                }
 
-                Text("""
-                You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a tentacle, it will automatically restart as needed.
-                """)
-                .lineLimit(6)
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundColor(.secondary)
+                    Spacer()
+                    
+                    Text("""
+                    You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a tentacle, it will automatically restart as needed.
+                    """)
+                    .lineLimit(6)
+                    .dynamicHeightTextInFormWorkaround()
+                    .foregroundColor(.secondary)
+                }
+                .padding(8)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+                }
 
                 VStack(alignment: .leading) {
                     HStack {
@@ -427,8 +434,8 @@ struct ActivityIndicatorView: NSViewRepresentable {
 struct CopilotView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CopilotView(status: .notSignedIn, version: "1.0.0")
-            CopilotView(status: .alreadySignedIn, isRunningAction: true)
+            GitHubCopilotView(status: .notSignedIn, version: "1.0.0")
+            GitHubCopilotView(status: .alreadySignedIn, isRunningAction: true)
         }
         .padding(.all, 8)
     }

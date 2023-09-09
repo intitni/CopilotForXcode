@@ -8,7 +8,7 @@ struct ServiceView: View {
     var body: some View {
         SidebarTabView(tag: $tag) {
             ScrollView {
-                CopilotView().padding()
+                GitHubCopilotView().padding()
             }.sidebarItem(
                 tag: 0,
                 title: "GitHub Copilot",
