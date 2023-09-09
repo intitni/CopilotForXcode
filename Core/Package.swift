@@ -70,7 +70,6 @@ let package = Package(
                 "SuggestionService",
                 "GitHubCopilotService",
                 "XPCShared",
-                "DisplayLink",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
@@ -247,7 +246,6 @@ let package = Package(
 
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
-        .target(name: "DisplayLink"),
         .target(
             name: "UpdateChecker",
             dependencies: [
