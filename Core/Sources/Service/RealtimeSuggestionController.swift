@@ -3,7 +3,6 @@ import AppKit
 import AsyncAlgorithms
 import AXExtension
 import AXNotificationStream
-import CGEventObserver
 import Environment
 import Foundation
 import Logger
@@ -13,7 +12,6 @@ import Workspace
 import XcodeInspector
 
 public actor RealtimeSuggestionController {
-    let eventObserver: CGEventObserverType = CGEventObserver(eventsOfInterest: [.keyDown])
     private var task: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
     private var windowChangeObservationTask: Task<Void, Error>?
@@ -29,7 +27,6 @@ public actor RealtimeSuggestionController {
         Task { [weak self] in
             if let app = ActiveApplicationMonitor.shared.activeXcode {
                 await self?.handleXcodeChanged(app)
-                await self?.startHIDObservation()
             }
             var previousApp = ActiveApplicationMonitor.shared.activeXcode
             for await app in ActiveApplicationMonitor.shared.createStream() {
@@ -40,32 +37,8 @@ public actor RealtimeSuggestionController {
                 if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
                     await self.handleXcodeChanged(app)
                 }
-
-                if ActiveApplicationMonitor.shared.activeXcode != nil {
-                    await startHIDObservation()
-                } else {
-                    await stopHIDObservation()
-                }
             }
         }
-    }
-
-    private func startHIDObservation() {
-        if task == nil {
-            task = Task { [weak self, eventObserver] in
-                for await event in eventObserver.createStream() {
-                    guard let self else { return }
-                    await self.handleHIDEvent(event: event)
-                }
-            }
-        }
-        eventObserver.activateIfPossible()
-    }
-
-    private func stopHIDObservation() {
-        task?.cancel()
-        task = nil
-        eventObserver.deactivate()
     }
 
     private func handleXcodeChanged(_ app: NSRunningApplication) {
@@ -165,21 +138,6 @@ public actor RealtimeSuggestionController {
                         filespace.codeMetadata.uti = nil
                     }
                 }
-            }
-        }
-    }
-
-    func handleHIDEvent(event: CGEvent) async {
-        guard await Environment.isXcodeActive() else { return }
-
-        let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
-        let escape = 0x35
-
-        // Escape should cancel in-flight tasks.
-        // Except that when the completion panel is presented, it should trigger prefetch instead.
-        if keycode == escape {
-            if event.type == .keyDown {
-                await cancelInFlightTasks()
             }
         }
     }

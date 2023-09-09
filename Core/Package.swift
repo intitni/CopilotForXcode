@@ -70,13 +70,11 @@ let package = Package(
                 "SuggestionService",
                 "GitHubCopilotService",
                 "XPCShared",
-                "DisplayLink",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
-                .product(name: "CGEventObserver", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
@@ -248,7 +246,6 @@ let package = Package(
 
         .target(name: "FileChangeChecker"),
         .target(name: "LaunchAgentManager"),
-        .target(name: "DisplayLink"),
         .target(
             name: "UpdateChecker",
             dependencies: [
