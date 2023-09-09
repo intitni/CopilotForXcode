@@ -85,6 +85,10 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
     override func didSaveFilespace(_ filespace: Filespace) {
         notifySaveFile(filespace: filespace)
     }
+    
+    override func didUpdateFilespace(_ filespace: Filespace, content: String) {
+        notifyUpdateFile(filespace: filespace, content: content)
+    }
 
     override func didCloseFilespace(_ fileURL: URL) {
         Task {

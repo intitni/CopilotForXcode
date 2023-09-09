@@ -192,10 +192,10 @@ public actor RealtimeSuggestionController {
 
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-              let (workspace, filespace) = try? await Service.shared.workspacePool
+              let (workspace, _) = try? await Service.shared.workspacePool
               .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
-        workspace.suggestionPlugin?.notifyUpdateFile(filespace: filespace, content: editor.value)
+        await workspace.didUpdateFilespace(fileURL: fileURL, content: editor.value)
     }
 }
 

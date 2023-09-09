@@ -38,6 +38,7 @@ open class WorkspacePlugin {
 
     open func didOpenFilespace(_: Filespace) {}
     open func didSaveFilespace(_: Filespace) {}
+    open func didUpdateFilespace(_: Filespace, content: String) {}
     open func didCloseFilespace(_: URL) {}
 }
 
@@ -132,6 +133,14 @@ public final class Workspace {
     @WorkspaceActor
     public func closeFilespace(fileURL: URL) {
         filespaces[fileURL] = nil
+    }
+    
+    @WorkspaceActor
+    public func didUpdateFilespace(fileURL: URL, content: String) {
+        guard let filespace = filespaces[fileURL] else { return }
+        for plugin in plugins.values {
+            plugin.didUpdateFilespace(filespace, content: content)
+        }
     }
 }
 
