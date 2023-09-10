@@ -41,8 +41,8 @@ public enum Environment {
             return false
         }
     }
-
-    public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
+    
+    public static var fetchCurrentWorkspaceURLFromXcode: () async throws -> URL? = {
         if let xcode = ActiveApplicationMonitor.shared.activeXcode
             ?? ActiveApplicationMonitor.shared.latestXcode
         {
@@ -53,14 +53,22 @@ public enum Environment {
                     let path = child.description
                     let trimmedNewLine = path.trimmingCharacters(in: .newlines)
                     var url = URL(fileURLWithPath: trimmedNewLine)
-                    while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                        !url.pathExtension.isEmpty
-                    {
-                        url = url.deletingLastPathComponent()
-                    }
                     return url
                 }
             }
+        }
+
+        return nil
+    }
+
+    public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
+        if var url = try await fetchCurrentWorkspaceURLFromXcode() {
+            while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                !url.pathExtension.isEmpty
+            {
+                url = url.deletingLastPathComponent()
+            }
+            return url
         }
 
         return nil
@@ -250,7 +258,7 @@ func runAppleScript(_ appleScript: String) async throws -> String {
     }
 }
 
-extension FileManager {
+public extension FileManager {
     func fileIsDirectory(atPath path: String) -> Bool {
         var isDirectory: ObjCBool = false
         let exists = fileExists(atPath: path, isDirectory: &isDirectory)

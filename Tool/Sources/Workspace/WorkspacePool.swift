@@ -56,14 +56,14 @@ public class WorkspacePool {
         }
 
         // If we know which project is opened.
-        if let currentProjectURL = try await Environment.fetchCurrentProjectRootURLFromXcode() {
-            if let existed = workspaces[currentProjectURL] {
+        if let currentWorkspaceURL = try await Environment.fetchCurrentWorkspaceURLFromXcode() {
+            if let existed = workspaces[currentWorkspaceURL] {
                 let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
                 return (existed, filespace)
             }
 
-            let new = createNewWorkspace(projectRootURL: currentProjectURL)
-            workspaces[currentProjectURL] = new
+            let new = createNewWorkspace(workspaceURL: currentWorkspaceURL)
+            workspaces[currentWorkspaceURL] = new
             let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
             return (new, filespace)
         }
@@ -93,7 +93,7 @@ public class WorkspacePool {
                     return workspace
                 }
             }
-            return createNewWorkspace(projectRootURL: workspaceURL)
+            return createNewWorkspace(workspaceURL: workspaceURL)
         }()
 
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
@@ -121,8 +121,8 @@ extension WorkspacePool {
         workspace.plugins[id] = nil
     }
 
-    func createNewWorkspace(projectRootURL: URL) -> Workspace {
-        let new = Workspace(projectRootURL: projectRootURL)
+    func createNewWorkspace(workspaceURL: URL) -> Workspace {
+        let new = Workspace(workspaceURL: workspaceURL)
         for (id, plugin) in plugins {
             addPlugin(plugin, id: id, to: new)
         }
