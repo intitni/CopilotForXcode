@@ -1,5 +1,6 @@
 import Foundation
 #if canImport(KeyBindingManager)
+import EnhancedWorkspace
 import KeyBindingManager
 #endif
 import Workspace
@@ -16,9 +17,10 @@ public final class Service {
     @WorkspaceActor
     let workspacePool = {
         let it = WorkspacePool()
-        it.registerPlugin {
-            SuggestionServiceWorkspacePlugin(workspace: $0)
-        }
+        it.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
+        #if canImport(EnhancedWorkspace)
+        it.registerPlugin { EnhancedWorkspacePlugin(workspace: $0) }
+        #endif
         return it
     }()
 
