@@ -76,7 +76,6 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
-        memory: ChatGPTMemory = ConversationChatGPTMemory(systemPrompt: ""),
         tools: [AgentTool] = [],
         endFunction: EndFunction
     ) {
@@ -92,7 +91,7 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                 configuration: configuration.overriding {
                     $0.runFunctionsAutomatically = false
                 },
-                memory: memory,
+                memory: nil,
                 functionProvider: functionProvider,
                 stream: false
             ),
@@ -158,7 +157,7 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
     }
 
     public func parseOutput(_ message: ChatMessage) async -> AgentNextStep<Output> {
-        if message.role == .function, let functionCall = message.functionCall {
+        if message.role == .assistant, let functionCall = message.functionCall {
             if let function = functionProvider.functionTools.first(where: {
                 $0.name == functionCall.name
             }) {
