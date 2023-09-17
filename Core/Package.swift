@@ -188,7 +188,9 @@ let package = Package(
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-            ]
+            ].pro([
+                "ProService",
+            ])
         ),
         .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
