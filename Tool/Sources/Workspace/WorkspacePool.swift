@@ -1,5 +1,17 @@
 import Environment
 import Foundation
+import Dependencies
+
+public struct WorkspacePoolDependencyKey: DependencyKey {
+    public static var liveValue: WorkspacePool = .init()
+}
+
+public extension DependencyValues {
+    var workspacePool: WorkspacePool {
+        get { self[WorkspacePoolDependencyKey.self] }
+        set { self[WorkspacePoolDependencyKey.self] = newValue }
+    }
+}
 
 @globalActor public enum WorkspaceActor {
     public actor TheActor {}
@@ -7,6 +19,17 @@ import Foundation
 }
 
 public class WorkspacePool {
+    public enum Error: Swift.Error, LocalizedError {
+        case invalidWorkspaceURL(URL)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .invalidWorkspaceURL(let url):
+                return "Invalid workspace URL: \(url)"
+            }
+        }
+    }
+    
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
 
@@ -44,6 +67,21 @@ public class WorkspacePool {
             }
         }
         return nil
+    }
+    
+    @WorkspaceActor
+    public func fetchOrCreateWorkspace(workspaceURL: URL) async throws -> Workspace {
+        guard workspaceURL != URL(fileURLWithPath: "/") else {
+            throw Error.invalidWorkspaceURL(workspaceURL)
+        }
+        
+        if let existed = workspaces[workspaceURL] {
+            return existed
+        }
+
+        let new = createNewWorkspace(workspaceURL: workspaceURL)
+        workspaces[workspaceURL] = new
+        return new
     }
 
     @WorkspaceActor

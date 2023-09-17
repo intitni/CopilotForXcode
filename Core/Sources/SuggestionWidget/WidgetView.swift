@@ -216,7 +216,7 @@ extension WidgetContextMenu {
     @ViewBuilder
     var enableSuggestionForProject: some View {
         WithViewStore(store) { _ in
-            let projectPath = xcodeInspector.activeProjectURL.path
+            let projectPath = xcodeInspector.activeProjectRootURL.path
             if disableSuggestionFeatureGlobally {
                 let matchedPath = suggestionFeatureEnabledProjectList.first { path in
                     projectPath.hasPrefix(path)

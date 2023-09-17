@@ -1,9 +1,11 @@
+import Dependencies
 import Foundation
+import Workspace
+
 #if canImport(KeyBindingManager)
 import EnhancedWorkspace
 import KeyBindingManager
 #endif
-import Workspace
 
 @globalActor public enum ServiceActor {
     public actor TheActor {}
@@ -15,15 +17,7 @@ public final class Service {
     public static let shared = Service()
 
     @WorkspaceActor
-    let workspacePool = {
-        let it = WorkspacePool()
-        it.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
-        #if canImport(EnhancedWorkspace)
-        it.registerPlugin { EnhancedWorkspacePlugin(workspace: $0) }
-        #endif
-        return it
-    }()
-
+    let workspacePool: WorkspacePool
     @MainActor
     public let guiController = GraphicalUserInterfaceController()
     public let realtimeSuggestionController = RealtimeSuggestionController()
@@ -33,6 +27,8 @@ public final class Service {
     #endif
 
     private init() {
+        @Dependency(\.workspacePool) var workspacePool
+        
         scheduledCleaner = .init(workspacePool: workspacePool, guiController: guiController)
         #if canImport(KeyBindingManager)
         keyBindingManager = .init(
@@ -44,6 +40,13 @@ public final class Service {
             }
         )
         #endif
+
+        workspacePool.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
+        #if canImport(EnhancedWorkspace)
+        workspacePool.registerPlugin { EnhancedWorkspacePlugin(workspace: $0) }
+        #endif
+        
+        self.workspacePool = workspacePool
     }
 
     @MainActor
