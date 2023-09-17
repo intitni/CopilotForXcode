@@ -77,6 +77,7 @@ public final class XcodeInspector: ObservableObject {
             .filter { $0.isXcode }
             .map(XcodeAppInstanceInspector.init(runningApplication:))
         let activeXcode = xcodes.first(where: \.isActive)
+        latestActiveXcode = activeXcode ?? xcodes.first
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
