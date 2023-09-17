@@ -1,23 +1,13 @@
 import Foundation
 
-public protocol AgentOutputParsable {
-    static func parse(_ string: String) throws -> Self
-    var botReadableContent: String { get }
-}
-
-extension String: AgentOutputParsable {
-    public static func parse(_ string: String) throws -> String { string }
-    public var botReadableContent: String { self }
-}
-
 public actor AgentExecutor<InnerAgent: Agent>: Chain
     where InnerAgent.Input == String, InnerAgent.Output: AgentOutputParsable
 {
     public typealias Input = String
     public struct Output {
-        typealias FinalOutput = AgentFinish<InnerAgent.Output>.ReturnValue
+        public typealias FinalOutput = AgentFinish<InnerAgent.Output>.ReturnValue
 
-        let finalOutput: FinalOutput
+        public let finalOutput: FinalOutput
         let intermediateSteps: [AgentAction]
     }
 
@@ -180,7 +170,7 @@ extension AgentExecutor {
     func getToolFinish(action: AgentAction) -> AgentFinish<InnerAgent.Output>? {
         guard let tool = tools[action.toolName] else { return nil }
         guard tool.returnDirectly else { return nil }
-        
+
         do {
             let result = try InnerAgent.Output.parse(action.observation ?? "")
             return .init(returnValue: .success(result), log: action.observation ?? "")
@@ -193,3 +183,32 @@ extension AgentExecutor {
     }
 }
 
+// MARK: - AgentOutputParsable
+
+public protocol AgentOutputParsable {
+    static func parse(_ string: String) throws -> Self
+    var botReadableContent: String { get }
+}
+
+extension String: AgentOutputParsable {
+    public static func parse(_ string: String) throws -> String { string }
+    public var botReadableContent: String { self }
+}
+
+extension Int: AgentOutputParsable {
+    public static func parse(_ string: String) throws -> Int {
+        guard let int = Int(string) else { return 0 }
+        return int
+    }
+
+    public var botReadableContent: String { String(self) }
+}
+
+extension Double: AgentOutputParsable {
+    public static func parse(_ string: String) throws -> Double {
+        guard let double = Double(string) else { return 0 }
+        return double
+    }
+
+    public var botReadableContent: String { String(self) }
+}
