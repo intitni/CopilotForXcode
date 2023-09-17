@@ -1,4 +1,5 @@
 import Foundation
+import OpenAIService
 
 public protocol AgentTool {
     var name: String { get }
@@ -30,3 +31,18 @@ public struct SimpleAgentTool: AgentTool {
     }
 }
 
+public struct FunctionCallingAgentTool: AgentTool {
+    public let function: any ChatGPTFunction
+    public var name: String { function.name }
+    public var description: String { function.description }
+    public let returnDirectly: Bool
+    
+    public init(function: any ChatGPTFunction, returnDirectly: Bool = false) {
+        self.function = function
+        self.returnDirectly = returnDirectly
+    }
+    
+    public func run(input: String) async throws -> String {
+        try await function.call(argumentsJsonString: input).botReadableContent
+    }
+}

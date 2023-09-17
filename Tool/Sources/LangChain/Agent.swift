@@ -100,7 +100,9 @@ public protocol Agent {
 
     func validateTools(tools: [AgentTool]) throws
     func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad
-    func parseOutput(_ output: String) -> AgentNextStep
+    func extraPlan(input: AgentInput<Input>)
+    func prepareForEarlyStopWithGenerate()
+    func parseOutput(_ output: ChatModelChain<AgentInput<Input>>.Output) async -> AgentNextStep
 }
 
 public extension Agent {
@@ -115,8 +117,9 @@ public extension Agent {
         callbackManagers: [CallbackManager]
     ) async throws -> AgentNextStep {
         let input = getFullInputs(input: input, intermediateSteps: intermediateSteps)
+        extraPlan(input: input)
         let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
-        return parseOutput(output.content ?? "")
+        return await parseOutput(output)
     }
 
     func returnStoppedResponse(
@@ -139,14 +142,14 @@ public extension Agent {
             (Please continue with `Final Answer:`)
             """
             let input = AgentInput(input: input, thoughts: .text(thoughts))
+            prepareForEarlyStopWithGenerate()
             let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
-            let reply = output.content ?? ""
-            let nextAction = parseOutput(reply)
+            let nextAction = await parseOutput(output)
             switch nextAction {
             case let .finish(finish):
                 return finish
             case .actions:
-                return AgentFinish(returnValue: reply, log: reply)
+                return AgentFinish(returnValue: output.content ?? "", log: output.content ?? "")
             }
         }
     }

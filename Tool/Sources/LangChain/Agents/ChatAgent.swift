@@ -102,12 +102,22 @@ public class ChatAgent: Agent {
         (Please continue with `Thought:` or `Final Answer:`)
         """)
     }
- 
+
     public func validateTools(tools: [AgentTool]) throws {
         // no validation
     }
 
-    public func parseOutput(_ text: String) -> AgentNextStep {
+    public func extraPlan(input: AgentInput<String>) {
+        // do nothing
+    }
+
+    public func prepareForEarlyStopWithGenerate() {
+        // do nothing
+    }
+
+    public func parseOutput(_ output: ChatMessage) async -> AgentNextStep {
+        let text = output.content ?? ""
+
         func parseFinalAnswerIfPossible() -> AgentNextStep? {
             let throughAnswerParser = PrefixThrough("Final Answer:")
             var parsableContent = text[...]
