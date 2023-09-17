@@ -21,18 +21,18 @@ public struct AgentAction: Equatable {
 }
 
 public extension CallbackEvents {
-    struct AgentDidFinish: CallbackEvent {
-        public let info: AgentFinish
+    struct AgentDidFinish<Output: AgentOutputParsable>: CallbackEvent {
+        public let info: AgentFinish<Output>
     }
-    
-    var agentDidFinish: AgentDidFinish.Type {
-        AgentDidFinish.self
+
+    func agentDidFinish<Output: AgentOutputParsable>() -> AgentDidFinish<Output>.Type {
+        AgentDidFinish<Output>.self
     }
 
     struct AgentActionDidStart: CallbackEvent {
         public let info: AgentAction
     }
-    
+
     var agentActionDidStart: AgentActionDidStart.Type {
         AgentActionDidStart.self
     }
@@ -40,25 +40,30 @@ public extension CallbackEvents {
     struct AgentActionDidEnd: CallbackEvent {
         public let info: AgentAction
     }
-    
+
     var agentActionDidEnd: AgentActionDidEnd.Type {
         AgentActionDidEnd.self
     }
 }
 
-public struct AgentFinish: Equatable {
-    public var returnValue: String
+public struct AgentFinish<Output: AgentOutputParsable> {
+    public enum ReturnValue {
+        case success(Output)
+        case failure(String)
+    }
+
+    public var returnValue: ReturnValue
     public var log: String
 
-    public init(returnValue: String, log: String) {
+    public init(returnValue: ReturnValue, log: String) {
         self.returnValue = returnValue
         self.log = log
     }
 }
 
-public enum AgentNextStep: Equatable {
+public enum AgentNextStep<Output: AgentOutputParsable> {
     case actions([AgentAction])
-    case finish(AgentFinish)
+    case finish(AgentFinish<Output>)
 }
 
 public enum AgentScratchPad: Equatable {
@@ -94,6 +99,7 @@ public enum AgentEarlyStopHandleType: Equatable {
 
 public protocol Agent {
     associatedtype Input
+    associatedtype Output: AgentOutputParsable
     var chatModelChain: ChatModelChain<AgentInput<Input>> { get }
     var observationPrefix: String { get }
     var llmPrefix: String { get }
@@ -101,8 +107,9 @@ public protocol Agent {
     func validateTools(tools: [AgentTool]) throws
     func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad
     func extraPlan(input: AgentInput<Input>)
-    func prepareForEarlyStopWithGenerate()
-    func parseOutput(_ output: ChatModelChain<AgentInput<Input>>.Output) async -> AgentNextStep
+    func prepareForEarlyStopWithGenerate() -> String
+    func parseOutput(_ output: ChatModelChain<AgentInput<Input>>.Output) async
+        -> AgentNextStep<Output>
 }
 
 public extension Agent {
@@ -115,7 +122,7 @@ public extension Agent {
         input: Input,
         intermediateSteps: [AgentAction],
         callbackManagers: [CallbackManager]
-    ) async throws -> AgentNextStep {
+    ) async throws -> AgentNextStep<Output> {
         let input = getFullInputs(input: input, intermediateSteps: intermediateSteps)
         extraPlan(input: input)
         let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
@@ -127,11 +134,11 @@ public extension Agent {
         earlyStoppedHandleType: AgentEarlyStopHandleType,
         intermediateSteps: [AgentAction],
         callbackManagers: [CallbackManager]
-    ) async throws -> AgentFinish {
+    ) async throws -> AgentFinish<Output> {
         switch earlyStoppedHandleType {
         case .force:
             return AgentFinish(
-                returnValue: "Agent stopped due to iteration limit or time limit.",
+                returnValue: .failure("Agent stopped due to iteration limit or time limit."),
                 log: ""
             )
         case .generate:
@@ -139,17 +146,17 @@ public extension Agent {
             thoughts += """
 
             \(llmPrefix)I now need to return a final answer based on the previous steps:
-            (Please continue with `Final Answer:`)
+            \(prepareForEarlyStopWithGenerate())
             """
             let input = AgentInput(input: input, thoughts: .text(thoughts))
-            prepareForEarlyStopWithGenerate()
+            
             let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
             let nextAction = await parseOutput(output)
             switch nextAction {
             case let .finish(finish):
                 return finish
             case .actions:
-                return AgentFinish(returnValue: output.content ?? "", log: output.content ?? "")
+                return .init(returnValue: .failure(output.content ?? ""), log: output.content ?? "")
             }
         }
     }

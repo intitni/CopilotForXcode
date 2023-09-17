@@ -35,6 +35,7 @@ private func formatInstruction(toolsNames: String, preferredLanguage: String) ->
 
 public class ChatAgent: Agent {
     public typealias Input = String
+    public typealias Output = String
     public var observationPrefix: String { "Observation: " }
     public var llmPrefix: String { "Thought: " }
     public let chatModelChain: ChatModelChain<AgentInput<String>>
@@ -111,28 +112,28 @@ public class ChatAgent: Agent {
         // do nothing
     }
 
-    public func prepareForEarlyStopWithGenerate() {
-        // do nothing
+    public func prepareForEarlyStopWithGenerate() -> String {
+        "(Please continue with `Final Answer:`)"
     }
 
-    public func parseOutput(_ output: ChatMessage) async -> AgentNextStep {
+    public func parseOutput(_ output: ChatMessage) async -> AgentNextStep<Output> {
         let text = output.content ?? ""
 
-        func parseFinalAnswerIfPossible() -> AgentNextStep? {
+        func parseFinalAnswerIfPossible() -> AgentNextStep<Output>? {
             let throughAnswerParser = PrefixThrough("Final Answer:")
             var parsableContent = text[...]
             do {
                 _ = try throughAnswerParser.parse(&parsableContent)
                 let answer = String(parsableContent)
                 let output = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-                return .finish(AgentFinish(returnValue: output, log: text))
+                return .finish(AgentFinish(returnValue: .success(output), log: text))
             } catch {
                 Logger.langchain.info("Could not parse LLM output final answer: \(error)")
                 return nil
             }
         }
 
-        func parseNextActionIfPossible() -> AgentNextStep? {
+        func parseNextActionIfPossible() -> AgentNextStep<Output>? {
             let throughActionBlockParser = PrefixThrough("""
             Action:
             ```
@@ -179,7 +180,7 @@ public class ChatAgent: Agent {
             answer = "Sorry, I don't know."
         }
 
-        return .finish(AgentFinish(returnValue: String(answer), log: text))
+        return .finish(AgentFinish(returnValue: .success(String(answer)), log: text))
     }
 }
 

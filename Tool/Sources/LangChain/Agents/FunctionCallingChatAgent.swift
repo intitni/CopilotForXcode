@@ -2,44 +2,70 @@ import Foundation
 import Logger
 import OpenAIService
 
-public class FunctionCallingChatAgent: Agent {
-    struct EndFunction: ChatGPTFunction {
-        struct Argument: Codable {
-            let finalAnswer: String
+public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: Agent {
+    public struct EndFunction: ChatGPTFunction {
+        public typealias Argument = Output
+        public typealias Result = String
+        public var name: String { "sendFinalAnswer" }
+        public var description: String { "Send the final answer to user" }
+        public let argumentSchema: JSONSchemaValue
+        public var reportProgress: (String) async -> Void = { _ in }
+        public func prepare() async {}
+        public func call(arguments: Argument) async throws -> Result { "" }
+        public init(argumentSchema: JSONSchemaValue) {
+            self.argumentSchema = argumentSchema
+        }
+    }
+
+    public struct OtherToolFunction: ChatGPTFunction {
+        public struct Argument: Decodable {
+            public var __arg1: String
         }
 
-        typealias Result = String
-
-        var name: String { "sendFinalAnswer" }
-        var description: String { "Send the final answer to user" }
-        var argumentSchema: JSONSchemaValue {
-            [
-                .type: "object",
-                .properties: [
-                    "finalAnswer": [
-                        .type: "string",
-                        .description: "the final answer to send to user",
-                    ],
+        public typealias Result = String
+        public var name: String { tool.name }
+        public var description: String { tool.description }
+        public var argumentSchema: JSONSchemaValue { [
+            .type: "object",
+            // This is a hack to get around the fact that some tools
+            // do not expose an args_schema, and expect an argument
+            // which is a string.
+            // And Open AI does not support an array type for the
+            // parameters.
+            .properties: [
+                "__arg1": [
+                    "title": "__arg1",
+                    .type: "string",
                 ],
-                .required: ["finalAnswer"],
-            ]
+            ],
+            .required: ["__arg1"],
+        ] }
+        public var reportProgress: (String) async -> Void = { _ in }
+        public func prepare() async {}
+        public func call(arguments: Argument) async throws -> Result {
+            try await tool.run(input: arguments.__arg1)
         }
 
-        var reportProgress: (String) async -> Void = { _ in }
-        func prepare() async {}
-        func call(arguments: Argument) async throws -> Result {
-            return arguments.finalAnswer
+        let tool: AgentTool
+        public init(tool: AgentTool) {
+            self.tool = tool
         }
     }
 
     struct FunctionProvider: ChatGPTFunctionProvider {
         var tools: [AgentTool] = []
         var functionTools: [any ChatGPTFunction] = []
+        var endFunction: EndFunction
         var functions: [any ChatGPTFunction] {
-            functionTools + [EndFunction()]
+            shouldFinish
+                ? [endFunction]
+                : functionTools + tools.map(OtherToolFunction.init) + [endFunction]
         }
 
-        var functionCallStrategy: FunctionCallStrategy? = nil
+        var shouldFinish = false
+        var functionCallStrategy: FunctionCallStrategy? {
+            shouldFinish ? .name(endFunction.name) : nil
+        }
     }
 
     public typealias Input = String
@@ -51,10 +77,16 @@ public class FunctionCallingChatAgent: Agent {
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
         memory: ChatGPTMemory = ConversationChatGPTMemory(systemPrompt: ""),
-        functions: [any ChatGPTFunction] = [],
-        tools: [AgentTool] = []
+        tools: [AgentTool] = [],
+        endFunction: EndFunction
     ) {
-        functionProvider = .init(tools: tools, functionTools: functions)
+        let functions = tools.compactMap { $0 as? FunctionCallingAgentTool }.map(\.function)
+        let otherTools = tools.filter { !($0 is FunctionCallingAgentTool) }
+        functionProvider = .init(
+            tools: otherTools,
+            functionTools: functions,
+            endFunction: endFunction
+        )
         chatModelChain = .init(
             chatModel: OpenAIChat(
                 configuration: configuration.overriding {
@@ -106,10 +138,9 @@ public class FunctionCallingChatAgent: Agent {
         // no extra plan
     }
 
-    public func prepareForEarlyStopWithGenerate() {
-        functionProvider.functionTools = []
-        functionProvider.tools = []
-        functionProvider.functionCallStrategy = .name("finalAnswer")
+    public func prepareForEarlyStopWithGenerate() -> String {
+        functionProvider.shouldFinish = true
+        return "(call sendFinalAnswer to finish)"
     }
 
     public func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad {
@@ -126,35 +157,53 @@ public class FunctionCallingChatAgent: Agent {
         // no validation
     }
 
-    public func parseOutput(_ message: ChatMessage) async -> AgentNextStep {
+    public func parseOutput(_ message: ChatMessage) async -> AgentNextStep<Output> {
         if message.role == .function, let functionCall = message.functionCall {
             if let function = functionProvider.functionTools.first(where: {
                 $0.name == functionCall.name
             }) {
-                do {
-                    let result = try await function
-                        .call(argumentsJsonString: functionCall.arguments)
-                    return .actions([.init(
-                        toolName: functionCall.name,
-                        toolInput: result.botReadableContent,
-                        log: result.botReadableContent
-                    )])
-                } catch {
-                    return .actions([.init(
-                        toolName: functionCall.name,
-                        toolInput: error.localizedDescription,
-                        log: error.localizedDescription
-                    )])
+                if function.name == functionProvider.endFunction.name {
+                    do {
+                        let output = try Output.parse(functionCall.arguments)
+                        return .finish(.init(
+                            returnValue: .success(output),
+                            log: functionCall.arguments
+                        ))
+                    } catch {
+                        return .finish(.init(
+                            returnValue: .failure(error.localizedDescription),
+                            log: functionCall.arguments
+                        ))
+                    }
+                } else {
+                    return .actions([
+                        .init(
+                            toolName: function.name,
+                            toolInput: functionCall.arguments,
+                            log: functionCall.arguments
+                        ),
+                    ])
                 }
             }
         }
+        
+        // fallback to normal agent.
 
-        return await ChatAgent(
+        let stringBaseOutput = await ChatAgent(
             chatModel: chatModelChain.chatModel,
             tools: functionProvider.tools,
             preferredLanguage: ""
-        )
-        .parseOutput(message)
+        ).parseOutput(message)
+
+        switch stringBaseOutput {
+        case let .actions(actions):
+            return .actions(actions)
+        case let .finish(finish):
+            switch finish.returnValue {
+            case let .failure(x), let .success(x):
+                return .finish(.init(returnValue: .failure(x), log: finish.log))
+            }
+        }
     }
 }
 
