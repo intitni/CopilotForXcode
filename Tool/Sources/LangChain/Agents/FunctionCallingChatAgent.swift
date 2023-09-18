@@ -104,7 +104,7 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                     .init(
                         role: .system,
                         content: """
-                        Gather information using functions, and generate a final answer to my query as helpfully and accurately as possible.
+                        Gather information using functions, and generate a final answer to my query as concisely, helpfully and accurately as possible.
                         You don't ask me for additional information.
                         \(extraSystemPrompt)
                         When you have the final answer, you MUST call `\(endFunction.name)` to save it.
