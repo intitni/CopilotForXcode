@@ -167,12 +167,12 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                     do {
                         let output = try Output.parse(functionCall.arguments)
                         return .finish(.init(
-                            returnValue: .success(output),
+                            returnValue: .structured(output),
                             log: functionCall.arguments
                         ))
                     } catch {
                         return .finish(.init(
-                            returnValue: .failure(error.localizedDescription),
+                            returnValue: .unstructured(error.localizedDescription),
                             log: functionCall.arguments
                         ))
                     }
@@ -201,8 +201,8 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
             return .actions(actions)
         case let .finish(finish):
             switch finish.returnValue {
-            case let .failure(x), let .success(x):
-                return .finish(.init(returnValue: .failure(x), log: finish.log))
+            case let .unstructured(x), let .structured(x):
+                return .finish(.init(returnValue: .unstructured(x), log: finish.log))
             }
         }
     }

@@ -48,8 +48,8 @@ public extension CallbackEvents {
 
 public struct AgentFinish<Output: AgentOutputParsable> {
     public enum ReturnValue {
-        case success(Output)
-        case failure(String)
+        case structured(Output)
+        case unstructured(String)
     }
 
     public var returnValue: ReturnValue
@@ -132,7 +132,7 @@ public extension Agent {
         switch earlyStoppedHandleType {
         case .force:
             return AgentFinish(
-                returnValue: .failure("Agent stopped due to iteration limit or time limit."),
+                returnValue: .unstructured("Agent stopped due to iteration limit or time limit."),
                 log: ""
             )
         case .generate:
@@ -144,7 +144,7 @@ public extension Agent {
             case let .finish(finish):
                 return finish
             case .actions:
-                return .init(returnValue: .failure(output.content ?? ""), log: output.content ?? "")
+                return .init(returnValue: .unstructured(output.content ?? ""), log: output.content ?? "")
             }
         }
     }

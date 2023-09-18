@@ -134,7 +134,7 @@ public class ChatAgent: Agent {
                 _ = try throughAnswerParser.parse(&parsableContent)
                 let answer = String(parsableContent)
                 let output = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-                return .finish(AgentFinish(returnValue: .success(output), log: text))
+                return .finish(AgentFinish(returnValue: .structured(output), log: text))
             } catch {
                 Logger.langchain.info("Could not parse LLM output final answer: \(error)")
                 return nil
@@ -188,7 +188,7 @@ public class ChatAgent: Agent {
             answer = "Sorry, I don't know."
         }
 
-        return .finish(AgentFinish(returnValue: .success(String(answer)), log: text))
+        return .finish(AgentFinish(returnValue: .structured(String(answer)), log: text))
     }
 }
 

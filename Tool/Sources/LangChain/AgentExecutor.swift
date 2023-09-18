@@ -101,8 +101,8 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
 
     public nonisolated func parseOutput(_ output: Output) -> String {
         switch output.finalOutput {
-        case let .failure(error): return error
-        case let .success(output): return output.botReadableContent
+        case let .unstructured(error): return error
+        case let .structured(output): return output.botReadableContent
         }
     }
 
@@ -173,10 +173,10 @@ extension AgentExecutor {
 
         do {
             let result = try InnerAgent.Output.parse(action.observation ?? "")
-            return .init(returnValue: .success(result), log: action.observation ?? "")
+            return .init(returnValue: .structured(result), log: action.observation ?? "")
         } catch {
             return .init(
-                returnValue: .failure(action.observation ?? "no observation"),
+                returnValue: .unstructured(action.observation ?? "no observation"),
                 log: action.observation ?? ""
             )
         }
