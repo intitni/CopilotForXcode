@@ -18,19 +18,22 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
     var earlyStopHandleType: AgentEarlyStopHandleType
     var now: () -> Date = { Date() }
     var isCancelled = false
+    var initialSteps: [AgentAction]
 
     public init(
         agent: InnerAgent,
         tools: [AgentTool],
         maxIteration: Int? = 10,
         maxExecutionTime: Double? = nil,
-        earlyStopHandleType: AgentEarlyStopHandleType = .force
+        earlyStopHandleType: AgentEarlyStopHandleType = .force,
+        initialSteps: [AgentAction] = []
     ) {
         self.agent = agent
         self.tools = tools.reduce(into: [:]) { $0[$1.name] = $1 }
         self.maxIteration = maxIteration
         self.maxExecutionTime = maxExecutionTime
         self.earlyStopHandleType = earlyStopHandleType
+        self.initialSteps = initialSteps
     }
 
     public func callLogic(
@@ -41,7 +44,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
 
         let startTime = now().timeIntervalSince1970
         var iterations = 0
-        var intermediateSteps: [AgentAction] = []
+        var intermediateSteps: [AgentAction] = initialSteps
 
         func shouldContinue() -> Bool {
             if isCancelled { return false }
@@ -84,8 +87,6 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
                         callbackManagers: callbackManagers
                     )
                 }
-            case .thought:
-                break
             }
             iterations += 1
         }
@@ -152,6 +153,10 @@ extension AgentExecutor {
                 for action in actions {
                     callbackManagers
                         .forEach { $0.send(CallbackEvents.AgentActionDidStart(info: action)) }
+                    if action.observation != nil {
+                        taskGroup.addTask { action }
+                        continue
+                    }
                     guard let tool = tools[action.toolName] else { throw InvalidToolError() }
                     taskGroup.addTask {
                         let observation = try await tool.run(input: action.toolInput)
@@ -169,15 +174,6 @@ extension AgentExecutor {
             }
 
             return .actions(completedActions)
-        case let .thought(content):
-            return .actions([
-                .init(
-                    toolName: "Thought",
-                    toolInput: content,
-                    log: "Thought: \(content)",
-                    observation: nil
-                ),
-            ])
         }
     }
 

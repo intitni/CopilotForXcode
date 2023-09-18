@@ -213,8 +213,6 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
             case let .unstructured(x), let .structured(x):
                 return .finish(.init(returnValue: .unstructured(x), log: finish.log))
             }
-        case let .thought(content):
-            return .finish(.init(returnValue: .unstructured(content), log: content))
         }
     }
 }

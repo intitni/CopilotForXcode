@@ -64,16 +64,19 @@ public struct AgentFinish<Output: AgentOutputParsable> {
 public enum AgentNextStep<Output: AgentOutputParsable> {
     case actions([AgentAction])
     case finish(AgentFinish<Output>)
-    case thought(String)
 }
 
 public struct AgentScratchPad<Content: Equatable>: Equatable {
-    var content: Content
+    public var content: Content
+    
+    public init(content: Content) {
+        self.content = content
+    }
 }
 
 public struct AgentInput<T, ScratchPadContent: Equatable> {
-    var input: T
-    var thoughts: AgentScratchPad<ScratchPadContent>
+    public var input: T
+    public var thoughts: AgentScratchPad<ScratchPadContent>
 
     public init(input: T, thoughts: AgentScratchPad<ScratchPadContent>) {
         self.input = input
@@ -146,8 +149,6 @@ public extension Agent {
                 return finish
             case .actions:
                 return .init(returnValue: .unstructured(output.content ?? ""), log: output.content ?? "")
-            case let .thought(content):
-                return .init(returnValue: .unstructured(content), log: content)
             }
         }
     }
