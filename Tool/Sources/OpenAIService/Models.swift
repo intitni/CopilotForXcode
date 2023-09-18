@@ -18,6 +18,10 @@ public struct ChatMessage: Equatable, Codable {
     public struct FunctionCall: Codable, Equatable {
         public var name: String
         public var arguments: String
+        public init(name: String, arguments: String) {
+            self.name = name
+            self.arguments = arguments
+        }
     }
 
     /// The role of a message.

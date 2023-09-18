@@ -66,25 +66,15 @@ public enum AgentNextStep<Output: AgentOutputParsable> {
     case finish(AgentFinish<Output>)
 }
 
-public enum AgentScratchPad: Equatable {
-    case text(String)
-    case messages([String])
-
-    var isEmpty: Bool {
-        switch self {
-        case let .text(text):
-            return text.isEmpty
-        case let .messages(messages):
-            return messages.isEmpty
-        }
-    }
+public struct AgentScratchPad<Content: Equatable>: Equatable {
+    var content: Content
 }
 
-public struct AgentInput<T> {
+public struct AgentInput<T, ScratchPadContent: Equatable> {
     var input: T
-    var thoughts: AgentScratchPad
+    var thoughts: AgentScratchPad<ScratchPadContent>
 
-    public init(input: T, thoughts: AgentScratchPad) {
+    public init(input: T, thoughts: AgentScratchPad<ScratchPadContent>) {
         self.input = input
         self.thoughts = thoughts
     }
@@ -100,20 +90,24 @@ public enum AgentEarlyStopHandleType: Equatable {
 public protocol Agent {
     associatedtype Input
     associatedtype Output: AgentOutputParsable
-    var chatModelChain: ChatModelChain<AgentInput<Input>> { get }
+    associatedtype ScratchPadContent: Equatable
+    var chatModelChain: ChatModelChain<AgentInput<Input, ScratchPadContent>> { get }
     var observationPrefix: String { get }
     var llmPrefix: String { get }
 
     func validateTools(tools: [AgentTool]) throws
-    func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad
-    func extraPlan(input: AgentInput<Input>)
-    func prepareForEarlyStopWithGenerate() -> String
-    func parseOutput(_ output: ChatModelChain<AgentInput<Input>>.Output) async
+    func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent>
+    func constructFinalScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent>
+    func extraPlan(input: AgentInput<Input, ScratchPadContent>)
+    func parseOutput(_ output: ChatModelChain<AgentInput<Input, ScratchPadContent>>.Output) async
         -> AgentNextStep<Output>
 }
 
 public extension Agent {
-    func getFullInputs(input: Input, intermediateSteps: [AgentAction]) -> AgentInput<Input> {
+    func getFullInputs(
+        input: Input,
+        intermediateSteps: [AgentAction]
+    ) -> AgentInput<Input, ScratchPadContent> {
         let thoughts = constructScratchpad(intermediateSteps: intermediateSteps)
         return AgentInput(input: input, thoughts: thoughts)
     }
@@ -142,14 +136,8 @@ public extension Agent {
                 log: ""
             )
         case .generate:
-            var thoughts = constructBaseScratchpad(intermediateSteps: intermediateSteps)
-            thoughts += """
-
-            \(llmPrefix)I now need to return a final answer based on the previous steps:
-            \(prepareForEarlyStopWithGenerate())
-            """
-            let input = AgentInput(input: input, thoughts: .text(thoughts))
-            
+            let thoughts = constructFinalScratchpad(intermediateSteps: intermediateSteps)
+            let input = AgentInput(input: input, thoughts: thoughts)
             let output = try await chatModelChain.call(input, callbackManagers: callbackManagers)
             let nextAction = await parseOutput(output)
             switch nextAction {
@@ -160,16 +148,4 @@ public extension Agent {
             }
         }
     }
-
-    func constructBaseScratchpad(intermediateSteps: [AgentAction]) -> String {
-        var thoughts = ""
-        for step in intermediateSteps {
-            thoughts += """
-            \(step.log)
-            \(observationPrefix)\(step.observation ?? "")
-            """
-        }
-        return thoughts
-    }
 }
-

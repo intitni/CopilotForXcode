@@ -3,11 +3,13 @@ import Logger
 import OpenAIService
 
 public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: Agent {
+    public typealias ScratchPadContent = [ChatMessage]
+    
     public struct EndFunction: ChatGPTFunction {
         public typealias Argument = Output
         public typealias Result = String
-        public var name: String { "sendFinalAnswer" }
-        public var description: String { "Send the final answer to user" }
+        public var name: String { "saveFinalAnswer" }
+        public var description: String { "Save the final answer when it's ready" }
         public let argumentSchema: JSONSchemaValue
         public var reportProgress: (String) async -> Void = { _ in }
         public func prepare() async {}
@@ -71,7 +73,7 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
     public typealias Input = String
     public var observationPrefix: String { "Observation: " }
     public var llmPrefix: String { "Thought: " }
-    public let chatModelChain: ChatModelChain<AgentInput<String>>
+    public let chatModelChain: ChatModelChain<AgentInput<String, ScratchPadContent>>
     var functionProvider: FunctionProvider
 
     public init(
@@ -79,8 +81,8 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
         tools: [AgentTool] = [],
         endFunction: EndFunction
     ) {
-        let functions = tools.compactMap { $0 as? FunctionCallingAgentTool }.map(\.function)
-        let otherTools = tools.filter { !($0 is FunctionCallingAgentTool) }
+        let functions = tools.compactMap { $0 as? (any ChatGPTFunction) }
+        let otherTools = tools.filter { !($0 is (any ChatGPTFunction)) }
         functionProvider = .init(
             tools: otherTools,
             functionTools: functions,
@@ -102,38 +104,18 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                         role: .system,
                         content: """
                         Respond to the human as helpfully and accurately as possible. \
-                        Format final answer to be more readable, in a ordered list if possible. \
+                        Save the final answer when it's ready
 
                         Begin!
                         """
                     ),
-                    agentInput.thoughts.isEmpty
-                        ? .init(role: .user, content: agentInput.input)
-                        : .init(
-                            role: .user,
-                            content: """
-                            \(agentInput.input)
-
-                            \({
-                                switch agentInput.thoughts {
-                                case let .text(text):
-                                    return text
-                                case let .messages(messages):
-                                    return messages.map { message in
-                                        """
-                                        \(message)
-                                        """
-                                    }.joined(separator: "\n")
-                                }
-                            }())
-                            """
-                        ),
-                ]
+                    .init(role: .user, content: agentInput.input)
+                ] + agentInput.thoughts.content
             }
         )
     }
 
-    public func extraPlan(input: AgentInput<String>) {
+    public func extraPlan(input: AgentInput<String, ScratchPadContent>) {
         // no extra plan
     }
 
@@ -142,14 +124,34 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
         return "(call sendFinalAnswer to finish)"
     }
 
-    public func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad {
-        let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
-        if baseScratchpad.isEmpty { return .text("") }
-        return .text("""
-        This was your previous work (but I haven't seen any of it! I only see what you return as `Final Answer`):
-        \(baseScratchpad)
-        (Please continue with `Thought:` or call a function)
-        """)
+    public func constructScratchpad(
+        intermediateSteps: [AgentAction]
+    ) -> AgentScratchPad<ScratchPadContent> {
+        let baseScratchpad = intermediateSteps.flatMap {
+            [
+                ChatMessage(
+                    role: .assistant,
+                    content: nil,
+                    functionCall: .init(name: $0.toolName, arguments: $0.toolInput)
+                ),
+                ChatMessage(role: .function, content: $0.observation),
+            ]
+        }
+        return .init(content: baseScratchpad)
+    }
+    
+    public func constructFinalScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent> {
+        let baseScratchpad = intermediateSteps.flatMap {
+            [
+                ChatMessage(
+                    role: .assistant,
+                    content: nil,
+                    functionCall: .init(name: $0.toolName, arguments: $0.toolInput)
+                ),
+                ChatMessage(role: .function, content: $0.observation),
+            ]
+        }
+        return .init(content: baseScratchpad)
     }
 
     public func validateTools(tools: [AgentTool]) throws {
@@ -185,7 +187,7 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                 }
             }
         }
-        
+
         // fallback to normal agent.
 
         let stringBaseOutput = await ChatAgent(

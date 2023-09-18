@@ -36,9 +36,10 @@ private func formatInstruction(toolsNames: String, preferredLanguage: String) ->
 public class ChatAgent: Agent {
     public typealias Input = String
     public typealias Output = String
+    public typealias ScratchPadContent = String
     public var observationPrefix: String { "Observation: " }
     public var llmPrefix: String { "Thought: " }
-    public let chatModelChain: ChatModelChain<AgentInput<String>>
+    public let chatModelChain: ChatModelChain<AgentInput<String, String>>
     let tools: [AgentTool]
 
     public init(chatModel: ChatModel, tools: [AgentTool], preferredLanguage: String) {
@@ -68,39 +69,50 @@ public class ChatAgent: Agent {
                         Begin! Reminder to always use the exact characters `Final Answer` when responding.
                         """
                     ),
-                    agentInput.thoughts.isEmpty
+                    agentInput.thoughts.content.isEmpty
                         ? .init(role: .user, content: agentInput.input)
                         : .init(
                             role: .user,
                             content: """
                             \(agentInput.input)
 
-                            \({
-                                switch agentInput.thoughts {
-                                case let .text(text):
-                                    return text
-                                case let .messages(messages):
-                                    return messages.map { message in
-                                        """
-                                        \(message)
-                                        """
-                                    }.joined(separator: "\n")
-                                }
-                            }())
+                            \(agentInput.thoughts.content)
                             """
                         ),
                 ]
             }
         )
     }
+    
+    func constructBaseScratchpad(intermediateSteps: [AgentAction]) -> String {
+        var thoughts = ""
+        for step in intermediateSteps {
+            thoughts += """
+            \(step.log)
+            \(observationPrefix)\(step.observation ?? "")
+            """
+        }
+        return thoughts
+    }
 
-    public func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad {
+    public func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<String> {
         let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
-        if baseScratchpad.isEmpty { return .text("") }
-        return .text("""
+        if baseScratchpad.isEmpty { return .init(content: "") }
+        return .init(content: """
         This was your previous work (but I haven't seen any of it! I only see what you return as `Final Answer`):
         \(baseScratchpad)
         (Please continue with `Thought:` or `Final Answer:`)
+        """)
+    }
+    
+    public func constructFinalScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<String> {
+        let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
+        if baseScratchpad.isEmpty { return .init(content: "") }
+        return .init(content: """
+        This was your previous work (but I haven't seen any of it! I only see what you return as `Final Answer`):
+        \(baseScratchpad)
+        \(llmPrefix)I now need to return a final answer based on the previous steps:
+        "(Please continue with `Final Answer:`)"
         """)
     }
 
@@ -108,12 +120,8 @@ public class ChatAgent: Agent {
         // no validation
     }
 
-    public func extraPlan(input: AgentInput<String>) {
+    public func extraPlan(input: AgentInput<String, String>) {
         // do nothing
-    }
-
-    public func prepareForEarlyStopWithGenerate() -> String {
-        "(Please continue with `Final Answer:`)"
     }
 
     public func parseOutput(_ output: ChatMessage) async -> AgentNextStep<Output> {
