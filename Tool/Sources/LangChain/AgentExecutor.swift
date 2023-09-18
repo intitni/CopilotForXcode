@@ -25,7 +25,7 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
         tools: [AgentTool],
         maxIteration: Int? = 10,
         maxExecutionTime: Double? = nil,
-        earlyStopHandleType: AgentEarlyStopHandleType = .force,
+        earlyStopHandleType: AgentEarlyStopHandleType = .generate,
         initialSteps: [AgentAction] = []
     ) {
         self.agent = agent
@@ -151,8 +151,7 @@ extension AgentExecutor {
             let completedActions = try await withThrowingTaskGroup(of: AgentAction.self) {
                 taskGroup in
                 for action in actions {
-                    callbackManagers
-                        .forEach { $0.send(CallbackEvents.AgentActionDidStart(info: action)) }
+                    callbackManagers.send(CallbackEvents.AgentActionDidStart(info: action))
                     if action.observation != nil {
                         taskGroup.addTask { action }
                         continue
@@ -167,8 +166,7 @@ extension AgentExecutor {
                 for try await action in taskGroup {
                     try Task.checkCancellation()
                     completedActions.append(action)
-                    callbackManagers
-                        .forEach { $0.send(CallbackEvents.AgentActionDidEnd(info: action)) }
+                    callbackManagers.send(CallbackEvents.AgentActionDidEnd(info: action))
                 }
                 return completedActions
             }

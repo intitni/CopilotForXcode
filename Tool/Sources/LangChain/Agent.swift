@@ -25,7 +25,7 @@ public extension CallbackEvents {
         public let info: AgentFinish<Output>
     }
 
-    func agentDidFinish<Output: AgentOutputParsable>() -> AgentDidFinish<Output>.Type {
+    static func agentDidFinish<Output: AgentOutputParsable>() -> AgentDidFinish<Output>.Type {
         AgentDidFinish<Output>.self
     }
 

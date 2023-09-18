@@ -10,6 +10,10 @@ public struct CallbackEvents {
 }
 
 public struct CallbackManager {
+    struct Observer<Event: CallbackEvent> {
+        let handler: (Event.Info) -> Void
+    }
+    
     fileprivate var observers = [Any]()
 
     public init() {}
@@ -24,19 +28,19 @@ public struct CallbackManager {
         _: Event.Type = Event.self,
         _ handler: @escaping (Event.Info) -> Void
     ) {
-        observers.append(handler)
+        observers.append(Observer<Event>(handler: handler))
     }
 
     public mutating func on<Event: CallbackEvent>(
         _: KeyPath<CallbackEvents, Event.Type>,
         _ handler: @escaping (Event.Info) -> Void
     ) {
-        observers.append(handler)
+        observers.append(Observer<Event>(handler: handler))
     }
 
     public func send<Event: CallbackEvent>(_ event: Event) {
-        for case let observer as ((Event.Info) -> Void) in observers {
-            observer(event.info)
+        for case let observer as Observer<Event> in observers {
+            observer.handler(event.info)
         }
     }
 
@@ -44,8 +48,8 @@ public struct CallbackManager {
         _: KeyPath<CallbackEvents, Event.Type>,
         _ info: Event.Info
     ) {
-        for case let observer as ((Event.Info) -> Void) in observers {
-            observer(info)
+        for case let observer as Observer<Event> in observers {
+            observer.handler(info)
         }
     }
 }
