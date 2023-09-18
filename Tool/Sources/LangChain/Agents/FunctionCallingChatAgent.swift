@@ -4,7 +4,7 @@ import OpenAIService
 
 public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: Agent {
     public typealias ScratchPadContent = [ChatMessage]
-    
+
     public struct EndFunction: ChatGPTFunction {
         public typealias Argument = Output
         public typealias Result = String
@@ -79,7 +79,8 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
         tools: [AgentTool] = [],
-        endFunction: EndFunction
+        endFunction: EndFunction,
+        extraSystemPrompt: String = ""
     ) {
         let functions = tools.compactMap { $0 as? (any ChatGPTFunction) }
         let otherTools = tools.filter { !($0 is (any ChatGPTFunction)) }
@@ -103,13 +104,13 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
                     .init(
                         role: .system,
                         content: """
-                        Respond to the human as helpfully and accurately as possible. \
-                        Save the final answer when it's ready
-
-                        Begin!
+                        Gather information using functions, and generate a final answer to my query as helpfully and accurately as possible.
+                        You don't ask me for additional information.
+                        \(extraSystemPrompt)
+                        When you have the final answer, you MUST call `\(endFunction.name)` to save it.
                         """
                     ),
-                    .init(role: .user, content: agentInput.input)
+                    .init(role: .user, content: agentInput.input),
                 ] + agentInput.thoughts.content
             }
         )
@@ -118,40 +119,48 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
     public func extraPlan(input: AgentInput<String, ScratchPadContent>) {
         // no extra plan
     }
-
-    public func prepareForEarlyStopWithGenerate() -> String {
-        functionProvider.shouldFinish = true
-        return "(call sendFinalAnswer to finish)"
+    
+    func constructBaseScratchpad(
+        intermediateSteps: [AgentAction]
+    ) -> ScratchPadContent {
+        return intermediateSteps.flatMap {
+            if let observation = $0.observation {
+                return [
+                    ChatMessage(
+                        role: .assistant,
+                        content: nil,
+                        functionCall: .init(name: $0.toolName, arguments: $0.toolInput)
+                    ),
+                    ChatMessage(role: .function, content: observation, name: $0.toolName),
+                ]
+            }
+            return [
+                ChatMessage(role: .assistant, content: $0.toolInput),
+                ChatMessage(
+                    role: .user,
+                    content: "Please continue, call \(functionProvider.endFunction.name) when you are done."
+                ),
+            ]
+        }
     }
 
     public func constructScratchpad(
         intermediateSteps: [AgentAction]
     ) -> AgentScratchPad<ScratchPadContent> {
-        let baseScratchpad = intermediateSteps.flatMap {
-            [
-                ChatMessage(
-                    role: .assistant,
-                    content: nil,
-                    functionCall: .init(name: $0.toolName, arguments: $0.toolInput)
-                ),
-                ChatMessage(role: .function, content: $0.observation),
-            ]
-        }
+        functionProvider.shouldFinish = false
+        let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
         return .init(content: baseScratchpad)
     }
-    
-    public func constructFinalScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent> {
-        let baseScratchpad = intermediateSteps.flatMap {
-            [
-                ChatMessage(
-                    role: .assistant,
-                    content: nil,
-                    functionCall: .init(name: $0.toolName, arguments: $0.toolInput)
-                ),
-                ChatMessage(role: .function, content: $0.observation),
-            ]
-        }
-        return .init(content: baseScratchpad)
+
+    public func constructFinalScratchpad(
+        intermediateSteps: [AgentAction]
+    ) -> AgentScratchPad<ScratchPadContent> {
+        functionProvider.shouldFinish = true
+        let baseScratchpad = constructBaseScratchpad(intermediateSteps: intermediateSteps)
+        return .init(content: baseScratchpad + [
+            ChatMessage(role: .assistant, content: "Now I need to save the final answer"),
+            ChatMessage(role: .user, content: "Please continue"),
+        ])
     }
 
     public func validateTools(tools: [AgentTool]) throws {
@@ -159,8 +168,8 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
     }
 
     public func parseOutput(_ message: ChatMessage) async -> AgentNextStep<Output> {
-        if message.role == .assistant, let functionCall = message.functionCall {
-            if let function = functionProvider.functionTools.first(where: {
+        if let functionCall = message.functionCall {
+            if let function = functionProvider.functions.first(where: {
                 $0.name == functionCall.name
             }) {
                 if function.name == functionProvider.endFunction.name {
@@ -204,6 +213,8 @@ public class FunctionCallingChatAgent<Output: AgentOutputParsable & Decodable>: 
             case let .unstructured(x), let .structured(x):
                 return .finish(.init(returnValue: .unstructured(x), log: finish.log))
             }
+        case let .thought(content):
+            return .finish(.init(returnValue: .unstructured(content), log: content))
         }
     }
 }

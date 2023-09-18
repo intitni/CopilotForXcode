@@ -57,12 +57,14 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
         }
 
         while shouldContinue() {
+            try Task.checkCancellation()
             let nextStepOutput = try await takeNextStep(
                 input: input,
                 intermediateSteps: intermediateSteps,
                 callbackManagers: callbackManagers
             )
 
+            try Task.checkCancellation()
             switch nextStepOutput {
             case let .finish(finish):
                 return end(
@@ -82,6 +84,8 @@ public actor AgentExecutor<InnerAgent: Agent>: Chain
                         callbackManagers: callbackManagers
                     )
                 }
+            case .thought:
+                break
             }
             iterations += 1
         }
@@ -156,6 +160,7 @@ extension AgentExecutor {
                 }
                 var completedActions = [AgentAction]()
                 for try await action in taskGroup {
+                    try Task.checkCancellation()
                     completedActions.append(action)
                     callbackManagers
                         .forEach { $0.send(CallbackEvents.AgentActionDidEnd(info: action)) }
@@ -164,6 +169,15 @@ extension AgentExecutor {
             }
 
             return .actions(completedActions)
+        case let .thought(content):
+            return .actions([
+                .init(
+                    toolName: "Thought",
+                    toolInput: content,
+                    log: "Thought: \(content)",
+                    observation: nil
+                ),
+            ])
         }
     }
 
@@ -212,3 +226,4 @@ extension Double: AgentOutputParsable {
 
     public var botReadableContent: String { String(self) }
 }
+
