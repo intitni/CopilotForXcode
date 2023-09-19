@@ -96,8 +96,6 @@ public protocol Agent {
     associatedtype Output: AgentOutputParsable
     associatedtype ScratchPadContent: Equatable
     var chatModelChain: ChatModelChain<AgentInput<Input, ScratchPadContent>> { get }
-    var observationPrefix: String { get }
-    var llmPrefix: String { get }
 
     func validateTools(tools: [AgentTool]) throws
     func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent>

@@ -6,6 +6,15 @@ public protocol CallbackEvent {
 }
 
 public struct CallbackEvents {
+    public struct UnTypedEvent: CallbackEvent {
+        public var info: String
+        init(info: String) {
+            self.info = info
+        }
+    }
+    
+    public var untyped: UnTypedEvent.Type { UnTypedEvent.self }
+    
     private init() {}
 }
 
@@ -52,6 +61,12 @@ public struct CallbackManager {
             observer.handler(info)
         }
     }
+    
+    public func send(_ string: String) {
+        for case let observer as Observer<CallbackEvents.UnTypedEvent> in observers {
+            observer.handler(string)
+        }
+    }
 }
 
 public extension [CallbackManager] {
@@ -64,6 +79,10 @@ public extension [CallbackManager] {
         _ info: Event.Info
     ) {
         for cb in self { cb.send(keyPath, info) }
+    }
+    
+    func send(_ event: String) {
+        for cb in self { cb.send(event) }
     }
 }
 
