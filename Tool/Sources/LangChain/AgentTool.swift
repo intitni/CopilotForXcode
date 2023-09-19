@@ -56,7 +56,7 @@ public struct FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool, ChatGPTFu
     public init(function: F, returnDirectly: Bool = false) {
         self.function = function
         name = function.name
-        description = function.description
+        description = "Run an action: \(function.description)"
         self.returnDirectly = returnDirectly
     }
 
