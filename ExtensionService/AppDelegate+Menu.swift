@@ -95,9 +95,12 @@ extension AppDelegate: NSMenuDelegate {
         case xcodeInspectorDebugMenuIdentifier:
             let inspector = XcodeInspector.shared
             menu.items.removeAll()
-            menu.items.append(.text("Active Project: \(inspector.activeProjectRootURL)"))
-            menu.items.append(.text("Active Workspace: \(inspector.activeWorkspaceURL)"))
-            menu.items.append(.text("Active Document: \(inspector.activeDocumentURL)"))
+            menu.items
+                .append(.text("Active Project: \(inspector.activeProjectRootURL?.path ?? "N/A")"))
+            menu.items
+                .append(.text("Active Workspace: \(inspector.activeWorkspaceURL?.path ?? "N/A")"))
+            menu.items
+                .append(.text("Active Document: \(inspector.activeDocumentURL?.path ?? "N/A")"))
             for xcode in inspector.xcodes {
                 let item = NSMenuItem(
                     title: "Xcode \(xcode.runningApplication.processIdentifier)",
@@ -108,9 +111,12 @@ extension AppDelegate: NSMenuDelegate {
                 let xcodeMenu = NSMenu()
                 item.submenu = xcodeMenu
                 xcodeMenu.items.append(.text("Is Active: \(xcode.isActive)"))
-                xcodeMenu.items.append(.text("Active Project: \(xcode.projectRootURL)"))
-                xcodeMenu.items.append(.text("Active Workspace: \(xcode.workspaceURL)"))
-                xcodeMenu.items.append(.text("Active Document: \(xcode.documentURL)"))
+                xcodeMenu.items
+                    .append(.text("Active Project: \(xcode.projectRootURL?.path ?? "N/A")"))
+                xcodeMenu.items
+                    .append(.text("Active Workspace: \(xcode.workspaceURL?.path ?? "N/A")"))
+                xcodeMenu.items
+                    .append(.text("Active Document: \(xcode.documentURL?.path ?? "N/A")"))
                 
                 for (key, workspace) in xcode.realtimeWorkspaces {
                     let workspaceItem = NSMenuItem(

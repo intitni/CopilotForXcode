@@ -109,8 +109,9 @@ public actor RealtimeSuggestionController {
                     await self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
-                    guard let sourceEditor = await sourceEditor else { continue }
-                    let fileURL = XcodeInspector.shared.activeDocumentURL
+                    guard let sourceEditor = await sourceEditor,
+                          let fileURL = XcodeInspector.shared.activeDocumentURL
+                    else { continue }
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                         fileURL: fileURL,
                         sourceEditor: sourceEditor
