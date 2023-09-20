@@ -70,6 +70,10 @@ public final class XcodeInspector: ObservableObject {
     public var realtimeActiveWorkspaceURL: URL {
         latestActiveXcode?.realtimeWorkspaceURL ?? activeWorkspaceURL
     }
+    
+    public var realtimeActiveProjectURL: URL {
+        latestActiveXcode?.realtimeProjectURL ?? activeWorkspaceURL
+    }
 
     init() {
         let runningApplications = NSWorkspace.shared.runningApplications
@@ -231,26 +235,35 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
     @Published public private(set) var completionPanel: AXUIElement?
 
-    public var realtimeDocumentURL: URL {
+    public var realtimeDocumentURL: URL? {
         guard let window = appElement.focusedWindow,
               window.identifier == "Xcode.WorkspaceWindow"
         else {
-            return URL(fileURLWithPath: "/")
+            return nil
         }
 
         return WorkspaceXcodeWindowInspector.extractDocumentURL(windowElement: window)
-            ?? URL(fileURLWithPath: "/")
     }
     
-    public var realtimeWorkspaceURL: URL {
+    public var realtimeWorkspaceURL: URL? {
         guard let window = appElement.focusedWindow,
               window.identifier == "Xcode.WorkspaceWindow"
         else {
-            return URL(fileURLWithPath: "/")
+            return nil
         }
 
         return WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window)
-            ?? URL(fileURLWithPath: "/")
+    }
+    
+    public var realtimeProjectURL: URL? {
+        guard let window = appElement.focusedWindow else { return URL(fileURLWithPath: "/") }
+        let workspaceURL = realtimeWorkspaceURL
+        let documentURL = realtimeDocumentURL
+        return WorkspaceXcodeWindowInspector.extractProjectURL(
+            windowElement: window,
+            workspaceURL: workspaceURL,
+            documentURL: documentURL
+        )
     }
 
     var _version: String?
