@@ -365,12 +365,11 @@ extension ChatGPTService {
             name: call.name
         )
         await memory.appendMessage(responseMessage)
-        function.reportProgress = { [weak self] summary in
+        await function.prepare { [weak self] summary in
             await self?.memory.updateMessage(id: messageId) { message in
                 message.summary = summary
             }
         }
-        await function.prepare()
     }
 
     /// Run a function call from the bot, and insert the result in memory.
@@ -395,15 +394,14 @@ extension ChatGPTService {
 
         await memory.appendMessage(responseMessage)
 
-        function.reportProgress = { [weak self] summary in
-            await self?.memory.updateMessage(id: messageId) { message in
-                message.summary = summary
-            }
-        }
-
         do {
             // Run the function
-            let result = try await function.call(argumentsJsonString: call.arguments)
+            let result = try await function.call(argumentsJsonString: call.arguments) {
+                [weak self] summary in
+                await self?.memory.updateMessage(id: messageId) { message in
+                    message.summary = summary
+                }
+            }
 
             await memory.updateMessage(id: messageId) { message in
                 message.content = result.botReadableContent

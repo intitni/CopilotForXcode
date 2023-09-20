@@ -4,15 +4,11 @@ import OpenAIService
 
 /// This is an agent used to get a structured output.
 public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
-    public struct EndFunction: ChatGPTFunction {
-        public typealias Argument = Output
-        public typealias Result = String
+    public struct EndFunction: ChatGPTArgumentsCollectingFunction {
+        public typealias Arguments = Output
         public var name: String { "saveFinalAnswer" }
         public var description: String { "Save the final answer when it's ready" }
         public let argumentSchema: JSONSchemaValue
-        public var reportProgress: (String) async -> Void = { _ in }
-        public func prepare() async {}
-        public func call(arguments: Argument) async throws -> Result { "" }
         public init(argumentSchema: JSONSchemaValue) {
             self.argumentSchema = argumentSchema
         }

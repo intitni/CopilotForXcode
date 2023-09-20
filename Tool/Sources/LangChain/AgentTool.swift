@@ -31,18 +31,17 @@ public struct SimpleAgentTool: AgentTool {
     }
 }
 
-public struct FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool, ChatGPTFunction {
+public class FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool {
     public func call(arguments: F.Arguments) async throws -> F.Result {
-        try await function.call(arguments: arguments)
+        try await function.call(arguments: arguments, reportProgress: reportProgress)
     }
 
     public var argumentSchema: OpenAIService.JSONSchemaValue { function.argumentSchema }
 
-    public func prepare() async { await function.prepare() }
-
-    public var reportProgress: (String) async -> Void {
-        get { function.reportProgress }
-        set { function.reportProgress = newValue }
+    public func prepare() async {
+        await function.prepare(reportProgress: { [weak self] p in
+            self?.reportProgress(p)
+        })
     }
 
     public typealias Arguments = F.Arguments
@@ -53,15 +52,37 @@ public struct FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool, ChatGPTFu
     public var description: String
     public var returnDirectly: Bool
 
-    public init(function: F, returnDirectly: Bool = false) {
+    let callbackManagers: [CallbackManager]
+
+    public init(
+        function: F,
+        returnDirectly: Bool = false,
+        callbackManagers: [CallbackManager] = []
+    ) {
         self.function = function
+        self.callbackManagers = callbackManagers
         name = function.name
-        description = "Run an action: \(function.description)"
+        description = function.description
         self.returnDirectly = returnDirectly
     }
 
+    func reportProgress(_ progress: String) {
+        callbackManagers.send(
+            CallbackEvents.AgentFunctionCallingToolReportProgress(info: .init(
+                functionName: name,
+                progress: progress
+            ))
+        )
+    }
+
     public func run(input: String) async throws -> String {
-        try await function.call(argumentsJsonString: input).botReadableContent
+        try await function.call(
+            argumentsJsonString: input,
+            reportProgress: { [weak self] p in
+                self?.reportProgress(p)
+            }
+        )
+        .botReadableContent
     }
 }
 

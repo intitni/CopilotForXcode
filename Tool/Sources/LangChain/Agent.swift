@@ -44,6 +44,19 @@ public extension CallbackEvents {
     var agentActionDidEnd: AgentActionDidEnd.Type {
         AgentActionDidEnd.self
     }
+    
+    struct AgentFunctionCallingToolReportProgress: CallbackEvent {
+        public struct Info {
+            let functionName: String
+            let progress: String
+        }
+        
+        public let info: Info
+    }
+    
+    var agentFunctionCallingToolReportProgress: AgentFunctionCallingToolReportProgress.Type {
+        AgentFunctionCallingToolReportProgress.self
+    }
 }
 
 public struct AgentFinish<Output: AgentOutputParsable> {
@@ -68,7 +81,7 @@ public enum AgentNextStep<Output: AgentOutputParsable> {
 
 public struct AgentScratchPad<Content: Equatable>: Equatable {
     public var content: Content
-    
+
     public init(content: Content) {
         self.content = content
     }
@@ -99,7 +112,8 @@ public protocol Agent {
 
     func validateTools(tools: [AgentTool]) throws
     func constructScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent>
-    func constructFinalScratchpad(intermediateSteps: [AgentAction]) -> AgentScratchPad<ScratchPadContent>
+    func constructFinalScratchpad(intermediateSteps: [AgentAction])
+        -> AgentScratchPad<ScratchPadContent>
     func extraPlan(input: AgentInput<Input, ScratchPadContent>)
     func parseOutput(_ output: ChatModelChain<AgentInput<Input, ScratchPadContent>>.Output) async
         -> AgentNextStep<Output>
@@ -146,8 +160,12 @@ public extension Agent {
             case let .finish(finish):
                 return finish
             case .actions:
-                return .init(returnValue: .unstructured(output.content ?? ""), log: output.content ?? "")
+                return .init(
+                    returnValue: .unstructured(output.content ?? ""),
+                    log: output.content ?? ""
+                )
             }
         }
     }
 }
+

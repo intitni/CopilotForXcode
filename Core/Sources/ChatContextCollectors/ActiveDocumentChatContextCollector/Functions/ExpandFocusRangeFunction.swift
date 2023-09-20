@@ -13,12 +13,10 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
             "Editing Document Context is updated to display code at \(range)."
         }
     }
-    
+
     struct E: Error, LocalizedError {
         var errorDescription: String?
     }
-
-    var reportProgress: (String) async -> Void = { _ in }
 
     var name: String {
         "expandFocusRange"
@@ -32,18 +30,21 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
         .type: "object",
         .properties: [:],
     ] }
-    
+
     weak var contextCollector: ActiveDocumentChatContextCollector?
-    
+
     init(contextCollector: ActiveDocumentChatContextCollector) {
         self.contextCollector = contextCollector
     }
 
-    func prepare() async {
+    func prepare(reportProgress: @escaping (String) async -> Void) async {
         await reportProgress("Finding the focused code..")
     }
 
-    func call(arguments: Arguments) async throws -> Result {
+    func call(
+        arguments: Arguments,
+        reportProgress: @escaping (String) async -> Void
+    ) async throws -> Result {
         await reportProgress("Finding the focused code..")
         contextCollector?.activeDocumentContext?.expandFocusedRangeToContextRange()
         guard let newContext = contextCollector?.activeDocumentContext?.focusedContext else {
@@ -56,3 +57,4 @@ struct ExpandFocusRangeFunction: ChatGPTFunction {
         return .init(range: newContext.codeRange)
     }
 }
+

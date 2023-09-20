@@ -19,29 +19,10 @@ public final class RelevantInformationExtractionChain: Chain {
         var functions: [any ChatGPTFunction] = [NoneFunction()]
     }
 
-    struct NoneFunction: ChatGPTFunction {
-        struct Arguments: Decodable {}
-
-        struct Result: ChatGPTFunctionResult {
-            var botReadableContent: String { "" }
-        }
-
-        var reportProgress: (String) async -> Void = { _ in }
-
+    struct NoneFunction: ChatGPTArgumentsCollectingFunction {
+        typealias Arguments = NoArguments
         var name: String = "noInformationFound"
         var description: String = "Call when you can't find any relevant information from the document, or the question was not mentioned in the document"
-        var argumentSchema: JSONSchemaValue {
-            return [
-                .type: "object",
-                .properties: .hash([:])
-            ]
-        }
-
-        func prepare() async {}
-
-        func call(arguments: Arguments) async throws -> Result {
-            return Result()
-        }
     }
 
     func buildChatModel() -> ChatModelChain<TaskInput> {
