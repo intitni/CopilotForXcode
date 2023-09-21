@@ -158,8 +158,13 @@ extension AgentExecutor {
                     }
                     guard let tool = tools[action.toolName] else { throw InvalidToolError() }
                     taskGroup.addTask {
-                        let observation = try await tool.run(input: action.toolInput)
-                        return action.observationAvailable(observation)
+                        do {
+                            let observation = try await tool.run(input: action.toolInput)
+                            return action.observationAvailable(observation)
+                        } catch {
+                            let observation = error.localizedDescription
+                            return action.observationAvailable(observation)
+                        }
                     }
                 }
                 var completedActions = [AgentAction]()

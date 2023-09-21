@@ -47,8 +47,8 @@ public extension CallbackEvents {
     
     struct AgentFunctionCallingToolReportProgress: CallbackEvent {
         public struct Info {
-            let functionName: String
-            let progress: String
+            public let functionName: String
+            public let progress: String
         }
         
         public let info: Info
