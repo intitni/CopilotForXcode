@@ -3,10 +3,11 @@ import Foundation
 
 /// Load a text document from local file.
 public struct TextLoader: DocumentLoader {
-    enum MetadataKeys {
-        static let filename = "filename"
-        static let `extension` = "extension"
-        static let contentModificationDate = "contentModificationDate"
+    public enum MetadataKeys {
+        public static let filename = "filename"
+        public static let `extension` = "extension"
+        public static let contentModificationDate = "contentModificationDate"
+        public static let filePath = "filePath"
     }
     
     let url: URL
@@ -38,6 +39,7 @@ public struct TextLoader: DocumentLoader {
             MetadataKeys.contentModificationDate: .number(
                 (modificationDate ?? Date()).timeIntervalSince1970
             ),
+            MetadataKeys.filePath: .string(url.path),
         ])]
     }
 }
