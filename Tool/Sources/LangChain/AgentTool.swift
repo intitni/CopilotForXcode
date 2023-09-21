@@ -31,18 +31,12 @@ public struct SimpleAgentTool: AgentTool {
     }
 }
 
-public class FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool {
+public class FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool, ChatGPTFunction {
     public func call(arguments: F.Arguments) async throws -> F.Result {
         try await function.call(arguments: arguments, reportProgress: reportProgress)
     }
 
     public var argumentSchema: OpenAIService.JSONSchemaValue { function.argumentSchema }
-
-    public func prepare() async {
-        await function.prepare(reportProgress: { [weak self] p in
-            self?.reportProgress(p)
-        })
-    }
 
     public typealias Arguments = F.Arguments
     public typealias Result = F.Result
@@ -76,13 +70,29 @@ public class FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool {
     }
 
     public func run(input: String) async throws -> String {
-        try await function.call(
+        await prepare(reportProgress: { [weak self] p in
+            self?.reportProgress(p)
+        })
+        return try await call(
             argumentsJsonString: input,
             reportProgress: { [weak self] p in
                 self?.reportProgress(p)
             }
         )
         .botReadableContent
+    }
+
+    public func prepare(reportProgress: @escaping ReportProgress) async {
+        await function.prepare(reportProgress: { [weak self] p in
+            self?.reportProgress(p)
+        })
+    }
+
+    public func call(
+        arguments: F.Arguments,
+        reportProgress: @escaping ReportProgress
+    ) async throws -> F.Result {
+        try await function.call(arguments: arguments, reportProgress: reportProgress)
     }
 }
 
