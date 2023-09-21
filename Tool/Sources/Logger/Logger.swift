@@ -20,6 +20,7 @@ public final class Logger {
     public static let codeium = Logger(category: "Codeium")
     public static let langchain = Logger(category: "LangChain")
     #if DEBUG
+    /// Use a temp logger to log something temporary. I won't be available in release builds.
     public static let temp = Logger(category: "Temp")
     #endif
 
