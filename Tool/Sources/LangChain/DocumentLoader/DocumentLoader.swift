@@ -9,6 +9,11 @@ public struct Document: Codable {
         self.pageContent = pageContent
         self.metadata = metadata
     }
+    
+    public func metadata<Key>(_ keyPath: KeyPath<Key.Type, String>) -> JSONValue? {
+        let key = Key.self[keyPath: keyPath]
+        return metadata[key]
+    }
 }
 
 public protocol DocumentLoader {
