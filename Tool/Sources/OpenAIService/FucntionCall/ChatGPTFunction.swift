@@ -80,6 +80,19 @@ public extension ChatGPTArgumentsCollectingFunction {
         assertionFailure("This function is only used to get a structured output from the bot.")
         return ""
     }
+    
+    @available(
+        *,
+        deprecated,
+        message: "This function is only used to get a structured output from the bot."
+    )
+    func call(
+        argumentsJsonString: String,
+        reportProgress: @escaping ReportProgress
+    ) async throws -> Result {
+        assertionFailure("This function is only used to get a structured output from the bot.")
+        return ""
+    }
 }
 
 struct ChatGPTFunctionSchema: Codable, Equatable {
