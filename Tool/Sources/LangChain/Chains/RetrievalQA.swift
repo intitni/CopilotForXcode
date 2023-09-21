@@ -5,6 +5,8 @@ public final class QAInformationRetrievalChain: Chain {
     let vectorStores: [VectorStore]
     let embedding: Embeddings
     let maxCount: Int
+    let filterMetadata: (String) -> Bool
+    let hint: String
 
     public struct Output {
         public var information: String
@@ -14,21 +16,29 @@ public final class QAInformationRetrievalChain: Chain {
     public init(
         vectorStore: VectorStore,
         embedding: Embeddings,
-        maxCount: Int = 5
+        maxCount: Int = 5,
+        filterMetadata: @escaping (String) -> Bool = { _ in true },
+        hint: String = ""
     ) {
         vectorStores = [vectorStore]
         self.embedding = embedding
         self.maxCount = maxCount
+        self.filterMetadata = filterMetadata
+        self.hint = hint
     }
 
     public init(
         vectorStores: [VectorStore],
         embedding: Embeddings,
-        maxCount: Int = 5
+        maxCount: Int = 5,
+        filterMetadata: @escaping (String) -> Bool = { _ in true },
+        hint: String = ""
     ) {
         self.vectorStores = vectorStores
         self.embedding = embedding
         self.maxCount = maxCount
+        self.filterMetadata = filterMetadata
+        self.hint = hint
     }
 
     public func callLogic(
@@ -57,10 +67,13 @@ public final class QAInformationRetrievalChain: Chain {
         }.sorted { $0.distance < $1.distance }.prefix(maxCount)
 
         let documents = Array(documentsSlice)
-        
+
         callbackManagers.send(CallbackEvents.RetrievalQADidExtractRelevantContent(info: documents))
 
-        let relevantInformationChain = RelevantInformationExtractionChain()
+        let relevantInformationChain = RelevantInformationExtractionChain(
+            filterMetadata: filterMetadata,
+            hint: hint
+        )
         let relevantInformation = try await relevantInformationChain.run(
             .init(question: input, documents: documents),
             callbackManagers: callbackManagers
