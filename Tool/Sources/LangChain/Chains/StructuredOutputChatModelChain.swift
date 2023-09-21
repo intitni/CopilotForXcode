@@ -5,12 +5,44 @@ import OpenAIService
 /// This is an agent used to get a structured output.
 public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
     public struct EndFunction: ChatGPTArgumentsCollectingFunction {
-        public typealias Arguments = Output
-        public var name: String { "saveFinalAnswer" }
+        public struct Arguments: Decodable {
+            var finalAnswer: Output
+        }
+
+        public var name: String { "FinalAnswer" }
         public var description: String { "Save the final answer when it's ready" }
-        public let argumentSchema: JSONSchemaValue
-        public init(argumentSchema: JSONSchemaValue) {
-            self.argumentSchema = argumentSchema
+        public var argumentSchema: JSONSchemaValue {
+            return [
+                .type: "object",
+                .properties: [
+                    "finalAnswer": .hash(finalAnswerSchema),
+                ],
+                .required: ["finalAnswer"],
+            ]
+        }
+
+        public let finalAnswerSchema: [String: JSONSchemaValue]
+
+        public init(argumentSchema: [String: JSONSchemaValue]) {
+            finalAnswerSchema = argumentSchema
+        }
+
+        public init() where Output == String {
+            finalAnswerSchema = [
+                JSONSchemaKey.type.key: "string",
+            ]
+        }
+
+        public init() where Output == Int {
+            finalAnswerSchema = [
+                JSONSchemaKey.type.key: "number",
+            ]
+        }
+
+        public init() where Output == Double {
+            finalAnswerSchema = [
+                JSONSchemaKey.type.key: "number",
+            ]
         }
     }
 
@@ -79,20 +111,14 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
 
     public func parseOutput(_ message: ChatMessage) async -> Output? {
         if let functionCall = message.functionCall {
-            if let function = functionProvider.functions.first(where: {
-                $0.name == functionCall.name
-            }) {
-                if function.name == functionProvider.endFunction.name {
-                    do {
-                        let result = try JSONDecoder().decode(
-                            Output.self,
-                            from: functionCall.arguments.data(using: .utf8) ?? Data()
-                        )
-                        return result
-                    } catch {
-                        return nil
-                    }
-                }
+            do {
+                let result = try JSONDecoder().decode(
+                    EndFunction.Arguments.self,
+                    from: functionCall.arguments.data(using: .utf8) ?? Data()
+                )
+                return result.finalAnswer
+            } catch {
+                return nil
             }
         }
 
