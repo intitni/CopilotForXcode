@@ -14,9 +14,12 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
         model.info.maxTokens
     }
 
-    #warning("TODO: Support different dimensions.")
     public var dimensions: Int {
-        1536 // text-embedding-ada-002
+        let dimensions = model.info.dimensions
+        if dimensions <= 0 {
+            return 1536
+        }
+        return dimensions
     }
 
     public init() {}

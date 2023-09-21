@@ -29,6 +29,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         public var baseURL: String
         @FallbackDecoding<EmptyInt>
         public var maxTokens: Int
+        @FallbackDecoding<EmptyInt>
+        public var dimensions: Int
         @FallbackDecoding<EmptyString>
         public var modelName: String
         public var azureOpenAIDeploymentName: String {
@@ -40,11 +42,13 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             apiKeyName: String = "",
             baseURL: String = "",
             maxTokens: Int = 8192,
+            dimensions: Int = 1536,
             modelName: String = ""
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
             self.maxTokens = maxTokens
+            self.dimensions = dimensions
             self.modelName = modelName
         }
     }
