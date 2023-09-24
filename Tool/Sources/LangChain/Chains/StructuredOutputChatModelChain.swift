@@ -63,9 +63,8 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
-        tools: [AgentTool] = [],
         endFunction: EndFunction,
-        extraSystemPrompt: String = ""
+        promptTemplate: ((String) -> [ChatMessage])? = nil
     ) {
         functionProvider = .init(
             endFunction: endFunction
@@ -80,7 +79,7 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
                 stream: false
             ),
             stops: ["Observation:"],
-            promptTemplate: { input in
+            promptTemplate: promptTemplate ?? { input in
                 [
                     .init(
                         role: .system,
@@ -88,7 +87,6 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
                         You are a helpful assistant
                         Generate a final answer to my query as concisely, helpfully and accurately as possible.
                         You don't ask me for additional information.
-                        \(extraSystemPrompt)
                         """
                     ),
                     .init(role: .user, content: input),

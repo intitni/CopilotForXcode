@@ -8,7 +8,7 @@ public protocol CallbackEvent {
 public struct CallbackEvents {
     public struct UnTypedEvent: CallbackEvent {
         public var info: String
-        init(info: String) {
+        public init(info: String) {
             self.info = info
         }
     }
