@@ -3,19 +3,29 @@ import Foundation
 import Preferences
 
 public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
+    public var chatModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>?
+    
     public var temperature: Double {
         min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
     }
 
-    public var model: ChatModel {
+    public var model: ChatModel? {
         let models = UserDefaults.shared.value(for: \.chatModels)
+        
+        if let chatModelKey {
+            let id = UserDefaults.shared.value(for: chatModelKey)
+            if let model = models.first(where: { $0.id == id }) {
+                return model
+            }
+        }
+        
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureChatModelId)
         return models.first { $0.id == id }
-            ?? models.first ?? .init(id: "", name: "", format: .openAI, info: .init())
+            ?? models.first
     }
 
     public var maxTokens: Int {
-        model.info.maxTokens
+        model?.info.maxTokens ?? 0
     }
 
     public var stop: [String] {
@@ -30,7 +40,9 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
         true
     }
 
-    public init() {}
+    public init(chatModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>? = nil) {
+        self.chatModelKey = chatModelKey
+    }
 }
 
 public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
@@ -77,7 +89,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         overriding.temperature ?? configuration.temperature
     }
 
-    public var model: ChatModel {
+    public var model: ChatModel? {
         if let model = overriding.model { return model }
         let models = UserDefaults.shared.value(for: \.chatModels)
         guard let id = overriding.modelId,

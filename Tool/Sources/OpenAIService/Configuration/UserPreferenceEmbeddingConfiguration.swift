@@ -3,26 +3,40 @@ import Foundation
 import Preferences
 
 public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
-    public var model: EmbeddingModel {
+    public var embeddingModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>?
+
+    public var model: EmbeddingModel? {
         let models = UserDefaults.shared.value(for: \.embeddingModels)
+        
+        if let embeddingModelKey {
+            let id = UserDefaults.shared.value(for: embeddingModelKey)
+            if let model = models.first(where: { $0.id == id }) {
+                return model
+            }
+        }
+        
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureEmbeddingModelId)
         return models.first { $0.id == id }
-            ?? models.first ?? .init(id: "", name: "", format: .openAI, info: .init())
+            ?? models.first
     }
 
     public var maxToken: Int {
-        model.info.maxTokens
+        model?.info.maxTokens ?? 0
     }
 
     public var dimensions: Int {
-        let dimensions = model.info.dimensions
+        let dimensions = model?.info.dimensions ?? 0
         if dimensions <= 0 {
             return 1536
         }
         return dimensions
     }
 
-    public init() {}
+    public init(
+        embeddingModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>? = nil
+    ) {
+        self.embeddingModelKey = embeddingModelKey
+    }
 }
 
 public class OverridingEmbeddingConfiguration<
@@ -55,7 +69,7 @@ public class OverridingEmbeddingConfiguration<
         self.configuration = configuration
     }
 
-    public var model: EmbeddingModel {
+    public var model: EmbeddingModel? {
         if let model = overriding.model { return model }
         let models = UserDefaults.shared.value(for: \.embeddingModels)
         guard let id = overriding.modelId,
@@ -67,7 +81,7 @@ public class OverridingEmbeddingConfiguration<
     public var maxToken: Int {
         overriding.maxTokens ?? configuration.maxToken
     }
-    
+
     public var dimensions: Int {
         overriding.dimensions ?? configuration.dimensions
     }

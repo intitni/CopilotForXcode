@@ -10,12 +10,18 @@ public protocol ChatGPTServiceType {
 }
 
 public enum ChatGPTServiceError: Error, LocalizedError {
+    case chatModelNotAvailable
+    case embeddingModelNotAvailable
     case endpointIncorrect
     case responseInvalid
     case otherError(String)
 
     public var errorDescription: String? {
         switch self {
+        case .chatModelNotAvailable:
+            return "Chat model is not available, please add a model in the settings."
+        case .embeddingModelNotAvailable:
+            return "Embedding model is not available, please add a model in the settings."
         case .endpointIncorrect:
             return "ChatGPT endpoint is incorrect"
         case .responseInvalid:
@@ -180,8 +186,12 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
     func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
-        guard let url = URL(string: configuration.endpoint)
-        else { throw ChatGPTServiceError.endpointIncorrect }
+        guard let model = configuration.model else {
+            throw ChatGPTServiceError.chatModelNotAvailable
+        }
+        guard let url = URL(string: configuration.endpoint) else {
+            throw ChatGPTServiceError.endpointIncorrect
+        }
 
         await memory.refresh()
 
@@ -196,8 +206,6 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
-
-        let model = configuration.model
 
         let requestBody = CompletionRequestBody(
             model: model.info.modelName,
@@ -287,8 +295,12 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream disabled.
     func sendMemoryAndWait() async throws -> ChatMessage? {
-        guard let url = URL(string: configuration.endpoint)
-        else { throw ChatGPTServiceError.endpointIncorrect }
+        guard let model = configuration.model else {
+            throw ChatGPTServiceError.chatModelNotAvailable
+        }
+        guard let url = URL(string: configuration.endpoint) else {
+            throw ChatGPTServiceError.endpointIncorrect
+        }
 
         await memory.refresh()
 
@@ -303,8 +315,6 @@ extension ChatGPTService {
             )
         }
         let remainingTokens = await memory.remainingTokens
-
-        let model = configuration.model
 
         let requestBody = CompletionRequestBody(
             model: model.info.modelName,
@@ -357,7 +367,7 @@ extension ChatGPTService {
     /// When a function call is detected, but arguments are not yet ready, we can call this
     /// to insert a message placeholder in memory.
     func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
-        guard var function = functionProvider.function(named: call.name) else { return }
+        guard let function = functionProvider.function(named: call.name) else { return }
         let responseMessage = ChatMessage(
             id: messageId,
             role: .function,
@@ -380,7 +390,7 @@ extension ChatGPTService {
     ) async -> String {
         let messageId = messageId ?? uuidGenerator()
 
-        guard var function = functionProvider.function(named: call.name) else {
+        guard let function = functionProvider.function(named: call.name) else {
             return await fallbackFunctionCall(call, messageId: messageId)
         }
 
