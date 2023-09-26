@@ -17,20 +17,23 @@ public final class XcodeInspector: ObservableObject {
     @Published public internal(set) var activeXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var latestActiveXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var xcodes: [XcodeAppInstanceInspector] = []
-    @Published public internal(set) var activeProjectURL = URL(fileURLWithPath: "/")
-    @Published public internal(set) var activeDocumentURL = URL(fileURLWithPath: "/")
+    @Published public internal(set) var activeProjectRootURL: URL? = nil
+    @Published public internal(set) var activeDocumentURL: URL? = nil
+    @Published public internal(set) var activeWorkspaceURL: URL? = nil
     @Published public internal(set) var focusedWindow: XcodeWindowInspector?
     @Published public internal(set) var focusedEditor: SourceEditor?
     @Published public internal(set) var focusedElement: AXUIElement?
     @Published public internal(set) var completionPanel: AXUIElement?
 
     public var focusedEditorContent: EditorInformation? {
+        guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
+              let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
+              let projectURL = XcodeInspector.shared.activeProjectRootURL
+        else { return nil }
+        
         let editorContent = XcodeInspector.shared.focusedEditor?.content
-        let documentURL = XcodeInspector.shared.activeDocumentURL
-        let projectURL = XcodeInspector.shared.activeProjectURL
         let language = languageIdentifierFromFileURL(documentURL)
-        let relativePath = documentURL.path
-            .replacingOccurrences(of: projectURL.path, with: "")
+        let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
 
         if let editorContent, let range = editorContent.selections.first {
             let (selectedContent, selectedLines) = EditorInformation.code(
@@ -42,7 +45,8 @@ public final class XcodeInspector: ObservableObject {
                 selectedContent: selectedContent,
                 selectedLines: selectedLines,
                 documentURL: documentURL,
-                projectURL: projectURL,
+                workspaceURL: workspaceURL,
+                projectRootURL: projectURL,
                 relativePath: relativePath,
                 language: language
             )
@@ -53,14 +57,23 @@ public final class XcodeInspector: ObservableObject {
             selectedContent: "",
             selectedLines: [],
             documentURL: documentURL,
-            projectURL: projectURL,
+            workspaceURL: workspaceURL,
+            projectRootURL: projectURL,
             relativePath: relativePath,
             language: language
         )
     }
 
-    public var realtimeActiveDocumentURL: URL {
-        latestActiveXcode?.realtimeDocumentURL ?? URL(fileURLWithPath: "/")
+    public var realtimeActiveDocumentURL: URL? {
+        latestActiveXcode?.realtimeDocumentURL ?? activeDocumentURL
+    }
+
+    public var realtimeActiveWorkspaceURL: URL? {
+        latestActiveXcode?.realtimeWorkspaceURL ?? activeWorkspaceURL
+    }
+
+    public var realtimeActiveProjectURL: URL? {
+        latestActiveXcode?.realtimeProjectURL ?? activeWorkspaceURL
     }
 
     init() {
@@ -69,6 +82,7 @@ public final class XcodeInspector: ObservableObject {
             .filter { $0.isXcode }
             .map(XcodeAppInstanceInspector.init(runningApplication:))
         let activeXcode = xcodes.first(where: \.isActive)
+        latestActiveXcode = activeXcode ?? xcodes.first
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
@@ -141,7 +155,8 @@ public final class XcodeInspector: ObservableObject {
         activeDocumentURL = xcode.documentURL
         focusedWindow = xcode.focusedWindow
         completionPanel = xcode.completionPanel
-        activeProjectURL = xcode.projectURL
+        activeProjectRootURL = xcode.projectRootURL
+        activeWorkspaceURL = xcode.workspaceURL
         focusedWindow = xcode.focusedWindow
 
         let setFocusedElement = { [weak self] in
@@ -179,8 +194,12 @@ public final class XcodeInspector: ObservableObject {
             self?.activeDocumentURL = url
         }.store(in: &activeXcodeCancellable)
 
-        xcode.$projectURL.sink { [weak self] url in
-            self?.activeProjectURL = url
+        xcode.$workspaceURL.sink { [weak self] url in
+            self?.activeWorkspaceURL = url
+        }.store(in: &activeXcodeCancellable)
+
+        xcode.$projectRootURL.sink { [weak self] url in
+            self?.activeProjectRootURL = url
         }.store(in: &activeXcodeCancellable)
 
         xcode.$focusedWindow.sink { [weak self] window in
@@ -206,8 +225,9 @@ public class AppInstanceInspector: ObservableObject {
 
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
     @Published public var focusedWindow: XcodeWindowInspector?
-    @Published public var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published public var projectURL: URL = .init(fileURLWithPath: "/")
+    @Published public var documentURL: URL? = nil
+    @Published public var workspaceURL: URL? = nil
+    @Published public var projectRootURL: URL? = nil
     @Published public var workspaces = [WorkspaceIdentifier: Workspace]()
     public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
         updateWorkspaceInfo()
@@ -216,15 +236,31 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
     @Published public private(set) var completionPanel: AXUIElement?
 
-    public var realtimeDocumentURL: URL {
+    public var realtimeDocumentURL: URL? {
         guard let window = appElement.focusedWindow,
               window.identifier == "Xcode.WorkspaceWindow"
-        else {
-            return URL(fileURLWithPath: "/")
-        }
+        else { return nil }
 
         return WorkspaceXcodeWindowInspector.extractDocumentURL(windowElement: window)
-            ?? URL(fileURLWithPath: "/")
+    }
+
+    public var realtimeWorkspaceURL: URL? {
+        guard let window = appElement.focusedWindow,
+              window.identifier == "Xcode.WorkspaceWindow"
+        else { return nil }
+
+        return WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window)
+    }
+
+    public var realtimeProjectURL: URL? {
+        guard let window = appElement.focusedWindow else { return nil }
+        let workspaceURL = realtimeWorkspaceURL
+        let documentURL = realtimeDocumentURL
+        return WorkspaceXcodeWindowInspector.extractProjectURL(
+            windowElement: window,
+            workspaceURL: workspaceURL,
+            documentURL: documentURL
+        )
     }
 
     var _version: String?
@@ -284,17 +320,23 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     focusedWindowObservations.removeAll()
 
                     documentURL = window.documentURL
-                    projectURL = window.projectURL
+                    workspaceURL = window.workspaceURL
+                    projectRootURL = window.projectRootURL
 
                     window.$documentURL
                         .filter { $0 != .init(fileURLWithPath: "/") }
                         .sink { [weak self] url in
                             self?.documentURL = url
                         }.store(in: &focusedWindowObservations)
-                    window.$projectURL
+                    window.$workspaceURL
                         .filter { $0 != .init(fileURLWithPath: "/") }
                         .sink { [weak self] url in
-                            self?.projectURL = url
+                            self?.workspaceURL = url
+                        }.store(in: &focusedWindowObservations)
+                    window.$projectRootURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .sink { [weak self] url in
+                            self?.projectRootURL = url
                         }.store(in: &focusedWindowObservations)
                 }
             } else {

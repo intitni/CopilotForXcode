@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
         .library(name: "ChatTab", targets: ["ChatTab"]),
+        .library(name: "ChatContextCollector", targets: ["ChatContextCollector"]),
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
@@ -211,6 +212,14 @@ let package = Package(
                 "USearchIndex",
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
+            ]
+        ),
+
+        .target(
+            name: "ChatContextCollector",
+            dependencies: [
+                "SuggestionModel",
+                "OpenAIService",
             ]
         ),
 

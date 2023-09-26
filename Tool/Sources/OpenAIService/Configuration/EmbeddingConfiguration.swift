@@ -7,6 +7,7 @@ public protocol EmbeddingConfiguration {
     var model: EmbeddingModel { get }
     var apiKey: String { get }
     var maxToken: Int { get }
+    var dimensions: Int { get }
 }
 
 public extension EmbeddingConfiguration {

@@ -15,12 +15,10 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
             "Editing Document Context is updated to display code at \(range)."
         }
     }
-    
+
     struct E: Error, LocalizedError {
         var errorDescription: String?
     }
-
-    var reportProgress: (String) async -> Void = { _ in }
 
     var name: String {
         "getCodeAtLine"
@@ -36,7 +34,7 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
             "line": [
                 .type: "number",
                 .description: "The line number in the file",
-            ]
+            ],
         ],
         .required: ["line"],
     ] }
@@ -47,11 +45,14 @@ struct MoveToCodeAroundLineFunction: ChatGPTFunction {
         self.contextCollector = contextCollector
     }
 
-    func prepare() async {
+    func prepare(reportProgress: @escaping (String) async -> Void) async {
         await reportProgress("Finding code around..")
     }
 
-    func call(arguments: Arguments) async throws -> Result {
+    func call(
+        arguments: Arguments,
+        reportProgress: @escaping (String) async -> Void
+    ) async throws -> Result {
         await reportProgress("Finding code around line \(arguments.line)..")
         contextCollector?.activeDocumentContext?.moveToCodeAroundLine(arguments.line)
         guard let newContext = contextCollector?.activeDocumentContext?.focusedContext else {

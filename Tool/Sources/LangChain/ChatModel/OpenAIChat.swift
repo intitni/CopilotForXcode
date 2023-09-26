@@ -3,13 +3,13 @@ import OpenAIService
 
 public struct OpenAIChat: ChatModel {
     public var configuration: ChatGPTConfiguration
-    public var memory: ChatGPTMemory
+    public var memory: ChatGPTMemory?
     public var functionProvider: ChatGPTFunctionProvider
     public var stream: Bool
 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
-        memory: ChatGPTMemory = ConversationChatGPTMemory(systemPrompt: ""),
+        memory: ChatGPTMemory? = ConversationChatGPTMemory(systemPrompt: ""),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider(),
         stream: Bool
     ) {
@@ -24,6 +24,8 @@ public struct OpenAIChat: ChatModel {
         stops: [String],
         callbackManagers: [CallbackManager]
     ) async throws -> ChatMessage {
+        let memory = memory ?? EmptyChatGPTMemory()
+        
         let service = ChatGPTService(
             memory: memory,
             configuration: configuration,

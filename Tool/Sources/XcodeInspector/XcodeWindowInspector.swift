@@ -15,7 +15,8 @@ public class XcodeWindowInspector: ObservableObject {
 public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     let app: NSRunningApplication
     @Published var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published var projectURL: URL = .init(fileURLWithPath: "/")
+    @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
+    @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
     private var updateTabsTask: Task<Void, Error>?
     private var focusedElementChangedTask: Task<Void, Error>?
 
@@ -23,7 +24,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         updateTabsTask?.cancel()
         focusedElementChangedTask?.cancel()
     }
-    
+
     public func refresh() {
         updateURLs()
     }
@@ -34,7 +35,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
 
         focusedElementChangedTask = Task { @MainActor in
             updateURLs()
-            
+
             Task { @MainActor in
                 // prevent that documentURL may not be available yet
                 try await Task.sleep(nanoseconds: 500_000_000)
@@ -42,7 +43,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                     updateURLs()
                 }
             }
-            
+
             let notifications = AXNotificationStream(
                 app: app,
                 notificationNames: kAXFocusedUIElementChangedNotification
@@ -54,18 +55,23 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             }
         }
     }
-    
+
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {
             self.documentURL = documentURL
         }
+        let workspaceURL = Self.extractWorkspaceURL(windowElement: uiElement)
+        if let workspaceURL {
+            self.workspaceURL = workspaceURL
+        }
         let projectURL = Self.extractProjectURL(
             windowElement: uiElement,
-            fileURL: documentURL
+            workspaceURL: workspaceURL,
+            documentURL: documentURL
         )
         if let projectURL {
-            self.projectURL = projectURL
+            projectRootURL = projectURL
         }
     }
 
@@ -84,37 +90,39 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         return nil
     }
 
-    static func extractProjectURL(
-        windowElement: AXUIElement,
-        fileURL: URL?
+    static func extractWorkspaceURL(
+        windowElement: AXUIElement
     ) -> URL? {
         for child in windowElement.children {
             if child.description.starts(with: "/"), child.description.count > 1 {
                 let path = child.description
                 let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                var url = URL(fileURLWithPath: trimmedNewLine)
-                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                    !url.pathExtension.isEmpty
-                {
-                    url = url.deletingLastPathComponent()
-                }
+                let url = URL(fileURLWithPath: trimmedNewLine)
                 return url
             }
         }
+        return nil
+    }
 
-        guard var currentURL = fileURL else { return nil }
+    static func extractProjectURL(
+        windowElement: AXUIElement,
+        workspaceURL: URL?,
+        documentURL: URL?
+    ) -> URL? {
+        guard var currentURL = workspaceURL ?? documentURL else { return nil }
         var firstDirectoryURL: URL?
+        var lastGitDirectoryURL: URL?
         while currentURL.pathComponents.count > 1 {
             defer { currentURL.deleteLastPathComponent() }
             guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
             if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
             let gitURL = currentURL.appendingPathComponent(".git")
             if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                return currentURL
+                lastGitDirectoryURL = currentURL
             }
         }
 
-        return firstDirectoryURL ?? fileURL
+        return lastGitDirectoryURL ?? firstDirectoryURL ?? workspaceURL
     }
 }
 

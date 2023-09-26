@@ -42,7 +42,8 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             selectedContent: code,
             selectedLines: [],
             documentURL: source.documentURL,
-            projectURL: source.projectRootURL,
+            workspaceURL: source.projectRootURL,
+            projectRootURL: source.projectRootURL,
             relativePath: "",
             language: source.language
         )

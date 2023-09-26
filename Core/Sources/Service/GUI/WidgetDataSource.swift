@@ -19,7 +19,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
             {
                 return .init(
                     code: suggestion.text,
-                    language: filespace.language,
+                    language: filespace.language.rawValue,
                     startLineIndex: suggestion.position.line,
                     suggestionCount: filespace.suggestions.count,
                     currentSuggestionIndex: filespace.suggestionIndex,

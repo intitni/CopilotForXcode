@@ -46,15 +46,8 @@ public final class RefineDocumentChain: Chain {
         var functions: [any ChatGPTFunction] = [RespondFunction()]
     }
 
-    struct RespondFunction: ChatGPTFunction {
+    struct RespondFunction: ChatGPTArgumentsCollectingFunction {
         typealias Arguments = IntermediateAnswer
-
-        struct Result: ChatGPTFunctionResult {
-            var botReadableContent: String { "" }
-        }
-
-        var reportProgress: (String) async -> Void = { _ in }
-
         var name: String = "respond"
         var description: String = "Respond with the refined answer"
         var argumentSchema: JSONSchemaValue {
@@ -76,12 +69,6 @@ public final class RefineDocumentChain: Chain {
                 ],
                 .required: ["answer", "more", "usefulness"],
             ]
-        }
-
-        func prepare() async {}
-
-        func call(arguments: Arguments) async throws -> Result {
-            return Result()
         }
     }
 

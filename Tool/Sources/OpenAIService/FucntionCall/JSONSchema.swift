@@ -1,7 +1,7 @@
 import Foundation
 
 public struct JSONSchemaKey: Codable, Hashable, Sendable, Equatable, ExpressibleByStringLiteral {
-    var key: String
+    public var key: String
     
     public init(stringLiteral: String) {
         key = stringLiteral

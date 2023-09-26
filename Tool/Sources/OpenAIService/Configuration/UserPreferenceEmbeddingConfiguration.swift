@@ -14,6 +14,14 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
         model.info.maxTokens
     }
 
+    public var dimensions: Int {
+        let dimensions = model.info.dimensions
+        if dimensions <= 0 {
+            return 1536
+        }
+        return dimensions
+    }
+
     public init() {}
 }
 
@@ -24,15 +32,18 @@ public class OverridingEmbeddingConfiguration<
         public var modelId: String?
         public var model: EmbeddingModel?
         public var maxTokens: Int?
+        public var dimensions: Int?
 
         public init(
             modelId: String? = nil,
             model: EmbeddingModel? = nil,
-            maxTokens: Int? = nil
+            maxTokens: Int? = nil,
+            dimensions: Int? = nil
         ) {
             self.modelId = modelId
             self.model = model
             self.maxTokens = maxTokens
+            self.dimensions = dimensions
         }
     }
 
@@ -55,6 +66,10 @@ public class OverridingEmbeddingConfiguration<
 
     public var maxToken: Int {
         overriding.maxTokens ?? configuration.maxToken
+    }
+    
+    public var dimensions: Int {
+        overriding.dimensions ?? configuration.dimensions
     }
 }
 

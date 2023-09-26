@@ -52,9 +52,9 @@ public struct PanelFeature: ReducerProtocol {
             switch action {
             case .presentSuggestion:
                 return .run { send in
-                    guard let provider = await fetchSuggestionProvider(
-                        fileURL: xcodeInspector.activeDocumentURL
-                    ) else { return }
+                    guard let fileURL = xcodeInspector.activeDocumentURL,
+                          let provider = await fetchSuggestionProvider(fileURL: fileURL)
+                    else { return }
                     await send(.presentSuggestionProvider(provider, displayContent: true))
                 }
 
@@ -96,7 +96,7 @@ public struct PanelFeature: ReducerProtocol {
             case .switchToAnotherEditorAndUpdateContent:
                 state.content.error = nil
                 return .run { send in
-                    let fileURL = xcodeInspector.activeDocumentURL
+                    guard let fileURL = xcodeInspector.realtimeActiveDocumentURL else { return }
                     if let suggestion = await fetchSuggestionProvider(fileURL: fileURL) {
                         await send(.presentSuggestionProvider(suggestion, displayContent: false))
                     }

@@ -47,7 +47,7 @@ public struct FilespaceCodeMetadata: Equatable {
 @dynamicMemberLookup
 public final class Filespace {
     public let fileURL: URL
-    public private(set) lazy var language: String = languageIdentifierFromFileURL(fileURL).rawValue
+    public private(set) lazy var language: CodeLanguage = languageIdentifierFromFileURL(fileURL)
     public var codeMetadata: FilespaceCodeMetadata = .init()
     public internal(set) var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }

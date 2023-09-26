@@ -30,6 +30,7 @@ public class WorkspacePropertyValues {
 open class WorkspacePlugin {
     public private(set) weak var workspace: Workspace?
     public var projectRootURL: URL { workspace?.projectRootURL ?? URL(fileURLWithPath: "/") }
+    public var workspaceURL: URL { workspace?.workspaceURL ?? projectRootURL }
     public var filespaces: [URL: Filespace] { workspace?.filespaces ?? [:] }
 
     public init(workspace: Workspace) {
@@ -38,6 +39,7 @@ open class WorkspacePlugin {
 
     open func didOpenFilespace(_: Filespace) {}
     open func didSaveFilespace(_: Filespace) {}
+    open func didUpdateFilespace(_: Filespace, content: String) {}
     open func didCloseFilespace(_: URL) {}
 }
 
@@ -56,6 +58,7 @@ public final class Workspace {
 
     var additionalProperties = WorkspacePropertyValues()
     public internal(set) var plugins = [ObjectIdentifier: WorkspacePlugin]()
+    public let workspaceURL: URL
     public let projectRootURL: URL
     public let openedFileRecoverableStorage: OpenedFileRecoverableStorage
     public private(set) var lastSuggestionUpdateTime = Environment.now()
@@ -83,8 +86,18 @@ public final class Workspace {
         plugins[ObjectIdentifier(type)] as? P
     }
 
-    init(projectRootURL: URL) {
-        self.projectRootURL = projectRootURL
+    init(workspaceURL: URL) {
+        self.workspaceURL = workspaceURL
+        self.projectRootURL = {
+            var url = workspaceURL
+            while !FileManager.default.fileIsDirectory(atPath: url.path) ||
+                !url.pathExtension.isEmpty
+            {
+                url = url.deletingLastPathComponent()
+            }
+            return url
+
+        }()
         openedFileRecoverableStorage = .init(projectRootURL: projectRootURL)
         let openedFiles = openedFileRecoverableStorage.openedFiles
         Task { @WorkspaceActor in
@@ -132,6 +145,14 @@ public final class Workspace {
     @WorkspaceActor
     public func closeFilespace(fileURL: URL) {
         filespaces[fileURL] = nil
+    }
+
+    @WorkspaceActor
+    public func didUpdateFilespace(fileURL: URL, content: String) {
+        guard let filespace = filespaces[fileURL] else { return }
+        for plugin in plugins.values {
+            plugin.didUpdateFilespace(filespace, content: content)
+        }
     }
 }
 
