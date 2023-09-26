@@ -41,10 +41,12 @@ public struct EmbeddingService {
     }
 
     public func embed(text: [String]) async throws -> EmbeddingResponse {
+        guard let model = configuration.model else {
+            throw ChatGPTServiceError.embeddingModelNotAvailable
+        }
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
-        let model = configuration.model
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -90,10 +92,12 @@ public struct EmbeddingService {
     }
 
     public func embed(tokens: [[Int]]) async throws -> EmbeddingResponse {
+        guard let model = configuration.model else {
+            throw ChatGPTServiceError.embeddingModelNotAvailable
+        }
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
-        let model = configuration.model
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()

@@ -4,7 +4,7 @@ import Keychain
 import Preferences
 
 public protocol EmbeddingConfiguration {
-    var model: EmbeddingModel { get }
+    var model: EmbeddingModel? { get }
     var apiKey: String { get }
     var maxToken: Int { get }
     var dimensions: Int { get }
@@ -12,11 +12,12 @@ public protocol EmbeddingConfiguration {
 
 public extension EmbeddingConfiguration {
     var endpoint: String {
-        model.endpoint
+        model?.endpoint ?? ""
     }
     
     var apiKey: String {
-        (try? Keychain.apiKey.get(model.info.apiKeyName)) ?? ""
+        guard let name = model?.info.apiKeyName else { return "" }
+        return (try? Keychain.apiKey.get(name)) ?? ""
     }
 
     func overriding(

@@ -264,6 +264,14 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeGenerateDescriptionInUserPreferredLanguage: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "PromptToCodeGenerateDescriptionInUserPreferredLanguage")
     }
+    
+    var promptToCodeChatModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PromptToCodeChatModelId")
+    }
+    
+    var promptToCodeEmbeddingModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PromptToCodeEmbeddingModelId")
+    }
 }
 
 // MARK: - Suggestion
