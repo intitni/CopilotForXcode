@@ -44,7 +44,7 @@ struct ChatSettingsView: View {
     var chatSettingsForm: some View {
         Form {
             Picker(
-                "Chat Feature Provider",
+                "Chat Model",
                 selection: $settings.defaultChatFeatureChatModelId
             ) {
                 if !settings.chatModels
@@ -63,7 +63,7 @@ struct ChatSettingsView: View {
             }
 
             Picker(
-                "Embedding Feature Provider",
+                "Embedding Model",
                 selection: $settings.defaultChatFeatureEmbeddingModelId
             ) {
                 if !settings.embeddingModels
