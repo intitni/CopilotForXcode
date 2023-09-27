@@ -15,6 +15,7 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.disableGitHubCopilotSettingsAutoRefreshOnAppear)
     var disableGitHubCopilotSettingsAutoRefreshOnAppear
     @AppStorage(\.useUserDefaultsBaseAPIKeychain) var useUserDefaultsBaseAPIKeychain
+    @AppStorage(\.disableEnhancedWorkspace) var disableEnhancedWorkspace
     init() {}
 }
 
@@ -57,6 +58,10 @@ struct DebugSettingsView: View {
                     }
                     Toggle(isOn: $settings.useUserDefaultsBaseAPIKeychain) {
                         Text("Store API keys in UserDefaults")
+                    }
+                    
+                    Toggle(isOn: $settings.disableEnhancedWorkspace) {
+                        Text("Disable Enhanced Workspace")
                     }
                     
                     Button("Reset Migration Version to 0") {
