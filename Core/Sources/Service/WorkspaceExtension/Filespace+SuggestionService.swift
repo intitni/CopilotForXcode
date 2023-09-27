@@ -13,6 +13,7 @@ struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
 }
 
 extension FilespacePropertyValues {
+    @WorkspaceActor
     var suggestionSourceSnapshot: FilespaceSuggestionSnapshot {
         get { self[FilespaceSuggestionSnapshotKey.self] }
         set { self[FilespaceSuggestionSnapshotKey.self] = newValue }
@@ -20,6 +21,7 @@ extension FilespacePropertyValues {
 }
 
 extension Filespace {
+    @WorkspaceActor
     func resetSnapshot() {
         // swiftformat:disable redundantSelf
         self.suggestionSourceSnapshot = FilespaceSuggestionSnapshotKey.createDefaultValue()

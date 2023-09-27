@@ -8,8 +8,9 @@ public protocol FilespacePropertyKey {
 }
 
 public final class FilespacePropertyValues {
-    var storage: [ObjectIdentifier: Any] = [:]
+    private var storage: [ObjectIdentifier: Any] = [:]
 
+    @WorkspaceActor
     public subscript<K: FilespacePropertyKey>(_ key: K.Type) -> K.Value {
         get {
             if let value = storage[ObjectIdentifier(key)] as? K.Value {
@@ -65,7 +66,7 @@ public final class Filespace {
     }
 
     private(set) var lastSuggestionUpdateTime: Date = Environment.now()
-    var additionalProperties = FilespacePropertyValues()
+    private var additionalProperties = FilespacePropertyValues()
     let fileSaveWatcher: FileSaveWatcher
     let onClose: (URL) -> Void
 
@@ -87,6 +88,7 @@ public final class Filespace {
         }
     }
 
+    @WorkspaceActor
     public subscript<K>(
         dynamicMember dynamicMember: WritableKeyPath<FilespacePropertyValues, K>
     ) -> K {

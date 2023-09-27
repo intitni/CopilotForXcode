@@ -8,8 +8,28 @@ public final class ChatProvider: ObservableObject {
     public let id = UUID()
     @Published public var history: [ChatMessage] = []
     @Published public var isReceivingMessage = false
+    public var temperature: Double? {
+        get {
+            configuration.overriding.temperature
+        }
+        set {
+            configuration.overriding.temperature = newValue
+            objectWillChange.send()
+        }
+    }
+    public var chatModelId: String? {
+        get {
+            configuration.overriding.modelId
+        }
+        set {
+            configuration.overriding.modelId = newValue
+            objectWillChange.send()
+        }
+    }
+    private let configuration: OverridingChatGPTConfiguration
     public var pluginIdentifiers: [String] = []
     public var systemPrompt = ""
+    
     public var title: String {
         let defaultTitle = "Chat"
         guard let lastMessageText = history
@@ -38,6 +58,7 @@ public final class ChatProvider: ObservableObject {
     public var onSetAsExtraPrompt: (MessageID) -> Void
 
     public init(
+        configuration: OverridingChatGPTConfiguration,
         history: [ChatMessage] = [],
         isReceivingMessage: Bool = false,
         pluginIdentifiers: [String] = [],
@@ -50,6 +71,7 @@ public final class ChatProvider: ObservableObject {
         onRunCustomCommand: @escaping (CustomCommand) -> Void = { _ in },
         onSetAsExtraPrompt: @escaping (MessageID) -> Void = { _ in }
     ) {
+        self.configuration = configuration
         self.history = history
         self.isReceivingMessage = isReceivingMessage
         self.pluginIdentifiers = pluginIdentifiers

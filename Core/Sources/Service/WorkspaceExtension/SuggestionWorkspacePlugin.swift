@@ -57,18 +57,6 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         return true
     }
 
-    func canAutoTriggerGetSuggestions(
-        forFileAt fileURL: URL,
-        lines: [String],
-        cursorPosition: CursorPosition
-    ) -> Bool {
-        guard isRealtimeSuggestionEnabled else { return false }
-        guard let filespace = filespaces[fileURL] else { return true }
-        if lines.hashValue != filespace.suggestionSourceSnapshot.linesHash { return true }
-        if cursorPosition != filespace.suggestionSourceSnapshot.cursorPosition { return true }
-        return false
-    }
-
     override init(workspace: Workspace) {
         super.init(workspace: workspace)
 

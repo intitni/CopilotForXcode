@@ -10,8 +10,9 @@ public protocol WorkspacePropertyKey {
 }
 
 public class WorkspacePropertyValues {
-    var storage: [ObjectIdentifier: Any] = [:]
+    private var storage: [ObjectIdentifier: Any] = [:]
 
+    @WorkspaceActor
     public subscript<K: WorkspacePropertyKey>(_ key: K.Type) -> K.Value {
         get {
             if let value = storage[ObjectIdentifier(key)] as? K.Value {
@@ -56,7 +57,7 @@ public final class Workspace {
         }
     }
 
-    var additionalProperties = WorkspacePropertyValues()
+    private var additionalProperties = WorkspacePropertyValues()
     public internal(set) var plugins = [ObjectIdentifier: WorkspacePlugin]()
     public let workspaceURL: URL
     public let projectRootURL: URL
