@@ -74,10 +74,16 @@ public struct AgentFinish<Output: AgentOutputParsable> {
     }
 }
 
+extension AgentFinish.ReturnValue: Equatable where Output: Equatable {}
+
+extension AgentFinish: Equatable where Output: Equatable {}
+
 public enum AgentNextStep<Output: AgentOutputParsable> {
     case actions([AgentAction])
     case finish(AgentFinish<Output>)
 }
+
+extension AgentNextStep: Equatable where Output: Equatable {}
 
 public struct AgentScratchPad<Content: Equatable>: Equatable {
     public var content: Content

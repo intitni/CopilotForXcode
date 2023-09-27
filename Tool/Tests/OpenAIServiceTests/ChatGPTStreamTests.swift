@@ -139,7 +139,7 @@ final class ChatGPTStreamTests: XCTestCase {
             .init(name: $0.name, description: $0.description, parameters: $0.argumentSchema)
         }, "Function schema is not submitted")
     }
-    
+
     func test_handling_multiple_function_call() async throws {
         let memory = ConversationChatGPTMemory(systemPrompt: "system", systemMessageId: "s")
         let configuration = UserPreferenceChatGPTConfiguration().overriding()
@@ -339,29 +339,30 @@ extension ChatGPTStreamTests {
         }
 
         var name: String { "function" }
-        
+
         var description: String { "description" }
 
         var argumentSchema: JSONSchemaValue {
             [
-                .type: ["null"]
+                .type: ["null"],
             ]
         }
-        
-        var reportProgress: (String) async -> Void = { print($0) }
 
-        func prepare() async {
+        func prepare(reportProgress: @escaping ReportProgress) async {
             print("Function will be called")
         }
 
-        func call(arguments: Parameters) async throws -> String {
+        func call(
+            arguments: Parameters,
+            reportProgress: @escaping ReportProgress
+        ) async throws -> String {
             "Function is called."
         }
     }
 
     struct FunctionProvider: ChatGPTFunctionProvider {
         var functionCallStrategy: OpenAIService.FunctionCallStrategy? { nil }
-        
+
         var functions: [any ChatGPTFunction] { [EmptyFunction()] }
     }
 }

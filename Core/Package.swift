@@ -363,6 +363,7 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "FocusedCodeFinder", package: "Tool"),
+                .product(name: "AppMonitoring", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),
