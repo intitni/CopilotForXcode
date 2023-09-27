@@ -66,7 +66,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             self.workspaceURL = workspaceURL
         }
         let projectURL = Self.extractProjectURL(
-            windowElement: uiElement,
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
@@ -104,8 +103,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         return nil
     }
 
-    static func extractProjectURL(
-        windowElement: AXUIElement,
+    public static func extractProjectURL(
         workspaceURL: URL?,
         documentURL: URL?
     ) -> URL? {

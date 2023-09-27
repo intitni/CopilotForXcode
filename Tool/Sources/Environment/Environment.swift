@@ -41,7 +41,8 @@ public enum Environment {
             return false
         }
     }
-    
+
+    #warning("TODO: Use XcodeInspector instead.")
     public static var fetchCurrentWorkspaceURLFromXcode: () async throws -> URL? = {
         if let xcode = ActiveApplicationMonitor.shared.activeXcode
             ?? ActiveApplicationMonitor.shared.latestXcode
