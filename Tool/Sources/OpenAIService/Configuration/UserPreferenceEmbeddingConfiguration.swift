@@ -7,14 +7,14 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
 
     public var model: EmbeddingModel? {
         let models = UserDefaults.shared.value(for: \.embeddingModels)
-        
+
         if let embeddingModelKey {
             let id = UserDefaults.shared.value(for: embeddingModelKey)
             if let model = models.first(where: { $0.id == id }) {
                 return model
             }
         }
-        
+
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureEmbeddingModelId)
         return models.first { $0.id == id }
             ?? models.first
@@ -39,9 +39,7 @@ public struct UserPreferenceEmbeddingConfiguration: EmbeddingConfiguration {
     }
 }
 
-public class OverridingEmbeddingConfiguration<
-    Configuration: EmbeddingConfiguration
->: EmbeddingConfiguration {
+public class OverridingEmbeddingConfiguration: EmbeddingConfiguration {
     public struct Overriding {
         public var modelId: String?
         public var model: EmbeddingModel?
@@ -61,10 +59,13 @@ public class OverridingEmbeddingConfiguration<
         }
     }
 
-    private let configuration: Configuration
+    private let configuration: EmbeddingConfiguration
     public var overriding = Overriding()
 
-    public init(overriding configuration: Configuration, with overrides: Overriding = .init()) {
+    public init(
+        overriding configuration: any EmbeddingConfiguration,
+        with overrides: Overriding = .init()
+    ) {
         overriding = overrides
         self.configuration = configuration
     }
