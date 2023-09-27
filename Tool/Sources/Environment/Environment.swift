@@ -69,6 +69,7 @@ public enum Environment {
         return nil
     }
 
+    #warning("TODO: Use WorkspaceXcodeWindowInspector.extractProjectURL instead.")
     public static var guessProjectRootURLForFile: (_ fileURL: URL) async throws -> URL = {
         fileURL in
         var currentURL = fileURL
@@ -77,10 +78,19 @@ public enum Environment {
         while currentURL.pathComponents.count > 1 {
             defer { currentURL.deleteLastPathComponent() }
             guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            guard currentURL.pathExtension != "xcodeproj" else { continue }
+            guard currentURL.pathExtension != "xcworkspace" else { continue }
+            guard currentURL.pathExtension != "playground" else { continue }
             if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
             let gitURL = currentURL.appendingPathComponent(".git")
             if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
                 lastGitDirectoryURL = currentURL
+            } else if let text = try? String(contentsOf: gitURL) {
+                if !text.hasPrefix("gitdir: ../"), // it's not a sub module
+                   text.range(of: "/.git/worktrees/") != nil // it's a git worktree
+                {
+                    lastGitDirectoryURL = currentURL
+                }
             }
         }
 
