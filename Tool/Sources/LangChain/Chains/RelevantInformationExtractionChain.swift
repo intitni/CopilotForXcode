@@ -15,63 +15,74 @@ public final class RelevantInformationExtractionChain: Chain {
     public typealias Output = String
 
     class FunctionProvider: ChatGPTFunctionProvider {
-        var functionCallStrategy: FunctionCallStrategy? = .auto
-        var functions: [any ChatGPTFunction] = [NoneFunction()]
+        var functionCallStrategy: FunctionCallStrategy? = .name("saveFinalAnswer")
+        var functions: [any ChatGPTFunction] = [FinalAnswer()]
     }
 
-    struct NoneFunction: ChatGPTFunction {
-        struct Arguments: Decodable {}
-
-        struct Result: ChatGPTFunctionResult {
-            var botReadableContent: String { "" }
+    struct FinalAnswer: ChatGPTArgumentsCollectingFunction {
+        struct Arguments: Decodable {
+            var relevantInformation: String
+            var noRelevantInformationFound: Bool?
         }
 
-        var reportProgress: (String) async -> Void = { _ in }
-
-        var name: String = "noInformationFound"
-        var description: String = "Call when you can't find any relevant information from the document, or the question was not mentioned in the document"
+        var name: String = "saveFinalAnswer"
+        var description: String =
+            "save the relevant information"
         var argumentSchema: JSONSchemaValue {
-            return [
+            [
                 .type: "object",
-                .properties: .hash([:])
+                .properties: [
+                    "relevantInformation": [.type: "string"],
+                    "noRelevantInformationFound": [.type: "boolean"],
+                ],
+                .required: ["relevantInformation", "noRelevantInformationFound"],
             ]
         }
+    }
 
-        func prepare() async {}
+    let filterMetadata: (String) -> Bool
+    let hint: String
 
-        func call(arguments: Arguments) async throws -> Result {
-            return Result()
-        }
+    init(filterMetadata: @escaping (String) -> Bool = { _ in true }, hint: String) {
+        self.filterMetadata = filterMetadata
+        self.hint = hint
     }
 
     func buildChatModel() -> ChatModelChain<TaskInput> {
         .init(
             chatModel: OpenAIChat(
                 configuration: UserPreferenceChatGPTConfiguration().overriding {
-                    $0.temperature = 0
+                    $0.temperature = 0.5
                     $0.runFunctionsAutomatically = false
                 },
                 memory: EmptyChatGPTMemory(),
                 functionProvider: FunctionProvider(),
                 stream: false
             )
-        ) { input in [
+        ) { [filterMetadata, hint] input in [
             .init(
                 role: .system,
                 content: """
                 Extract the relevant information from the Document according to the Question.
+                The information may not directly answer the question, but it should be relevant to the question, \
+                please think carefully and make you decision.
                 Make the information clear, concise and short.
                 If found code, wrap it in markdown code block.
+                \(hint)
                 """
             ),
             .init(
                 role: .user,
                 content: """
                 Question:###
+                (how, when, what or why)
                 \(input.question)
                 ###
                 Document:###
-                \(input.document)
+                \(input.document.metadata.filter { key, _ in
+                    filterMetadata(key)
+                })
+                \(input.document.pageContent)
                 ###
                 """
             ),
@@ -92,6 +103,22 @@ public final class RelevantInformationExtractionChain: Chain {
                             taskInput,
                             callbackManagers: callbackManagers
                         )
+                        
+                        if let functionCall = output.functionCall {
+                            do {
+                                let arguments = try JSONDecoder().decode(
+                                    FinalAnswer.Arguments.self,
+                                    from: functionCall.arguments.data(using: .utf8) ?? Data()
+                                )
+                                if arguments.noRelevantInformationFound ?? false {
+                                    return ""
+                                }
+                                return arguments.relevantInformation
+                            } catch {
+                                return output.content ?? ""
+                            }
+                        }
+                        
                         return output.content ?? ""
                     }
 
@@ -138,3 +165,4 @@ public extension CallbackEvents {
         RelevantInformationExtractionChainDidExtractPartialRelevantContent.self
     }
 }
+

@@ -171,7 +171,6 @@ let package = Package(
             name: "ChatService",
             dependencies: [
                 "ChatPlugin",
-                "ChatContextCollector",
 
                 // plugins
                 "MathChatPlugin",
@@ -183,12 +182,15 @@ let package = Package(
                 "ActiveDocumentChatContextCollector",
                 "SystemInfoChatContextCollector",
 
+                .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-            ]
+            ].pro([
+                "ProService",
+            ])
         ),
         .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
@@ -197,16 +199,6 @@ let package = Package(
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
-            ]
-        ),
-        .target(
-            name: "ChatContextCollector",
-            dependencies: [
-                .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
             ]
         ),
 
@@ -346,7 +338,7 @@ let package = Package(
         .target(
             name: "WebChatContextCollector",
             dependencies: [
-                "ChatContextCollector",
+                .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "ExternalServices", package: "Tool"),
@@ -358,7 +350,7 @@ let package = Package(
         .target(
             name: "SystemInfoChatContextCollector",
             dependencies: [
-                "ChatContextCollector",
+                .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
@@ -367,10 +359,11 @@ let package = Package(
         .target(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
-                "ChatContextCollector",
+                .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "FocusedCodeFinder", package: "Tool"),
+                .product(name: "AppMonitoring", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),
@@ -412,14 +405,18 @@ func isProIncluded(file: StaticString = #file) -> Bool {
     let rootURL = fileURL
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    let folderURL = rootURL.appendingPathComponent("Pro")
-    if !FileManager.default.fileExists(atPath: folderURL.path) {
+    let confURL = rootURL.appendingPathComponent("PLUS")
+    if !FileManager.default.fileExists(atPath: confURL.path) {
         return false
     }
-    let packageManifestURL = folderURL.appendingPathComponent("Package.swift")
-    if !FileManager.default.fileExists(atPath: packageManifestURL.path) {
+    do {
+        let content = String(
+            data: try Data(contentsOf: confURL),
+            encoding: .utf8
+        )
+        return content?.hasPrefix("YES") ?? false
+    } catch {
         return false
     }
-    return true
 }
 

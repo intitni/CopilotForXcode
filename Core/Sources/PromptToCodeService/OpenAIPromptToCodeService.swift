@@ -42,7 +42,8 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             selectedContent: code,
             selectedLines: [],
             documentURL: source.documentURL,
-            projectURL: source.projectRootURL,
+            workspaceURL: source.projectRootURL,
+            projectRootURL: source.projectRootURL,
             relativePath: "",
             language: source.language
         )
@@ -170,8 +171,9 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         What is your requirement?
         """
 
-        let configuration = UserPreferenceChatGPTConfiguration()
-            .overriding(.init(temperature: 0))
+        let configuration =
+            UserPreferenceChatGPTConfiguration(chatModelKey: \.promptToCodeChatModelId)
+                .overriding(.init(temperature: 0))
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
             configuration: configuration,

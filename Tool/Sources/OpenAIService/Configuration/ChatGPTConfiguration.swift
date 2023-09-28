@@ -4,7 +4,7 @@ import Preferences
 import Keychain
 
 public protocol ChatGPTConfiguration {
-    var model: ChatModel { get }
+    var model: ChatModel? { get }
     var temperature: Double { get }
     var apiKey: String { get }
     var stop: [String] { get }
@@ -15,11 +15,12 @@ public protocol ChatGPTConfiguration {
 
 public extension ChatGPTConfiguration {
     var endpoint: String {
-        model.endpoint
+        model?.endpoint ?? ""
     }
     
     var apiKey: String {
-        (try? Keychain.apiKey.get(model.info.apiKeyName)) ?? ""
+        guard let name = model?.info.apiKeyName else { return "" }
+        return (try? Keychain.apiKey.get(name)) ?? ""
     }
 
     func overriding(

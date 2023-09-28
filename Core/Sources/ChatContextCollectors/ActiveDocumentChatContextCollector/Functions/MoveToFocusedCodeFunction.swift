@@ -4,7 +4,7 @@ import OpenAIService
 import SuggestionModel
 
 struct MoveToFocusedCodeFunction: ChatGPTFunction {
-    struct Arguments: Codable {}
+    typealias Arguments = NoArguments
 
     struct Result: ChatGPTFunctionResult {
         var range: CursorRange
@@ -13,12 +13,10 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
             "Editing Document Context is updated to display code at \(range)."
         }
     }
-    
+
     struct E: Error, LocalizedError {
         var errorDescription: String?
     }
-
-    var reportProgress: (String) async -> Void = { _ in }
 
     var name: String {
         "moveToFocusedCode"
@@ -28,22 +26,20 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
         "Move editing document context to the selected or focused code"
     }
 
-    var argumentSchema: JSONSchemaValue { [
-        .type: "object",
-        .properties: [:],
-    ] }
-    
     weak var contextCollector: ActiveDocumentChatContextCollector?
-    
+
     init(contextCollector: ActiveDocumentChatContextCollector) {
         self.contextCollector = contextCollector
     }
 
-    func prepare() async {
+    func prepare(reportProgress: @escaping (String) async -> Void) async {
         await reportProgress("Finding the focused code..")
     }
 
-    func call(arguments: Arguments) async throws -> Result {
+    func call(
+        arguments: Arguments,
+        reportProgress: @escaping (String) async -> Void
+    ) async throws -> Result {
         await reportProgress("Finding the focused code..")
         contextCollector?.activeDocumentContext?.moveToFocusedCode()
         guard let newContext = contextCollector?.activeDocumentContext?.focusedContext else {
@@ -56,3 +52,4 @@ struct MoveToFocusedCodeFunction: ChatGPTFunction {
         return .init(range: newContext.codeRange)
     }
 }
+

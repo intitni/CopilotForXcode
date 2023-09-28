@@ -3,9 +3,9 @@ import Foundation
 public class ChatModelChain<Input>: Chain {
     public typealias Output = ChatMessage
 
-    var chatModel: ChatModel
-    var promptTemplate: (Input) -> [ChatMessage]
-    var stops: [String]
+    public internal(set) var chatModel: ChatModel
+    public internal(set) var promptTemplate: (Input) -> [ChatMessage]
+    public internal(set) var stops: [String]
 
     public init(
         chatModel: ChatModel,

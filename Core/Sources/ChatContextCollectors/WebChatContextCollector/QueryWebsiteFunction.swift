@@ -17,8 +17,6 @@ struct QueryWebsiteFunction: ChatGPTFunction {
         }
     }
 
-    var reportProgress: (String) async -> Void = { _ in }
-
     var name: String {
         "queryWebsite"
     }
@@ -47,11 +45,14 @@ struct QueryWebsiteFunction: ChatGPTFunction {
         ]
     }
 
-    func prepare() async {
+    func prepare(reportProgress: @escaping (String) async -> Void) async {
         await reportProgress("Reading..")
     }
 
-    func call(arguments: Arguments) async throws -> Result {
+    func call(
+        arguments: Arguments,
+        reportProgress: @escaping (String) async -> Void
+    ) async throws -> Result {
         do {
             let embedding = OpenAIEmbedding(configuration: UserPreferenceEmbeddingConfiguration())
 
@@ -61,10 +62,13 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                     group.addTask {
                         // 1. grab the website content
                         await reportProgress("Loading \(url)..")
-                        
+
                         if let database = await TemporaryUSearch.view(identifier: urlString) {
                             await reportProgress("Getting relevant information..")
-                            let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
+                            let qa = QAInformationRetrievalChain(
+                                vectorStore: database,
+                                embedding: embedding
+                            )
                             return try await qa.call(.init(arguments.query)).information
                         }
                         let loader = WebLoader(urls: [url])
@@ -83,7 +87,10 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         try await database.set(embeddedDocuments)
                         // 4. generate answer
                         await reportProgress("Getting relevant information..")
-                        let qa = QAInformationRetrievalChain(vectorStore: database, embedding: embedding)
+                        let qa = QAInformationRetrievalChain(
+                            vectorStore: database,
+                            embedding: embedding
+                        )
                         let result = try await qa.call(.init(arguments.query))
                         return result.information
                     }
@@ -101,7 +108,7 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         .joined(separator: "\n")
                 )
                 """)
-                                     
+
                 return all
             }
 

@@ -208,8 +208,6 @@ struct CodeiumView: View {
                 }
             }
 
-            Divider()
-
             Form {
                 Toggle("Codeium Enterprise Mode", isOn: $viewModel.codeiumEnterpriseMode)
                 TextField("Codeium Portal URL", text: $viewModel.codeiumPortalUrl)

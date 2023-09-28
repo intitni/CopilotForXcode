@@ -410,7 +410,8 @@ extension WindowBaseCommandHandler {
         let viewStore = Service.shared.guiController.viewStore
 
         _ = await Task { @MainActor in
-            viewStore.send(.promptToCodeGroup(.createPromptToCode(.init(
+            // if there is already a prompt to code presenting, we should not present another one
+            viewStore.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
                 code: code,
                 selectionRange: selection,
                 language: codeLanguage,

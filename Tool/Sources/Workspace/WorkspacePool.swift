@@ -1,5 +1,17 @@
 import Environment
 import Foundation
+import Dependencies
+
+public struct WorkspacePoolDependencyKey: DependencyKey {
+    public static var liveValue: WorkspacePool = .init()
+}
+
+public extension DependencyValues {
+    var workspacePool: WorkspacePool {
+        get { self[WorkspacePoolDependencyKey.self] }
+        set { self[WorkspacePoolDependencyKey.self] = newValue }
+    }
+}
 
 @globalActor public enum WorkspaceActor {
     public actor TheActor {}
@@ -7,6 +19,17 @@ import Foundation
 }
 
 public class WorkspacePool {
+    public enum Error: Swift.Error, LocalizedError {
+        case invalidWorkspaceURL(URL)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .invalidWorkspaceURL(let url):
+                return "Invalid workspace URL: \(url)"
+            }
+        }
+    }
+    
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
 
@@ -45,6 +68,21 @@ public class WorkspacePool {
         }
         return nil
     }
+    
+    @WorkspaceActor
+    public func fetchOrCreateWorkspace(workspaceURL: URL) async throws -> Workspace {
+        guard workspaceURL != URL(fileURLWithPath: "/") else {
+            throw Error.invalidWorkspaceURL(workspaceURL)
+        }
+        
+        if let existed = workspaces[workspaceURL] {
+            return existed
+        }
+
+        let new = createNewWorkspace(workspaceURL: workspaceURL)
+        workspaces[workspaceURL] = new
+        return new
+    }
 
     @WorkspaceActor
     public func fetchOrCreateWorkspaceAndFilespace(fileURL: URL) async throws
@@ -56,14 +94,14 @@ public class WorkspacePool {
         }
 
         // If we know which project is opened.
-        if let currentProjectURL = try await Environment.fetchCurrentProjectRootURLFromXcode() {
-            if let existed = workspaces[currentProjectURL] {
+        if let currentWorkspaceURL = try await Environment.fetchCurrentWorkspaceURLFromXcode() {
+            if let existed = workspaces[currentWorkspaceURL] {
                 let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
                 return (existed, filespace)
             }
 
-            let new = createNewWorkspace(projectRootURL: currentProjectURL)
-            workspaces[currentProjectURL] = new
+            let new = createNewWorkspace(workspaceURL: currentWorkspaceURL)
+            workspaces[currentWorkspaceURL] = new
             let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
             return (new, filespace)
         }
@@ -93,7 +131,7 @@ public class WorkspacePool {
                     return workspace
                 }
             }
-            return createNewWorkspace(projectRootURL: workspaceURL)
+            return createNewWorkspace(workspaceURL: workspaceURL)
         }()
 
         let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
@@ -121,8 +159,8 @@ extension WorkspacePool {
         workspace.plugins[id] = nil
     }
 
-    func createNewWorkspace(projectRootURL: URL) -> Workspace {
-        let new = Workspace(projectRootURL: projectRootURL)
+    func createNewWorkspace(workspaceURL: URL) -> Workspace {
+        let new = Workspace(workspaceURL: workspaceURL)
         for (id, plugin) in plugins {
             addPlugin(plugin, id: id, to: new)
         }

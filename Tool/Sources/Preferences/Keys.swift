@@ -264,6 +264,14 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeGenerateDescriptionInUserPreferredLanguage: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "PromptToCodeGenerateDescriptionInUserPreferredLanguage")
     }
+    
+    var promptToCodeChatModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PromptToCodeChatModelId")
+    }
+    
+    var promptToCodeEmbeddingModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PromptToCodeEmbeddingModelId")
+    }
 }
 
 // MARK: - Suggestion
@@ -489,6 +497,13 @@ public extension UserDefaultPreferenceKeys {
         .init(
             defaultValue: false,
             key: "FeatureFlag-DisableGitHubCopilotSettingsAutoRefreshOnAppear"
+        )
+    }
+    
+    var disableEnhancedWorkspace: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-DisableEnhancedWorkspace"
         )
     }
 }

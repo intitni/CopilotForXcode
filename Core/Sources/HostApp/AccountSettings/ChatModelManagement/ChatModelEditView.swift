@@ -115,6 +115,13 @@ struct ChatModelEditView: View {
                 "Supports Function Calling",
                 isOn: viewStore.$supportsFunctionCalling
             )
+
+            Text(
+                "Function calling is required by some features, if this model doesn't support function calling, you should turn it off to avoid undefined behaviors."
+            )
+            .foregroundColor(.secondary)
+            .font(.callout)
+            .dynamicHeightTextInFormWorkaround()
         }
     }
 

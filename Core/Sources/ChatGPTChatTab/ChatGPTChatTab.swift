@@ -44,7 +44,7 @@ public class ChatGPTChatTab: ChatTab {
     public func buildTabItem() -> any View {
         ChatTabItemView(chat: provider)
     }
-    
+
     public func buildMenu() -> any View {
         ChatContextMenu(chat: provider)
     }
@@ -95,33 +95,42 @@ public class ChatGPTChatTab: ChatTab {
 
     public func start() {
         chatTabViewStore.send(.updateTitle("Chat"))
-        
+
         service.$systemPrompt.removeDuplicates().sink { _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)
             }
         }.store(in: &cancellable)
-        
+
         service.$extraSystemPrompt.removeDuplicates().sink { _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)
             }
         }.store(in: &cancellable)
-        
+
         provider.$history.sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 if let title = self?.provider.title {
                     self?.chatTabViewStore.send(.updateTitle(title))
                 }
-                self?.chatTabViewStore.send(.tabContentUpdated)
             }
         }.store(in: &cancellable)
+
+        provider.objectWillChange.debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.chatTabViewStore.send(.tabContentUpdated)
+                }
+            }.store(in: &cancellable)
     }
 }
 
 extension ChatProvider {
     convenience init(service: ChatService) {
-        self.init(pluginIdentifiers: service.allPluginCommands)
+        self.init(
+            configuration: service.configuration,
+            pluginIdentifiers: service.allPluginCommands
+        )
 
         let cancellable = service.objectWillChange.sink { [weak self] in
             guard let self else { return }

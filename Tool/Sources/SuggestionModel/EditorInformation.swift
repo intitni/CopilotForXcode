@@ -55,7 +55,8 @@ public struct EditorInformation {
     public let selectedContent: String
     public let selectedLines: [String]
     public let documentURL: URL
-    public let projectURL: URL
+    public let workspaceURL: URL
+    public let projectRootURL: URL
     public let relativePath: String
     public let language: CodeLanguage
 
@@ -64,7 +65,8 @@ public struct EditorInformation {
         selectedContent: String,
         selectedLines: [String],
         documentURL: URL,
-        projectURL: URL,
+        workspaceURL: URL,
+        projectRootURL: URL,
         relativePath: String,
         language: CodeLanguage
     ) {
@@ -72,7 +74,8 @@ public struct EditorInformation {
         self.selectedContent = selectedContent
         self.selectedLines = selectedLines
         self.documentURL = documentURL
-        self.projectURL = projectURL
+        self.workspaceURL = workspaceURL
+        self.projectRootURL = projectRootURL
         self.relativePath = relativePath
         self.language = language
     }

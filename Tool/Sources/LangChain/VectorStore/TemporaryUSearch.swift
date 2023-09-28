@@ -18,11 +18,11 @@ public actor TemporaryUSearch: VectorStore {
     let index: USearchIndex
     var documents: [USearchLabel: LabeledDocument] = [:]
 
-    public init(identifier: String) {
+    public init(identifier: String, dimensions: Int = 1536 /* text-embedding-ada-002 */ ) {
         self.identifier = calculateMD5Hash(identifier)
         index = .init(
             metric: .IP,
-            dimensions: 1536, // text-embedding-ada-002
+            dimensions: UInt32(dimensions),
             connectivity: 16,
             quantization: .F32
         )

@@ -45,11 +45,10 @@ enum ChatTabFactory {
                 let content = editor.content
                 return .init(
                     selectedText: content.selectedContent,
-                    language: languageIdentifierFromFileURL(
-                        XcodeInspector.shared
-                            .activeDocumentURL
-                    )
-                    .rawValue,
+                    language: (
+                        XcodeInspector.shared.activeDocumentURL
+                            .map(languageIdentifierFromFileURL) ?? .plaintext
+                    ).rawValue,
                     fileContent: content.content
                 )
             },

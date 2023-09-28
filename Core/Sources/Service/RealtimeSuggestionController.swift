@@ -109,8 +109,9 @@ public actor RealtimeSuggestionController {
                     await self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: focusElement)
                 case kAXSelectedTextChangedNotification:
-                    guard let sourceEditor = await sourceEditor else { continue }
-                    let fileURL = XcodeInspector.shared.activeDocumentURL
+                    guard let sourceEditor = await sourceEditor,
+                          let fileURL = XcodeInspector.shared.activeDocumentURL
+                    else { continue }
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                         fileURL: fileURL,
                         sourceEditor: sourceEditor
@@ -192,10 +193,10 @@ public actor RealtimeSuggestionController {
 
     func notifyEditingFileChange(editor: AXUIElement) async {
         guard let fileURL = try? await Environment.fetchCurrentFileURL(),
-              let (workspace, filespace) = try? await Service.shared.workspacePool
+              let (workspace, _) = try? await Service.shared.workspacePool
               .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
-        workspace.suggestionPlugin?.notifyUpdateFile(filespace: filespace, content: editor.value)
+        await workspace.didUpdateFilespace(fileURL: fileURL, content: editor.value)
     }
 }
 

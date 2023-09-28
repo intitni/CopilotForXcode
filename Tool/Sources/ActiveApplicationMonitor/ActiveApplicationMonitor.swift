@@ -20,6 +20,8 @@ public final class ActiveApplicationMonitor {
     private var continuations: [UUID: AsyncStream<NSRunningApplication?>.Continuation] = [:]
 
     private init() {
+        activeApplication = NSWorkspace.shared.runningApplications.first(where: \.isActive)
+        
         Task {
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didActivateApplicationNotification)

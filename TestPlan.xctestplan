@@ -101,13 +101,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Pro",
-        "identifier" : "LicenseManagementTests",
-        "name" : "LicenseManagementTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Core",
         "identifier" : "ActiveDocumentChatContextCollectorTests",
         "name" : "ActiveDocumentChatContextCollectorTests"
@@ -118,13 +111,6 @@
         "containerPath" : "container:Tool",
         "identifier" : "ASTParserTests",
         "name" : "ASTParserTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Pro",
-        "identifier" : "ChatTabPersistentTests",
-        "name" : "ChatTabPersistentTests"
       }
     },
     {

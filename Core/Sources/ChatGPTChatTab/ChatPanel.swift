@@ -1,4 +1,5 @@
 import AppKit
+import OpenAIService
 import MarkdownUI
 import SharedUIComponents
 import SwiftUI
@@ -112,7 +113,7 @@ private struct Instruction: View {
             Markdown(
                 """
                 Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-                                
+
                 \(
                     useCodeScopeByDefaultInChatContext
                         ? "Scope **`@code`** is enabled by default."
@@ -131,6 +132,7 @@ private struct Instruction: View {
                 | `@file` | Read the metadata of the editing file |
                 | `@code` | Read the code and metadata in the editing file |
                 | `@web` (beta) | Search on Bing or query from a web page |
+                | `@project` | Experimental. Access content of the project |
 
                 To use scopes, you can prefix a message with `@code`.
 
@@ -398,7 +400,7 @@ struct ChatPanelInputArea: View {
                 EmptyView()
             }
             .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
-            
+
             Button(action: {
                 isInputAreaFocused = true
             }) {
@@ -580,6 +582,7 @@ struct ChatPanel_Preview: PreviewProvider {
 
     static var previews: some View {
         ChatPanel(chat: .init(
+            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
             history: ChatPanel_Preview.history,
             isReceivingMessage: true
         ))
@@ -591,6 +594,7 @@ struct ChatPanel_Preview: PreviewProvider {
 struct ChatPanel_EmptyChat_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
+            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
             history: [],
             isReceivingMessage: false
         ))
@@ -623,6 +627,7 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
 struct ChatPanel_InputText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
+            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
             history: ChatPanel_Preview.history,
             isReceivingMessage: false
         ))
@@ -636,6 +641,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(
             chat: .init(
+                configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
                 history: ChatPanel_Preview.history,
                 isReceivingMessage: false
             ),
@@ -650,6 +656,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
 struct ChatPanel_Light_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
+            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
             history: ChatPanel_Preview.history,
             isReceivingMessage: true
         ))

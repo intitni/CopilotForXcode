@@ -42,7 +42,8 @@ public enum Environment {
         }
     }
 
-    public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
+    #warning("TODO: Use XcodeInspector instead.")
+    public static var fetchCurrentWorkspaceURLFromXcode: () async throws -> URL? = {
         if let xcode = ActiveApplicationMonitor.shared.activeXcode
             ?? ActiveApplicationMonitor.shared.latestXcode
         {
@@ -53,11 +54,6 @@ public enum Environment {
                     let path = child.description
                     let trimmedNewLine = path.trimmingCharacters(in: .newlines)
                     var url = URL(fileURLWithPath: trimmedNewLine)
-                    while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                        !url.pathExtension.isEmpty
-                    {
-                        url = url.deletingLastPathComponent()
-                    }
                     return url
                 }
             }
@@ -66,21 +62,40 @@ public enum Environment {
         return nil
     }
 
+    public static var fetchCurrentProjectRootURLFromXcode: () async throws -> URL? = {
+        if var url = try await fetchCurrentWorkspaceURLFromXcode() {
+            return try await guessProjectRootURLForFile(url)
+        }
+
+        return nil
+    }
+
+    #warning("TODO: Use WorkspaceXcodeWindowInspector.extractProjectURL instead.")
     public static var guessProjectRootURLForFile: (_ fileURL: URL) async throws -> URL = {
         fileURL in
         var currentURL = fileURL
         var firstDirectoryURL: URL?
+        var lastGitDirectoryURL: URL?
         while currentURL.pathComponents.count > 1 {
             defer { currentURL.deleteLastPathComponent() }
             guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            guard currentURL.pathExtension != "xcodeproj" else { continue }
+            guard currentURL.pathExtension != "xcworkspace" else { continue }
+            guard currentURL.pathExtension != "playground" else { continue }
             if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
             let gitURL = currentURL.appendingPathComponent(".git")
             if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
-                return currentURL
+                lastGitDirectoryURL = currentURL
+            } else if let text = try? String(contentsOf: gitURL) {
+                if !text.hasPrefix("gitdir: ../"), // it's not a sub module
+                   text.range(of: "/.git/worktrees/") != nil // it's a git worktree
+                {
+                    lastGitDirectoryURL = currentURL
+                }
             }
         }
 
-        return firstDirectoryURL ?? fileURL
+        return lastGitDirectoryURL ?? firstDirectoryURL ?? fileURL
     }
 
     public static var fetchCurrentFileURL: () async throws -> URL = {
@@ -250,7 +265,7 @@ func runAppleScript(_ appleScript: String) async throws -> String {
     }
 }
 
-extension FileManager {
+public extension FileManager {
     func fileIsDirectory(atPath path: String) -> Bool {
         var isDirectory: ObjCBool = false
         let exists = fileExists(atPath: path, isDirectory: &isDirectory)
