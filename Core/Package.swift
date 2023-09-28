@@ -405,14 +405,18 @@ func isProIncluded(file: StaticString = #file) -> Bool {
     let rootURL = fileURL
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    let folderURL = rootURL.appendingPathComponent("Pro")
-    if !FileManager.default.fileExists(atPath: folderURL.path) {
+    let confURL = rootURL.appendingPathComponent("PLUS")
+    if !FileManager.default.fileExists(atPath: confURL.path) {
         return false
     }
-    let packageManifestURL = folderURL.appendingPathComponent("Package.swift")
-    if !FileManager.default.fileExists(atPath: packageManifestURL.path) {
+    do {
+        let content = String(
+            data: try Data(contentsOf: confURL),
+            encoding: .utf8
+        )
+        return content?.hasPrefix("YES") ?? false
+    } catch {
         return false
     }
-    return true
 }
 

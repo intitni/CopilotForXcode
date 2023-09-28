@@ -3,16 +3,28 @@
   <channel>
     <title>Copilot for Xcode</title>
 
-      <item>
-        <title>0.23.2</title>
-        <pubDate>Sat, 09 Sep 2023 22:07:35 +0800</pubDate>
-        <sparkle:version>241</sparkle:version>
-        <sparkle:shortVersionString>0.23.2</sparkle:shortVersionString>
-        <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-        <sparkle:releaseNotesLink>
+    <item>
+      <title>0.24.0</title>
+      <pubDate>Thu, 28 Sep 2023 01:35:21 +0800</pubDate>
+      <sparkle:version>250</sparkle:version>
+      <sparkle:shortVersionString>0.24.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.24.0
+      </sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.24.0/Copilot.for.Xcode.app.zip" length="33885796" type="application/octet-stream" sparkle:edSignature="A5VujChe+oIK51cpXvxrs5agPsZQY+CvhNI5xSS4JM8W6qk8OcMAx38JYOPjirY7gdaonYWSOtSRraAMfgUjCw=="/>
+    </item>
+
+    <item>
+      <title>0.23.2</title>
+      <pubDate>Sat, 09 Sep 2023 22:07:35 +0800</pubDate>
+      <sparkle:version>241</sparkle:version>
+      <sparkle:shortVersionString>0.23.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
         https://github.com/intitni/CopilotForXcode/releases/tag/0.23.2
       </sparkle:releaseNotesLink>
-        <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.23.2/Copilot.for.Xcode.app.zip" length="32279961" type="application/octet-stream" sparkle:edSignature="9freCwsRzTUZvOoE97lmYeghullf4xcYcPe+4Zuc1Elkh/U8vRPntxKXH49E0ebv+d+Xiw+feFE3JTRBvqzcCw=="/>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.23.2/Copilot.for.Xcode.app.zip" length="32279961" type="application/octet-stream" sparkle:edSignature="9freCwsRzTUZvOoE97lmYeghullf4xcYcPe+4Zuc1Elkh/U8vRPntxKXH49E0ebv+d+Xiw+feFE3JTRBvqzcCw=="/>
     </item>
 
     <item>

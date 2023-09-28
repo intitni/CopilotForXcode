@@ -24,7 +24,7 @@ public final class XcodeInspector: ObservableObject {
     @Published public internal(set) var focusedEditor: SourceEditor?
     @Published public internal(set) var focusedElement: AXUIElement?
     @Published public internal(set) var completionPanel: AXUIElement?
-
+    
     public var focusedEditorContent: EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
@@ -253,11 +253,9 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
 
     public var realtimeProjectURL: URL? {
-        guard let window = appElement.focusedWindow else { return nil }
         let workspaceURL = realtimeWorkspaceURL
         let documentURL = realtimeDocumentURL
         return WorkspaceXcodeWindowInspector.extractProjectURL(
-            windowElement: window,
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
@@ -469,18 +467,8 @@ extension XcodeAppInstanceInspector {
 
     /// Use the project path as the workspace identifier.
     static func workspaceIdentifier(_ window: AXUIElement) -> WorkspaceIdentifier {
-        for child in window.children {
-            if child.description.starts(with: "/"), child.description.count > 1 {
-                let path = child.description
-                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                var url = URL(fileURLWithPath: trimmedNewLine)
-                while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                    !url.pathExtension.isEmpty
-                {
-                    url = url.deletingLastPathComponent()
-                }
-                return WorkspaceIdentifier.url(url)
-            }
+        if let url = WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window) {
+            return WorkspaceIdentifier.url(url)
         }
         return WorkspaceIdentifier.unknown
     }

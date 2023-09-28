@@ -3,6 +3,7 @@ import Foundation
 import Preferences
 import SuggestionModel
 import UserDefaultsObserver
+import XcodeInspector
 
 public protocol WorkspacePropertyKey {
     associatedtype Value
@@ -89,16 +90,10 @@ public final class Workspace {
 
     init(workspaceURL: URL) {
         self.workspaceURL = workspaceURL
-        self.projectRootURL = {
-            var url = workspaceURL
-            while !FileManager.default.fileIsDirectory(atPath: url.path) ||
-                !url.pathExtension.isEmpty
-            {
-                url = url.deletingLastPathComponent()
-            }
-            return url
-
-        }()
+        self.projectRootURL = WorkspaceXcodeWindowInspector.extractProjectURL(
+            workspaceURL: workspaceURL,
+            documentURL: nil
+        ) ?? workspaceURL
         openedFileRecoverableStorage = .init(projectRootURL: projectRootURL)
         let openedFiles = openedFileRecoverableStorage.openedFiles
         Task { @WorkspaceActor in

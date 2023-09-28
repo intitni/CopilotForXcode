@@ -132,6 +132,7 @@ private struct Instruction: View {
                 | `@file` | Read the metadata of the editing file |
                 | `@code` | Read the code and metadata in the editing file |
                 | `@web` (beta) | Search on Bing or query from a web page |
+                | `@project` | Experimental. Access content of the project |
 
                 To use scopes, you can prefix a message with `@code`.
 

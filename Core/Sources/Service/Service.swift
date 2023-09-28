@@ -28,7 +28,7 @@ public final class Service {
 
     private init() {
         @Dependency(\.workspacePool) var workspacePool
-        
+
         scheduledCleaner = .init(workspacePool: workspacePool, guiController: guiController)
         #if canImport(KeyBindingManager)
         keyBindingManager = .init(
@@ -43,9 +43,11 @@ public final class Service {
 
         workspacePool.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
         #if canImport(EnhancedWorkspace)
-        workspacePool.registerPlugin { EnhancedWorkspacePlugin(workspace: $0) }
+        if !UserDefaults.shared.value(for: \.disableEnhancedWorkspace) {
+            workspacePool.registerPlugin { EnhancedWorkspacePlugin(workspace: $0) }
+        }
         #endif
-        
+
         self.workspacePool = workspacePool
     }
 

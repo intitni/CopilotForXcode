@@ -66,7 +66,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             self.workspaceURL = workspaceURL
         }
         let projectURL = Self.extractProjectURL(
-            windowElement: uiElement,
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
@@ -104,8 +103,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         return nil
     }
 
-    static func extractProjectURL(
-        windowElement: AXUIElement,
+    public static func extractProjectURL(
         workspaceURL: URL?,
         documentURL: URL?
     ) -> URL? {
@@ -115,10 +113,19 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         while currentURL.pathComponents.count > 1 {
             defer { currentURL.deleteLastPathComponent() }
             guard FileManager.default.fileIsDirectory(atPath: currentURL.path) else { continue }
+            guard currentURL.pathExtension != "xcodeproj" else { continue }
+            guard currentURL.pathExtension != "xcworkspace" else { continue }
+            guard currentURL.pathExtension != "playground" else { continue }
             if firstDirectoryURL == nil { firstDirectoryURL = currentURL }
             let gitURL = currentURL.appendingPathComponent(".git")
             if FileManager.default.fileIsDirectory(atPath: gitURL.path) {
                 lastGitDirectoryURL = currentURL
+            } else if let text = try? String(contentsOf: gitURL) {
+                if !text.hasPrefix("gitdir: ../"), // it's not a sub module
+                   text.range(of: "/.git/worktrees/") != nil // it's a git worktree
+                {
+                    lastGitDirectoryURL = currentURL
+                }
             }
         }
 

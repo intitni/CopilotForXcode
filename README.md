@@ -75,7 +75,9 @@ You can install it via [Homebrew](http://brew.sh/):
 brew install --cask copilot-for-xcode
 ```
 
-Or install it manually, by downloading the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases), and extract it to the Applications folder.
+Or install it manually, by downloading the `Copilot for Xcode.app` from the latest [release](https://github.com/intitni/CopilotForXcode/releases).
+
+Please make sure the app is inside the Applications folder.
 
 Open the app, the app will create a launch agent to setup a background running Service that does the real job.
 

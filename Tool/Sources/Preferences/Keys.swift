@@ -499,5 +499,12 @@ public extension UserDefaultPreferenceKeys {
             key: "FeatureFlag-DisableGitHubCopilotSettingsAutoRefreshOnAppear"
         )
     }
+    
+    var disableEnhancedWorkspace: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-DisableEnhancedWorkspace"
+        )
+    }
 }
 

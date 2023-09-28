@@ -189,6 +189,7 @@ let package = Package(
                 "Environment",
                 "Logger",
                 "Preferences",
+                "XcodeInspector"
             ]
         ),
 

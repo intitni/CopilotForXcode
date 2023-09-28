@@ -67,6 +67,8 @@ public struct PromptToCodeGroup: ReducerProtocol {
     }
 
     public enum Action: Equatable {
+        /// Activate the prompt to code if it exists or create it if it doesn't
+        case activateOrCreatePromptToCode(PromptToCodeInitialState)
         case createPromptToCode(PromptToCodeInitialState)
         case updatePromptToCodeRange(id: PromptToCode.State.ID, range: CursorRange)
         case discardAcceptedPromptToCodeIfNotContinuous(id: PromptToCode.State.ID)
@@ -80,6 +82,13 @@ public struct PromptToCodeGroup: ReducerProtocol {
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
+            case let .activateOrCreatePromptToCode(s):
+                guard state.activePromptToCode == nil else {
+                    return .none
+                }
+                return .run { send in
+                    await send(.createPromptToCode(s))
+                }
             case let .createPromptToCode(s):
                 let newPromptToCode = PromptToCode.State(
                     code: s.code,

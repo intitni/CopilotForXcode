@@ -114,7 +114,8 @@ public struct PanelFeature: ReducerProtocol {
                 state.content.suggestion = nil
                 return .none
 
-            case .sharedPanel(.promptToCodeGroup(.createPromptToCode)):
+            case .sharedPanel(.promptToCodeGroup(.activateOrCreatePromptToCode)),
+                 .sharedPanel(.promptToCodeGroup(.createPromptToCode)):
                 let hasPromptToCode = state.content.promptToCode != nil
                 return .run { send in
                     await send(.displayPanelContent)
