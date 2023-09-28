@@ -1,6 +1,7 @@
 import Dependencies
 import Foundation
 import Workspace
+import WorkspaceSuggestionService
 
 #if canImport(KeyBindingManager)
 import EnhancedWorkspace

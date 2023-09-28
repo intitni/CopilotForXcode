@@ -28,7 +28,6 @@ let package = Package(
             name: "HostApp",
             targets: [
                 "HostApp",
-                "GitHubCopilotService",
                 "Client",
                 "XPCShared",
                 "LaunchAgentManager",
@@ -38,9 +37,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
-        // TODO: Update LanguageClient some day.
-        .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
-        .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
@@ -58,7 +54,7 @@ let package = Package(
             name: "Client",
             dependencies: [
                 "XPCShared",
-                "GitHubCopilotService",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -67,14 +63,13 @@ let package = Package(
         .target(
             name: "Service",
             dependencies: [
-                "SuggestionService",
-                "GitHubCopilotService",
                 "XPCShared",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
@@ -96,9 +91,9 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "GitHubCopilotService",
                 "SuggestionInjector",
                 "XPCShared",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -111,10 +106,9 @@ let package = Package(
             name: "HostApp",
             dependencies: [
                 "Client",
-                "GitHubCopilotService",
-                "CodeiumService",
                 "LaunchAgentManager",
                 "PlusFeatureFlag",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
@@ -144,11 +138,6 @@ let package = Package(
             name: "SuggestionInjectorTests",
             dependencies: ["SuggestionInjector"]
         ),
-        .target(name: "SuggestionService", dependencies: [
-            "GitHubCopilotService",
-            "CodeiumService",
-            .product(name: "UserDefaultsObserver", package: "Tool"),
-        ]),
 
         // MARK: - Prompt To Code
 
@@ -248,7 +237,7 @@ let package = Package(
         .target(
             name: "ServiceUpdateMigration",
             dependencies: [
-                "GitHubCopilotService",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Keychain", package: "Tool"),
             ]
@@ -265,39 +254,6 @@ let package = Package(
             ].pro([
                 "LicenseManagement",
             ])
-        ),
-
-        // MARK: - GitHub Copilot
-
-        .target(
-            name: "GitHubCopilotService",
-            dependencies: [
-                "LanguageClient",
-                "XPCShared",
-                .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "Logger", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "Terminal", package: "Tool"),
-                .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
-            ]
-        ),
-        .testTarget(
-            name: "GitHubCopilotServiceTests",
-            dependencies: ["GitHubCopilotService"]
-        ),
-
-        // MARK: - Codeium
-
-        .target(
-            name: "CodeiumService",
-            dependencies: [
-                "LanguageClient",
-                .product(name: "Keychain", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "Terminal", package: "Tool"),
-            ]
         ),
 
         // MARK: - Chat Plugins
