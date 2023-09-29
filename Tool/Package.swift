@@ -7,6 +7,7 @@ let package = Package(
     name: "Tool",
     platforms: [.macOS(.v12)],
     products: [
+        .library(name: "XPCShared", targets: ["XPCShared"]),
         .library(name: "Terminal", targets: ["Terminal"]),
         .library(name: "LangChain", targets: ["LangChain"]),
         .library(name: "ExternalServices", targets: ["BingSearchService"]),
@@ -68,6 +69,8 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
+        .target(name: "XPCShared", dependencies: ["SuggestionModel"]),
+        
         .target(name: "Configs"),
 
         .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
@@ -204,6 +207,7 @@ let package = Package(
             dependencies: [
                 "Workspace",
                 "SuggestionService",
+                "XPCShared",
             ]
         ),
 
@@ -274,6 +278,7 @@ let package = Package(
                 "SuggestionModel",
                 "Preferences",
                 "Terminal",
+                "XcodeInspector",
             ]
         ),
 

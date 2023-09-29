@@ -21,7 +21,6 @@ let package = Package(
             name: "Client",
             targets: [
                 "Client",
-                "XPCShared",
             ]
         ),
         .library(
@@ -29,7 +28,6 @@ let package = Package(
             targets: [
                 "HostApp",
                 "Client",
-                "XPCShared",
                 "LaunchAgentManager",
                 "UpdateChecker",
             ]
@@ -53,7 +51,7 @@ let package = Package(
         .target(
             name: "Client",
             dependencies: [
-                "XPCShared",
+                .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
@@ -63,12 +61,12 @@ let package = Package(
         .target(
             name: "Service",
             dependencies: [
-                "XPCShared",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
+                .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
@@ -92,7 +90,7 @@ let package = Package(
                 "Service",
                 "Client",
                 "SuggestionInjector",
-                "XPCShared",
+                .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
@@ -119,13 +117,6 @@ let package = Package(
             ].pro([
                 "ProHostApp",
             ])
-        ),
-
-        // MARK: - XPC Related
-
-        .target(
-            name: "XPCShared",
-            dependencies: [.product(name: "SuggestionModel", package: "Tool")]
         ),
 
         // MARK: - Suggestion Service
@@ -380,4 +371,3 @@ let isProIncluded: Bool = {
 
     return isProIncluded()
 }()
-
