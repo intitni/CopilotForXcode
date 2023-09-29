@@ -26,7 +26,7 @@ public actor RealtimeSuggestionController {
     func start() {
         Task { [weak self] in
             if let app = ActiveApplicationMonitor.shared.activeXcode {
-                await self?.handleXcodeChanged(app)
+                await self?.handleXcodeChanged()
             }
             var previousApp = ActiveApplicationMonitor.shared.activeXcode
             for await app in ActiveApplicationMonitor.shared.createStream() {
@@ -35,13 +35,14 @@ public actor RealtimeSuggestionController {
                 defer { previousApp = app }
 
                 if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
-                    await self.handleXcodeChanged(app)
+                    await self.handleXcodeChanged()
                 }
             }
         }
     }
 
-    private func handleXcodeChanged(_ app: NSRunningApplication) {
+    private func handleXcodeChanged() {
+        guard let app = ActiveApplicationMonitor.shared.activeXcode else { return }
         windowChangeObservationTask?.cancel()
         windowChangeObservationTask = nil
         observeXcodeWindowChangeIfNeeded(app)
@@ -50,12 +51,13 @@ public actor RealtimeSuggestionController {
     private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
         guard windowChangeObservationTask == nil else { return }
         handleFocusElementChange()
+
+        let notifications = AXNotificationStream(
+            app: app,
+            notificationNames: kAXFocusedUIElementChangedNotification,
+            kAXMainWindowChangedNotification
+        )
         windowChangeObservationTask = Task { [weak self] in
-            let notifications = AXNotificationStream(
-                app: app,
-                notificationNames: kAXFocusedUIElementChangedNotification,
-                kAXMainWindowChangedNotification
-            )
             for await _ in notifications {
                 guard let self else { return }
                 try Task.checkCancellation()
@@ -84,6 +86,12 @@ public actor RealtimeSuggestionController {
         editorObservationTask?.cancel()
         editorObservationTask = nil
 
+        let notificationsFromEditor = AXNotificationStream(
+            app: activeXcode,
+            element: focusElement,
+            notificationNames: kAXValueChangedNotification, kAXSelectedTextChangedNotification
+        )
+
         editorObservationTask = Task { [weak self] in
             let fileURL = try await Environment.fetchCurrentFileURL()
             if let sourceEditor = await self?.sourceEditor {
@@ -92,12 +100,6 @@ public actor RealtimeSuggestionController {
                     sourceEditor: sourceEditor
                 )
             }
-
-            let notificationsFromEditor = AXNotificationStream(
-                app: activeXcode,
-                element: focusElement,
-                notificationNames: kAXValueChangedNotification, kAXSelectedTextChangedNotification
-            )
 
             for await notification in notificationsFromEditor {
                 guard let self else { return }
