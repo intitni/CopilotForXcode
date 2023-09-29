@@ -86,12 +86,14 @@ public final class AXNotificationStream: AsyncSequence {
                 guard let self else { return }
                 retry += 1
                 for name in notificationNames {
-                    let e = AXObserverAddNotification(
-                        observer,
-                        observingElement,
-                        name as CFString,
-                        &self.continuation
-                    )
+                    let e = withUnsafeMutablePointer(to: &self.continuation) { pointer in
+                        AXObserverAddNotification(
+                            observer,
+                            observingElement,
+                            name as CFString,
+                            pointer
+                        )
+                    }
                     switch e {
                     case .success:
                         pendingRegistrationNames.remove(name)

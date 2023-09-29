@@ -25,16 +25,18 @@ public actor RealtimeSuggestionController {
     nonisolated
     func start() {
         Task { [weak self] in
-            if let app = ActiveApplicationMonitor.shared.activeXcode {
+            if ActiveApplicationMonitor.shared.activeXcode != nil {
                 await self?.handleXcodeChanged()
             }
-            var previousApp = ActiveApplicationMonitor.shared.activeXcode
-            for await app in ActiveApplicationMonitor.shared.createStream() {
+            var previousApp = ActiveApplicationMonitor.shared.activeXcode?.info
+            for await app in ActiveApplicationMonitor.shared.createInfoStream() {
                 guard let self else { return }
                 try Task.checkCancellation()
                 defer { previousApp = app }
 
-                if let app = ActiveApplicationMonitor.shared.activeXcode, app != previousApp {
+                if let app = ActiveApplicationMonitor.shared.activeXcode,
+                   app.processIdentifier != previousApp?.processIdentifier
+                {
                     await self.handleXcodeChanged()
                 }
             }
