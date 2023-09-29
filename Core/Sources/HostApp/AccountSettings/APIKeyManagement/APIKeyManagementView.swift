@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import SharedUIComponents
 import SwiftUI
 
 struct APIKeyManagementView: View {
@@ -47,6 +48,13 @@ struct APIKeyManagementView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .buttonStyle(.plain)
+                        }
+                    }
+                    .modify { view in
+                        if #available(macOS 13.0, *) {
+                            view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                        } else {
+                            view
                         }
                     }
                 }

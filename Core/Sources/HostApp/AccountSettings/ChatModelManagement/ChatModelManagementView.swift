@@ -12,7 +12,7 @@ struct ChatModelManagementView: View {
                 action: ChatModelManagement.Action.chatModelItem
             )) { store in
                 ChatModelEditView(store: store)
-                    .frame(minWidth: 400)
+                    .frame(width: 800)
             }
     }
 }

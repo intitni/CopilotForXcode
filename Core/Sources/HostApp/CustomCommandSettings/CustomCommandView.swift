@@ -3,6 +3,7 @@ import MarkdownUI
 import PlusFeatureFlag
 import Preferences
 import SwiftUI
+import SharedUIComponents
 
 extension List {
     @ViewBuilder
@@ -56,6 +57,13 @@ struct CustomCommandView: View {
             .onMove(perform: { indices, newOffset in
                 settings.customCommands.move(fromOffsets: indices, toOffset: newOffset)
             })
+            .modify { view in
+                if #available(macOS 13.0, *) {
+                    view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                } else {
+                    view
+                }
+            }
         }
         .removeBackground()
         .padding(.vertical, 4)

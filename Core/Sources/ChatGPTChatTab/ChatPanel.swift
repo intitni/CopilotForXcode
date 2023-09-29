@@ -1,6 +1,6 @@
 import AppKit
-import OpenAIService
 import MarkdownUI
+import OpenAIService
 import SharedUIComponents
 import SwiftUI
 
@@ -68,6 +68,14 @@ struct ChatPanelMessages: View {
                 Instruction()
 
                 Spacer()
+                    
+            }
+            .modify { view in
+                if #available(macOS 13.0, *) {
+                    view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                } else {
+                    view
+                }
             }
             .scaleEffect(x: -1, y: 1, anchor: .center)
         }

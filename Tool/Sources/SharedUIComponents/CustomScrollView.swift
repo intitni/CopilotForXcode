@@ -43,6 +43,13 @@ public struct CustomScrollView<Content: View>: View {
                     .modifier(CustomScrollViewUpdateHeightModifier())
             }
             .listStyle(.plain)
+            .modify { view in
+                if #available(macOS 13.0, *) {
+                    view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                } else {
+                    view
+                }
+            }
             .frame(idealHeight: max(10, height))
             .onPreferenceChange(CustomScrollViewHeightPreferenceKey.self) { newHeight in
                 Task { @MainActor in
