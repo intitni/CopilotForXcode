@@ -379,7 +379,7 @@ let package = Package(
 
 extension [Target.Dependency] {
     func pro(_ targetNames: [String]) -> [Target.Dependency] {
-        if isProIncluded() {
+        if isProIncluded {
             // include the pro package
             return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
         }
@@ -389,7 +389,7 @@ extension [Target.Dependency] {
 
 extension [Package.Dependency] {
     var pro: [Package.Dependency] {
-        if isProIncluded() {
+        if isProIncluded {
             // include the pro package
             return self + [.package(path: "../Pro")]
         }
@@ -399,24 +399,29 @@ extension [Package.Dependency] {
 
 import Foundation
 
-func isProIncluded(file: StaticString = #file) -> Bool {
-    let filePath = "\(file)"
-    let fileURL = URL(fileURLWithPath: filePath)
-    let rootURL = fileURL
-        .deletingLastPathComponent()
-        .deletingLastPathComponent()
-    let confURL = rootURL.appendingPathComponent("PLUS")
-    if !FileManager.default.fileExists(atPath: confURL.path) {
-        return false
+let isProIncluded: Bool = {
+    func isProIncluded(file: StaticString = #file) -> Bool {
+        let filePath = "\(file)"
+        let fileURL = URL(fileURLWithPath: filePath)
+        let rootURL = fileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let confURL = rootURL.appendingPathComponent("PLUS")
+        if !FileManager.default.fileExists(atPath: confURL.path) {
+            return false
+        }
+        do {
+            let content = String(
+                data: try Data(contentsOf: confURL),
+                encoding: .utf8
+            )
+            print("")
+            return content?.hasPrefix("YES") ?? false
+        } catch {
+            return false
+        }
     }
-    do {
-        let content = String(
-            data: try Data(contentsOf: confURL),
-            encoding: .utf8
-        )
-        return content?.hasPrefix("YES") ?? false
-    } catch {
-        return false
-    }
-}
+
+    return isProIncluded()
+}()
 
