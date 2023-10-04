@@ -5,6 +5,7 @@ import Preferences
 import SuggestionInjector
 import SuggestionModel
 import Workspace
+import WorkspaceSuggestionService
 import XcodeInspector
 import XPCShared
 

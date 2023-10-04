@@ -2,17 +2,22 @@ import Foundation
 import SuggestionModel
 import Workspace
 
-struct FilespaceSuggestionSnapshot: Equatable {
-    var linesHash: Int
-    var cursorPosition: CursorPosition
+public struct FilespaceSuggestionSnapshot: Equatable {
+    public var linesHash: Int
+    public var cursorPosition: CursorPosition
+    
+    public init(linesHash: Int, cursorPosition: CursorPosition) {
+        self.linesHash = linesHash
+        self.cursorPosition = cursorPosition
+    }
 }
 
-struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
-    static func createDefaultValue()
+public struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
+    public static func createDefaultValue()
         -> FilespaceSuggestionSnapshot { .init(linesHash: -1, cursorPosition: .outOfScope) }
 }
 
-extension FilespacePropertyValues {
+public extension FilespacePropertyValues {
     @WorkspaceActor
     var suggestionSourceSnapshot: FilespaceSuggestionSnapshot {
         get { self[FilespaceSuggestionSnapshotKey.self] }
@@ -20,7 +25,7 @@ extension FilespacePropertyValues {
     }
 }
 
-extension Filespace {
+public extension Filespace {
     @WorkspaceActor
     func resetSnapshot() {
         // swiftformat:disable redundantSelf

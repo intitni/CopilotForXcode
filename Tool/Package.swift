@@ -7,6 +7,7 @@ let package = Package(
     name: "Tool",
     platforms: [.macOS(.v12)],
     products: [
+        .library(name: "XPCShared", targets: ["XPCShared"]),
         .library(name: "Terminal", targets: ["Terminal"]),
         .library(name: "LangChain", targets: ["LangChain"]),
         .library(name: "ExternalServices", targets: ["BingSearchService"]),
@@ -23,7 +24,11 @@ let package = Package(
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
         .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
-        .library(name: "Workspace", targets: ["Workspace"]),
+        .library(name: "Workspace", targets: ["Workspace", "WorkspaceSuggestionService"]),
+        .library(
+            name: "SuggestionService",
+            targets: ["SuggestionService", "GitHubCopilotService", "CodeiumService"]
+        ),
         .library(
             name: "AppMonitoring",
             targets: [
@@ -37,7 +42,9 @@ let package = Package(
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
         .package(url: "https://github.com/intitni/Tiktoken", branch: "main"),
+        // TODO: Update LanguageClient some day.
         .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
+        .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
@@ -62,6 +69,8 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
+        .target(name: "XPCShared", dependencies: ["SuggestionModel"]),
+        
         .target(name: "Configs"),
 
         .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
@@ -189,7 +198,16 @@ let package = Package(
                 "Environment",
                 "Logger",
                 "Preferences",
-                "XcodeInspector"
+                "XcodeInspector",
+            ]
+        ),
+
+        .target(
+            name: "WorkspaceSuggestionService",
+            dependencies: [
+                "Workspace",
+                "SuggestionService",
+                "XPCShared",
             ]
         ),
 
@@ -225,6 +243,44 @@ let package = Package(
         ),
 
         .target(name: "BingSearchService"),
+
+        .target(name: "SuggestionService", dependencies: [
+            "GitHubCopilotService",
+            "CodeiumService",
+            "UserDefaultsObserver",
+        ]),
+
+        // MARK: - GitHub Copilot
+
+        .target(
+            name: "GitHubCopilotService",
+            dependencies: [
+                "LanguageClient",
+                "SuggestionModel",
+                "Logger",
+                "Preferences",
+                "Terminal",
+                .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
+            ]
+        ),
+        .testTarget(
+            name: "GitHubCopilotServiceTests",
+            dependencies: ["GitHubCopilotService"]
+        ),
+
+        // MARK: - Codeium
+
+        .target(
+            name: "CodeiumService",
+            dependencies: [
+                "LanguageClient",
+                "Keychain",
+                "SuggestionModel",
+                "Preferences",
+                "Terminal",
+                "XcodeInspector",
+            ]
+        ),
 
         // MARK: - OpenAI
 

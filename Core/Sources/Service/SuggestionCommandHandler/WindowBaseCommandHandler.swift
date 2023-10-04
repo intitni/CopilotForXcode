@@ -10,6 +10,7 @@ import SuggestionModel
 import SuggestionWidget
 import UserNotifications
 import Workspace
+import WorkspaceSuggestionService
 import XPCShared
 
 struct WindowBaseCommandHandler: SuggestionCommandHandler {

@@ -4,7 +4,7 @@ import SuggestionService
 import Workspace
 import XPCShared
 
-extension Workspace {
+public extension Workspace {
     var suggestionPlugin: SuggestionServiceWorkspacePlugin? {
         plugin(for: SuggestionServiceWorkspacePlugin.self)
     }
@@ -18,13 +18,13 @@ extension Workspace {
     }
 
     struct SuggestionFeatureDisabledError: Error, LocalizedError {
-        var errorDescription: String? {
+        public var errorDescription: String? {
             "Suggestion feature is disabled for this project."
         }
     }
 }
 
-extension Workspace {
+public extension Workspace {
     @WorkspaceActor
     @discardableResult
     func generateSuggestions(
@@ -59,7 +59,7 @@ extension Workspace {
             usesTabsForIndentation: editor.usesTabsForIndentation,
             ignoreSpaceOnlySuggestions: true
         )
-        
+
         filespace.setSuggestions(completions)
 
         return completions

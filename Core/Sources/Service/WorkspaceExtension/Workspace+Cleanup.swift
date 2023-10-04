@@ -1,6 +1,7 @@
 import Foundation
 import Workspace
 import SuggestionService
+import WorkspaceSuggestionService
 
 extension Workspace {
     @WorkspaceActor
