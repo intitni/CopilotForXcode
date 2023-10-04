@@ -338,7 +338,7 @@ extension [Package.Dependency] {
     var pro: [Package.Dependency] {
         if isProIncluded {
             // include the pro package
-            return self + [.package(path: "../Pro")]
+            return self + [.package(path: "../Pro/Pro")]
         }
         return self
     }
