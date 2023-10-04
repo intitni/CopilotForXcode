@@ -19,6 +19,7 @@ struct ChatSettingsView: View {
         @AppStorage(\.defaultChatFeatureEmbeddingModelId) var defaultChatFeatureEmbeddingModelId
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
+        @AppStorage(\.wrapCodeInChatCodeBlock) var wrapCodeInCodeBlock
 
         init() {}
     }
@@ -158,6 +159,10 @@ struct ChatSettingsView: View {
                 .textFieldStyle(.roundedBorder)
 
                 Text("pt")
+            }
+            
+            Toggle(isOn: $settings.wrapCodeInCodeBlock) {
+                Text("Wrap code in code block")
             }
         }
     }

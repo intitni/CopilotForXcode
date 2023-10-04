@@ -1,17 +1,20 @@
 import AppKit
+import ComposableArchitecture
 import SharedUIComponents
 import SwiftUI
 
 struct ChatTabItemView: View {
-    @ObservedObject var chat: ChatProvider
+    let chat: StoreOf<Chat>
 
     var body: some View {
-        Text(chat.title)
+        WithViewStore(chat, observe: \.title) { viewStore in
+            Text(viewStore.state)
+        }
     }
 }
 
 struct ChatContextMenu: View {
-    @ObservedObject var chat: ChatProvider
+    let store: StoreOf<ChatMenu>
     @AppStorage(\.customCommands) var customCommands
     @AppStorage(\.chatModels) var chatModels
     @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatModelId
@@ -19,6 +22,7 @@ struct ChatContextMenu: View {
 
     var body: some View {
         currentSystemPrompt
+            .onAppear { store.send(.appear) }
         currentExtraSystemPrompt
         resetPrompt
 
@@ -35,74 +39,78 @@ struct ChatContextMenu: View {
     @ViewBuilder
     var currentSystemPrompt: some View {
         Text("System Prompt:")
-        Text({
-            var text = chat.systemPrompt
-            if text.isEmpty { text = "N/A" }
-            if text.count > 30 { text = String(text.prefix(30)) + "..." }
-            return text
-        }() as String)
+        WithViewStore(store, observe: \.systemPrompt) { viewStore in
+            Text({
+                var text = viewStore.state
+                if text.isEmpty { text = "N/A" }
+                if text.count > 30 { text = String(text.prefix(30)) + "..." }
+                return text
+            }() as String)
+        }
     }
 
     @ViewBuilder
     var currentExtraSystemPrompt: some View {
         Text("Extra Prompt:")
-        Text({
-            var text = chat.extraSystemPrompt
-            if text.isEmpty { text = "N/A" }
-            if text.count > 30 { text = String(text.prefix(30)) + "..." }
-            return text
-        }() as String)
+        WithViewStore(store, observe: \.extraSystemPrompt) { viewStore in
+            Text({
+                var text = viewStore.state
+                if text.isEmpty { text = "N/A" }
+                if text.count > 30 { text = String(text.prefix(30)) + "..." }
+                return text
+            }() as String)
+        }
     }
 
     var resetPrompt: some View {
         Button("Reset System Prompt") {
-            chat.resetPrompt()
+            store.send(.resetPromptButtonTapped)
         }
     }
 
     @ViewBuilder
     var chatModel: some View {
         Menu("Chat Model") {
-            Button(action: {
-                chat.chatModelId = nil
-            }) {
-                HStack {
-                    if let defaultModel = chatModels.first(where: { $0.id == defaultChatModelId }) {
-                        Text("Default (\(defaultModel.name))")
-                        if chat.chatModelId == nil {
+            WithViewStore(store, observe: \.chatModelIdOverride) { viewStore in
+                Button(action: {
+                    viewStore.send(.chatModelIdOverrideSelected(nil))
+                }) {
+                    HStack {
+                        if let defaultModel = chatModels
+                            .first(where: { $0.id == defaultChatModelId })
+                        {
+                            Text("Default (\(defaultModel.name))")
+                            if viewStore.state == nil {
+                                Image(systemName: "checkmark")
+                            }
+                        } else {
+                            Text("No Model Available")
+                        }
+                    }
+                }
+
+                if let id = viewStore.state, !chatModels.map(\.id).contains(id) {
+                    Button(action: {
+                        viewStore.send(.chatModelIdOverrideSelected(nil))
+                    }) {
+                        HStack {
+                            Text("Default (Selected Model Not Found)")
                             Image(systemName: "checkmark")
                         }
-                    } else {
-                        Text("No Model Available")
                     }
                 }
-            }
 
-            if let id = chat.chatModelId,
-               !chatModels.map(\.id).contains(id)
-            {
-                Button(action: {
-                    chat.chatModelId = nil
-                    chat.objectWillChange.send()
-                }) {
-                    HStack {
-                        Text("Default (Selected Model Not Found)")
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
-            
-            Divider()
+                Divider()
 
-            ForEach(chatModels, id: \.id) { model in
-                Button(action: {
-                    chat.chatModelId = model.id
-                    chat.objectWillChange.send()
-                }) {
-                    HStack {
-                        Text(model.name)
-                        if model.id == chat.chatModelId {
-                            Image(systemName: "checkmark")
+                ForEach(chatModels, id: \.id) { model in
+                    Button(action: {
+                        viewStore.send(.chatModelIdOverrideSelected(model.id))
+                    }) {
+                        HStack {
+                            Text(model.name)
+                            if model.id == viewStore.state {
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
@@ -113,29 +121,31 @@ struct ChatContextMenu: View {
     @ViewBuilder
     var temperature: some View {
         Menu("Temperature") {
-            Button(action: {
-                chat.temperature = nil
-            }) {
-                HStack {
-                    Text(
-                        "Default (\(defaultTemperature.formatted(.number.precision(.fractionLength(1)))))"
-                    )
-                    if chat.temperature == nil {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
-            
-            Divider()
-
-            ForEach(Array(stride(from: 0.0, through: 2.0, by: 0.1)), id: \.self) { value in
+            WithViewStore(store, observe: \.temperatureOverride) { viewStore in
                 Button(action: {
-                    chat.temperature = value
+                    viewStore.send(.temperatureOverrideSelected(nil))
                 }) {
                     HStack {
-                        Text("\(value.formatted(.number.precision(.fractionLength(1))))")
-                        if value == chat.temperature {
+                        Text(
+                            "Default (\(defaultTemperature.formatted(.number.precision(.fractionLength(1)))))"
+                        )
+                        if viewStore.state == nil {
                             Image(systemName: "checkmark")
+                        }
+                    }
+                }
+
+                Divider()
+
+                ForEach(Array(stride(from: 0.0, through: 2.0, by: 0.1)), id: \.self) { value in
+                    Button(action: {
+                        viewStore.send(.temperatureOverrideSelected(value))
+                    }) {
+                        HStack {
+                            Text("\(value.formatted(.number.precision(.fractionLength(1))))")
+                            if value == viewStore.state {
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
@@ -156,7 +166,7 @@ struct ChatContextMenu: View {
                 id: \.name
             ) { command in
                 Button(action: {
-                    chat.triggerCustomCommand(command)
+                    store.send(.customCommandButtonTapped(command))
                 }) {
                     Text(command.name)
                 }
