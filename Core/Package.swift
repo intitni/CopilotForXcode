@@ -2,6 +2,57 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
+import Foundation
+
+// MARK: - Pro
+
+extension [Target.Dependency] {
+    func pro(_ targetNames: [String]) -> [Target.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
+        }
+        return self
+    }
+}
+
+extension [Package.Dependency] {
+    var pro: [Package.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + [.package(path: "../Pro/Pro")]
+        }
+        return self
+    }
+}
+
+let isProIncluded: Bool = {
+    func isProIncluded(file: StaticString = #file) -> Bool {
+        let filePath = "\(file)"
+        let fileURL = URL(fileURLWithPath: filePath)
+        let rootURL = fileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let confURL = rootURL.appendingPathComponent("PLUS")
+        if !FileManager.default.fileExists(atPath: confURL.path) {
+            return false
+        }
+        do {
+            let content = String(
+                data: try Data(contentsOf: confURL),
+                encoding: .utf8
+            )
+            print("")
+            return content?.hasPrefix("YES") ?? false
+        } catch {
+            return false
+        }
+    }
+
+    return isProIncluded()
+}()
+
+// MARK: - Package
 
 let package = Package(
     name: "Core",
@@ -322,52 +373,3 @@ let package = Package(
     ]
 )
 
-// MARK: - Pro
-
-extension [Target.Dependency] {
-    func pro(_ targetNames: [String]) -> [Target.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
-        }
-        return self
-    }
-}
-
-extension [Package.Dependency] {
-    var pro: [Package.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + [.package(path: "../Pro/Pro")]
-        }
-        return self
-    }
-}
-
-import Foundation
-
-let isProIncluded: Bool = {
-    func isProIncluded(file: StaticString = #file) -> Bool {
-        let filePath = "\(file)"
-        let fileURL = URL(fileURLWithPath: filePath)
-        let rootURL = fileURL
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let confURL = rootURL.appendingPathComponent("PLUS")
-        if !FileManager.default.fileExists(atPath: confURL.path) {
-            return false
-        }
-        do {
-            let content = String(
-                data: try Data(contentsOf: confURL),
-                encoding: .utf8
-            )
-            print("")
-            return content?.hasPrefix("YES") ?? false
-        } catch {
-            return false
-        }
-    }
-
-    return isProIncluded()
-}()

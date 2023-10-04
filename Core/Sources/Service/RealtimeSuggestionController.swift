@@ -21,10 +21,23 @@ public actor RealtimeSuggestionController {
     private var sourceEditor: SourceEditor?
 
     init() {}
+    
+    deinit {
+        task?.cancel()
+        inflightPrefetchTask?.cancel()
+        windowChangeObservationTask?.cancel()
+        activeApplicationMonitorTask?.cancel()
+        editorObservationTask?.cancel()
+    }
 
     nonisolated
     func start() {
-        Task { [weak self] in
+        Task { await observeXcodeChange() }
+    }
+    
+    private func observeXcodeChange() {
+        task?.cancel()
+        task = Task { [weak self] in
             if ActiveApplicationMonitor.shared.activeXcode != nil {
                 await self?.handleXcodeChanged()
             }
