@@ -12,7 +12,8 @@ public class ChatGPTChatTab: ChatTab {
     public static var name: String { "Chat" }
 
     public let service: ChatService
-    public let provider: ChatProvider
+    let chat: StoreOf<Chat>
+    let viewStore: ViewStoreOf<Chat>
     private var cancellable = Set<AnyCancellable>()
 
     struct RestorableState: Codable {
@@ -28,7 +29,7 @@ public class ChatGPTChatTab: ChatTab {
         var afterBuild: (ChatGPTChatTab) async -> Void = { _ in }
 
         func build(store: StoreOf<ChatTabItem>) async -> (any ChatTab)? {
-            let tab = ChatGPTChatTab(store: store)
+            let tab = await ChatGPTChatTab(store: store)
             if let customCommand {
                 try? await tab.service.handleCustomCommand(customCommand)
             }
@@ -38,15 +39,15 @@ public class ChatGPTChatTab: ChatTab {
     }
 
     public func buildView() -> any View {
-        ChatPanel(chat: provider)
+        ChatPanel(chat: chat)
     }
 
     public func buildTabItem() -> any View {
-        ChatTabItemView(chat: provider)
+        ChatTabItemView(chat: chat)
     }
 
     public func buildMenu() -> any View {
-        ChatContextMenu(chat: provider)
+        ChatContextMenu(store: chat.scope(state: \.chatMenu, action: Chat.Action.chatMenu))
     }
 
     public func restorableState() async -> Data {
@@ -87,9 +88,11 @@ public class ChatGPTChatTab: ChatTab {
         return [Builder(title: "New Chat", customCommand: nil)] + customCommands
     }
 
+    @MainActor
     public init(service: ChatService = .init(), store: StoreOf<ChatTabItem>) {
         self.service = service
-        provider = .init(service: service)
+        chat = .init(initialState: .init(), reducer: Chat(service: service))
+        viewStore = .init(chat)
         super.init(store: store)
     }
 
@@ -108,15 +111,14 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        provider.$history.sink { [weak self] _ in
+        viewStore.publisher.map(\.title).removeDuplicates().sink { [weak self] title in
             Task { @MainActor [weak self] in
-                if let title = self?.provider.title {
-                    self?.chatTabViewStore.send(.updateTitle(title))
-                }
+                self?.chatTabViewStore.send(.updateTitle(title))
             }
         }.store(in: &cancellable)
 
-        provider.objectWillChange.debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+        viewStore.publisher.removeDuplicates()
+            .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
                     self?.chatTabViewStore.send(.tabContentUpdated)
@@ -124,90 +126,3 @@ public class ChatGPTChatTab: ChatTab {
             }.store(in: &cancellable)
     }
 }
-
-extension ChatProvider {
-    convenience init(service: ChatService) {
-        self.init(
-            configuration: service.configuration,
-            pluginIdentifiers: service.allPluginCommands
-        )
-
-        let cancellable = service.objectWillChange.sink { [weak self] in
-            guard let self else { return }
-            Task { @MainActor in
-                self.history = (await service.memory.history).map { message in
-                    .init(
-                        id: message.id,
-                        role: {
-                            switch message.role {
-                            case .system: return .ignored
-                            case .user: return .user
-                            case .assistant:
-                                if let text = message.summary ?? message.content, !text.isEmpty {
-                                    return .assistant
-                                }
-                                return .ignored
-                            case .function: return .function
-                            }
-                        }(),
-                        text: message.summary ?? message.content ?? ""
-                    )
-                }
-                self.isReceivingMessage = service.isReceivingMessage
-                self.systemPrompt = service.systemPrompt
-                self.extraSystemPrompt = service.extraSystemPrompt
-            }
-        }
-
-        service.objectWillChange.send()
-
-        onMessageSend = { [cancellable] message in
-            _ = cancellable
-            Task {
-                try await service.send(content: message)
-            }
-        }
-        onStop = {
-            Task {
-                await service.stopReceivingMessage()
-            }
-        }
-
-        onClear = {
-            Task {
-                await service.clearHistory()
-            }
-        }
-
-        onDeleteMessage = { id in
-            Task {
-                await service.deleteMessage(id: id)
-            }
-        }
-
-        onResendMessage = { id in
-            Task {
-                try await service.resendMessage(id: id)
-            }
-        }
-
-        onResetPrompt = {
-            Task {
-                await service.resetPrompt()
-            }
-        }
-
-        onRunCustomCommand = { command in
-            Task {
-                try await service.handleCustomCommand(command)
-            }
-        }
-
-        onSetAsExtraPrompt = { id in
-            Task {
-                await service.setMessageAsExtraPrompt(id: id)
-            }
-        }
-    }
-}
-

@@ -1,8 +1,8 @@
 // swift-tools-version: 5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
-import PackageDescription
 import Foundation
+import PackageDescription
 
 // MARK: - Pro
 
@@ -242,6 +242,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 

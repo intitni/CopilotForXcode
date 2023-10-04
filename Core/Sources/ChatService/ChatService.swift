@@ -10,6 +10,7 @@ public final class ChatService: ObservableObject {
     public let configuration: OverridingChatGPTConfiguration
     public let chatGPTService: any ChatGPTServiceType
     public var allPluginCommands: [String] { allPlugins.map { $0.command } }
+    @Published public internal(set) var chatHistory: [ChatMessage] = []
     @Published public internal(set) var isReceivingMessage = false
     @Published public internal(set) var systemPrompt = UserDefaults.shared
         .value(for: \.defaultChatSystemPrompt)
@@ -54,7 +55,9 @@ public final class ChatService: ObservableObject {
 
         memory.chatService = self
         memory.observeHistoryChange { [weak self] in
-            self?.objectWillChange.send()
+            Task { [weak self] in
+                self?.chatHistory = await memory.history
+            }
         }
     }
     
