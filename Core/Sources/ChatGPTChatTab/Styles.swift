@@ -33,25 +33,20 @@ extension NSAppearance {
     }
 }
 
-extension MarkdownUI.Theme {
-    static func custom(fontSize: Double) -> MarkdownUI.Theme {
-        .gitHub.text {
-            ForegroundColor(.primary)
-            BackgroundColor(Color.clear)
-            FontSize(fontSize)
-        }
-        .codeBlock { configuration in
-            ScrollView(.horizontal) {
-                configuration.label
-                    .relativeLineSpacing(.em(0.225))
-                    .markdownTextStyle {
-                        FontFamilyVariant(.monospaced)
-                        FontSize(.em(0.85))
-                    }
-                    .padding(16)
-                    .padding(.top, 14)
+extension View {
+    func codeBlockLabelStyle() -> some View {
+        self
+            .relativeLineSpacing(.em(0.225))
+            .markdownTextStyle {
+                FontFamilyVariant(.monospaced)
+                FontSize(.em(0.85))
             }
-            .workaroundForVerticalScrollingBugInMacOS()
+            .padding(16)
+            .padding(.top, 14)
+    }
+    
+    func codeBlockStyle(_ configuration: CodeBlockConfiguration) -> some View {
+        self
             .background(Color(nsColor: .textBackgroundColor).opacity(0.7))
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(alignment: .top) {
@@ -69,6 +64,31 @@ extension MarkdownUI.Theme {
                 }
             }
             .markdownMargin(top: 4, bottom: 16)
+    }
+}
+
+extension MarkdownUI.Theme {
+    static func custom(fontSize: Double) -> MarkdownUI.Theme {
+        .gitHub.text {
+            ForegroundColor(.primary)
+            BackgroundColor(Color.clear)
+            FontSize(fontSize)
+        }
+        .codeBlock { configuration in
+            let wrapCode = UserDefaults.shared.value(for: \.wrapCodeInChatCodeBlock)
+
+            if wrapCode {
+                configuration.label
+                    .codeBlockLabelStyle()
+                    .codeBlockStyle(configuration)
+            } else {
+                ScrollView(.horizontal) {
+                    configuration.label
+                        .codeBlockLabelStyle()
+                }
+                .workaroundForVerticalScrollingBugInMacOS()
+                .codeBlockStyle(configuration)
+            }
         }
     }
 

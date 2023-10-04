@@ -384,6 +384,10 @@ public extension UserDefaultPreferenceKeys {
     var chatSearchPluginMaxIterations: PreferenceKey<Int> {
         .init(defaultValue: 3, key: "ChatSearchPluginMaxIterations")
     }
+    
+    var wrapCodeInChatCodeBlock: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "WrapCodeInChatCodeBlock")
+    }
 }
 
 // MARK: - Bing Search
