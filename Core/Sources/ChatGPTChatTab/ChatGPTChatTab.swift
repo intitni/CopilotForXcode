@@ -118,7 +118,6 @@ public class ChatGPTChatTab: ChatTab {
         }.store(in: &cancellable)
 
         viewStore.publisher.removeDuplicates()
-            .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
                     self?.chatTabViewStore.send(.tabContentUpdated)
