@@ -17,8 +17,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext? {
-        guard let info = getEditorInformation() else { return nil }
+    ) -> ChatContext {
+        guard let info = getEditorInformation() else { return .empty }
         let context = getActiveDocumentContext(info)
         activeDocumentContext = context
 
@@ -27,11 +27,16 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 var removedCode = context
                 removedCode.focusedContext = nil
                 return .init(
-                    systemPrompt: extractSystemPrompt(removedCode),
+                    systemPrompt: [
+                        .init(
+                            content: extractSystemPrompt(removedCode),
+                            priority: .high
+                        ),
+                    ],
                     functions: []
                 )
             }
-            return nil
+            return .empty
         }
 
         var functions = [any ChatGPTFunction]()
@@ -65,7 +70,9 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         }
 
         return .init(
-            systemPrompt: extractSystemPrompt(context),
+            systemPrompt: [
+                .init(content: extractSystemPrompt(context), priority: .high)
+            ],
             functions: functions
         )
     }

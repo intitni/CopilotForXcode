@@ -12,8 +12,8 @@ public final class WebChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext? {
-        guard scopes.contains("web") || scopes.contains("w") else { return nil }
+    ) -> ChatContext {
+        guard scopes.contains("web") || scopes.contains("w") else { return .empty }
         let links = Self.detectLinks(from: history) + Self.detectLinks(from: content)
         let functions: [(any ChatGPTFunction)?] = [
             SearchFunction(maxTokens: configuration.maxTokens),
@@ -21,7 +21,12 @@ public final class WebChatContextCollector: ChatContextCollector {
             links.isEmpty ? nil : QueryWebsiteFunction(),
         ]
         return .init(
-            systemPrompt: "You prefer to answer questions with latest content on the internet.",
+            systemPrompt: [
+                .init(
+                    content: "You prefer to answer questions with latest content on the internet.",
+                    priority: .low
+                ),
+            ],
             functions: functions.compactMap { $0 }
         )
     }

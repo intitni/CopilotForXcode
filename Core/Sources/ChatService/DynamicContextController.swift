@@ -47,7 +47,7 @@ final class DynamicContextController {
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history
         let contexts = await withTaskGroup(
-            of: ChatContext?.self
+            of: ChatContext.self
         ) { [scopes, content, configuration] group in
             for collector in contextCollectors {
                 group.addTask {
@@ -61,17 +61,25 @@ final class DynamicContextController {
             }
             var contexts = [ChatContext]()
             for await context in group {
-                if let context = context {
-                    contexts.append(context)
-                }
+                contexts.append(context)
             }
             return contexts
         }
+        
+        let separator = String(repeating: "=", count: 32) // only 1 token
+        
+        let contextPrompts = contexts
+            .flatMap(\.systemPrompt)
+            .filter { !$0.content.isEmpty }
+            .sorted { $0.priority > $1.priority }
+        
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)
 
-        \(contexts.map(\.systemPrompt).filter { !$0.isEmpty }.joined(separator: "\n\n"))
+        Below are information related to the conversation, separated by \(separator)
+        
+        \(contextPrompts.map(\.content).joined(separator: "\n\(separator)\n"))
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
         functionProvider.append(functions: contexts.flatMap(\.functions))
