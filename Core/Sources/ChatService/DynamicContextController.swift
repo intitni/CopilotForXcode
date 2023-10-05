@@ -46,13 +46,26 @@ final class DynamicContextController {
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history
-        let contexts = contextCollectors.compactMap {
-            $0.generateContext(
-                history: oldMessages,
-                scopes: scopes,
-                content: content,
-                configuration: configuration
-            )
+        let contexts = await withTaskGroup(
+            of: ChatContext?.self
+        ) { [scopes, content, configuration] group in
+            for collector in contextCollectors {
+                group.addTask {
+                    await collector.generateContext(
+                        history: oldMessages,
+                        scopes: scopes,
+                        content: content,
+                        configuration: configuration
+                    )
+                }
+            }
+            var contexts = [ChatContext]()
+            for await context in group {
+                if let context = context {
+                    contexts.append(context)
+                }
+            }
+            return contexts
         }
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")

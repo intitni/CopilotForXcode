@@ -16,6 +16,6 @@ public protocol ChatContextCollector {
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext?
+    ) async -> ChatContext?
 }
 
