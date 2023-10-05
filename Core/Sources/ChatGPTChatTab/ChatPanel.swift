@@ -58,17 +58,10 @@ struct ChatPanelMessages: View {
 
                         ChatHistory(chat: chat)
                             .listItemTint(.clear)
-
+                        
                         WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
                             if viewStore.state {
-                                StopRespondingButton(chat: chat)
-                                    .padding(.vertical, 4)
-                                    .listRowInsets(EdgeInsets(
-                                        top: 0,
-                                        leading: -8,
-                                        bottom: 0,
-                                        trailing: -8
-                                    ))
+                                Spacer(minLength: 12)
                             }
                         }
 
@@ -109,6 +102,16 @@ struct ChatPanelMessages: View {
                 .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
                     scrollOffset = value
                     updatePinningState()
+                }
+                .overlay(alignment: .bottom) {
+                    WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+                        StopRespondingButton(chat: chat)
+                            .padding(.bottom, 8)
+                            .opacity(viewStore.state ? 1 : 0)
+                            .disabled(!viewStore.state)
+                            .transformEffect(.init(translationX: 0, y: viewStore.state ? 0 : 20))
+                            .animation(.easeInOut(duration: 0.2), value: viewStore.state)
+                    }
                 }
                 .overlay(alignment: .bottomTrailing) {
                     WithViewStore(chat, observe: \.history.last) { viewStore in
