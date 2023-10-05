@@ -27,7 +27,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         public var tabInfo: IdentifiedArray<String, ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
-        
+
         public var selectedTabInfo: ChatTabInfo? {
             guard let id = selectedTabId else { return tabInfo.first }
             return tabInfo[id: id]
@@ -69,7 +69,8 @@ public struct ChatPanelFeature: ReducerProtocol {
         case appendAndSelectTab(ChatTabInfo)
         case switchToNextTab
         case switchToPreviousTab
-        
+        case moveChatTab(from: Int, to: Int)
+
         case chatTab(id: String, action: ChatTabItem.Action)
     }
 
@@ -205,7 +206,18 @@ public struct ChatPanelFeature: ReducerProtocol {
                 let targetId = state.chatTabGroup.tabInfo[previousIndex].id
                 state.chatTabGroup.selectedTabId = targetId
                 return .none
-                
+
+            case let .moveChatTab(from, to):
+                guard from >= 0, from < state.chatTabGroup.tabInfo.endIndex, to >= 0,
+                      to <= state.chatTabGroup.tabInfo.endIndex
+                else {
+                    return .none
+                }
+                let tab = state.chatTabGroup.tabInfo[from]
+                state.chatTabGroup.tabInfo.remove(at: from)
+                state.chatTabGroup.tabInfo.insert(tab, at: to)
+                return .none
+
             case .chatTab:
                 return .none
             }
