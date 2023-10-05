@@ -188,7 +188,6 @@ struct ChatTabBar: View {
                                     }
                                     .id(info.id)
                                     .onDrag {
-                                        print("dragging tab \(info.id)")
                                         draggingTabId = info.id
                                         return NSItemProvider(object: info.id as NSString)
                                     }
