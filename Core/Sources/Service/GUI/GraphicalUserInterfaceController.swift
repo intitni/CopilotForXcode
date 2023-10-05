@@ -219,9 +219,12 @@ struct GUI: ReducerProtocol {
                 #endif
                 }
             }
-        }.onChange(of: \.chatTabGroup.tabInfo) { _, _ in
+        }.onChange(of: \.chatTabGroup.tabInfo) { old, new in
             Reduce { _, _ in
-                .run { send in
+                guard old.map(\.id) != new.map(\.id) else {
+                    return .none
+                }
+                return .run { send in
                     #if canImport(ChatTabPersistent)
                     await send(.persistent(.chatOrderChanged))
                     #endif
