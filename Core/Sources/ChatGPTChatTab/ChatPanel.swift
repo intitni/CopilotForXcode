@@ -53,12 +53,12 @@ struct ChatPanelMessages: View {
                 List {
                     Group {
                         Spacer(minLength: 12)
-                        
+
                         Instruction()
-                        
+
                         ChatHistory(chat: chat)
                             .listItemTint(.clear)
-                        
+
                         WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
                             if viewStore.state {
                                 StopRespondingButton(chat: chat)
@@ -71,8 +71,14 @@ struct ChatPanelMessages: View {
                                     ))
                             }
                         }
-                        
+
                         Spacer(minLength: 12)
+                            .onAppear {
+                                withAnimation {
+                                    proxy.scrollTo(bottomID, anchor: .bottom)
+                                }
+                            }
+                            .id(bottomID)
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
                                 Color.clear
@@ -85,7 +91,6 @@ struct ChatPanelMessages: View {
                                 key: ListHeightPreferenceKey.self,
                                 value: listGeo.size.height
                             )
-                            .id(bottomID)
                     }
                     .modify { view in
                         if #available(macOS 13.0, *) {
@@ -115,7 +120,12 @@ struct ChatPanelMessages: View {
                             Image(systemName: "arrow.down")
                                 .padding(4)
                                 .background {
-                                    Circle().fill(.thickMaterial)
+                                    Circle()
+                                        .fill(.thickMaterial)
+                                        .shadow(color: .black.opacity(0.2), radius: 2)
+                                }
+                                .overlay {
+                                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                                 }
                                 .foregroundStyle(.secondary)
                                 .padding(4)
@@ -127,7 +137,7 @@ struct ChatPanelMessages: View {
                                 if isInitialLoad {
                                     isInitialLoad = false
                                 }
-                                withAnimation(.easeInOut(duration: 0.1)) {
+                                withAnimation {
                                     proxy.scrollTo(bottomID, anchor: .bottom)
                                 }
                             }
@@ -137,7 +147,7 @@ struct ChatPanelMessages: View {
             }
         }
     }
-    
+
     func updatePinningState() {
         if scrollOffset > listHeight + 24 + 100 || scrollOffset <= 0 {
             pinnedToBottom = false
@@ -218,19 +228,6 @@ private struct Instruction: View {
         Group {
             Markdown(
                 """
-                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-
-                \(
-                    useCodeScopeByDefaultInChatContext
-                        ? "Scope **`@code`** is enabled by default."
-                        : "Scope **`@file`** is enabled by default."
-                )
-                """
-            )
-            .modifier(InstructionModifier())
-
-            Markdown(
-                """
                 You can use scopes to give the bot extra abilities.
 
                 | Scope Name | Abilities |
@@ -260,6 +257,19 @@ private struct Instruction: View {
                 | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
 
                 To use plugins, you can prefix a message with `/pluginName`.
+                """
+            )
+            .modifier(InstructionModifier())
+
+            Markdown(
+                """
+                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+
+                \(
+                    useCodeScopeByDefaultInChatContext
+                        ? "Scope **`@code`** is enabled by default."
+                        : "Scope **`@file`** is enabled by default."
+                )
                 """
             )
             .modifier(InstructionModifier())
