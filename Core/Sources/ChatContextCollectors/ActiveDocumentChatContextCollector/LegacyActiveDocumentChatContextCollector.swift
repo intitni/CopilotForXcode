@@ -78,7 +78,8 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
         }()
 
         return .init(
-            systemPrompt: [
+            systemPrompt: "",
+            retrievedContent: [
                 .init(content: """
                 Active Document Context:###
                 Document Relative Path: \(relativePath)

@@ -27,7 +27,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 var removedCode = context
                 removedCode.focusedContext = nil
                 return .init(
-                    systemPrompt: [
+                    systemPrompt: "",
+                    retrievedContent: [
                         .init(
                             content: extractSystemPrompt(removedCode),
                             priority: .high
@@ -70,7 +71,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         }
 
         return .init(
-            systemPrompt: [
+            systemPrompt: "",
+            retrievedContent: [
                 .init(content: extractSystemPrompt(context), priority: .high)
             ],
             functions: functions

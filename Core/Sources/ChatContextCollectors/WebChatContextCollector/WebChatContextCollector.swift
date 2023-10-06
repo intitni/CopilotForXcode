@@ -21,12 +21,8 @@ public final class WebChatContextCollector: ChatContextCollector {
             links.isEmpty ? nil : QueryWebsiteFunction(),
         ]
         return .init(
-            systemPrompt: [
-                .init(
-                    content: "You prefer to answer questions with latest content on the internet.",
-                    priority: .low
-                ),
-            ],
+            systemPrompt: "You prefer to answer questions with latest content on the internet.",
+            retrievedContent: [],
             functions: functions.compactMap { $0 }
         )
     }

@@ -2,7 +2,7 @@ import Foundation
 import OpenAIService
 
 public struct ChatContext {
-    public struct RetrievedPrompt {
+    public struct RetrievedContent {
         public enum Priority: Equatable, Comparable {
             case low
             case medium
@@ -40,29 +40,35 @@ public struct ChatContext {
         }
     }
 
-    public var systemPrompt: [RetrievedPrompt]
+    public var systemPrompt: String
+    public var retrievedContent: [RetrievedContent]
     public var functions: [any ChatGPTFunction]
-    public init(systemPrompt: [RetrievedPrompt], functions: [any ChatGPTFunction]) {
+    public init(
+        systemPrompt: String,
+        retrievedContent: [RetrievedContent],
+        functions: [any ChatGPTFunction]
+    ) {
         self.systemPrompt = systemPrompt
+        self.retrievedContent = retrievedContent
         self.functions = functions
     }
-    
+
     public static var empty: Self {
-        .init(systemPrompt: [], functions: [])
+        .init(systemPrompt: "", retrievedContent: [], functions: [])
     }
 }
 
 public func + (
-    lhs: ChatContext.RetrievedPrompt.Priority,
+    lhs: ChatContext.RetrievedContent.Priority,
     rhs: Int
-) -> ChatContext.RetrievedPrompt.Priority {
+) -> ChatContext.RetrievedContent.Priority {
     .custom(lhs.rawValue + rhs)
 }
 
 public func - (
-    lhs: ChatContext.RetrievedPrompt.Priority,
+    lhs: ChatContext.RetrievedContent.Priority,
     rhs: Int
-) -> ChatContext.RetrievedPrompt.Priority {
+) -> ChatContext.RetrievedContent.Priority {
     .custom(lhs.rawValue - rhs)
 }
 
