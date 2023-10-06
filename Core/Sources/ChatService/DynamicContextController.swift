@@ -66,8 +66,6 @@ final class DynamicContextController {
             return contexts
         }
         
-        let separator = String(repeating: "=", count: 32) // only 1 token
-        
         let contextPrompts = contexts
             .flatMap(\.systemPrompt)
             .filter { !$0.content.isEmpty }
@@ -76,12 +74,9 @@ final class DynamicContextController {
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)
-
-        Below are information related to the conversation, separated by \(separator)
-        
-        \(contextPrompts.map(\.content).joined(separator: "\n\(separator)\n"))
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
+        await memory.mutateRetrievedContent(contextPrompts.map(\.content))
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }
 }
