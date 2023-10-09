@@ -10,7 +10,7 @@ import XcodeInspector
 public final class ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
-    var activeDocumentContext: ActiveDocumentContext?
+    public var activeDocumentContext: ActiveDocumentContext?
 
     public func generateContext(
         history: [ChatMessage],

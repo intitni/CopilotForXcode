@@ -4,19 +4,25 @@ import OpenAIService
 public struct ChatContext {
     public struct RetrievedContent {
         public enum Priority: Equatable, Comparable {
+            case bottom
             case low
             case medium
             case high
+            case top
             case custom(Int)
 
             public var rawValue: Int {
                 switch self {
+                case .bottom:
+                    return 0
                 case .low:
-                    return 20
+                    return 400
                 case .medium:
-                    return 60
+                    return 600
                 case .high:
-                    return 80
+                    return 800
+                case .top:
+                    return 1_000_000_000
                 case let .custom(value):
                     return value
                 }

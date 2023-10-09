@@ -210,7 +210,6 @@ let package = Package(
 
                 // context collectors
                 "WebChatContextCollector",
-                "ActiveDocumentChatContextCollector",
                 "SystemInfoChatContextCollector",
 
                 .product(name: "ChatContextCollector", package: "Tool"),
@@ -353,23 +352,6 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
-        ),
-
-        .target(
-            name: "ActiveDocumentChatContextCollector",
-            dependencies: [
-                .product(name: "ChatContextCollector", package: "Tool"),
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "FocusedCodeFinder", package: "Tool"),
-                .product(name: "AppMonitoring", package: "Tool"),
-            ],
-            path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
-        ),
-
-        .testTarget(
-            name: "ActiveDocumentChatContextCollectorTests",
-            dependencies: ["ActiveDocumentChatContextCollector"]
         ),
     ]
 )
