@@ -78,9 +78,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
         }()
 
         return .init(
-            systemPrompt: "",
-            retrievedContent: [
-                .init(content: """
+            systemPrompt: """
                 Active Document Context:###
                 Document Relative Path: \(relativePath)
                 Selection Range Start: \
@@ -100,8 +98,8 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
                         .joined(separator: "\n") ?? "N/A"
                 )
                 ###
-                """, priority: .high),
-            ],
+                """,
+            retrievedContent: [],
             functions: []
         )
     }
