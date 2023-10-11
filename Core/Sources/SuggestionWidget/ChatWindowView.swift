@@ -66,9 +66,7 @@ struct ChatTitleBar: View {
                             : Color(nsColor: .disabledControlTextColor)
                     )
                     .frame(width: 10, height: 10)
-                    .overlay {
-                        Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
-                    }
+                    .shadow(radius: 0.5)
                     .overlay {
                         if isHovering {
                             Image(systemName: "minus")
@@ -91,9 +89,7 @@ struct ChatTitleBar: View {
                                 : Color(nsColor: .disabledControlTextColor)
                         )
                         .frame(width: 10, height: 10)
-                        .overlay {
-                            Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
-                        }
+                        .shadow(radius: 0.5)
                         .disabled(!viewStore.state)
                         .overlay {
                             if isHovering {
