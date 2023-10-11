@@ -1,88 +1,208 @@
 import AppKit
-import OpenAIService
+import ComposableArchitecture
 import MarkdownUI
+import OpenAIService
 import SharedUIComponents
 import SwiftUI
 
 private let r: Double = 8
 
 public struct ChatPanel: View {
-    @ObservedObject var chat: ChatProvider
+    let chat: StoreOf<Chat>
     @Namespace var inputAreaNamespace
-    @State var typedMessage = ""
-
-    public init(chat: ChatProvider, typedMessage: String = "") {
-        self.chat = chat
-        self.typedMessage = typedMessage
-    }
 
     public var body: some View {
         VStack(spacing: 0) {
-            ChatPanelMessages(
-                chat: chat
-            )
+            ChatPanelMessages(chat: chat)
             Divider()
-            ChatPanelInputArea(
-                chat: chat,
-                typedMessage: $typedMessage
-            )
+            ChatPanelInputArea(chat: chat)
         }
         .background(.regularMaterial)
+        .onAppear { chat.send(.appear) }
+    }
+}
+
+private struct ScrollViewOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue = CGFloat.zero
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value += nextValue()
+    }
+}
+
+private struct ListHeightPreferenceKey: PreferenceKey {
+    static var defaultValue = CGFloat.zero
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value += nextValue()
     }
 }
 
 struct ChatPanelMessages: View {
-    @ObservedObject var chat: ChatProvider
+    let chat: StoreOf<Chat>
+    @State var pinnedToBottom = true
+    @Namespace var bottomID
+    @Namespace var scrollSpace
+    @State var scrollOffset: Double = 0
+    @State var listHeight: Double = 0
+    @State var isInitialLoad = true
 
     var body: some View {
-        List {
-            Group {
-                Spacer()
+        ScrollViewReader { proxy in
+            GeometryReader { listGeo in
+                List {
+                    Group {
+                        Spacer(minLength: 12)
 
-                if chat.isReceivingMessage {
-                    StopRespondingButton(chat: chat)
-                        .padding(.vertical, 4)
-                        .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                }
+                        Instruction()
 
-                ForEach(chat.history.reversed(), id: \.id) { message in
-                    let text = message.text
+                        ChatHistory(chat: chat)
+                            .listItemTint(.clear)
 
-                    switch message.role {
-                    case .user:
-                        UserMessage(id: message.id, text: text, chat: chat)
-                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                            .padding(.vertical, 4)
-                    case .assistant:
-                        BotMessage(id: message.id, text: text, chat: chat)
-                            .listRowInsets(EdgeInsets(top: 0, leading: -8, bottom: 0, trailing: -8))
-                            .padding(.vertical, 4)
-                    case .function:
-                        FunctionMessage(id: message.id, text: text)
-                    case .ignored:
-                        EmptyView()
+                        WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+                            if viewStore.state {
+                                Spacer(minLength: 12)
+                            }
+                        }
+
+                        Spacer(minLength: 12)
+                            .onAppear {
+                                withAnimation {
+                                    proxy.scrollTo(bottomID, anchor: .bottom)
+                                }
+                            }
+                            .id(bottomID)
+                            .background(GeometryReader { geo in
+                                let offset = geo.frame(in: .named(scrollSpace)).minY
+                                Color.clear
+                                    .preference(
+                                        key: ScrollViewOffsetPreferenceKey.self,
+                                        value: offset
+                                    )
+                            })
+                            .preference(
+                                key: ListHeightPreferenceKey.self,
+                                value: listGeo.size.height
+                            )
+                    }
+                    .modify { view in
+                        if #available(macOS 13.0, *) {
+                            view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                        } else {
+                            view
+                        }
                     }
                 }
-                .listItemTint(.clear)
-
-                Instruction()
-
-                Spacer()
+                .listStyle(.plain)
+                .coordinateSpace(name: scrollSpace)
+                .onPreferenceChange(ListHeightPreferenceKey.self) { value in
+                    listHeight = value
+                    updatePinningState()
+                }
+                .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
+                    scrollOffset = value
+                    updatePinningState()
+                }
+                .overlay(alignment: .bottom) {
+                    WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+                        StopRespondingButton(chat: chat)
+                            .padding(.bottom, 8)
+                            .opacity(viewStore.state ? 1 : 0)
+                            .disabled(!viewStore.state)
+                            .transformEffect(.init(translationX: 0, y: viewStore.state ? 0 : 20))
+                            .animation(.easeInOut(duration: 0.2), value: viewStore.state)
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    WithViewStore(chat, observe: \.history.last) { viewStore in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.1)) {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
+                        }) {
+                            Image(systemName: "arrow.down")
+                                .padding(4)
+                                .background {
+                                    Circle()
+                                        .fill(.thickMaterial)
+                                        .shadow(color: .black.opacity(0.2), radius: 2)
+                                }
+                                .overlay {
+                                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                }
+                                .foregroundStyle(.secondary)
+                                .padding(4)
+                        }
+                        .opacity(pinnedToBottom ? 0 : 1)
+                        .buttonStyle(.plain)
+                        .onChange(of: viewStore.state) { _ in
+                            if pinnedToBottom || isInitialLoad {
+                                if isInitialLoad {
+                                    isInitialLoad = false
+                                }
+                                withAnimation {
+                                    proxy.scrollTo(bottomID, anchor: .bottom)
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            .scaleEffect(x: -1, y: 1, anchor: .center)
         }
-        .id("\(chat.history.count), \(chat.isReceivingMessage)")
-        .listStyle(.plain)
-        .scaleEffect(x: 1, y: -1, anchor: .center)
+    }
+
+    func updatePinningState() {
+        if scrollOffset > listHeight + 24 + 100 || scrollOffset <= 0 {
+            pinnedToBottom = false
+        } else {
+            pinnedToBottom = true
+        }
+    }
+}
+
+struct ChatHistory: View {
+    let chat: StoreOf<Chat>
+
+    var body: some View {
+        WithViewStore(chat, observe: \.history) { viewStore in
+            ForEach(viewStore.state, id: \.id) { message in
+                let text = message.text
+
+                switch message.role {
+                case .user:
+                    UserMessage(id: message.id, text: text, chat: chat)
+                        .listRowInsets(EdgeInsets(
+                            top: 0,
+                            leading: -8,
+                            bottom: 0,
+                            trailing: -8
+                        ))
+                        .padding(.vertical, 4)
+                case .assistant:
+                    BotMessage(id: message.id, text: text, chat: chat)
+                        .listRowInsets(EdgeInsets(
+                            top: 0,
+                            leading: -8,
+                            bottom: 0,
+                            trailing: -8
+                        ))
+                        .padding(.vertical, 4)
+                case .function:
+                    FunctionMessage(id: message.id, text: text)
+                case .ignored:
+                    EmptyView()
+                }
+            }
+        }
     }
 }
 
 private struct StopRespondingButton: View {
-    let chat: ChatProvider
+    let chat: StoreOf<Chat>
 
     var body: some View {
         Button(action: {
-            chat.stop()
+            chat.send(.stopRespondingButtonTapped)
         }) {
             HStack(spacing: 4) {
                 Image(systemName: "stop.fill")
@@ -99,7 +219,6 @@ private struct StopRespondingButton: View {
             }
         }
         .buttonStyle(.borderless)
-        .scaleEffect(x: -1, y: -1, anchor: .center)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 }
@@ -112,13 +231,17 @@ private struct Instruction: View {
         Group {
             Markdown(
                 """
-                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+                You can use plugins to perform various tasks.
 
-                \(
-                    useCodeScopeByDefaultInChatContext
-                        ? "Scope **`@code`** is enabled by default."
-                        : "Scope **`@file`** is enabled by default."
-                )
+                | Plugin Name | Description |
+                | --- | --- |
+                | `/run` | Runs a command under the project root |
+                | `/math` | Solves a math problem in natural language |
+                | `/search` | Searches on Bing and summarizes the results |
+                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
+                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
+
+                To use plugins, you can prefix a message with `/pluginName`.
                 """
             )
             .modifier(InstructionModifier())
@@ -143,17 +266,13 @@ private struct Instruction: View {
 
             Markdown(
                 """
-                You can use plugins to perform various tasks.
+                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
 
-                | Plugin Name | Description |
-                | --- | --- |
-                | `/run` | Runs a command under the project root |
-                | `/math` | Solves a math problem in natural language |
-                | `/search` | Searches on Bing and summarizes the results |
-                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
-                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
-
-                To use plugins, you can prefix a message with `/pluginName`.
+                \(
+                    useCodeScopeByDefaultInChatContext
+                        ? "Scope **`@code`** is enabled by default."
+                        : "Scope **`@file`** is enabled by default."
+                )
                 """
             )
             .modifier(InstructionModifier())
@@ -174,7 +293,6 @@ private struct Instruction: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 }
-                .scaleEffect(x: -1, y: -1, anchor: .center)
         }
     }
 }
@@ -182,7 +300,7 @@ private struct Instruction: View {
 private struct UserMessage: View {
     let id: String
     let text: String
-    let chat: ChatProvider
+    let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.chatFontSize) var chatFontSize
     @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
@@ -209,9 +327,8 @@ private struct UserMessage: View {
             }
             .padding(.leading)
             .padding(.trailing, 8)
-            .scaleEffect(x: -1, y: -1, anchor: .center)
             .shadow(color: .black.opacity(0.1), radius: 2)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .trailing)
             .contextMenu {
                 Button("Copy") {
                     NSPasteboard.general.clearContents()
@@ -219,17 +336,17 @@ private struct UserMessage: View {
                 }
 
                 Button("Send Again") {
-                    chat.resendMessage(id: id)
+                    chat.send(.resendMessageButtonTapped(id))
                 }
 
                 Button("Set as Extra System Prompt") {
-                    chat.setAsExtraPrompt(id: id)
+                    chat.send(.setAsExtraPromptButtonTapped(id))
                 }
 
                 Divider()
 
                 Button("Delete") {
-                    chat.deleteMessage(id: id)
+                    chat.send(.deleteMessageButtonTapped(id))
                 }
             }
     }
@@ -238,19 +355,13 @@ private struct UserMessage: View {
 private struct BotMessage: View {
     let id: String
     let text: String
-    let chat: ChatProvider
+    let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.chatFontSize) var chatFontSize
     @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 2) {
-            CopyButton {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-            }
-            .scaleEffect(x: -1, y: -1, anchor: .center)
-
             Markdown(text)
                 .textSelection(.enabled)
                 .markdownTheme(.custom(fontSize: chatFontSize))
@@ -271,7 +382,6 @@ private struct BotMessage: View {
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 }
                 .padding(.leading, 8)
-                .scaleEffect(x: -1, y: -1, anchor: .center)
                 .shadow(color: .black.opacity(0.1), radius: 2)
                 .contextMenu {
                     Button("Copy") {
@@ -280,17 +390,22 @@ private struct BotMessage: View {
                     }
 
                     Button("Set as Extra System Prompt") {
-                        chat.setAsExtraPrompt(id: id)
+                        chat.send(.setAsExtraPromptButtonTapped(id))
                     }
 
                     Divider()
 
                     Button("Delete") {
-                        chat.deleteMessage(id: id)
+                        chat.send(.deleteMessageButtonTapped(id))
                     }
                 }
+
+            CopyButton {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.trailing, 2)
     }
 }
@@ -304,15 +419,13 @@ struct FunctionMessage: View {
         Markdown(text)
             .textSelection(.enabled)
             .markdownTheme(.functionCall(fontSize: chatFontSize))
-            .scaleEffect(x: -1, y: -1, anchor: .center)
             .padding(.vertical, 2)
             .padding(.trailing, 2)
     }
 }
 
 struct ChatPanelInputArea: View {
-    @ObservedObject var chat: ChatProvider
-    @Binding var typedMessage: String
+    let chat: StoreOf<Chat>
     @FocusState var isInputAreaFocused: Bool
 
     var body: some View {
@@ -327,9 +440,10 @@ struct ChatPanelInputArea: View {
         .background(.ultraThickMaterial)
     }
 
+    @MainActor
     var clearButton: some View {
         Button(action: {
-            chat.clear()
+            chat.send(.clearButtonTap)
         }) {
             Group {
                 if #available(macOS 13.0, *) {
@@ -343,46 +457,53 @@ struct ChatPanelInputArea: View {
                 Circle().fill(Color(nsColor: .controlBackgroundColor))
             }
             .overlay {
-                Circle()
-                    .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+                Circle().stroke(Color(nsColor: .controlColor), lineWidth: 1)
             }
         }
         .buttonStyle(.plain)
     }
 
+    @MainActor
     var textEditor: some View {
         HStack(spacing: 0) {
-            ZStack(alignment: .center) {
-                // a hack to support dynamic height of TextEditor
-                Text(typedMessage.isEmpty ? "Hi" : typedMessage).opacity(0)
-                    .font(.system(size: 14))
-                    .frame(maxWidth: .infinity, maxHeight: 400)
+            WithViewStore(chat, removeDuplicates: { $0.typedMessage == $1.typedMessage }) {
+                viewStore in
+                ZStack(alignment: .center) {
+                    // a hack to support dynamic height of TextEditor
+                    Text(
+                        viewStore.state.typedMessage.isEmpty ? "Hi" : viewStore.state.typedMessage
+                    ).opacity(0)
+                        .font(.system(size: 14))
+                        .frame(maxWidth: .infinity, maxHeight: 400)
+                        .padding(.top, 1)
+                        .padding(.bottom, 2)
+                        .padding(.horizontal, 4)
+
+                    CustomTextEditor(
+                        text: viewStore.$typedMessage,
+                        font: .systemFont(ofSize: 14),
+                        onSubmit: { viewStore.send(.sendButtonTapped) },
+                        completions: chatAutoCompletion
+                    )
                     .padding(.top, 1)
-                    .padding(.bottom, 2)
-                    .padding(.horizontal, 4)
-
-                CustomTextEditor(
-                    text: $typedMessage,
-                    font: .systemFont(ofSize: 14),
-                    onSubmit: { submitText() },
-                    completions: chatAutoCompletion
-                )
-                .padding(.top, 1)
-                .padding(.bottom, -1)
+                    .padding(.bottom, -1)
+                }
+                .focused($isInputAreaFocused)
+                .padding(8)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .focused($isInputAreaFocused)
-            .padding(8)
-            .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: {
-                submitText()
-            }) {
-                Image(systemName: "paperplane.fill")
-                    .padding(8)
+            WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+                Button(action: {
+                    viewStore.send(.sendButtonTapped)
+                }) {
+                    Image(systemName: "paperplane.fill")
+                        .padding(8)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewStore.state)
+                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
             }
-            .buttonStyle(.plain)
-            .disabled(chat.isReceivingMessage)
-            .keyboardShortcut(KeyEquivalent.return, modifiers: [])
         }
         .frame(maxWidth: .infinity)
         .background {
@@ -395,7 +516,7 @@ struct ChatPanelInputArea: View {
         }
         .background {
             Button(action: {
-                typedMessage += "\n"
+                chat.send(.returnButtonTapped)
             }) {
                 EmptyView()
             }
@@ -410,19 +531,13 @@ struct ChatPanelInputArea: View {
         }
     }
 
-    func submitText() {
-        if typedMessage.isEmpty { return }
-        chat.send(typedMessage)
-        typedMessage = ""
-    }
-
     func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
         guard text.count == 1 else { return [] }
-        let plugins = chat.pluginIdentifiers.map { "/\($0)" }
+        let plugins = [String]() // chat.pluginIdentifiers.map { "/\($0)" }
         let availableFeatures = plugins + [
             "/exit",
             "@code",
-            "@file",
+            "@project",
             "@web",
         ]
 
@@ -582,9 +697,8 @@ struct ChatPanel_Preview: PreviewProvider {
 
     static var previews: some View {
         ChatPanel(chat: .init(
-            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
-            history: ChatPanel_Preview.history,
-            isReceivingMessage: true
+            initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: true),
+            reducer: Chat(service: .init())
         ))
         .frame(width: 450, height: 1200)
         .colorScheme(.dark)
@@ -594,9 +708,8 @@ struct ChatPanel_Preview: PreviewProvider {
 struct ChatPanel_EmptyChat_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
-            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
-            history: [],
-            isReceivingMessage: false
+            initialState: .init(history: [], isReceivingMessage: false),
+            reducer: Chat(service: .init())
         ))
         .padding()
         .frame(width: 450, height: 600)
@@ -627,9 +740,8 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
 struct ChatPanel_InputText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
-            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
-            history: ChatPanel_Preview.history,
-            isReceivingMessage: false
+            initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: false),
+            reducer: Chat(service: .init())
         ))
         .padding()
         .frame(width: 450, height: 600)
@@ -641,11 +753,14 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(
             chat: .init(
-                configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
-                history: ChatPanel_Preview.history,
-                isReceivingMessage: false
-            ),
-            typedMessage: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce turpis dolor, malesuada quis fringilla sit amet, placerat at nunc. Suspendisse orci tortor, tempor nec blandit a, malesuada vel tellus. Nunc sed leo ligula. Ut at ligula eget turpis pharetra tristique. Integer luctus leo non elit rhoncus fermentum."
+                initialState: .init(
+                    typedMessage: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce turpis dolor, malesuada quis fringilla sit amet, placerat at nunc. Suspendisse orci tortor, tempor nec blandit a, malesuada vel tellus. Nunc sed leo ligula. Ut at ligula eget turpis pharetra tristique. Integer luctus leo non elit rhoncus fermentum.",
+
+                    history: ChatPanel_Preview.history,
+                    isReceivingMessage: false
+                ),
+                reducer: Chat(service: .init())
+            )
         )
         .padding()
         .frame(width: 450, height: 600)
@@ -656,9 +771,8 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
 struct ChatPanel_Light_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
-            configuration: UserPreferenceChatGPTConfiguration().overriding(.init()),
-            history: ChatPanel_Preview.history,
-            isReceivingMessage: true
+            initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: true),
+            reducer: Chat(service: .init())
         ))
         .padding()
         .frame(width: 450, height: 600)

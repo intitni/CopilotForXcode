@@ -6,7 +6,7 @@ import SuggestionService
 import SuggestionModel
 import Preferences
 
-final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
+public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
     let userDefaultsObserver = UserDefaultsObserver(
         object: UserDefaults.shared, forKeyPaths: [
             UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
@@ -14,13 +14,13 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         ], context: nil
     )
 
-    var isRealtimeSuggestionEnabled: Bool {
+    public var isRealtimeSuggestionEnabled: Bool {
         UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
     }
 
     private var _suggestionService: SuggestionServiceType?
 
-    var suggestionService: SuggestionServiceType? {
+    public var suggestionService: SuggestionServiceType? {
         // Check if the workspace is disabled.
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
@@ -45,7 +45,7 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         return _suggestionService
     }
 
-    var isSuggestionFeatureEnabled: Bool {
+    public var isSuggestionFeatureEnabled: Bool {
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
         if isSuggestionDisabledGlobally {
@@ -57,7 +57,7 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         return true
     }
 
-    override init(workspace: Workspace) {
+    public override init(workspace: Workspace) {
         super.init(workspace: workspace)
 
         userDefaultsObserver.onChange = { [weak self] in
@@ -66,25 +66,25 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
     }
 
-    override func didOpenFilespace(_ filespace: Filespace) {
+    public override func didOpenFilespace(_ filespace: Filespace) {
         notifyOpenFile(filespace: filespace)
     }
 
-    override func didSaveFilespace(_ filespace: Filespace) {
+    public override func didSaveFilespace(_ filespace: Filespace) {
         notifySaveFile(filespace: filespace)
     }
     
-    override func didUpdateFilespace(_ filespace: Filespace, content: String) {
+    public override func didUpdateFilespace(_ filespace: Filespace, content: String) {
         notifyUpdateFile(filespace: filespace, content: content)
     }
 
-    override func didCloseFilespace(_ fileURL: URL) {
+    public override func didCloseFilespace(_ fileURL: URL) {
         Task {
             try await suggestionService?.notifyCloseTextDocument(fileURL: fileURL)
         }
     }
 
-    func notifyOpenFile(filespace: Filespace) {
+    public func notifyOpenFile(filespace: Filespace) {
         workspace?.refreshUpdateTime()
         workspace?.openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
@@ -102,7 +102,7 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
     }
 
-    func notifyUpdateFile(filespace: Filespace, content: String) {
+    public func notifyUpdateFile(filespace: Filespace, content: String) {
         filespace.refreshUpdateTime()
         workspace?.refreshUpdateTime()
         Task {
@@ -113,7 +113,7 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
     }
 
-    func notifySaveFile(filespace: Filespace) {
+    public func notifySaveFile(filespace: Filespace) {
         filespace.refreshUpdateTime()
         workspace?.refreshUpdateTime()
         Task {
@@ -121,7 +121,7 @@ final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
     }
 
-    func terminateSuggestionService() async {
+    public func terminateSuggestionService() async {
         await _suggestionService?.terminate()
     }
 }

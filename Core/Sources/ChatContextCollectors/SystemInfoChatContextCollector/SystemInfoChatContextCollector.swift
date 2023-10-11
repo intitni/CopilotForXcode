@@ -16,11 +16,14 @@ public final class SystemInfoChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext? {
+    ) -> ChatContext {
         return .init(
             systemPrompt: """
-            Current Time: \(Self.dateFormatter.string(from: Date())) (You can use it to calculate time in another time zone)
-            """,
+                    Current Time: \(
+                        Self.dateFormatter.string(from: Date())
+                    ) (You can use it to calculate time in another time zone)
+                    """,
+            retrievedContent: [],
             functions: []
         )
     }

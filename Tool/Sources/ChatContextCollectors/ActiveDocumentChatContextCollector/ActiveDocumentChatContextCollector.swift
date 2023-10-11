@@ -10,15 +10,15 @@ import XcodeInspector
 public final class ActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
 
-    var activeDocumentContext: ActiveDocumentContext?
+    public var activeDocumentContext: ActiveDocumentContext?
 
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext? {
-        guard let info = getEditorInformation() else { return nil }
+    ) -> ChatContext {
+        guard let info = getEditorInformation() else { return .empty }
         let context = getActiveDocumentContext(info)
         activeDocumentContext = context
 
@@ -28,10 +28,11 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 removedCode.focusedContext = nil
                 return .init(
                     systemPrompt: extractSystemPrompt(removedCode),
+                    retrievedContent: [],
                     functions: []
                 )
             }
-            return nil
+            return .empty
         }
 
         var functions = [any ChatGPTFunction]()
@@ -66,6 +67,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
         return .init(
             systemPrompt: extractSystemPrompt(context),
+            retrievedContent: [],
             functions: functions
         )
     }

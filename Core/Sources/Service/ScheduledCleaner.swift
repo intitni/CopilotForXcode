@@ -19,7 +19,6 @@ public final class ScheduledCleaner {
     }
 
     func start() {
-        // occasionally cleanup workspaces.
         Task { @ServiceActor in
             while !Task.isCancelled {
                 try await Task.sleep(nanoseconds: 10 * 60 * 1_000_000_000)
@@ -27,9 +26,8 @@ public final class ScheduledCleaner {
             }
         }
 
-        // cleanup when Xcode becomes inactive
         Task { @ServiceActor in
-            for await app in ActiveApplicationMonitor.shared.createStream() {
+            for await app in ActiveApplicationMonitor.shared.createInfoStream() {
                 try Task.checkCancellation()
                 if let app, !app.isXcode {
                     await cleanUp()

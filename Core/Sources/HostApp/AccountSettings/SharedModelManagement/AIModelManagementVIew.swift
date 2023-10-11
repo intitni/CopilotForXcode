@@ -1,6 +1,7 @@
 import AIModel
 import ComposableArchitecture
 import PlusFeatureFlag
+import SharedUIComponents
 import SwiftUI
 
 protocol AIModelManagementAction {
@@ -54,7 +55,7 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                             .foregroundColor(.secondary)
 
                         let disabled = viewStore.state >= 2
-                        
+
                         Button(disabled ? "Add More Model (Plus)" : "Add Model") {
                             store.send(.createModel)
                         }.disabled(disabled)
@@ -102,6 +103,13 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                     .onMove(perform: { indices, newOffset in
                         viewStore.send(.moveModel(from: indices, to: newOffset))
                     })
+                    .modify { view in
+                        if #available(macOS 13.0, *) {
+                            view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                        } else {
+                            view
+                        }
+                    }
                 }
                 .removeBackground()
                 .listStyle(.plain)

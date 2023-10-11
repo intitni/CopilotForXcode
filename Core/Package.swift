@@ -1,7 +1,61 @@
 // swift-tools-version: 5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
+import Foundation
 import PackageDescription
+
+// MARK: - Pro
+
+extension [Target.Dependency] {
+    func pro(_ targetNames: [String]) -> [Target.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
+        }
+        return self
+    }
+}
+
+extension [Package.Dependency] {
+    var pro: [Package.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + [.package(path: "../Pro/Pro")]
+        }
+        return self
+    }
+}
+
+let isProIncluded: Bool = {
+    func isProIncluded(file: StaticString = #file) -> Bool {
+        let filePath = "\(file)"
+        let fileURL = URL(fileURLWithPath: filePath)
+        let rootURL = fileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let confURL = rootURL.appendingPathComponent("PLUS")
+        if !FileManager.default.fileExists(atPath: confURL.path) {
+            return false
+        }
+        do {
+            if let content = String(
+                data: try Data(contentsOf: confURL),
+                encoding: .utf8
+            ) {
+                if content.hasPrefix("YES") {
+                    return true
+                }
+            }
+            return false
+        } catch {
+            return false
+        }
+    }
+
+    return isProIncluded()
+}()
+
+// MARK: - Package
 
 let package = Package(
     name: "Core",
@@ -21,16 +75,13 @@ let package = Package(
             name: "Client",
             targets: [
                 "Client",
-                "XPCShared",
             ]
         ),
         .library(
             name: "HostApp",
             targets: [
                 "HostApp",
-                "GitHubCopilotService",
                 "Client",
-                "XPCShared",
                 "LaunchAgentManager",
                 "UpdateChecker",
             ]
@@ -38,9 +89,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
-        // TODO: Update LanguageClient some day.
-        .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
-        .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
@@ -57,8 +105,8 @@ let package = Package(
         .target(
             name: "Client",
             dependencies: [
-                "XPCShared",
-                "GitHubCopilotService",
+                .product(name: "XPCShared", package: "Tool"),
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -67,14 +115,13 @@ let package = Package(
         .target(
             name: "Service",
             dependencies: [
-                "SuggestionService",
-                "GitHubCopilotService",
-                "XPCShared",
                 "SuggestionWidget",
                 "ChatService",
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
+                .product(name: "XPCShared", package: "Tool"),
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
@@ -96,9 +143,9 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "GitHubCopilotService",
                 "SuggestionInjector",
-                "XPCShared",
+                .product(name: "XPCShared", package: "Tool"),
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Environment", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -111,10 +158,9 @@ let package = Package(
             name: "HostApp",
             dependencies: [
                 "Client",
-                "GitHubCopilotService",
-                "CodeiumService",
                 "LaunchAgentManager",
                 "PlusFeatureFlag",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
@@ -127,13 +173,6 @@ let package = Package(
             ])
         ),
 
-        // MARK: - XPC Related
-
-        .target(
-            name: "XPCShared",
-            dependencies: [.product(name: "SuggestionModel", package: "Tool")]
-        ),
-
         // MARK: - Suggestion Service
 
         .target(
@@ -144,11 +183,6 @@ let package = Package(
             name: "SuggestionInjectorTests",
             dependencies: ["SuggestionInjector"]
         ),
-        .target(name: "SuggestionService", dependencies: [
-            "GitHubCopilotService",
-            "CodeiumService",
-            .product(name: "UserDefaultsObserver", package: "Tool"),
-        ]),
 
         // MARK: - Prompt To Code
 
@@ -179,7 +213,6 @@ let package = Package(
 
                 // context collectors
                 "WebChatContextCollector",
-                "ActiveDocumentChatContextCollector",
                 "SystemInfoChatContextCollector",
 
                 .product(name: "ChatContextCollector", package: "Tool"),
@@ -211,6 +244,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 
@@ -248,7 +282,7 @@ let package = Package(
         .target(
             name: "ServiceUpdateMigration",
             dependencies: [
-                "GitHubCopilotService",
+                .product(name: "SuggestionService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Keychain", package: "Tool"),
             ]
@@ -265,39 +299,6 @@ let package = Package(
             ].pro([
                 "LicenseManagement",
             ])
-        ),
-
-        // MARK: - GitHub Copilot
-
-        .target(
-            name: "GitHubCopilotService",
-            dependencies: [
-                "LanguageClient",
-                "XPCShared",
-                .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "Logger", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "Terminal", package: "Tool"),
-                .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
-            ]
-        ),
-        .testTarget(
-            name: "GitHubCopilotServiceTests",
-            dependencies: ["GitHubCopilotService"]
-        ),
-
-        // MARK: - Codeium
-
-        .target(
-            name: "CodeiumService",
-            dependencies: [
-                "LanguageClient",
-                .product(name: "Keychain", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "Terminal", package: "Tool"),
-            ]
         ),
 
         // MARK: - Chat Plugins
@@ -355,73 +356,6 @@ let package = Package(
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
         ),
-
-        .target(
-            name: "ActiveDocumentChatContextCollector",
-            dependencies: [
-                .product(name: "ChatContextCollector", package: "Tool"),
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "Preferences", package: "Tool"),
-                .product(name: "FocusedCodeFinder", package: "Tool"),
-                .product(name: "AppMonitoring", package: "Tool"),
-            ],
-            path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
-        ),
-
-        .testTarget(
-            name: "ActiveDocumentChatContextCollectorTests",
-            dependencies: ["ActiveDocumentChatContextCollector"]
-        ),
     ]
 )
-
-// MARK: - Pro
-
-extension [Target.Dependency] {
-    func pro(_ targetNames: [String]) -> [Target.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
-        }
-        return self
-    }
-}
-
-extension [Package.Dependency] {
-    var pro: [Package.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + [.package(path: "../Pro")]
-        }
-        return self
-    }
-}
-
-import Foundation
-
-let isProIncluded: Bool = {
-    func isProIncluded(file: StaticString = #file) -> Bool {
-        let filePath = "\(file)"
-        let fileURL = URL(fileURLWithPath: filePath)
-        let rootURL = fileURL
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let confURL = rootURL.appendingPathComponent("PLUS")
-        if !FileManager.default.fileExists(atPath: confURL.path) {
-            return false
-        }
-        do {
-            let content = String(
-                data: try Data(contentsOf: confURL),
-                encoding: .utf8
-            )
-            print("")
-            return content?.hasPrefix("YES") ?? false
-        } catch {
-            return false
-        }
-    }
-
-    return isProIncluded()
-}()
 

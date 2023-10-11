@@ -91,15 +91,6 @@
       }
     },
     {
-      "identity" : "sparkle",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sparkle-project/Sparkle",
-      "state" : {
-        "revision" : "631846cc829f0f0cae327df9bafe5a32b7ddadce",
-        "version" : "2.4.0"
-      }
-    },
-    {
       "identity" : "swift-async-algorithms",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-async-algorithms",
@@ -178,15 +169,6 @@
       "state" : {
         "revision" : "d01446a78fb768adc9a78cbb6df07767c8ccfc29",
         "version" : "0.8.0"
-      }
-    },
-    {
-      "identity" : "swift-markdown-ui",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalezreal/swift-markdown-ui",
-      "state" : {
-        "revision" : "12b351a75201a8124c2f2e1f9fc6ef5cd812c0b9",
-        "version" : "2.1.0"
       }
     },
     {

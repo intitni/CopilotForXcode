@@ -1,9 +1,9 @@
 import ASTParser
 import Foundation
+import Preferences
 import SuggestionModel
 import SwiftParser
 import SwiftSyntax
-import Preferences
 
 public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
     public let maxFocusedCodeLineCount: Int
@@ -61,7 +61,10 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
                 }
             }
             guard let focusedNode else {
-                var result = UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
+                var result =
+                    UnknownLanguageFocusedCodeFinder(
+                        proposedSearchRange: maxFocusedCodeLineCount / 2
+                    )
                     .findFocusedCode(
                         containingRange: range,
                         activeDocumentContext: activeDocumentContext

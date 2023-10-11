@@ -46,21 +46,42 @@ final class DynamicContextController {
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let oldMessages = await memory.history
-        let contexts = contextCollectors.compactMap {
-            $0.generateContext(
-                history: oldMessages,
-                scopes: scopes,
-                content: content,
-                configuration: configuration
-            )
+        let contexts = await withTaskGroup(
+            of: ChatContext.self
+        ) { [scopes, content, configuration] group in
+            for collector in contextCollectors {
+                group.addTask {
+                    await collector.generateContext(
+                        history: oldMessages,
+                        scopes: scopes,
+                        content: content,
+                        configuration: configuration
+                    )
+                }
+            }
+            var contexts = [ChatContext]()
+            for await context in group {
+                contexts.append(context)
+            }
+            return contexts
         }
+        
+        let extraSystemPrompt = contexts
+            .map(\.systemPrompt)
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        
+        let contextPrompts = contexts
+            .flatMap(\.retrievedContent)
+            .filter { !$0.content.isEmpty }
+            .sorted { $0.priority > $1.priority }
+        
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
-        \(systemPrompt)
-
-        \(contexts.map(\.systemPrompt).filter { !$0.isEmpty }.joined(separator: "\n\n"))
+        \(systemPrompt)\(extraSystemPrompt.isEmpty ? "" : "\n\(extraSystemPrompt)")
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
+        await memory.mutateRetrievedContent(contextPrompts.map(\.content))
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }
 }

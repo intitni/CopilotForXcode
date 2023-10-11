@@ -1,5 +1,6 @@
 import SuggestionModel
 import SwiftUI
+import SharedUIComponents
 
 struct SuggestionFeatureDisabledLanguageListView: View {
     final class Settings: ObservableObject {
@@ -66,6 +67,13 @@ struct SuggestionFeatureDisabledLanguageListView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
+                    }
+                }
+                .modify { view in
+                    if #available(macOS 13.0, *) {
+                        view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                    } else {
+                        view
                     }
                 }
             }

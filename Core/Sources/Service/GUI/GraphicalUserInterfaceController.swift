@@ -31,12 +31,17 @@ struct GUI: ReducerProtocol {
         }
 
         #if canImport(ChatTabPersistent)
+        var isChatTabRestoreFinished: Bool = false
         var persistentState: ChatTabPersistent.State {
             get {
-                .init(chatTabInfo: chatTabGroup.tabInfo)
+                .init(
+                    chatTabInfo: chatTabGroup.tabInfo,
+                    isRestoreFinished: isChatTabRestoreFinished
+                )
             }
             set {
                 chatTabGroup.tabInfo = newValue.chatTabInfo
+                isChatTabRestoreFinished = newValue.isRestoreFinished
             }
         }
         #endif
@@ -61,147 +66,171 @@ struct GUI: ReducerProtocol {
 
     @Dependency(\.chatTabPool) var chatTabPool: ChatTabPool
 
+    public enum Debounce: Hashable {
+        case updateChatTabOrder
+    }
+
     var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.suggestionWidgetState, action: /Action.suggestionWidget) {
-            WidgetFeature()
-        }
+        CombineReducers {
+            Scope(state: \.suggestionWidgetState, action: /Action.suggestionWidget) {
+                WidgetFeature()
+            }
 
-        Scope(
-            state: \.chatTabGroup,
-            action: /Action.suggestionWidget .. /WidgetFeature.Action.chatPanel
-        ) {
-            Reduce { _, action in
-                switch action {
-                case let .createNewTapButtonClicked(kind):
-                    return .run { send in
-                        if let (_, chatTabInfo) = await chatTabPool.createTab(for: kind) {
-                            await send(.appendAndSelectTab(chatTabInfo))
+            Scope(
+                state: \.chatTabGroup,
+                action: /Action.suggestionWidget .. /WidgetFeature.Action.chatPanel
+            ) {
+                Reduce { _, action in
+                    switch action {
+                    case let .createNewTapButtonClicked(kind):
+                        return .run { send in
+                            if let (_, chatTabInfo) = await chatTabPool.createTab(for: kind) {
+                                await send(.appendAndSelectTab(chatTabInfo))
+                            }
                         }
-                    }
 
-                case let .closeTabButtonClicked(id):
-                    return .run { _ in
-                        chatTabPool.removeTab(of: id)
-                    }
-
-                case let .chatTab(_, .openNewTab(builder)):
-                    return .run { send in
-                        if let (_, chatTabInfo) = await chatTabPool
-                            .createTab(from: builder.chatTabBuilder)
-                        {
-                            await send(.appendAndSelectTab(chatTabInfo))
+                    case let .closeTabButtonClicked(id):
+                        return .run { _ in
+                            chatTabPool.removeTab(of: id)
                         }
-                    }
 
-                default:
-                    return .none
+                    case let .chatTab(_, .openNewTab(builder)):
+                        return .run { send in
+                            if let (_, chatTabInfo) = await chatTabPool
+                                .createTab(from: builder.chatTabBuilder)
+                            {
+                                await send(.appendAndSelectTab(chatTabInfo))
+                            }
+                        }
+
+                    default:
+                        return .none
+                    }
                 }
             }
-        }
-
-        #if canImport(ChatTabPersistent)
-        Scope(state: \.persistentState, action: /Action.persistent) {
-            ChatTabPersistent()
-        }
-        #endif
-
-        Reduce { state, action in
-            switch action {
-            case .start:
-                #if canImport(ChatTabPersistent)
-                return .run { send in
-                    await send(.persistent(.restoreChatTabs))
-                }
-                #else
-                return .none
-                #endif
-
-            case let .openChatPanel(forceDetach):
-                return .run { send in
-                    await send(
-                        .suggestionWidget(.chatPanel(.presentChatPanel(forceDetach: forceDetach)))
-                    )
-                }
-
-            case .createChatGPTChatTabIfNeeded:
-                if state.chatTabGroup.tabInfo.contains(where: {
-                    chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
-                }) {
-                    return .none
-                }
-                return .run { send in
-                    if let (_, chatTabInfo) = await chatTabPool.createTab(for: nil) {
-                        await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
-                    }
-                }
-
-            case let .sendCustomCommandToActiveChat(command):
-                @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
-                    if tab.service.isReceivingMessage {
-                        await tab.service.stopReceivingMessage()
-                    }
-                    try? await tab.service.handleCustomCommand(command)
-                }
-
-                if let info = state.chatTabGroup.selectedTabInfo,
-                   let activeTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
-                {
-                    return .run { send in
-                        await send(.openChatPanel(forceDetach: false))
-                        await stopAndHandleCommand(activeTab)
-                    }
-                }
-
-                if let info = state.chatTabGroup.tabInfo.first(where: {
-                    chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
-                }),
-                    let chatTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
-                {
-                    state.chatTabGroup.selectedTabId = chatTab.id
-                    return .run { send in
-                        await send(.openChatPanel(forceDetach: false))
-                        await stopAndHandleCommand(chatTab)
-                    }
-                }
-
-                return .run { send in
-                    guard let (chatTab, chatTabInfo) = await chatTabPool.createTab(for: nil) else {
-                        return
-                    }
-                    await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
-                    await send(.openChatPanel(forceDetach: false))
-                    if let chatTab = chatTab as? ChatGPTChatTab {
-                        await stopAndHandleCommand(chatTab)
-                    }
-                }
-
-            case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
-                #if canImport(ChatTabPersistent)
-                // when a tab is updated, persist it.
-                return .run { send in
-                    await send(.persistent(.chatTabUpdated(id: id)))
-                }
-                #else
-                return .none
-                #endif
-
-            case let .suggestionWidget(.chatPanel(.closeTabButtonClicked(id))):
-                #if canImport(ChatTabPersistent)
-                // when a tab is closed, remove it from persistence.
-                return .run { send in
-                    await send(.persistent(.chatTabClosed(id: id)))
-                }
-                #else
-                return .none
-                #endif
-
-            case .suggestionWidget:
-                return .none
 
             #if canImport(ChatTabPersistent)
-            case .persistent:
-                return .none
+            Scope(state: \.persistentState, action: /Action.persistent) {
+                ChatTabPersistent()
+            }
             #endif
+
+            Reduce { state, action in
+                switch action {
+                case .start:
+                    #if canImport(ChatTabPersistent)
+                    return .run { send in
+                        await send(.persistent(.restoreChatTabs))
+                    }
+                    #else
+                    return .none
+                    #endif
+
+                case let .openChatPanel(forceDetach):
+                    return .run { send in
+                        await send(
+                            .suggestionWidget(
+                                .chatPanel(.presentChatPanel(forceDetach: forceDetach))
+                            )
+                        )
+                    }
+
+                case .createChatGPTChatTabIfNeeded:
+                    if state.chatTabGroup.tabInfo.contains(where: {
+                        chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
+                    }) {
+                        return .none
+                    }
+                    return .run { send in
+                        if let (_, chatTabInfo) = await chatTabPool.createTab(for: nil) {
+                            await send(
+                                .suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo)))
+                            )
+                        }
+                    }
+
+                case let .sendCustomCommandToActiveChat(command):
+                    @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
+                        if tab.service.isReceivingMessage {
+                            await tab.service.stopReceivingMessage()
+                        }
+                        try? await tab.service.handleCustomCommand(command)
+                    }
+
+                    if let info = state.chatTabGroup.selectedTabInfo,
+                       let activeTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
+                    {
+                        return .run { send in
+                            await send(.openChatPanel(forceDetach: false))
+                            await stopAndHandleCommand(activeTab)
+                        }
+                    }
+
+                    if let info = state.chatTabGroup.tabInfo.first(where: {
+                        chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
+                    }),
+                        let chatTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
+                    {
+                        state.chatTabGroup.selectedTabId = chatTab.id
+                        return .run { send in
+                            await send(.openChatPanel(forceDetach: false))
+                            await stopAndHandleCommand(chatTab)
+                        }
+                    }
+
+                    return .run { send in
+                        guard let (chatTab, chatTabInfo) = await chatTabPool.createTab(for: nil)
+                        else {
+                            return
+                        }
+                        await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
+                        await send(.openChatPanel(forceDetach: false))
+                        if let chatTab = chatTab as? ChatGPTChatTab {
+                            await stopAndHandleCommand(chatTab)
+                        }
+                    }
+
+                case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
+                    #if canImport(ChatTabPersistent)
+                    // when a tab is updated, persist it.
+                    return .run { send in
+                        await send(.persistent(.chatTabUpdated(id: id)))
+                    }
+                    #else
+                    return .none
+                    #endif
+
+                case let .suggestionWidget(.chatPanel(.closeTabButtonClicked(id))):
+                    #if canImport(ChatTabPersistent)
+                    // when a tab is closed, remove it from persistence.
+                    return .run { send in
+                        await send(.persistent(.chatTabClosed(id: id)))
+                    }
+                    #else
+                    return .none
+                    #endif
+
+                case .suggestionWidget:
+                    return .none
+
+                #if canImport(ChatTabPersistent)
+                case .persistent:
+                    return .none
+                #endif
+                }
+            }
+        }.onChange(of: \.chatTabGroup.tabInfo) { old, new in
+            Reduce { _, _ in
+                guard old.map(\.id) != new.map(\.id) else {
+                    return .none
+                }
+                #if canImport(ChatTabPersistent)
+                return .run { send in
+                    await send(.persistent(.chatOrderChanged))
+                }.debounce(id: Debounce.updateChatTabOrder, for: 1, scheduler: DispatchQueue.main)
+                #else
+                return .none
+                #endif
             }
         }
     }

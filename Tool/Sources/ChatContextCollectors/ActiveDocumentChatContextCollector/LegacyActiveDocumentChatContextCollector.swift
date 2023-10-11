@@ -1,9 +1,9 @@
+import ChatContextCollector
 import Foundation
 import OpenAIService
 import Preferences
 import SuggestionModel
 import XcodeInspector
-import ChatContextCollector
 
 public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
     public init() {}
@@ -13,8 +13,8 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
         scopes: Set<String>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext? {
-        guard let content = getEditorInformation() else { return nil }
+    ) -> ChatContext {
+        guard let content = getEditorInformation() else { return .empty }
         let relativePath = content.relativePath
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
@@ -79,29 +79,29 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
 
         return .init(
             systemPrompt: """
-            Active Document Context:###
-            Document Relative Path: \(relativePath)
-            Selection Range Start: \
-            Line \(selectionRange.start.line) \
-            Character \(selectionRange.start.character)
-            Selection Range End: \
-            Line \(selectionRange.end.line) \
-            Character \(selectionRange.end.character)
-            Cursor Position: \
-            Line \(selectionRange.end.line) \
-            Character \(selectionRange.end.character)
-            \(editorContent)
-            Line Annotations:
-            \(
-                content.editorContent?.lineAnnotations
-                    .map { "  - \($0)" }
-                    .joined(separator: "\n") ?? "N/A"
-            )
-            ###
-            """,
+                Active Document Context:###
+                Document Relative Path: \(relativePath)
+                Selection Range Start: \
+                Line \(selectionRange.start.line) \
+                Character \(selectionRange.start.character)
+                Selection Range End: \
+                Line \(selectionRange.end.line) \
+                Character \(selectionRange.end.character)
+                Cursor Position: \
+                Line \(selectionRange.end.line) \
+                Character \(selectionRange.end.character)
+                \(editorContent)
+                Line Annotations:
+                \(
+                    content.editorContent?.lineAnnotations
+                        .map { "  - \($0)" }
+                        .joined(separator: "\n") ?? "N/A"
+                )
+                ###
+                """,
+            retrievedContent: [],
             functions: []
         )
     }
 }
-
 

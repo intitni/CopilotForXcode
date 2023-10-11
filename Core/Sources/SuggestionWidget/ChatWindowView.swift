@@ -66,9 +66,7 @@ struct ChatTitleBar: View {
                             : Color(nsColor: .disabledControlTextColor)
                     )
                     .frame(width: 10, height: 10)
-                    .overlay {
-                        Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
-                    }
+                    .shadow(radius: 0.5)
                     .overlay {
                         if isHovering {
                             Image(systemName: "minus")
@@ -91,9 +89,7 @@ struct ChatTitleBar: View {
                                 : Color(nsColor: .disabledControlTextColor)
                         )
                         .frame(width: 10, height: 10)
-                        .overlay {
-                            Circle().strokeBorder(.black.opacity(0.3), lineWidth: 1)
-                        }
+                        .shadow(radius: 0.5)
                         .disabled(!viewStore.state)
                         .overlay {
                             if isHovering {
@@ -160,6 +156,7 @@ struct ChatTabBar: View {
     }
 
     @Environment(\.chatTabPool) var chatTabPool
+    @State var draggingTabId: String?
 
     var body: some View {
         WithViewStore(
@@ -186,6 +183,20 @@ struct ChatTabBar: View {
                                         tab.menu
                                     }
                                     .id(info.id)
+                                    .onDrag {
+                                        draggingTabId = info.id
+                                        return NSItemProvider(object: info.id as NSString)
+                                    }
+                                    .onDrop(
+                                        of: [.text],
+                                        delegate: ChatTabBarDropDelegate(
+                                            store: store,
+                                            tabs: viewStore.state.tabInfo,
+                                            itemId: info.id,
+                                            draggingTabId: $draggingTabId
+                                        )
+                                    )
+
                                 } else {
                                     EmptyView()
                                 }
@@ -264,6 +275,30 @@ struct ChatTabBar: View {
     }
 }
 
+struct ChatTabBarDropDelegate: DropDelegate {
+    let store: StoreOf<ChatPanelFeature>
+    let tabs: IdentifiedArray<String, ChatTabInfo>
+    let itemId: String
+    @Binding var draggingTabId: String?
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingTabId = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard itemId != draggingTabId else { return }
+        let from = tabs.firstIndex { $0.id == draggingTabId }
+        let to = tabs.firstIndex { $0.id == itemId }
+        guard let from, let to, from != to else { return }
+        store.send(.moveChatTab(from: from, to: to))
+    }
+}
+
 struct ChatTabBarButton<Content: View>: View {
     let store: StoreOf<ChatPanelFeature>
     let info: ChatTabInfo
@@ -273,33 +308,30 @@ struct ChatTabBarButton<Content: View>: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Button(action: {
-                store.send(.tabClicked(id: info.id))
-            }) {
-                content()
-                    .font(.callout)
-                    .lineLimit(1)
-                    .frame(maxWidth: 120)
-                    .padding(.horizontal, 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            .overlay(alignment: .leading) {
-                Button(action: {
-                    store.send(.closeTabButtonClicked(id: info.id))
-                }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.secondary)
+            content()
+                .font(.callout)
+                .lineLimit(1)
+                .frame(maxWidth: 120)
+                .padding(.horizontal, 32)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    store.send(.tabClicked(id: info.id))
                 }
-                .buttonStyle(.plain)
-                .padding(2)
-                .padding(.leading, 8)
-                .opacity(isHovered ? 1 : 0)
-            }
-            .onHover { isHovered = $0 }
-            .animation(.linear(duration: 0.1), value: isHovered)
-            .animation(.linear(duration: 0.1), value: isSelected)
+                .overlay(alignment: .leading) {
+                    Button(action: {
+                        store.send(.closeTabButtonClicked(id: info.id))
+                    }) {
+                        Image(systemName: "xmark")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(2)
+                    .padding(.leading, 8)
+                    .opacity(isHovered ? 1 : 0)
+                }
+                .onHover { isHovered = $0 }
+                .animation(.linear(duration: 0.1), value: isHovered)
+                .animation(.linear(duration: 0.1), value: isSelected)
 
             Divider().padding(.vertical, 6)
         }

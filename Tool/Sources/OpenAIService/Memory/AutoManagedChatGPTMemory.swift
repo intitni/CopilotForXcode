@@ -8,7 +8,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public private(set) var messages: [ChatMessage] = []
     public private(set) var remainingTokens: Int?
 
-    public var systemPrompt: ChatMessage
+    public var systemPrompt: String
+    public var retrievedContent: [String] = []
     public var history: [ChatMessage] = [] {
         didSet { onHistoryChange() }
     }
@@ -25,7 +26,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         configuration: ChatGPTConfiguration,
         functionProvider: ChatGPTFunctionProvider
     ) {
-        self.systemPrompt = .init(role: .system, content: systemPrompt)
+        self.systemPrompt = systemPrompt
         self.configuration = configuration
         self.functionProvider = functionProvider
         _ = Self.encoder // force pre-initialize
@@ -36,7 +37,11 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     public func mutateSystemPrompt(_ newPrompt: String) {
-        systemPrompt.content = newPrompt
+        systemPrompt = newPrompt
+    }
+
+    public func mutateRetrievedContent(_ newContent: [String]) {
+        retrievedContent = newContent
     }
 
     public nonisolated
@@ -52,6 +57,17 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+    ///
+    /// Format:
+    /// ```
+    /// [System Prompt] priority: high
+    ///   [Retrieved Content] priority: low
+    ///     [Retrieved Content A]
+    ///     <separator>
+    ///     [Retrieved Content B]
+    /// [Functions] priority: high
+    /// [Message History] priority: medium
+    /// ```
     func generateSendingHistory(
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
@@ -63,8 +79,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             return count
         }
 
-        var all: [ChatMessage] = []
-        let systemMessageTokenCount = countToken(&systemPrompt)
+        var smallestSystemPromptMessage = ChatMessage(role: .system, content: systemPrompt)
+        let smallestSystemMessageTokenCount = countToken(&smallestSystemPromptMessage)
         let functionTokenCount = functionProvider.functions.reduce(into: 0) { partial, function in
             var count = encoder.countToken(text: function.name)
                 + encoder.countToken(text: function.description)
@@ -75,38 +91,83 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             }
             partial += count
         }
-        var allTokensCount = functionTokenCount +
-            3 // every reply is primed with <|start|>assistant<|message|>
-        allTokensCount += systemPrompt.isEmpty ? 0 : systemMessageTokenCount
+        let mandatoryContentTokensCount = smallestSystemMessageTokenCount
+            + functionTokenCount
+            + 3 // every reply is primed with <|start|>assistant<|message|>
+
+        /// the available tokens count for other messages and retrieved content
+        let availableTokenCountForMessages = configuration.maxTokens
+            - configuration.minimumReplyTokens
+            - mandatoryContentTokensCount
+
+        var messageTokenCount = 0
+        var allMessages: [ChatMessage] = []
 
         for (index, message) in history.enumerated().reversed() {
-            if maxNumberOfMessages > 0, all.count >= maxNumberOfMessages { break }
+            if maxNumberOfMessages > 0, allMessages.count >= maxNumberOfMessages { break }
             if message.isEmpty { continue }
             let tokensCount = countToken(&history[index])
-            if tokensCount + allTokensCount >
-                configuration.maxTokens - configuration.minimumReplyTokens
-            {
-                break
+            if tokensCount + messageTokenCount > availableTokenCountForMessages { break }
+            messageTokenCount += tokensCount
+            allMessages.append(message)
+        }
+
+        /// the available tokens count for retrieved content
+        let availableTokenCountForRetrievedContent = min(
+            availableTokenCountForMessages - messageTokenCount,
+            configuration.maxTokens / 2
+        )
+        var retrievedContentTokenCount = 0
+
+        let separator = String(repeating: "=", count: 32) // only 1 token
+
+        var systemPrompt = systemPrompt
+
+        func appendToSystemPrompt(_ text: String) -> Bool {
+            let tokensCount = encoder.countToken(text: text)
+            if tokensCount + retrievedContentTokenCount >
+                availableTokenCountForRetrievedContent { return false }
+            retrievedContentTokenCount += tokensCount
+            systemPrompt += text
+            return true
+        }
+
+        for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
+            if index == 0 {
+                if !appendToSystemPrompt("""
+
+                Below are information related to the conversation, separated by \(separator)
+
+                """) { break }
+            } else {
+                if !appendToSystemPrompt("\n\(separator)\n") { break }
             }
-            allTokensCount += tokensCount
-            all.append(message)
+
+            if !appendToSystemPrompt(content) { break }
         }
 
         if !systemPrompt.isEmpty {
-            all.append(systemPrompt)
+            let message = ChatMessage(role: .system, content: systemPrompt)
+            allMessages.append(message)
         }
 
         #if DEBUG
         Logger.service.info("""
         Sending tokens count
-        - system prompt: \(systemMessageTokenCount)
+        - system prompt: \(smallestSystemMessageTokenCount)
         - functions: \(functionTokenCount)
-        - total: \(allTokensCount)
-        
+        - messages: \(messageTokenCount)
+        - retrieved content: \(retrievedContentTokenCount)
+        - total: \(
+            smallestSystemMessageTokenCount
+                + functionTokenCount
+                + messageTokenCount
+                + retrievedContentTokenCount
+        )
         """)
         #endif
 
-        return all.reversed()
+        return allMessages.reversed()
     }
 
     func generateRemainingTokens(

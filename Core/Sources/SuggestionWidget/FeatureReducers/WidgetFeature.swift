@@ -79,7 +79,7 @@ public struct WidgetFeature: ReducerProtocol {
                 )
             }
         }
-        
+
         var lastUpdateWindowOpacityTime = Date(timeIntervalSince1970: 0)
 
         public init() {}
@@ -213,10 +213,10 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .observeActiveApplicationChange:
                 return .run { send in
-                    var previousApp: NSRunningApplication?
-                    for await app in activeApplicationMonitor.createStream() {
+                    var previousApp: RunningApplicationInfo?
+                    for await app in activeApplicationMonitor.createInfoStream() {
                         try Task.checkCancellation()
-                        if app != previousApp {
+                        if app?.processIdentifier != previousApp?.processIdentifier {
                             await send(.updateActiveApplication)
                         }
                         previousApp = app
@@ -311,26 +311,26 @@ public struct WidgetFeature: ReducerProtocol {
             case .observeWindowChange:
                 guard let app = activeApplicationMonitor.activeApplication else { return .none }
                 guard app.isXcode else { return .none }
-                
+
                 let documentURL = state.focusingDocumentURL
 
-                return .run { [app] send in
-                    await send(.observeEditorChange)
+                let notifications = AXNotificationStream(
+                    app: app,
+                    notificationNames:
+                    kAXApplicationActivatedNotification,
+                    kAXMovedNotification,
+                    kAXResizedNotification,
+                    kAXMainWindowChangedNotification,
+                    kAXFocusedWindowChangedNotification,
+                    kAXFocusedUIElementChangedNotification,
+                    kAXWindowMovedNotification,
+                    kAXWindowResizedNotification,
+                    kAXWindowMiniaturizedNotification,
+                    kAXWindowDeminiaturizedNotification
+                )
 
-                    let notifications = AXNotificationStream(
-                        app: app,
-                        notificationNames:
-                        kAXApplicationActivatedNotification,
-                        kAXMovedNotification,
-                        kAXResizedNotification,
-                        kAXMainWindowChangedNotification,
-                        kAXFocusedWindowChangedNotification,
-                        kAXFocusedUIElementChangedNotification,
-                        kAXWindowMovedNotification,
-                        kAXWindowResizedNotification,
-                        kAXWindowMiniaturizedNotification,
-                        kAXWindowDeminiaturizedNotification
-                    )
+                return .run { send in
+                    await send(.observeEditorChange)
 
                     for await notification in notifications {
                         try Task.checkCancellation()
@@ -369,45 +369,46 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .observeEditorChange:
                 guard let app = activeApplicationMonitor.activeApplication else { return .none }
-                return .run { send in
-                    let appElement = AXUIElementCreateApplication(app.processIdentifier)
-                    if let focusedElement = appElement.focusedElement,
-                       focusedElement.description == "Source Editor",
-                       let scrollView = focusedElement.parent,
-                       let scrollBar = scrollView.verticalScrollBar
-                    {
-                        let selectionRangeChange = AXNotificationStream(
-                            app: app,
-                            element: focusedElement,
-                            notificationNames: kAXSelectedTextChangedNotification
-                        )
-                        let scroll = AXNotificationStream(
-                            app: app,
-                            element: scrollBar,
-                            notificationNames: kAXValueChangedNotification
-                        )
+                let appElement = AXUIElementCreateApplication(app.processIdentifier)
+                guard let focusedElement = appElement.focusedElement,
+                      focusedElement.description == "Source Editor",
+                      let scrollView = focusedElement.parent,
+                      let scrollBar = scrollView.verticalScrollBar
+                else { return .none }
 
-                        if #available(macOS 13.0, *) {
-                            for await _ in merge(
-                                selectionRangeChange.debounce(for: Duration.milliseconds(500)),
-                                scroll
-                            ) {
-                                guard activeApplicationMonitor.latestXcode != nil
-                                else { return }
-                                try Task.checkCancellation()
-                                await send(.updateWindowLocation(animated: false))
-                                await send(.updateWindowOpacity)
-                            }
-                        } else {
-                            for await _ in merge(selectionRangeChange, scroll) {
-                                guard activeApplicationMonitor.latestXcode != nil
-                                else { return }
-                                try Task.checkCancellation()
-                                await send(.updateWindowLocation(animated: false))
-                                await send(.updateWindowOpacity)
-                            }
+                let selectionRangeChange = AXNotificationStream(
+                    app: app,
+                    element: focusedElement,
+                    notificationNames: kAXSelectedTextChangedNotification
+                )
+                let scroll = AXNotificationStream(
+                    app: app,
+                    element: scrollBar,
+                    notificationNames: kAXValueChangedNotification
+                )
+
+                return .run { send in
+                    if #available(macOS 13.0, *) {
+                        for await _ in merge(
+                            selectionRangeChange.debounce(for: Duration.milliseconds(500)),
+                            scroll
+                        ) {
+                            guard activeApplicationMonitor.latestXcode != nil
+                            else { return }
+                            try Task.checkCancellation()
+                            await send(.updateWindowLocation(animated: false))
+                            await send(.updateWindowOpacity)
+                        }
+                    } else {
+                        for await _ in merge(selectionRangeChange, scroll) {
+                            guard activeApplicationMonitor.latestXcode != nil
+                            else { return }
+                            try Task.checkCancellation()
+                            await send(.updateWindowLocation(animated: false))
+                            await send(.updateWindowOpacity)
                         }
                     }
+
                 }.cancellable(id: CancelID.observeEditorChange, cancelInFlight: true)
 
             case .updateActiveApplication:
@@ -447,7 +448,7 @@ public struct WidgetFeature: ReducerProtocol {
                 state.panelState.suggestionPanelState.colorScheme = scheme
                 state.chatPanelState.colorScheme = scheme
                 return .none
-                
+
             case .updateFocusingDocumentURL:
                 state.focusingDocumentURL = xcodeInspector.realtimeActiveDocumentURL
                 return .none
@@ -574,7 +575,7 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.updateWindowOpacityFinished)
                 }
                 .cancellable(id: DebounceKey.updateWindowOpacity, cancelInFlight: true)
-                
+
             case .updateWindowOpacityFinished:
                 state.lastUpdateWindowOpacityTime = Date()
                 return .none
