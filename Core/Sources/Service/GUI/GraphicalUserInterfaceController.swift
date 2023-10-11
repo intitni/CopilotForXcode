@@ -65,7 +65,7 @@ struct GUI: ReducerProtocol {
     }
 
     @Dependency(\.chatTabPool) var chatTabPool: ChatTabPool
-    
+
     public enum Debounce: Hashable {
         case updateChatTabOrder
     }
@@ -224,11 +224,13 @@ struct GUI: ReducerProtocol {
                 guard old.map(\.id) != new.map(\.id) else {
                     return .none
                 }
+                #if canImport(ChatTabPersistent)
                 return .run { send in
-                    #if canImport(ChatTabPersistent)
                     await send(.persistent(.chatOrderChanged))
-                    #endif
                 }.debounce(id: Debounce.updateChatTabOrder, for: 1, scheduler: DispatchQueue.main)
+                #else
+                return .none
+                #endif
             }
         }
     }

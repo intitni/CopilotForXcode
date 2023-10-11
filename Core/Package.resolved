@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "cgeventoverride",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/intitni/CGEventOverride",
-      "state" : {
-        "revision" : "ae83f8ef1de2ad4c1a1473a0453b9675281d0d2c",
-        "version" : "1.2.1"
-      }
-    },
-    {
       "identity" : "codablewrappers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/GottaGetSwifty/CodableWrappers",
@@ -52,15 +43,6 @@
       "state" : {
         "branch" : "bump-highlight-js-version",
         "revision" : "4ffbb1b0b721378263297cafea6f2838044eb1eb"
-      }
-    },
-    {
-      "identity" : "indexstore-db",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/indexstore-db.git",
-      "state" : {
-        "branch" : "release/5.9",
-        "revision" : "89ec16c2ac1bb271614e734a2ee792224809eb20"
       }
     },
     {
