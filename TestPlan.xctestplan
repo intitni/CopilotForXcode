@@ -52,13 +52,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "GitHubCopilotServiceTests",
-        "name" : "GitHubCopilotServiceTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "LangChainTests",
         "name" : "LangChainTests"
@@ -101,13 +94,6 @@
     },
     {
       "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "ActiveDocumentChatContextCollectorTests",
-        "name" : "ActiveDocumentChatContextCollectorTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "ASTParserTests",
         "name" : "ASTParserTests"
@@ -125,6 +111,20 @@
         "containerPath" : "container:Tool",
         "identifier" : "KeychainTests",
         "name" : "KeychainTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "ActiveDocumentChatContextCollectorTests",
+        "name" : "ActiveDocumentChatContextCollectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "GitHubCopilotServiceTests",
+        "name" : "GitHubCopilotServiceTests"
       }
     }
   ],
