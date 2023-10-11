@@ -113,8 +113,10 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         }
 
         /// the available tokens count for retrieved content
-        let availableTokenCountForRetrievedContent = availableTokenCountForMessages
-            - messageTokenCount
+        let availableTokenCountForRetrievedContent = min(
+            availableTokenCountForMessages - messageTokenCount,
+            configuration.maxTokens / 2
+        )
         var retrievedContentTokenCount = 0
 
         let separator = String(repeating: "=", count: 32) // only 1 token
@@ -138,7 +140,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
 
                 """) { break }
             } else {
-                if !appendToSystemPrompt(separator) { break }
+                if !appendToSystemPrompt("\n\(separator)\n") { break }
             }
 
             if !appendToSystemPrompt(content) { break }
@@ -152,7 +154,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         #if DEBUG
         Logger.service.info("""
         Sending tokens count
-        - system prompt: \(smallestSystemPromptMessage)
+        - system prompt: \(smallestSystemMessageTokenCount)
         - functions: \(functionTokenCount)
         - messages: \(messageTokenCount)
         - retrieved content: \(retrievedContentTokenCount)
@@ -162,7 +164,6 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
                 + messageTokenCount
                 + retrievedContentTokenCount
         )
-
         """)
         #endif
 
