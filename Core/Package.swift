@@ -38,12 +38,15 @@ let isProIncluded: Bool = {
             return false
         }
         do {
-            let content = String(
+            if let content = String(
                 data: try Data(contentsOf: confURL),
                 encoding: .utf8
-            )
-            print("")
-            return content?.hasPrefix("YES") ?? false
+            ) {
+                if content.hasPrefix("YES") {
+                    return true
+                }
+            }
+            return false
         } catch {
             return false
         }
