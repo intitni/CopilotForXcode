@@ -173,7 +173,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var gitHubCopilotIgnoreTrailingNewLines: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "GitHubCopilotIgnoreTrailingNewLines")
+        .init(defaultValue: true, key: "GitHubCopilotIgnoreTrailingNewLines")
     }
 }
 
@@ -318,7 +318,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "AcceptSuggestionWithTab")
+        .init(defaultValue: true, key: "AcceptSuggestionWithTab")
     }
 }
 
