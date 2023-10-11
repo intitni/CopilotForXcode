@@ -58,7 +58,7 @@ struct ChatPanelMessages: View {
 
                         ChatHistory(chat: chat)
                             .listItemTint(.clear)
-                        
+
                         WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
                             if viewStore.state {
                                 Spacer(minLength: 12)
@@ -231,6 +231,23 @@ private struct Instruction: View {
         Group {
             Markdown(
                 """
+                You can use plugins to perform various tasks.
+
+                | Plugin Name | Description |
+                | --- | --- |
+                | `/run` | Runs a command under the project root |
+                | `/math` | Solves a math problem in natural language |
+                | `/search` | Searches on Bing and summarizes the results |
+                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
+                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
+
+                To use plugins, you can prefix a message with `/pluginName`.
+                """
+            )
+            .modifier(InstructionModifier())
+
+            Markdown(
+                """
                 You can use scopes to give the bot extra abilities.
 
                 | Scope Name | Abilities |
@@ -243,23 +260,6 @@ private struct Instruction: View {
                 To use scopes, you can prefix a message with `@code`.
 
                 You can use shorthand to represent a scope, such as `@c`, and enable multiple scopes with `@c+web`.
-                """
-            )
-            .modifier(InstructionModifier())
-
-            Markdown(
-                """
-                You can use plugins to perform various tasks.
-
-                | Plugin Name | Description |
-                | --- | --- |
-                | `/run` | Runs a command under the project root |
-                | `/math` | Solves a math problem in natural language |
-                | `/search` | Searches on Bing and summarizes the results |
-                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
-                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
-
-                To use plugins, you can prefix a message with `/pluginName`.
                 """
             )
             .modifier(InstructionModifier())
@@ -537,7 +537,7 @@ struct ChatPanelInputArea: View {
         let availableFeatures = plugins + [
             "/exit",
             "@code",
-            "@file",
+            "@project",
             "@web",
         ]
 
