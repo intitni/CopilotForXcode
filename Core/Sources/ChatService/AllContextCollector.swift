@@ -6,7 +6,6 @@ import WebChatContextCollector
 import ProChatContextCollectors
 let allContextCollectors: [any ChatContextCollector] = [
     SystemInfoChatContextCollector(),
-    ActiveDocumentChatContextCollector(),
     WebChatContextCollector(),
     ProChatContextCollectors(),
 ]

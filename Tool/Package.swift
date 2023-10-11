@@ -15,7 +15,10 @@ let package = Package(
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
         .library(name: "ChatTab", targets: ["ChatTab"]),
-        .library(name: "ChatContextCollector", targets: ["ChatContextCollector"]),
+        .library(
+            name: "ChatContextCollector",
+            targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
+        ),
         .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
@@ -70,7 +73,7 @@ let package = Package(
         // MARK: - Helpers
 
         .target(name: "XPCShared", dependencies: ["SuggestionModel"]),
-        
+
         .target(name: "Configs"),
 
         .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
@@ -234,14 +237,6 @@ let package = Package(
             ]
         ),
 
-        .target(
-            name: "ChatContextCollector",
-            dependencies: [
-                "SuggestionModel",
-                "OpenAIService",
-            ]
-        ),
-
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionService", dependencies: [
@@ -308,6 +303,33 @@ let package = Package(
                 name: "ComposableArchitecture",
                 package: "swift-composable-architecture"
             )]
+        ),
+
+        // MARK: - Chat Context Collector
+
+        .target(
+            name: "ChatContextCollector",
+            dependencies: [
+                "SuggestionModel",
+                "OpenAIService",
+            ]
+        ),
+
+        .target(
+            name: "ActiveDocumentChatContextCollector",
+            dependencies: [
+                "ChatContextCollector",
+                "OpenAIService",
+                "Preferences",
+                "FocusedCodeFinder",
+                "XcodeInspector",
+            ],
+            path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
+        ),
+
+        .testTarget(
+            name: "ActiveDocumentChatContextCollectorTests",
+            dependencies: ["ActiveDocumentChatContextCollector"]
         ),
 
         // MARK: - Tests
