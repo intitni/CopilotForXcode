@@ -33,7 +33,7 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     }
 
     public var minimumReplyTokens: Int {
-        300
+        maxTokens / 5
     }
 
     public var runFunctionsAutomatically: Bool {
