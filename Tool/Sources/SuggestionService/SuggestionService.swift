@@ -4,8 +4,16 @@ import Preferences
 import SuggestionModel
 import UserDefaultsObserver
 
-public protocol SuggestionServiceType {
-    func getSuggestions(
+public struct SuggestionRequest {
+    public var fileURL: URL
+    public var content: String
+    public var cursorPosition: CursorPosition
+    public var tabSize: Int
+    public var indentSize: Int
+    public var usesTabsForIndentation: Bool
+    public var ignoreSpaceOnlySuggestions: Bool
+
+    public init(
         fileURL: URL,
         content: String,
         cursorPosition: CursorPosition,
@@ -13,7 +21,19 @@ public protocol SuggestionServiceType {
         indentSize: Int,
         usesTabsForIndentation: Bool,
         ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CodeSuggestion]
+    ) {
+        self.fileURL = fileURL
+        self.content = content
+        self.cursorPosition = cursorPosition
+        self.tabSize = tabSize
+        self.indentSize = indentSize
+        self.usesTabsForIndentation = usesTabsForIndentation
+        self.ignoreSpaceOnlySuggestions = ignoreSpaceOnlySuggestions
+    }
+}
+
+public protocol SuggestionServiceType {
+    func getSuggestions(_ request: SuggestionRequest) async throws -> [CodeSuggestion]
 
     func notifyAccepted(_ suggestion: CodeSuggestion) async
     func notifyRejected(_ suggestions: [CodeSuggestion]) async
@@ -25,9 +45,45 @@ public protocol SuggestionServiceType {
     func terminate() async
 }
 
+public extension SuggestionServiceType {
+    func getSuggestions(
+        fileURL: URL,
+        content: String,
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        ignoreSpaceOnlySuggestions: Bool
+    ) async throws -> [CodeSuggestion] {
+        return try await getSuggestions(.init(
+            fileURL: fileURL,
+            content: content,
+            cursorPosition: cursorPosition,
+            tabSize: tabSize,
+            indentSize: indentSize,
+            usesTabsForIndentation: usesTabsForIndentation,
+            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
+        ))
+    }
+}
+
 protocol SuggestionServiceProvider: SuggestionServiceType {}
 
 public actor SuggestionService: SuggestionServiceType {
+    static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
+        DisabledLanguageSuggestionServiceMiddleware()
+    ]
+    
+    static var customMiddlewares: [SuggestionServiceMiddleware] = []
+    
+    static var middlewares: [SuggestionServiceMiddleware] {
+        builtInMiddlewares + customMiddlewares
+    }
+    
+    public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
+        customMiddlewares.append(middleware)
+    }
+    
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     let providerChangeObserver = UserDefaultsObserver(
@@ -75,31 +131,16 @@ public actor SuggestionService: SuggestionServiceType {
 }
 
 public extension SuggestionService {
-    func getSuggestions(
-        fileURL: URL,
-        content: String,
-        cursorPosition: SuggestionModel.CursorPosition,
-        tabSize: Int,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
-        let language = languageIdentifierFromFileURL(fileURL)
-        if UserDefaults.shared.value(for: \.suggestionFeatureDisabledLanguageList)
-            .contains(where: { $0 == language.rawValue })
-        {
-            return []
+    func getSuggestions(_ request: SuggestionRequest) async throws -> [SuggestionModel.CodeSuggestion] {
+        var getSuggestion = suggestionProvider.getSuggestions
+        
+        for middleware in Self.middlewares.reversed() {
+            getSuggestion = { request in
+                try await middleware.getSuggestion(request, next: getSuggestion)
+            }
         }
 
-        return try await suggestionProvider.getSuggestions(
-            fileURL: fileURL,
-            content: content,
-            cursorPosition: cursorPosition,
-            tabSize: tabSize,
-            indentSize: indentSize,
-            usesTabsForIndentation: usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
-        )
+        return try await getSuggestion(request)
     }
 
     func notifyAccepted(_ suggestion: SuggestionModel.CodeSuggestion) async {
