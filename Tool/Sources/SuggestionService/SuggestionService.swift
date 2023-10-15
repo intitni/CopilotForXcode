@@ -71,19 +71,19 @@ protocol SuggestionServiceProvider: SuggestionServiceType {}
 
 public actor SuggestionService: SuggestionServiceType {
     static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
-        DisabledLanguageSuggestionServiceMiddleware()
+        DisabledLanguageSuggestionServiceMiddleware(),
     ]
-    
+
     static var customMiddlewares: [SuggestionServiceMiddleware] = []
-    
+
     static var middlewares: [SuggestionServiceMiddleware] {
         builtInMiddlewares + customMiddlewares
     }
-    
+
     public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
         customMiddlewares.append(middleware)
     }
-    
+
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceType) -> Void
     let providerChangeObserver = UserDefaultsObserver(
@@ -131,9 +131,11 @@ public actor SuggestionService: SuggestionServiceType {
 }
 
 public extension SuggestionService {
-    func getSuggestions(_ request: SuggestionRequest) async throws -> [SuggestionModel.CodeSuggestion] {
+    func getSuggestions(
+        _ request: SuggestionRequest
+    ) async throws -> [SuggestionModel.CodeSuggestion] {
         var getSuggestion = suggestionProvider.getSuggestions
-        
+
         for middleware in Self.middlewares.reversed() {
             getSuggestion = { request in
                 try await middleware.getSuggestion(request, next: getSuggestion)
@@ -167,6 +169,7 @@ public extension SuggestionService {
         try await suggestionProvider.notifySaveTextDocument(fileURL: fileURL)
     }
 
+    #warning("Move the cancellation to this type so that we can also cancel middlewares")
     func cancelRequest() async {
         await suggestionProvider.cancelRequest()
     }
