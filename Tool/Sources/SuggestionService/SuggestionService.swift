@@ -131,13 +131,13 @@ public actor SuggestionService: SuggestionServiceType {
 }
 
 public extension SuggestionService {
-    func getSuggestions(
+    func getSuggestions( 
         _ request: SuggestionRequest
     ) async throws -> [SuggestionModel.CodeSuggestion] {
         var getSuggestion = suggestionProvider.getSuggestions
-
+ 
         for middleware in Self.middlewares.reversed() {
-            getSuggestion = { request in
+            getSuggestion = { [getSuggestion] request in
                 try await middleware.getSuggestion(request, next: getSuggestion)
             }
         }
@@ -169,7 +169,6 @@ public extension SuggestionService {
         try await suggestionProvider.notifySaveTextDocument(fileURL: fileURL)
     }
 
-    #warning("Move the cancellation to this type so that we can also cancel middlewares")
     func cancelRequest() async {
         await suggestionProvider.cancelRequest()
     }
