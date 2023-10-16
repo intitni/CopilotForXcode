@@ -31,6 +31,7 @@ enum ChatTabFactory {
                 ),
                 title: BrowserChatTab.name
             ),
+            folderIfNeeded(TerminalChatTab.chatBuilders(), title: TerminalChatTab.name),
         ].compactMap { $0 }
 
         return collection
