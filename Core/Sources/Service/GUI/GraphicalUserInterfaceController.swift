@@ -388,6 +388,12 @@ extension ChatTabPool {
                 externalDependency: ChatTabFactory.externalDependenciesForBrowserChatTab()
             ) else { break }
             return await createTab(id: data.id, from: builder)
+        case TerminalChatTab.name:
+            guard let builder = try? await TerminalChatTab.restore(
+                from: data.data,
+                externalDependency: ()
+            ) else { break }
+            return await createTab(id: data.id, from: builder)
         default:
             break
         }
@@ -397,7 +403,7 @@ extension ChatTabPool {
         ) else {
             return nil
         }
-        return await createTab(from: builder)
+        return await createTab(id: data.id, from: builder)
     }
     #endif
 }
