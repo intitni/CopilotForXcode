@@ -46,6 +46,16 @@ public class ChatGPTChatTab: ChatTab {
         ChatTabItemView(chat: chat)
     }
 
+    public func buildIcon() -> any View {
+        WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+            if viewStore.state {
+                Image(systemName: "ellipsis.message")
+            } else {
+                Image(systemName: "message")
+            }
+        }
+    }
+
     public func buildMenu() -> any View {
         ChatContextMenu(store: chat.scope(state: \.chatMenu, action: Chat.Action.chatMenu))
     }
@@ -125,3 +135,4 @@ public class ChatGPTChatTab: ChatTab {
             }.store(in: &cancellable)
     }
 }
+
