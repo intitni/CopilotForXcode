@@ -69,7 +69,7 @@ final class DynamicContextController {
         let extraSystemPrompt = contexts
             .map(\.systemPrompt)
             .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+            .joined(separator: "\n\n")
         
         let contextPrompts = contexts
             .flatMap(\.retrievedContent)

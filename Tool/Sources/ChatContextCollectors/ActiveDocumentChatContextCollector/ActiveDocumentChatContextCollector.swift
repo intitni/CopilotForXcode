@@ -101,9 +101,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 : "When you don't known what I am asking, I am probably referring to the code."
         )
 
-        Editing Document Context: ###
+        ### Editing Document Context
         """
-        let end = "###"
         let relativePath = "Document Relative Path: \(context.relativePath)"
         let language = "Language: \(context.language.rawValue)"
 
@@ -160,7 +159,6 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 code,
                 codeAnnotations,
                 fileAnnotations,
-                end,
             ]
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
@@ -180,10 +178,9 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 language,
                 lineAnnotations,
                 selectionRange,
-                end,
             ]
             .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+            .joined(separator: "\n\n")
         }
     }
 
