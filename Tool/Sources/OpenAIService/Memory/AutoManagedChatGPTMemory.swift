@@ -135,9 +135,13 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
             if index == 0 {
                 if !appendToSystemPrompt("""
-
+                
+                
+                ## Relevant Content
+                
                 Below are information related to the conversation, separated by \(separator)
 
+                
                 """) { break }
             } else {
                 if !appendToSystemPrompt("\n\(separator)\n") { break }

@@ -19,10 +19,12 @@ public final class SystemInfoChatContextCollector: ChatContextCollector {
     ) -> ChatContext {
         return .init(
             systemPrompt: """
-                    Current Time: \(
-                        Self.dateFormatter.string(from: Date())
-                    ) (You can use it to calculate time in another time zone)
-                    """,
+            ## System Info
+            
+            Current Time: \(
+                Self.dateFormatter.string(from: Date())
+            ) (You can use it to calculate time in another time zone)
+            """,
             retrievedContent: [],
             functions: []
         )

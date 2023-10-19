@@ -13,7 +13,7 @@ protocol CompletionStreamAPI {
     )
 }
 
-public enum FunctionCallStrategy: Encodable, Equatable {
+public enum FunctionCallStrategy: Codable, Equatable {
     /// Forbid the bot to call any function.
     case none
     /// Let the bot choose what function to call.
@@ -39,7 +39,7 @@ public enum FunctionCallStrategy: Encodable, Equatable {
 }
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionRequestBody: Encodable, Equatable {
+struct CompletionRequestBody: Codable, Equatable {
     struct Message: Codable, Equatable {
         /// The role of the message.
         var role: ChatMessage.Role
