@@ -146,7 +146,9 @@ public class ChatGPTService: ChatGPTServiceType {
                             #endif
                         }
 
+                        #if DEBUG
                         Debugger.didFinish()
+                        #endif
                         continuation.finish()
                     } catch {
                         continuation.finish(throwing: error)
@@ -185,8 +187,10 @@ public class ChatGPTService: ChatGPTServiceType {
                 functionCall = nextMessage.functionCall
             }
 
+            #if DEBUG
             Debugger.didReceiveResponse(content: finalResult ?? "N/A")
             Debugger.didFinish()
+            #endif
 
             return finalResult
         }
