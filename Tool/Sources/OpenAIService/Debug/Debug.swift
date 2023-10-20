@@ -2,14 +2,11 @@ import AppKit
 import Foundation
 
 enum Debugger {
-    #if DEBUG
     @TaskLocal
     static var id: UUID?
-    #endif
 
+    #if DEBUG
     static func didSendRequestBody(body: CompletionRequestBody) {
-        #if DEBUG
-
         do {
             let json = try JSONEncoder().encode(body)
             let center = NSWorkspace.shared.notificationCenter
@@ -24,13 +21,9 @@ enum Debugger {
         } catch {
             print("Failed to encode request body: \(error)")
         }
-
-        #endif
     }
 
     static func didReceiveFunction(name: String, arguments: String) {
-        #if DEBUG
-
         let center = NSWorkspace.shared.notificationCenter
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.receivedFunctionCall"),
@@ -41,13 +34,9 @@ enum Debugger {
                 "arguments": arguments,
             ]
         )
-
-        #endif
     }
 
     static func didReceiveFunctionResult(result: String) {
-        #if DEBUG
-
         let center = NSWorkspace.shared.notificationCenter
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.receivedFunctionResult"),
@@ -57,13 +46,9 @@ enum Debugger {
                 "result": result,
             ]
         )
-
-        #endif
     }
 
     static func didReceiveResponse(content: String) {
-        #if DEBUG
-
         let center = NSWorkspace.shared.notificationCenter
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.responseReceived"),
@@ -73,8 +58,6 @@ enum Debugger {
                 "response": content,
             ]
         )
-
-        #endif
     }
 
     static func didFinish() {
@@ -87,5 +70,6 @@ enum Debugger {
             ]
         )
     }
+    #endif
 }
 
