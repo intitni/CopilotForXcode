@@ -3,8 +3,10 @@ import Foundation
 import SuggestionModel
 import XcodeInspector
 
-struct CustomCommandTemplateProcessor {
-    func process(_ text: String) -> String {
+public struct CustomCommandTemplateProcessor {
+    public init() {}
+    
+    public func process(_ text: String) -> String {
         let info = getEditorInformation()
         let editorContent = info.editorContent
         let updatedText = text

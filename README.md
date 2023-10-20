@@ -308,7 +308,7 @@ You can create custom commands that run Chat and Prompt to Code with personalize
 - Custom Chat: Open the chat window and immediately send a message, if provided. You can overwrite the entire system prompt through the system prompt field.
 - Single Round Dialog: Send a message to a temporary chat. Useful when you want to run a terminal command with `/run`.
 
-For Send Message, Single Round Dialog and Custom Chat commands, you can use the following template arguments:
+You can use the following template arguments in custom commands:
 
 | Argument                      | Description                                    |
 | ----------------------------- | ---------------------------------------------- |
@@ -316,7 +316,7 @@ For Send Message, Single Round Dialog and Custom Chat commands, you can use the 
 | `{{active_editor_language}}`  | The programming language of the active editor. |
 | `{{active_editor_file_url}}`  | The URL of the active file in the editor.      |
 | `{{active_editor_file_name}}` | The name of the active file in the editor.     |
-| `{{clipboard}}`               | The content in clipboard                       |
+| `{{clipboard}}`               | The content in clipboard.                      |
 
 ## Plus Features
 
