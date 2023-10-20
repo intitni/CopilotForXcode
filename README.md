@@ -25,8 +25,8 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
   - [Granting Permissions to the App](#granting-permissions-to-the-app)
   - [Setting Up Key Bindings](#setting-up-key-bindings)
   - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
-      - [Setting Up GitHub Copilot](#setting-up-github-copilot)
-      - [Setting Up Codeium](#setting-up-codeium)
+    - [Setting Up GitHub Copilot](#setting-up-github-copilot)
+    - [Setting Up Codeium](#setting-up-codeium)
   - [Setting Up Chat Feature](#setting-up-chat-feature)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
@@ -129,11 +129,11 @@ Another convenient method to access commands is by using the `⇧⌘/` shortcut 
 1. In the host app, navigate to "Service - GitHub Copilot" to access your GitHub Copilot account settings.
 2. Click on "Install" to install the language server.
 3. Optionally, set up the path to Node. The default value is simply `node`. Copilot for Xcode.app will attempt to locate Node from the following directories: `/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`.
-    
-    If your Node installation is located elsewhere, you can run `which node` from the terminal to obtain the correct path.
-    
-    If you are using a node version manager that provides a shim executable, you will need to find the path to the actual executable. Please refer to the FAQ for more information.
-    
+
+   If your Node installation is located elsewhere, you can run `which node` from the terminal to obtain the correct path.
+
+   If you are using a node version manager that provides a shim executable, you will need to find the path to the actual executable. Please refer to the FAQ for more information.
+
 4. Click on "Sign In", and you will be redirected to a verification website provided by GitHub. A user code will be copied to your clipboard.
 5. After signing in, return to the app and click on "Confirm Sign-in" to complete the process.
 6. Go to "Feature - Suggestion" and update the feature provider to "GitHub Copilot".
@@ -235,7 +235,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | :------: | --------------------------------------------------------------------------------------------------- |
 |   `⌘W`   | Close the chat tab.                                                                                 |
 |   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
-|  `⇧↩︎`   | Add new line.                                                                                       |
+|  `⇧↩︎`  | Add new line.                                                                                       |
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
 
@@ -297,7 +297,7 @@ This feature is recommended when you need to update a specific piece of code. So
 #### Commands
 
 - Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
-- Accept Prompt to Code:  Accept the result of prompt to code.
+- Accept Prompt to Code: Accept the result of prompt to code.
 
 ### Custom Commands
 
@@ -308,7 +308,7 @@ You can create custom commands that run Chat and Prompt to Code with personalize
 - Custom Chat: Open the chat window and immediately send a message, if provided. You can overwrite the entire system prompt through the system prompt field.
 - Single Round Dialog: Send a message to a temporary chat. Useful when you want to run a terminal command with `/run`.
 
-For Send Message, Single Round Dialog and Custom Chat commands, you can use the following template arguments:
+You can use the following template arguments in custom commands:
 
 | Argument                      | Description                                    |
 | ----------------------------- | ---------------------------------------------- |
@@ -316,6 +316,7 @@ For Send Message, Single Round Dialog and Custom Chat commands, you can use the 
 | `{{active_editor_language}}`  | The programming language of the active editor. |
 | `{{active_editor_file_url}}`  | The URL of the active file in the editor.      |
 | `{{active_editor_file_name}}` | The name of the active file in the editor.     |
+| `{{clipboard}}`               | The content in clipboard.                      |
 
 ## Plus Features
 

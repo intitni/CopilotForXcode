@@ -337,7 +337,9 @@ extension PseudoCommandHandler {
 
     @WorkspaceActor
     func getEditorContent(sourceEditor: SourceEditor?) async -> EditorContent? {
-        guard let filespace = await getFilespace(), let sourceEditor else { return nil }
+        guard let filespace = await getFilespace(),
+              let sourceEditor = sourceEditor ?? XcodeInspector.shared.focusedEditor
+        else { return nil }
         let content = sourceEditor.content
         let uti = filespace.codeMetadata.uti ?? ""
         let tabSize = filespace.codeMetadata.tabSize ?? 4

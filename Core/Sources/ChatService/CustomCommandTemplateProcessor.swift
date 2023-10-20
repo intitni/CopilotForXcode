@@ -1,9 +1,12 @@
+import AppKit
 import Foundation
 import SuggestionModel
 import XcodeInspector
 
-struct CustomCommandTemplateProcessor {
-    func process(_ text: String) -> String {
+public struct CustomCommandTemplateProcessor {
+    public init() {}
+    
+    public func process(_ text: String) -> String {
         let info = getEditorInformation()
         let editorContent = info.editorContent
         let updatedText = text
@@ -21,6 +24,10 @@ struct CustomCommandTemplateProcessor {
             .replacingOccurrences(
                 of: "{{active_editor_file_name}}",
                 with: info.documentURL?.lastPathComponent ?? ""
+            )
+            .replacingOccurrences(
+                of: "{{clipboard}}",
+                with: NSPasteboard.general.string(forType: .string) ?? ""
             )
         return updatedText
     }

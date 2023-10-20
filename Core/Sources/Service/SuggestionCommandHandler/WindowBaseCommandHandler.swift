@@ -409,6 +409,10 @@ extension WindowBaseCommandHandler {
         }() as (String, CursorRange)
 
         let viewStore = Service.shared.guiController.viewStore
+        
+        let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
+        let newExtraSystemPrompt = extraSystemPrompt.map(customCommandTemplateProcessor.process)
+        let newPrompt = prompt.map(customCommandTemplateProcessor.process)
 
         _ = await Task { @MainActor in
             // if there is already a prompt to code presenting, we should not present another one
@@ -423,8 +427,8 @@ extension WindowBaseCommandHandler {
                 allCode: editor.content,
                 isContinuous: isContinuous,
                 commandName: name,
-                defaultPrompt: prompt ?? "",
-                extraSystemPrompt: extraSystemPrompt,
+                defaultPrompt: newPrompt ?? "",
+                extraSystemPrompt: newExtraSystemPrompt,
                 generateDescriptionRequirement: generateDescription
             ))))
         }.result
