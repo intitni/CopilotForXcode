@@ -27,6 +27,10 @@ struct HostApp: ReducerProtocol {
     }
 
     @Dependency(\.toast) var toast
+    
+    init() {
+        KeyboardShortcuts.userDefaults = .shared
+    }
 
     var body: some ReducerProtocol<State, Action> {
         Scope(state: \.general, action: /Action.general) {
@@ -44,7 +48,6 @@ struct HostApp: ReducerProtocol {
         Reduce { _, action in
             switch action {
             case .appear:
-                KeyboardShortcuts.userDefaults = .shared
                 return .none
 
             case .informExtensionServiceAboutLicenseKeyChange:
