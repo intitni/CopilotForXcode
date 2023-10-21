@@ -225,6 +225,8 @@ struct GeneralSettingsView: View {
         var preferWidgetToStayInsideEditorWhenWidthGreaterThan
         @AppStorage(\.hideCircularWidget)
         var hideCircularWidget
+        @AppStorage(\.showHideWidgetShortcutGlobally)
+        var showHideWidgetShortcutGlobally
     }
 
     @StateObject var settings = Settings()
@@ -287,7 +289,11 @@ struct GeneralSettingsView: View {
                 Text("pt")
             }
             
-            KeyboardShortcuts.Recorder("Global Shortcut to Toggle Widgets", name: .showHideWidget)
+            KeyboardShortcuts.Recorder("Hotkey to Toggle Widgets", name: .showHideWidget)
+            
+            Toggle(isOn: $settings.showHideWidgetShortcutGlobally) {
+                Text("Enable the Hotkey Globally")
+            }
 
             Toggle(isOn: $settings.hideCircularWidget) {
                 Text("Hide circular widget")

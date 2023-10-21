@@ -133,6 +133,7 @@ struct ChatPanelMessages: View {
                                 .foregroundStyle(.secondary)
                                 .padding(4)
                         }
+                        .keyboardShortcut(.downArrow, modifiers: [.command])
                         .opacity(pinnedToBottom ? 0 : 1)
                         .buttonStyle(.plain)
                         .onChange(of: viewStore.state) { _ in

@@ -24,13 +24,13 @@ public final class XcodeInspector: ObservableObject {
     @Published public internal(set) var focusedEditor: SourceEditor?
     @Published public internal(set) var focusedElement: AXUIElement?
     @Published public internal(set) var completionPanel: AXUIElement?
-    
+
     public var focusedEditorContent: EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
               let projectURL = XcodeInspector.shared.activeProjectRootURL
         else { return nil }
-        
+
         let editorContent = XcodeInspector.shared.focusedEditor?.content
         let language = languageIdentifierFromFileURL(documentURL)
         let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
@@ -143,8 +143,8 @@ public final class XcodeInspector: ObservableObject {
 
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
+        activeApplication = xcode
         xcode.refresh()
-
         for task in activeXcodeObservations { task.cancel() }
         for cancellable in activeXcodeCancellable { cancellable.cancel() }
         activeXcodeObservations.removeAll()
@@ -214,6 +214,8 @@ public class AppInstanceInspector: ObservableObject {
     public let appElement: AXUIElement
     public let runningApplication: NSRunningApplication
     public var isActive: Bool { runningApplication.isActive }
+    public var isXcode: Bool { runningApplication.isXcode }
+    public var isExtensionService: Bool { runningApplication.isCopilotForXcodeExtensionService }
 
     init(runningApplication: NSRunningApplication) {
         self.runningApplication = runningApplication

@@ -88,6 +88,11 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "HideCircularWidget"
     )
+    
+    public let showHideWidgetShortcutGlobally = PreferenceKey(
+        defaultValue: false,
+        key: "ShowHideWidgetShortcutGlobally"
+    )
 }
 
 // MARK: - OpenAI Account Settings
