@@ -77,6 +77,7 @@ struct ChatTitleBar: View {
                         }
                     }
             }
+            .keyboardShortcut("m", modifiers: [.command])
 
             WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
                 Button(action: {

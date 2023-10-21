@@ -240,6 +240,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | Shortcut | Description                                                                                         |
 | :------: | --------------------------------------------------------------------------------------------------- |
 |   `⌘W`   | Close the chat tab.                                                                                 |
+|   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
 |  `⇧↩︎`  | Add new line.                                                                                       |
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
