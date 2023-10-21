@@ -122,6 +122,12 @@ Essentially using `⌥⇧` as the "access" key combination for all bindings.
 
 Another convenient method to access commands is by using the `⇧⌘/` shortcut to search for a command in the menu bar.
 
+#### Setting Up Global Hotkeys
+
+Currently, the is only one global hotkey you can set to show/hide the widgets under the General tab from the host app.
+
+When this hotkey is not set to enabled globally, it will only work when the service app or Xcode is active.
+
 ### Setting Up Suggestion Feature
 
 #### Setting Up GitHub Copilot
@@ -234,7 +240,6 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | Shortcut | Description                                                                                         |
 | :------: | --------------------------------------------------------------------------------------------------- |
 |   `⌘W`   | Close the chat tab.                                                                                 |
-|   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
 |  `⇧↩︎`  | Add new line.                                                                                       |
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
