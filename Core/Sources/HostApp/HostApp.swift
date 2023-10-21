@@ -1,10 +1,15 @@
 import Client
 import ComposableArchitecture
 import Foundation
+import KeyboardShortcuts
 
 #if canImport(LicenseManagement)
 import LicenseManagement
 #endif
+
+extension KeyboardShortcuts.Name {
+    static let showHideWidget = Self("ShowHideWidget")
+}
 
 struct HostApp: ReducerProtocol {
     struct State: Equatable {
@@ -27,11 +32,11 @@ struct HostApp: ReducerProtocol {
         Scope(state: \.general, action: /Action.general) {
             General()
         }
-        
+
         Scope(state: \.chatModelManagement, action: /Action.chatModelManagement) {
             ChatModelManagement()
         }
-        
+
         Scope(state: \.embeddingModelManagement, action: /Action.embeddingModelManagement) {
             EmbeddingModelManagement()
         }
@@ -39,8 +44,9 @@ struct HostApp: ReducerProtocol {
         Reduce { _, action in
             switch action {
             case .appear:
+                KeyboardShortcuts.userDefaults = .shared
                 return .none
-                
+
             case .informExtensionServiceAboutLicenseKeyChange:
                 #if canImport(LicenseManagement)
                 return .run { _ in
@@ -55,13 +61,13 @@ struct HostApp: ReducerProtocol {
                 #else
                 return .none
                 #endif
-                
+
             case .general:
                 return .none
-                
+
             case .chatModelManagement:
                 return .none
-                
+
             case .embeddingModelManagement:
                 return .none
             }
@@ -70,8 +76,8 @@ struct HostApp: ReducerProtocol {
 }
 
 import Dependencies
-import Preferences
 import Keychain
+import Preferences
 
 struct UserDefaultsDependencyKey: DependencyKey {
     static var liveValue: UserDefaultsType = UserDefaults.shared
@@ -80,6 +86,7 @@ struct UserDefaultsDependencyKey: DependencyKey {
         it.removePersistentDomain(forName: "HostAppPreview")
         return it
     }()
+
     static var testValue: UserDefaultsType = {
         let it = UserDefaults(suiteName: "HostAppTest")!
         it.removePersistentDomain(forName: "HostAppTest")
@@ -106,3 +113,4 @@ extension DependencyValues {
         set { self[APIKeyKeychainDependencyKey.self] = newValue }
     }
 }
+

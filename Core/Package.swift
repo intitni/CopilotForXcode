@@ -38,8 +38,8 @@ let isProIncluded: Bool = {
             return false
         }
         do {
-            if let content = String(
-                data: try Data(contentsOf: confURL),
+            if let content = try String(
+                data: Data(contentsOf: confURL),
                 encoding: .utf8
             ) {
                 if content.hasPrefix("YES") {
@@ -98,6 +98,9 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
+        // quick hack to support custom UserDefaults
+        // https://github.com/sindresorhus/KeyboardShortcuts
+        .package(url: "https://github.com/intitni/KeyboardShortcuts", branch: "main"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -134,6 +137,7 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ].pro([
                 "ProService",
             ])
@@ -168,6 +172,7 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ].pro([
                 "ProHostApp",
             ])

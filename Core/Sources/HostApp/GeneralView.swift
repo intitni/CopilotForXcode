@@ -1,5 +1,6 @@
 import Client
 import ComposableArchitecture
+import KeyboardShortcuts
 import LaunchAgentManager
 import Preferences
 import SwiftUI
@@ -285,6 +286,8 @@ struct GeneralSettingsView: View {
 
                 Text("pt")
             }
+            
+            KeyboardShortcuts.Recorder("Global Shortcut to Toggle Widgets", name: .showHideWidget)
 
             Toggle(isOn: $settings.hideCircularWidget) {
                 Text("Hide circular widget")
@@ -342,7 +345,7 @@ struct LargeIconPicker<
             }
         }
     }
-    
+
     var body: some View {
         if #available(macOS 13.0, *) {
             LabeledContent {

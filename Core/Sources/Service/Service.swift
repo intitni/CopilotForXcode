@@ -1,5 +1,6 @@
 import Dependencies
 import Foundation
+import KeyboardShortcuts
 import Workspace
 import WorkspaceSuggestionService
 
@@ -10,6 +11,10 @@ import ProService
 @globalActor public enum ServiceActor {
     public actor TheActor {}
     public static let shared = TheActor()
+}
+
+extension KeyboardShortcuts.Name {
+    static let showHideWidget = Self("ShowHideWidget")
 }
 
 /// The running extension service.
@@ -43,6 +48,8 @@ public final class Service {
             ProService()
         }
         #endif
+        
+        KeyboardShortcuts.userDefaults = .shared
     }
 
     @MainActor
@@ -54,6 +61,10 @@ public final class Service {
         proService.start()
         #endif
         DependencyUpdater().update()
+        
+        KeyboardShortcuts.onKeyUp(for: .showHideWidget) { [guiController] in
+            guiController.viewStore.send(.suggestionWidget(.circularWidget(.widgetClicked)))
+        }
     }
 }
 
