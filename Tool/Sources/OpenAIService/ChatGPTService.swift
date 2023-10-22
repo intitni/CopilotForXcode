@@ -265,7 +265,9 @@ extension ChatGPTService {
             requestBody
         )
 
+        #if DEBUG
         Debugger.didSendRequestBody(body: requestBody)
+        #endif
 
         return AsyncThrowingStream<StreamContent, Error> { continuation in
             Task {
@@ -376,7 +378,9 @@ extension ChatGPTService {
             requestBody
         )
 
+        #if DEBUG
         Debugger.didSendRequestBody(body: requestBody)
+        #endif
 
         let response = try await api()
 
@@ -418,7 +422,9 @@ extension ChatGPTService {
         _ call: ChatMessage.FunctionCall,
         messageId: String? = nil
     ) async -> String {
+        #if DEBUG
         Debugger.didReceiveFunction(name: call.name, arguments: call.arguments)
+        #endif
 
         let messageId = messageId ?? uuidGenerator()
 
@@ -445,7 +451,9 @@ extension ChatGPTService {
                 }
             }
 
+            #if DEBUG
             Debugger.didReceiveFunctionResult(result: result.botReadableContent)
+            #endif
 
             await memory.updateMessage(id: messageId) { message in
                 message.content = result.botReadableContent
@@ -456,7 +464,9 @@ extension ChatGPTService {
             // For errors, use the error message as the result.
             let content = "Error: \(error.localizedDescription)"
 
+            #if DEBUG
             Debugger.didReceiveFunctionResult(result: content)
+            #endif
 
             await memory.updateMessage(id: messageId) { message in
                 message.content = content
