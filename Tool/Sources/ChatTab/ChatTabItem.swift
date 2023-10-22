@@ -20,6 +20,7 @@ public struct ChatTabItem: ReducerProtocol {
         case updateTitle(String)
         case openNewTab(AnyChatTabBuilder)
         case tabContentUpdated
+        case close
     }
 
     public init() {}
@@ -33,6 +34,8 @@ public struct ChatTabItem: ReducerProtocol {
             case .openNewTab:
                 return .none
             case .tabContentUpdated:
+                return .none
+            case .close:
                 return .none
             }
         }

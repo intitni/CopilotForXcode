@@ -77,6 +77,7 @@ struct ChatTitleBar: View {
                         }
                     }
             }
+            .keyboardShortcut("m", modifiers: [.command])
 
             WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
                 Button(action: {
@@ -177,6 +178,7 @@ struct ChatTabBar: View {
                                         store: store,
                                         info: info,
                                         content: { tab.tabItem },
+                                        icon: { tab.icon },
                                         isSelected: info.id == viewStore.state.selectedTabId
                                     )
                                     .contextMenu {
@@ -280,7 +282,7 @@ struct ChatTabBarDropDelegate: DropDelegate {
     let tabs: IdentifiedArray<String, ChatTabInfo>
     let itemId: String
     @Binding var draggingTabId: String?
-    
+
     func dropUpdated(info: DropInfo) -> DropProposal? {
         return DropProposal(operation: .move)
     }
@@ -299,20 +301,24 @@ struct ChatTabBarDropDelegate: DropDelegate {
     }
 }
 
-struct ChatTabBarButton<Content: View>: View {
+struct ChatTabBarButton<Content: View, Icon: View>: View {
     let store: StoreOf<ChatPanelFeature>
     let info: ChatTabInfo
     let content: () -> Content
+    let icon: () -> Icon
     let isSelected: Bool
     @State var isHovered: Bool = false
 
     var body: some View {
         HStack(spacing: 0) {
-            content()
+            HStack(spacing: 4) {
+                icon().foregroundColor(.secondary)
+                content()
+            }
                 .font(.callout)
                 .lineLimit(1)
                 .frame(maxWidth: 120)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 28)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     store.send(.tabClicked(id: info.id))

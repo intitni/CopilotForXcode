@@ -218,6 +218,11 @@ public struct ChatPanelFeature: ReducerProtocol {
                 state.chatTabGroup.tabInfo.insert(tab, at: to)
                 return .none
 
+            case let .chatTab(id, .close):
+                return .run { send in
+                    await send(.closeTabButtonClicked(id: id))
+                }
+                
             case .chatTab:
                 return .none
             }

@@ -1,7 +1,6 @@
 import ChatContextCollector
 import Foundation
 import OpenAIService
-import Parsing
 import Preferences
 import XcodeInspector
 
@@ -65,17 +64,17 @@ final class DynamicContextController {
             }
             return contexts
         }
-        
+
         let extraSystemPrompt = contexts
             .map(\.systemPrompt)
             .filter { !$0.isEmpty }
-            .joined(separator: "\n")
-        
+            .joined(separator: "\n\n")
+
         let contextPrompts = contexts
             .flatMap(\.retrievedContent)
             .filter { !$0.content.isEmpty }
             .sorted { $0.priority > $1.priority }
-        
+
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)\(extraSystemPrompt.isEmpty ? "" : "\n\(extraSystemPrompt)")
@@ -88,30 +87,8 @@ final class DynamicContextController {
 
 extension DynamicContextController {
     static func parseScopes(_ prompt: inout String) -> Set<String> {
-        guard !prompt.isEmpty else { return [] }
-        do {
-            let parser = Parse {
-                "@"
-                Many {
-                    Prefix { $0.isLetter }
-                } separator: {
-                    "+"
-                } terminator: {
-                    " "
-                }
-                Skip {
-                    Many {
-                        " "
-                    }
-                }
-                Rest()
-            }
-            let (scopes, rest) = try parser.parse(prompt)
-            prompt = String(rest)
-            return Set(scopes.map(String.init))
-        } catch {
-            return []
-        }
+        let parser = MessageScopeParser()
+        return parser(&prompt)
     }
 }
 

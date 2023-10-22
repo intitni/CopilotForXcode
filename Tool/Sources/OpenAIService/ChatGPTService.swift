@@ -98,41 +98,61 @@ public class ChatGPTService: ChatGPTServiceType {
             await memory.appendMessage(newMessage)
         }
 
-        return AsyncThrowingStream<String, Error> { continuation in
-            Task(priority: .userInitiated) {
-                do {
-                    var functionCall: ChatMessage.FunctionCall?
-                    var functionCallMessageID = ""
-                    var isInitialCall = true
-                    loop: while functionCall != nil || isInitialCall {
-                        isInitialCall = false
-                        if let call = functionCall {
-                            if !configuration.runFunctionsAutomatically {
-                                break loop
-                            }
-                            functionCall = nil
-                            await runFunctionCall(call, messageId: functionCallMessageID)
-                        }
-                        let stream = try await sendMemory()
-                        for try await content in stream {
-                            switch content {
-                            case let .text(text):
-                                continuation.yield(text)
-                            case let .functionCall(call):
-                                if functionCall == nil {
-                                    functionCallMessageID = uuidGenerator()
-                                    functionCall = call
-                                } else {
-                                    functionCall?.name.append(call.name)
-                                    functionCall?.arguments.append(call.arguments)
+        return Debugger.$id.withValue(.init()) {
+            AsyncThrowingStream<String, Error> { continuation in
+                Task(priority: .userInitiated) {
+                    do {
+                        var functionCall: ChatMessage.FunctionCall?
+                        var functionCallMessageID = ""
+                        var isInitialCall = true
+                        loop: while functionCall != nil || isInitialCall {
+                            isInitialCall = false
+                            if let call = functionCall {
+                                if !configuration.runFunctionsAutomatically {
+                                    break loop
                                 }
-                                await prepareFunctionCall(call, messageId: functionCallMessageID)
+                                functionCall = nil
+                                await runFunctionCall(call, messageId: functionCallMessageID)
                             }
+                            let stream = try await sendMemory()
+
+                            #if DEBUG
+                            var reply = ""
+                            #endif
+
+                            for try await content in stream {
+                                switch content {
+                                case let .text(text):
+                                    continuation.yield(text)
+                                    #if DEBUG
+                                    reply.append(text)
+                                    #endif
+                                case let .functionCall(call):
+                                    if functionCall == nil {
+                                        functionCallMessageID = uuidGenerator()
+                                        functionCall = call
+                                    } else {
+                                        functionCall?.name.append(call.name)
+                                        functionCall?.arguments.append(call.arguments)
+                                    }
+                                    await prepareFunctionCall(
+                                        call,
+                                        messageId: functionCallMessageID
+                                    )
+                                }
+                            }
+                            #if DEBUG
+                            Debugger.didReceiveResponse(content: reply)
+                            #endif
                         }
+
+                        #if DEBUG
+                        Debugger.didFinish()
+                        #endif
+                        continuation.finish()
+                    } catch {
+                        continuation.finish(throwing: error)
                     }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
                 }
             }
         }
@@ -152,22 +172,28 @@ public class ChatGPTService: ChatGPTServiceType {
             )
             await memory.appendMessage(newMessage)
         }
-
-        let message = try await sendMemoryAndWait()
-        var finalResult = message?.content
-        var functionCall = message?.functionCall
-        while let call = functionCall {
-            if !configuration.runFunctionsAutomatically {
-                break
+        return try await Debugger.$id.withValue(.init()) {
+            let message = try await sendMemoryAndWait()
+            var finalResult = message?.content
+            var functionCall = message?.functionCall
+            while let call = functionCall {
+                if !configuration.runFunctionsAutomatically {
+                    break
+                }
+                functionCall = nil
+                await runFunctionCall(call)
+                guard let nextMessage = try await sendMemoryAndWait() else { break }
+                finalResult = nextMessage.content
+                functionCall = nextMessage.functionCall
             }
-            functionCall = nil
-            await runFunctionCall(call)
-            guard let nextMessage = try await sendMemoryAndWait() else { break }
-            finalResult = nextMessage.content
-            functionCall = nextMessage.functionCall
-        }
 
-        return finalResult
+            #if DEBUG
+            Debugger.didReceiveResponse(content: finalResult ?? "N/A")
+            Debugger.didFinish()
+            #endif
+
+            return finalResult
+        }
     }
 
     public func stopReceivingMessage() {
@@ -238,6 +264,10 @@ extension ChatGPTService {
             url,
             requestBody
         )
+
+        #if DEBUG
+        Debugger.didSendRequestBody(body: requestBody)
+        #endif
 
         return AsyncThrowingStream<StreamContent, Error> { continuation in
             Task {
@@ -348,6 +378,10 @@ extension ChatGPTService {
             requestBody
         )
 
+        #if DEBUG
+        Debugger.didSendRequestBody(body: requestBody)
+        #endif
+
         let response = try await api()
 
         guard let choice = response.choices.first else { return nil }
@@ -388,6 +422,10 @@ extension ChatGPTService {
         _ call: ChatMessage.FunctionCall,
         messageId: String? = nil
     ) async -> String {
+        #if DEBUG
+        Debugger.didReceiveFunction(name: call.name, arguments: call.arguments)
+        #endif
+
         let messageId = messageId ?? uuidGenerator()
 
         guard let function = functionProvider.function(named: call.name) else {
@@ -413,6 +451,10 @@ extension ChatGPTService {
                 }
             }
 
+            #if DEBUG
+            Debugger.didReceiveFunctionResult(result: result.botReadableContent)
+            #endif
+
             await memory.updateMessage(id: messageId) { message in
                 message.content = result.botReadableContent
             }
@@ -421,6 +463,11 @@ extension ChatGPTService {
         } catch {
             // For errors, use the error message as the result.
             let content = "Error: \(error.localizedDescription)"
+
+            #if DEBUG
+            Debugger.didReceiveFunctionResult(result: content)
+            #endif
+
             await memory.updateMessage(id: messageId) { message in
                 message.content = content
             }

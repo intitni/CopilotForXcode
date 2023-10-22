@@ -61,10 +61,7 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
                 }
             }
             guard let focusedNode else {
-                var result =
-                    UnknownLanguageFocusedCodeFinder(
-                        proposedSearchRange: maxFocusedCodeLineCount / 2
-                    )
+                var result = UnknownLanguageFocusedCodeFinder(proposedSearchRange: 8)
                     .findFocusedCode(
                         containingRange: range,
                         activeDocumentContext: activeDocumentContext

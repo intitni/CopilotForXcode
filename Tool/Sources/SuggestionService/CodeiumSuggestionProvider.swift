@@ -28,23 +28,17 @@ actor CodeiumSuggestionProvider: SuggestionServiceProvider {
 }
 
 extension CodeiumSuggestionProvider {
-    func getSuggestions(
-        fileURL: URL,
-        content: String,
-        cursorPosition: SuggestionModel.CursorPosition,
-        tabSize: Int,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
-        try await (try createCodeiumServiceIfNeeded()).getCompletions(
-            fileURL: fileURL,
-            content: content,
-            cursorPosition: cursorPosition,
-            tabSize: tabSize,
-            indentSize: indentSize,
-            usesTabsForIndentation: usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
+    func getSuggestions(_ request: SuggestionRequest) async throws
+        -> [SuggestionModel.CodeSuggestion]
+    {
+        try await (createCodeiumServiceIfNeeded()).getCompletions(
+            fileURL: request.fileURL,
+            content: request.content,
+            cursorPosition: request.cursorPosition,
+            tabSize: request.tabSize,
+            indentSize: request.indentSize,
+            usesTabsForIndentation: request.usesTabsForIndentation,
+            ignoreSpaceOnlySuggestions: request.ignoreSpaceOnlySuggestions
         )
     }
 
@@ -70,12 +64,12 @@ extension CodeiumSuggestionProvider {
     }
 
     func notifySaveTextDocument(fileURL: URL) async throws {}
-    
+
     func cancelRequest() async {
         await (try? createCodeiumServiceIfNeeded())?
             .cancelRequest()
     }
-    
+
     func terminate() async {
         (try? createCodeiumServiceIfNeeded())?.terminate()
     }
