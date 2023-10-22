@@ -288,9 +288,12 @@ struct GeneralSettingsView: View {
 
                 Text("pt")
             }
-            
-            KeyboardShortcuts.Recorder("Hotkey to Toggle Widgets", name: .showHideWidget)
-            
+
+            KeyboardShortcuts.Recorder("Hotkey to Toggle Widgets", name: .showHideWidget) { _ in
+                // It's not used in this app!
+                KeyboardShortcuts.disable(.showHideWidget)
+            }
+
             Toggle(isOn: $settings.showHideWidgetShortcutGlobally) {
                 Text("Enable the Hotkey Globally")
             }
