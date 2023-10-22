@@ -332,6 +332,7 @@ These features are included in another repo, and are not open sourced.
 
 The currently available Plus features include:
 
+- Terminal tab in chat panel.
 - Unlimited chat/embedding models.
 - Tab to accept suggestions.
 - Persisted chat panel.
