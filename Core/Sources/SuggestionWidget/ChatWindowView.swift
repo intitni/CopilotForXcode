@@ -377,6 +377,7 @@ struct ChatTabContainer: View {
                             tab.body
                                 .opacity(isActive ? 1 : 0)
                                 .disabled(!isActive)
+                                .allowsHitTesting(isActive)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             EmptyView()
