@@ -54,6 +54,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         public var maxTokens: Int?
         public var minimumReplyTokens: Int?
         public var runFunctionsAutomatically: Bool?
+        public var apiKey: String?
 
         public init(
             temperature: Double? = nil,
@@ -62,7 +63,8 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
             stop: [String]? = nil,
             maxTokens: Int? = nil,
             minimumReplyTokens: Int? = nil,
-            runFunctionsAutomatically: Bool? = nil
+            runFunctionsAutomatically: Bool? = nil,
+            apiKey: String? = nil
         ) {
             self.temperature = temperature
             self.modelId = modelId
@@ -71,6 +73,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
             self.maxTokens = maxTokens
             self.minimumReplyTokens = minimumReplyTokens
             self.runFunctionsAutomatically = runFunctionsAutomatically
+            self.apiKey = apiKey
         }
     }
 
@@ -112,6 +115,10 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
 
     public var runFunctionsAutomatically: Bool {
         overriding.runFunctionsAutomatically ?? configuration.runFunctionsAutomatically
+    }
+    
+    public var apiKey: String {
+        overriding.apiKey ?? configuration.apiKey
     }
 }
 
