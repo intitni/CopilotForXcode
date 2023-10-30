@@ -255,7 +255,7 @@ private struct Instruction: View {
                 | --- | --- |
                 | `@file` | Read the metadata of the editing file |
                 | `@code` | Read the code and metadata in the editing file |
-                | `@sense`| Experimental. Read the relevant information of the focused code |
+                | `@sense`| Experimental. Read the relevant code of the focused editor |
                 | `@project` | Experimental. Access content of the project |
                 | `@web` (beta) | Search on Bing or query from a web page |
 
