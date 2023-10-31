@@ -62,11 +62,29 @@ public final class ChatService: ObservableObject {
     }
     
     public func resetDefaultScopes() {
-        if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
-            memory.contextController.defaultScopes = ["code"]
-        } else {
-            memory.contextController.defaultScopes = ["file"]
+        var scopes = Set<String>()
+        
+        if UserDefaults.shared.value(for: \.enableFileScopeByDefaultInChatContext) {
+            scopes.insert("file")
         }
+        
+        if UserDefaults.shared.value(for: \.enableCodeScopeByDefaultInChatContext) {
+            scopes.insert("code")
+        }
+        
+        if UserDefaults.shared.value(for: \.enableSenseScopeByDefaultInChatContext) {
+            scopes.insert("sense")
+        }
+        
+        if UserDefaults.shared.value(for: \.enableProjectScopeByDefaultInChatContext) {
+            scopes.insert("project")
+        }
+        
+        if UserDefaults.shared.value(for: \.enableWebScopeByDefaultInChatContext) {
+            scopes.insert("web")
+        }
+        
+        memory.contextController.defaultScopes = scopes
     }
 
     public func send(content: String) async throws {
