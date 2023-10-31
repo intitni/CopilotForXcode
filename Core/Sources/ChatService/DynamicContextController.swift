@@ -8,13 +8,13 @@ final class DynamicContextController {
     let contextCollectors: [ChatContextCollector]
     let memory: AutoManagedChatGPTMemory
     let functionProvider: ChatFunctionProvider
-    let configuration: ChatGPTConfiguration
-    var defaultScopes = [] as Set<String>
+    let configuration: OverridingChatGPTConfiguration
+    var defaultScopes = [] as Set<ChatContext.Scope>
 
     convenience init(
         memory: AutoManagedChatGPTMemory,
         functionProvider: ChatFunctionProvider,
-        configuration: ChatGPTConfiguration,
+        configuration: OverridingChatGPTConfiguration,
         contextCollectors: ChatContextCollector...
     ) {
         self.init(
@@ -28,7 +28,7 @@ final class DynamicContextController {
     init(
         memory: AutoManagedChatGPTMemory,
         functionProvider: ChatFunctionProvider,
-        configuration: ChatGPTConfiguration,
+        configuration: OverridingChatGPTConfiguration,
         contextCollectors: [ChatContextCollector]
     ) {
         self.memory = memory
@@ -86,7 +86,7 @@ final class DynamicContextController {
 }
 
 extension DynamicContextController {
-    static func parseScopes(_ prompt: inout String) -> Set<String> {
+    static func parseScopes(_ prompt: inout String) -> Set<ChatContext.Scope> {
         let parser = MessageScopeParser()
         return parser(&prompt)
     }

@@ -6,13 +6,7 @@ import OpenAIService
 import Preferences
 
 public final class ChatService: ObservableObject {
-    public enum Scope: String, Equatable, CaseIterable {
-        case file
-        case code
-        case sense
-        case project
-        case web
-    }
+    public typealias Scope = ChatContext.Scope
     
     public let memory: ContextAwareAutoManagedChatGPTMemory
     public let configuration: OverridingChatGPTConfiguration
@@ -96,7 +90,7 @@ public final class ChatService: ObservableObject {
     }
 
     public func send(content: String) async throws {
-        memory.contextController.defaultScopes = Set(defaultScopes.map(\.rawValue))
+        memory.contextController.defaultScopes = defaultScopes
         guard !isReceivingMessage else { throw CancellationError() }
         let handledInPlugin = try await pluginController.handleContent(content)
         if handledInPlugin { return }

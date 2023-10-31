@@ -3,6 +3,14 @@ import OpenAIService
 import Parsing
 
 public struct ChatContext {
+    public enum Scope: String, Equatable, CaseIterable {
+        case file
+        case code
+        case sense
+        case project
+        case web
+    }
+
     public struct RetrievedContent {
         public var content: String
         public var priority: Int
@@ -31,10 +39,22 @@ public struct ChatContext {
     }
 }
 
+public extension ChatContext.Scope {
+    init?(text: String) {
+        for scope in Self.allCases {
+            if scope.rawValue.hasPrefix(text.lowercased()) {
+                self = scope
+                return
+            }
+        }
+        return nil
+    }
+}
+
 public protocol ChatContextCollector {
     func generateContext(
         history: [ChatMessage],
-        scopes: Set<String>,
+        scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
     ) async -> ChatContext
@@ -43,11 +63,11 @@ public protocol ChatContextCollector {
 public struct MessageScopeParser {
     public init() {}
 
-    public func callAsFunction(_ content: inout String) -> Set<String> {
+    public func callAsFunction(_ content: inout String) -> Set<ChatContext.Scope> {
         return parseScopes(&content)
     }
 
-    func parseScopes(_ prompt: inout String) -> Set<String> {
+    func parseScopes(_ prompt: inout String) -> Set<ChatContext.Scope> {
         guard !prompt.isEmpty else { return [] }
         do {
             let parser = Parse {
@@ -68,7 +88,7 @@ public struct MessageScopeParser {
             }
             let (scopes, rest) = try parser.parse(prompt)
             prompt = String(rest)
-            return Set(scopes.map(String.init))
+            return Set(scopes.map(String.init).compactMap(ChatContext.Scope.init(text:)))
         } catch {
             return []
         }

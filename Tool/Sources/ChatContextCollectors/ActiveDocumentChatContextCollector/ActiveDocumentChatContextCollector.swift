@@ -14,7 +14,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     public func generateContext(
         history: [ChatMessage],
-        scopes: Set<String>,
+        scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
     ) -> ChatContext {
@@ -22,8 +22,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         let context = getActiveDocumentContext(info)
         activeDocumentContext = context
 
-        guard scopes.contains("code") || scopes.contains("c") else {
-            if scopes.contains("file") || scopes.contains("f") {
+        guard scopes.contains(.code) else {
+            if scopes.contains(.file) {
                 var removedCode = context
                 removedCode.focusedContext = nil
                 return .init(

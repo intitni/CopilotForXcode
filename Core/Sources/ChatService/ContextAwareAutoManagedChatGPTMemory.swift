@@ -24,7 +24,7 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     init(
-        configuration: ChatGPTConfiguration,
+        configuration: OverridingChatGPTConfiguration,
         functionProvider: ChatFunctionProvider
     ) {
         memory = AutoManagedChatGPTMemory(
