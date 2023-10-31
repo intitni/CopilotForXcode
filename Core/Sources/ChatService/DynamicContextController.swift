@@ -37,10 +37,37 @@ final class DynamicContextController {
         self.contextCollectors = contextCollectors
     }
 
-    func updatePromptToMatchContent(systemPrompt: String, content: String) async throws {
+    func collectContextInformation(systemPrompt: String, content: String) async throws {
         var content = content
         var scopes = Self.parseScopes(&content)
         scopes.formUnion(defaultScopes)
+        
+        let overridingChatModelId = {
+            var ids = [String]()
+            if scopes.contains(.sense) {
+                ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForSenseScope))
+            }
+            
+            if scopes.contains(.project) {
+                ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForProjectScope))
+            }
+            
+            if scopes.contains(.web) {
+                ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForWebScope))
+            }
+            
+            let chatModels = UserDefaults.shared.value(for: \.chatModels)
+            let idIndexMap = chatModels.enumerated().reduce(into: [String: Int]()) {
+                $0[$1.element.id] = $1.offset
+            }
+            return ids.sorted(by: {
+                let lhs = idIndexMap[$0] ?? Int.max
+                let rhs = idIndexMap[$1] ?? Int.max
+                return lhs < rhs
+            }).first
+        }()
+        
+        configuration.overriding.modelId = overridingChatModelId
 
         functionProvider.removeAll()
         let language = UserDefaults.shared.value(for: \.chatGPTLanguage)

@@ -14,11 +14,11 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
     public var remainingTokens: Int? {
         get async { await memory.remainingTokens }
     }
-    
+
     public var history: [ChatMessage] {
         get async { await memory.history }
     }
-    
+
     func observeHistoryChange(_ observer: @escaping () -> Void) {
         memory.observeHistoryChange(observer)
     }
@@ -48,10 +48,13 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
     public func refresh() async {
         let content = (await memory.history)
             .last(where: { $0.role == .user || $0.role == .function })?.content
-        try? await contextController.updatePromptToMatchContent(systemPrompt: """
-        \(chatService?.systemPrompt ?? "")
-        \(chatService?.extraSystemPrompt ?? "")
-        """, content: content ?? "")
+        try? await contextController.collectContextInformation(
+            systemPrompt: """
+            \(chatService?.systemPrompt ?? "")
+            \(chatService?.extraSystemPrompt ?? "")
+            """,
+            content: content ?? ""
+        )
         await memory.refresh()
     }
 }

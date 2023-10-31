@@ -40,8 +40,10 @@ public final class ChatService: ObservableObject {
 
     public convenience init() {
         let configuration = UserPreferenceChatGPTConfiguration().overriding()
+        /// Used by context collector
+        let extraConfiguration = configuration.overriding()
         let memory = ContextAwareAutoManagedChatGPTMemory(
-            configuration: configuration,
+            configuration: extraConfiguration,
             functionProvider: ChatFunctionProvider()
         )
         self.init(
@@ -49,7 +51,7 @@ public final class ChatService: ObservableObject {
             configuration: configuration,
             chatGPTService: ChatGPTService(
                 memory: memory,
-                configuration: configuration,
+                configuration: extraConfiguration,
                 functionProvider: memory.functionProvider
             )
         )
