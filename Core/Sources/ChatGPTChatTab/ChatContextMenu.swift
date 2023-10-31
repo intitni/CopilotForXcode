@@ -1,4 +1,5 @@
 import AppKit
+import ChatService
 import ComposableArchitecture
 import SharedUIComponents
 import SwiftUI
@@ -30,6 +31,7 @@ struct ChatContextMenu: View {
 
         chatModel
         temperature
+        defaultScopes
 
         Divider()
 
@@ -144,6 +146,34 @@ struct ChatContextMenu: View {
                         HStack {
                             Text("\(value.formatted(.number.precision(.fractionLength(1))))")
                             if value == viewStore.state {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    var defaultScopes: some View {
+        Menu("Default Scopes") {
+            WithViewStore(store, observe: \.defaultScopes) { viewStore in
+                Button(action: {
+                    store.send(.resetDefaultScopesButtonTapped)
+                }) {
+                    Text("Reset Default Scopes")
+                }
+
+                Divider()
+
+                ForEach(ChatService.Scope.allCases, id: \.rawValue) { value in
+                    Button(action: {
+                        viewStore.send(.toggleScope(value))
+                    }) {
+                        HStack {
+                            Text("@" + value.rawValue)
+                            if viewStore.state.contains(value) {
                                 Image(systemName: "checkmark")
                             }
                         }

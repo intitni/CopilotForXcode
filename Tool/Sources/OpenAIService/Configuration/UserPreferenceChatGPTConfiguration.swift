@@ -1,24 +1,25 @@
 import AIModel
 import Foundation
+import Keychain
 import Preferences
 
 public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     public var chatModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>?
-    
+
     public var temperature: Double {
         min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
     }
 
     public var model: ChatModel? {
         let models = UserDefaults.shared.value(for: \.chatModels)
-        
+
         if let chatModelKey {
             let id = UserDefaults.shared.value(for: chatModelKey)
             if let model = models.first(where: { $0.id == id }) {
                 return model
             }
         }
-        
+
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureChatModelId)
         return models.first { $0.id == id }
             ?? models.first
@@ -116,9 +117,11 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     public var runFunctionsAutomatically: Bool {
         overriding.runFunctionsAutomatically ?? configuration.runFunctionsAutomatically
     }
-    
+
     public var apiKey: String {
-        overriding.apiKey ?? configuration.apiKey
+        if let apiKey = overriding.apiKey { return apiKey }
+        guard let name = model?.info.apiKeyName else { return configuration.apiKey }
+        return (try? Keychain.apiKey.get(name)) ?? configuration.apiKey
     }
 }
 

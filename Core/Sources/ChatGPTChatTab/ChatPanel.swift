@@ -54,7 +54,7 @@ struct ChatPanelMessages: View {
                     Group {
                         Spacer(minLength: 12)
 
-                        Instruction()
+                        Instruction(chat: chat)
 
                         ChatHistory(chat: chat)
                             .listItemTint(.clear)
@@ -225,8 +225,7 @@ private struct StopRespondingButton: View {
 }
 
 private struct Instruction: View {
-    @AppStorage(\.useCodeScopeByDefaultInChatContext)
-    var useCodeScopeByDefaultInChatContext
+    let chat: StoreOf<Chat>
 
     var body: some View {
         Group {
@@ -255,8 +254,9 @@ private struct Instruction: View {
                 | --- | --- |
                 | `@file` | Read the metadata of the editing file |
                 | `@code` | Read the code and metadata in the editing file |
-                | `@web` (beta) | Search on Bing or query from a web page |
+                | `@sense`| Experimental. Read the relevant code of the focused editor |
                 | `@project` | Experimental. Access content of the project |
+                | `@web` (beta) | Search on Bing or query from a web page |
 
                 To use scopes, you can prefix a message with `@code`.
 
@@ -265,18 +265,24 @@ private struct Instruction: View {
             )
             .modifier(InstructionModifier())
 
-            Markdown(
-                """
-                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+            WithViewStore(chat, observe: \.chatMenu.defaultScopes) { viewStore in
+                Markdown(
+                    """
+                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
 
-                \(
-                    useCodeScopeByDefaultInChatContext
-                        ? "Scope **`@code`** is enabled by default."
-                        : "Scope **`@file`** is enabled by default."
+                    \({
+                        if viewStore.state.isEmpty {
+                            return "No scope is enabled by default"
+                        } else {
+                            let scopes = viewStore.state.map(\.rawValue).sorted()
+                                .joined(separator: ", ")
+                            return "Default scopes: `\(scopes)`"
+                        }
+                    }())
+                    """
                 )
-                """
-            )
-            .modifier(InstructionModifier())
+                .modifier(InstructionModifier())
+            }
         }
     }
 

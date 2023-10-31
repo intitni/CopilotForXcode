@@ -9,11 +9,11 @@ public final class WebChatContextCollector: ChatContextCollector {
 
     public func generateContext(
         history: [ChatMessage],
-        scopes: Set<String>,
+        scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
     ) -> ChatContext {
-        guard scopes.contains("web") || scopes.contains("w") else { return .empty }
+        guard scopes.contains(.web) else { return .empty }
         let links = Self.detectLinks(from: history) + Self.detectLinks(from: content)
         let functions: [(any ChatGPTFunction)?] = [
             SearchFunction(maxTokens: configuration.maxTokens),

@@ -1,5 +1,7 @@
+import ChatContextCollector
 import ChatService
 import ChatTab
+import CodableWrappers
 import Combine
 import ComposableArchitecture
 import Foundation
@@ -21,6 +23,7 @@ public class ChatGPTChatTab: ChatTab {
         var configuration: OverridingChatGPTConfiguration.Overriding
         var systemPrompt: String
         var extraSystemPrompt: String
+        var defaultScopes: Set<ChatContext.Scope>?
     }
 
     struct Builder: ChatTabBuilder {
@@ -65,7 +68,8 @@ public class ChatGPTChatTab: ChatTab {
             history: await service.memory.history,
             configuration: service.configuration.overriding,
             systemPrompt: service.systemPrompt,
-            extraSystemPrompt: service.extraSystemPrompt
+            extraSystemPrompt: service.extraSystemPrompt,
+            defaultScopes: service.defaultScopes
         )
         return (try? JSONEncoder().encode(state)) ?? Data()
     }
@@ -79,6 +83,9 @@ public class ChatGPTChatTab: ChatTab {
             tab.service.configuration.overriding = state.configuration
             tab.service.mutateSystemPrompt(state.systemPrompt)
             tab.service.mutateExtraSystemPrompt(state.extraSystemPrompt)
+            if let scopes = state.defaultScopes {
+                tab.service.defaultScopes = scopes
+            }
             await tab.service.memory.mutateHistory { history in
                 history = state.history
             }

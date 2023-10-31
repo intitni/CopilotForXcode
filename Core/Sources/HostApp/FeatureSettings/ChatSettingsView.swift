@@ -1,5 +1,10 @@
 import Preferences
+import SharedUIComponents
 import SwiftUI
+
+#if canImport(ProHostApp)
+import ProHostApp
+#endif
 
 struct ChatSettingsView: View {
     class Settings: ObservableObject {
@@ -9,10 +14,7 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatGPTMaxMessageCount) var chatGPTMaxMessageCount
         @AppStorage(\.chatFontSize) var chatFontSize
         @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
-        @AppStorage(\.maxFocusedCodeLineCount)
-        var maxFocusedCodeLineCount
-        @AppStorage(\.useCodeScopeByDefaultInChatContext)
-        var useCodeScopeByDefaultInChatContext
+
         @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
@@ -32,12 +34,11 @@ struct ChatSettingsView: View {
     var body: some View {
         VStack {
             chatSettingsForm
-            Divider()
+            SettingsDivider("UI")
             uiForm
-            Divider()
-            contextForm
-            Divider()
+            SettingsDivider("Plugin")
             pluginForm
+            ScopeForm()
         }
     }
 
@@ -102,6 +103,7 @@ struct ChatSettingsView: View {
                     "\(settings.chatGPTTemperature.formatted(.number.precision(.fractionLength(1))))"
                 )
                 .font(.body)
+                .foregroundColor(settings.chatGPTTemperature >= 1 ? .red : .secondary)
                 .monospacedDigit()
                 .padding(.vertical, 2)
                 .padding(.horizontal, 6)
@@ -160,31 +162,9 @@ struct ChatSettingsView: View {
 
                 Text("pt")
             }
-            
+
             Toggle(isOn: $settings.wrapCodeInCodeBlock) {
                 Text("Wrap code in code block")
-            }
-        }
-    }
-
-    @ViewBuilder
-    var contextForm: some View {
-        Form {
-            Toggle(isOn: $settings.useCodeScopeByDefaultInChatContext) {
-                Text("Use @code scope by default in chat context.")
-            }
-
-            HStack {
-                TextField(text: .init(get: {
-                    "\(Int(settings.maxFocusedCodeLineCount))"
-                }, set: {
-                    settings.maxFocusedCodeLineCount = Int($0) ?? 0
-                })) {
-                    Text("Max focused code line count in chat context")
-                }
-                .textFieldStyle(.roundedBorder)
-
-                Text("lines")
             }
         }
     }
@@ -235,13 +215,218 @@ struct ChatSettingsView: View {
             )
         }
     }
+
+    struct ScopeForm: View {
+        class Settings: ObservableObject {
+            @AppStorage(\.enableFileScopeByDefaultInChatContext)
+            var enableFileScopeByDefaultInChatContext: Bool
+            @AppStorage(\.enableCodeScopeByDefaultInChatContext)
+            var enableCodeScopeByDefaultInChatContext: Bool
+            @AppStorage(\.enableSenseScopeByDefaultInChatContext)
+            var enableSenseScopeByDefaultInChatContext: Bool
+            @AppStorage(\.enableProjectScopeByDefaultInChatContext)
+            var enableProjectScopeByDefaultInChatContext: Bool
+            @AppStorage(\.enableWebScopeByDefaultInChatContext)
+            var enableWebScopeByDefaultInChatContext: Bool
+            @AppStorage(\.preferredChatModelIdForSenseScope)
+            var preferredChatModelIdForSenseScope: String
+            @AppStorage(\.preferredChatModelIdForProjectScope)
+            var preferredChatModelIdForProjectScope: String
+            @AppStorage(\.preferredChatModelIdForWebScope)
+            var preferredChatModelIdForWebScope: String
+            @AppStorage(\.chatModels) var chatModels
+            @AppStorage(\.maxFocusedCodeLineCount)
+            var maxFocusedCodeLineCount
+
+            init() {}
+        }
+
+        @StateObject var settings = Settings()
+
+        var body: some View {
+            VStack {
+                Scope(
+                    title: Text("File Scope"),
+                    description: "Enable the bot to read the metadata of the editing file."
+                ) {
+                    Form {
+                        Toggle(isOn: $settings.enableFileScopeByDefaultInChatContext) {
+                            Text("Enable @file scope by default in chat context.")
+                        }
+                    }
+                }
+
+                Scope(
+                    title: Text("Code Scope"),
+                    description: "Enable the bot to read the code and metadata in the editing file."
+                ) {
+                    Form {
+                        Toggle(isOn: $settings.enableCodeScopeByDefaultInChatContext) {
+                            Text("Enable @code scope by default in chat context.")
+                        }
+
+                        HStack {
+                            TextField(text: .init(get: {
+                                "\(Int(settings.maxFocusedCodeLineCount))"
+                            }, set: {
+                                settings.maxFocusedCodeLineCount = Int($0) ?? 0
+                            })) {
+                                Text("Max focused code")
+                            }
+                            .textFieldStyle(.roundedBorder)
+
+                            Text("lines")
+                        }
+                    }
+                }
+
+                #if canImport(ProHostApp)
+
+                Scope(
+                    title: WithFeatureEnabled(\.projectScopeInChat) { Text("Sense Scope") },
+                    description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
+                ) {
+                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
+                        Form {
+                            Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
+                                Text("Enable @sense scope by default in chat context.")
+                            }
+
+                            Picker(
+                                "Preferred Chat Model",
+                                selection: $settings.preferredChatModelIdForSenseScope
+                            ) {
+                                Text("None").tag("")
+
+                                if !settings.chatModels
+                                    .contains(where: {
+                                        $0.id == settings.preferredChatModelIdForSenseScope
+                                    }),
+                                    !settings.preferredChatModelIdForSenseScope.isEmpty
+                                {
+                                    Text(
+                                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                            ?? "No Model Found"
+                                    )
+                                    .tag(settings.preferredChatModelIdForSenseScope)
+                                }
+
+                                ForEach(settings.chatModels, id: \.id) { chatModel in
+                                    Text(chatModel.name).tag(chatModel.id)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Scope(
+                    title: WithFeatureEnabled(\.projectScopeInChat) { Text("Project Scope") },
+                    description: "Experimental. Enable the bot to search  code symbols in the project, third party packages and the SDK."
+                ) {
+                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
+                        Form {
+                            Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
+                                Text("Enable @project scope by default in chat context.")
+                            }
+
+                            Picker(
+                                "Preferred Chat Model",
+                                selection: $settings.preferredChatModelIdForProjectScope
+                            ) {
+                                Text("None").tag("")
+
+                                if !settings.chatModels
+                                    .contains(where: {
+                                        $0.id == settings.preferredChatModelIdForProjectScope
+                                    }),
+                                    !settings.preferredChatModelIdForProjectScope.isEmpty
+                                {
+                                    Text(
+                                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                            ?? "No Model Found"
+                                    )
+                                    .tag(settings.preferredChatModelIdForProjectScope)
+                                }
+
+                                ForEach(settings.chatModels, id: \.id) { chatModel in
+                                    Text(chatModel.name).tag(chatModel.id)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                #endif
+
+                Scope(
+                    title: Text("Web Scope"),
+                    description: "Allow the bot to search on Bing or read a web page."
+                ) {
+                    Form {
+                        Toggle(isOn: $settings.enableWebScopeByDefaultInChatContext) {
+                            Text("Enable @web scope by default in chat context.")
+                        }
+
+                        Picker(
+                            "Preferred Chat Model",
+                            selection: $settings.preferredChatModelIdForWebScope
+                        ) {
+                            Text("None").tag("")
+
+                            if !settings.chatModels
+                                .contains(where: {
+                                    $0.id == settings.preferredChatModelIdForWebScope
+                                }),
+                                !settings.preferredChatModelIdForWebScope.isEmpty
+                            {
+                                Text(
+                                    (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                        ?? "No Model Found"
+                                )
+                                .tag(settings.preferredChatModelIdForWebScope)
+                            }
+
+                            ForEach(settings.chatModels, id: \.id) { chatModel in
+                                Text(chatModel.name).tag(chatModel.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        struct Scope<Title: View, Content: View>: View {
+            let title: Title
+            let description: String
+            let content: () -> Content
+
+            var body: some View {
+                SettingsDivider(title)
+                VStack {
+                    Text(description)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(8)
+                        .background {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.secondary.opacity(0.1))
+                        }
+                    content()
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Preview
 
-struct ChatSettingsView_Previews: PreviewProvider {
-    static var previews: some View {
+#Preview {
+    ScrollView {
         ChatSettingsView()
+            .padding()
     }
+    .frame(height: 800)
+    .environment(\.overrideFeatureFlag, \.never)
 }
 

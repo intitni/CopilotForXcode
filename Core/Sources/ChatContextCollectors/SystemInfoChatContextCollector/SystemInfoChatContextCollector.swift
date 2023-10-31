@@ -13,7 +13,7 @@ public final class SystemInfoChatContextCollector: ChatContextCollector {
 
     public func generateContext(
         history: [ChatMessage],
-        scopes: Set<String>,
+        scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
     ) -> ChatContext {

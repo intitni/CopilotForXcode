@@ -212,14 +212,14 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
     func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
+        await memory.refresh()
+
         guard let model = configuration.model else {
             throw ChatGPTServiceError.chatModelNotAvailable
         }
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
-
-        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
@@ -325,14 +325,14 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream disabled.
     func sendMemoryAndWait() async throws -> ChatMessage? {
+        await memory.refresh()
+
         guard let model = configuration.model else {
             throw ChatGPTServiceError.chatModelNotAvailable
         }
         guard let url = URL(string: configuration.endpoint) else {
             throw ChatGPTServiceError.endpointIncorrect
         }
-
-        await memory.refresh()
 
         let messages = await memory.messages.map {
             CompletionRequestBody.Message(
