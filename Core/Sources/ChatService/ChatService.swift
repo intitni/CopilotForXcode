@@ -6,6 +6,14 @@ import OpenAIService
 import Preferences
 
 public final class ChatService: ObservableObject {
+    public enum Scope: String, Equatable, CaseIterable {
+        case file
+        case code
+        case sense
+        case project
+        case web
+    }
+    
     public let memory: ContextAwareAutoManagedChatGPTMemory
     public let configuration: OverridingChatGPTConfiguration
     public let chatGPTService: any ChatGPTServiceType
@@ -15,6 +23,7 @@ public final class ChatService: ObservableObject {
     @Published public internal(set) var systemPrompt = UserDefaults.shared
         .value(for: \.defaultChatSystemPrompt)
     @Published public internal(set) var extraSystemPrompt = ""
+    @Published public var defaultScopes = Set<Scope>()
 
     let pluginController: ChatPluginController
     var cancellable = Set<AnyCancellable>()
@@ -50,7 +59,7 @@ public final class ChatService: ObservableObject {
                 functionProvider: memory.functionProvider
             )
         )
-        
+
         resetDefaultScopes()
 
         memory.chatService = self
@@ -60,38 +69,38 @@ public final class ChatService: ObservableObject {
             }
         }
     }
-    
+
     public func resetDefaultScopes() {
-        var scopes = Set<String>()
-        
+        var scopes = Set<Scope>()
         if UserDefaults.shared.value(for: \.enableFileScopeByDefaultInChatContext) {
-            scopes.insert("file")
+            scopes.insert(.file)
         }
-        
+
         if UserDefaults.shared.value(for: \.enableCodeScopeByDefaultInChatContext) {
-            scopes.insert("code")
+            scopes.insert(.code)
         }
-        
-        if UserDefaults.shared.value(for: \.enableSenseScopeByDefaultInChatContext) {
-            scopes.insert("sense")
-        }
-        
+
         if UserDefaults.shared.value(for: \.enableProjectScopeByDefaultInChatContext) {
-            scopes.insert("project")
+            scopes.insert(.project)
         }
-        
+
+        if UserDefaults.shared.value(for: \.enableSenseScopeByDefaultInChatContext) {
+            scopes.insert(.sense)
+        }
+
         if UserDefaults.shared.value(for: \.enableWebScopeByDefaultInChatContext) {
-            scopes.insert("web")
+            scopes.insert(.web)
         }
         
-        memory.contextController.defaultScopes = scopes
+        defaultScopes = scopes
     }
 
     public func send(content: String) async throws {
+        memory.contextController.defaultScopes = Set(defaultScopes.map(\.rawValue))
         guard !isReceivingMessage else { throw CancellationError() }
         let handledInPlugin = try await pluginController.handleContent(content)
         if handledInPlugin { return }
-       
+
         let stream = try await chatGPTService.send(content: content, summary: nil)
         isReceivingMessage = true
         do {
@@ -133,7 +142,6 @@ public final class ChatService: ObservableObject {
     public func resetPrompt() async {
         systemPrompt = UserDefaults.shared.value(for: \.defaultChatSystemPrompt)
         extraSystemPrompt = ""
-        resetDefaultScopes()
     }
 
     public func deleteMessage(id: String) async {
