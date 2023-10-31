@@ -103,6 +103,7 @@ struct ChatSettingsView: View {
                     "\(settings.chatGPTTemperature.formatted(.number.precision(.fractionLength(1))))"
                 )
                 .font(.body)
+                .foregroundColor(settings.chatGPTTemperature >= 1 ? .red : .secondary)
                 .monospacedDigit()
                 .padding(.vertical, 2)
                 .padding(.horizontal, 6)
