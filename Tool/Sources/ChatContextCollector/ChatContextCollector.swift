@@ -3,7 +3,7 @@ import OpenAIService
 import Parsing
 
 public struct ChatContext {
-    public enum Scope: String, Equatable, CaseIterable {
+    public enum Scope: String, Equatable, CaseIterable, Codable {
         case file
         case code
         case sense
