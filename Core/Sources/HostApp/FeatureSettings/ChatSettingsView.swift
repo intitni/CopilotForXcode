@@ -14,8 +14,7 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatGPTMaxMessageCount) var chatGPTMaxMessageCount
         @AppStorage(\.chatFontSize) var chatFontSize
         @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
-        @AppStorage(\.maxFocusedCodeLineCount)
-        var maxFocusedCodeLineCount
+
         @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
@@ -37,8 +36,6 @@ struct ChatSettingsView: View {
             chatSettingsForm
             SettingsDivider("UI")
             uiForm
-            SettingsDivider("Context")
-            contextForm
             SettingsDivider("Plugin")
             pluginForm
             ScopeForm()
@@ -172,24 +169,6 @@ struct ChatSettingsView: View {
     }
 
     @ViewBuilder
-    var contextForm: some View {
-        Form {
-            HStack {
-                TextField(text: .init(get: {
-                    "\(Int(settings.maxFocusedCodeLineCount))"
-                }, set: {
-                    settings.maxFocusedCodeLineCount = Int($0) ?? 0
-                })) {
-                    Text("Max focused code line count in chat context")
-                }
-                .textFieldStyle(.roundedBorder)
-
-                Text("lines")
-            }
-        }
-    }
-
-    @ViewBuilder
     var pluginForm: some View {
         Form {
             TextField(text: .init(get: {
@@ -255,6 +234,8 @@ struct ChatSettingsView: View {
             @AppStorage(\.preferredChatModelIdForWebScope)
             var preferredChatModelIdForWebScope: String
             @AppStorage(\.chatModels) var chatModels
+            @AppStorage(\.maxFocusedCodeLineCount)
+            var maxFocusedCodeLineCount
 
             init() {}
         }
@@ -281,6 +262,19 @@ struct ChatSettingsView: View {
                     Form {
                         Toggle(isOn: $settings.enableCodeScopeByDefaultInChatContext) {
                             Text("Enable @code scope by default in chat context.")
+                        }
+
+                        HStack {
+                            TextField(text: .init(get: {
+                                "\(Int(settings.maxFocusedCodeLineCount))"
+                            }, set: {
+                                settings.maxFocusedCodeLineCount = Int($0) ?? 0
+                            })) {
+                                Text("Max focused code")
+                            }
+                            .textFieldStyle(.roundedBorder)
+
+                            Text("lines")
                         }
                     }
                 }
@@ -322,7 +316,6 @@ struct ChatSettingsView: View {
                             }
                         }
                     }
-                    .padding(.top, 20)
                 }
 
                 Scope(
@@ -334,7 +327,7 @@ struct ChatSettingsView: View {
                             Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
                                 Text("Enable @project scope by default in chat context.")
                             }
-                            
+
                             Picker(
                                 "Preferred Chat Model",
                                 selection: $settings.preferredChatModelIdForProjectScope
@@ -372,7 +365,7 @@ struct ChatSettingsView: View {
                         Toggle(isOn: $settings.enableWebScopeByDefaultInChatContext) {
                             Text("Enable @web scope by default in chat context.")
                         }
-                        
+
                         Picker(
                             "Preferred Chat Model",
                             selection: $settings.preferredChatModelIdForWebScope
@@ -412,15 +405,13 @@ struct ChatSettingsView: View {
                     Text(description)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
                         .padding(8)
                         .background {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.secondary.opacity(0.1))
                         }
-                        .frame(maxWidth: 500)
-                    Form {
-                        content()
-                    }
+                    content()
                 }
             }
         }

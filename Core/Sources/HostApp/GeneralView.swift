@@ -3,6 +3,7 @@ import ComposableArchitecture
 import KeyboardShortcuts
 import LaunchAgentManager
 import Preferences
+import SharedUIComponents
 import SwiftUI
 
 struct GeneralView: View {
@@ -12,11 +13,11 @@ struct GeneralView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 AppInfoView()
-                Divider()
+                SettingsDivider()
                 ExtensionServiceView(store: store)
-                Divider()
+                SettingsDivider()
                 LaunchAgentView()
-                Divider()
+                SettingsDivider()
                 GeneralSettingsView()
             }
         }

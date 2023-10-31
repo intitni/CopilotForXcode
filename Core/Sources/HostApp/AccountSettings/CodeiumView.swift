@@ -1,5 +1,6 @@
 import CodeiumService
 import Foundation
+import SharedUIComponents
 import SwiftUI
 
 struct CodeiumView: View {
@@ -220,7 +221,7 @@ struct CodeiumView: View {
                     .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
             }
 
-            Divider()
+            SettingsDivider("Advanced")
 
             Form {
                 Toggle("Verbose Log", isOn: $viewModel.codeiumVerboseLog)
