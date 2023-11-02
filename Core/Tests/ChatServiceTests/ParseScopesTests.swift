@@ -8,14 +8,21 @@ final class ParseScopesTests: XCTestCase {
     func test_parse_single_scope() async throws {
         var prompt = "@web hello"
         let scopes = parse(&prompt)
-        XCTAssertEqual(scopes, ["web"])
+        XCTAssertEqual(scopes, [.web])
+        XCTAssertEqual(prompt, "hello")
+    }
+    
+    func test_parse_single_scope_with_prefix() async throws {
+        var prompt = "@w hello"
+        let scopes = parse(&prompt)
+        XCTAssertEqual(scopes, [.web])
         XCTAssertEqual(prompt, "hello")
     }
     
     func test_parse_multiple_spaces() async throws {
         var prompt = "@web                hello"
         let scopes = parse(&prompt)
-        XCTAssertEqual(scopes, ["web"])
+        XCTAssertEqual(scopes, [.web])
         XCTAssertEqual(prompt, "hello")
     }
     
@@ -27,9 +34,9 @@ final class ParseScopesTests: XCTestCase {
     }
     
     func test_parse_multiple_scopes() async throws {
-        var prompt = "@web+file+selection hello"
+        var prompt = "@web+file+c+s+project hello"
         let scopes = parse(&prompt)
-        XCTAssertEqual(scopes, ["web", "file", "selection"])
+        XCTAssertEqual(scopes, [.web, .code, .sense, .project, .file])
         XCTAssertEqual(prompt, "hello")
     }
 }
