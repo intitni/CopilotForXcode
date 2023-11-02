@@ -11,6 +11,8 @@ enum Style {
     static let widgetHeight: Double = 20
     static var widgetWidth: Double { widgetHeight }
     static let widgetPadding: Double = 4
+    static let chatWindowTitleBarHeight: Double = 24
+    static let trafficLightButtonSize: Double = 12
 }
 
 extension Color {

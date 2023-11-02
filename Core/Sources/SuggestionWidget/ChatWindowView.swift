@@ -52,56 +52,36 @@ struct ChatWindowView: View {
 struct ChatTitleBar: View {
     let store: StoreOf<ChatPanelFeature>
     @State var isHovering = false
-    @Environment(\.controlActiveState) var controlActiveState
 
     var body: some View {
-        HStack(spacing: 4) {
-            Button(action: {
-                store.send(.hideButtonClicked)
-            }) {
-                Circle()
-                    .fill(
-                        controlActiveState == .key
-                            ? Color(nsColor: .systemOrange)
-                            : Color(nsColor: .disabledControlTextColor)
-                    )
-                    .frame(width: 10, height: 10)
-                    .shadow(radius: 0.5)
-                    .overlay {
-                        if isHovering {
-                            Image(systemName: "minus")
-                                .resizable()
-                                .foregroundStyle(.black.opacity(0.7))
-                                .font(Font.title.weight(.heavy))
-                                .frame(width: 5, height: 1)
-                        }
-                    }
+        HStack(spacing: 6) {
+            TrafficLightButton(
+                isHovering: isHovering,
+                isActive: true,
+                color: Color(nsColor: .systemOrange),
+                action: {
+                    store.send(.hideButtonClicked)
+                }
+            ) {
+                Image(systemName: "minus")
+                    .foregroundStyle(.black.opacity(0.5))
+                    .font(Font.system(size: 8).weight(.heavy))
             }
             .keyboardShortcut("m", modifiers: [.command])
 
             WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
-                Button(action: {
-                    store.send(.toggleChatPanelDetachedButtonClicked)
-                }) {
-                    Circle()
-                        .fill(
-                            controlActiveState == .key && viewStore.state
-                                ? Color(nsColor: .systemCyan)
-                                : Color(nsColor: .disabledControlTextColor)
-                        )
-                        .frame(width: 10, height: 10)
-                        .shadow(radius: 0.5)
-                        .disabled(!viewStore.state)
-                        .overlay {
-                            if isHovering {
-                                Image(systemName: "pin")
-                                    .resizable()
-                                    .foregroundStyle(.black.opacity(0.7))
-                                    .font(Font.title.weight(.heavy))
-                                    .frame(width: 4, height: 6)
-                                    .transformEffect(.init(translationX: 0, y: 0.5))
-                            }
-                        }
+                TrafficLightButton(
+                    isHovering: isHovering,
+                    isActive: viewStore.state,
+                    color: Color(nsColor: .systemCyan),
+                    action: {
+                        store.send(.toggleChatPanelDetachedButtonClicked)
+                    }
+                ) {
+                    Image(systemName: "pin.fill")
+                        .foregroundStyle(.black.opacity(0.5))
+                        .font(Font.system(size: 6).weight(.black))
+                        .transformEffect(.init(translationX: 0, y: 0.5))
                 }
             }
 
@@ -131,10 +111,46 @@ struct ChatTitleBar: View {
         .padding(.horizontal, 6)
         .padding(.top, 1)
         .frame(maxWidth: .infinity)
-        .frame(height: 16)
+        .frame(height: Style.chatWindowTitleBarHeight)
         .onHover(perform: { hovering in
             isHovering = hovering
         })
+    }
+
+    struct TrafficLightButton<Icon: View>: View {
+        let isHovering: Bool
+        let isActive: Bool
+        let color: Color
+        let action: () -> Void
+        let icon: () -> Icon
+
+        @Environment(\.controlActiveState) var controlActiveState
+
+        var body: some View {
+            Button(action: {
+                action()
+            }) {
+                Circle()
+                    .fill(
+                        controlActiveState == .key && isActive
+                            ? color
+                            : Color(nsColor: .separatorColor)
+                    )
+                    .frame(
+                        width: Style.trafficLightButtonSize,
+                        height: Style.trafficLightButtonSize
+                    )
+                    .overlay{
+                        Circle().stroke(lineWidth: 0.5).foregroundColor(.black.opacity(0.2))
+                    }
+                    .overlay {
+                        if isHovering {
+                            icon()
+                        }
+                    }
+            }
+            .focusable(false)
+        }
     }
 }
 
@@ -315,29 +331,29 @@ struct ChatTabBarButton<Content: View, Icon: View>: View {
                 icon().foregroundColor(.secondary)
                 content()
             }
-                .font(.callout)
-                .lineLimit(1)
-                .frame(maxWidth: 120)
-                .padding(.horizontal, 28)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    store.send(.tabClicked(id: info.id))
+            .font(.callout)
+            .lineLimit(1)
+            .frame(maxWidth: 120)
+            .padding(.horizontal, 28)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                store.send(.tabClicked(id: info.id))
+            }
+            .overlay(alignment: .leading) {
+                Button(action: {
+                    store.send(.closeTabButtonClicked(id: info.id))
+                }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.secondary)
                 }
-                .overlay(alignment: .leading) {
-                    Button(action: {
-                        store.send(.closeTabButtonClicked(id: info.id))
-                    }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(2)
-                    .padding(.leading, 8)
-                    .opacity(isHovered ? 1 : 0)
-                }
-                .onHover { isHovered = $0 }
-                .animation(.linear(duration: 0.1), value: isHovered)
-                .animation(.linear(duration: 0.1), value: isSelected)
+                .buttonStyle(.plain)
+                .padding(2)
+                .padding(.leading, 8)
+                .opacity(isHovered ? 1 : 0)
+            }
+            .onHover { isHovered = $0 }
+            .animation(.linear(duration: 0.1), value: isHovered)
+            .animation(.linear(duration: 0.1), value: isSelected)
 
             Divider().padding(.vertical, 6)
         }
