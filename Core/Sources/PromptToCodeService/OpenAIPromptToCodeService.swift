@@ -166,7 +166,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
         let secondMessage = """
         I will update the code you just provided.
-        It looks like every line has an indentation of \(indentation) spaces, I will keep that.
+        Every line has an indentation of \(indentation) spaces, I will keep that.
 
         What is your requirement?
         """
@@ -212,8 +212,14 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             }
         }
     }
+}
 
-    func extractCodeAndDescription(from content: String) -> (code: String, description: String) {
+// MAKR: - Internal
+
+extension OpenAIPromptToCodeService {
+    func extractCodeAndDescription(from content: String)
+        -> (code: String, description: String)
+    {
         func extractCodeFromMarkdown(_ markdown: String) -> (code: String, endIndex: Int)? {
             let codeBlockRegex = try! NSRegularExpression(
                 pattern: #"```(?:\w+)?[\n]([\s\S]+?)[\n]```"#,
@@ -275,7 +281,8 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         editorInformation: EditorInformation,
         source: PromptToCodeSource
     ) -> String {
-        guard let annotations = editorInformation.editorContent?.lineAnnotations else { return "" }
+        guard let annotations = editorInformation.editorContent?.lineAnnotations
+        else { return "" }
         let all = annotations
             .lazy
             .filter { annotation in
