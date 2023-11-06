@@ -141,6 +141,8 @@ public final class XcodeInspector: ObservableObject {
         }
     }
 
+    #warning("TODO: Double check before releasing 0.27.0")
+    
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         activeApplication = xcode
