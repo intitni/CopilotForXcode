@@ -31,6 +31,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var maxTokens: Int
         @FallbackDecoding<EmptyBool>
         public var supportsFunctionCalling: Bool
+        @FallbackDecoding<EmptyBool>
+        public var supportsOpenAIAPI2023_11: Bool
         @FallbackDecoding<EmptyString>
         public var modelName: String
         public var azureOpenAIDeploymentName: String {
@@ -43,12 +45,14 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             baseURL: String = "",
             maxTokens: Int = 4000,
             supportsFunctionCalling: Bool = true,
+            supportsOpenAIAPI2023_11: Bool = false,
             modelName: String = ""
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
             self.maxTokens = maxTokens
             self.supportsFunctionCalling = supportsFunctionCalling
+            self.supportsOpenAIAPI2023_11 = supportsOpenAIAPI2023_11
             self.modelName = modelName
         }
     }
