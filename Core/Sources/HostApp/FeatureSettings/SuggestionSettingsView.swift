@@ -28,6 +28,8 @@ struct SuggestionSettingsView: View {
         var suggestionDisplayCompactMode
         @AppStorage(\.acceptSuggestionWithTab)
         var acceptSuggestionWithTab
+        @AppStorage(\.isSuggestionSenseEnabled)
+        var isSuggestionSenseEnabled
         init() {}
     }
 
@@ -66,6 +68,14 @@ struct SuggestionSettingsView: View {
             Toggle(isOn: $settings.realtimeSuggestionToggle) {
                 Text("Real-time Suggestion")
             }
+
+            #if canImport(ProHostApp)
+            WithFeatureEnabled(\.suggestionSense) {
+                Toggle(isOn: $settings.isSuggestionSenseEnabled) {
+                    Text("Suggestion Sense")
+                }
+            }
+            #endif
 
             #if canImport(ProHostApp)
             WithFeatureEnabled(\.tabToAcceptSuggestion) {

@@ -325,6 +325,10 @@ public extension UserDefaultPreferenceKeys {
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "AcceptSuggestionWithTab")
     }
+    
+    var isSuggestionSenseEnabled: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "IsSuggestionSenseEnabled")
+    }
 }
 
 // MARK: - Chat
