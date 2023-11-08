@@ -86,7 +86,7 @@ extension ContextAwarePromptToCodeService: PromptToCodeServiceType {
 
 public struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
     public static let liveValue: () -> PromptToCodeServiceType = {
-        ContextAwarePromptToCodeService()
+        OpenAIPromptToCodeService()
     }
 
     public static let previewValue: () -> PromptToCodeServiceType = {
