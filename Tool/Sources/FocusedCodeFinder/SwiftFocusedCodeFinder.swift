@@ -268,7 +268,8 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name,
-                contextRange: convertRange(node)
+                contextRange: convertRange(node),
+                canBeUsedAsCodeRange: false
             ), true)
 
         case let node as AccessorDeclSyntax:
