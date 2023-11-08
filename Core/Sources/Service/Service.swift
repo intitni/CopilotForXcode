@@ -38,7 +38,7 @@ public final class Service {
     private init() {
         @Dependency(\.workspacePool) var workspacePool
 
-        scheduledCleaner = .init(workspacePool: workspacePool, guiController: guiController)
+        scheduledCleaner = .init()
         workspacePool.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
@@ -52,6 +52,8 @@ public final class Service {
             ProService()
         }
         #endif
+        
+        scheduledCleaner.service = self
     }
 
     @MainActor
