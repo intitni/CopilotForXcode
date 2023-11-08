@@ -2,20 +2,22 @@ import Foundation
 import SuggestionModel
 
 public struct CodeContext: Equatable {
+    public typealias ScopeContext = ActiveDocumentContext.FocusedContext.Context
+    
     public enum Scope: Equatable {
         case file
         case top
-        case scope(signature: [String])
+        case scope(signature: [ScopeContext])
     }
 
-    public var scopeSignatures: [String] {
+    public var scopeContexts: [ScopeContext] {
         switch scope {
         case .file:
             return []
         case .top:
-            return ["Top level of the file"]
-        case let .scope(signature):
-            return signature
+            return []
+        case let .scope(contexts):
+            return contexts
         }
     }
 

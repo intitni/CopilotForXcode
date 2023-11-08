@@ -13,7 +13,19 @@ public struct ActiveDocumentContext {
     public var imports: [String]
 
     public struct FocusedContext {
-        public var context: [String]
+        public struct Context: Equatable {
+            public var signature: String
+            public var name: String
+            public var range: CursorRange
+            
+            public init(signature: String, name: String, range: CursorRange) {
+                self.signature = signature
+                self.name = name
+                self.range = range
+            }
+        }
+        
+        public var context: [Context]
         public var contextRange: CursorRange
         public var codeRange: CursorRange
         public var code: String
@@ -21,7 +33,7 @@ public struct ActiveDocumentContext {
         public var otherLineAnnotations: [EditorInformation.LineAnnotation]
 
         public init(
-            context: [String],
+            context: [Context],
             contextRange: CursorRange,
             codeRange: CursorRange,
             code: String,
@@ -109,7 +121,7 @@ public struct ActiveDocumentContext {
         }
 
         focusedContext = .init(
-            context: codeContext.scopeSignatures,
+            context: codeContext.scopeContexts,
             contextRange: codeContext.contextRange,
             codeRange: codeContext.focusedRange,
             code: codeContext.focusedCode,

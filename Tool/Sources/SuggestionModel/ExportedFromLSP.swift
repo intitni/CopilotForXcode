@@ -1,5 +1,6 @@
 import LanguageServerProtocol
 
+/// Line starts at 0.
 public typealias CursorPosition = LanguageServerProtocol.Position
 
 public extension CursorPosition {

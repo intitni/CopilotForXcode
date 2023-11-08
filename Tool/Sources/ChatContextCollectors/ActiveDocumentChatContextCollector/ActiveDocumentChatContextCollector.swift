@@ -112,7 +112,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 : """
                 Focused Context:
                 ```
-                \(focusedContext.context.joined(separator: "\n"))
+                \(focusedContext.context.map(\.signature).joined(separator: "\n"))
                 ```
                 """
 
