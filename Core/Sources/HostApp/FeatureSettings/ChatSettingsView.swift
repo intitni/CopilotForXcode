@@ -320,7 +320,9 @@ struct ChatSettingsView: View {
                 }
 
                 Scope(
-                    title: WithFeatureEnabled(\.projectScopeInChat) { Text("Project Scope") },
+                    title: WithFeatureEnabled(\.projectScopeInChat) {
+                        Text("Project Scope (Experimental)")
+                    },
                     description: "Experimental. Enable the bot to search  code symbols in the project, third party packages and the SDK."
                 ) {
                     WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {

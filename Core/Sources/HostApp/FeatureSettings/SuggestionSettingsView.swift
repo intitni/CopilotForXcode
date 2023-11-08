@@ -72,7 +72,7 @@ struct SuggestionSettingsView: View {
             #if canImport(ProHostApp)
             WithFeatureEnabled(\.suggestionSense) {
                 Toggle(isOn: $settings.isSuggestionSenseEnabled) {
-                    Text("Suggestion Sense")
+                    Text("Suggestion Cheatsheet (Experimental)")
                 }
             }
             #endif
