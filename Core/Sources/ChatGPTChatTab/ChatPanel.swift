@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ComposableArchitecture
 import MarkdownUI
 import OpenAIService
@@ -40,12 +41,15 @@ private struct ListHeightPreferenceKey: PreferenceKey {
 
 struct ChatPanelMessages: View {
     let chat: StoreOf<Chat>
+    @State var cancellable = Set<AnyCancellable>()
     @State var isScrollToBottomButtonDisplayed = true
     @State var isPinnedToBottom = true
     @Namespace var bottomID
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
+    
+    @Environment(\.isEnabled) var isEnabled
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -80,10 +84,6 @@ struct ChatPanelMessages: View {
                                     value: offset
                                 )
                             })
-                            .preference(
-                                key: ListHeightPreferenceKey.self,
-                                value: listGeo.size.height
-                            )
                     }
                     .modify { view in
                         if #available(macOS 13.0, *) {
@@ -95,22 +95,15 @@ struct ChatPanelMessages: View {
                 }
                 .listStyle(.plain)
                 .coordinateSpace(name: scrollSpace)
+                .preference(
+                    key: ListHeightPreferenceKey.self,
+                    value: listGeo.size.height
+                )
                 .onPreferenceChange(ListHeightPreferenceKey.self) { value in
                     listHeight = value
                     updatePinningState()
                 }
                 .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
-                    /// I don't know if there is a way to detect that a scroll is triggered by user
-                    let scrollUpToThreshold = listHeight > 0 // sometimes it can suddenly become 0
-                        && value > listHeight + 32 + 20 // scroll up to a threshold
-                        && value > scrollOffset // it's scroll up
-                        && value - scrollOffset < 100 // it's not some mystery jump
-                    /// Scroll up too much and the tracker is lost
-                    let checkerOutOfScope = value <= 0
-                    if checkerOutOfScope || scrollUpToThreshold {
-                        isPinnedToBottom = false
-                    }
-
                     scrollOffset = value
                     updatePinningState()
                 }
@@ -121,7 +114,6 @@ struct ChatPanelMessages: View {
                             .opacity(viewStore.state ? 1 : 0)
                             .disabled(!viewStore.state)
                             .transformEffect(.init(translationX: 0, y: viewStore.state ? 0 : 20))
-                            .animation(.easeInOut(duration: 0.2), value: viewStore.state)
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
@@ -134,12 +126,34 @@ struct ChatPanelMessages: View {
                 }
             }
         }
+        .onAppear {
+            trackScrollWheel()
+        }
+        .onDisappear {
+            cancellable.forEach { $0.cancel() }
+            cancellable = []
+        }
+    }
+
+    func trackScrollWheel() {
+        NSApplication.shared.publisher(for: \.currentEvent)
+            .filter { _ in isEnabled }
+            .filter { event in event?.type == .scrollWheel }
+            .sink { event in
+                guard isEnabled, isPinnedToBottom else { return }
+                let delta = event?.deltaY ?? 0
+                let scrollUp = delta > 0
+                if scrollUp {
+                    isPinnedToBottom = false
+                }
+            }
+            .store(in: &cancellable)
     }
 
     @MainActor
     func updatePinningState() {
         // where does the 32 come from?
-        withAnimation {
+        withAnimation(.linear(duration: 0.1)) {
             isScrollToBottomButtonDisplayed = scrollOffset > listHeight + 32 + 20
                 || scrollOffset <= 0
         }
@@ -148,6 +162,7 @@ struct ChatPanelMessages: View {
     @ViewBuilder
     func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
         Button(action: {
+            isPinnedToBottom = true
             withAnimation(.easeInOut(duration: 0.1)) {
                 proxy.scrollTo(bottomID, anchor: .bottom)
             }
@@ -193,6 +208,7 @@ struct ChatPanelMessages: View {
                     .onChange(of: viewStore.state.isReceivingMessage) { isReceiving in
                         if isReceiving {
                             pinnedToBottom = true
+                            scrollToBottom()
                         }
                     }
                     .onChange(of: viewStore.state.lastMessage) { _ in
@@ -661,41 +677,6 @@ struct RoundedCorners: Shape {
                 clockwise: false
             )
             path.closeSubpath()
-        }
-    }
-}
-
-struct GlobalChatSwitchToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 4) {
-            Text(configuration.isOn ? "Shared Conversation" : "Local Conversation")
-                .foregroundStyle(.tertiary)
-
-            RoundedRectangle(cornerRadius: 10, style: .circular)
-                .foregroundColor(configuration.isOn ? Color.indigo : .gray.opacity(0.5))
-                .frame(width: 30, height: 20, alignment: .center)
-                .overlay(
-                    Circle()
-                        .fill(.regularMaterial)
-                        .padding(.all, 2)
-                        .overlay(
-                            Image(
-                                systemName: configuration
-                                    .isOn ? "globe" : "doc.circle"
-                            )
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 12, height: 12, alignment: .center)
-                            .foregroundStyle(.secondary)
-                        )
-                        .offset(x: configuration.isOn ? 5 : -5, y: 0)
-                        .animation(.linear(duration: 0.1), value: configuration.isOn)
-                )
-                .onTapGesture { configuration.isOn.toggle() }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .circular)
-                        .stroke(.black.opacity(0.2), lineWidth: 1)
-                }
         }
     }
 }
