@@ -1,13 +1,15 @@
 import ComposableArchitecture
+import Environment
 import Foundation
 import PromptToCodeService
 import SuggestionModel
-import Environment
+import XcodeInspector
 
 public struct PromptToCodeGroup: ReducerProtocol {
     public struct State: Equatable {
         public var promptToCodes: IdentifiedArrayOf<PromptToCode.State> = []
-        public var activeDocumentURL: PromptToCode.State.ID?
+        public var activeDocumentURL: PromptToCode.State.ID? = XcodeInspector.shared
+            .realtimeActiveDocumentURL
         public var activePromptToCode: PromptToCode.State? {
             get {
                 if let detached = promptToCodes.first(where: { !$0.isAttachedToSelectionRange }) {

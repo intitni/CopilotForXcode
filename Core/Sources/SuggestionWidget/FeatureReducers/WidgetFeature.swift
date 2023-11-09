@@ -331,6 +331,7 @@ public struct WidgetFeature: ReducerProtocol {
 
                 return .run { send in
                     await send(.observeEditorChange)
+                    await send(.panel(.switchToAnotherEditorAndUpdateContent))
 
                     for await notification in notifications {
                         try Task.checkCancellation()
