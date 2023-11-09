@@ -52,7 +52,7 @@ public final class Service {
             ProService()
         }
         #endif
-        
+
         scheduledCleaner.service = self
     }
 
@@ -83,9 +83,16 @@ final class GlobalShortcutManager {
         setupShortcutIfNeeded()
 
         KeyboardShortcuts.onKeyUp(for: .showHideWidget) { [guiController] in
-            guiController.viewStore.send(.suggestionWidget(.circularWidget(.widgetClicked)))
+            if XcodeInspector.shared.activeXcode == nil,
+               !guiController.viewStore.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
+               UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally)
+            {
+                guiController.viewStore.send(.openChatPanel(forceDetach: true))
+            } else {
+                guiController.viewStore.send(.suggestionWidget(.circularWidget(.widgetClicked)))
+            }
         }
-        
+
         XcodeInspector.shared.$activeApplication.sink { app in
             if !UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally) {
                 let shouldBeEnabled = if let app, app.isXcode || app.isExtensionService {
