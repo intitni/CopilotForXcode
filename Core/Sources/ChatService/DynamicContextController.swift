@@ -92,7 +92,7 @@ final class DynamicContextController {
             return contexts
         }
 
-        let extraSystemPrompt = contexts
+        let contextSystemPrompt = contexts
             .map(\.systemPrompt)
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
@@ -104,9 +104,10 @@ final class DynamicContextController {
 
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
-        \(systemPrompt)\(extraSystemPrompt.isEmpty ? "" : "\n\(extraSystemPrompt)")
+        \(systemPrompt)
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
+        await memory.mutateContextSystemPrompt(contextSystemPrompt)
         await memory.mutateRetrievedContent(contextPrompts.map(\.content))
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }

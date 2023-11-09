@@ -9,6 +9,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public private(set) var remainingTokens: Int?
 
     public var systemPrompt: String
+    public var contextSystemPrompt: String
     public var retrievedContent: [String] = []
     public var history: [ChatMessage] = [] {
         didSet { onHistoryChange() }
@@ -27,6 +28,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         functionProvider: ChatGPTFunctionProvider
     ) {
         self.systemPrompt = systemPrompt
+        contextSystemPrompt = ""
         self.configuration = configuration
         self.functionProvider = functionProvider
         _ = Self.encoder // force pre-initialize
@@ -38,6 +40,10 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
 
     public func mutateSystemPrompt(_ newPrompt: String) {
         systemPrompt = newPrompt
+    }
+
+    public func mutateContextSystemPrompt(_ newPrompt: String) {
+        contextSystemPrompt = newPrompt
     }
 
     public func mutateRetrievedContent(_ newContent: [String]) {
@@ -67,6 +73,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     ///     [Retrieved Content B]
     /// [Functions] priority: high
     /// [Message History] priority: medium
+    /// [Context System Prompt] priority: high
+    /// [Latest Message] priority: high
     /// ```
     func generateSendingHistory(
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
@@ -80,7 +88,12 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         }
 
         var smallestSystemPromptMessage = ChatMessage(role: .system, content: systemPrompt)
+        var contextSystemPromptMessage = ChatMessage(role: .system, content: contextSystemPrompt)
         let smallestSystemMessageTokenCount = countToken(&smallestSystemPromptMessage)
+        let contextSystemPromptTokenCount = !contextSystemPrompt.isEmpty
+            ? countToken(&contextSystemPromptMessage)
+            : 0
+
         let functionTokenCount = functionProvider.functions.reduce(into: 0) { partial, function in
             var count = encoder.countToken(text: function.name)
                 + encoder.countToken(text: function.description)
@@ -92,6 +105,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             partial += count
         }
         let mandatoryContentTokensCount = smallestSystemMessageTokenCount
+            + contextSystemPromptTokenCount
             + functionTokenCount
             + 3 // every reply is primed with <|start|>assistant<|message|>
 
@@ -135,13 +149,13 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
             if index == 0 {
                 if !appendToSystemPrompt("""
-                
-                
+
+
                 ## Relevant Content
-                
+
                 Below are information related to the conversation, separated by \(separator)
 
-                
+
                 """) { break }
             } else {
                 if !appendToSystemPrompt("\n\(separator)\n") { break }
@@ -154,16 +168,22 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             let message = ChatMessage(role: .system, content: systemPrompt)
             allMessages.append(message)
         }
+        
+        if !contextSystemPrompt.isEmpty {
+            allMessages.insert(contextSystemPromptMessage, at: 1)
+        }
 
         #if DEBUG
         Logger.service.info("""
         Sending tokens count
         - system prompt: \(smallestSystemMessageTokenCount)
+        - context system prompt: \(contextSystemPromptTokenCount)
         - functions: \(functionTokenCount)
         - messages: \(messageTokenCount)
         - retrieved content: \(retrievedContentTokenCount)
         - total: \(
             smallestSystemMessageTokenCount
+                + contextSystemPromptTokenCount
                 + functionTokenCount
                 + messageTokenCount
                 + retrievedContentTokenCount
