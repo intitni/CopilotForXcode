@@ -36,12 +36,14 @@ struct GUI: ReducerProtocol {
             get {
                 .init(
                     chatTabInfo: chatTabGroup.tabInfo,
-                    isRestoreFinished: isChatTabRestoreFinished
+                    isRestoreFinished: isChatTabRestoreFinished,
+                    selectedChatTapId: chatTabGroup.selectedTabId
                 )
             }
             set {
                 chatTabGroup.tabInfo = newValue.chatTabInfo
                 isChatTabRestoreFinished = newValue.isRestoreFinished
+                chatTabGroup.selectedTabId = newValue.selectedChatTapId
             }
         }
         #endif
