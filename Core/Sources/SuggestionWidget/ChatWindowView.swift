@@ -140,7 +140,7 @@ struct ChatTitleBar: View {
                         width: Style.trafficLightButtonSize,
                         height: Style.trafficLightButtonSize
                     )
-                    .overlay{
+                    .overlay {
                         Circle().stroke(lineWidth: 0.5).foregroundColor(.black.opacity(0.2))
                     }
                     .overlay {
@@ -395,6 +395,11 @@ struct ChatTabContainer: View {
                                 .disabled(!isActive)
                                 .allowsHitTesting(isActive)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                // move it out of window
+                                .rotationEffect(
+                                    isActive ? .zero : .degrees(90),
+                                    anchor: .topLeading
+                                )
                         } else {
                             EmptyView()
                         }
