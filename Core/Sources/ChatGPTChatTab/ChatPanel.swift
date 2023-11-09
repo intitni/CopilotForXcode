@@ -66,19 +66,16 @@ struct ChatPanelMessages: View {
                         }
 
                         Spacer(minLength: 12)
-                            .onAppear {
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
                             .id(bottomID)
+                            .task {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
-                                Color.clear
-                                    .preference(
-                                        key: ScrollViewOffsetPreferenceKey.self,
-                                        value: offset
-                                    )
+                                Color.clear.preference(
+                                    key: ScrollViewOffsetPreferenceKey.self,
+                                    value: offset
+                                )
                             })
                             .preference(
                                 key: ListHeightPreferenceKey.self,
@@ -96,12 +93,16 @@ struct ChatPanelMessages: View {
                 .listStyle(.plain)
                 .coordinateSpace(name: scrollSpace)
                 .onPreferenceChange(ListHeightPreferenceKey.self) { value in
-                    listHeight = value
-                    updatePinningState()
+                    Task { @MainActor in
+                        listHeight = value
+                        updatePinningState()
+                    }
                 }
                 .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
-                    scrollOffset = value
-                    updatePinningState()
+                    Task { @MainActor in
+                        scrollOffset = value
+                        updatePinningState()
+                    }
                 }
                 .overlay(alignment: .bottom) {
                     WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
@@ -114,49 +115,52 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    WithViewStore(chat, observe: \.history.last) { viewStore in
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                proxy.scrollTo(bottomID, anchor: .bottom)
-                            }
-                        }) {
-                            Image(systemName: "arrow.down")
-                                .padding(4)
-                                .background {
-                                    Circle()
-                                        .fill(.thickMaterial)
-                                        .shadow(color: .black.opacity(0.2), radius: 2)
-                                }
-                                .overlay {
-                                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                                }
-                                .foregroundStyle(.secondary)
-                                .padding(4)
-                        }
-                        .keyboardShortcut(.downArrow, modifiers: [.command])
-                        .opacity(pinnedToBottom ? 0 : 1)
-                        .buttonStyle(.plain)
-                        .onChange(of: viewStore.state) { _ in
-                            if pinnedToBottom || isInitialLoad {
-                                if isInitialLoad {
-                                    isInitialLoad = false
-                                }
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
-                        }
-                    }
+                    scrollToBottomButton(proxy: proxy)
                 }
             }
         }
     }
 
     func updatePinningState() {
-        if scrollOffset > listHeight + 24 + 100 || scrollOffset <= 0 {
+        if scrollOffset > listHeight + 30 + 100 || scrollOffset <= 0 {
             pinnedToBottom = false
         } else {
             pinnedToBottom = true
+        }
+    }
+
+    @ViewBuilder
+    func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
+        WithViewStore(chat, observe: \.history.last) { viewStore in
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
+            }) {
+                Image(systemName: "arrow.down")
+                    .padding(4)
+                    .background {
+                        Circle()
+                            .fill(.thickMaterial)
+                            .shadow(color: .black.opacity(0.2), radius: 2)
+                    }
+                    .overlay {
+                        Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(4)
+            }
+            .keyboardShortcut(.downArrow, modifiers: [.command])
+            .opacity(pinnedToBottom ? 0 : 1)
+            .buttonStyle(.plain)
+            .onChange(of: viewStore.state) { _ in
+                if pinnedToBottom || isInitialLoad {
+                    if isInitialLoad {
+                        isInitialLoad = false
+                    }
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
+            }
         }
     }
 }
