@@ -256,7 +256,7 @@ extension SuggestionWidgetController: NSWindowDelegate {
             .frame ?? .zero
         var mouseLocation = NSEvent.mouseLocation
         let windowFrame = chatPanelWindow.frame
-        if mouseLocation.y > windowFrame.maxY - 16,
+        if mouseLocation.y > windowFrame.maxY - Style.chatWindowTitleBarHeight,
            mouseLocation.y < windowFrame.maxY,
            mouseLocation.x > windowFrame.minX,
            mouseLocation.x < windowFrame.maxX
@@ -291,7 +291,7 @@ class ChatWindow: NSWindow {
     override func mouseDown(with event: NSEvent) {
         let windowFrame = frame
         let currentLocation = event.locationInWindow
-        if currentLocation.y > windowFrame.size.height - 16,
+        if currentLocation.y > windowFrame.size.height - Style.chatWindowTitleBarHeight,
            currentLocation.y < windowFrame.size.height,
            currentLocation.x > 0,
            currentLocation.x < windowFrame.width

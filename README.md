@@ -249,11 +249,13 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
-|  Scope  | Description                                                                              |
-| :-----: | ---------------------------------------------------------------------------------------- |
-| `@file` | Includes the metadata of the editing document and line annotations in the system prompt. |
-| `@code` | Includes the focused/selected code and everything from `@file` in the system prompt.     |
-| `@web`  | Allow the bot to search on Bing or query from a web page                                 |
+|   Scope    | Description                                                                              |
+| :--------: | ---------------------------------------------------------------------------------------- |
+|  `@file`   | Includes the metadata of the editing document and line annotations in the system prompt. |
+|  `@code`   | Includes the focused/selected code and everything from `@file` in the system prompt.     |
+|  `@sense`  | Experimental. Read the relevant information of the focused code                          |
+| `@project` | Experimental. Access content of the project                                              |
+|   `@web`   | Allow the bot to search on Bing or query from a web page                                 |
 
 `@code` is on by default, if `Use @code scope by default in chat context.` is on. Otherwise, `@file` will be on by default.
 

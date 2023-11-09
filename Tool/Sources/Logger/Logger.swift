@@ -19,6 +19,7 @@ public final class Logger {
     public static let gitHubCopilot = Logger(category: "GitHubCopilot")
     public static let codeium = Logger(category: "Codeium")
     public static let langchain = Logger(category: "LangChain")
+    public static let retrieval = Logger(category: "Retrieval")
     #if DEBUG
     /// Use a temp logger to log something temporary. I won't be available in release builds.
     public static let temp = Logger(category: "Temp")

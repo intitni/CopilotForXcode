@@ -88,7 +88,7 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "HideCircularWidget"
     )
-    
+
     public let showHideWidgetShortcutGlobally = PreferenceKey(
         defaultValue: false,
         key: "ShowHideWidgetShortcutGlobally"
@@ -269,11 +269,11 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeGenerateDescriptionInUserPreferredLanguage: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "PromptToCodeGenerateDescriptionInUserPreferredLanguage")
     }
-    
+
     var promptToCodeChatModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "PromptToCodeChatModelId")
     }
-    
+
     var promptToCodeEmbeddingModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "PromptToCodeEmbeddingModelId")
     }
@@ -325,6 +325,10 @@ public extension UserDefaultPreferenceKeys {
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "AcceptSuggestionWithTab")
     }
+    
+    var isSuggestionSenseEnabled: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "IsSuggestionSenseEnabled")
+    }
 }
 
 // MARK: - Chat
@@ -366,7 +370,7 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: 100, key: "MaxEmbeddableFileInChatContextLineCount")
     }
 
-    var useCodeScopeByDefaultInChatContext: PreferenceKey<Bool> {
+    var useCodeScopeByDefaultInChatContext: DeprecatedPreferenceKey<Bool> {
         .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
     }
 
@@ -389,9 +393,41 @@ public extension UserDefaultPreferenceKeys {
     var chatSearchPluginMaxIterations: PreferenceKey<Int> {
         .init(defaultValue: 3, key: "ChatSearchPluginMaxIterations")
     }
-    
+
     var wrapCodeInChatCodeBlock: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "WrapCodeInChatCodeBlock")
+    }
+
+    var enableFileScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "EnableFileScopeByDefaultInChatContext")
+    }
+
+    var enableCodeScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "UseSelectionScopeByDefaultInChatContext")
+    }
+
+    var enableSenseScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "EnableSenseScopeByDefaultInChatContext")
+    }
+
+    var enableProjectScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "EnableProjectScopeByDefaultInChatContext")
+    }
+
+    var enableWebScopeByDefaultInChatContext: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "EnableWebScopeByDefaultInChatContext")
+    }
+    
+    var preferredChatModelIdForSenseScope: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PreferredChatModelIdForSenseScope")
+    }
+    
+    var preferredChatModelIdForProjectScope: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PreferredChatModelIdForProjectScope")
+    }
+    
+    var preferredChatModelIdForWebScope: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PreferredChatModelIdForWebScope")
     }
 }
 
@@ -508,7 +544,7 @@ public extension UserDefaultPreferenceKeys {
             key: "FeatureFlag-DisableGitHubCopilotSettingsAutoRefreshOnAppear"
         )
     }
-    
+
     var disableEnhancedWorkspace: FeatureFlag {
         .init(
             defaultValue: false,

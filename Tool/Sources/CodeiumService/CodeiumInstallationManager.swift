@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion = "1.2.93"
+    static let latestSupportedVersion = "1.4.15"
 
     public init() {}
 
@@ -62,7 +62,7 @@ public struct CodeiumInstallationManager {
                     continuation.yield(.downloading)
                     let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
                     let urlString =
-                    "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                        "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
                     guard let url = URL(string: urlString) else { return }
 
                     // download

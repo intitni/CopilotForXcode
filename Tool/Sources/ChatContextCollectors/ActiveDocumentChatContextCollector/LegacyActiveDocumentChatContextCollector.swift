@@ -10,7 +10,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
 
     public func generateContext(
         history: [ChatMessage],
-        scopes: Set<String>,
+        scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
     ) -> ChatContext {
@@ -18,7 +18,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
         let relativePath = content.relativePath
         let selectionRange = content.editorContent?.selections.first ?? .outOfScope
         let editorContent = {
-            if scopes.contains("file") || scopes.contains("f") {
+            if scopes.contains(.file) {
                 return """
                 File Content:```\(content.language.rawValue)
                 \(content.editorContent?.content ?? "")
@@ -49,7 +49,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
                 }
             }
 
-            if UserDefaults.shared.value(for: \.useCodeScopeByDefaultInChatContext) {
+            if UserDefaults.shared.value(for: \.enableCodeScopeByDefaultInChatContext) {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)
@@ -58,7 +58,7 @@ public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {
                 """
             }
 
-            if scopes.contains("selection") || scopes.contains("s") {
+            if scopes.contains(.code) {
                 return """
                 Selected Code \
                 (start from line \(selectionRange.start.line)):```\(content.language.rawValue)

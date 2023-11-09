@@ -1,24 +1,25 @@
 import AIModel
 import Foundation
+import Keychain
 import Preferences
 
 public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     public var chatModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>?
-    
+
     public var temperature: Double {
         min(max(0, UserDefaults.shared.value(for: \.chatGPTTemperature)), 2)
     }
 
     public var model: ChatModel? {
         let models = UserDefaults.shared.value(for: \.chatModels)
-        
+
         if let chatModelKey {
             let id = UserDefaults.shared.value(for: chatModelKey)
             if let model = models.first(where: { $0.id == id }) {
                 return model
             }
         }
-        
+
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureChatModelId)
         return models.first { $0.id == id }
             ?? models.first
@@ -54,6 +55,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         public var maxTokens: Int?
         public var minimumReplyTokens: Int?
         public var runFunctionsAutomatically: Bool?
+        public var apiKey: String?
 
         public init(
             temperature: Double? = nil,
@@ -62,7 +64,8 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
             stop: [String]? = nil,
             maxTokens: Int? = nil,
             minimumReplyTokens: Int? = nil,
-            runFunctionsAutomatically: Bool? = nil
+            runFunctionsAutomatically: Bool? = nil,
+            apiKey: String? = nil
         ) {
             self.temperature = temperature
             self.modelId = modelId
@@ -71,6 +74,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
             self.maxTokens = maxTokens
             self.minimumReplyTokens = minimumReplyTokens
             self.runFunctionsAutomatically = runFunctionsAutomatically
+            self.apiKey = apiKey
         }
     }
 
@@ -103,15 +107,24 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     }
 
     public var maxTokens: Int {
-        overriding.maxTokens ?? configuration.maxTokens
+        if let maxTokens = overriding.maxTokens { return maxTokens }
+        if let model { return model.info.maxTokens }
+        return configuration.maxTokens
     }
 
     public var minimumReplyTokens: Int {
-        overriding.minimumReplyTokens ?? configuration.minimumReplyTokens
+        if let minimumReplyTokens = overriding.minimumReplyTokens { return minimumReplyTokens }
+        return maxTokens / 5
     }
 
     public var runFunctionsAutomatically: Bool {
         overriding.runFunctionsAutomatically ?? configuration.runFunctionsAutomatically
+    }
+
+    public var apiKey: String {
+        if let apiKey = overriding.apiKey { return apiKey }
+        guard let name = model?.info.apiKeyName else { return configuration.apiKey }
+        return (try? Keychain.apiKey.get(name)) ?? configuration.apiKey
     }
 }
 

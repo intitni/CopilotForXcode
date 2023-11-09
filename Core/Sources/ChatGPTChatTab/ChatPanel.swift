@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ComposableArchitecture
 import MarkdownUI
 import OpenAIService
@@ -40,12 +41,14 @@ private struct ListHeightPreferenceKey: PreferenceKey {
 
 struct ChatPanelMessages: View {
     let chat: StoreOf<Chat>
-    @State var pinnedToBottom = true
+    @State var cancellable = Set<AnyCancellable>()
+    @State var isScrollToBottomButtonDisplayed = true
+    @State var isPinnedToBottom = true
     @Namespace var bottomID
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
-    @State var isInitialLoad = true
+    @Environment(\.isEnabled) var isEnabled
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -54,7 +57,7 @@ struct ChatPanelMessages: View {
                     Group {
                         Spacer(minLength: 12)
 
-                        Instruction()
+                        Instruction(chat: chat)
 
                         ChatHistory(chat: chat)
                             .listItemTint(.clear)
@@ -66,24 +69,20 @@ struct ChatPanelMessages: View {
                         }
 
                         Spacer(minLength: 12)
-                            .onAppear {
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
                             .id(bottomID)
+                            .onAppear {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
+                            .task {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
-                                Color.clear
-                                    .preference(
-                                        key: ScrollViewOffsetPreferenceKey.self,
-                                        value: offset
-                                    )
+                                Color.clear.preference(
+                                    key: ScrollViewOffsetPreferenceKey.self,
+                                    value: offset
+                                )
                             })
-                            .preference(
-                                key: ListHeightPreferenceKey.self,
-                                value: listGeo.size.height
-                            )
                     }
                     .modify { view in
                         if #available(macOS 13.0, *) {
@@ -95,6 +94,10 @@ struct ChatPanelMessages: View {
                 }
                 .listStyle(.plain)
                 .coordinateSpace(name: scrollSpace)
+                .preference(
+                    key: ListHeightPreferenceKey.self,
+                    value: listGeo.size.height
+                )
                 .onPreferenceChange(ListHeightPreferenceKey.self) { value in
                     listHeight = value
                     updatePinningState()
@@ -110,53 +113,115 @@ struct ChatPanelMessages: View {
                             .opacity(viewStore.state ? 1 : 0)
                             .disabled(!viewStore.state)
                             .transformEffect(.init(translationX: 0, y: viewStore.state ? 0 : 20))
-                            .animation(.easeInOut(duration: 0.2), value: viewStore.state)
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    WithViewStore(chat, observe: \.history.last) { viewStore in
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                proxy.scrollTo(bottomID, anchor: .bottom)
-                            }
-                        }) {
-                            Image(systemName: "arrow.down")
-                                .padding(4)
-                                .background {
-                                    Circle()
-                                        .fill(.thickMaterial)
-                                        .shadow(color: .black.opacity(0.2), radius: 2)
-                                }
-                                .overlay {
-                                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                                }
-                                .foregroundStyle(.secondary)
-                                .padding(4)
-                        }
-                        .keyboardShortcut(.downArrow, modifiers: [.command])
-                        .opacity(pinnedToBottom ? 0 : 1)
-                        .buttonStyle(.plain)
-                        .onChange(of: viewStore.state) { _ in
-                            if pinnedToBottom || isInitialLoad {
-                                if isInitialLoad {
-                                    isInitialLoad = false
-                                }
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
-                        }
+                    scrollToBottomButton(proxy: proxy)
+                }
+                .background {
+                    PinToBottomHandler(chat: chat, pinnedToBottom: $isPinnedToBottom) {
+                        proxy.scrollTo(bottomID, anchor: .bottom)
                     }
                 }
             }
         }
+        .onAppear {
+            trackScrollWheel()
+        }
+        .onDisappear {
+            cancellable.forEach { $0.cancel() }
+            cancellable = []
+        }
     }
 
+    func trackScrollWheel() {
+        NSApplication.shared.publisher(for: \.currentEvent)
+            .filter {
+                if !isEnabled { return false }
+                return $0?.type == .scrollWheel
+            }
+            .compactMap { $0 }
+            .sink { event in
+                guard isPinnedToBottom else { return }
+                let delta = event.deltaY
+                let scrollUp = delta > 0
+                if scrollUp {
+                    isPinnedToBottom = false
+                }
+            }
+            .store(in: &cancellable)
+    }
+
+    @MainActor
     func updatePinningState() {
-        if scrollOffset > listHeight + 24 + 100 || scrollOffset <= 0 {
-            pinnedToBottom = false
-        } else {
-            pinnedToBottom = true
+        // where does the 32 come from?
+        withAnimation(.linear(duration: 0.1)) {
+            isScrollToBottomButtonDisplayed = scrollOffset > listHeight + 32 + 20
+                || scrollOffset <= 0
+        }
+    }
+
+    @ViewBuilder
+    func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
+        Button(action: {
+            isPinnedToBottom = true
+            withAnimation(.easeInOut(duration: 0.1)) {
+                proxy.scrollTo(bottomID, anchor: .bottom)
+            }
+        }) {
+            Image(systemName: "arrow.down")
+                .padding(4)
+                .background {
+                    Circle()
+                        .fill(.thickMaterial)
+                        .shadow(color: .black.opacity(0.2), radius: 2)
+                }
+                .overlay {
+                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+                .foregroundStyle(.secondary)
+                .padding(4)
+        }
+        .keyboardShortcut(.downArrow, modifiers: [.command])
+        .opacity(isScrollToBottomButtonDisplayed ? 1 : 0)
+        .buttonStyle(.plain)
+    }
+
+    struct PinToBottomHandler: View {
+        let chat: StoreOf<Chat>
+        @Binding var pinnedToBottom: Bool
+        let scrollToBottom: () -> Void
+
+        @State var isInitialLoad = true
+
+        struct PinToBottomRelatedState: Equatable {
+            var isReceivingMessage: Bool
+            var lastMessage: ChatMessage?
+        }
+
+        var body: some View {
+            WithViewStore(chat, observe: {
+                PinToBottomRelatedState(
+                    isReceivingMessage: $0.isReceivingMessage,
+                    lastMessage: $0.history.last
+                )
+            }) { viewStore in
+                EmptyView()
+                    .onChange(of: viewStore.state.isReceivingMessage) { isReceiving in
+                        if isReceiving {
+                            pinnedToBottom = true
+                            scrollToBottom()
+                        }
+                    }
+                    .onChange(of: viewStore.state.lastMessage) { _ in
+                        if pinnedToBottom || isInitialLoad {
+                            if isInitialLoad {
+                                isInitialLoad = false
+                            }
+                            scrollToBottom()
+                        }
+                    }
+            }
         }
     }
 }
@@ -225,8 +290,7 @@ private struct StopRespondingButton: View {
 }
 
 private struct Instruction: View {
-    @AppStorage(\.useCodeScopeByDefaultInChatContext)
-    var useCodeScopeByDefaultInChatContext
+    let chat: StoreOf<Chat>
 
     var body: some View {
         Group {
@@ -255,8 +319,9 @@ private struct Instruction: View {
                 | --- | --- |
                 | `@file` | Read the metadata of the editing file |
                 | `@code` | Read the code and metadata in the editing file |
-                | `@web` (beta) | Search on Bing or query from a web page |
+                | `@sense`| Experimental. Read the relevant code of the focused editor |
                 | `@project` | Experimental. Access content of the project |
+                | `@web` (beta) | Search on Bing or query from a web page |
 
                 To use scopes, you can prefix a message with `@code`.
 
@@ -265,18 +330,24 @@ private struct Instruction: View {
             )
             .modifier(InstructionModifier())
 
-            Markdown(
-                """
-                Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
+            WithViewStore(chat, observe: \.chatMenu.defaultScopes) { viewStore in
+                Markdown(
+                    """
+                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
 
-                \(
-                    useCodeScopeByDefaultInChatContext
-                        ? "Scope **`@code`** is enabled by default."
-                        : "Scope **`@file`** is enabled by default."
+                    \({
+                        if viewStore.state.isEmpty {
+                            return "No scope is enabled by default"
+                        } else {
+                            let scopes = viewStore.state.map(\.rawValue).sorted()
+                                .joined(separator: ", ")
+                            return "Default scopes: `\(scopes)`"
+                        }
+                    }())
+                    """
                 )
-                """
-            )
-            .modifier(InstructionModifier())
+                .modifier(InstructionModifier())
+            }
         }
     }
 
@@ -538,6 +609,7 @@ struct ChatPanelInputArea: View {
         let availableFeatures = plugins + [
             "/exit",
             "@code",
+            "@sense",
             "@project",
             "@web",
         ]
@@ -608,41 +680,6 @@ struct RoundedCorners: Shape {
                 clockwise: false
             )
             path.closeSubpath()
-        }
-    }
-}
-
-struct GlobalChatSwitchToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 4) {
-            Text(configuration.isOn ? "Shared Conversation" : "Local Conversation")
-                .foregroundStyle(.tertiary)
-
-            RoundedRectangle(cornerRadius: 10, style: .circular)
-                .foregroundColor(configuration.isOn ? Color.indigo : .gray.opacity(0.5))
-                .frame(width: 30, height: 20, alignment: .center)
-                .overlay(
-                    Circle()
-                        .fill(.regularMaterial)
-                        .padding(.all, 2)
-                        .overlay(
-                            Image(
-                                systemName: configuration
-                                    .isOn ? "globe" : "doc.circle"
-                            )
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 12, height: 12, alignment: .center)
-                            .foregroundStyle(.secondary)
-                        )
-                        .offset(x: configuration.isOn ? 5 : -5, y: 0)
-                        .animation(.linear(duration: 0.1), value: configuration.isOn)
-                )
-                .onTapGesture { configuration.isOn.toggle() }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .circular)
-                        .stroke(.black.opacity(0.2), lineWidth: 1)
-                }
         }
     }
 }

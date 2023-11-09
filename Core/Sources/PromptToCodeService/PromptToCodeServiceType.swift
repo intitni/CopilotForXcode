@@ -42,11 +42,6 @@ public struct PromptToCodeServiceDependencyKey: DependencyKey {
     public static let previewValue: PromptToCodeServiceType = PreviewPromptToCodeService()
 }
 
-public struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
-    public static let liveValue: () -> PromptToCodeServiceType = { OpenAIPromptToCodeService() }
-    public static let previewValue: () -> PromptToCodeServiceType = { PreviewPromptToCodeService() }
-}
-
 public extension DependencyValues {
     var promptToCodeService: PromptToCodeServiceType {
         get { self[PromptToCodeServiceDependencyKey.self] }
@@ -58,4 +53,58 @@ public extension DependencyValues {
         set { self[PromptToCodeServiceFactoryDependencyKey.self] = newValue }
     }
 }
+
+#if canImport(ContextAwarePromptToCodeService)
+
+import ContextAwarePromptToCodeService
+
+extension ContextAwarePromptToCodeService: PromptToCodeServiceType {
+    public func modifyCode(
+        code: String,
+        requirement: String,
+        source: PromptToCodeSource,
+        isDetached: Bool,
+        extraSystemPrompt: String?,
+        generateDescriptionRequirement: Bool?
+    ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
+        try await modifyCode(
+            code: code,
+            requirement: requirement,
+            source: ContextAwarePromptToCodeService.Source(
+                language: source.language,
+                documentURL: source.documentURL,
+                projectRootURL: source.projectRootURL,
+                allCode: source.allCode,
+                range: source.range
+            ),
+            isDetached: isDetached,
+            extraSystemPrompt: extraSystemPrompt,
+            generateDescriptionRequirement: generateDescriptionRequirement
+        )
+    }
+}
+
+public struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
+    public static let liveValue: () -> PromptToCodeServiceType = {
+        OpenAIPromptToCodeService()
+    }
+
+    public static let previewValue: () -> PromptToCodeServiceType = {
+        PreviewPromptToCodeService()
+    }
+}
+
+#else
+
+public struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
+    public static let liveValue: () -> PromptToCodeServiceType = {
+        OpenAIPromptToCodeService()
+    }
+
+    public static let previewValue: () -> PromptToCodeServiceType = {
+        PreviewPromptToCodeService()
+    }
+}
+
+#endif
 

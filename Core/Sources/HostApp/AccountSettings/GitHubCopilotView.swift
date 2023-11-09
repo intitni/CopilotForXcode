@@ -149,7 +149,7 @@ struct GitHubCopilotView: View {
                             "node"
                         )
                     ) {
-                        Text("Path to Node (v17+)")
+                        Text("Path to Node (v18+)")
                     }
 
                     Text(
@@ -270,7 +270,7 @@ struct GitHubCopilotView: View {
                         .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
                 }
 
-                Divider()
+                SettingsDivider("Advanced")
 
                 Form {
                     Toggle(
@@ -287,7 +287,7 @@ struct GitHubCopilotView: View {
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
                 }
 
-                Divider()
+                SettingsDivider("Proxy")
 
                 Form {
                     TextField(

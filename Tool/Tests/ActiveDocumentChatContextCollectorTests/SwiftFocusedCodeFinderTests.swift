@@ -355,7 +355,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (0, 0), endPair: (13, 2)),
-            focusedRange: .init(startPair: (0, 0), endPair: (10, 15)),
+            focusedRange: .init(startPair: (0, 0), endPair: (13, 2)),
             focusedCode: """
             @MainActor
             public
@@ -368,6 +368,9 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
             }
             
             func hello() {
+                print("hello")
+                print("hello")
+            }
             
             """,
             imports: []

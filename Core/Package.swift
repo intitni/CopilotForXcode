@@ -200,7 +200,9 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-            ]
+            ].pro([
+                "ProService",
+            ])
         ),
         .testTarget(name: "PromptToCodeServiceTests", dependencies: ["PromptToCodeService"]),
 

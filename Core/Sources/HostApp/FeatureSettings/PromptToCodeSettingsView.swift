@@ -1,3 +1,4 @@
+import SharedUIComponents
 import SwiftUI
 
 struct PromptToCodeSettingsView: View {
@@ -30,7 +31,7 @@ struct PromptToCodeSettingsView: View {
                     selection: $settings.promptToCodeChatModelId
                 ) {
                     Text("Same as Chat Feature").tag("")
-                    
+
                     if !settings.chatModels
                         .contains(where: { $0.id == settings.promptToCodeChatModelId }),
                         !settings.promptToCodeChatModelId.isEmpty
@@ -52,7 +53,7 @@ struct PromptToCodeSettingsView: View {
                     selection: $settings.promptToCodeEmbeddingModelId
                 ) {
                     Text("Same as Chat Feature").tag("")
-                    
+
                     if !settings.embeddingModels
                         .contains(where: { $0.id == settings.promptToCodeEmbeddingModelId }),
                         !settings.promptToCodeEmbeddingModelId.isEmpty
@@ -78,16 +79,7 @@ struct PromptToCodeSettingsView: View {
                 }
             }
 
-            Divider()
-
-            Text("Mirroring Settings of Suggestion Feature")
-                .foregroundColor(.white)
-                .padding(.vertical, 2)
-                .padding(.horizontal, 8)
-                .background(
-                    Color.accentColor,
-                    in: RoundedRectangle(cornerRadius: 20)
-                )
+            SettingsDivider("Mirroring Settings of Suggestion Feature")
 
             Form {
                 Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {

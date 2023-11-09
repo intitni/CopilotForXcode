@@ -100,7 +100,7 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
         }
 
         var contextRange = CursorRange.zero
-        var signature = [String]()
+        var signature = [CodeContext.ScopeContext]()
 
         while let node = nodes.first {
             nodes.removeFirst()
@@ -114,7 +114,11 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
 
             if let context {
                 contextRange = context.contextRange
-                signature.insert(context.signature, at: 0)
+                signature.insert(.init(
+                    signature: context.signature,
+                    name: context.name,
+                    range: context.contextRange
+                ), at: 0)
             }
 
             if !more {
@@ -135,6 +139,7 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
 extension SwiftFocusedCodeFinder {
     struct ContextInfo {
         var signature: String
+        var name: String
         var contextRange: CursorRange
         var canBeUsedAsCodeRange: Bool = true
     }
@@ -163,6 +168,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -174,6 +180,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -185,6 +192,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -196,6 +204,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: ""),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -206,6 +215,7 @@ extension SwiftFocusedCodeFinder {
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -217,6 +227,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -228,6 +239,7 @@ extension SwiftFocusedCodeFinder {
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: name,
                 contextRange: convertRange(node)
             ), false)
 
@@ -242,6 +254,7 @@ extension SwiftFocusedCodeFinder {
             return (.init(
                 signature: "\(type) \(name)\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText)),
+                name: name,
                 contextRange: convertRange(node)
             ), true)
 
@@ -254,7 +267,9 @@ extension SwiftFocusedCodeFinder {
                 signature: "\(type) \(name)\(signature.isEmpty ? "" : "\(signature)")"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                contextRange: convertRange(node)
+                name: name,
+                contextRange: convertRange(node),
+                canBeUsedAsCodeRange: false
             ), true)
 
         case let node as AccessorDeclSyntax:
@@ -265,6 +280,7 @@ extension SwiftFocusedCodeFinder {
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: keyword,
                 contextRange: convertRange(node)
             ), true)
 
@@ -278,6 +294,7 @@ extension SwiftFocusedCodeFinder {
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
+                name: "subscript",
                 contextRange: convertRange(node)
             ), true)
 
@@ -288,7 +305,7 @@ extension SwiftFocusedCodeFinder {
                 signature: "\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-
+                name: "init",
                 contextRange: convertRange(node)
             ), true)
 
@@ -299,7 +316,7 @@ extension SwiftFocusedCodeFinder {
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-
+                name: "deinit",
                 contextRange: convertRange(node)
             ), true)
 
@@ -308,6 +325,7 @@ extension SwiftFocusedCodeFinder {
 
             return (.init(
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
+                name: "closure",
                 contextRange: convertRange(node)
             ), true)
 
@@ -316,6 +334,7 @@ extension SwiftFocusedCodeFinder {
 
             return (.init(
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
+                name: "function call",
                 contextRange: convertRange(node),
                 canBeUsedAsCodeRange: false
             ), true)
@@ -323,6 +342,7 @@ extension SwiftFocusedCodeFinder {
         case let node as SwitchCaseSyntax:
             return (.init(
                 signature: node.trimmedDescription.replacingOccurrences(of: "\n", with: " "),
+                name: "switch",
                 contextRange: convertRange(node)
             ), true)
 

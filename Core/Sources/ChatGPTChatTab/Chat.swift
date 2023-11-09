@@ -51,11 +51,13 @@ struct Chat: ReducerProtocol {
         case observeIsReceivingMessageChange
         case observeSystemPromptChange
         case observeExtraSystemPromptChange
+        case observeDefaultScopesChange
 
         case historyChanged
         case isReceivingMessageChanged
         case systemPromptChanged
         case extraSystemPromptChanged
+        case defaultScopesChanged
 
         case chatMenu(ChatMenu.Action)
     }
@@ -68,6 +70,7 @@ struct Chat: ReducerProtocol {
         case observeIsReceivingMessageChange(UUID)
         case observeSystemPromptChange(UUID)
         case observeExtraSystemPromptChange(UUID)
+        case observeDefaultScopesChange(UUID)
     }
 
     var body: some ReducerProtocol<State, Action> {
@@ -131,6 +134,7 @@ struct Chat: ReducerProtocol {
                     await send(.observeIsReceivingMessageChange)
                     await send(.observeSystemPromptChange)
                     await send(.observeExtraSystemPromptChange)
+                    await send(.observeDefaultScopesChange)
                 }
 
             case .observeHistoryChange:
@@ -198,6 +202,22 @@ struct Chat: ReducerProtocol {
                     }
                 }.cancellable(id: CancelID.observeExtraSystemPromptChange(id), cancelInFlight: true)
 
+            case .observeDefaultScopesChange:
+                return .run { send in
+                    let stream = AsyncStream<Void> { continuation in
+                        let cancellable = service.$defaultScopes
+                            .sink { _ in
+                                continuation.yield()
+                            }
+                        continuation.onTermination = { _ in
+                            cancellable.cancel()
+                        }
+                    }
+                    for await _ in stream {
+                        await send(.defaultScopesChanged)
+                    }
+                }.cancellable(id: CancelID.observeDefaultScopesChange(id), cancelInFlight: true)
+
             case .historyChanged:
                 state.history = service.chatHistory.map { message in
                     .init(
@@ -250,6 +270,10 @@ struct Chat: ReducerProtocol {
                 state.chatMenu.extraSystemPrompt = service.extraSystemPrompt
                 return .none
 
+            case .defaultScopesChanged:
+                state.chatMenu.defaultScopes = service.defaultScopes
+                return .none
+
             case .binding:
                 return .none
 
@@ -266,6 +290,7 @@ struct ChatMenu: ReducerProtocol {
         var extraSystemPrompt: String = ""
         var temperatureOverride: Double? = nil
         var chatModelIdOverride: String? = nil
+        var defaultScopes: Set<ChatService.Scope> = []
     }
 
     enum Action: Equatable {
@@ -274,6 +299,8 @@ struct ChatMenu: ReducerProtocol {
         case temperatureOverrideSelected(Double?)
         case chatModelIdOverrideSelected(String?)
         case customCommandButtonTapped(CustomCommand)
+        case resetDefaultScopesButtonTapped
+        case toggleScope(ChatService.Scope)
     }
 
     let service: ChatService
@@ -303,6 +330,15 @@ struct ChatMenu: ReducerProtocol {
             case let .customCommandButtonTapped(command):
                 return .run { _ in
                     try await service.handleCustomCommand(command)
+                }
+
+            case .resetDefaultScopesButtonTapped:
+                return .run { _ in
+                    service.resetDefaultScopes()
+                }
+            case let .toggleScope(scope):
+                return .run { _ in
+                    service.defaultScopes.formSymmetricDifference([scope])
                 }
             }
         }
