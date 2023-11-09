@@ -454,6 +454,7 @@ public struct WidgetFeature: ReducerProtocol {
                 state.focusingDocumentURL = xcodeInspector.realtimeActiveDocumentURL
                 return .none
 
+                #warning("TODO: use function instead of action for high rate actions like this")
             case let .updateWindowLocation(animated):
                 guard let widgetLocation = generateWidgetLocation() else { return .none }
                 state.panelState.sharedPanelState.alignTopToAnchor = widgetLocation
@@ -523,6 +524,7 @@ public struct WidgetFeature: ReducerProtocol {
                     if shouldDebounce {
                         try await mainQueue.sleep(for: .seconds(0.2))
                     }
+                    try Task.checkCancellation()
                     let task = Task { @MainActor in
                         if let app = activeApplicationMonitor.activeApplication, app.isXcode {
                             let application = AXUIElementCreateApplication(app.processIdentifier)
