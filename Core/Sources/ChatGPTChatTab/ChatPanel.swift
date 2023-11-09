@@ -48,7 +48,6 @@ struct ChatPanelMessages: View {
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
-    
     @Environment(\.isEnabled) var isEnabled
 
     var body: some View {
@@ -137,11 +136,14 @@ struct ChatPanelMessages: View {
 
     func trackScrollWheel() {
         NSApplication.shared.publisher(for: \.currentEvent)
-            .filter { _ in isEnabled }
-            .filter { event in event?.type == .scrollWheel }
+            .filter {
+                if !isEnabled { return false }
+                return $0?.type == .scrollWheel
+            }
+            .compactMap { $0 }
             .sink { event in
-                guard isEnabled, isPinnedToBottom else { return }
-                let delta = event?.deltaY ?? 0
+                guard isPinnedToBottom else { return }
+                let delta = event.deltaY
                 let scrollUp = delta > 0
                 if scrollUp {
                     isPinnedToBottom = false
@@ -607,6 +609,7 @@ struct ChatPanelInputArea: View {
         let availableFeatures = plugins + [
             "/exit",
             "@code",
+            "@sense",
             "@project",
             "@web",
         ]

@@ -107,11 +107,14 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     }
 
     public var maxTokens: Int {
-        overriding.maxTokens ?? configuration.maxTokens
+        if let maxTokens = overriding.maxTokens { return maxTokens }
+        if let model { return model.info.maxTokens }
+        return configuration.maxTokens
     }
 
     public var minimumReplyTokens: Int {
-        overriding.minimumReplyTokens ?? configuration.minimumReplyTokens
+        if let minimumReplyTokens = overriding.minimumReplyTokens { return minimumReplyTokens }
+        return maxTokens / 5
     }
 
     public var runFunctionsAutomatically: Bool {

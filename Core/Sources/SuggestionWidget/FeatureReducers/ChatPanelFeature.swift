@@ -47,7 +47,7 @@ public struct ChatPanelFeature: ReducerProtocol {
     public struct State: Equatable {
         public var chatTabGroup = ChatTabGroup()
         var colorScheme: ColorScheme = .light
-        var isPanelDisplayed = false
+        public internal(set) var isPanelDisplayed = false
         var chatPanelInASeparateWindow = false
     }
 
