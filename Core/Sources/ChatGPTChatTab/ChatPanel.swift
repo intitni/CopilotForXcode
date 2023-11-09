@@ -137,11 +137,11 @@ struct ChatPanelMessages: View {
 
     func trackScrollWheel() {
         NSApplication.shared.publisher(for: \.currentEvent)
-            .filter { _ in isEnabled }
-            .filter { event in event?.type == .scrollWheel }
+            .compactMap { $0 }
+            .filter { isEnabled && $0.type == .scrollWheel }
             .sink { event in
-                guard isEnabled, isPinnedToBottom else { return }
-                let delta = event?.deltaY ?? 0
+                guard isPinnedToBottom else { return }
+                let delta = event.deltaY
                 let scrollUp = delta > 0
                 if scrollUp {
                     isPinnedToBottom = false
