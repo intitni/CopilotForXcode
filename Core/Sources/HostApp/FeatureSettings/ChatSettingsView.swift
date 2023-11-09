@@ -283,7 +283,9 @@ struct ChatSettingsView: View {
                 #if canImport(ProHostApp)
 
                 Scope(
-                    title: WithFeatureEnabled(\.projectScopeInChat) { Text("Sense Scope (Experimental)") },
+                    title: WithFeatureEnabled(\.projectScopeInChat) {
+                        Text("Sense Scope (Experimental)")
+                    },
                     description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
                 ) {
                     WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
