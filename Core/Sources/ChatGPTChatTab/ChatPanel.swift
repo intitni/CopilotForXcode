@@ -40,12 +40,12 @@ private struct ListHeightPreferenceKey: PreferenceKey {
 
 struct ChatPanelMessages: View {
     let chat: StoreOf<Chat>
-    @State var pinnedToBottom = true
+    @State var isScrollToBottomButtonDisplayed = true
+    @State var isPinnedToBottom = true
     @Namespace var bottomID
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
-    @State var isInitialLoad = true
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -66,19 +66,19 @@ struct ChatPanelMessages: View {
                         }
 
                         Spacer(minLength: 12)
-                            .onAppear {
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
                             .id(bottomID)
+                            .onAppear {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
+                            .task {
+                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            }
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
-                                Color.clear
-                                    .preference(
-                                        key: ScrollViewOffsetPreferenceKey.self,
-                                        value: offset
-                                    )
+                                Color.clear.preference(
+                                    key: ScrollViewOffsetPreferenceKey.self,
+                                    value: offset
+                                )
                             })
                             .preference(
                                 key: ListHeightPreferenceKey.self,
@@ -100,6 +100,17 @@ struct ChatPanelMessages: View {
                     updatePinningState()
                 }
                 .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
+                    /// I don't know if there is a way to detect that a scroll is triggered by user
+                    let scrollUpToThreshold = listHeight > 0 // sometimes it can suddenly become 0
+                        && value > listHeight + 32 + 20 // scroll up to a threshold
+                        && value > scrollOffset // it's scroll up
+                        && value - scrollOffset < 100 // it's not some mystery jump
+                    /// Scroll up too much and the tracker is lost
+                    let checkerOutOfScope = value <= 0
+                    if checkerOutOfScope || scrollUpToThreshold {
+                        isPinnedToBottom = false
+                    }
+
                     scrollOffset = value
                     updatePinningState()
                 }
@@ -114,49 +125,85 @@ struct ChatPanelMessages: View {
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    WithViewStore(chat, observe: \.history.last) { viewStore in
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                proxy.scrollTo(bottomID, anchor: .bottom)
-                            }
-                        }) {
-                            Image(systemName: "arrow.down")
-                                .padding(4)
-                                .background {
-                                    Circle()
-                                        .fill(.thickMaterial)
-                                        .shadow(color: .black.opacity(0.2), radius: 2)
-                                }
-                                .overlay {
-                                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                                }
-                                .foregroundStyle(.secondary)
-                                .padding(4)
-                        }
-                        .keyboardShortcut(.downArrow, modifiers: [.command])
-                        .opacity(pinnedToBottom ? 0 : 1)
-                        .buttonStyle(.plain)
-                        .onChange(of: viewStore.state) { _ in
-                            if pinnedToBottom || isInitialLoad {
-                                if isInitialLoad {
-                                    isInitialLoad = false
-                                }
-                                withAnimation {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                }
-                            }
-                        }
+                    scrollToBottomButton(proxy: proxy)
+                }
+                .background {
+                    PinToBottomHandler(chat: chat, pinnedToBottom: $isPinnedToBottom) {
+                        proxy.scrollTo(bottomID, anchor: .bottom)
                     }
                 }
             }
         }
     }
 
+    @MainActor
     func updatePinningState() {
-        if scrollOffset > listHeight + 24 + 100 || scrollOffset <= 0 {
-            pinnedToBottom = false
-        } else {
-            pinnedToBottom = true
+        // where does the 32 come from?
+        withAnimation {
+            isScrollToBottomButtonDisplayed = scrollOffset > listHeight + 32 + 20
+                || scrollOffset <= 0
+        }
+    }
+
+    @ViewBuilder
+    func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.1)) {
+                proxy.scrollTo(bottomID, anchor: .bottom)
+            }
+        }) {
+            Image(systemName: "arrow.down")
+                .padding(4)
+                .background {
+                    Circle()
+                        .fill(.thickMaterial)
+                        .shadow(color: .black.opacity(0.2), radius: 2)
+                }
+                .overlay {
+                    Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+                .foregroundStyle(.secondary)
+                .padding(4)
+        }
+        .keyboardShortcut(.downArrow, modifiers: [.command])
+        .opacity(isScrollToBottomButtonDisplayed ? 1 : 0)
+        .buttonStyle(.plain)
+    }
+
+    struct PinToBottomHandler: View {
+        let chat: StoreOf<Chat>
+        @Binding var pinnedToBottom: Bool
+        let scrollToBottom: () -> Void
+
+        @State var isInitialLoad = true
+
+        struct PinToBottomRelatedState: Equatable {
+            var isReceivingMessage: Bool
+            var lastMessage: ChatMessage?
+        }
+
+        var body: some View {
+            WithViewStore(chat, observe: {
+                PinToBottomRelatedState(
+                    isReceivingMessage: $0.isReceivingMessage,
+                    lastMessage: $0.history.last
+                )
+            }) { viewStore in
+                EmptyView()
+                    .onChange(of: viewStore.state.isReceivingMessage) { isReceiving in
+                        if isReceiving {
+                            pinnedToBottom = true
+                        }
+                    }
+                    .onChange(of: viewStore.state.lastMessage) { _ in
+                        if pinnedToBottom || isInitialLoad {
+                            if isInitialLoad {
+                                isInitialLoad = false
+                            }
+                            scrollToBottom()
+                        }
+                    }
+            }
         }
     }
 }
