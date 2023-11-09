@@ -607,6 +607,7 @@ struct ChatPanelInputArea: View {
         let availableFeatures = plugins + [
             "/exit",
             "@code",
+            "@sense",
             "@project",
             "@web",
         ]
