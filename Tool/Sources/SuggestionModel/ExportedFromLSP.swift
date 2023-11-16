@@ -48,6 +48,10 @@ public struct CursorRange: Codable, Hashable, Sendable, Equatable, CustomStringC
         return start == end
     }
     
+    public var isOneLine: Bool {
+        return start.line == end.line
+    }
+    
     public static func == (lhs: CursorRange, rhs: CursorRange) -> Bool {
         return lhs.start == rhs.start && lhs.end == rhs.end
     }

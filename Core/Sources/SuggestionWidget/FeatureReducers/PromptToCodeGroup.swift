@@ -31,6 +31,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
         public var documentURL: URL
         public var projectRootURL: URL
         public var allCode: String
+        public var allLines: [String]
         public var isContinuous: Bool
         public var commandName: String?
         public var defaultPrompt: String
@@ -46,6 +47,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
             documentURL: URL,
             projectRootURL: URL,
             allCode: String,
+            allLines: [String],
             isContinuous: Bool,
             commandName: String?,
             defaultPrompt: String,
@@ -60,6 +62,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
             self.documentURL = documentURL
             self.projectRootURL = projectRootURL
             self.allCode = allCode
+            self.allLines = allLines
             self.isContinuous = isContinuous
             self.commandName = commandName
             self.defaultPrompt = defaultPrompt
@@ -100,7 +103,8 @@ public struct PromptToCodeGroup: ReducerProtocol {
                     usesTabsForIndentation: s.usesTabsForIndentation,
                     projectRootURL: s.projectRootURL,
                     documentURL: s.documentURL,
-                    allCode: s.allCode,
+                    allCode: s.allCode, 
+                    allLines: s.allLines,
                     commandName: s.commandName,
                     isContinuous: s.isContinuous,
                     selectionRange: s.selectionRange,

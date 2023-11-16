@@ -57,6 +57,7 @@ public struct PromptToCode: ReducerProtocol {
         public var projectRootURL: URL
         public var documentURL: URL
         public var allCode: String
+        public var allLines: [String]
         public var extraSystemPrompt: String?
         public var generateDescriptionRequirement: Bool?
         public var commandName: String?
@@ -76,6 +77,7 @@ public struct PromptToCode: ReducerProtocol {
             projectRootURL: URL,
             documentURL: URL,
             allCode: String,
+            allLines: [String],
             commandName: String? = nil,
             description: String = "",
             isResponding: Bool = false,
@@ -101,6 +103,7 @@ public struct PromptToCode: ReducerProtocol {
             self.projectRootURL = projectRootURL
             self.documentURL = documentURL
             self.allCode = allCode
+            self.allLines = allLines
             self.extraSystemPrompt = extraSystemPrompt
             self.generateDescriptionRequirement = generateDescriptionRequirement
             self.isAttachedToSelectionRange = isAttachedToSelectionRange
@@ -165,7 +168,8 @@ public struct PromptToCode: ReducerProtocol {
                                 language: copiedState.language,
                                 documentURL: copiedState.documentURL,
                                 projectRootURL: copiedState.projectRootURL,
-                                allCode: copiedState.allCode,
+                                content: copiedState.allCode,
+                                lines: copiedState.allLines,
                                 range: copiedState.selectionRange ?? .outOfScope
                             ),
                             isDetached: !copiedState.isAttachedToSelectionRange,

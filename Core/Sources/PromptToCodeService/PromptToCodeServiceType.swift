@@ -19,20 +19,23 @@ public struct PromptToCodeSource {
     public var language: CodeLanguage
     public var documentURL: URL
     public var projectRootURL: URL
-    public var allCode: String
+    public var content: String
+    public var lines: [String]
     public var range: CursorRange
 
     public init(
         language: CodeLanguage,
         documentURL: URL,
         projectRootURL: URL,
-        allCode: String,
+        content: String,
+        lines: [String],
         range: CursorRange
     ) {
         self.language = language
         self.documentURL = documentURL
         self.projectRootURL = projectRootURL
-        self.allCode = allCode
+        self.content = content
+        self.lines = lines
         self.range = range
     }
 }
@@ -74,7 +77,8 @@ extension ContextAwarePromptToCodeService: PromptToCodeServiceType {
                 language: source.language,
                 documentURL: source.documentURL,
                 projectRootURL: source.projectRootURL,
-                allCode: source.allCode,
+                content: source.content,
+                lines: source.lines,
                 range: source.range
             ),
             isDetached: isDetached,
@@ -86,7 +90,7 @@ extension ContextAwarePromptToCodeService: PromptToCodeServiceType {
 
 public struct PromptToCodeServiceFactoryDependencyKey: DependencyKey {
     public static let liveValue: () -> PromptToCodeServiceType = {
-        OpenAIPromptToCodeService()
+        ContextAwarePromptToCodeService()
     }
 
     public static let previewValue: () -> PromptToCodeServiceType = {
