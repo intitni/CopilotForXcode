@@ -5,7 +5,7 @@ import SuggestionModel
 import SwiftParser
 import SwiftSyntax
 
-public struct SwiftFocusedCodeFinder: FocusedCodeFinder {
+public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
     public let maxFocusedCodeLineCount: Int
 
     public init(

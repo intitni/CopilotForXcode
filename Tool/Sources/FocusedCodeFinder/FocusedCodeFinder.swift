@@ -46,14 +46,14 @@ public struct CodeContext: Equatable {
     }
 }
 
-public protocol FocusedCodeFinder {
+public protocol FocusedCodeFinderType {
     func findFocusedCode(
         containingRange: CursorRange,
         activeDocumentContext: ActiveDocumentContext
     ) -> CodeContext
 }
 
-public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
+public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
     let proposedSearchRange: Int
 
     public init(proposedSearchRange: Int) {

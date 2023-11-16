@@ -92,7 +92,7 @@ public struct ActiveDocumentContext {
     }
 
     public mutating func moveToCodeContainingRange(_ range: CursorRange) {
-        let finder: FocusedCodeFinder = {
+        let finder: FocusedCodeFinderType = {
             switch language {
             case .builtIn(.swift):
                 return SwiftFocusedCodeFinder()
