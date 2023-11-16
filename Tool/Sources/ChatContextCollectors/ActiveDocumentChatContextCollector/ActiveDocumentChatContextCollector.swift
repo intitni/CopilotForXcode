@@ -74,7 +74,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     func getActiveDocumentContext(_ info: EditorInformation) -> ActiveDocumentContext {
         var activeDocumentContext = activeDocumentContext ?? .init(
-            filePath: "",
+            documentURL: .init(fileURLWithPath: "/"),
             relativePath: "",
             language: .builtIn(.swift),
             fileContent: "",

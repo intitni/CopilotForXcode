@@ -16,15 +16,15 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
     }
 
     public func findFocusedCode(
-        containingRange range: CursorRange,
-        activeDocumentContext: ActiveDocumentContext
+        in document: Document,
+        containingRange range: CursorRange
     ) -> CodeContext {
-        let source = activeDocumentContext.fileContent
+        let source = document.content
         #warning("TODO: cache the tree")
         let tree = Parser.parse(source: source)
 
         let locationConverter = SourceLocationConverter(
-            file: activeDocumentContext.filePath,
+            file: document.documentURL.path,
             tree: tree
         )
 
@@ -52,8 +52,8 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
                     node,
                     parentNodes: nodes,
                     tree: tree,
-                    activeDocumentContext: activeDocumentContext,
-                    locationConverter: locationConverter
+                    locationConverter: locationConverter,
+                    in: document
                 )
                 if context?.canBeUsedAsCodeRange ?? false {
                     focusedNode = node
@@ -62,10 +62,7 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
             }
             guard let focusedNode else {
                 var result = UnknownLanguageFocusedCodeFinder(proposedSearchRange: 8)
-                    .findFocusedCode(
-                        containingRange: range,
-                        activeDocumentContext: activeDocumentContext
-                    )
+                    .findFocusedCode(in: document, containingRange: range)
                 result.imports = visitor.imports
                 return result
             }
@@ -74,8 +71,11 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
             codeRange = range
         }
 
-        let result = EditorInformation
-            .code(in: activeDocumentContext.lines, inside: codeRange, ignoreColumns: true)
+        let result = EditorInformation.code(
+            in: document.lines,
+            inside: codeRange,
+            ignoreColumns: true
+        )
 
         var code = result.code
 
@@ -108,8 +108,8 @@ public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
                 node,
                 parentNodes: nodes,
                 tree: tree,
-                activeDocumentContext: activeDocumentContext,
-                locationConverter: locationConverter
+                locationConverter: locationConverter,
+                in: document
             )
 
             if let context {
@@ -148,15 +148,15 @@ extension SwiftFocusedCodeFinder {
         _ node: SyntaxProtocol,
         parentNodes: [SyntaxProtocol],
         tree: SourceFileSyntax,
-        activeDocumentContext: ActiveDocumentContext,
-        locationConverter: SourceLocationConverter
+        locationConverter: SourceLocationConverter,
+        in document: Document
     ) -> (context: ContextInfo?, more: Bool) {
         func convertRange(_ node: SyntaxProtocol) -> CursorRange {
             .init(sourceRange: node.sourceRange(converter: locationConverter))
         }
 
         func extractText(_ node: SyntaxProtocol) -> String {
-            EditorInformation.code(in: activeDocumentContext.lines, inside: convertRange(node)).code
+            EditorInformation.code(in: document.lines, inside: convertRange(node)).code
         }
 
         switch node {

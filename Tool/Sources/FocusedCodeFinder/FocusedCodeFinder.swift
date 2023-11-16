@@ -3,7 +3,7 @@ import SuggestionModel
 
 public struct CodeContext: Equatable {
     public typealias ScopeContext = ActiveDocumentContext.FocusedContext.Context
-    
+
     public enum Scope: Equatable {
         case file
         case top
@@ -46,10 +46,45 @@ public struct CodeContext: Equatable {
     }
 }
 
-public protocol FocusedCodeFinderType {
-    func findFocusedCode(
+public struct FocusedCodeFinder {
+    public init() {}
+    
+    public struct Document {
+        var documentURL: URL
+        var content: String
+        var lines: [String]
+        
+        public init(documentURL: URL, content: String, lines: [String]) {
+            self.documentURL = documentURL
+            self.content = content
+            self.lines = lines
+        }
+    }
+    
+    public func findFocusedCode(
+        in document: Document,
         containingRange: CursorRange,
-        activeDocumentContext: ActiveDocumentContext
+        language: CodeLanguage
+    ) -> CodeContext {
+        let finder: FocusedCodeFinderType = {
+            switch language {
+            case .builtIn(.swift):
+                return SwiftFocusedCodeFinder()
+            default:
+                return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
+            }
+        }()
+
+        return finder.findFocusedCode(in: document, containingRange: containingRange)
+    }
+}
+
+public protocol FocusedCodeFinderType {
+    typealias Document = FocusedCodeFinder.Document
+    
+    func findFocusedCode(
+        in document: Document,
+        containingRange: CursorRange
     ) -> CodeContext
 }
 
@@ -61,15 +96,15 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
     }
 
     public func findFocusedCode(
-        containingRange: CursorRange,
-        activeDocumentContext: ActiveDocumentContext
+        in document: Document,
+        containingRange: CursorRange
     ) -> CodeContext {
-        guard !activeDocumentContext.lines.isEmpty else { return .empty }
+        guard !document.lines.isEmpty else { return .empty }
 
         // when user is not selecting any code.
         if containingRange.start == containingRange.end {
             // search up and down for up to `proposedSearchRange * 2 + 1` lines.
-            let lines = activeDocumentContext.lines
+            let lines = document.lines
             let proposedLineCount = proposedSearchRange * 2 + 1
             let startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
             let endLineIndex = min(
@@ -102,13 +137,13 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
         }
 
         let startLine = max(containingRange.start.line, 0)
-        let endLine = min(containingRange.end.line, activeDocumentContext.lines.count - 1)
+        let endLine = min(containingRange.end.line, document.lines.count - 1)
 
         if endLine < startLine { return .empty }
 
-        let focusedLines = activeDocumentContext.lines[startLine...endLine]
+        let focusedLines = document.lines[startLine...endLine]
         let contextStartLine = max(startLine - 3, 0)
-        let contextEndLine = min(endLine + 3, activeDocumentContext.lines.count - 1)
+        let contextEndLine = min(endLine + 3, document.lines.count - 1)
 
         return CodeContext(
             scope: .top,
@@ -116,7 +151,7 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
                 start: .init(line: contextStartLine, character: 0),
                 end: .init(
                     line: contextEndLine,
-                    character: activeDocumentContext.lines[contextEndLine].count
+                    character: document.lines[contextEndLine].count
                 )
             ),
             focusedRange: containingRange,
