@@ -55,8 +55,8 @@ struct GUI: ReducerProtocol {
         case openChatPanel(forceDetach: Bool)
         case createChatGPTChatTabIfNeeded
         case sendCustomCommandToActiveChat(CustomCommand)
-        case toggleWidgets
-        
+        case toggleWidgetsHotkeyPressed
+
         case suggestionWidget(WidgetFeature.Action)
 
         static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
@@ -194,11 +194,18 @@ struct GUI: ReducerProtocol {
                         }
                     }
 
-                case .toggleWidgets:
+                case .toggleWidgetsHotkeyPressed:
+                    let hasChat = state.chatTabGroup.selectedTabInfo != nil
+                    let hasPromptToCode = state.promptToCodeGroup.activePromptToCode != nil
+                    
                     return .run { send in
-                        await send(
-                            .suggestionWidget(.circularWidget(.widgetClicked))
-                        )
+                        await send(.suggestionWidget(.circularWidget(.widgetClicked)))
+
+                        if hasPromptToCode {
+                            await send(.suggestionWidget(.updateKeyWindow(.sharedPanel)))
+                        } else if hasChat {
+                            await send(.suggestionWidget(.updateKeyWindow(.chatPanel)))
+                        }
                     }
 
                 case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):

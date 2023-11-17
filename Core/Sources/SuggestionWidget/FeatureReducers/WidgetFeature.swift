@@ -21,6 +21,11 @@ public struct WidgetFeature: ReducerProtocol {
         public var sharedPanelWindowState = WindowState()
         public var tabWindowState = WindowState()
     }
+    
+    public enum WindowCanBecomeKey: Equatable {
+        case sharedPanel
+        case chatPanel
+    }
 
     public struct State: Equatable {
         var focusingDocumentURL: URL?
@@ -112,6 +117,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateWindowOpacity
         case updateFocusingDocumentURL
         case updateWindowOpacityFinished
+        case updateKeyWindow(WindowCanBecomeKey)
 
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
@@ -578,10 +584,20 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.updateWindowOpacityFinished)
                 }
                 .cancellable(id: DebounceKey.updateWindowOpacity, cancelInFlight: true)
-
+                
             case .updateWindowOpacityFinished:
                 state.lastUpdateWindowOpacityTime = Date()
                 return .none
+
+            case let .updateKeyWindow(window):
+                return .run { _ in
+                    switch window {
+                    case .chatPanel:
+                        await windows.chatPanelWindow.makeKeyAndOrderFront(nil)
+                    case .sharedPanel:
+                        await windows.sharedPanelWindow.makeKeyAndOrderFront(nil)
+                    }
+                }
 
             case .circularWidget:
                 return .none

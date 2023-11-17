@@ -31,7 +31,7 @@ final class GlobalShortcutManager {
             {
                 guiController.viewStore.send(.openChatPanel(forceDetach: true))
             } else {
-                guiController.viewStore.send(.toggleWidgets)
+                guiController.viewStore.send(.toggleWidgetsHotkeyPressed)
             }
 
             if !isExtensionActive {
