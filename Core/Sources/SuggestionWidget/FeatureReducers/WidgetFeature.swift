@@ -196,8 +196,8 @@ public struct WidgetFeature: ReducerProtocol {
         Scope(state: \.panelState, action: /Action.panel) {
             PanelFeature()
         }
-        
-        Reduce { state, action in
+
+        Reduce { _, action in
             switch action {
             case .panel(.sharedPanel(.promptToCodeGroup(.activateOrCreatePromptToCode))):
                 return .run { send in
@@ -619,7 +619,7 @@ public struct WidgetFeature: ReducerProtocol {
                 return .none
 
             case let .updateKeyWindow(window):
-                return .run { send in
+                return .run { _ in
                     switch window {
                     case .chatPanel:
                         await windows.chatPanelWindow.makeKeyAndOrderFront(nil)
