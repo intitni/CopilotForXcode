@@ -80,6 +80,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
     }
 
     @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
+    @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
 
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
@@ -143,7 +144,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 case .cancelButtonTapped:
                     state.promptToCodes.remove(id: id)
                     return .run { _ in
-                        try await Environment.makeXcodeActive()
+                        activatePreviousActiveXcode()
                     }
                 default:
                     return .none

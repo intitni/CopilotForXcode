@@ -37,6 +37,7 @@ public struct PanelFeature: ReducerProtocol {
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
+    @Dependency(\.activateThisApp) var activateThisApp
     var windows: WidgetWindows { suggestionWidgetControllerDependency.windows }
 
     public var body: some ReducerProtocol<State, Action> {
@@ -121,9 +122,7 @@ public struct PanelFeature: ReducerProtocol {
                     await send(.displayPanelContent)
 
                     if hasPromptToCode {
-                        // looks like we need a delay.
-                        try await Task.sleep(nanoseconds: 150_000_000)
-                        await NSApplication.shared.activate(ignoringOtherApps: true)
+                        activateThisApp()
                         await windows.sharedPanelWindow.makeKey()
                     }
                 }.animation(.easeInOut(duration: 0.2))

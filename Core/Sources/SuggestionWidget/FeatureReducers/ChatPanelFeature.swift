@@ -77,8 +77,8 @@ public struct ChatPanelFeature: ReducerProtocol {
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
-    @Dependency(\.activatePreviouslyActiveXcode) var activatePreviouslyActiveXcode
-    @Dependency(\.activateExtensionService) var activateExtensionService
+    @Dependency(\.activatePreviousActiveXcode) var activatePreviouslyActiveXcode
+    @Dependency(\.activateThisApp) var activateExtensionService
     @Dependency(\.chatTabBuilderCollection) var chatTabBuilderCollection
 
     public var body: some ReducerProtocol<State, Action> {
@@ -88,7 +88,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                 state.isPanelDisplayed = false
 
                 return .run { _ in
-                    await activatePreviouslyActiveXcode()
+                    activatePreviouslyActiveXcode()
                 }
 
             case .closeActiveTabClicked:
@@ -119,7 +119,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                 }
                 state.isPanelDisplayed = true
                 return .run { send in
-                    await activateExtensionService()
+                    activateExtensionService()
                     await send(.focusActiveChatTab)
                 }
 

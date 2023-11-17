@@ -1,4 +1,5 @@
 import ActiveApplicationMonitor
+import AppActivator
 import AsyncAlgorithms
 import AXNotificationStream
 import ComposableArchitecture
@@ -133,6 +134,8 @@ public struct WidgetFeature: ReducerProtocol {
     @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.mainQueue) var mainQueue
+    @Dependency(\.activateThisApp) var activateThisApp
+    @Dependency(\.activatePreviousActiveApp) var activatePreviousActiveApp
 
     public enum DebounceKey: Hashable {
         case updateWindowOpacity
@@ -163,20 +166,26 @@ public struct WidgetFeature: ReducerProtocol {
                     state.panelState.suggestionPanelState.isPanelDisplayed = true
                     state.chatPanelState.isPanelDisplayed = true
                 }
+
                 let isDisplayingContent = state._circularWidgetState.isDisplayingContent
+                let hasChat = state.chatPanelState.chatTabGroup.selectedTabInfo != nil
+                let hasPromptToCode = state.panelState.sharedPanelState.content
+                    .promptToCodeGroup.activePromptToCode != nil
+
                 return .run { send in
                     if isDisplayingContent {
+                        if hasPromptToCode {
+                            await send(.updateKeyWindow(.sharedPanel))
+                        } else if hasChat {
+                            await send(.updateKeyWindow(.chatPanel))
+                        }
                         await send(.chatPanel(.focusActiveChatTab))
                     }
-                    
+
                     if isDisplayingContent, !(await NSApplication.shared.isActive) {
-                        try await Task.sleep(nanoseconds: 50_000_000)
-                        await NSApplication.shared.activate(ignoringOtherApps: true)
-                    } else if !isDisplayingContent,
-                              let app = xcodeInspector.previousActiveApplication
-                    {
-                        try await Task.sleep(nanoseconds: 20_000_000)
-                        app.runningApplication.activate()
+                        activateThisApp()
+                    } else if !isDisplayingContent {
+                        activatePreviousActiveApp()
                     }
                 }
 
@@ -599,7 +608,7 @@ public struct WidgetFeature: ReducerProtocol {
                 return .none
 
             case let .updateKeyWindow(window):
-                return .run { _ in
+                return .run { send in
                     switch window {
                     case .chatPanel:
                         await windows.chatPanelWindow.makeKeyAndOrderFront(nil)
