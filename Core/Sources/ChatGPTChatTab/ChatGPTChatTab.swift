@@ -122,13 +122,13 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        service.$systemPrompt.removeDuplicates().sink { _ in
+        service.$systemPrompt.removeDuplicates().sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)
             }
         }.store(in: &cancellable)
 
-        service.$extraSystemPrompt.removeDuplicates().sink { _ in
+        service.$extraSystemPrompt.removeDuplicates().sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)
             }
@@ -140,12 +140,11 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        viewStore.publisher.removeDuplicates()
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.chatTabViewStore.send(.tabContentUpdated)
-                }
-            }.store(in: &cancellable)
+        viewStore.publisher.removeDuplicates().sink { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.chatTabViewStore.send(.tabContentUpdated)
+            }
+        }.store(in: &cancellable)
     }
 }
 
