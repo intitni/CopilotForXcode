@@ -278,6 +278,8 @@ public final class GraphicalUserInterfaceController {
                     await handler.acceptPromptToCode()
                     if !promptToCode.isContinuous {
                         NSWorkspace.activatePreviousActiveXcode()
+                    } else {
+                        NSWorkspace.activateThisApp()
                     }
                 }
             }
