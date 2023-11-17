@@ -23,7 +23,6 @@ final class GlobalShortcutManager {
 
         KeyboardShortcuts.onKeyUp(for: .showHideWidget) { [guiController] in
             let isXCodeActive = XcodeInspector.shared.activeXcode != nil
-            let isExtensionActive = NSApplication.shared.isActive
 
             if !isXCodeActive,
                !guiController.viewStore.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
@@ -32,17 +31,6 @@ final class GlobalShortcutManager {
                 guiController.viewStore.send(.openChatPanel(forceDetach: true))
             } else {
                 guiController.viewStore.send(.toggleWidgetsHotkeyPressed)
-            }
-
-            if !isExtensionActive {
-                Task {
-                    try await Task.sleep(nanoseconds: 150_000_000)
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
-            } else if let previous = XcodeInspector.shared.previousActiveApplication,
-                      !previous.isActive
-            {
-                previous.runningApplication.activate()
             }
         }
 

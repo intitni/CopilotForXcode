@@ -21,7 +21,7 @@ public struct WidgetFeature: ReducerProtocol {
         public var sharedPanelWindowState = WindowState()
         public var tabWindowState = WindowState()
     }
-    
+
     public enum WindowCanBecomeKey: Equatable {
         case sharedPanel
         case chatPanel
@@ -153,8 +153,8 @@ public struct WidgetFeature: ReducerProtocol {
                 }
 
             case .circularWidget(.widgetClicked):
-                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
-                if isDisplayingContent {
+                let wasDisplayingContent = state._circularWidgetState.isDisplayingContent
+                if wasDisplayingContent {
                     state.panelState.sharedPanelState.isPanelDisplayed = false
                     state.panelState.suggestionPanelState.isPanelDisplayed = false
                     state.chatPanelState.isPanelDisplayed = false
@@ -163,11 +163,16 @@ public struct WidgetFeature: ReducerProtocol {
                     state.panelState.suggestionPanelState.isPanelDisplayed = true
                     state.chatPanelState.isPanelDisplayed = true
                 }
+                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
                 return .run { _ in
-                    guard isDisplayingContent else { return }
-                    if let app = activeApplicationMonitor.previousApp, app.isXcode {
-                        try await Task.sleep(nanoseconds: 200_000_000)
-                        app.activate()
+                    if isDisplayingContent, !(await NSApplication.shared.isActive) {
+                        try await Task.sleep(nanoseconds: 50_000_000)
+                        await NSApplication.shared.activate(ignoringOtherApps: true)
+                    } else if !isDisplayingContent,
+                              let app = xcodeInspector.previousActiveApplication
+                    {
+                        try await Task.sleep(nanoseconds: 20_000_000)
+                        app.runningApplication.activate()
                     }
                 }
 
@@ -584,7 +589,7 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.updateWindowOpacityFinished)
                 }
                 .cancellable(id: DebounceKey.updateWindowOpacity, cancelInFlight: true)
-                
+
             case .updateWindowOpacityFinished:
                 state.lastUpdateWindowOpacityTime = Date()
                 return .none
