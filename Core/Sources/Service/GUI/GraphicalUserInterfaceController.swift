@@ -6,6 +6,7 @@ import ComposableArchitecture
 import Dependencies
 import Environment
 import Preferences
+import SuggestionModel
 import SuggestionWidget
 
 #if canImport(ProChatTabs)
@@ -54,7 +55,8 @@ struct GUI: ReducerProtocol {
         case openChatPanel(forceDetach: Bool)
         case createChatGPTChatTabIfNeeded
         case sendCustomCommandToActiveChat(CustomCommand)
-
+        case toggleWidgets
+        
         case suggestionWidget(WidgetFeature.Action)
 
         static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
@@ -190,6 +192,13 @@ struct GUI: ReducerProtocol {
                         if let chatTab = chatTab as? ChatGPTChatTab {
                             await stopAndHandleCommand(chatTab)
                         }
+                    }
+
+                case .toggleWidgets:
+                    return .run { send in
+                        await send(
+                            .suggestionWidget(.circularWidget(.widgetClicked))
+                        )
                     }
 
                 case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
