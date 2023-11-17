@@ -43,6 +43,10 @@ public struct PromptToCode: ReducerProtocol {
                 }
             }
         }
+        
+        public enum FocusField: Equatable {
+            case textField
+        }
 
         public var id: URL { documentURL }
         public var history: HistoryNode
@@ -63,6 +67,7 @@ public struct PromptToCode: ReducerProtocol {
         @BindingState public var prompt: String
         @BindingState public var isContinuous: Bool
         @BindingState public var isAttachedToSelectionRange: Bool
+        @BindingState public var focusedField: FocusField? = .textField
 
         public var filename: String { documentURL.lastPathComponent }
         public var canRevert: Bool { history != .empty }
@@ -114,6 +119,7 @@ public struct PromptToCode: ReducerProtocol {
 
     public enum Action: Equatable, BindableAction {
         case binding(BindingAction<State>)
+        case focusOnTextField
         case selectionRangeToggleTapped
         case modifyCodeButtonTapped
         case revertButtonTapped
@@ -141,6 +147,10 @@ public struct PromptToCode: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case .binding:
+                return .none
+                
+            case .focusOnTextField:
+                state.focusedField = .textField
                 return .none
 
             case .selectionRangeToggleTapped:

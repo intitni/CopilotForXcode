@@ -72,11 +72,15 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
             let lines = activeDocumentContext.lines
             let proposedLineCount = proposedSearchRange * 2 + 1
             let startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
-            let endLineIndex = max(
-                startLineIndex,
-                min(startLineIndex + proposedLineCount - 1, lines.count - 1)
+            let endLineIndex = min(
+                max(
+                    startLineIndex,
+                    min(startLineIndex + proposedLineCount - 1, lines.count - 1)
+                ),
+                lines.count - 1
             )
 
+            guard endLineIndex >= startLineIndex else { return .empty }
             let focusedLines = lines[startLineIndex...endLineIndex]
 
             let contextStartLine = max(startLineIndex - 5, 0)
