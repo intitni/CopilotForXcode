@@ -32,7 +32,7 @@ struct Chat: ReducerProtocol {
         var history: [ChatMessage] = []
         @BindingState var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
-        @BindingState var focusedField: Field? = .textField
+        @BindingState var focusedField: Field?
 
         enum Field: String, Hashable {
             case textField
@@ -95,6 +95,7 @@ struct Chat: ReducerProtocol {
                     await send(.isReceivingMessageChanged)
                     await send(.systemPromptChanged)
                     await send(.extraSystemPromptChanged)
+                    await send(.focusOnTextField)
                 }
 
             case .sendButtonTapped:

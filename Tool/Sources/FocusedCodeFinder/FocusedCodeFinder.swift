@@ -67,14 +67,17 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinder {
         guard !activeDocumentContext.lines.isEmpty else { return .empty }
 
         // when user is not selecting any code.
-        if containingRange.start == containingRange.end {
+        if containingRange.start == containingRange.end{
             // search up and down for up to `proposedSearchRange * 2 + 1` lines.
             let lines = activeDocumentContext.lines
             let proposedLineCount = proposedSearchRange * 2 + 1
             let startLineIndex = max(containingRange.start.line - proposedSearchRange, 0)
-            let endLineIndex = max(
-                startLineIndex,
-                min(startLineIndex + proposedLineCount - 1, lines.count - 1)
+            let endLineIndex = min(
+                max(
+                    startLineIndex,
+                    min(startLineIndex + proposedLineCount - 1, lines.count - 1)
+                ),
+                lines.count - 1
             )
 
             let focusedLines = lines[startLineIndex...endLineIndex]
