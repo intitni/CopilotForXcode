@@ -14,6 +14,7 @@ public final class XcodeInspector: ObservableObject {
     private var activeXcodeCancellable = Set<AnyCancellable>()
 
     @Published public internal(set) var activeApplication: AppInstanceInspector?
+    @Published public internal(set) var previousActiveApplication: AppInstanceInspector?
     @Published public internal(set) var activeXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var latestActiveXcode: XcodeAppInstanceInspector?
     @Published public internal(set) var xcodes: [XcodeAppInstanceInspector] = []
@@ -110,6 +111,7 @@ public final class XcodeInspector: ObservableObject {
                         setActiveXcode(new)
                     }
                 } else {
+                    previousActiveApplication = activeApplication
                     activeApplication = AppInstanceInspector(runningApplication: app)
                 }
             }
@@ -145,6 +147,7 @@ public final class XcodeInspector: ObservableObject {
     
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
+        previousActiveApplication = activeApplication
         activeApplication = xcode
         xcode.refresh()
         for task in activeXcodeObservations { task.cancel() }

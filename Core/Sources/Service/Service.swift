@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Dependencies
 import Foundation
@@ -83,13 +84,27 @@ final class GlobalShortcutManager {
         setupShortcutIfNeeded()
 
         KeyboardShortcuts.onKeyUp(for: .showHideWidget) { [guiController] in
-            if XcodeInspector.shared.activeXcode == nil,
+            let isXCodeActive = XcodeInspector.shared.activeXcode != nil
+            let isExtensionActive = NSApplication.shared.isActive
+
+            if !isXCodeActive,
                !guiController.viewStore.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
                UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally)
             {
                 guiController.viewStore.send(.openChatPanel(forceDetach: true))
             } else {
                 guiController.viewStore.send(.suggestionWidget(.circularWidget(.widgetClicked)))
+            }
+
+            if !isExtensionActive {
+                Task {
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            } else if let previous = XcodeInspector.shared.previousActiveApplication,
+                      !previous.isActive
+            {
+                previous.runningApplication.activate()
             }
         }
 
