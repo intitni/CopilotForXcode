@@ -86,8 +86,10 @@ public struct PromptToCodeGroup: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case let .activateOrCreatePromptToCode(s):
-                guard state.activePromptToCode == nil else {
-                    return .none
+                if let promptToCode = state.activePromptToCode {
+                    return .run { send in
+                        await send(.promptToCode(promptToCode.id, .focusOnTextField))
+                    }
                 }
                 return .run { send in
                     await send(.createPromptToCode(s))
