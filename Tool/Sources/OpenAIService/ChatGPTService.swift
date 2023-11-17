@@ -274,7 +274,7 @@ extension ChatGPTService {
                 do {
                     let (trunks, cancel) = try await api()
                     cancelTask = cancel
-                    let proposedId = UUID().uuidString
+                    let proposedId = UUID().uuidString + String(Date().timeIntervalSince1970)
                     for try await trunk in trunks {
                         guard let delta = trunk.choices?.first?.delta else { continue }
 
@@ -290,7 +290,7 @@ extension ChatGPTService {
                         }
 
                         await memory.streamMessage(
-                            id: trunk.id ?? proposedId,
+                            id: proposedId,
                             role: delta.role,
                             content: delta.content,
                             functionCall: functionCall
