@@ -70,6 +70,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         case switchToNextTab
         case switchToPreviousTab
         case moveChatTab(from: Int, to: Int)
+        case focusActiveChatTab
 
         case chatTab(id: String, action: ChatTabItem.Action)
     }
@@ -117,8 +118,9 @@ public struct ChatPanelFeature: ReducerProtocol {
                     state.chatPanelInASeparateWindow = true
                 }
                 state.isPanelDisplayed = true
-                return .run { _ in
+                return .run { send in
                     await activateExtensionService()
+                    await send(.focusActiveChatTab)
                 }
 
             case let .updateChatTabInfo(chatTabInfo):
@@ -172,14 +174,18 @@ public struct ChatPanelFeature: ReducerProtocol {
                     return .none
                 }
                 state.chatTabGroup.selectedTabId = id
-                return .none
+                return .run { send in
+                    await send(.focusActiveChatTab)
+                }
 
             case let .appendAndSelectTab(tab):
                 guard !state.chatTabGroup.tabInfo.contains(where: { $0.id == tab.id })
                 else { return .none }
                 state.chatTabGroup.tabInfo.append(tab)
                 state.chatTabGroup.selectedTabId = tab.id
-                return .none
+                return .run { send in
+                    await send(.focusActiveChatTab)
+                }
 
             case .switchToNextTab:
                 let selectedId = state.chatTabGroup.selectedTabId
@@ -192,7 +198,9 @@ public struct ChatPanelFeature: ReducerProtocol {
                 }
                 let targetId = state.chatTabGroup.tabInfo[nextIndex].id
                 state.chatTabGroup.selectedTabId = targetId
-                return .none
+                return .run { send in
+                    await send(.focusActiveChatTab)
+                }
 
             case .switchToPreviousTab:
                 let selectedId = state.chatTabGroup.selectedTabId
@@ -205,7 +213,9 @@ public struct ChatPanelFeature: ReducerProtocol {
                 }
                 let targetId = state.chatTabGroup.tabInfo[previousIndex].id
                 state.chatTabGroup.selectedTabId = targetId
-                return .none
+                return .run { send in
+                    await send(.focusActiveChatTab)
+                }
 
             case let .moveChatTab(from, to):
                 guard from >= 0, from < state.chatTabGroup.tabInfo.endIndex, to >= 0,
@@ -217,6 +227,13 @@ public struct ChatPanelFeature: ReducerProtocol {
                 state.chatTabGroup.tabInfo.remove(at: from)
                 state.chatTabGroup.tabInfo.insert(tab, at: to)
                 return .none
+                
+            case .focusActiveChatTab:
+                let id = state.chatTabGroup.selectedTabInfo?.id
+                guard let id else { return .none }
+                return .run { send in
+                    await send(.chatTab(id: id, action: .focus))
+                }
 
             case let .chatTab(id, .close):
                 return .run { send in

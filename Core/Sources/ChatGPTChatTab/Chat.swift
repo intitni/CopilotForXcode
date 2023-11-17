@@ -32,6 +32,11 @@ struct Chat: ReducerProtocol {
         var history: [ChatMessage] = []
         @BindingState var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
+        @BindingState var focusedField: Field? = .textField
+
+        enum Field: String, Hashable {
+            case textField
+        }
     }
 
     enum Action: Equatable, BindableAction {
@@ -45,6 +50,7 @@ struct Chat: ReducerProtocol {
         case deleteMessageButtonTapped(MessageID)
         case resendMessageButtonTapped(MessageID)
         case setAsExtraPromptButtonTapped(MessageID)
+        case focusOnTextField
 
         case observeChatService
         case observeHistoryChange
@@ -127,6 +133,10 @@ struct Chat: ReducerProtocol {
                 return .run { _ in
                     await service.setMessageAsExtraPrompt(id: id)
                 }
+                
+            case .focusOnTextField:
+                state.focusedField = .textField
+                return .none
 
             case .observeChatService:
                 return .run { send in

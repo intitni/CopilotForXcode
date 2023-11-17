@@ -116,6 +116,12 @@ public class ChatGPTChatTab: ChatTab {
     public func start() {
         chatTabViewStore.send(.updateTitle("Chat"))
 
+        chatTabViewStore.publisher.focusTrigger.removeDuplicates().sink { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.viewStore.send(.focusOnTextField)
+            }
+        }.store(in: &cancellable)
+
         service.$systemPrompt.removeDuplicates().sink { _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)

@@ -164,7 +164,11 @@ public struct WidgetFeature: ReducerProtocol {
                     state.chatPanelState.isPanelDisplayed = true
                 }
                 let isDisplayingContent = state._circularWidgetState.isDisplayingContent
-                return .run { _ in
+                return .run { send in
+                    if isDisplayingContent {
+                        await send(.chatPanel(.focusActiveChatTab))
+                    }
+                    
                     if isDisplayingContent, !(await NSApplication.shared.isActive) {
                         try await Task.sleep(nanoseconds: 50_000_000)
                         await NSApplication.shared.activate(ignoringOtherApps: true)
