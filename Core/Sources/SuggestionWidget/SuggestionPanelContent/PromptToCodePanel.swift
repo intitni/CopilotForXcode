@@ -290,7 +290,7 @@ extension PromptToCodePanel {
 
     struct Toolbar: View {
         let store: StoreOf<PromptToCode>
-        @FocusState var isInputAreaFocused: Bool
+        @FocusState var focusField: PromptToCode.State.FocusField?
 
         struct RevertButtonState: Equatable {
             var isResponding: Bool
@@ -299,6 +299,7 @@ extension PromptToCodePanel {
 
         struct InputFieldState: Equatable {
             @BindingViewState var prompt: String
+            @BindingViewState var focusField: PromptToCode.State.FocusField?
             var isResponding: Bool
         }
 
@@ -326,14 +327,11 @@ extension PromptToCodePanel {
                     .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
                 }
                 .background {
-                    Button(action: { isInputAreaFocused = true }) {
+                    Button(action: { focusField = .textField }) {
                         EmptyView()
                     }
                     .keyboardShortcut("l", modifiers: [.command])
                 }
-            }
-            .onAppear {
-                isInputAreaFocused = true
             }
             .padding(8)
             .background(.ultraThickMaterial)
@@ -366,7 +364,13 @@ extension PromptToCodePanel {
         var inputField: some View {
             WithViewStore(
                 store,
-                observe: { InputFieldState(prompt: $0.$prompt, isResponding: $0.isResponding) }
+                observe: {
+                    InputFieldState(
+                        prompt: $0.$prompt,
+                        focusField: $0.$focusedField,
+                        isResponding: $0.isResponding
+                    )
+                }
             ) { viewStore in
                 ZStack(alignment: .center) {
                     // a hack to support dynamic height of TextEditor
@@ -389,8 +393,9 @@ extension PromptToCodePanel {
                     .opacity(viewStore.state.isResponding ? 0.5 : 1)
                     .disabled(viewStore.state.isResponding)
                 }
+                .focused($focusField, equals: .textField)
+                .bind(viewStore.$focusField, to: $focusField)
             }
-            .focused($isInputAreaFocused)
             .padding(8)
             .fixedSize(horizontal: false, vertical: true)
         }

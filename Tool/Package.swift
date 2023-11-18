@@ -39,6 +39,7 @@ let package = Package(
                 "ActiveApplicationMonitor",
                 "AXExtension",
                 "AXNotificationStream",
+                "AppActivator",
             ]
         ),
     ],
@@ -108,6 +109,14 @@ let package = Package(
                 "ActiveApplicationMonitor",
                 "AXExtension",
                 "Preferences",
+            ]
+        ),
+
+        .target(
+            name: "AppActivator",
+            dependencies: [
+                "XcodeInspector",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 

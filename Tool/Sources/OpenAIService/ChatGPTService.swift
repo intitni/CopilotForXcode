@@ -100,12 +100,13 @@ public class ChatGPTService: ChatGPTServiceType {
 
         return Debugger.$id.withValue(.init()) {
             AsyncThrowingStream<String, Error> { continuation in
-                Task(priority: .userInitiated) {
+                let task = Task(priority: .userInitiated) {
                     do {
                         var functionCall: ChatMessage.FunctionCall?
                         var functionCallMessageID = ""
                         var isInitialCall = true
                         loop: while functionCall != nil || isInitialCall {
+                            try Task.checkCancellation()
                             isInitialCall = false
                             if let call = functionCall {
                                 if !configuration.runFunctionsAutomatically {
@@ -121,6 +122,7 @@ public class ChatGPTService: ChatGPTServiceType {
                             #endif
 
                             for try await content in stream {
+                                try Task.checkCancellation()
                                 switch content {
                                 case let .text(text):
                                     continuation.yield(text)
@@ -154,6 +156,9 @@ public class ChatGPTService: ChatGPTServiceType {
                         continuation.finish(throwing: error)
                     }
                 }
+                continuation.onTermination = { _ in
+                    task.cancel()
+                }
             }
         }
     }
@@ -177,6 +182,7 @@ public class ChatGPTService: ChatGPTServiceType {
             var finalResult = message?.content
             var functionCall = message?.functionCall
             while let call = functionCall {
+                try Task.checkCancellation()
                 if !configuration.runFunctionsAutomatically {
                     break
                 }
@@ -270,12 +276,13 @@ extension ChatGPTService {
         #endif
 
         return AsyncThrowingStream<StreamContent, Error> { continuation in
-            Task {
+            let task = Task {
                 do {
                     let (trunks, cancel) = try await api()
                     cancelTask = cancel
-                    let proposedId = UUID().uuidString
+                    let proposedId = UUID().uuidString + String(Date().timeIntervalSince1970)
                     for try await trunk in trunks {
+                        try Task.checkCancellation()
                         guard let delta = trunk.choices?.first?.delta else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -290,7 +297,7 @@ extension ChatGPTService {
                         }
 
                         await memory.streamMessage(
-                            id: trunk.id ?? proposedId,
+                            id: proposedId,
                             role: delta.role,
                             content: delta.content,
                             functionCall: functionCall
@@ -319,6 +326,10 @@ extension ChatGPTService {
                     ))
                     continuation.finish(throwing: error)
                 }
+            }
+            
+            continuation.onTermination = { _ in
+                task.cancel()
             }
         }
     }

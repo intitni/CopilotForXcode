@@ -1,4 +1,5 @@
 import ActiveApplicationMonitor
+import AppActivator
 import AppKit
 import ChatGPTChatTab
 import ChatTab
@@ -6,6 +7,7 @@ import ComposableArchitecture
 import Dependencies
 import Environment
 import Preferences
+import SuggestionModel
 import SuggestionWidget
 
 #if canImport(ProChatTabs)
@@ -54,6 +56,7 @@ struct GUI: ReducerProtocol {
         case openChatPanel(forceDetach: Bool)
         case createChatGPTChatTabIfNeeded
         case sendCustomCommandToActiveChat(CustomCommand)
+        case toggleWidgetsHotkeyPressed
 
         case suggestionWidget(WidgetFeature.Action)
 
@@ -66,7 +69,8 @@ struct GUI: ReducerProtocol {
         #endif
     }
 
-    @Dependency(\.chatTabPool) var chatTabPool: ChatTabPool
+    @Dependency(\.chatTabPool) var chatTabPool
+    @Dependency(\.activateThisApp) var activateThisApp
 
     public enum Debounce: Hashable {
         case updateChatTabOrder
@@ -135,6 +139,9 @@ struct GUI: ReducerProtocol {
                                 .chatPanel(.presentChatPanel(forceDetach: forceDetach))
                             )
                         )
+                        await send(.suggestionWidget(.updateKeyWindow(.chatPanel)))
+
+                        activateThisApp()
                     }
 
                 case .createChatGPTChatTabIfNeeded:
@@ -190,6 +197,11 @@ struct GUI: ReducerProtocol {
                         if let chatTab = chatTab as? ChatGPTChatTab {
                             await stopAndHandleCommand(chatTab)
                         }
+                    }
+
+                case .toggleWidgetsHotkeyPressed:
+                    return .run { send in
+                        await send(.suggestionWidget(.circularWidget(.widgetClicked)))
                     }
 
                 case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
@@ -262,12 +274,10 @@ public final class GraphicalUserInterfaceController {
                 Task {
                     let handler = PseudoCommandHandler()
                     await handler.acceptPromptToCode()
-                    if let app = ActiveApplicationMonitor.shared.previousApp,
-                       app.isXcode,
-                       !promptToCode.isContinuous
-                    {
-                        try await Task.sleep(nanoseconds: 200_000_000)
-                        app.activate()
+                    if !promptToCode.isContinuous {
+                        NSWorkspace.activatePreviousActiveXcode()
+                    } else {
+                        NSWorkspace.activateThisApp()
                     }
                 }
             }

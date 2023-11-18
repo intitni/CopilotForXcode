@@ -42,6 +42,10 @@ public final class ChatService: ObservableObject {
         let configuration = UserPreferenceChatGPTConfiguration().overriding()
         /// Used by context collector
         let extraConfiguration = configuration.overriding()
+        extraConfiguration.textWindowTerminator = {
+            guard let last = $0.last else { return false }
+            return last.isNewline || last.isPunctuation
+        }
         let memory = ContextAwareAutoManagedChatGPTMemory(
             configuration: extraConfiguration,
             functionProvider: ChatFunctionProvider()

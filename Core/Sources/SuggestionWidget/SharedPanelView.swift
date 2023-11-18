@@ -57,13 +57,16 @@ struct SharedPanelView: View {
                                 )
                             }
                         } else if let promptToCode = viewStore.state.promptToCode {
-                            PromptToCodePanel(store: store.scope(
-                                state: { _ in promptToCode },
+                            IfLetStore(store.scope(
+                                state: { $0.content.promptToCodeGroup.activePromptToCode },
                                 action: {
                                     SharedPanelFeature.Action
-                                        .promptToCodeGroup(.promptToCode(promptToCode.id, $0))
+                                        .promptToCodeGroup(.activePromptToCode($0))
                                 }
-                            ))
+                            )) {
+                                PromptToCodePanel(store: $0)
+                            }
+                            
                         } else if let suggestion = viewStore.state.suggestion {
                             switch suggestionPresentationMode {
                             case .nearbyTextCursor:

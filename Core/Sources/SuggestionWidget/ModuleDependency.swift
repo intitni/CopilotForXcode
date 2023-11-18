@@ -78,23 +78,6 @@ struct ChatTabBuilderCollectionKey: DependencyKey {
     static let liveValue: () -> [ChatTabBuilderCollection] = { [] }
 }
 
-struct ActivatePreviouslyActiveXcodeKey: DependencyKey {
-    static let liveValue = { @MainActor in
-        @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
-        if let app = activeApplicationMonitor.previousApp, app.isXcode {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            app.activate()
-        }
-    }
-}
-
-struct ActivateExtensionServiceKey: DependencyKey {
-    static let liveValue = { @MainActor in
-        try? await Task.sleep(nanoseconds: 150_000_000)
-        NSApplication.shared.activate(ignoringOtherApps: true)
-    }
-}
-
 public extension DependencyValues {
     var suggestionWidgetControllerDependency: SuggestionWidgetControllerDependency {
         get { self[SuggestionWidgetControllerDependencyKey.self] }
@@ -121,16 +104,6 @@ extension DependencyValues {
     var activeApplicationMonitor: ActiveApplicationMonitor {
         get { self[ActiveApplicationMonitorKey.self] }
         set { self[ActiveApplicationMonitorKey.self] = newValue }
-    }
-
-    var activatePreviouslyActiveXcode: () async -> Void {
-        get { self[ActivatePreviouslyActiveXcodeKey.self] }
-        set { self[ActivatePreviouslyActiveXcodeKey.self] = newValue }
-    }
-
-    var activateExtensionService: () async -> Void {
-        get { self[ActivateExtensionServiceKey.self] }
-        set { self[ActivateExtensionServiceKey.self] = newValue }
     }
 }
 

@@ -1,4 +1,5 @@
 import ActiveApplicationMonitor
+import AppActivator
 import AsyncAlgorithms
 import AXNotificationStream
 import ComposableArchitecture
@@ -20,6 +21,11 @@ public struct WidgetFeature: ReducerProtocol {
         public var suggestionPanelWindowState = WindowState()
         public var sharedPanelWindowState = WindowState()
         public var tabWindowState = WindowState()
+    }
+
+    public enum WindowCanBecomeKey: Equatable {
+        case sharedPanel
+        case chatPanel
     }
 
     public struct State: Equatable {
@@ -112,6 +118,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateWindowOpacity
         case updateFocusingDocumentURL
         case updateWindowOpacityFinished
+        case updateKeyWindow(WindowCanBecomeKey)
 
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
@@ -127,6 +134,8 @@ public struct WidgetFeature: ReducerProtocol {
     @Dependency(\.activeApplicationMonitor) var activeApplicationMonitor
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.mainQueue) var mainQueue
+    @Dependency(\.activateThisApp) var activateThisApp
+    @Dependency(\.activatePreviousActiveApp) var activatePreviousActiveApp
 
     public enum DebounceKey: Hashable {
         case updateWindowOpacity
@@ -147,8 +156,8 @@ public struct WidgetFeature: ReducerProtocol {
                 }
 
             case .circularWidget(.widgetClicked):
-                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
-                if isDisplayingContent {
+                let wasDisplayingContent = state._circularWidgetState.isDisplayingContent
+                if wasDisplayingContent {
                     state.panelState.sharedPanelState.isPanelDisplayed = false
                     state.panelState.suggestionPanelState.isPanelDisplayed = false
                     state.chatPanelState.isPanelDisplayed = false
@@ -157,11 +166,26 @@ public struct WidgetFeature: ReducerProtocol {
                     state.panelState.suggestionPanelState.isPanelDisplayed = true
                     state.chatPanelState.isPanelDisplayed = true
                 }
-                return .run { _ in
-                    guard isDisplayingContent else { return }
-                    if let app = activeApplicationMonitor.previousApp, app.isXcode {
-                        try await Task.sleep(nanoseconds: 200_000_000)
-                        app.activate()
+
+                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
+                let hasChat = state.chatPanelState.chatTabGroup.selectedTabInfo != nil
+                let hasPromptToCode = state.panelState.sharedPanelState.content
+                    .promptToCodeGroup.activePromptToCode != nil
+
+                return .run { send in
+                    if isDisplayingContent {
+                        if hasPromptToCode {
+                            await send(.updateKeyWindow(.sharedPanel))
+                        } else if hasChat {
+                            await send(.updateKeyWindow(.chatPanel))
+                        }
+                        await send(.chatPanel(.focusActiveChatTab))
+                    }
+
+                    if isDisplayingContent, !(await NSApplication.shared.isActive) {
+                        activateThisApp()
+                    } else if !isDisplayingContent {
+                        activatePreviousActiveApp()
                     }
                 }
 
@@ -582,6 +606,16 @@ public struct WidgetFeature: ReducerProtocol {
             case .updateWindowOpacityFinished:
                 state.lastUpdateWindowOpacityTime = Date()
                 return .none
+
+            case let .updateKeyWindow(window):
+                return .run { _ in
+                    switch window {
+                    case .chatPanel:
+                        await windows.chatPanelWindow.makeKeyAndOrderFront(nil)
+                    case .sharedPanel:
+                        await windows.sharedPanelWindow.makeKeyAndOrderFront(nil)
+                    }
+                }
 
             case .circularWidget:
                 return .none

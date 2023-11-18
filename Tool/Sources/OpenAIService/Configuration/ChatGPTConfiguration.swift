@@ -11,6 +11,7 @@ public protocol ChatGPTConfiguration {
     var maxTokens: Int { get }
     var minimumReplyTokens: Int { get }
     var runFunctionsAutomatically: Bool { get }
+    var shouldEndTextWindow: (String) -> Bool { get }
 }
 
 public extension ChatGPTConfiguration {

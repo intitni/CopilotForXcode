@@ -40,6 +40,10 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
     public var runFunctionsAutomatically: Bool {
         true
     }
+    
+    public var shouldEndTextWindow: (String) -> Bool {
+        { _ in true }
+    }
 
     public init(chatModelKey: KeyPath<UserDefaultPreferenceKeys, PreferenceKey<String>>? = nil) {
         self.chatModelKey = chatModelKey
@@ -56,7 +60,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         public var minimumReplyTokens: Int?
         public var runFunctionsAutomatically: Bool?
         public var apiKey: String?
-
+            
         public init(
             temperature: Double? = nil,
             modelId: String? = nil,
@@ -80,6 +84,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
 
     private let configuration: ChatGPTConfiguration
     public var overriding = Overriding()
+    public var textWindowTerminator: ((String) -> Bool)?
 
     public init(
         overriding configuration: any ChatGPTConfiguration,
@@ -125,6 +130,10 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
         if let apiKey = overriding.apiKey { return apiKey }
         guard let name = model?.info.apiKeyName else { return configuration.apiKey }
         return (try? Keychain.apiKey.get(name)) ?? configuration.apiKey
+    }
+    
+    public var shouldEndTextWindow: (String) -> Bool {
+        textWindowTerminator ?? configuration.shouldEndTextWindow
     }
 }
 
