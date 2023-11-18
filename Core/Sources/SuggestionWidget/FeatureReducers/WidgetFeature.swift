@@ -197,17 +197,6 @@ public struct WidgetFeature: ReducerProtocol {
             PanelFeature()
         }
 
-        Reduce { _, action in
-            switch action {
-            case .panel(.sharedPanel(.promptToCodeGroup(.activateOrCreatePromptToCode))):
-                return .run { send in
-                    await send(.updateKeyWindow(.sharedPanel))
-                    activateThisApp()
-                }
-            default: return .none
-            }
-        }
-
         Scope(state: \.chatPanelState, action: /Action.chatPanel) {
             ChatPanelFeature()
         }

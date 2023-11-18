@@ -141,9 +141,7 @@ struct GUI: ReducerProtocol {
                         )
                         await send(.suggestionWidget(.updateKeyWindow(.chatPanel)))
 
-                        if await !NSApplication.shared.isActive {
-                            activateThisApp()
-                        }
+                        activateThisApp()
                     }
 
                 case .createChatGPTChatTabIfNeeded:
