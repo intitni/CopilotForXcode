@@ -1,3 +1,4 @@
+import AppKit
 import ChatService
 import Environment
 import Foundation
@@ -409,7 +410,7 @@ extension WindowBaseCommandHandler {
         }() as (String, CursorRange)
 
         let viewStore = Service.shared.guiController.viewStore
-        
+
         let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
         let newExtraSystemPrompt = extraSystemPrompt.map(customCommandTemplateProcessor.process)
         let newPrompt = prompt.map(customCommandTemplateProcessor.process)

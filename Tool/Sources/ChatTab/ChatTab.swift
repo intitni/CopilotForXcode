@@ -6,6 +6,7 @@ import SwiftUI
 public struct ChatTabInfo: Identifiable, Equatable {
     public var id: String
     public var title: String
+    public var focusTrigger: Int = 0
 
     public init(id: String, title: String) {
         self.id = id

@@ -1,7 +1,5 @@
-import Combine
 import Dependencies
 import Foundation
-import KeyboardShortcuts
 import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
@@ -13,10 +11,6 @@ import ProService
 @globalActor public enum ServiceActor {
     public actor TheActor {}
     public static let shared = TheActor()
-}
-
-extension KeyboardShortcuts.Name {
-    static let showHideWidget = Self("ShowHideWidget")
 }
 
 /// The running extension service.
@@ -66,57 +60,6 @@ public final class Service {
         #endif
         DependencyUpdater().update()
         globalShortcutManager.start()
-    }
-}
-
-@MainActor
-final class GlobalShortcutManager {
-    let guiController: GraphicalUserInterfaceController
-    private var cancellable = Set<AnyCancellable>()
-
-    nonisolated init(guiController: GraphicalUserInterfaceController) {
-        self.guiController = guiController
-    }
-
-    func start() {
-        KeyboardShortcuts.userDefaults = .shared
-        setupShortcutIfNeeded()
-
-        KeyboardShortcuts.onKeyUp(for: .showHideWidget) { [guiController] in
-            if XcodeInspector.shared.activeXcode == nil,
-               !guiController.viewStore.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
-               UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally)
-            {
-                guiController.viewStore.send(.openChatPanel(forceDetach: true))
-            } else {
-                guiController.viewStore.send(.suggestionWidget(.circularWidget(.widgetClicked)))
-            }
-        }
-
-        XcodeInspector.shared.$activeApplication.sink { app in
-            if !UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally) {
-                let shouldBeEnabled = if let app, app.isXcode || app.isExtensionService {
-                    true
-                } else {
-                    false
-                }
-                if shouldBeEnabled {
-                    self.setupShortcutIfNeeded()
-                } else {
-                    self.removeShortcutIfNeeded()
-                }
-            } else {
-                self.setupShortcutIfNeeded()
-            }
-        }.store(in: &cancellable)
-    }
-
-    func setupShortcutIfNeeded() {
-        KeyboardShortcuts.enable(.showHideWidget)
-    }
-
-    func removeShortcutIfNeeded() {
-        KeyboardShortcuts.disable(.showHideWidget)
     }
 }
 

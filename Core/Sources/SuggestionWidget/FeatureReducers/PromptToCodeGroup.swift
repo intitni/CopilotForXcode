@@ -18,7 +18,12 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 guard let id = activeDocumentURL else { return nil }
                 return promptToCodes[id: id]
             }
-            set { activeDocumentURL = newValue?.id }
+            set {
+                activeDocumentURL = newValue?.id
+                if let id = newValue?.id {
+                    promptToCodes[id: id] = newValue
+                }
+            }
         }
     }
 
@@ -77,16 +82,20 @@ public struct PromptToCodeGroup: ReducerProtocol {
         case updateActivePromptToCode(documentURL: URL)
         case discardExpiredPromptToCode(documentURLs: [URL])
         case promptToCode(PromptToCode.State.ID, PromptToCode.Action)
+        case activePromptToCode(PromptToCode.Action)
     }
 
     @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
+    @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
 
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
             case let .activateOrCreatePromptToCode(s):
-                guard state.activePromptToCode == nil else {
-                    return .none
+                if let promptToCode = state.activePromptToCode {
+                    return .run { send in
+                        await send(.promptToCode(promptToCode.id, .focusOnTextField))
+                    }
                 }
                 return .run { send in
                     await send(.createPromptToCode(s))
@@ -138,22 +147,38 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 }
                 return .none
 
-            case let .promptToCode(id, action):
-                switch action {
-                case .cancelButtonTapped:
-                    state.promptToCodes.remove(id: id)
-                    return .run { _ in
-                        try await Environment.makeXcodeActive()
-                    }
-                default:
-                    return .none
-                }
+            case .promptToCode:
+                return .none
+                
+            case .activePromptToCode:
+                return .none
             }
+        }
+        .ifLet(\.activePromptToCode, action: /Action.activePromptToCode) {
+            PromptToCode()
+                .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         }
         .forEach(\.promptToCodes, action: /Action.promptToCode, element: {
             PromptToCode()
                 .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         })
+        
+        Reduce { state, action in
+            switch action {
+            case let .promptToCode(id, .cancelButtonTapped):
+                state.promptToCodes.remove(id: id)
+                return .run { _ in
+                    activatePreviousActiveXcode()
+                }
+            case .activePromptToCode(.cancelButtonTapped):
+                guard let id = state.activePromptToCode?.id else { return .none }
+                state.promptToCodes.remove(id: id)
+                return .run { _ in
+                    activatePreviousActiveXcode()
+                }
+            default: return .none
+            }
+        }
     }
 }
 

@@ -498,15 +498,12 @@ struct FunctionMessage: View {
 
 struct ChatPanelInputArea: View {
     let chat: StoreOf<Chat>
-    @FocusState var isInputAreaFocused: Bool
+    @FocusState var focusedField: Chat.State.Field?
 
     var body: some View {
         HStack {
             clearButton
             textEditor
-        }
-        .onAppear {
-            isInputAreaFocused = true
         }
         .padding(8)
         .background(.ultraThickMaterial)
@@ -538,8 +535,11 @@ struct ChatPanelInputArea: View {
     @MainActor
     var textEditor: some View {
         HStack(spacing: 0) {
-            WithViewStore(chat, removeDuplicates: { $0.typedMessage == $1.typedMessage }) {
-                viewStore in
+            WithViewStore(
+                chat,
+                removeDuplicates: {
+                    $0.typedMessage == $1.typedMessage && $0.focusedField == $1.focusedField
+            }) { viewStore in
                 ZStack(alignment: .center) {
                     // a hack to support dynamic height of TextEditor
                     Text(
@@ -560,7 +560,8 @@ struct ChatPanelInputArea: View {
                     .padding(.top, 1)
                     .padding(.bottom, -1)
                 }
-                .focused($isInputAreaFocused)
+                .focused($focusedField, equals: .textField)
+                .bind(viewStore.$focusedField, to: $focusedField)
                 .padding(8)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -595,7 +596,7 @@ struct ChatPanelInputArea: View {
             .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
 
             Button(action: {
-                isInputAreaFocused = true
+                focusedField = .textField
             }) {
                 EmptyView()
             }

@@ -1,4 +1,6 @@
 import ActiveApplicationMonitor
+import AppActivator
+import AppKit
 import ChatService
 import ComposableArchitecture
 import Foundation
@@ -39,24 +41,14 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.rejectSuggestions()
-                            if let app = ActiveApplicationMonitor.shared.previousApp,
-                               app.isXcode
-                            {
-                                try await Task.sleep(nanoseconds: 200_000_000)
-                                app.activate()
-                            }
+                            NSWorkspace.activatePreviousActiveXcode()
                         }
                     },
                     onAcceptSuggestionTapped: {
                         Task {
                             let handler = PseudoCommandHandler()
                             await handler.acceptSuggestion()
-                            if let app = ActiveApplicationMonitor.shared.previousApp,
-                               app.isXcode
-                            {
-                                try await Task.sleep(nanoseconds: 200_000_000)
-                                app.activate()
-                            }
+                            NSWorkspace.activatePreviousActiveXcode()
                         }
                     }
                 )
