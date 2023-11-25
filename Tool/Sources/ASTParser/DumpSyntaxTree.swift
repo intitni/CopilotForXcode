@@ -1,76 +1,55 @@
 import SwiftTreeSitter
+import SwiftUI
 
 public extension ASTTree {
     /// Dumps the syntax tree as a string, for debugging purposes.
-    func dump() -> String {
+    func dump() -> AttributedString {
         guard let tree, let root = tree.rootNode else { return "" }
-        var result = ""
+        var result: AttributedString = ""
 
-        let appendNode: (_ level: Int, _ node: Node) -> Void = { level, node in
+        let appendNode: (_ level: Int, _ node: Node, _ name: String) -> Void = {
+            level, node, name in
             let range = node.pointRange
             let lowerBoundL = range.lowerBound.row
             let lowerBoundC = range.lowerBound.column / 2
             let upperBoundL = range.upperBound.row
             let upperBoundC = range.upperBound.column / 2
-            let line =
-                "\(String(repeating: "  ", count: level))\(node.nodeType ?? "N/A") [\(lowerBoundL), \(lowerBoundC)] - [\(upperBoundL), \(upperBoundC)]"
-            result += line + "\n"
+            let indentation = AttributedString(String(repeating: "  ", count: level))
+            let nodeInfo = {
+                if name.isEmpty {
+                    return AttributedString(node.nodeType ?? "N/A", attributes: .init([
+                        .foregroundColor: NSColor.blue,
+                    ]))
+                } else {
+                    var string = AttributedString("\(name): ", attributes: .init([
+                        .foregroundColor: NSColor.brown,
+                    ]))
+                    string.append(AttributedString(node.nodeType ?? "N/A", attributes: .init([
+                        .foregroundColor: NSColor.blue,
+                    ])))
+                    return string
+                }
+            }()
+            let rangeText = "[\(lowerBoundL), \(lowerBoundC)] - [\(upperBoundL), \(upperBoundC)]"
+
+            var line: AttributedString = ""
+            line.append(indentation)
+            line.append(nodeInfo)
+            line.append(AttributedString(" \(rangeText)\n"))
+            
+            result.append(line)
         }
 
-        guard let node = root.descendant(in: root.byteRange) else { return result }
-
-        appendNode(0, node)
-
-        let cursor = node.treeCursor
-        let level = 0
-
-        if cursor.goToFirstChild(for: node.byteRange.lowerBound) == false {
-            return result
-        }
-
-        cursor.enumerateCurrentAndDescendents(level: level + 1) { level, node in
-            appendNode(level, node)
-        }
-
-        while cursor.goToNextSibling() {
-            guard let node = cursor.currentNode else {
-                assertionFailure("no current node when gotoNextSibling succeeded")
-                break
-            }
-
-            // once we are past the interesting range, stop
-            if node.byteRange.lowerBound > root.byteRange.upperBound {
-                break
-            }
-
-            cursor.enumerateCurrentAndDescendents(level: level + 1) { level, node in
-                appendNode(level, node)
+        func enumerate(_ node: Node, level: Int, name: String) {
+            appendNode(level, node, name)
+            for i in 0..<node.childCount {
+                let n = node.child(at: i)!
+                enumerate(n, level: level + 1, name: node.fieldNameForChild(at: i) ?? "")
             }
         }
 
+        enumerate(root, level: 0, name: "root")
         return result
-    }
-}
-
-private extension TreeCursor {
-    func enumerateCurrentAndDescendents(level: Int, block: (Int, Node) throws -> Void) rethrows {
-        if let node = currentNode {
-            try block(level, node)
-        }
-
-        if goToFirstChild() == false {
-            return
-        }
-
-        try enumerateCurrentAndDescendents(level: level + 1, block: block)
-
-        while goToNextSibling() {
-            try enumerateCurrentAndDescendents(level: level + 1, block: block)
-        }
-
-        let success = gotoParent()
-
-        assert(success)
     }
 }
 
