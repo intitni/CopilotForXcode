@@ -63,11 +63,7 @@ let package = Package(
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
 
         // TreeSitter
-        .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.7.1"),
-        .package(
-            url: "https://github.com/alex-pinkus/tree-sitter-swift",
-            branch: "with-generated-files"
-        ),
+        .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
         .package(url: "https://github.com/lukepistrol/tree-sitter-objc", branch: "feature/spm"),
     ],
     targets: [
@@ -197,7 +193,6 @@ let package = Package(
             "SuggestionModel",
             .product(name: "SwiftTreeSitter", package: "SwiftTreeSitter"),
             .product(name: "TreeSitterObjC", package: "tree-sitter-objc"),
-            .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),
         ]),
 
         .testTarget(name: "ASTParserTests", dependencies: ["ASTParser"]),
