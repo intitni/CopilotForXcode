@@ -43,7 +43,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "@ViewBuilder private func f(_ a: String) -> String",
                     name: "f",
-                    range: .init(startPair: (2, 0), endPair: (7, 5))
+                    range: .init(startPair: (1, 4), endPair: (7, 5))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
@@ -162,7 +162,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "public protocol A: Hashable",
                     name: "A",
-                    range: .init(startPair: (1, 0), endPair: (1, 9))
+                    range: .init(startPair: (0, 0), endPair: (6, 1))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
@@ -199,7 +199,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "private extension A: Equatable",
                     name: "A",
-                    range: .init(startPair: (1, 0), endPair: (1, 9))
+                    range: .init(startPair: (0, 0), endPair: (6, 1))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
@@ -237,7 +237,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "@gloablActor public actor A",
                     name: "A",
-                    range: .init(startPair: (2, 0), endPair: (2, 9))
+                    range: .init(startPair: (0, 0), endPair: (7, 1))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (7, 1)),
@@ -276,7 +276,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "@MainActor public indirect enum A",
                     name: "A",
-                    range: .init(startPair: (3, 0), endPair: (3, 9))
+                    range: .init(startPair: (0, 0), endPair: (8, 1))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
@@ -315,12 +315,12 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 .init(
                     signature: "struct A",
                     name: "A",
-                    range: .init(startPair: (2, 0), endPair: (2, 9))
+                    range: .init(startPair: (0, 0), endPair: (8, 1))
                 ),
                 .init(
                     signature: "@SomeWrapper public private(set) var a: Int",
                     name: "a",
-                    range: .init(startPair: (1, 0), endPair: (7, 4))
+                    range: .init(startPair: (1, 4), endPair: (7, 5))
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
@@ -462,7 +462,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
 final class SwiftFocusedCodeFinder_Import_Tests: XCTestCase {
     func test_parsing_imports() {
         let code = """
-        import OpTop
+        import OnTop
         import Second
         import Third
 
