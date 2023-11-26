@@ -263,7 +263,6 @@ extension ObjectiveCFocusedCodeFinder {
         _ node: ASTNode,
         textProvider: @escaping TextProvider
     ) -> (nodeInfo: NodeInfo?, more: Bool) {
-        let definitionRange = CursorRange(pointRange: node.pointRange)
         let name = node.contentOfChild(withFieldName: "name", textProvider: textProvider)
         let (
             _,

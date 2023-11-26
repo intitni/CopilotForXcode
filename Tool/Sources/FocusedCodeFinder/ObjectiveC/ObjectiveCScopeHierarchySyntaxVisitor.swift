@@ -54,7 +54,7 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
         case .classInterface, .categoryInterface, .protocolDeclaration:
             guard cursorRange.contains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
-            return .skipChildren
+            return .visitChildren
         case .classImplementation, .categoryImplementation:
             guard cursorRange.contains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
@@ -62,7 +62,7 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
         case .methodDefinition:
             guard cursorRange.contains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
-            return .visitChildren
+            return .skipChildren
         case .typeDefinition:
             guard cursorRange.contains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
@@ -71,6 +71,10 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
             guard cursorRange.contains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .skipChildren 
+        case .functionDefinition:
+            guard cursorRange.contains(range) else { return .skipChildren }
+            _scopeHierarchy.append(node)
+            return .skipChildren
         default:
             return .skipChildren
         }
