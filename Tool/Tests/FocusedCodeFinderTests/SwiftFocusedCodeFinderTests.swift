@@ -1,9 +1,8 @@
-import FocusedCodeFinder
 import Foundation
 import SuggestionModel
 import XCTest
 
-@testable import ActiveDocumentChatContextCollector
+@testable import FocusedCodeFinder
 
 func document(code: String) -> FocusedCodeFinder.Document {
     .init(

@@ -1,8 +1,8 @@
-import FocusedCodeFinder
 import Foundation
+import SuggestionModel
 import XCTest
 
-@testable import ActiveDocumentChatContextCollector
+@testable import FocusedCodeFinder
 
 class UnknownLanguageFocusedCodeFinderTests: XCTestCase {
     func test_the_code_is_long_enough_for_the_search_range() {
