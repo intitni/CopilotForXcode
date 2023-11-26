@@ -68,7 +68,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     public func contextContainingNode(
         _ node: Node,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         switch ObjectiveCNodeType(rawValue: node.nodeType ?? "") {
         case .classInterface, .categoryInterface:
             return parseClassInterfaceNode(node, textProvider: textProvider)
@@ -85,39 +85,35 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         case .typeDefinition:
             return parseTypedefNode(node, textProvider: textProvider)
         default:
-            return (nil, false)
+            return nil
         }
     }
 
     func parseClassInterfaceNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         var name = ""
         var superClass = ""
         var category = ""
         var protocols = [String]()
-        let children = node.children
-        for child in children {
-            if let nameNode = child.child(byFieldName: "name") {
-                name = textProvider(.node(nameNode))
-            }
-            if let superClassNode = child.child(byFieldName: "superclass") {
-                superClass = textProvider(.node(superClassNode))
-            }
-            if let categoryNode = child.child(byFieldName: "category") {
-                category = textProvider(.node(categoryNode))
-            }
-            if let protocolsNode = child.child(byFieldName: "protocols") {
-                for protocolNode in protocolsNode.children {
-                    let protocolName = textProvider(.node(protocolNode))
-                    if !protocolName.isEmpty {
-                        protocols.append(protocolName)
-                    }
+        if let nameNode = node.child(byFieldName: "name") {
+            name = textProvider(.node(nameNode))
+        }
+        if let superClassNode = node.child(byFieldName: "superclass") {
+            superClass = textProvider(.node(superClassNode))
+        }
+        if let categoryNode = node.child(byFieldName: "category") {
+            category = textProvider(.node(categoryNode))
+        }
+        if let protocolsNode = node.child(byFieldName: "protocols") {
+            for protocolNode in protocolsNode.children {
+                let protocolName = textProvider(.node(protocolNode))
+                if !protocolName.isEmpty {
+                    protocols.append(protocolName)
                 }
             }
         }
-
         var signature = "@interface \(name)"
         if !category.isEmpty {
             signature += "(\(category))"
@@ -129,47 +125,41 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             signature += ": \(superClass)"
         }
 
-        return (
-            .init(
-                node: node,
-                signature: signature,
-                name: name,
-                canBeUsedAsCodeRange: true
-            ),
-            false
+        return .init(
+            node: node,
+            signature: signature,
+            name: name,
+            canBeUsedAsCodeRange: true
         )
     }
 
     func parseClassImplementationNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         var name = ""
         var superClass = ""
         var category = ""
         var protocols = [String]()
-        let children = node.children
-        for child in children {
-            if let nameNode = child.child(byFieldName: "name") {
-                name = textProvider(.node(nameNode))
-            }
-            if let superClassNode = child.child(byFieldName: "superclass") {
-                superClass = textProvider(.node(superClassNode))
-            }
-            if let categoryNode = child.child(byFieldName: "category") {
-                category = textProvider(.node(categoryNode))
-            }
-            if let protocolsNode = child.child(byFieldName: "protocols") {
-                for protocolNode in protocolsNode.children {
-                    let protocolName = textProvider(.node(protocolNode))
-                    if !protocolName.isEmpty {
-                        protocols.append(protocolName)
-                    }
+        if let nameNode = node.child(byFieldName: "name") {
+            name = textProvider(.node(nameNode))
+        }
+        if let superClassNode = node.child(byFieldName: "superclass") {
+            superClass = textProvider(.node(superClassNode))
+        }
+        if let categoryNode = node.child(byFieldName: "category") {
+            category = textProvider(.node(categoryNode))
+        }
+        if let protocolsNode = node.child(byFieldName: "protocols") {
+            for protocolNode in protocolsNode.children {
+                let protocolName = textProvider(.node(protocolNode))
+                if !protocolName.isEmpty {
+                    protocols.append(protocolName)
                 }
             }
         }
 
-        var signature = "@implement \(name)"
+        var signature = "@implementation \(name)"
         if !category.isEmpty {
             signature += "(\(category))"
         }
@@ -179,34 +169,28 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         if !superClass.isEmpty {
             signature += ": \(superClass)"
         }
-        return (
-            .init(
-                node: node,
-                signature: signature,
-                name: name,
-                canBeUsedAsCodeRange: true
-            ),
-            false
+        return .init(
+            node: node,
+            signature: signature,
+            name: name,
+            canBeUsedAsCodeRange: true
         )
     }
 
     func parseProtocolNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         var name = ""
         var protocols = [String]()
-        let children = node.children
-        for child in children {
-            if let nameNode = child.child(byFieldName: "name") {
-                name = textProvider(.node(nameNode))
-            }
-            if let protocolsNode = child.child(byFieldName: "protocols") {
-                for protocolNode in protocolsNode.children {
-                    let protocolName = textProvider(.node(protocolNode))
-                    if !protocolName.isEmpty {
-                        protocols.append(protocolName)
-                    }
+        if let nameNode = node.child(byFieldName: "name") {
+            name = textProvider(.node(nameNode))
+        }
+        if let protocolsNode = node.child(byFieldName: "protocols") {
+            for protocolNode in protocolsNode.children {
+                let protocolName = textProvider(.node(protocolNode))
+                if !protocolName.isEmpty {
+                    protocols.append(protocolName)
                 }
             }
         }
@@ -215,44 +199,60 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         if !protocols.isEmpty {
             signature += "<\(protocols.joined(separator: ","))>"
         }
-        return (
-            .init(
-                node: node,
-                signature: signature,
-                name: name,
-                canBeUsedAsCodeRange: true
-            ),
-            false
+        return .init(
+            node: node,
+            signature: signature,
+            name: name,
+            canBeUsedAsCodeRange: true
         )
     }
 
     func parseMethodDefinitionNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         parseSignatureBeforeBody(node, fieldNameForName: "selector", textProvider: textProvider)
-    }
-
-    func parseFunctionDefinitionNode(
-        _ node: ASTNode,
-        textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
-        parseSignatureBeforeBody(node, textProvider: textProvider)
     }
 
     func parseTypeSpecifierNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         parseSignatureBeforeBody(node, textProvider: textProvider)
     }
 
     func parseTypedefNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
-        guard let typeNode = node.child(byFieldName: "type") else { return (nil, false) }
+    ) -> NodeInfo? {
+        guard let typeNode = node.child(byFieldName: "type") else { return nil }
         return parseSignatureBeforeBody(typeNode, textProvider: textProvider)
+    }
+
+    func parseFunctionDefinitionNode(
+        _ node: ASTNode,
+        textProvider: @escaping TextProvider
+    ) -> NodeInfo? {
+        let declaratorNode = node.child(byFieldName: "declarator")
+        let name = declaratorNode?.contentOfChild(
+            withFieldName: "declarator",
+            textProvider: textProvider
+        )
+        let (
+            _,
+            signatureRange,
+            signaturePointRange
+        ) = node.extractInformationBeforeNode(withFieldName: "body")
+        let signature = textProvider(.range(range: signatureRange, pointRange: signaturePointRange))
+            .replacingOccurrences(of: "\n", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if signature.isEmpty { return nil }
+        return .init(
+            node: node,
+            signature: signature,
+            name: name ?? "N/A",
+            canBeUsedAsCodeRange: false
+        )
     }
 }
 
@@ -263,7 +263,7 @@ extension ObjectiveCFocusedCodeFinder {
         _ node: ASTNode,
         fieldNameForName: String = "name",
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         let name = node.contentOfChild(withFieldName: fieldNameForName, textProvider: textProvider)
         let (
             _,
@@ -273,15 +273,12 @@ extension ObjectiveCFocusedCodeFinder {
         let signature = textProvider(.range(range: signatureRange, pointRange: signaturePointRange))
             .replacingOccurrences(of: "\n", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if signature.isEmpty { return (nil, false) }
-        return (
-            .init(
-                node: node,
-                signature: signature,
-                name: name ?? "N/A",
-                canBeUsedAsCodeRange: false
-            ),
-            false
+        if signature.isEmpty { return nil }
+        return .init(
+            node: node,
+            signature: signature,
+            name: name ?? "N/A",
+            canBeUsedAsCodeRange: false
         )
     }
 }

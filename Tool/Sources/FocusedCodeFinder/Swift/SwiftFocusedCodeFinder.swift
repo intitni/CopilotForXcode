@@ -65,7 +65,7 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     public func contextContainingNode(
         _ node: SyntaxProtocol,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool) {
+    ) -> NodeInfo? {
         func extractText(_ node: SyntaxProtocol) -> String {
             textProvider(node)
         }
@@ -74,85 +74,85 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         case let node as StructDeclSyntax:
             let type = node.structKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as ClassDeclSyntax:
             let type = node.classKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as EnumDeclSyntax:
             let type = node.enumKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as ActorDeclSyntax:
             let type = node.actorKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: ""),
                 name: name
-            ), false)
+            )
 
         case let node as MacroDeclSyntax:
             let type = node.macroKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as ProtocolDeclSyntax:
             let type = node.protocolKeyword.text
             let name = node.identifier.text
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as ExtensionDeclSyntax:
             let type = node.extensionKeyword.text
             let name = node.extendedType.trimmedDescription
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name
-            ), false)
+            )
 
         case let node as FunctionDeclSyntax:
             let type = node.funcKeyword.text
@@ -162,38 +162,38 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .joined(separator: " ")
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText)),
                 name: name
-            ), true)
+            )
 
         case let node as VariableDeclSyntax:
             let type = node.bindingSpecifier.trimmedDescription
             let name = node.bindings.first?.pattern.trimmedDescription ?? ""
             let signature = node.bindings.first?.typeAnnotation?.trimmedDescription ?? ""
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(type) \(name)\(signature.isEmpty ? "" : "\(signature)")"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name,
                 canBeUsedAsCodeRange: false
-            ), true)
+            )
 
         case let node as AccessorDeclSyntax:
             let keyword = node.accessorSpecifier.text
             let signature = keyword
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: keyword
-            ), true)
+            )
 
         case let node as SubscriptDeclSyntax:
             let genericPClause = node.genericWhereClause?.trimmedDescription ?? ""
@@ -201,64 +201,64 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             let whereClause = node.genericWhereClause?.trimmedDescription ?? ""
             let signature = "subscript\(genericPClause)(\(pClause))\(whereClause)"
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: "subscript"
-            ), true)
+            )
 
         case let node as InitializerDeclSyntax:
             let signature = "init"
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: "\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: "init"
-            ), true)
+            )
 
         case let node as DeinitializerDeclSyntax:
             let signature = "deinit"
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: "deinit"
-            ), true)
+            )
 
         case let node as ClosureExprSyntax:
             let signature = "closure"
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
                 name: "closure"
-            ), true)
+            )
 
         case let node as FunctionCallExprSyntax:
             let signature = "function call"
 
-            return (.init(
+            return .init(
                 node: node,
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
                 name: "function call",
                 canBeUsedAsCodeRange: false
-            ), true)
+            )
 
         case let node as SwitchCaseSyntax:
-            return (.init(
+            return .init(
                 node: node,
                 signature: node.trimmedDescription.replacingOccurrences(of: "\n", with: " "),
                 name: "switch"
-            ), true)
+            )
 
         default:
-            return (nil, true)
+            return nil
         }
     }
 

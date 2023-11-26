@@ -36,7 +36,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                     range: .init(startPair: (1, 0), endPair: (5, 1))
                 ),
             ]),
-            contextRange: .init(startPair: (1, 0), endPair: (5, 1)),
+            contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
             focusedRange: range,
             focusedCode: """
                 NSInteger foo = 0;

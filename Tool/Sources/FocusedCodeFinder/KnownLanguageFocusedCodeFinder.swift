@@ -58,7 +58,7 @@ public protocol KnownLanguageFocusedCodeFinderType: FocusedCodeFinderType {
     func contextContainingNode(
         _ node: Node,
         textProvider: @escaping TextProvider
-    ) -> (nodeInfo: NodeInfo?, more: Bool)
+    ) -> NodeInfo?
 
     func createTextProviderAndRangeConverter(
         for document: Document,
@@ -92,7 +92,7 @@ public extension KnownLanguageFocusedCodeFinderType {
             var focusedNode: Node?
             while let node = contextInfo.nodes.first {
                 contextInfo.nodes.removeFirst()
-                let (nodeInfo, _) = contextContainingNode(node, textProvider: textProvider)
+                let nodeInfo = contextContainingNode(node, textProvider: textProvider)
                 if nodeInfo?.canBeUsedAsCodeRange ?? false {
                     focusedNode = node
                     break
@@ -186,7 +186,7 @@ extension KnownLanguageFocusedCodeFinderType {
 
         while let node = nodes.first {
             nodes.removeFirst()
-            let (context, more) = contextContainingNode(node, textProvider: textProvider)
+            let context = contextContainingNode(node, textProvider: textProvider)
 
             if let context {
                 contextRange = rangeConverter(context.node)
@@ -195,10 +195,6 @@ extension KnownLanguageFocusedCodeFinderType {
                     name: context.name,
                     range: contextRange
                 ), at: 0)
-            }
-
-            if !more {
-                break
             }
         }
 
