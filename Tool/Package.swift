@@ -228,6 +228,10 @@ let package = Package(
                 .product(name: "SwiftParser", package: "swift-syntax"),
             ]
         ),
+        .testTarget(
+            name: "FocusedCodeFinderTests",
+            dependencies: ["FocusedCodeFinder"]
+        ),
 
         // MARK: - Services
 

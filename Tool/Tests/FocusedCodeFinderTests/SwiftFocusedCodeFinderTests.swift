@@ -1,24 +1,19 @@
+import FocusedCodeFinder
 import Foundation
 import SuggestionModel
 import XCTest
-import FocusedCodeFinder
 
 @testable import ActiveDocumentChatContextCollector
 
-final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
-    func context(code: String) -> ActiveDocumentContext {
-        .init(
-            filePath: "",
-            relativePath: "",
-            language: .builtIn(.swift),
-            fileContent: code,
-            lines: code.components(separatedBy: "\n").map { "\($0)\n" },
-            selectedCode: "", selectionRange: .zero,
-            lineAnnotations: [],
-            imports: []
-        )
-    }
+func document(code: String) -> FocusedCodeFinder.Document {
+    .init(
+        documentURL: URL(fileURLWithPath: "/"),
+        content: code,
+        lines: code.components(separatedBy: "\n").map { "\($0)\n" }
+    )
+}
 
+final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
     func test_collecting_imports() {
         let code = """
         import var Darwin.stderr
@@ -32,8 +27,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 2, character: 1)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context.imports, ["Darwin.stderr", "Bar"])
     }
@@ -55,13 +50,21 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 4, character: 13)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "public struct A: B, C",
-                "@ViewBuilder private func f(_ a: String) -> String",
+                .init(
+                    signature: "public struct A: B, C",
+                    name: "A",
+                    range: .init(startPair: (0, 0), endPair: (8, 1))
+                ),
+                .init(
+                    signature: "@ViewBuilder private func f(_ a: String) -> String",
+                    name: "f",
+                    range: .init(startPair: (2, 0), endPair: (7, 5))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (4, 0), endPair: (4, 13)),
@@ -69,7 +72,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                     let c = 3
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -91,12 +95,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 7, character: 5)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "@MainActor public struct A: B, C",
+                .init(
+                    signature: "@MainActor public struct A: B, C",
+                    name: "A",
+                    range: .init(startPair: (0, 0), endPair: (9, 1))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (9, 1)),
             focusedRange: .init(startPair: (2, 0), endPair: (7, 5)),
@@ -109,7 +117,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                     let e = 5
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -128,12 +137,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 1, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "@MainActor final public class A: P<B, C, D>, K",
+                .init(
+                    signature: "@MainActor final public class A: P<B, C, D>, K",
+                    name: "A",
+                    range: .init(startPair: (0, 0), endPair: (6, 1))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
@@ -141,7 +154,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 var a = 1
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -160,12 +174,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 1, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "public protocol A: Hashable",
+                .init(
+                    signature: "public protocol A: Hashable",
+                    name: "A",
+                    range: .init(startPair: (1, 0), endPair: (1, 9))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
@@ -173,7 +191,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 func f()
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -192,12 +211,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 1, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "private extension A: Equatable",
+                .init(
+                    signature: "private extension A: Equatable",
+                    name: "A",
+                    range: .init(startPair: (1, 0), endPair: (1, 9))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
@@ -205,7 +228,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 var a = 1
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -225,12 +249,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 2, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "@gloablActor public actor A",
+                .init(
+                    signature: "@gloablActor public actor A",
+                    name: "A",
+                    range: .init(startPair: (2, 0), endPair: (2, 9))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (7, 1)),
             focusedRange: .init(startPair: (2, 0), endPair: (2, 9)),
@@ -238,7 +266,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 static func f() {}
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -259,12 +288,16 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 3, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "@MainActor public indirect enum A",
+                .init(
+                    signature: "@MainActor public indirect enum A",
+                    name: "A",
+                    range: .init(startPair: (3, 0), endPair: (3, 9))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (3, 0), endPair: (3, 9)),
@@ -272,7 +305,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 case a
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -293,13 +327,21 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             end: CursorPosition(line: 2, character: 9)
         )
         let context = SwiftFocusedCodeFinder().findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
-                "struct A",
-                "@SomeWrapper public private(set) var a: Int",
+                .init(
+                    signature: "struct A",
+                    name: "A",
+                    range: .init(startPair: (2, 0), endPair: (2, 9))
+                ),
+                .init(
+                    signature: "@SomeWrapper public private(set) var a: Int",
+                    name: "a",
+                    range: .init(startPair: (1, 0), endPair: (7, 4))
+                ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (2, 0), endPair: (2, 9)),
@@ -307,7 +349,8 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                     let a = 1
 
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 
@@ -317,19 +360,6 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
 }
 
 final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
-    func context(code: String) -> ActiveDocumentContext {
-        .init(
-            filePath: "",
-            relativePath: "",
-            language: .builtIn(.swift),
-            fileContent: code,
-            lines: code.components(separatedBy: "\n").map { "\($0)\n" },
-            selectedCode: "", selectionRange: .zero,
-            lineAnnotations: [],
-            imports: []
-        )
-    }
-    
     func test_get_focused_code_on_top_level_should_fallback_to_unknown_language() {
         let code = """
         @MainActor
@@ -341,7 +371,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
             case d
             case e
         }
-        
+
         func hello() {
             print("hello")
             print("hello")
@@ -349,8 +379,8 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         """
         let range = CursorRange(startPair: (0, 0), endPair: (0, 0))
         let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 1000).findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .top,
@@ -366,17 +396,18 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
                 case d
                 case e
             }
-            
+
             func hello() {
                 print("hello")
                 print("hello")
             }
-            
+
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
-    
+
     func test_get_focused_code_inside_enum_the_whole_enum_will_be_the_focused_code() {
         let code = """
         @MainActor
@@ -391,8 +422,8 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         """
         let range = CursorRange(startPair: (3, 0), endPair: (3, 0))
         let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 1000).findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .file,
@@ -408,12 +439,13 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
                 case d
                 case e
             }
-            
+
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
-    
+
     func test_get_focused_code_inside_enum_with_limited_max_line_count() {
         let code = """
         @MainActor
@@ -428,8 +460,8 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         """
         let range = CursorRange(startPair: (3, 0), endPair: (3, 0))
         let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 3).findFocusedCode(
-            containingRange: range,
-            activeDocumentContext: context(code: code)
+            in: document(code: code),
+            containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .file,
@@ -439,9 +471,46 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
             indirect enum A {
                 case a
                 case b
-            
+
             """,
-            imports: []
+            imports: [],
+            includes: []
         ))
     }
 }
+
+final class SwiftFocusedCodeFinder_Import_Tests: XCTestCase {
+    func test_parsing_imports() {
+        let code = """
+        import OpTop
+        import Second
+        import Third
+
+        struct Foo {
+
+        }
+
+        import BelowStructFoo
+
+        class Bar {
+
+        }
+
+        import BelowClassBar
+        """
+
+        let range = CursorRange.zero
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: 3).findFocusedCode(
+            in: document(code: code),
+            containingRange: range
+        )
+        XCTAssertEqual(context.imports, [
+            "OnTop",
+            "Second",
+            "Third",
+            "BelowStructFoo",
+            "BelowClassBar",
+        ])
+    }
+}
+
