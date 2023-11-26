@@ -19,7 +19,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     ) {
         super.init(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
     }
-    
+
     public func parseSyntaxTree(from document: Document) -> ASTTree? {
         let parser = ASTParser(language: .objectiveC)
         return parser.parse(document.content)
@@ -40,9 +40,9 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             },
             range: range
         )
-        
+
         let nodes = visitor.findScopeHierarchy()
-        
+
         return .init(nodes: nodes, includes: visitor.includes, imports: visitor.imports)
     }
 
@@ -230,7 +230,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         _ node: ASTNode,
         textProvider: @escaping TextProvider
     ) -> (nodeInfo: NodeInfo?, more: Bool) {
-        parseSignatureBeforeBody(node, textProvider: textProvider)
+        parseSignatureBeforeBody(node, fieldNameForName: "selector", textProvider: textProvider)
     }
 
     func parseFunctionDefinitionNode(
@@ -261,9 +261,10 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 extension ObjectiveCFocusedCodeFinder {
     func parseSignatureBeforeBody(
         _ node: ASTNode,
+        fieldNameForName: String = "name",
         textProvider: @escaping TextProvider
     ) -> (nodeInfo: NodeInfo?, more: Bool) {
-        let name = node.contentOfChild(withFieldName: "name", textProvider: textProvider)
+        let name = node.contentOfChild(withFieldName: fieldNameForName, textProvider: textProvider)
         let (
             _,
             signatureRange,
@@ -303,30 +304,28 @@ extension ASTNode {
             return (nil, range, pointRange)
         }
 
-        let range = self.range.excluding(postfixNode.range)
-        let pointRange = self.pointRange.excluding(postfixNode.pointRange)
+        let range = self.range.subtracting(postfixNode.range)
+        let pointRange = self.pointRange.subtracting(postfixNode.pointRange)
         return (postfixNode, range, pointRange)
     }
 }
 
 extension NSRange {
-    func excluding(_ range: NSRange) -> NSRange {
-        let start = max(location, range.location)
-        let end = min(location + length, range.location + range.length)
+    func subtracting(_ range: NSRange) -> NSRange {
+        let start = lowerBound
+        let end = Swift.max(lowerBound, Swift.min(upperBound, range.lowerBound))
         return NSRange(location: start, length: end - start)
     }
 }
 
 extension Range where Bound == Point {
-    func excluding(_ range: Range<Bound>) -> Range<Bound> {
-        let start = Point(
-            row: Swift.max(lowerBound.row, range.lowerBound.row),
-            column: Swift.max(lowerBound.column, range.lowerBound.column)
-        )
-        let end = Point(
-            row: Swift.min(upperBound.row, range.upperBound.row),
-            column: Swift.min(upperBound.column, range.upperBound.column)
-        )
+    func subtracting(_ range: Range<Bound>) -> Range<Bound> {
+        let start = lowerBound
+        let end = if range.lowerBound >= upperBound {
+            upperBound
+        } else {
+            Swift.max(range.lowerBound, lowerBound)
+        }
         return Range(uncheckedBounds: (start, end))
     }
 }
