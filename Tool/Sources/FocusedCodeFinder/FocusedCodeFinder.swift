@@ -26,6 +26,7 @@ public struct CodeContext: Equatable {
     public var focusedRange: CursorRange
     public var focusedCode: String
     public var imports: [String]
+    public var includes: [String]
 
     public static var empty: CodeContext {
         .init(scope: .file, contextRange: .zero, focusedRange: .zero, focusedCode: "", imports: [])
@@ -36,13 +37,15 @@ public struct CodeContext: Equatable {
         contextRange: CursorRange,
         focusedRange: CursorRange,
         focusedCode: String,
-        imports: [String]
+        imports: [String],
+        includes: [String]
     ) {
         self.scope = scope
         self.contextRange = contextRange
         self.focusedRange = focusedRange
         self.focusedCode = focusedCode
         self.imports = imports
+        self.includes = includes
     }
 }
 
