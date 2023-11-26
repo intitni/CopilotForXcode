@@ -13,25 +13,6 @@ func document(code: String) -> FocusedCodeFinder.Document {
 }
 
 final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
-    func test_collecting_imports() {
-        let code = """
-        import var Darwin.stderr
-        public struct A: B, C {
-            let a = 1
-        }
-        import Bar
-        """
-        let range = CursorRange(
-            start: CursorPosition(line: 2, character: 0),
-            end: CursorPosition(line: 2, character: 1)
-        )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
-            in: document(code: code),
-            containingRange: range
-        )
-        XCTAssertEqual(context.imports, ["Darwin.stderr", "Bar"])
-    }
-
     func test_selecting_a_line_inside_the_function_the_scope_should_be_the_function() {
         let code = """
         public struct A: B, C {

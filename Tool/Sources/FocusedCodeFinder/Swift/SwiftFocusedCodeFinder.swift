@@ -5,159 +5,69 @@ import SuggestionModel
 import SwiftParser
 import SwiftSyntax
 
-public struct SwiftFocusedCodeFinder: FocusedCodeFinderType {
-    public let maxFocusedCodeLineCount: Int
-
-    public init(
-        maxFocusedCodeLineCount: Int = UserDefaults.shared
-            .value(for: \.maxFocusedCodeLineCount)
+public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
+    SourceFileSyntax,
+    SyntaxProtocol,
+    SyntaxProtocol
+> {
+    override public init(
+        maxFocusedCodeLineCount: Int = UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)
     ) {
-        self.maxFocusedCodeLineCount = maxFocusedCodeLineCount
+        super.init(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
     }
 
-    public func findFocusedCode(
-        in document: Document,
-        containingRange range: CursorRange
-    ) -> CodeContext {
-        let source = document.content
-        #warning("TODO: cache the tree")
-        let tree = Parser.parse(source: source)
+    public func parseSyntaxTree(from document: Document) -> SourceFileSyntax? {
+        Parser.parse(source: document.content)
+    }
 
+    public func collectContextNodes(
+        in document: Document,
+        tree: SourceFileSyntax,
+        containingRange range: CursorRange,
+        textProvider: @escaping TextProvider,
+        rangeConverter: @escaping RangeConverter
+    ) -> ContextInfo {
+        let visitor = SwiftScopeHierarchySyntaxVisitor(
+            tree: tree,
+            code: document.content,
+            range: range,
+            rangeConverter: rangeConverter
+        )
+
+        let nodes = visitor.findScopeHierarchy()
+        return .init(
+            nodes: nodes,
+            includes: [],
+            imports: visitor.imports
+        )
+    }
+
+    public func createTextProviderAndRangeConverter(
+        for document: Document,
+        tree: SourceFileSyntax
+    ) -> (TextProvider, RangeConverter) {
         let locationConverter = SourceLocationConverter(
             file: document.documentURL.path,
             tree: tree
         )
-
-        let visitor = SwiftScopeHierarchySyntaxVisitor(
-            tree: tree,
-            code: source,
-            range: range,
-            locationConverter: locationConverter
-        )
-
-        var nodes = visitor.findScopeHierarchy()
-
-        var codeRange: CursorRange
-
-        func convertRange(_ node: SyntaxProtocol) -> CursorRange {
-            .init(sourceRange: node.sourceRange(converter: locationConverter))
-        }
-
-        if range.isEmpty {
-            // use the first scope as code, the second as context
-            var focusedNode: SyntaxProtocol?
-            while let node = nodes.first {
-                nodes.removeFirst()
-                let (context, _) = contextContainingNode(
-                    node,
-                    parentNodes: nodes,
-                    tree: tree,
-                    locationConverter: locationConverter,
-                    in: document
-                )
-                if context?.canBeUsedAsCodeRange ?? false {
-                    focusedNode = node
-                    break
-                }
+        return (
+            { node in
+                let range = CursorRange(sourceRange: node.sourceRange(converter: locationConverter))
+                return EditorInformation.code(in: document.lines, inside: range).code
+            },
+            { node in
+                let range = CursorRange(sourceRange: node.sourceRange(converter: locationConverter))
+                return range
             }
-            guard let focusedNode else {
-                var result = UnknownLanguageFocusedCodeFinder(proposedSearchRange: 8)
-                    .findFocusedCode(in: document, containingRange: range)
-                result.imports = visitor.imports
-                return result
-            }
-            codeRange = convertRange(focusedNode)
-        } else {
-            codeRange = range
-        }
-
-        let result = EditorInformation.code(
-            in: document.lines,
-            inside: codeRange,
-            ignoreColumns: true
-        )
-
-        var code = result.code
-
-        if range.isEmpty, result.lines.count > maxFocusedCodeLineCount {
-            // if the focused code is too long, truncate it to be shorter
-            let centerLine = range.start.line
-            let relativeCenterLine = centerLine - codeRange.start.line
-            let startLine = max(0, relativeCenterLine - maxFocusedCodeLineCount / 2)
-            let endLine = max(
-                startLine,
-                min(result.lines.count - 1, startLine + maxFocusedCodeLineCount - 1)
-            )
-
-            code = result.lines[startLine...endLine].joined()
-            codeRange = .init(
-                start: .init(line: startLine + codeRange.start.line, character: 0),
-                end: .init(
-                    line: endLine + codeRange.start.line,
-                    character: result.lines[endLine].count
-                )
-            )
-        }
-
-        var contextRange = CursorRange.zero
-        var signature = [CodeContext.ScopeContext]()
-
-        while let node = nodes.first {
-            nodes.removeFirst()
-            let (context, more) = contextContainingNode(
-                node,
-                parentNodes: nodes,
-                tree: tree,
-                locationConverter: locationConverter,
-                in: document
-            )
-
-            if let context {
-                contextRange = context.contextRange
-                signature.insert(.init(
-                    signature: context.signature,
-                    name: context.name,
-                    range: context.contextRange
-                ), at: 0)
-            }
-
-            if !more {
-                break
-            }
-        }
-
-        return .init(
-            scope: signature.isEmpty ? .file : .scope(signature: signature),
-            contextRange: contextRange,
-            focusedRange: codeRange,
-            focusedCode: code,
-            imports: visitor.imports,
-            includes: []
         )
     }
-}
 
-extension SwiftFocusedCodeFinder {
-    struct ContextInfo {
-        var signature: String
-        var name: String
-        var contextRange: CursorRange
-        var canBeUsedAsCodeRange: Bool = true
-    }
-
-    func contextContainingNode(
+    public func contextContainingNode(
         _ node: SyntaxProtocol,
-        parentNodes: [SyntaxProtocol],
-        tree: SourceFileSyntax,
-        locationConverter: SourceLocationConverter,
-        in document: Document
-    ) -> (context: ContextInfo?, more: Bool) {
-        func convertRange(_ node: SyntaxProtocol) -> CursorRange {
-            .init(sourceRange: node.sourceRange(converter: locationConverter))
-        }
-
+        textProvider: @escaping TextProvider
+    ) -> (nodeInfo: NodeInfo?, more: Bool) {
         func extractText(_ node: SyntaxProtocol) -> String {
-            EditorInformation.code(in: document.lines, inside: convertRange(node)).code
+            textProvider(node)
         }
 
         switch node {
@@ -165,83 +75,83 @@ extension SwiftFocusedCodeFinder {
             let type = node.structKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as ClassDeclSyntax:
             let type = node.classKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as EnumDeclSyntax:
             let type = node.enumKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as ActorDeclSyntax:
             let type = node.actorKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: ""),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as MacroDeclSyntax:
             let type = node.macroKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as ProtocolDeclSyntax:
             let type = node.protocolKeyword.text
             let name = node.identifier.text
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as ExtensionDeclSyntax:
             let type = node.extensionKeyword.text
             let name = node.extendedType.trimmedDescription
             return (.init(
+                node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), false)
 
         case let node as FunctionDeclSyntax:
@@ -253,10 +163,10 @@ extension SwiftFocusedCodeFinder {
                 .joined(separator: " ")
 
             return (.init(
+                node: node,
                 signature: "\(type) \(name)\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText)),
-                name: name,
-                contextRange: convertRange(node)
+                name: name
             ), true)
 
         case let node as VariableDeclSyntax:
@@ -265,11 +175,11 @@ extension SwiftFocusedCodeFinder {
             let signature = node.bindings.first?.typeAnnotation?.trimmedDescription ?? ""
 
             return (.init(
+                node: node,
                 signature: "\(type) \(name)\(signature.isEmpty ? "" : "\(signature)")"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
                 name: name,
-                contextRange: convertRange(node),
                 canBeUsedAsCodeRange: false
             ), true)
 
@@ -278,11 +188,11 @@ extension SwiftFocusedCodeFinder {
             let signature = keyword
 
             return (.init(
+                node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: keyword,
-                contextRange: convertRange(node)
+                name: keyword
             ), true)
 
         case let node as SubscriptDeclSyntax:
@@ -292,59 +202,59 @@ extension SwiftFocusedCodeFinder {
             let signature = "subscript\(genericPClause)(\(pClause))\(whereClause)"
 
             return (.init(
+                node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: "subscript",
-                contextRange: convertRange(node)
+                name: "subscript"
             ), true)
 
         case let node as InitializerDeclSyntax:
             let signature = "init"
 
             return (.init(
+                node: node,
                 signature: "\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: "init",
-                contextRange: convertRange(node)
+                name: "init"
             ), true)
 
         case let node as DeinitializerDeclSyntax:
             let signature = "deinit"
 
             return (.init(
+                node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .replacingOccurrences(of: "\n", with: " "),
-                name: "deinit",
-                contextRange: convertRange(node)
+                name: "deinit"
             ), true)
 
         case let node as ClosureExprSyntax:
             let signature = "closure"
 
             return (.init(
+                node: node,
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
-                name: "closure",
-                contextRange: convertRange(node)
+                name: "closure"
             ), true)
 
         case let node as FunctionCallExprSyntax:
             let signature = "function call"
 
             return (.init(
+                node: node,
                 signature: signature.replacingOccurrences(of: "\n", with: " "),
                 name: "function call",
-                contextRange: convertRange(node),
                 canBeUsedAsCodeRange: false
             ), true)
 
         case let node as SwitchCaseSyntax:
             return (.init(
+                node: node,
                 signature: node.trimmedDescription.replacingOccurrences(of: "\n", with: " "),
-                name: "switch",
-                contextRange: convertRange(node)
+                name: "switch"
             ), true)
 
         default:

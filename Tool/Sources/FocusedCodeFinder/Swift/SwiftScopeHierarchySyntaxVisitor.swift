@@ -9,7 +9,7 @@ final class SwiftScopeHierarchySyntaxVisitor: SyntaxVisitor {
     let tree: SyntaxProtocol
     let code: String
     let range: CursorRange
-    let locationConverter: SourceLocationConverter
+    let rangeConverter: (SyntaxProtocol) -> CursorRange
 
     var imports: [String] = []
     private var _scopeHierarchy: [SyntaxProtocol] = []
@@ -30,12 +30,12 @@ final class SwiftScopeHierarchySyntaxVisitor: SyntaxVisitor {
         tree: SyntaxProtocol,
         code: String,
         range: CursorRange,
-        locationConverter: SourceLocationConverter
+        rangeConverter: @escaping (SyntaxProtocol) -> CursorRange
     ) {
         self.tree = tree
         self.code = code
         self.range = range
-        self.locationConverter = locationConverter
+        self.rangeConverter = rangeConverter
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -53,8 +53,7 @@ final class SwiftScopeHierarchySyntaxVisitor: SyntaxVisitor {
     }
 
     func nodeContainsRange(_ node: SyntaxProtocol) -> Bool {
-        let sourceRange = node.sourceRange(converter: locationConverter)
-        let cursorRange = CursorRange(sourceRange: sourceRange)
+        let cursorRange = rangeConverter(node)
         return cursorRange.strictlyContains(range)
     }
 
