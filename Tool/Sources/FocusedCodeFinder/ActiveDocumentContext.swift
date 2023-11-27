@@ -2,7 +2,7 @@ import Foundation
 import SuggestionModel
 
 public struct ActiveDocumentContext {
-    public var filePath: String
+    public var documentURL: URL
     public var relativePath: String
     public var language: CodeLanguage
     public var fileContent: String
@@ -52,7 +52,7 @@ public struct ActiveDocumentContext {
     public var focusedContext: FocusedContext?
 
     public init(
-        filePath: String,
+        documentURL: URL,
         relativePath: String,
         language: CodeLanguage,
         fileContent: String,
@@ -63,7 +63,7 @@ public struct ActiveDocumentContext {
         imports: [String],
         focusedContext: FocusedContext? = nil
     ) {
-        self.filePath = filePath
+        self.documentURL = documentURL
         self.relativePath = relativePath
         self.language = language
         self.fileContent = fileContent
@@ -92,18 +92,12 @@ public struct ActiveDocumentContext {
     }
 
     public mutating func moveToCodeContainingRange(_ range: CursorRange) {
-        let finder: FocusedCodeFinder = {
-            switch language {
-            case .builtIn(.swift):
-                return SwiftFocusedCodeFinder()
-            default:
-                return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
-            }
-        }()
-
+        let finder = FocusedCodeFinder()
+        
         let codeContext = finder.findFocusedCode(
+            in: .init(documentURL: documentURL, content: fileContent, lines: lines),
             containingRange: range,
-            activeDocumentContext: self
+            language: language
         )
 
         imports = codeContext.imports
@@ -141,7 +135,7 @@ public struct ActiveDocumentContext {
             return false
         }()
 
-        filePath = info.documentURL.path
+        documentURL = info.documentURL
         relativePath = info.relativePath
         language = info.language
         fileContent = info.editorContent?.content ?? ""
