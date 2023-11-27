@@ -81,6 +81,7 @@ public struct FocusedCodeFinder {
             case .builtIn(.swift):
                 return SwiftFocusedCodeFinder()
             case .builtIn(.objc), .builtIn(.objcpp), .builtIn(.c):
+                #warning("TODO: Implement C++ focused code finder, use it for C and metal shading language")
                 return ObjectiveCFocusedCodeFinder()
             default:
                 return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
