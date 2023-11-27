@@ -201,7 +201,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             node: node,
             signature: signature,
             name: name ?? "N/A",
-            canBeUsedAsCodeRange: false
+            canBeUsedAsCodeRange: true
         )
     }
 }
@@ -228,7 +228,7 @@ extension ObjectiveCFocusedCodeFinder {
             node: node,
             signature: signature,
             name: name ?? "N/A",
-            canBeUsedAsCodeRange: false
+            canBeUsedAsCodeRange: true
         )
     }
 }

@@ -344,6 +344,85 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
     }
 }
 
+final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
+    func test_get_focused_code_inside_method_the_method_should_be_the_focused_code() {
+        let code = """
+        @implementation Foo
+        - (void)fooWith:(NSInteger)foo {
+            NSInteger foo = 0;
+            NSLog(@"Hello");
+            NSLog(@"World");
+        }
+        @end
+        """
+        let range = CursorRange(
+            start: CursorPosition(line: 2, character: 0),
+            end: CursorPosition(line: 2, character: 0)
+        )
+        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+            in: document(code: code),
+            containingRange: range
+        )
+        XCTAssertEqual(context, .init(
+            scope: .scope(signature: [
+                .init(
+                    signature: "@implementation Foo",
+                    name: "Foo",
+                    range: .init(startPair: (0, 0), endPair: (6, 4))
+                ),
+            ]),
+            contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            focusedRange: .init(startPair: (1, 0), endPair: (5, 1)),
+            focusedCode: """
+            - (void)fooWith:(NSInteger)foo {
+                NSInteger foo = 0;
+                NSLog(@"Hello");
+                NSLog(@"World");
+            }
+            
+            """,
+            imports: [],
+            includes: []
+        ))
+    }
+    
+    func test_get_focused_code_inside_an_interface_category_the_focused_code_should_be_the_interface() {
+        let code = """
+        @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        @end
+        
+        @implementation Foo
+        @end
+        """
+        let range = CursorRange(
+            start: CursorPosition(line: 1, character: 0),
+            end: CursorPosition(line: 1, character: 0)
+        )
+        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+            in: document(code: code),
+            containingRange: range
+        )
+        XCTAssertEqual(context, .init(
+            scope: .file,
+            contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            focusedRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            focusedCode: """
+            @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            @end
+            
+            """,
+            imports: [],
+            includes: []
+        ))
+    }
+}
+
 final class ObjectiveCFocusedCodeFinder_Imports_Tests: XCTestCase {
     func test_parsing_imports() {
         let code = """
