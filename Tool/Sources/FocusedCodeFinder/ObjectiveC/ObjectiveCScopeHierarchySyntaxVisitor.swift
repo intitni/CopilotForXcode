@@ -52,27 +52,27 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
             handleModuleImport(node)
             return .skipChildren
         case .classInterface, .categoryInterface, .protocolDeclaration:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .visitChildren
         case .classImplementation, .categoryImplementation:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .visitChildren
         case .methodDefinition:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .skipChildren
         case .typeDefinition:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .skipChildren
         case .structSpecifier, .enumSpecifier, .nsEnumSpecifier:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .skipChildren 
         case .functionDefinition:
-            guard cursorRange.contains(range) else { return .skipChildren }
+            guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
             return .skipChildren
         default:

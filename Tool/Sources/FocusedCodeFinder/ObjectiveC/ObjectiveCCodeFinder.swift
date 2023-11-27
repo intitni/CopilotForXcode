@@ -100,26 +100,41 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         if let nameNode = node.child(byFieldName: "name") {
             name = textProvider(.node(nameNode))
         }
-        if let superClassNode = node.child(byFieldName: "superclass") {
-            superClass = textProvider(.node(superClassNode))
-        }
         if let categoryNode = node.child(byFieldName: "category") {
             category = textProvider(.node(categoryNode))
         }
-        if let protocolsNode = node.child(byFieldName: "protocols") {
-            for protocolNode in protocolsNode.children {
-                let protocolName = textProvider(.node(protocolNode))
-                if !protocolName.isEmpty {
-                    protocols.append(protocolName)
+
+        for i in 0..<node.childCount {
+            guard let childNode = node.child(at: i) else { continue }
+            switch ObjectiveCNodeType(rawValue: childNode.nodeType) {
+            case .protocolQualifiers:
+                var protocolNames = [String]()
+                for j in 0..<childNode.childCount {
+                    guard let protocolNode = childNode.child(at: j) else { continue }
+                    guard ObjectiveCNodeType(rawValue: protocolNode.nodeType) == .identifier
+                    else { continue }
+                    protocolNames.append(
+                        textProvider(.node(protocolNode))
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
                 }
+                protocols = protocolNames.filter { $0 != "," && !$0.isEmpty }
+            case .superclassReference:
+                if let superClassNode = childNode.child(byFieldName: "name") {
+                    superClass = textProvider(.node(superClassNode))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            default:
+                continue
             }
         }
+
         var signature = "@interface \(name)"
         if !category.isEmpty {
-            signature += "(\(category))"
+            signature += " (\(category))"
         }
         if !protocols.isEmpty {
-            signature += "<\(protocols.joined(separator: ","))>"
+            signature += "<\(protocols.joined(separator: ", "))>"
         }
         if !superClass.isEmpty {
             signature += ": \(superClass)"
@@ -144,27 +159,41 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         if let nameNode = node.child(byFieldName: "name") {
             name = textProvider(.node(nameNode))
         }
-        if let superClassNode = node.child(byFieldName: "superclass") {
-            superClass = textProvider(.node(superClassNode))
-        }
         if let categoryNode = node.child(byFieldName: "category") {
             category = textProvider(.node(categoryNode))
         }
-        if let protocolsNode = node.child(byFieldName: "protocols") {
-            for protocolNode in protocolsNode.children {
-                let protocolName = textProvider(.node(protocolNode))
-                if !protocolName.isEmpty {
-                    protocols.append(protocolName)
+
+        for i in 0..<node.childCount {
+            guard let childNode = node.child(at: i) else { continue }
+            switch ObjectiveCNodeType(rawValue: childNode.nodeType) {
+            case .protocolQualifiers:
+                var protocolNames = [String]()
+                for j in 0..<childNode.childCount {
+                    guard let protocolNode = childNode.child(at: j) else { continue }
+                    guard ObjectiveCNodeType(rawValue: protocolNode.nodeType) == .identifier
+                    else { continue }
+                    protocolNames.append(
+                        textProvider(.node(protocolNode))
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
                 }
+                protocols = protocolNames.filter { $0 != "," && !$0.isEmpty }
+            case .superclassReference:
+                if let superClassNode = childNode.child(byFieldName: "name") {
+                    superClass = textProvider(.node(superClassNode))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            default:
+                continue
             }
         }
 
         var signature = "@implementation \(name)"
         if !category.isEmpty {
-            signature += "(\(category))"
+            signature += " (\(category))"
         }
         if !protocols.isEmpty {
-            signature += "<\(protocols.joined(separator: ","))>"
+            signature += "<\(protocols.joined(separator: ", "))>"
         }
         if !superClass.isEmpty {
             signature += ": \(superClass)"

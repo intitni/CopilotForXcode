@@ -121,8 +121,12 @@ enum ObjectiveCNodeType: String {
     case enumSpecifier = "enum_specifier"
     /// `NS_ENUM {}` and `NS_OPTIONS {}`.
     case nsEnumSpecifier = "ns_enum_specifier"
-    /// fields inside a type definition.
+    /// Fields inside a type definition.
     case fieldDeclarationList = "field_declaration_list"
+    /// Protocols that a type conforms.
+    case protocolQualifiers = "protocol_qualifiers"
+    /// Superclass of a type.
+    case superclassReference = "superclass_reference"
 }
 
 extension ObjectiveCNodeType {
