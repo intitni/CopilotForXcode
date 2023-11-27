@@ -23,13 +23,13 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
         self.textProvider = textProvider
         super.init(tree: tree)
     }
-    
+
     /// The nodes containing the current range, sorted from inner to outer.
     func findScopeHierarchy(_ node: ASTNode) -> [ASTNode] {
         walk(node)
         return _scopeHierarchy.sorted { $0.range.location > $1.range.location }
     }
-    
+
     /// The nodes containing the current range, sorted from inner to outer.
     func findScopeHierarchy() -> [ASTNode] {
         walk()
@@ -70,7 +70,7 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
         case .structSpecifier, .enumSpecifier, .nsEnumSpecifier:
             guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
-            return .skipChildren 
+            return .skipChildren
         case .functionDefinition:
             guard cursorRange.strictlyContains(range) else { return .skipChildren }
             _scopeHierarchy.append(node)
@@ -85,45 +85,28 @@ final class ObjectiveCScopeHierarchySyntaxVisitor: ASTTreeVisitor {
     // MARK: Imports
 
     func handlePreprocInclude(_ node: ASTNode) {
-        let children = node.children
-        for child in children {
-            if let pathNode = child.child(byFieldName: "path") {
-                let path = textProvider(pathNode)
-                if !path.isEmpty {
-                    includes.append(path.replacingOccurrences(of: "\"", with: ""))
-                }
-                break
+        if let pathNode = node.child(byFieldName: "path") {
+            let path = textProvider(pathNode)
+            if !path.isEmpty {
+                includes.append(path)
             }
         }
     }
 
     func handlePreprocImport(_ node: ASTNode) {
-        let children = node.children
-        for child in children {
-            if let pathNode = child.child(byFieldName: "path") {
-                let path = textProvider(pathNode)
-                if !path.isEmpty {
-                    imports.append(
-                        path
-                            .replacingOccurrences(of: "\"", with: "")
-                            .replacingOccurrences(of: "<", with: "")
-                            .replacingOccurrences(of: ">", with: "")
-                    )
-                }
-                break
+        if let pathNode = node.child(byFieldName: "path") {
+            let path = textProvider(pathNode)
+            if !path.isEmpty {
+                imports.append(path)
             }
         }
     }
 
     func handleModuleImport(_ node: ASTNode) {
-        let children = node.children
-        for child in children {
-            if let pathNode = child.child(byFieldName: "module") {
-                let path = textProvider(pathNode)
-                if !path.isEmpty {
-                    imports.append(path)
-                }
-                break
+        if let pathNode = node.child(byFieldName: "module") {
+            let path = textProvider(pathNode)
+            if !path.isEmpty {
+                imports.append(path)
             }
         }
     }

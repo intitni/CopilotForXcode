@@ -172,7 +172,11 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         textProvider: @escaping TextProvider
     ) -> NodeInfo? {
         guard let typeNode = node.child(byFieldName: "type") else { return nil }
-        return parseSignatureBeforeBody(typeNode, textProvider: textProvider)
+        guard var result = parseSignatureBeforeBody(typeNode, textProvider: textProvider)
+        else { return nil }
+        result.signature = "typedef \(result.signature)"
+        result.node = node
+        return result
     }
 
     func parseFunctionDefinitionNode(
