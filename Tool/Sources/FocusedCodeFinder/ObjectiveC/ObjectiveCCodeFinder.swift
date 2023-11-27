@@ -71,11 +71,11 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     ) -> NodeInfo? {
         switch ObjectiveCNodeType(rawValue: node.nodeType ?? "") {
         case .classInterface, .categoryInterface:
-            return parseClassInterfaceNode(node, textProvider: textProvider)
+            return parseDeclarationInterfaceNode(node, textProvider: textProvider)
         case .classImplementation, .categoryImplementation:
-            return parseClassImplementationNode(node, textProvider: textProvider)
+            return parseDeclarationInterfaceNode(node, textProvider: textProvider)
         case .protocolDeclaration:
-            return parseProtocolNode(node, textProvider: textProvider)
+            return parseDeclarationInterfaceNode(node, textProvider: textProvider)
         case .methodDefinition:
             return parseMethodDefinitionNode(node, textProvider: textProvider)
         case .functionDefinition:
@@ -89,16 +89,23 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         }
     }
 
-    func parseClassInterfaceNode(
+    func parseDeclarationInterfaceNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
     ) -> NodeInfo? {
         var name = ""
-        var superClass = ""
         var category = ""
-        var protocols = [String]()
+        /// Attributes, declaration kind, and name.
+        var prefix = ""
+        /// Generics, super class, etc.
+        var extra = ""
+        
         if let nameNode = node.child(byFieldName: "name") {
             name = textProvider(.node(nameNode))
+            prefix = textProvider(.range(
+                range: node.range.notSurpassing(nameNode.range),
+                pointRange: node.pointRange.notSurpassing(nameNode.pointRange)
+            ))
         }
         if let categoryNode = node.child(byFieldName: "category") {
             category = textProvider(.node(categoryNode))
@@ -107,38 +114,36 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         for i in 0..<node.childCount {
             guard let childNode = node.child(at: i) else { continue }
             switch ObjectiveCNodeType(rawValue: childNode.nodeType) {
-            case .protocolQualifiers:
-                var protocolNames = [String]()
-                for j in 0..<childNode.childCount {
-                    guard let protocolNode = childNode.child(at: j) else { continue }
-                    guard ObjectiveCNodeType(rawValue: protocolNode.nodeType) == .identifier
-                    else { continue }
-                    protocolNames.append(
-                        textProvider(.node(protocolNode))
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
+            case .superclassReference,
+                 .protocolQualifiers,
+                 .parameterizedClassTypeArguments:
+                extra.append(textProvider(.node(childNode)))
+            case .genericsTypeReference:
+                // When it's a category of a generic type, e.g.
+                // @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
+                if let nameNode = childNode.child(byFieldName: "name") {
+                    name = textProvider(.node(nameNode))
                 }
-                protocols = protocolNames.filter { $0 != "," && !$0.isEmpty }
-            case .superclassReference:
-                if let superClassNode = childNode.child(byFieldName: "name") {
-                    superClass = textProvider(.node(superClassNode))
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-            default:
-                continue
+                prefix = textProvider(.range(
+                    range: node.range.notSurpassing(childNode.range),
+                    pointRange: node.pointRange.notSurpassing(childNode.pointRange)
+                ))
+            default: continue
             }
         }
 
-        var signature = "@interface \(name)"
+        prefix = prefix.split(separator: "\n")
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        extra = extra.split(separator: "\n")
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var signature = "\(prefix)\(extra)"
         if !category.isEmpty {
             signature += " (\(category))"
         }
-        if !protocols.isEmpty {
-            signature += "<\(protocols.joined(separator: ", "))>"
-        }
-        if !superClass.isEmpty {
-            signature += ": \(superClass)"
-        }
 
         return .init(
             node: node,
@@ -147,95 +152,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             canBeUsedAsCodeRange: true
         )
     }
-
-    func parseClassImplementationNode(
-        _ node: ASTNode,
-        textProvider: @escaping TextProvider
-    ) -> NodeInfo? {
-        var name = ""
-        var superClass = ""
-        var category = ""
-        var protocols = [String]()
-        if let nameNode = node.child(byFieldName: "name") {
-            name = textProvider(.node(nameNode))
-        }
-        if let categoryNode = node.child(byFieldName: "category") {
-            category = textProvider(.node(categoryNode))
-        }
-
-        for i in 0..<node.childCount {
-            guard let childNode = node.child(at: i) else { continue }
-            switch ObjectiveCNodeType(rawValue: childNode.nodeType) {
-            case .protocolQualifiers:
-                var protocolNames = [String]()
-                for j in 0..<childNode.childCount {
-                    guard let protocolNode = childNode.child(at: j) else { continue }
-                    guard ObjectiveCNodeType(rawValue: protocolNode.nodeType) == .identifier
-                    else { continue }
-                    protocolNames.append(
-                        textProvider(.node(protocolNode))
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
-                }
-                protocols = protocolNames.filter { $0 != "," && !$0.isEmpty }
-            case .superclassReference:
-                if let superClassNode = childNode.child(byFieldName: "name") {
-                    superClass = textProvider(.node(superClassNode))
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-            default:
-                continue
-            }
-        }
-
-        var signature = "@implementation \(name)"
-        if !category.isEmpty {
-            signature += " (\(category))"
-        }
-        if !protocols.isEmpty {
-            signature += "<\(protocols.joined(separator: ", "))>"
-        }
-        if !superClass.isEmpty {
-            signature += ": \(superClass)"
-        }
-        return .init(
-            node: node,
-            signature: signature,
-            name: name,
-            canBeUsedAsCodeRange: true
-        )
-    }
-
-    func parseProtocolNode(
-        _ node: ASTNode,
-        textProvider: @escaping TextProvider
-    ) -> NodeInfo? {
-        var name = ""
-        var protocols = [String]()
-        if let nameNode = node.child(byFieldName: "name") {
-            name = textProvider(.node(nameNode))
-        }
-        if let protocolsNode = node.child(byFieldName: "protocols") {
-            for protocolNode in protocolsNode.children {
-                let protocolName = textProvider(.node(protocolNode))
-                if !protocolName.isEmpty {
-                    protocols.append(protocolName)
-                }
-            }
-        }
-
-        var signature = "@protocol \(name)"
-        if !protocols.isEmpty {
-            signature += "<\(protocols.joined(separator: ","))>"
-        }
-        return .init(
-            node: node,
-            signature: signature,
-            name: name,
-            canBeUsedAsCodeRange: true
-        )
-    }
-
+    
     func parseMethodDefinitionNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider
@@ -273,7 +190,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             signaturePointRange
         ) = node.extractInformationBeforeNode(withFieldName: "body")
         let signature = textProvider(.range(range: signatureRange, pointRange: signaturePointRange))
-            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if signature.isEmpty { return nil }
         return .init(
@@ -342,6 +259,12 @@ extension NSRange {
         let end = Swift.max(lowerBound, Swift.min(upperBound, range.lowerBound))
         return NSRange(location: start, length: end - start)
     }
+
+    func notSurpassing(_ range: NSRange) -> NSRange {
+        let start = lowerBound
+        let end = Swift.max(lowerBound, Swift.min(upperBound, range.upperBound))
+        return NSRange(location: start, length: end - start)
+    }
 }
 
 extension Range where Bound == Point {
@@ -351,6 +274,16 @@ extension Range where Bound == Point {
             upperBound
         } else {
             Swift.max(range.lowerBound, lowerBound)
+        }
+        return Range(uncheckedBounds: (start, end))
+    }
+
+    func notSurpassing(_ range: Range<Bound>) -> Range<Bound> {
+        let start = lowerBound
+        let end = if range.lowerBound >= upperBound {
+            upperBound
+        } else {
+            Swift.max(range.upperBound, lowerBound)
         }
         return Range(uncheckedBounds: (start, end))
     }

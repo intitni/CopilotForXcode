@@ -81,6 +81,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
     
     func test_selecting_a_method_inside_an_implementation_the_scope_should_be_the_implementation() {
         let code = """
+        __attribute__((objc_nonlazy_class))
         @implementation Foo (Category)
         - (void)fooWith:(NSInteger)foo {
             NSInteger foo = 0;
@@ -90,8 +91,8 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
         @end
         """
         let range = CursorRange(
-            start: CursorPosition(line: 1, character: 0),
-            end: CursorPosition(line: 5, character: 1)
+            start: CursorPosition(line: 2, character: 0),
+            end: CursorPosition(line: 6, character: 1)
         )
         let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
             in: document(code: code),
@@ -100,12 +101,12 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
                 .init(
-                    signature: "@implementation Foo (Category)",
+                    signature: "__attribute__((objc_nonlazy_class)) @implementation Foo (Category)",
                     name: "Foo",
-                    range: .init(startPair: (0, 0), endPair: (6, 4))
+                    range: .init(startPair: (0, 0), endPair: (7, 4))
                 ),
             ]),
-            contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            contextRange: .init(startPair: (0, 0), endPair: (7, 4)),
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo {
@@ -122,7 +123,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
     
     func test_selecting_a_line_inside_an_interface_the_scope_should_be_the_interface() {
         let code = """
-        @interface Foo<A, B>: NSObject
+        @interface ViewController <ObjectType: id<UITableViewDelegate, UITableViewDataSource>>: NSObject <ProtocolName>
         - (void)fooWith:(NSInteger)foo;
         - (void)fooWith:(NSInteger)foo;
         - (void)fooWith:(NSInteger)foo;
@@ -139,7 +140,81 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
                 .init(
-                    signature: "@interface Foo<A, B>: NSObject",
+                    signature: "@interface ViewController<ObjectType: id<UITableViewDelegate, UITableViewDataSource>>: NSObject<ProtocolName>",
+                    name: "ViewController",
+                    range: .init(startPair: (0, 0), endPair: (4, 4))
+                ),
+            ]),
+            contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            focusedRange: range,
+            focusedCode: """
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            
+            """,
+            imports: [],
+            includes: []
+        ))
+    }
+    
+    func test_selecting_a_line_inside_an_interface_category_the_scope_should_be_the_interface() {
+        let code = """
+        @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        @end
+        """
+        let range = CursorRange(
+            start: CursorPosition(line: 1, character: 0),
+            end: CursorPosition(line: 3, character: 31)
+        )
+        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+            in: document(code: code),
+            containingRange: range
+        )
+        XCTAssertEqual(context, .init(
+            scope: .scope(signature: [
+                .init(
+                    signature: "@interface __GENERICS(NSArray, ObjectType) (BlocksKit)",
+                    name: "NSArray",
+                    range: .init(startPair: (0, 0), endPair: (4, 4))
+                ),
+            ]),
+            contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            focusedRange: range,
+            focusedCode: """
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            - (void)fooWith:(NSInteger)foo;
+            
+            """,
+            imports: [],
+            includes: []
+        ))
+    }
+    
+    func test_selecting_a_line_inside_a_protocol_the_scope_should_be_the_protocol() {
+        let code = """
+        @protocol Foo<A, B>
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        - (void)fooWith:(NSInteger)foo;
+        @end
+        """
+        let range = CursorRange(
+            start: CursorPosition(line: 1, character: 0),
+            end: CursorPosition(line: 3, character: 31)
+        )
+        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+            in: document(code: code),
+            containingRange: range
+        )
+        XCTAssertEqual(context, .init(
+            scope: .scope(signature: [
+                .init(
+                    signature: "@protocol Foo<A, B>",
                     name: "Foo",
                     range: .init(startPair: (0, 0), endPair: (4, 4))
                 ),

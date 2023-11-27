@@ -1,9 +1,10 @@
 import Foundation
 
-/// https://github.com/merico-dev/tree-sitter-objc/test/corpus/imports.txt
-/// https://github.com/merico-dev/tree-sitter-objc/test/corpus/expressions.txt
-/// https://github.com/merico-dev/tree-sitter-objc/test/corpus/declarations.txt
-/// https://github.com/merico-dev/tree-sitter-objc/node-types.json
+/// https://github.com/lukepistrol/tree-sitter-objc/blob/feature/spm/test/corpus/imports.txt
+/// https://github.com/lukepistrol/tree-sitter-objc/blob/feature/spm/test/corpus/expressions.txt
+/// https://github.com/lukepistrol/tree-sitter-objc/blob/feature/spm/test/corpus/declarations.txt
+/// https://github.com/lukepistrol/tree-sitter-objc/blob/feature/spm/node-types.json
+/// Some of the test cases are actually incorrect?
 enum ObjectiveCNodeType: String {
     /// The top most item
     case translationUnit = "translation_unit"
@@ -22,26 +23,6 @@ enum ObjectiveCNodeType: String {
     /// + (tr)k1:(t1)a1 : (t2)a2 k2: a3;
     /// @end
     /// ```
-    ///
-    /// will parse into:
-    /// ```
-    /// (translation_unit
-    ///   (class_interface
-    ///     name: (identifier)
-    ///     superclass: (identifier)))              < SuperClass
-    ///     protocols: (protocol_reference_list     < Protocols
-    ///       (identifier)
-    ///       (identifier))))
-    ///     (field_declaration                      < iv1
-    ///       type: (type_identifier)
-    ///       declarator: (field_identifier))
-    ///     (field_declaration                      < iv2
-    ///       type: (type_identifier)
-    ///       declarator: (field_identifier))))
-    ///     (property_declaration ...)              < property value
-    ///     (method_declaration ...)                < method
-    /// ```
-    ///
     case classInterface = "class_interface"
     /// `@implementation`
     case classImplementation = "class_implementation"
@@ -56,51 +37,13 @@ enum ObjectiveCNodeType: String {
     /// ```objc
     /// @class C1, C2;
     /// ```
-    ///
-    /// will parse into:
-    /// ```
-    /// (translation_unit
-    ///   (class_declaration_list
-    ///     (identifier)
-    ///     (identifier)))
-    /// ```
     case classDeclarationList = "class_declaration_list"
     /// ```
     /// + (tr)k1: (t1)a1 : (t2)a2 k2: a3;
     /// ```
-    ///
-    /// will parse into:
-    /// ```
-    /// (property_declaration
-    ///   (readwrite)
-    ///   (copy)
-    ///   type: (type_identifier)                   < type
-    ///   name: (identifier))))                     < name
-    /// ```
     case propertyDeclaration = "property_declaration"
     /// ```objc
     /// + (tr)k1: (t1)a1 : (t2)a2 k2: a3;
-    /// ```
-    ///
-    /// will parse into:
-    /// ```
-    /// (method_declaration
-    ///   scope: (class_scope)
-    ///   return_type: (type_descriptor
-    ///   type: (type_identifier))
-    ///   selector: (keyword_selector
-    ///   (keyword_declarator
-    ///       keyword: (identifier)
-    ///       type: (type_descriptor
-    ///           type: (type_identifier))
-    ///       name: (identifier))
-    ///   (keyword_declarator
-    ///       type: (type_descriptor
-    ///           type: (type_identifier))
-    ///       name: (identifier))
-    ///   (keyword_declarator
-    ///       keyword: (identifier)
-    ///       name: (identifier))))))
     /// ```
     case methodDeclaration = "method_declaration"
     /// `- (rt)sel {}`
@@ -127,6 +70,12 @@ enum ObjectiveCNodeType: String {
     case protocolQualifiers = "protocol_qualifiers"
     /// Superclass of a type.
     case superclassReference = "superclass_reference"
+    /// The generic type arguments.
+    case parameterizedClassTypeArguments = "parameterized_class_type_arguments"
+    /// `__GENERICS` in category interface and implementation.
+    case genericsTypeReference = "generics_type_reference"
+    /// `IB_DESIGNABLE`, etc. The typo is from the original source.
+    case classInterfaceAttributeSpecifier = "class_interface_attribute_sepcifier"
 }
 
 extension ObjectiveCNodeType {
