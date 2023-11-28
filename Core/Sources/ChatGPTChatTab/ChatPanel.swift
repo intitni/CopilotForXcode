@@ -540,26 +540,14 @@ struct ChatPanelInputArea: View {
                 removeDuplicates: {
                     $0.typedMessage == $1.typedMessage && $0.focusedField == $1.focusedField
             }) { viewStore in
-                ZStack(alignment: .center) {
-                    // a hack to support dynamic height of TextEditor
-                    Text(
-                        viewStore.state.typedMessage.isEmpty ? "Hi" : viewStore.state.typedMessage
-                    ).opacity(0)
-                        .font(.system(size: 14))
-                        .frame(maxWidth: .infinity, maxHeight: 400)
-                        .padding(.top, 1)
-                        .padding(.bottom, 2)
-                        .padding(.horizontal, 4)
-
-                    CustomTextEditor(
-                        text: viewStore.$typedMessage,
-                        font: .systemFont(ofSize: 14),
-                        onSubmit: { viewStore.send(.sendButtonTapped) },
-                        completions: chatAutoCompletion
-                    )
-                    .padding(.top, 1)
-                    .padding(.bottom, -1)
-                }
+                AutoresizingCustomTextEditor(
+                    text: viewStore.$typedMessage,
+                    font: .systemFont(ofSize: 14),
+                    isEditable: true,
+                    maxHeight: 400,
+                    onSubmit: { viewStore.send(.sendButtonTapped) },
+                    completions: chatAutoCompletion
+                )
                 .focused($focusedField, equals: .textField)
                 .bind(viewStore.$focusedField, to: $focusedField)
                 .padding(8)
