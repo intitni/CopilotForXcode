@@ -14,7 +14,7 @@ import SuggestionWidget
 final class WidgetDataSource {}
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
-    func suggestionForFile(at url: URL) async -> SuggestionProvider? {
+    func suggestionForFile(at url: URL) async -> CodeSuggestionProvider? {
         for workspace in Service.shared.workspacePool.workspaces.values {
             if let filespace = workspace.filespaces[url],
                let suggestion = filespace.presentingSuggestion

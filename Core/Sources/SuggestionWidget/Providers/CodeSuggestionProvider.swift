@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-public final class SuggestionProvider: ObservableObject, Equatable {
-    public static func == (lhs: SuggestionProvider, rhs: SuggestionProvider) -> Bool {
+public final class CodeSuggestionProvider: ObservableObject, Equatable {
+    public static func == (lhs: CodeSuggestionProvider, rhs: CodeSuggestionProvider) -> Bool {
         lhs.code == rhs.code && lhs.language == rhs.language
     }
 
@@ -12,6 +12,7 @@ public final class SuggestionProvider: ObservableObject, Equatable {
     @Published public var suggestionCount: Int = 0
     @Published public var currentSuggestionIndex: Int = 0
     @Published public var commonPrecedingSpaceCount = 0
+    @Published public var extraInformation: String = ""
 
     public var onSelectPreviousSuggestionTapped: () -> Void
     public var onSelectNextSuggestionTapped: () -> Void

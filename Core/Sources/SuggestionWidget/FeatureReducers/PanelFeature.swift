@@ -23,7 +23,7 @@ public struct PanelFeature: ReducerProtocol {
 
     public enum Action: Equatable {
         case presentSuggestion
-        case presentSuggestionProvider(SuggestionProvider, displayContent: Bool)
+        case presentSuggestionProvider(CodeSuggestionProvider, displayContent: Bool)
         case presentError(String)
         case presentPromptToCode(PromptToCodeGroup.PromptToCodeInitialState)
         case displayPanelContent
@@ -136,7 +136,7 @@ public struct PanelFeature: ReducerProtocol {
         }
     }
 
-    func fetchSuggestionProvider(fileURL: URL) async -> SuggestionProvider? {
+    func fetchSuggestionProvider(fileURL: URL) async -> CodeSuggestionProvider? {
         guard let provider = await suggestionWidgetControllerDependency
             .suggestionWidgetDataSource?
             .suggestionForFile(at: fileURL) else { return nil }
