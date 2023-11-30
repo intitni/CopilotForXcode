@@ -196,7 +196,7 @@ struct ChatPanelMessages: View {
 
         struct PinToBottomRelatedState: Equatable {
             var isReceivingMessage: Bool
-            var lastMessage: ChatMessage?
+            var lastMessage: DisplayedChatMessage?
         }
 
         var body: some View {
@@ -676,7 +676,7 @@ struct RoundedCorners: Shape {
 // MARK: - Previews
 
 struct ChatPanel_Preview: PreviewProvider {
-    static let history: [ChatMessage] = [
+    static let history: [DisplayedChatMessage] = [
         .init(
             id: "1",
             role: .user,

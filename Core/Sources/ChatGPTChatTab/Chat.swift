@@ -4,7 +4,7 @@ import Foundation
 import OpenAIService
 import Preferences
 
-public struct ChatMessage: Equatable {
+public struct DisplayedChatMessage: Equatable {
     public enum Role {
         case user
         case assistant
@@ -29,7 +29,7 @@ struct Chat: ReducerProtocol {
     struct State: Equatable {
         var title: String = "Chat"
         @BindingState var typedMessage = ""
-        var history: [ChatMessage] = []
+        var history: [DisplayedChatMessage] = []
         @BindingState var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
         @BindingState var focusedField: Field?

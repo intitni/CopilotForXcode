@@ -259,11 +259,7 @@ extension AutoManagedChatGPTMemory {
         for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
             if index == 0 {
                 if !appendToMessage("""
-
-
-                ## Relevant Content
-
-                Below are information related to the conversation, separated by \(separator)
+                Here are the information you know about the system and the project, separated by \(separator)
 
 
                 """) { break }
