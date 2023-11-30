@@ -88,7 +88,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         }
 
         var smallestSystemPromptMessage = ChatMessage(role: .system, content: systemPrompt)
-        var contextSystemPromptMessage = ChatMessage(role: .system, content: contextSystemPrompt)
+        var contextSystemPromptMessage = ChatMessage(role: .user, content: contextSystemPrompt)
         let smallestSystemMessageTokenCount = countToken(&smallestSystemPromptMessage)
         let contextSystemPromptTokenCount = !contextSystemPrompt.isEmpty
             ? countToken(&contextSystemPromptMessage)
