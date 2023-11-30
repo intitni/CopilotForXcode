@@ -67,11 +67,11 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     /// Format:
     /// ```
     /// [System Prompt] priority: high
-    ///   [Retrieved Content] priority: low
+    /// [Functions] priority: high
+    /// [Retrieved Content] priority: low
     ///     [Retrieved Content A]
     ///     <separator>
     ///     [Retrieved Content B]
-    /// [Functions] priority: high
     /// [Message History] priority: medium
     /// [Context System Prompt] priority: high
     /// [Latest Message] priority: high
@@ -80,18 +80,88 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
     ) -> [ChatMessage] {
-        func countToken(_ message: inout ChatMessage) -> Int {
-            if let count = message.tokensCount { return count }
-            let count = encoder.countToken(message: message)
-            message.tokensCount = count
-            return count
+        let (
+            systemPromptMessage,
+            contextSystemPromptMessage,
+            availableTokenCountForMessages,
+            mandatoryUsage
+        ) = generateMandatoryMessages(encoder: encoder)
+
+        let (
+            historyMessage,
+            newMessage,
+            availableTokenCountForRetrievedContent,
+            messageUsage
+        ) = generateMessageHistory(
+            maxNumberOfMessages: maxNumberOfMessages,
+            maxTokenCount: availableTokenCountForMessages,
+            encoder: encoder
+        )
+
+        let (
+            retrievedContentMessage,
+            _,
+            retrievedContentUsage,
+            _
+        ) = generateRetrievedContentMessage(
+            maxTokenCount: availableTokenCountForRetrievedContent,
+            encoder: encoder
+        )
+
+        let allMessages: [ChatMessage] = (
+            [systemPromptMessage] +
+                historyMessage +
+                [retrievedContentMessage, contextSystemPromptMessage, newMessage]
+        ).filter {
+            !($0.content?.isEmpty ?? false)
         }
 
+        #if DEBUG
+        Logger.service.info("""
+        Sending tokens count
+        - system prompt: \(mandatoryUsage.systemPrompt)
+        - context system prompt: \(mandatoryUsage.contextSystemPrompt)
+        - functions: \(mandatoryUsage.functions)
+        - messages: \(messageUsage)
+        - retrieved content: \(retrievedContentUsage)
+        - total: \(
+            mandatoryUsage.systemPrompt
+                + mandatoryUsage.contextSystemPrompt
+                + mandatoryUsage.functions
+                + messageUsage
+                + retrievedContentUsage
+        )
+        """)
+        #endif
+
+        return allMessages
+    }
+
+    func generateRemainingTokens(
+        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
+        encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
+    ) -> Int? {
+        // It should be fine to just let OpenAI decide.
+        return nil
+    }
+
+    func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
+        onHistoryChange = onChange
+    }
+}
+
+extension AutoManagedChatGPTMemory {
+    func generateMandatoryMessages(encoder: TokenEncoder) -> (
+        systemPrompt: ChatMessage,
+        contextSystemPrompt: ChatMessage,
+        remainingTokenCount: Int,
+        usage: (systemPrompt: Int, contextSystemPrompt: Int, functions: Int)
+    ) {
         var smallestSystemPromptMessage = ChatMessage(role: .system, content: systemPrompt)
         var contextSystemPromptMessage = ChatMessage(role: .user, content: contextSystemPrompt)
-        let smallestSystemMessageTokenCount = countToken(&smallestSystemPromptMessage)
+        let smallestSystemMessageTokenCount = encoder.countToken(&smallestSystemPromptMessage)
         let contextSystemPromptTokenCount = !contextSystemPrompt.isEmpty
-            ? countToken(&contextSystemPromptMessage)
+            ? encoder.countToken(&contextSystemPromptMessage)
             : 0
 
         let functionTokenCount = functionProvider.functions.reduce(into: 0) { partial, function in
@@ -109,46 +179,86 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             + functionTokenCount
             + 3 // every reply is primed with <|start|>assistant<|message|>
 
+        // build messages
+
         /// the available tokens count for other messages and retrieved content
         let availableTokenCountForMessages = configuration.maxTokens
             - configuration.minimumReplyTokens
             - mandatoryContentTokensCount
 
+        return (
+            smallestSystemPromptMessage,
+            contextSystemPromptMessage,
+            availableTokenCountForMessages,
+            (
+                smallestSystemMessageTokenCount,
+                contextSystemPromptTokenCount,
+                functionTokenCount
+            )
+        )
+    }
+
+    func generateMessageHistory(
+        maxNumberOfMessages: Int,
+        maxTokenCount: Int,
+        encoder: TokenEncoder
+    ) -> (
+        history: [ChatMessage],
+        newMessage: ChatMessage,
+        remainingTokenCount: Int,
+        usage: Int
+    ) {
         var messageTokenCount = 0
         var allMessages: [ChatMessage] = []
+        var newMessage: ChatMessage?
 
         for (index, message) in history.enumerated().reversed() {
             if maxNumberOfMessages > 0, allMessages.count >= maxNumberOfMessages { break }
             if message.isEmpty { continue }
-            let tokensCount = countToken(&history[index])
-            if tokensCount + messageTokenCount > availableTokenCountForMessages { break }
+            let tokensCount = encoder.countToken(&history[index])
+            if tokensCount + messageTokenCount > maxTokenCount { break }
             messageTokenCount += tokensCount
-            allMessages.append(message)
+            if index == history.endIndex - 1 {
+                newMessage = message
+            } else {
+                allMessages.append(message)
+            }
         }
 
-        /// the available tokens count for retrieved content
-        let availableTokenCountForRetrievedContent = min(
-            availableTokenCountForMessages - messageTokenCount,
-            configuration.maxTokens / 2
+        return (
+            allMessages.reversed(),
+            newMessage ?? .init(role: .user, content: ""),
+            maxTokenCount - messageTokenCount,
+            messageTokenCount
         )
+    }
+
+    func generateRetrievedContentMessage(
+        maxTokenCount: Int,
+        encoder: TokenEncoder
+    ) -> (
+        retrievedContent: ChatMessage,
+        remainingTokenCount: Int,
+        usage: Int,
+        includedRetrievedContent: [String]
+    ) {
         var retrievedContentTokenCount = 0
-
         let separator = String(repeating: "=", count: 32) // only 1 token
+        var message = ""
+        var includedRetrievedContent = [String]()
 
-        var systemPrompt = systemPrompt
-
-        func appendToSystemPrompt(_ text: String) -> Bool {
+        func appendToMessage(_ text: String) -> Bool {
             let tokensCount = encoder.countToken(text: text)
-            if tokensCount + retrievedContentTokenCount >
-                availableTokenCountForRetrievedContent { return false }
+            if tokensCount + retrievedContentTokenCount > maxTokenCount { return false }
             retrievedContentTokenCount += tokensCount
-            systemPrompt += text
+            message += text
+            includedRetrievedContent.append(text)
             return true
         }
 
         for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
             if index == 0 {
-                if !appendToSystemPrompt("""
+                if !appendToMessage("""
 
 
                 ## Relevant Content
@@ -158,52 +268,18 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
 
                 """) { break }
             } else {
-                if !appendToSystemPrompt("\n\(separator)\n") { break }
+                if !appendToMessage("\n\(separator)\n") { break }
             }
 
-            if !appendToSystemPrompt(content) { break }
+            if !appendToMessage(content) { break }
         }
 
-        if !systemPrompt.isEmpty {
-            let message = ChatMessage(role: .system, content: systemPrompt)
-            allMessages.append(message)
-        }
-        
-        if !contextSystemPrompt.isEmpty {
-            allMessages.insert(contextSystemPromptMessage, at: 1)
-        }
-
-        #if DEBUG
-        Logger.service.info("""
-        Sending tokens count
-        - system prompt: \(smallestSystemMessageTokenCount)
-        - context system prompt: \(contextSystemPromptTokenCount)
-        - functions: \(functionTokenCount)
-        - messages: \(messageTokenCount)
-        - retrieved content: \(retrievedContentTokenCount)
-        - total: \(
-            smallestSystemMessageTokenCount
-                + contextSystemPromptTokenCount
-                + functionTokenCount
-                + messageTokenCount
-                + retrievedContentTokenCount
+        return (
+            .init(role: .user, content: message),
+            maxTokenCount - retrievedContentTokenCount,
+            retrievedContentTokenCount,
+            includedRetrievedContent
         )
-        """)
-        #endif
-
-        return allMessages.reversed()
-    }
-
-    func generateRemainingTokens(
-        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
-    ) -> Int? {
-        // It should be fine to just let OpenAI decide.
-        return nil
-    }
-
-    func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
-        onHistoryChange = onChange
     }
 }
 
@@ -223,6 +299,13 @@ extension TokenEncoder {
             total += encode(text: functionCall.arguments).count
         }
         return total
+    }
+
+    func countToken(_ message: inout ChatMessage) -> Int {
+        if let count = message.tokensCount { return count }
+        let count = countToken(message: message)
+        message.tokensCount = count
+        return count
     }
 }
 
