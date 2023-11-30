@@ -15,11 +15,13 @@ public struct DisplayedChatMessage: Equatable {
     public var id: String
     public var role: Role
     public var text: String
+    public var references: [ChatMessage.Reference] = []
 
-    public init(id: String, role: Role, text: String) {
+    public init(id: String, role: Role, text: String, references: [ChatMessage.Reference]) {
         self.id = id
         self.role = role
         self.text = text
+        self.references = references
     }
 }
 
@@ -247,7 +249,8 @@ struct Chat: ReducerProtocol {
                             case .function: return .function
                             }
                         }(),
-                        text: message.summary ?? message.content ?? ""
+                        text: message.summary ?? message.content ?? "",
+                        references: message.references
                     )
                 }
 
