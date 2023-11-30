@@ -372,27 +372,15 @@ extension PromptToCodePanel {
                     )
                 }
             ) { viewStore in
-                ZStack(alignment: .center) {
-                    // a hack to support dynamic height of TextEditor
-                    Text(viewStore.state.prompt.isEmpty ? "Hi" : viewStore.state.prompt)
-                        .opacity(0)
-                        .font(.system(size: 14))
-                        .frame(maxWidth: .infinity, maxHeight: 400)
-                        .padding(.top, 1)
-                        .padding(.bottom, 2)
-                        .padding(.horizontal, 4)
-
-                    CustomTextEditor(
-                        text: viewStore.$prompt,
-                        font: .systemFont(ofSize: 14),
-                        isEditable: !viewStore.state.isResponding,
-                        onSubmit: { viewStore.send(.modifyCodeButtonTapped) }
-                    )
-                    .padding(.top, 1)
-                    .padding(.bottom, -1)
-                    .opacity(viewStore.state.isResponding ? 0.5 : 1)
-                    .disabled(viewStore.state.isResponding)
-                }
+                AutoresizingCustomTextEditor(
+                    text: viewStore.$prompt,
+                    font: .systemFont(ofSize: 14),
+                    isEditable: !viewStore.state.isResponding,
+                    maxHeight: 400,
+                    onSubmit: { viewStore.send(.modifyCodeButtonTapped) }
+                )
+                .opacity(viewStore.state.isResponding ? 0.5 : 1)
+                .disabled(viewStore.state.isResponding)
                 .focused($focusField, equals: .textField)
                 .bind(viewStore.$focusField, to: $focusField)
             }

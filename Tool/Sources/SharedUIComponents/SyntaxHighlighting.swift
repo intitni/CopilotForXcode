@@ -42,7 +42,8 @@ public func highlighted(
     language: String,
     brightMode: Bool,
     droppingLeadingSpaces: Bool,
-    fontSize: Double
+    fontSize: Double,
+    replaceSpacesWithMiddleDots: Bool = true
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let formatted = highlightedCodeBlock(
         code: code,
@@ -56,14 +57,16 @@ public func highlighted(
     return convertToCodeLines(
         formatted,
         middleDotColor: middleDotColor,
-        droppingLeadingSpaces: droppingLeadingSpaces
+        droppingLeadingSpaces: droppingLeadingSpaces,
+        replaceSpacesWithMiddleDots: replaceSpacesWithMiddleDots
     )
 }
 
 func convertToCodeLines(
     _ formattedCode: NSAttributedString,
     middleDotColor: NSColor,
-    droppingLeadingSpaces: Bool
+    droppingLeadingSpaces: Bool,
+    replaceSpacesWithMiddleDots: Bool = true
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let input = formattedCode.string
     func isEmptyLine(_ line: String) -> Bool {
@@ -115,24 +118,26 @@ func convertToCodeLines(
             }
         }
 
-        // use regex to replace all spaces to a middle dot
-        do {
-            let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
-            let result = regex.matches(
-                in: mutable.string,
-                range: NSRange(location: 0, length: mutable.mutableString.length)
-            )
-            for r in result {
-                let range = r.range
-                mutable.replaceCharacters(
-                    in: range,
-                    with: String(repeating: "·", count: range.length)
+        if replaceSpacesWithMiddleDots {
+            // use regex to replace all spaces to a middle dot
+            do {
+                let regex = try NSRegularExpression(pattern: "[ ]*", options: [])
+                let result = regex.matches(
+                    in: mutable.string,
+                    range: NSRange(location: 0, length: mutable.mutableString.length)
                 )
-                mutable.addAttributes([
-                    .foregroundColor: middleDotColor,
-                ], range: range)
-            }
-        } catch {}
+                for r in result {
+                    let range = r.range
+                    mutable.replaceCharacters(
+                        in: range,
+                        with: String(repeating: "·", count: range.length)
+                    )
+                    mutable.addAttributes([
+                        .foregroundColor: middleDotColor,
+                    ], range: range)
+                }
+            } catch {}
+        }
         output.append(mutable)
         start += range.length + 1
     }

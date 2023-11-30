@@ -61,6 +61,7 @@ let package = Package(
         ),
         .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
+        .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -185,6 +186,7 @@ let package = Package(
             dependencies: [
                 "Highlightr",
                 "Preferences",
+                .product(name: "STTextView", package: "STTextView"),
             ]
         ),
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
