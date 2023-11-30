@@ -9,6 +9,8 @@ struct Cancellable {
 }
 
 public struct ChatMessage: Equatable, Codable {
+    public typealias ID = String
+
     public enum Role: String, Codable, Equatable {
         case system
         case user
@@ -29,6 +31,7 @@ public struct ChatMessage: Equatable, Codable {
         public var title: String
         public var subTitle: String
         public var uri: String
+        public var content: String
         public var startLine: Int?
         public var endLine: Int?
         public var metadata: [String: String]
@@ -37,6 +40,7 @@ public struct ChatMessage: Equatable, Codable {
             title: String,
             subTitle: String,
             uri: String,
+            content: String,
             startLine: Int?,
             endLine: Int?,
             metadata: [String: String]
@@ -45,6 +49,9 @@ public struct ChatMessage: Equatable, Codable {
             self.subTitle = subTitle
             self.uri = uri
             self.metadata = metadata
+            self.content = content
+            self.startLine = startLine
+            self.endLine = endLine
         }
     }
 
@@ -70,7 +77,7 @@ public struct ChatMessage: Equatable, Codable {
     public var summary: String?
 
     /// The id of the message.
-    public var id: String
+    public var id: ID
 
     /// The number of tokens of this message.
     var tokensCount: Int?

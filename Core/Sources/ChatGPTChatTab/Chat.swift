@@ -17,7 +17,7 @@ public struct DisplayedChatMessage: Equatable {
     public var text: String
     public var references: [ChatMessage.Reference] = []
 
-    public init(id: String, role: Role, text: String, references: [ChatMessage.Reference]) {
+    public init(id: String, role: Role, text: String, references: [ChatMessage.Reference] = []) {
         self.id = id
         self.role = role
         self.text = text

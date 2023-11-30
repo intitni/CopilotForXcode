@@ -52,7 +52,7 @@ public actor ShortcutInputChatPlugin: ChatPlugin {
         var input = String(content).trimmingCharacters(in: .whitespacesAndNewlines)
         if input.isEmpty {
             // if no input detected, use the previous message as input
-            input = await chatGPTService.memory.messages.last?.content ?? ""
+            input = await chatGPTService.memory.history.last?.content ?? ""
         }
 
         do {

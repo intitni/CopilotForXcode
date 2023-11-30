@@ -41,21 +41,21 @@ final class DynamicContextController {
         var content = content
         var scopes = Self.parseScopes(&content)
         scopes.formUnion(defaultScopes)
-        
+
         let overridingChatModelId = {
             var ids = [String]()
             if scopes.contains(.sense) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForSenseScope))
             }
-            
+
             if scopes.contains(.project) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForProjectScope))
             }
-            
+
             if scopes.contains(.web) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForWebScope))
             }
-            
+
             let chatModels = UserDefaults.shared.value(for: \.chatModels)
             let idIndexMap = chatModels.enumerated().reduce(into: [String: Int]()) {
                 $0[$1.element.id] = $1.offset
@@ -66,7 +66,7 @@ final class DynamicContextController {
                 return lhs < rhs
             }).first
         }()
-        
+
         configuration.overriding.modelId = overridingChatModelId
 
         functionProvider.removeAll()
@@ -108,7 +108,17 @@ final class DynamicContextController {
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
         await memory.mutateContextSystemPrompt(contextSystemPrompt)
-        await memory.mutateRetrievedContent(contextPrompts.map(\.content))
+        await memory.mutateRetrievedContent(contextPrompts.map {
+            .init(
+                title: "",
+                subTitle: "",
+                uri: "",
+                content: $0.content,
+                startLine: nil,
+                endLine: nil,
+                metadata: [:]
+            )
+        })
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }
 }

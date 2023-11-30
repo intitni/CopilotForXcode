@@ -5,16 +5,14 @@ import TokenEncoder
 
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
-    public private(set) var messages: [ChatMessage] = []
+    public private(set) var history: [ChatMessage] = [] {
+        didSet { onHistoryChange() }
+    }
     public private(set) var remainingTokens: Int?
 
     public var systemPrompt: String
     public var contextSystemPrompt: String
-    public var retrievedContent: [String] = []
-    public var history: [ChatMessage] = [] {
-        didSet { onHistoryChange() }
-    }
-
+    public var retrievedContent: [ChatMessage.Reference] = []
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
@@ -46,7 +44,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         contextSystemPrompt = newPrompt
     }
 
-    public func mutateRetrievedContent(_ newContent: [String]) {
+    public func mutateRetrievedContent(_ newContent: [ChatMessage.Reference]) {
         retrievedContent = newContent
     }
 
@@ -57,9 +55,8 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         }
     }
 
-    public func refresh() async {
-        messages = generateSendingHistory()
-        remainingTokens = generateRemainingTokens()
+    public func generatePrompt() async -> ChatGPTPrompt {
+        return generateSendingHistory()
     }
 
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -79,7 +76,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     func generateSendingHistory(
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
-    ) -> [ChatMessage] {
+    ) -> ChatGPTPrompt {
         let (
             systemPromptMessage,
             contextSystemPromptMessage,
@@ -102,7 +99,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             retrievedContentMessage,
             _,
             retrievedContentUsage,
-            _
+            retrievedContent
         ) = generateRetrievedContentMessage(
             maxTokenCount: availableTokenCountForRetrievedContent,
             encoder: encoder
@@ -134,15 +131,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         """)
         #endif
 
-        return allMessages
-    }
-
-    func generateRemainingTokens(
-        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
-    ) -> Int? {
-        // It should be fine to just let OpenAI decide.
-        return nil
+        return .init(history: allMessages, references: retrievedContent)
     }
 
     func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
@@ -240,26 +229,26 @@ extension AutoManagedChatGPTMemory {
         retrievedContent: ChatMessage,
         remainingTokenCount: Int,
         usage: Int,
-        includedRetrievedContent: [String]
+        references: [ChatMessage.Reference]
     ) {
         var retrievedContentTokenCount = 0
         let separator = String(repeating: "=", count: 32) // only 1 token
         var message = ""
-        var includedRetrievedContent = [String]()
+        var references = [ChatMessage.Reference]()
 
         func appendToMessage(_ text: String) -> Bool {
             let tokensCount = encoder.countToken(text: text)
             if tokensCount + retrievedContentTokenCount > maxTokenCount { return false }
             retrievedContentTokenCount += tokensCount
             message += text
-            includedRetrievedContent.append(text)
             return true
         }
 
-        for (index, content) in retrievedContent.filter({ !$0.isEmpty }).enumerated() {
+        for (index, content) in retrievedContent.filter({ !$0.content.isEmpty }).enumerated() {
             if index == 0 {
                 if !appendToMessage("""
-                Here are the information you know about the system and the project, separated by \(separator)
+                Here are the information you know about the system and the project, \
+                separated by \(separator)
 
 
                 """) { break }
@@ -267,14 +256,15 @@ extension AutoManagedChatGPTMemory {
                 if !appendToMessage("\n\(separator)\n") { break }
             }
 
-            if !appendToMessage(content) { break }
+            if !appendToMessage(content.content) { break }
+            references.append(content)
         }
 
         return (
             .init(role: .user, content: message),
             maxTokenCount - retrievedContentTokenCount,
             retrievedContentTokenCount,
-            includedRetrievedContent
+            references
         )
     }
 }

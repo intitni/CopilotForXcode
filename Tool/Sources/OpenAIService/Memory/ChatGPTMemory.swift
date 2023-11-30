@@ -1,17 +1,33 @@
 import Foundation
 
+public struct ChatGPTPrompt {
+    public var history: [ChatMessage]
+    public var references: [ChatMessage.Reference]
+    public var remainingTokenCount: Int?
+
+    public init(
+        history: [ChatMessage],
+        references: [ChatMessage.Reference] = [],
+        remainingTokenCount: Int? = nil
+    ) {
+        self.history = history
+        self.references = references
+        self.remainingTokenCount = remainingTokenCount
+    }
+}
+
 public protocol ChatGPTMemory {
-    /// The visible messages to the ChatGPT service.
-    var messages: [ChatMessage] { get async }
-    /// The remaining tokens available for the reply.
-    var remainingTokens: Int? { get async }
+    /// The message history.
+    var history: [ChatMessage] { get async }
     /// Update the message history.
     func mutateHistory(_ update: (inout [ChatMessage]) -> Void) async
-    /// Refresh `messages` and `remainingTokens`.
-    /// Sometimes the message history needs time to generate, in such case, you
-    /// can use this method to refresh the memory, instead of making variable
-    /// `messages` and `remainingTokens` computed.
-    func refresh() async
+    /// Generate prompt that would be send through the API.
+    ///
+    /// A memory should make sure that the history in the prompt 
+    /// doesn't exceed the maximum token count.
+    ///
+    /// The history can be different from the actual history.
+    func generatePrompt() async -> ChatGPTPrompt
 }
 
 public extension ChatGPTMemory {
@@ -48,7 +64,8 @@ public extension ChatGPTMemory {
         role: ChatMessage.Role? = nil,
         content: String? = nil,
         functionCall: ChatMessage.FunctionCall? = nil,
-        summary: String? = nil
+        summary: String? = nil,
+        references: [ChatMessage.Reference] = []
     ) async {
         await mutateHistory { history in
             if let index = history.firstIndex(where: { $0.id == id }) {
@@ -91,3 +108,4 @@ public extension ChatGPTMemory {
         await mutateHistory { $0.removeAll() }
     }
 }
+

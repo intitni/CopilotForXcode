@@ -100,15 +100,13 @@ public final class ChatService: ObservableObject {
         guard !isReceivingMessage else { throw CancellationError() }
         let handledInPlugin = try await pluginController.handleContent(content)
         if handledInPlugin { return }
+        isReceivingMessage = true
+        defer { isReceivingMessage = false }
 
         let stream = try await chatGPTService.send(content: content, summary: nil)
-        isReceivingMessage = true
         do {
             for try await _ in stream {}
-            isReceivingMessage = false
-        } catch {
-            isReceivingMessage = false
-        }
+        } catch {}
     }
 
     public func sendAndWait(content: String) async throws -> String {
