@@ -97,9 +97,9 @@ final class DynamicContextController {
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
 
-        let contextPrompts = contexts
+        let retrievedContent = contexts
             .flatMap(\.retrievedContent)
-            .filter { !$0.content.isEmpty }
+            .filter { !$0.document.content.isEmpty }
             .sorted { $0.priority > $1.priority }
 
         let contextualSystemPrompt = """
@@ -108,17 +108,7 @@ final class DynamicContextController {
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
         await memory.mutateContextSystemPrompt(contextSystemPrompt)
-        await memory.mutateRetrievedContent(contextPrompts.map {
-            .init(
-                title: "",
-                subTitle: "",
-                uri: "",
-                content: $0.content,
-                startLine: nil,
-                endLine: nil,
-                metadata: [:]
-            )
-        })
+        await memory.mutateRetrievedContent(retrievedContent.map(\.document))
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }
 }
