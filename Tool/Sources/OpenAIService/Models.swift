@@ -34,22 +34,19 @@ public struct ChatMessage: Equatable, Codable {
         public var content: String
         public var startLine: Int?
         public var endLine: Int?
-        public var metadata: [String: String]
 
         public init(
             title: String,
             subTitle: String,
-            uri: String,
             content: String,
+            uri: String,
             startLine: Int?,
-            endLine: Int?,
-            metadata: [String: String]
+            endLine: Int?
         ) {
             self.title = title
             self.subTitle = subTitle
-            self.uri = uri
-            self.metadata = metadata
             self.content = content
+            self.uri = uri
             self.startLine = startLine
             self.endLine = endLine
         }

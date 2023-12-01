@@ -65,7 +65,7 @@ public extension ChatGPTMemory {
         content: String? = nil,
         functionCall: ChatMessage.FunctionCall? = nil,
         summary: String? = nil,
-        references: [ChatMessage.Reference] = []
+        references: [ChatMessage.Reference]? = nil
     ) async {
         await mutateHistory { history in
             if let index = history.firstIndex(where: { $0.id == id }) {
@@ -90,6 +90,9 @@ public extension ChatGPTMemory {
                 if let summary {
                     history[index].summary = summary
                 }
+                if let references {
+                    history[index].references.append(contentsOf: references)
+                }
             } else {
                 history.append(.init(
                     id: id,
@@ -97,7 +100,8 @@ public extension ChatGPTMemory {
                     content: content,
                     name: nil,
                     functionCall: functionCall,
-                    summary: summary
+                    summary: summary,
+                    references: references ?? []
                 ))
             }
         }
