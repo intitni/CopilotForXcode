@@ -109,8 +109,13 @@ struct ReferenceList: View {
                     }) {
                         HStack(spacing: 8) {
                             Text(reference.title)
+                                .truncationMode(.middle)
+                                .lineLimit(1)
                             Text(reference.subtitle)
-                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .layoutPriority(/*@START_MENU_TOKEN@*/0/*@END_MENU_TOKEN@*/)
+                                .foregroundStyle(.tertiary)
                         }
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)
@@ -124,8 +129,8 @@ struct ReferenceList: View {
                 }
             }
             .padding()
-            .frame(maxHeight: 500)
         }
+        .frame(maxWidth: 500, maxHeight: 500)
     }
 }
 
@@ -138,20 +143,12 @@ struct ReferenceList: View {
         func foo() {}
         ```
         """,
-        references: [
-            .init(
-                title: "ReferenceList",
-                subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-                uri: "https://google.com",
-                startLine: nil
-            ),
-            .init(
-                title: "BotMessage.swift:100-102",
-                subtitle: "/Core/Sources/ChatGPTChatTab/Views",
-                uri: "https://google.com",
-                startLine: nil
-            ),
-        ],
+        references: .init(repeating: .init(
+            title: "ReferenceList",
+            subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
+            uri: "https://google.com",
+            startLine: nil
+        ), count: 20),
         chat: .init(initialState: .init(), reducer: Chat(service: .init()))
     )
     .padding()
