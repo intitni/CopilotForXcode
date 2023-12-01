@@ -168,14 +168,16 @@ struct Chat: ReducerProtocol {
                         do {
                             _ = try await terminal.runCommand(
                                 "/bin/bash",
-                                arguments: ["-c",
-                                            "xed -l \(reference.startLine ?? 0) \"\(reference.uri)\""],
+                                arguments: [
+                                    "-c",
+                                    "xed -l \(reference.startLine ?? 0) \"\(reference.uri)\"",
+                                ],
                                 environment: [:]
                             )
                         } catch {
                             print(error)
                         }
-                    } else if let url = URL(string: reference.uri) {
+                    } else if let url = URL(string: reference.uri), url.scheme != nil {
                         await openURL(url)
                     }
                 }
