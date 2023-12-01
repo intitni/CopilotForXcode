@@ -5,24 +5,40 @@ import OpenAIService
 import Preferences
 
 public struct DisplayedChatMessage: Equatable {
-    public enum Role {
+    public enum Role: Equatable {
         case user
         case assistant
         case function
         case ignored
     }
+    
+    public struct Reference: Equatable {
+        public var title: String
+        public var subtitle: String
+        public var uri: String
+        
+        public init(title: String, subtitle: String, uri: String) {
+            self.title = title
+            self.subtitle = subtitle
+            self.uri = uri
+        }
+    }
 
     public var id: String
     public var role: Role
     public var text: String
-    public var references: [ChatMessage.Reference] = []
+    public var references: [Reference] = []
 
-    public init(id: String, role: Role, text: String, references: [ChatMessage.Reference] = []) {
+    public init(id: String, role: Role, text: String, references: [Reference]) {
         self.id = id
         self.role = role
         self.text = text
         self.references = references
     }
+}
+
+private var isPreview: Bool {
+    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 }
 
 struct Chat: ReducerProtocol {
@@ -92,6 +108,7 @@ struct Chat: ReducerProtocol {
             switch action {
             case .appear:
                 return .run { send in
+                    if isPreview { return }
                     await send(.observeChatService)
                     await send(.historyChanged)
                     await send(.isReceivingMessageChanged)
@@ -250,7 +267,9 @@ struct Chat: ReducerProtocol {
                             }
                         }(),
                         text: message.summary ?? message.content ?? "",
-                        references: message.references
+                        references: message.references.map {
+                            .init(title: $0.title, subtitle: $0.subTitle, uri: $0.uri)
+                        }
                     )
                 }
 

@@ -245,14 +245,19 @@ struct ChatHistory: View {
                         ))
                         .padding(.vertical, 4)
                 case .assistant:
-                    BotMessage(id: message.id, text: text, chat: chat)
-                        .listRowInsets(EdgeInsets(
-                            top: 0,
-                            leading: -8,
-                            bottom: 0,
-                            trailing: -8
-                        ))
-                        .padding(.vertical, 4)
+                    BotMessage(
+                        id: message.id,
+                        text: text,
+                        references: message.references,
+                        chat: chat
+                    )
+                    .listRowInsets(EdgeInsets(
+                        top: 0,
+                        leading: -8,
+                        bottom: 0,
+                        trailing: -8
+                    ))
+                    .padding(.vertical, 4)
                 case .function:
                     FunctionMessage(id: message.id, text: text)
                 case .ignored:
@@ -427,50 +432,82 @@ private struct UserMessage: View {
 private struct BotMessage: View {
     let id: String
     let text: String
+    let references: [DisplayedChatMessage.Reference]
     let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.chatFontSize) var chatFontSize
     @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
 
+    @State var isReferencesPresented = false
+    @State var isReferencesHovered = false
+
     var body: some View {
         HStack(alignment: .bottom, spacing: 2) {
-            Markdown(text)
-                .textSelection(.enabled)
-                .markdownTheme(.custom(fontSize: chatFontSize))
-                .markdownCodeSyntaxHighlighter(
-                    ChatCodeSyntaxHighlighter(
-                        brightMode: colorScheme != .dark,
-                        fontSize: chatCodeFontSize
+            VStack(alignment: .leading, spacing: 16) {
+                if !references.isEmpty {
+                    Button(action: {
+                        isReferencesPresented.toggle()
+                    }, label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus.circle")
+                            Text("Used \(references.count) references")
+                        }
+                            .padding(8)
+                            .background {
+                                RoundedRectangle(cornerRadius: r - 4)
+                                    .foregroundStyle(Color(isReferencesHovered ? .black : .clear))
+                                    
+                            }
+                            .overlay {
+                                RoundedRectangle(cornerRadius: r - 4)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            }
+                            .foregroundStyle(.secondary)
+                    })
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $isReferencesPresented, arrowEdge: .trailing) {
+                        ReferenceList(references: references)
+                    }
+                }
+
+                Markdown(text)
+                    .textSelection(.enabled)
+                    .markdownTheme(.custom(fontSize: chatFontSize))
+                    .markdownCodeSyntaxHighlighter(
+                        ChatCodeSyntaxHighlighter(
+                            brightMode: colorScheme != .dark,
+                            fontSize: chatCodeFontSize
+                        )
                     )
-                )
-                .frame(alignment: .trailing)
-                .padding()
-                .background {
-                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                        .fill(Color.contentBackground)
+            }
+            .frame(alignment: .trailing)
+            .padding()
+            .background {
+                RoundedCorners(tl: r, tr: r, bl: 0, br: r)
+                    .fill(Color.contentBackground)
+            }
+            .overlay {
+                RoundedCorners(tl: r, tr: r, bl: 0, br: r)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            }
+            .padding(.leading, 8)
+            .shadow(color: .black.opacity(0.1), radius: 2)
+            .contextMenu {
+                Button("Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
                 }
-                .overlay {
-                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+
+                Button("Set as Extra System Prompt") {
+                    chat.send(.setAsExtraPromptButtonTapped(id))
                 }
-                .padding(.leading, 8)
-                .shadow(color: .black.opacity(0.1), radius: 2)
-                .contextMenu {
-                    Button("Copy") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(text, forType: .string)
-                    }
 
-                    Button("Set as Extra System Prompt") {
-                        chat.send(.setAsExtraPromptButtonTapped(id))
-                    }
+                Divider()
 
-                    Divider()
-
-                    Button("Delete") {
-                        chat.send(.deleteMessageButtonTapped(id))
-                    }
+                Button("Delete") {
+                    chat.send(.deleteMessageButtonTapped(id))
                 }
+            }
 
             CopyButton {
                 NSPasteboard.general.clearContents()
@@ -479,6 +516,26 @@ private struct BotMessage: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.trailing, 2)
+    }
+}
+
+struct ReferenceList: View {
+    let references: [DisplayedChatMessage.Reference]
+    var body: some View {
+        ScrollView {
+            VStack {
+                ForEach(0..<references.endIndex, id: \.self) { index in
+                    let reference = references[index]
+                    HStack(spacing: 8) {
+                        Text(reference.title)
+                        Text(reference.subtitle)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding()
+            .frame(maxHeight: 500)
+        }
     }
 }
 
@@ -539,7 +596,8 @@ struct ChatPanelInputArea: View {
                 chat,
                 removeDuplicates: {
                     $0.typedMessage == $1.typedMessage && $0.focusedField == $1.focusedField
-            }) { viewStore in
+                }
+            ) { viewStore in
                 AutoresizingCustomTextEditor(
                     text: viewStore.$typedMessage,
                     font: .systemFont(ofSize: 14),
@@ -680,7 +738,8 @@ struct ChatPanel_Preview: PreviewProvider {
         .init(
             id: "1",
             role: .user,
-            text: "**Hello**"
+            text: "**Hello**",
+            references: []
         ),
         .init(
             id: "2",
@@ -690,18 +749,45 @@ struct ChatPanel_Preview: PreviewProvider {
             func foo() {}
             ```
             **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
-            """
+            """,
+            references: [
+                .init(
+                    title: "Hello Hello Hello Hello",
+                    subtitle: "Hi Hi Hi Hi",
+                    uri: "https://google.com"
+                ),
+            ]
         ),
-        .init(id: "7", role: .ignored, text: "Ignored"),
-        .init(id: "6", role: .function, text: """
-        Searching for something...
-        - abc
-        - [def](https://1.com)
-        > hello
-        > hi
-        """),
-        .init(id: "5", role: .assistant, text: "Yooo"),
-        .init(id: "4", role: .user, text: "Yeeeehh"),
+        .init(
+            id: "7",
+            role: .ignored,
+            text: "Ignored",
+            references: []
+        ),
+        .init(
+            id: "6",
+            role: .function,
+            text: """
+            Searching for something...
+            - abc
+            - [def](https://1.com)
+            > hello
+            > hi
+            """,
+            references: []
+        ),
+        .init(
+            id: "5",
+            role: .assistant,
+            text: "Yooo",
+            references: []
+        ),
+        .init(
+            id: "4",
+            role: .user,
+            text: "Yeeeehh",
+            references: []
+        ),
         .init(
             id: "3",
             role: .user,
@@ -718,7 +804,8 @@ struct ChatPanel_Preview: PreviewProvider {
             ```objectivec
             - (void)bar {}
             ```
-            """#
+            """#,
+            references: []
         ),
     ]
 
