@@ -3,6 +3,7 @@ import ComposableArchitecture
 import Foundation
 import OpenAIService
 import Preferences
+import Terminal
 
 public struct DisplayedChatMessage: Equatable {
     public enum Role: Equatable {
@@ -11,12 +12,12 @@ public struct DisplayedChatMessage: Equatable {
         case function
         case ignored
     }
-    
+
     public struct Reference: Equatable {
         public var title: String
         public var subtitle: String
         public var uri: String
-        
+
         public init(title: String, subtitle: String, uri: String) {
             self.title = title
             self.subtitle = subtitle
@@ -69,6 +70,7 @@ struct Chat: ReducerProtocol {
         case resendMessageButtonTapped(MessageID)
         case setAsExtraPromptButtonTapped(MessageID)
         case focusOnTextField
+        case referenceClicked(DisplayedChatMessage.Reference)
 
         case observeChatService
         case observeHistoryChange
@@ -96,6 +98,8 @@ struct Chat: ReducerProtocol {
         case observeExtraSystemPromptChange(UUID)
         case observeDefaultScopesChange(UUID)
     }
+    
+    @Dependency(\.openURL) var openURL
 
     var body: some ReducerProtocol<State, Action> {
         BindingReducer()
@@ -153,7 +157,26 @@ struct Chat: ReducerProtocol {
                 return .run { _ in
                     await service.setMessageAsExtraPrompt(id: id)
                 }
-                
+
+            case let .referenceClicked(reference):
+                let fileURL = URL(fileURLWithPath: reference.uri)
+                return .run { _ in
+                    if FileManager.default.fileExists(atPath: fileURL.path) {
+                        let terminal = Terminal()
+                        do {
+                            _ = try await terminal.runCommand(
+                                "/bin/bash",
+                                arguments: ["-c", "xed -l 0 \"\(reference.uri)\""],
+                                environment: [:]
+                            )
+                        } catch {
+                            print(error)
+                        }
+                    } else if let url = URL(string: reference.uri) {
+                        await openURL(url)
+                    }
+                }
+
             case .focusOnTextField:
                 state.focusedField = .textField
                 return .none

@@ -41,7 +41,7 @@ struct BotMessage: View {
                     })
                     .buttonStyle(.plain)
                     .popover(isPresented: $isReferencesPresented, arrowEdge: .trailing) {
-                        ReferenceList(references: references)
+                        ReferenceList(references: references, chat: chat)
                     }
                 }
 
@@ -96,14 +96,16 @@ struct BotMessage: View {
 
 struct ReferenceList: View {
     let references: [DisplayedChatMessage.Reference]
+    let chat: StoreOf<Chat>
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(0..<references.endIndex, id: \.self) { index in
                     let reference = references[index]
-                    
+
                     Button(action: {
-                        print("")
+                        chat.send(.referenceClicked(reference))
                     }) {
                         HStack(spacing: 8) {
                             Text(reference.title)
@@ -186,6 +188,6 @@ struct ReferenceList: View {
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com"
         ),
-    ])
+    ], chat: .init(initialState: .init(), reducer: Chat(service: .init())))
 }
 

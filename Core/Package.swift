@@ -250,6 +250,7 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
+                .product(name: "Terminal", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
