@@ -17,11 +17,13 @@ public struct DisplayedChatMessage: Equatable {
         public var title: String
         public var subtitle: String
         public var uri: String
+        public var startLine: Int?
 
-        public init(title: String, subtitle: String, uri: String) {
+        public init(title: String, subtitle: String, uri: String, startLine: Int?) {
             self.title = title
             self.subtitle = subtitle
             self.uri = uri
+            self.startLine = startLine
         }
     }
 
@@ -98,7 +100,7 @@ struct Chat: ReducerProtocol {
         case observeExtraSystemPromptChange(UUID)
         case observeDefaultScopesChange(UUID)
     }
-    
+
     @Dependency(\.openURL) var openURL
 
     var body: some ReducerProtocol<State, Action> {
@@ -166,7 +168,8 @@ struct Chat: ReducerProtocol {
                         do {
                             _ = try await terminal.runCommand(
                                 "/bin/bash",
-                                arguments: ["-c", "xed -l 0 \"\(reference.uri)\""],
+                                arguments: ["-c",
+                                            "xed -l \(reference.startLine ?? 0) \"\(reference.uri)\""],
                                 environment: [:]
                             )
                         } catch {
@@ -291,7 +294,12 @@ struct Chat: ReducerProtocol {
                         }(),
                         text: message.summary ?? message.content ?? "",
                         references: message.references.map {
-                            .init(title: $0.title, subtitle: $0.subTitle, uri: $0.uri)
+                            .init(
+                                title: $0.title,
+                                subtitle: $0.subTitle,
+                                uri: $0.uri,
+                                startLine: $0.startLine
+                            )
                         }
                     )
                 }

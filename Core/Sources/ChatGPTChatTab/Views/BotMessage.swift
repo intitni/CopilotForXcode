@@ -142,12 +142,14 @@ struct ReferenceList: View {
             .init(
                 title: "ReferenceList",
                 subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-                uri: "https://google.com"
+                uri: "https://google.com",
+                startLine: nil
             ),
             .init(
                 title: "BotMessage.swift:100-102",
                 subtitle: "/Core/Sources/ChatGPTChatTab/Views",
-                uri: "https://google.com"
+                uri: "https://google.com",
+                startLine: nil
             ),
         ],
         chat: .init(initialState: .init(), reducer: Chat(service: .init()))
@@ -161,32 +163,38 @@ struct ReferenceList: View {
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
         .init(
             title: "BotMessage.swift:100-102",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
-            uri: "https://google.com"
+            uri: "https://google.com",
+            startLine: nil
         ),
     ], chat: .init(initialState: .init(), reducer: Chat(service: .init())))
 }
