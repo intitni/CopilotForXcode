@@ -16,6 +16,7 @@ struct SubSection<Title: View, Content: View>: View {
             if !(title is EmptyView && description.isEmpty) {
                 VStack(alignment: .leading, spacing: 8) {
                     title
+                        .font(.system(size: 14).weight(.semibold))
 
                     if !description.isEmpty {
                         Text(description)
@@ -27,7 +28,7 @@ struct SubSection<Title: View, Content: View>: View {
             }
 
             if !(title is EmptyView && description.isEmpty) {
-                Divider()
+                Divider().padding(.bottom, 4)
             }
 
             content()
