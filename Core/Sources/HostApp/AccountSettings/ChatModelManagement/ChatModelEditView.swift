@@ -63,6 +63,7 @@ struct ChatModelEditView: View {
         .onAppear {
             store.send(.appear)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     var nameTextField: some View {
@@ -224,6 +225,17 @@ struct ChatModelEditView: View {
 
         maxTokensTextField
         supportsFunctionCallingToggle
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " To get an API key, please visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)"
+            )
+
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " If you don't have access to GPT-4, you may need to visit [https://platform.openai.com/account/billing/overview](https://platform.openai.com/account/billing/overview) to buy some credits. A ChatGPT Plus subscription is not enough to access GPT-4 through API."
+            )
+        }
+        .padding(.vertical)
     }
 
     @ViewBuilder
@@ -259,25 +271,43 @@ struct ChatModelEditView: View {
     }
 }
 
-class ChatModelManagementView_Editing_Previews: PreviewProvider {
-    static var previews: some View {
-        ChatModelEditView(
-            store: .init(
-                initialState: .init(model: ChatModel(
-                    id: "3",
-                    name: "Test Model 3",
-                    format: .openAICompatible,
-                    info: .init(
-                        apiKeyName: "key",
-                        baseURL: "apple.com",
-                        maxTokens: 3000,
-                        supportsFunctionCalling: false,
-                        modelName: "gpt-3.5-turbo"
-                    )
-                )),
-                reducer: ChatModelEdit()
-            )
+#Preview("OpenAI") {
+    ChatModelEditView(
+        store: .init(
+            initialState: .init(model: ChatModel(
+                id: "3",
+                name: "Test Model 3",
+                format: .openAI,
+                info: .init(
+                    apiKeyName: "key",
+                    baseURL: "apple.com",
+                    maxTokens: 3000,
+                    supportsFunctionCalling: false,
+                    modelName: "gpt-3.5-turbo"
+                )
+            )),
+            reducer: ChatModelEdit()
         )
-    }
+    )
+}
+
+#Preview("OpenAI Compatible") {
+    ChatModelEditView(
+        store: .init(
+            initialState: .init(model: ChatModel(
+                id: "3",
+                name: "Test Model 3",
+                format: .openAICompatible,
+                info: .init(
+                    apiKeyName: "key",
+                    baseURL: "apple.com",
+                    maxTokens: 3000,
+                    supportsFunctionCalling: false,
+                    modelName: "gpt-3.5-turbo"
+                )
+            )),
+            reducer: ChatModelEdit()
+        )
+    )
 }
 
