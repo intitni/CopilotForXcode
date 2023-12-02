@@ -260,7 +260,7 @@ struct ChatSettingsView: View {
 
                 SubSection(
                     title: Text("Code Scope"),
-                    description: "Enable the bot to read the code and metadata in the editing file."
+                    description: "Enable the bot to read the code and metadata of the editing file."
                 ) {
                     Form {
                         Toggle(isOn: $settings.enableCodeScopeByDefaultInChatContext) {
