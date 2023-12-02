@@ -15,7 +15,7 @@ class UnknownLanguageFocusedCodeFinderTests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (40, 0), endPair: (60, 3)),
-            smallestContextRange: .init(startPair: (45, 0), endPair: (55, 3)),
+            smallestContextRange: .init(startPair: (40, 0), endPair: (60, 3)),
             focusedRange: .init(startPair: (45, 0), endPair: (55, 3)),
             focusedCode: stride(from: 45, through: 55, by: 1).map { "\($0)\n" }.joined(),
             imports: [],
@@ -33,7 +33,7 @@ class UnknownLanguageFocusedCodeFinderTests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (0, 0), endPair: (15, 3)),
-            smallestContextRange: .init(startPair: (0, 0), endPair: (10, 3)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (15, 3)),
             focusedRange: .init(startPair: (0, 0), endPair: (10, 3)),
             focusedCode: stride(from: 0, through: 10, by: 1).map { "\($0)\n" }.joined(),
             imports: [],
@@ -51,7 +51,7 @@ class UnknownLanguageFocusedCodeFinderTests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (89, 0), endPair: (101, 1)),
-            smallestContextRange: .init(startPair: (94, 0), endPair: (101, 1)),
+            smallestContextRange: .init(startPair: (89, 0), endPair: (101, 1)),
             focusedRange: .init(startPair: (94, 0), endPair: (101, 1)),
             focusedCode: stride(from: 94, through: 100, by: 1).map { "\($0)\n" }.joined() + "\n",
             imports: [],
@@ -69,7 +69,7 @@ class UnknownLanguageFocusedCodeFinderTests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (0, 0), endPair: (11, 1)),
-            smallestContextRange: .init(startPair: (0, 0), endPair: (10, 3)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (11, 1)),
             focusedRange: .init(startPair: (0, 0), endPair: (10, 3)),
             focusedCode: code,
             imports: [],

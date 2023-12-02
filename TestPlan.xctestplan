@@ -126,6 +126,13 @@
         "identifier" : "GitHubCopilotServiceTests",
         "name" : "GitHubCopilotServiceTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "FocusedCodeFinderTests",
+        "name" : "FocusedCodeFinderTests"
+      }
     }
   ],
   "version" : 1

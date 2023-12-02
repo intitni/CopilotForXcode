@@ -29,7 +29,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 4, character: 0),
             end: CursorPosition(line: 4, character: 13)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -75,7 +75,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 7, character: 5)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -118,7 +118,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -156,7 +156,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -194,7 +194,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -233,7 +233,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -273,7 +273,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 3, character: 0),
             end: CursorPosition(line: 3, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -313,7 +313,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -456,7 +456,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .file,
             contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
-            smallestContextRange: .init(startPair: (2, 0), endPair: (4, 11)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (2, 0), endPair: (4, 11)),
             focusedCode: """
             indirect enum A {
