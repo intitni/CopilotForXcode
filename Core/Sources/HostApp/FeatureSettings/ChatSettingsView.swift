@@ -244,25 +244,27 @@ struct ChatSettingsView: View {
         @StateObject var settings = Settings()
 
         var body: some View {
+            SettingsDivider("Scopes")
+
             VStack {
-                Scope(
+                SubSection(
                     title: Text("File Scope"),
                     description: "Enable the bot to read the metadata of the editing file."
                 ) {
                     Form {
                         Toggle(isOn: $settings.enableFileScopeByDefaultInChatContext) {
-                            Text("Enable @file scope by default in chat context.")
+                            Text("Enable by default")
                         }
                     }
                 }
 
-                Scope(
+                SubSection(
                     title: Text("Code Scope"),
                     description: "Enable the bot to read the code and metadata in the editing file."
                 ) {
                     Form {
                         Toggle(isOn: $settings.enableCodeScopeByDefaultInChatContext) {
-                            Text("Enable @code scope by default in chat context.")
+                            Text("Enable by default")
                         }
 
                         HStack {
@@ -282,8 +284,8 @@ struct ChatSettingsView: View {
 
                 #if canImport(ProHostApp)
 
-                Scope(
-                    title: WithFeatureEnabled(\.projectScopeInChat) {
+                SubSection(
+                    title: WithFeatureEnabled(\.projectScopeInChat, alignment: .trailing) {
                         Text("Sense Scope (Experimental)")
                     },
                     description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
@@ -291,7 +293,7 @@ struct ChatSettingsView: View {
                     WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
                         Form {
                             Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
-                                Text("Enable @sense scope by default in chat context.")
+                                Text("Enable by default")
                             }
 
                             Picker(
@@ -321,16 +323,16 @@ struct ChatSettingsView: View {
                     }
                 }
 
-                Scope(
-                    title: WithFeatureEnabled(\.projectScopeInChat) {
+                SubSection(
+                    title: WithFeatureEnabled(\.projectScopeInChat, alignment: .trailing) {
                         Text("Project Scope (Experimental)")
                     },
-                    description: "Experimental. Enable the bot to search  code symbols in the project, third party packages and the SDK."
+                    description: "Experimental. Enable the bot to search code symbols in the project, third party packages and the SDK."
                 ) {
                     WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
                         Form {
                             Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
-                                Text("Enable @project scope by default in chat context.")
+                                Text("Enable by default")
                             }
 
                             Picker(
@@ -362,7 +364,7 @@ struct ChatSettingsView: View {
 
                 #endif
 
-                Scope(
+                SubSection(
                     title: Text("Web Scope"),
                     description: "Allow the bot to search on Bing or read a web page."
                 ) {
@@ -395,28 +397,6 @@ struct ChatSettingsView: View {
                             }
                         }
                     }
-                }
-            }
-        }
-
-        struct Scope<Title: View, Content: View>: View {
-            let title: Title
-            let description: String
-            let content: () -> Content
-
-            var body: some View {
-                SettingsDivider(title)
-                VStack {
-                    Text(description)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.secondary.opacity(0.1))
-                        }
-                    content()
                 }
             }
         }
