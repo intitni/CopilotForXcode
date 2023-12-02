@@ -99,6 +99,7 @@ struct Chat: ReducerProtocol {
         case observeSystemPromptChange(UUID)
         case observeExtraSystemPromptChange(UUID)
         case observeDefaultScopesChange(UUID)
+        case sendMessage(UUID)
     }
 
     @Dependency(\.openURL) var openURL
@@ -129,16 +130,19 @@ struct Chat: ReducerProtocol {
                 state.typedMessage = ""
                 return .run { _ in
                     try await service.send(content: message)
-                }
+                }.cancellable(id: CancelID.sendMessage(id))
 
             case .returnButtonTapped:
                 state.typedMessage += "\n"
                 return .none
 
             case .stopRespondingButtonTapped:
-                return .run { _ in
-                    await service.stopReceivingMessage()
-                }
+                return .merge(
+                    .run { _ in
+                        await service.stopReceivingMessage()
+                    },
+                    .cancel(id: CancelID.sendMessage(id))
+                )
 
             case .clearButtonTap:
                 return .run { _ in

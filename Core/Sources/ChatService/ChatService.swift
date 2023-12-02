@@ -105,7 +105,9 @@ public final class ChatService: ObservableObject {
 
         let stream = try await chatGPTService.send(content: content, summary: nil)
         do {
-            for try await _ in stream {}
+            for try await _ in stream {
+                try Task.checkCancellation()
+            }
         } catch {}
     }
 
