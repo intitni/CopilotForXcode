@@ -135,7 +135,7 @@ struct CodeiumView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            VStack(alignment: .leading) {
+            SubSection(title: Text("Codeium Language Server")) {
                 switch viewModel.installationStatus {
                 case .notInstalled:
                     HStack {
@@ -185,12 +185,6 @@ struct CodeiumView: View {
                     }
                 }
             }
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
-            }
             .sheet(isPresented: $isSignInPanelPresented) {
                 CodeiumSignInView(viewModel: viewModel, isPresented: $isSignInPanelPresented)
             }
@@ -209,16 +203,12 @@ struct CodeiumView: View {
                 }
             }
 
-            Form {
-                Toggle("Codeium Enterprise Mode", isOn: $viewModel.codeiumEnterpriseMode)
-                TextField("Codeium Portal URL", text: $viewModel.codeiumPortalUrl)
-                TextField("Codeium API URL", text: $viewModel.codeiumApiUrl)
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
+            SubSection(title: Text("Enterprise")) {
+                Form {
+                    Toggle("Codeium Enterprise Mode", isOn: $viewModel.codeiumEnterpriseMode)
+                    TextField("Codeium Portal URL", text: $viewModel.codeiumPortalUrl)
+                    TextField("Codeium API URL", text: $viewModel.codeiumApiUrl)
+                }
             }
 
             SettingsDivider("Advanced")
@@ -305,32 +295,34 @@ struct CodeiumView_Previews: PreviewProvider {
     }
 
     static var previews: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            CodeiumView(viewModel: TestViewModel(
-                isSignedIn: false,
-                installationStatus: .notInstalled,
-                installationStep: nil
-            ))
-
-            CodeiumView(viewModel: TestViewModel(
-                isSignedIn: true,
-                installationStatus: .installed("1.2.9"),
-                installationStep: nil
-            ))
-
-            CodeiumView(viewModel: TestViewModel(
-                isSignedIn: true,
-                installationStatus: .outdated(current: "1.2.9", latest: "1.3.0"),
-                installationStep: .downloading
-            ))
-
-            CodeiumView(viewModel: TestViewModel(
-                isSignedIn: true,
-                installationStatus: .unsupported(current: "1.5.9", latest: "1.3.0"),
-                installationStep: .downloading
-            ))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                CodeiumView(viewModel: TestViewModel(
+                    isSignedIn: false,
+                    installationStatus: .notInstalled,
+                    installationStep: nil
+                ))
+                
+                CodeiumView(viewModel: TestViewModel(
+                    isSignedIn: true,
+                    installationStatus: .installed("1.2.9"),
+                    installationStep: nil
+                ))
+                
+                CodeiumView(viewModel: TestViewModel(
+                    isSignedIn: true,
+                    installationStatus: .outdated(current: "1.2.9", latest: "1.3.0"),
+                    installationStep: .downloading
+                ))
+                
+                CodeiumView(viewModel: TestViewModel(
+                    isSignedIn: true,
+                    installationStatus: .unsupported(current: "1.5.9", latest: "1.3.0"),
+                    installationStep: .downloading
+                ))
+            }
+            .padding(8)
         }
-        .padding(8)
     }
 }
 

@@ -277,6 +277,10 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeEmbeddingModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "PromptToCodeEmbeddingModelId")
     }
+    
+    var enableSenseScopeByDefaultInPromptToCode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "EnableSenseScopeByDefaultInPromptToCode")
+    }
 }
 
 // MARK: - Suggestion
