@@ -29,7 +29,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 4, character: 0),
             end: CursorPosition(line: 4, character: 13)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -47,6 +47,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
+            smallestContextRange: .init(startPair: (4, 0), endPair: (4, 13)),
             focusedRange: .init(startPair: (4, 0), endPair: (4, 13)),
             focusedCode: """
                     let c = 3
@@ -74,7 +75,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 7, character: 5)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -87,6 +88,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (9, 1)),
+            smallestContextRange: .init(startPair: (2, 0), endPair: (7, 5)),
             focusedRange: .init(startPair: (2, 0), endPair: (7, 5)),
             focusedCode: """
                 func f() {
@@ -116,7 +118,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -129,6 +131,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
+            smallestContextRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedCode: """
                 var a = 1
@@ -153,7 +156,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -166,6 +169,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
+            smallestContextRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedCode: """
                 func f()
@@ -190,7 +194,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -203,6 +207,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 1)),
+            smallestContextRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedRange: .init(startPair: (1, 0), endPair: (1, 9)),
             focusedCode: """
                 var a = 1
@@ -228,7 +233,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -241,6 +246,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (7, 1)),
+            smallestContextRange: .init(startPair: (2, 0), endPair: (2, 9)),
             focusedRange: .init(startPair: (2, 0), endPair: (2, 9)),
             focusedCode: """
                 static func f() {}
@@ -267,7 +273,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 3, character: 0),
             end: CursorPosition(line: 3, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -280,6 +286,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
+            smallestContextRange: .init(startPair: (3, 0), endPair: (3, 9)),
             focusedRange: .init(startPair: (3, 0), endPair: (3, 9)),
             focusedCode: """
                 case a
@@ -306,7 +313,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 9)
         )
-        let context = SwiftFocusedCodeFinder().findFocusedCode(
+        let context = SwiftFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -324,6 +331,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (8, 1)),
+            smallestContextRange: .init(startPair: (2, 0), endPair: (2, 9)),
             focusedRange: .init(startPair: (2, 0), endPair: (2, 9)),
             focusedCode: """
                     let a = 1
@@ -365,6 +373,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .top,
             contextRange: .init(startPair: (0, 0), endPair: (13, 2)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (13, 2)),
             focusedRange: .init(startPair: (0, 0), endPair: (13, 2)),
             focusedCode: """
             @MainActor
@@ -408,6 +417,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .file,
             contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedCode: """
             @MainActor
@@ -446,6 +456,7 @@ final class SwiftFocusedCodeFinder_FocusedCode_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .file,
             contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (8, 1)),
             focusedRange: .init(startPair: (2, 0), endPair: (4, 11)),
             focusedCode: """
             indirect enum A {

@@ -196,7 +196,7 @@ struct ChatPanelMessages: View {
 
         struct PinToBottomRelatedState: Equatable {
             var isReceivingMessage: Bool
-            var lastMessage: ChatMessage?
+            var lastMessage: DisplayedChatMessage?
         }
 
         var body: some View {
@@ -245,14 +245,19 @@ struct ChatHistory: View {
                         ))
                         .padding(.vertical, 4)
                 case .assistant:
-                    BotMessage(id: message.id, text: text, chat: chat)
-                        .listRowInsets(EdgeInsets(
-                            top: 0,
-                            leading: -8,
-                            bottom: 0,
-                            trailing: -8
-                        ))
-                        .padding(.vertical, 4)
+                    BotMessage(
+                        id: message.id,
+                        text: text,
+                        references: message.references,
+                        chat: chat
+                    )
+                    .listRowInsets(EdgeInsets(
+                        top: 0,
+                        leading: -8,
+                        bottom: 0,
+                        trailing: -8
+                    ))
+                    .padding(.vertical, 4)
                 case .function:
                     FunctionMessage(id: message.id, text: text)
                 case .ignored:
@@ -286,213 +291,6 @@ private struct StopRespondingButton: View {
         }
         .buttonStyle(.borderless)
         .frame(maxWidth: .infinity, alignment: .center)
-    }
-}
-
-private struct Instruction: View {
-    let chat: StoreOf<Chat>
-
-    var body: some View {
-        Group {
-            Markdown(
-                """
-                You can use plugins to perform various tasks.
-
-                | Plugin Name | Description |
-                | --- | --- |
-                | `/run` | Runs a command under the project root |
-                | `/math` | Solves a math problem in natural language |
-                | `/search` | Searches on Bing and summarizes the results |
-                | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
-                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
-
-                To use plugins, you can prefix a message with `/pluginName`.
-                """
-            )
-            .modifier(InstructionModifier())
-
-            Markdown(
-                """
-                You can use scopes to give the bot extra abilities.
-
-                | Scope Name | Abilities |
-                | --- | --- |
-                | `@file` | Read the metadata of the editing file |
-                | `@code` | Read the code and metadata in the editing file |
-                | `@sense`| Experimental. Read the relevant code of the focused editor |
-                | `@project` | Experimental. Access content of the project |
-                | `@web` (beta) | Search on Bing or query from a web page |
-
-                To use scopes, you can prefix a message with `@code`.
-
-                You can use shorthand to represent a scope, such as `@c`, and enable multiple scopes with `@c+web`.
-                """
-            )
-            .modifier(InstructionModifier())
-
-            WithViewStore(chat, observe: \.chatMenu.defaultScopes) { viewStore in
-                Markdown(
-                    """
-                    Hello, I am your AI programming assistant. I can identify issues, explain and even improve code.
-
-                    \({
-                        if viewStore.state.isEmpty {
-                            return "No scope is enabled by default"
-                        } else {
-                            let scopes = viewStore.state.map(\.rawValue).sorted()
-                                .joined(separator: ", ")
-                            return "Default scopes: `\(scopes)`"
-                        }
-                    }())
-                    """
-                )
-                .modifier(InstructionModifier())
-            }
-        }
-    }
-
-    struct InstructionModifier: ViewModifier {
-        @AppStorage(\.chatFontSize) var chatFontSize
-
-        func body(content: Content) -> some View {
-            content
-                .textSelection(.enabled)
-                .markdownTheme(.custom(fontSize: chatFontSize))
-                .opacity(0.8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                }
-        }
-    }
-}
-
-private struct UserMessage: View {
-    let id: String
-    let text: String
-    let chat: StoreOf<Chat>
-    @Environment(\.colorScheme) var colorScheme
-    @AppStorage(\.chatFontSize) var chatFontSize
-    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
-
-    var body: some View {
-        Markdown(text)
-            .textSelection(.enabled)
-            .markdownTheme(.custom(fontSize: chatFontSize))
-            .markdownCodeSyntaxHighlighter(
-                ChatCodeSyntaxHighlighter(
-                    brightMode: colorScheme != .dark,
-                    fontSize: chatCodeFontSize
-                )
-            )
-            .frame(alignment: .leading)
-            .padding()
-            .background {
-                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
-                    .fill(Color.userChatContentBackground)
-            }
-            .overlay {
-                RoundedCorners(tl: r, tr: r, bl: r, br: 0)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-            }
-            .padding(.leading)
-            .padding(.trailing, 8)
-            .shadow(color: .black.opacity(0.1), radius: 2)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .contextMenu {
-                Button("Copy") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(text, forType: .string)
-                }
-
-                Button("Send Again") {
-                    chat.send(.resendMessageButtonTapped(id))
-                }
-
-                Button("Set as Extra System Prompt") {
-                    chat.send(.setAsExtraPromptButtonTapped(id))
-                }
-
-                Divider()
-
-                Button("Delete") {
-                    chat.send(.deleteMessageButtonTapped(id))
-                }
-            }
-    }
-}
-
-private struct BotMessage: View {
-    let id: String
-    let text: String
-    let chat: StoreOf<Chat>
-    @Environment(\.colorScheme) var colorScheme
-    @AppStorage(\.chatFontSize) var chatFontSize
-    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 2) {
-            Markdown(text)
-                .textSelection(.enabled)
-                .markdownTheme(.custom(fontSize: chatFontSize))
-                .markdownCodeSyntaxHighlighter(
-                    ChatCodeSyntaxHighlighter(
-                        brightMode: colorScheme != .dark,
-                        fontSize: chatCodeFontSize
-                    )
-                )
-                .frame(alignment: .trailing)
-                .padding()
-                .background {
-                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                        .fill(Color.contentBackground)
-                }
-                .overlay {
-                    RoundedCorners(tl: r, tr: r, bl: 0, br: r)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                }
-                .padding(.leading, 8)
-                .shadow(color: .black.opacity(0.1), radius: 2)
-                .contextMenu {
-                    Button("Copy") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(text, forType: .string)
-                    }
-
-                    Button("Set as Extra System Prompt") {
-                        chat.send(.setAsExtraPromptButtonTapped(id))
-                    }
-
-                    Divider()
-
-                    Button("Delete") {
-                        chat.send(.deleteMessageButtonTapped(id))
-                    }
-                }
-
-            CopyButton {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.trailing, 2)
-    }
-}
-
-struct FunctionMessage: View {
-    let id: String
-    let text: String
-    @AppStorage(\.chatFontSize) var chatFontSize
-
-    var body: some View {
-        Markdown(text)
-            .textSelection(.enabled)
-            .markdownTheme(.functionCall(fontSize: chatFontSize))
-            .padding(.vertical, 2)
-            .padding(.trailing, 2)
     }
 }
 
@@ -539,7 +337,8 @@ struct ChatPanelInputArea: View {
                 chat,
                 removeDuplicates: {
                     $0.typedMessage == $1.typedMessage && $0.focusedField == $1.focusedField
-            }) { viewStore in
+                }
+            ) { viewStore in
                 AutoresizingCustomTextEditor(
                     text: viewStore.$typedMessage,
                     font: .systemFont(ofSize: 14),
@@ -617,70 +416,15 @@ struct ChatPanelInputArea: View {
     }
 }
 
-struct RoundedCorners: Shape {
-    var tl: CGFloat = 0.0
-    var tr: CGFloat = 0.0
-    var bl: CGFloat = 0.0
-    var br: CGFloat = 0.0
-
-    func path(in rect: CGRect) -> Path {
-        Path { path in
-
-            let w = rect.size.width
-            let h = rect.size.height
-
-            // Make sure we do not exceed the size of the rectangle
-            let tr = min(min(self.tr, h / 2), w / 2)
-            let tl = min(min(self.tl, h / 2), w / 2)
-            let bl = min(min(self.bl, h / 2), w / 2)
-            let br = min(min(self.br, h / 2), w / 2)
-
-            path.move(to: CGPoint(x: w / 2.0, y: 0))
-            path.addLine(to: CGPoint(x: w - tr, y: 0))
-            path.addArc(
-                center: CGPoint(x: w - tr, y: tr),
-                radius: tr,
-                startAngle: Angle(degrees: -90),
-                endAngle: Angle(degrees: 0),
-                clockwise: false
-            )
-            path.addLine(to: CGPoint(x: w, y: h - br))
-            path.addArc(
-                center: CGPoint(x: w - br, y: h - br),
-                radius: br,
-                startAngle: Angle(degrees: 0),
-                endAngle: Angle(degrees: 90),
-                clockwise: false
-            )
-            path.addLine(to: CGPoint(x: bl, y: h))
-            path.addArc(
-                center: CGPoint(x: bl, y: h - bl),
-                radius: bl,
-                startAngle: Angle(degrees: 90),
-                endAngle: Angle(degrees: 180),
-                clockwise: false
-            )
-            path.addLine(to: CGPoint(x: 0, y: tl))
-            path.addArc(
-                center: CGPoint(x: tl, y: tl),
-                radius: tl,
-                startAngle: Angle(degrees: 180),
-                endAngle: Angle(degrees: 270),
-                clockwise: false
-            )
-            path.closeSubpath()
-        }
-    }
-}
-
 // MARK: - Previews
 
 struct ChatPanel_Preview: PreviewProvider {
-    static let history: [ChatMessage] = [
+    static let history: [DisplayedChatMessage] = [
         .init(
             id: "1",
             role: .user,
-            text: "**Hello**"
+            text: "**Hello**",
+            references: []
         ),
         .init(
             id: "2",
@@ -690,18 +434,46 @@ struct ChatPanel_Preview: PreviewProvider {
             func foo() {}
             ```
             **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
-            """
+            """,
+            references: [
+                .init(
+                    title: "Hello Hello Hello Hello",
+                    subtitle: "Hi Hi Hi Hi",
+                    uri: "https://google.com",
+                    startLine: nil
+                ),
+            ]
         ),
-        .init(id: "7", role: .ignored, text: "Ignored"),
-        .init(id: "6", role: .function, text: """
-        Searching for something...
-        - abc
-        - [def](https://1.com)
-        > hello
-        > hi
-        """),
-        .init(id: "5", role: .assistant, text: "Yooo"),
-        .init(id: "4", role: .user, text: "Yeeeehh"),
+        .init(
+            id: "7",
+            role: .ignored,
+            text: "Ignored",
+            references: []
+        ),
+        .init(
+            id: "6",
+            role: .function,
+            text: """
+            Searching for something...
+            - abc
+            - [def](https://1.com)
+            > hello
+            > hi
+            """,
+            references: []
+        ),
+        .init(
+            id: "5",
+            role: .assistant,
+            text: "Yooo",
+            references: []
+        ),
+        .init(
+            id: "4",
+            role: .user,
+            text: "Yeeeehh",
+            references: []
+        ),
         .init(
             id: "3",
             role: .user,
@@ -718,7 +490,8 @@ struct ChatPanel_Preview: PreviewProvider {
             ```objectivec
             - (void)bar {}
             ```
-            """#
+            """#,
+            references: []
         ),
     ]
 

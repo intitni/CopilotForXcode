@@ -15,7 +15,9 @@ public final class OpenedFileRecoverableStorage {
         var openedFiles = Set(dict[projectRootURL.path] as? [String] ?? [])
         openedFiles.insert(fileURL.path)
         dict[projectRootURL.path] = Array(openedFiles)
-        userDefault.set(dict, forKey: key)
+        Task { @MainActor [dict] in
+            userDefault.set(dict, forKey: key)
+        }
     }
 
     public func closeFile(fileURL: URL) {
@@ -23,7 +25,9 @@ public final class OpenedFileRecoverableStorage {
         var openedFiles = dict[projectRootURL.path] as? [String] ?? []
         openedFiles.removeAll(where: { $0 == fileURL.path })
         dict[projectRootURL.path] = openedFiles
-        userDefault.set(dict, forKey: key)
+        Task { @MainActor [dict] in
+            userDefault.set(dict, forKey: key)
+        }
     }
 
     public var openedFiles: [URL] {

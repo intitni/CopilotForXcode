@@ -14,9 +14,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     ASTNode,
     TreeSitterTextPosition
 > {
-    override public init(
-        maxFocusedCodeLineCount: Int = UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)
-    ) {
+    override public init(maxFocusedCodeLineCount: Int) {
         super.init(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
     }
 
@@ -99,7 +97,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         var prefix = ""
         /// Generics, super class, etc.
         var extra = ""
-        
+
         if let nameNode = node.child(byFieldName: "name") {
             name = textProvider(.node(nameNode))
             prefix = textProvider(.range(
@@ -135,7 +133,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         prefix = prefix.split(separator: "\n")
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         extra = extra.split(separator: "\n")
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -152,7 +150,7 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             canBeUsedAsCodeRange: true
         )
     }
-    
+
     func parseMethodDefinitionNode(
         _ node: ASTNode,
         textProvider: @escaping TextProvider

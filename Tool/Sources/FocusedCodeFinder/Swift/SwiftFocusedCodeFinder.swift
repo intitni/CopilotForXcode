@@ -10,9 +10,7 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
     SyntaxProtocol,
     SyntaxProtocol
 > {
-    override public init(
-        maxFocusedCodeLineCount: Int = UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)
-    ) {
+    override public init(maxFocusedCodeLineCount: Int) {
         super.init(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
     }
 

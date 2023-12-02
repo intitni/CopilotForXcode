@@ -28,17 +28,22 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
                 min(startLineIndex + proposedLineCount - 1, lines.count - 1)
             )
 
+            if lines.endIndex <= endLineIndex { return .empty }
+            
             let focusedLines = lines[startLineIndex...endLineIndex]
 
             let contextStartLine = max(startLineIndex - 5, 0)
             let contextEndLine = min(endLineIndex + 5, lines.count - 1)
+            
+            let contextRange = CursorRange(
+                start: .init(line: contextStartLine, character: 0),
+                end: .init(line: contextEndLine, character: lines[contextEndLine].count)
+            )
 
             return .init(
                 scope: .top,
-                contextRange: .init(
-                    start: .init(line: contextStartLine, character: 0),
-                    end: .init(line: contextEndLine, character: lines[contextEndLine].count)
-                ),
+                contextRange: contextRange,
+                smallestContextRange: contextRange,
                 focusedRange: .init(
                     start: .init(line: startLineIndex, character: 0),
                     end: .init(line: endLineIndex, character: lines[endLineIndex].count)
@@ -57,16 +62,19 @@ public struct UnknownLanguageFocusedCodeFinder: FocusedCodeFinderType {
         let focusedLines = document.lines[startLine...endLine]
         let contextStartLine = max(startLine - 3, 0)
         let contextEndLine = min(endLine + 3, document.lines.count - 1)
+        
+        let contextRange = CursorRange(
+            start: .init(line: contextStartLine, character: 0),
+            end: .init(
+                line: contextEndLine,
+                character: document.lines[contextEndLine].count
+            )
+        )
 
         return CodeContext(
             scope: .top,
-            contextRange: .init(
-                start: .init(line: contextStartLine, character: 0),
-                end: .init(
-                    line: contextEndLine,
-                    character: document.lines[contextEndLine].count
-                )
-            ),
+            contextRange: contextRange,
+            smallestContextRange: contextRange,
             focusedRange: containingRange,
             focusedCode: focusedLines.joined(),
             imports: [],

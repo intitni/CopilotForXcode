@@ -19,7 +19,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 4)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -37,6 +37,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSInteger foo = 0;
@@ -56,7 +57,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
         }
         """
         let range = CursorRange(startPair: (2, 0), endPair: (2, 4))
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -69,6 +70,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSLog(@"Hello");
@@ -78,7 +80,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             includes: []
         ))
     }
-    
+
     func test_selecting_a_method_inside_an_implementation_the_scope_should_be_the_implementation() {
         let code = """
         __attribute__((objc_nonlazy_class))
@@ -94,7 +96,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 6, character: 1)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -107,6 +109,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (7, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo {
@@ -114,13 +117,13 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 NSLog(@"Hello");
                 NSLog(@"World");
             }
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_an_interface_the_scope_should_be_the_interface() {
         let code = """
         @interface ViewController <ObjectType: id<UITableViewDelegate, UITableViewDataSource>>: NSObject <ProtocolName>
@@ -133,7 +136,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -146,18 +149,19 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_an_interface_category_the_scope_should_be_the_interface() {
         let code = """
         @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
@@ -170,7 +174,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -183,18 +187,19 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_a_protocol_the_scope_should_be_the_protocol() {
         let code = """
         @protocol Foo<A, B>
@@ -207,7 +212,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -220,18 +225,19 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_a_struct_the_scope_should_be_the_struct() {
         let code = """
         struct Foo {
@@ -244,7 +250,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -257,18 +263,19 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSInteger foo;
                 NSInteger bar;
                 NSInteger baz;
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_a_enum_the_scope_should_be_the_enum() {
         let code = """
         enum Foo {
@@ -281,7 +288,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -294,18 +301,19 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 foo,
                 bar,
                 baz
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
+
     func test_selecting_a_line_inside_an_NSEnum_the_scope_should_be_the_enum() {
         let code = """
         typedef NS_ENUM(NSInteger, Foo) {
@@ -318,7 +326,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 3, character: 31)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -331,12 +339,13 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 2)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 foo,
                 bar,
                 baz
-            
+
             """,
             imports: [],
             includes: []
@@ -359,7 +368,7 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
             start: CursorPosition(line: 2, character: 0),
             end: CursorPosition(line: 2, character: 0)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
@@ -372,6 +381,7 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            smallestContextRange: .init(startPair: (1, 0), endPair: (5, 1)),
             focusedRange: .init(startPair: (1, 0), endPair: (5, 1)),
             focusedCode: """
             - (void)fooWith:(NSInteger)foo {
@@ -379,21 +389,22 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
                 NSLog(@"Hello");
                 NSLog(@"World");
             }
-            
+
             """,
             imports: [],
             includes: []
         ))
     }
-    
-    func test_get_focused_code_inside_an_interface_category_the_focused_code_should_be_the_interface() {
+
+    func test_get_focused_code_inside_an_interface_category_the_focused_code_should_be_the_interface(
+    ) {
         let code = """
         @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
         - (void)fooWith:(NSInteger)foo;
         - (void)fooWith:(NSInteger)foo;
         - (void)fooWith:(NSInteger)foo;
         @end
-        
+
         @implementation Foo
         @end
         """
@@ -401,13 +412,14 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
             start: CursorPosition(line: 1, character: 0),
             end: CursorPosition(line: 1, character: 0)
         )
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: range
         )
         XCTAssertEqual(context, .init(
             scope: .file,
             contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            smallestContextRange: .init(startPair: (0, 0), endPair: (4, 4)),
             focusedRange: .init(startPair: (0, 0), endPair: (4, 4)),
             focusedCode: """
             @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
@@ -415,7 +427,7 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
             - (void)fooWith:(NSInteger)foo;
             - (void)fooWith:(NSInteger)foo;
             @end
-            
+
             """,
             imports: [],
             includes: []
@@ -431,19 +443,20 @@ final class ObjectiveCFocusedCodeFinder_Imports_Tests: XCTestCase {
         #import "Foo.h"
         #include "Bar.h"
         """
-        
-        let context = ObjectiveCFocusedCodeFinder().findFocusedCode(
+
+        let context = ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: .max).findFocusedCode(
             in: document(code: code),
             containingRange: .zero
         )
-        
+
         XCTAssertEqual(context.imports, [
             "<Foundation/Foundation.h>",
             "UIKit",
-            "\"Foo.h\""
+            "\"Foo.h\"",
         ])
         XCTAssertEqual(context.includes, [
-            "\"Bar.h\""
+            "\"Bar.h\"",
         ])
     }
 }
+

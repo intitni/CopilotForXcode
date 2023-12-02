@@ -11,22 +11,24 @@ public struct ActiveDocumentContext {
     public var selectionRange: CursorRange
     public var lineAnnotations: [EditorInformation.LineAnnotation]
     public var imports: [String]
+    public var includes: [String]
 
     public struct FocusedContext {
         public struct Context: Equatable {
             public var signature: String
             public var name: String
             public var range: CursorRange
-            
+
             public init(signature: String, name: String, range: CursorRange) {
                 self.signature = signature
                 self.name = name
                 self.range = range
             }
         }
-        
+
         public var context: [Context]
         public var contextRange: CursorRange
+        public var smallestContextRange: CursorRange
         public var codeRange: CursorRange
         public var code: String
         public var lineAnnotations: [EditorInformation.LineAnnotation]
@@ -35,6 +37,7 @@ public struct ActiveDocumentContext {
         public init(
             context: [Context],
             contextRange: CursorRange,
+            smallestContextRange: CursorRange,
             codeRange: CursorRange,
             code: String,
             lineAnnotations: [EditorInformation.LineAnnotation],
@@ -42,6 +45,7 @@ public struct ActiveDocumentContext {
         ) {
             self.context = context
             self.contextRange = contextRange
+            self.smallestContextRange = smallestContextRange
             self.codeRange = codeRange
             self.code = code
             self.lineAnnotations = lineAnnotations
@@ -61,6 +65,7 @@ public struct ActiveDocumentContext {
         selectionRange: CursorRange,
         lineAnnotations: [EditorInformation.LineAnnotation],
         imports: [String],
+        includes: [String],
         focusedContext: FocusedContext? = nil
     ) {
         self.documentURL = documentURL
@@ -72,6 +77,7 @@ public struct ActiveDocumentContext {
         self.selectionRange = selectionRange
         self.lineAnnotations = lineAnnotations
         self.imports = imports
+        self.includes = includes
         self.focusedContext = focusedContext
     }
 
@@ -92,8 +98,10 @@ public struct ActiveDocumentContext {
     }
 
     public mutating func moveToCodeContainingRange(_ range: CursorRange) {
-        let finder = FocusedCodeFinder()
-        
+        let finder = FocusedCodeFinder(
+            maxFocusedCodeLineCount: UserDefaults.shared.value(for: \.maxFocusedCodeLineCount)
+        )
+
         let codeContext = finder.findFocusedCode(
             in: .init(documentURL: documentURL, content: fileContent, lines: lines),
             containingRange: range,
@@ -101,6 +109,7 @@ public struct ActiveDocumentContext {
         )
 
         imports = codeContext.imports
+        includes = codeContext.includes
 
         let startLine = codeContext.focusedRange.start.line
         let endLine = codeContext.focusedRange.end.line
@@ -117,6 +126,7 @@ public struct ActiveDocumentContext {
         focusedContext = .init(
             context: codeContext.scopeContexts,
             contextRange: codeContext.contextRange,
+            smallestContextRange: codeContext.smallestContextRange,
             codeRange: codeContext.focusedRange,
             code: codeContext.focusedCode,
             lineAnnotations: matchedAnnotations,
@@ -144,6 +154,7 @@ public struct ActiveDocumentContext {
         selectionRange = info.editorContent?.selections.first ?? .zero
         lineAnnotations = info.editorContent?.lineAnnotations ?? []
         imports = []
+        includes = []
 
         if changed {
             moveToFocusedCode()
