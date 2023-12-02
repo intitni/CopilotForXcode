@@ -108,7 +108,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             availableTokenCountForRetrievedContent,
             messageUsage
         ) = generateMessageHistory(
-            maxNumberOfMessages: maxNumberOfMessages,
+            maxNumberOfMessages: maxNumberOfMessages - 1, // for the new message
             maxTokenCount: availableTokenCountForMessages,
             encoder: encoder
         )

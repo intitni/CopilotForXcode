@@ -299,11 +299,21 @@ let package = Package(
                 "Keychain",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                )
             ]
         ),
         .testTarget(
             name: "OpenAIServiceTests",
-            dependencies: ["OpenAIService"]
+            dependencies: [
+                "OpenAIService",
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                )
+            ]
         ),
 
         // MARK: - UI

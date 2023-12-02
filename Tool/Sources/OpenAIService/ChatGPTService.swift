@@ -1,4 +1,5 @@
 import AsyncAlgorithms
+import Dependencies
 import Foundation
 import Preferences
 
@@ -62,7 +63,6 @@ public class ChatGPTService: ChatGPTServiceType {
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
-    var uuidGenerator: () -> String = { UUID().uuidString }
     var runningTask: Task<Void, Never>?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
     var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
@@ -80,6 +80,9 @@ public class ChatGPTService: ChatGPTServiceType {
         self.configuration = configuration
         self.functionProvider = functionProvider
     }
+    
+    @Dependency(\.uuid) var uuid
+    @Dependency(\.date) var date
 
     /// Send a message and stream the reply.
     public func send(
@@ -88,7 +91,7 @@ public class ChatGPTService: ChatGPTServiceType {
     ) async throws -> AsyncThrowingStream<String, Error> {
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
-                id: uuidGenerator(),
+                id: uuid().uuidString,
                 role: .user,
                 content: content,
                 name: nil,
@@ -132,7 +135,7 @@ public class ChatGPTService: ChatGPTServiceType {
                                     #endif
                                 case let .functionCall(call):
                                     if functionCall == nil {
-                                        functionCallMessageID = uuidGenerator()
+                                        functionCallMessageID = uuid().uuidString
                                         functionCall = call
                                     } else {
                                         functionCall?.name.append(call.name)
@@ -171,7 +174,7 @@ public class ChatGPTService: ChatGPTServiceType {
     ) async throws -> String? {
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
-                id: uuidGenerator(),
+                id: uuid().uuidString,
                 role: .user,
                 content: content,
                 summary: summary
@@ -276,11 +279,12 @@ extension ChatGPTService {
         #if DEBUG
         Debugger.didSendRequestBody(body: requestBody)
         #endif
+        
+        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
 
         return AsyncThrowingStream<StreamContent, Error> { continuation in
             let task = Task {
                 do {
-                    let proposedId = UUID().uuidString + String(Date().timeIntervalSince1970)
                     await memory.streamMessage(
                         id: proposedId,
                         references: prompt.references
@@ -335,9 +339,9 @@ extension ChatGPTService {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
             runningTask = task
-            
+
             continuation.onTermination = { _ in
                 task.cancel()
             }
@@ -346,7 +350,7 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream disabled.
     func sendMemoryAndWait() async throws -> ChatMessage? {
-        let proposedId = UUID().uuidString + String(Date().timeIntervalSince1970)
+        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
         let prompt = await memory.generatePrompt()
 
         guard let model = configuration.model else {
@@ -425,13 +429,7 @@ extension ChatGPTService {
     /// to insert a message placeholder in memory.
     func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
         guard let function = functionProvider.function(named: call.name) else { return }
-        let responseMessage = ChatMessage(
-            id: messageId,
-            role: .function,
-            content: nil,
-            name: call.name
-        )
-        await memory.appendMessage(responseMessage)
+        await memory.streamMessage(id: messageId, role: .function, name: call.name)
         await function.prepare { [weak self] summary in
             await self?.memory.updateMessage(id: messageId) { message in
                 message.summary = summary
@@ -449,21 +447,13 @@ extension ChatGPTService {
         Debugger.didReceiveFunction(name: call.name, arguments: call.arguments)
         #endif
 
-        let messageId = messageId ?? uuidGenerator()
+        let messageId = messageId ?? uuid().uuidString
 
         guard let function = functionProvider.function(named: call.name) else {
             return await fallbackFunctionCall(call, messageId: messageId)
         }
 
-        // Insert the chat message into memory to indicate the start of the function.
-        let responseMessage = ChatMessage(
-            id: messageId,
-            role: .function,
-            content: nil,
-            name: call.name
-        )
-
-        await memory.appendMessage(responseMessage)
+        await memory.streamMessage(id: messageId, role: .function, name: call.name)
 
         do {
             // Run the function
@@ -537,14 +527,13 @@ extension ChatGPTService {
                 return "No result."
             }
         }()
-        let responseMessage = ChatMessage(
+        await memory.streamMessage(
             id: messageId,
             role: .function,
             content: content,
             name: call.name,
             summary: "Finished running function."
         )
-        await memory.appendMessage(responseMessage)
         return content
     }
 }
@@ -552,10 +541,6 @@ extension ChatGPTService {
 extension ChatGPTService {
     func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
-    }
-
-    func changeUUIDGenerator(_ generator: @escaping () -> String) {
-        uuidGenerator = generator
     }
 }
 

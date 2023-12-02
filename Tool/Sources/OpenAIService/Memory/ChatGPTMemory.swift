@@ -63,6 +63,7 @@ public extension ChatGPTMemory {
         id: String,
         role: ChatMessage.Role? = nil,
         content: String? = nil,
+        name: String? = nil,
         functionCall: ChatMessage.FunctionCall? = nil,
         summary: String? = nil,
         references: [ChatMessage.Reference]? = nil
@@ -93,12 +94,15 @@ public extension ChatGPTMemory {
                 if let references {
                     history[index].references.append(contentsOf: references)
                 }
+                if let name {
+                    history[index].name = name
+                }
             } else {
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
                     content: content,
-                    name: nil,
+                    name: name,
                     functionCall: functionCall,
                     summary: summary,
                     references: references ?? []
