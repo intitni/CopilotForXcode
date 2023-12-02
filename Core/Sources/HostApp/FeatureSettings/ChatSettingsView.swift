@@ -290,7 +290,7 @@ struct ChatSettingsView: View {
                     },
                     description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
                 ) {
-                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
+                    WithFeatureEnabled(\.senseScopeInChat, alignment: .hidden) {
                         Form {
                             Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
                                 Text("Enable by default")

@@ -1,5 +1,10 @@
+import Preferences
 import SharedUIComponents
 import SwiftUI
+
+#if canImport(ProHostApp)
+import ProHostApp
+#endif
 
 struct PromptToCodeSettingsView: View {
     final class Settings: ObservableObject {
@@ -99,13 +104,49 @@ struct PromptToCodeSettingsView: View {
                     Text("pt")
                 }.disabled(true)
             }
+            
+            ScopeForm()
+        }
+    }
+    
+    struct ScopeForm: View {
+        class Settings: ObservableObject {
+            @AppStorage(\.enableSenseScopeByDefaultInPromptToCode)
+            var enableSenseScopeByDefaultInPromptToCode: Bool
+            init() {}
+        }
+
+        @StateObject var settings = Settings()
+
+        var body: some View {
+            SettingsDivider("Scopes")
+
+            VStack {
+                #if canImport(ProHostApp)
+
+                SubSection(
+                    title: WithFeatureEnabled(\.senseScopeInChat, alignment: .trailing) {
+                        Text("Sense Scope (Experimental)")
+                    },
+                    description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
+                ) {
+                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
+                        Form {
+                            Toggle(isOn: $settings.enableSenseScopeByDefaultInPromptToCode) {
+                                Text("Enable by default")
+                            }
+                        }
+                    }
+                }
+
+                #endif
+            }
         }
     }
 }
 
-struct PromptToCodeSettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        PromptToCodeSettingsView()
-    }
+#Preview {
+    PromptToCodeSettingsView()
+        .padding()
 }
 
