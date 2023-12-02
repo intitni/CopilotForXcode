@@ -67,6 +67,14 @@ For chat and prompt to code features:
 
 ## Installation and Setup
 
+> The installation process is a bit complicated. Here is a quick overview:
+> 
+> 1. Install the app into the Applications folder.
+> 2. Enable the source editor extension.
+> 3. Grant Accessibility API permission to the extension app.
+> 4. Setup accounts and models in the host app.
+> 5. Optionally, update the settings of each feature in the host app, and setup keybindings.
+
 ### Install
 
 You can install it via [Homebrew](http://brew.sh/):
