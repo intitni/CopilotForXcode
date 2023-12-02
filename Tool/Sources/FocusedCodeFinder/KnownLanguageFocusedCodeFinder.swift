@@ -126,7 +126,8 @@ public extension KnownLanguageFocusedCodeFinderType {
 
         return .init(
             scope: scopeContexts.isEmpty ? .file : .scope(signature: scopeContexts),
-            contextRange: contextRange,
+            contextRange: contextRange, 
+            smallestContextRange: codeRange,
             focusedRange: focusedRange,
             focusedCode: code,
             imports: contextInfo.imports,

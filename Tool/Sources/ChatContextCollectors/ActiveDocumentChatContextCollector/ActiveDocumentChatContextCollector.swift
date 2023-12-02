@@ -82,7 +82,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             selectedCode: "",
             selectionRange: .outOfScope,
             lineAnnotations: [],
-            imports: []
+            imports: [],
+            includes: []
         )
 
         activeDocumentContext.update(info)

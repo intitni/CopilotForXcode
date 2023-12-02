@@ -23,6 +23,7 @@ public struct CodeContext: Equatable {
 
     public var scope: Scope
     public var contextRange: CursorRange
+    public var smallestContextRange: CursorRange
     public var focusedRange: CursorRange
     public var focusedCode: String
     public var imports: [String]
@@ -32,6 +33,7 @@ public struct CodeContext: Equatable {
         .init(
             scope: .file,
             contextRange: .zero,
+            smallestContextRange: .zero,
             focusedRange: .zero,
             focusedCode: "",
             imports: [],
@@ -42,6 +44,7 @@ public struct CodeContext: Equatable {
     public init(
         scope: Scope,
         contextRange: CursorRange,
+        smallestContextRange: CursorRange,
         focusedRange: CursorRange,
         focusedCode: String,
         imports: [String],
@@ -49,6 +52,7 @@ public struct CodeContext: Equatable {
     ) {
         self.scope = scope
         self.contextRange = contextRange
+        self.smallestContextRange = smallestContextRange
         self.focusedRange = focusedRange
         self.focusedCode = focusedCode
         self.imports = imports
@@ -57,7 +61,11 @@ public struct CodeContext: Equatable {
 }
 
 public struct FocusedCodeFinder {
-    public init() {}
+    public let maxFocusedCodeLineCount: Int
+
+    public init(maxFocusedCodeLineCount: Int) {
+        self.maxFocusedCodeLineCount = maxFocusedCodeLineCount
+    }
 
     public struct Document {
         var documentURL: URL
@@ -79,10 +87,12 @@ public struct FocusedCodeFinder {
         let finder: FocusedCodeFinderType = {
             switch language {
             case .builtIn(.swift):
-                return SwiftFocusedCodeFinder()
+                return SwiftFocusedCodeFinder(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
             case .builtIn(.objc), .builtIn(.objcpp), .builtIn(.c):
-                #warning("TODO: Implement C++ focused code finder, use it for C and metal shading language")
-                return ObjectiveCFocusedCodeFinder()
+                #warning(
+                    "TODO: Implement C++ focused code finder, use it for C and metal shading language"
+                )
+                return ObjectiveCFocusedCodeFinder(maxFocusedCodeLineCount: maxFocusedCodeLineCount)
             default:
                 return UnknownLanguageFocusedCodeFinder(proposedSearchRange: 5)
             }

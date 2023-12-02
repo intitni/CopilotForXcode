@@ -36,7 +36,8 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                     range: .init(startPair: (1, 0), endPair: (5, 1))
                 ),
             ]),
-            contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            contextRange: .init(startPair: (0, 0), endPair: (6, 4)), 
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSInteger foo = 0;
@@ -69,6 +70,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSLog(@"Hello");
@@ -107,6 +109,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (7, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo {
@@ -146,6 +149,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
@@ -183,6 +187,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
@@ -220,6 +225,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 4)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
             - (void)fooWith:(NSInteger)foo;
@@ -257,6 +263,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 NSInteger foo;
@@ -294,6 +301,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 1)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 foo,
@@ -331,6 +339,7 @@ final class ObjectiveCFocusedCodeFinder_Selection_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (4, 2)),
+            smallestContextRange: range,
             focusedRange: range,
             focusedCode: """
                 foo,
@@ -372,6 +381,7 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
                 ),
             ]),
             contextRange: .init(startPair: (0, 0), endPair: (6, 4)),
+            smallestContextRange: range,
             focusedRange: .init(startPair: (1, 0), endPair: (5, 1)),
             focusedCode: """
             - (void)fooWith:(NSInteger)foo {
@@ -408,6 +418,7 @@ final class ObjectiveCFocusedCodeFinder_Focus_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .file,
             contextRange: .init(startPair: (0, 0), endPair: (0, 0)),
+            smallestContextRange: range,
             focusedRange: .init(startPair: (0, 0), endPair: (4, 4)),
             focusedCode: """
             @interface __GENERICS(NSArray, ObjectType) (BlocksKit)
