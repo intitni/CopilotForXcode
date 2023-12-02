@@ -5,9 +5,20 @@ import TokenEncoder
 
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
+    public struct ComposableMessages {
+        public var systemPromptMessage: ChatMessage
+        public var historyMessage: [ChatMessage]
+        public var retrievedContentMessage: ChatMessage
+        public var contextSystemPromptMessage: ChatMessage
+        public var newMessage: ChatMessage
+    }
+
+    public typealias HistoryComposer = (ComposableMessages) -> [ChatMessage]
+
     public private(set) var history: [ChatMessage] = [] {
         didSet { onHistoryChange() }
     }
+
     public private(set) var remainingTokens: Int?
 
     public var systemPrompt: String
@@ -19,16 +30,36 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     static let encoder: TokenEncoder = TiktokenCl100kBaseTokenEncoder()
 
     var onHistoryChange: () -> Void = {}
+    
+    let composeHistory: HistoryComposer
 
     public init(
         systemPrompt: String,
         configuration: ChatGPTConfiguration,
-        functionProvider: ChatGPTFunctionProvider
+        functionProvider: ChatGPTFunctionProvider,
+        composeHistory: @escaping HistoryComposer = {
+            /// Default Format:
+            /// ```
+            /// [System Prompt] priority: high
+            /// [Functions] priority: high
+            /// [Retrieved Content] priority: low
+            ///     [Retrieved Content A]
+            ///     <separator>
+            ///     [Retrieved Content B]
+            /// [Message History] priority: medium
+            /// [Context System Prompt] priority: high
+            /// [Latest Message] priority: high
+            /// ```
+            [$0.systemPromptMessage] +
+                $0.historyMessage +
+                [$0.retrievedContentMessage, $0.contextSystemPromptMessage, $0.newMessage]
+        }
     ) {
         self.systemPrompt = systemPrompt
         contextSystemPrompt = ""
         self.configuration = configuration
         self.functionProvider = functionProvider
+        self.composeHistory = composeHistory
         _ = Self.encoder // force pre-initialize
     }
 
@@ -60,19 +91,6 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    ///
-    /// Format:
-    /// ```
-    /// [System Prompt] priority: high
-    /// [Functions] priority: high
-    /// [Retrieved Content] priority: low
-    ///     [Retrieved Content A]
-    ///     <separator>
-    ///     [Retrieved Content B]
-    /// [Message History] priority: medium
-    /// [Context System Prompt] priority: high
-    /// [Latest Message] priority: high
-    /// ```
     func generateSendingHistory(
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
         encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
@@ -105,11 +123,13 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             encoder: encoder
         )
 
-        let allMessages: [ChatMessage] = (
-            [systemPromptMessage] +
-                historyMessage +
-                [retrievedContentMessage, contextSystemPromptMessage, newMessage]
-        ).filter {
+        let allMessages = composeHistory(.init(
+            systemPromptMessage: systemPromptMessage,
+            historyMessage: historyMessage,
+            retrievedContentMessage: retrievedContentMessage,
+            contextSystemPromptMessage: contextSystemPromptMessage,
+            newMessage: newMessage
+        )).filter {
             !($0.content?.isEmpty ?? false)
         }
 
@@ -269,7 +289,7 @@ extension AutoManagedChatGPTMemory {
     }
 }
 
-extension TokenEncoder {
+public extension TokenEncoder {
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     func countToken(message: ChatMessage) -> Int {
         var total = 3
