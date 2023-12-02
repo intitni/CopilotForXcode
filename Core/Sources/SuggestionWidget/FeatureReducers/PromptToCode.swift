@@ -219,7 +219,7 @@ public struct PromptToCode: ReducerProtocol {
             case .stopRespondingButtonTapped:
                 state.isResponding = false
                 promptToCodeService.stopResponding()
-                return .none
+                return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case let .modifyCodeTrunkReceived(code, description):
                 state.code = code

@@ -63,7 +63,7 @@ public class ChatGPTService: ChatGPTServiceType {
     public var functionProvider: ChatGPTFunctionProvider
 
     var uuidGenerator: () -> String = { UUID().uuidString }
-    var cancelTask: Cancellable?
+    var runningTask: Task<Void, Never>?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
     var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
 
@@ -204,8 +204,8 @@ public class ChatGPTService: ChatGPTServiceType {
     }
 
     public func stopReceivingMessage() {
-        cancelTask?()
-        cancelTask = nil
+        runningTask?.cancel()
+        runningTask = nil
     }
 }
 
@@ -285,9 +285,11 @@ extension ChatGPTService {
                         references: prompt.references
                     )
                     let (trunks, cancel) = try await api()
-                    cancelTask = cancel
                     for try await trunk in trunks {
-                        try Task.checkCancellation()
+                        if Task.isCancelled {
+                            cancel()
+                            throw CancellationError()
+                        }
                         guard let delta = trunk.choices?.first?.delta else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -332,6 +334,8 @@ extension ChatGPTService {
                     continuation.finish(throwing: error)
                 }
             }
+            
+            runningTask = task
             
             continuation.onTermination = { _ in
                 task.cancel()
