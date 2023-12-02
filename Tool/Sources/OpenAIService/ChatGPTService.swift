@@ -41,11 +41,16 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
     public struct ErrorContent: Codable {
         public var message: String
-        public var type: String
+        public var type: String?
         public var param: String?
         public var code: String?
 
-        public init(message: String, type: String, param: String? = nil, code: String? = nil) {
+        public init(
+            message: String,
+            type: String? = nil,
+            param: String? = nil,
+            code: String? = nil
+        ) {
             self.message = message
             self.type = type
             self.param = param
@@ -80,7 +85,7 @@ public class ChatGPTService: ChatGPTServiceType {
         self.configuration = configuration
         self.functionProvider = functionProvider
     }
-    
+
     @Dependency(\.uuid) var uuid
     @Dependency(\.date) var date
 
@@ -279,7 +284,7 @@ extension ChatGPTService {
         #if DEBUG
         Debugger.didSendRequestBody(body: requestBody)
         #endif
-        
+
         let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
 
         return AsyncThrowingStream<StreamContent, Error> { continuation in
