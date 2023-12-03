@@ -1,5 +1,7 @@
+import Dependencies
 import Environment
 import Foundation
+import GitIgnoreCheck
 import SuggestionModel
 
 public protocol FilespacePropertyKey {
@@ -47,19 +49,33 @@ public struct FilespaceCodeMetadata: Equatable {
 
 @dynamicMemberLookup
 public final class Filespace {
+    struct GitIgnoreStatus {
+        var isIgnored: Bool
+        var checkTime: Date
+        var isExpired: Bool {
+            Environment.now().timeIntervalSince(checkTime) > 60 * 3
+        }
+    }
+
+    // MARK: Metadata
+
     public let fileURL: URL
     public private(set) lazy var language: CodeLanguage = languageIdentifierFromFileURL(fileURL)
     public var codeMetadata: FilespaceCodeMetadata = .init()
+
+    // MARK: Suggestions
+
+    public private(set) var suggestionIndex: Int = 0
     public internal(set) var suggestions: [CodeSuggestion] = [] {
         didSet { refreshUpdateTime() }
     }
-
-    public private(set) var suggestionIndex: Int = 0
 
     public var presentingSuggestion: CodeSuggestion? {
         guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
         return suggestions[suggestionIndex]
     }
+
+    // MARK: Life Cycle
 
     public var isExpired: Bool {
         Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 3
@@ -69,6 +85,25 @@ public final class Filespace {
     private var additionalProperties = FilespacePropertyValues()
     let fileSaveWatcher: FileSaveWatcher
     let onClose: (URL) -> Void
+
+    // MARK: Git Ignore
+
+    private var gitIgnoreStatus: GitIgnoreStatus?
+    public var isGitIgnored: Bool {
+        get async {
+            @Dependency(\.gitIgnoredChecker) var gitIgnoredChecker
+            @Dependency(\.date) var date
+
+            if let gitIgnoreStatus = gitIgnoreStatus, !gitIgnoreStatus.isExpired {
+                return gitIgnoreStatus.isIgnored
+            }
+            let isIgnored = await gitIgnoredChecker.checkIfGitIgnored(fileURL: fileURL)
+            gitIgnoreStatus = .init(isIgnored: isIgnored, checkTime: date())
+            return isIgnored
+        }
+    }
+
+    // MARK: Methods
 
     deinit {
         onClose(fileURL)
