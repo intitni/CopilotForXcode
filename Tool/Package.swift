@@ -42,6 +42,7 @@ let package = Package(
                 "AppActivator",
             ]
         ),
+        .library(name: "GitIgnoreCheck", targets: ["GitIgnoreCheck"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -202,6 +203,7 @@ let package = Package(
         .target(
             name: "Workspace",
             dependencies: [
+                "GitIgnoreCheck",
                 "UserDefaultsObserver",
                 "SuggestionModel",
                 "Environment",
@@ -233,6 +235,18 @@ let package = Package(
         .testTarget(
             name: "FocusedCodeFinderTests",
             dependencies: ["FocusedCodeFinder"]
+        ),
+
+        .target(
+            name: "GitIgnoreCheck",
+            dependencies: [
+                "Terminal",
+                "Preferences",
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
+            ]
         ),
 
         // MARK: - Services
@@ -302,7 +316,7 @@ let package = Package(
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
-                )
+                ),
             ]
         ),
         .testTarget(
@@ -312,7 +326,7 @@ let package = Package(
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
-                )
+                ),
             ]
         ),
 
@@ -344,6 +358,7 @@ let package = Package(
                 "Preferences",
                 "FocusedCodeFinder",
                 "XcodeInspector",
+                "GitIgnoreCheck",
             ],
             path: "Sources/ChatContextCollectors/ActiveDocumentChatContextCollector"
         ),

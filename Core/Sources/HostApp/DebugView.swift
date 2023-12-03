@@ -16,6 +16,7 @@ final class DebugSettings: ObservableObject {
     var disableGitHubCopilotSettingsAutoRefreshOnAppear
     @AppStorage(\.useUserDefaultsBaseAPIKeychain) var useUserDefaultsBaseAPIKeychain
     @AppStorage(\.disableEnhancedWorkspace) var disableEnhancedWorkspace
+    @AppStorage(\.disableGitIgnoreCheck) var disableGitIgnoreCheck
     init() {}
 }
 
@@ -62,6 +63,10 @@ struct DebugSettingsView: View {
                     
                     Toggle(isOn: $settings.disableEnhancedWorkspace) {
                         Text("Disable Enhanced Workspace")
+                    }
+                    
+                    Toggle(isOn: $settings.disableGitIgnoreCheck) {
+                        Text("Disable Git Ignore Check")
                     }
                     
                     Button("Reset Migration Version to 0") {

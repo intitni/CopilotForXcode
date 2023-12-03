@@ -1,7 +1,9 @@
 import ASTParser
 import ChatContextCollector
+import Dependencies
 import FocusedCodeFinder
 import Foundation
+import GitIgnoreCheck
 import OpenAIService
 import Preferences
 import SuggestionModel
@@ -12,22 +14,27 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
     public var activeDocumentContext: ActiveDocumentContext?
 
+    @Dependency(\.gitIgnoredChecker) var gitIgnoredChecker
+
     public func generateContext(
         history: [ChatMessage],
         scopes: Set<ChatContext.Scope>,
         content: String,
         configuration: ChatGPTConfiguration
-    ) -> ChatContext {
+    ) async -> ChatContext {
         guard let info = getEditorInformation() else { return .empty }
         let context = getActiveDocumentContext(info)
         activeDocumentContext = context
 
-        guard scopes.contains(.code) else {
+        let isSensitive = await gitIgnoredChecker.checkIfGitIgnored(fileURL: info.documentURL)
+
+        guard scopes.contains(.code)
+        else {
             if scopes.contains(.file) {
                 var removedCode = context
                 removedCode.focusedContext = nil
                 return .init(
-                    systemPrompt: extractSystemPrompt(removedCode),
+                    systemPrompt: extractSystemPrompt(removedCode, isSensitive: isSensitive),
                     retrievedContent: [],
                     functions: []
                 )
@@ -37,36 +44,39 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
         var functions = [any ChatGPTFunction]()
 
-        // When the bot is already focusing on a piece of code, it can expand the range.
+        if !isSensitive {
+            // When the bot is already focusing on a piece of code, it can expand the range.
 
-        if context.focusedContext != nil {
-            functions.append(ExpandFocusRangeFunction(contextCollector: self))
-        }
+            if context.focusedContext != nil {
+                functions.append(ExpandFocusRangeFunction(contextCollector: self))
+            }
 
-        // When the bot is not focusing on any code, or the focusing area is not the user's
-        // selection, it can move the focus back to the user's selection.
+            // When the bot is not focusing on any code, or the focusing area is not the user's
+            // selection, it can move the focus back to the user's selection.
 
-        if context.focusedContext == nil ||
-            !(context.focusedContext?.codeRange.contains(context.selectionRange) ?? false)
-        {
-            functions.append(MoveToFocusedCodeFunction(contextCollector: self))
-        }
+            if context.focusedContext == nil ||
+                !(context.focusedContext?.codeRange.contains(context.selectionRange) ?? false)
+            {
+                functions.append(MoveToFocusedCodeFunction(contextCollector: self))
+            }
 
-        // When there is a line annotation not in the focused area, the bot can move the focus area
-        // to the code covering the line of the annotation.
+            // When there is a line annotation not in the focused area, the bot can move the focus
+            // area
+            // to the code covering the line of the annotation.
 
-        if let focusedContext = context.focusedContext,
-           !focusedContext.otherLineAnnotations.isEmpty
-        {
-            functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
-        }
+            if let focusedContext = context.focusedContext,
+               !focusedContext.otherLineAnnotations.isEmpty
+            {
+                functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
+            }
 
-        if context.focusedContext == nil, !context.lineAnnotations.isEmpty {
-            functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
+            if context.focusedContext == nil, !context.lineAnnotations.isEmpty {
+                functions.append(MoveToCodeAroundLineFunction(contextCollector: self))
+            }
         }
 
         return .init(
-            systemPrompt: extractSystemPrompt(context),
+            systemPrompt: extractSystemPrompt(context, isSensitive: isSensitive),
             retrievedContent: [],
             functions: functions
         )
@@ -90,7 +100,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         return activeDocumentContext
     }
 
-    func extractSystemPrompt(_ context: ActiveDocumentContext) -> String {
+    func extractSystemPrompt(_ context: ActiveDocumentContext, isSensitive: Bool) -> String {
         let start = """
         ## File and Code Scope
 
@@ -108,7 +118,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         let language = "Language: \(context.language.rawValue)"
 
         if let focusedContext = context.focusedContext {
-            let codeContext = focusedContext.context.isEmpty
+            let codeContext = focusedContext.context.isEmpty || isSensitive
                 ? ""
                 : """
                 Focused Context:
@@ -119,14 +129,16 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
 
             let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
 
-            let code = """
-            Focused Code (start from line \(focusedContext.codeRange.start.line + 1)):
-            ```\(context.language.rawValue)
-            \(focusedContext.code)
-            ```
-            """
+            let code = context.selectionRange.isEmpty && isSensitive
+                ? ""
+                : """
+                Focused Code (start from line \(focusedContext.codeRange.start.line + 1)):
+                ```\(context.language.rawValue)
+                \(focusedContext.code)
+                ```
+                """
 
-            let fileAnnotations = focusedContext.otherLineAnnotations.isEmpty
+            let fileAnnotations = focusedContext.otherLineAnnotations.isEmpty || isSensitive
                 ? ""
                 : """
                 Other Annotations:\"""
@@ -139,7 +151,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 \"""
                 """
 
-            let codeAnnotations = focusedContext.lineAnnotations.isEmpty
+            let codeAnnotations = focusedContext.lineAnnotations.isEmpty || isSensitive
                 ? ""
                 : """
                 Annotations Inside Focused Range:\"""
@@ -165,7 +177,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             .joined(separator: "\n\n")
         } else {
             let selectionRange = "Selection Range [line, character]: \(context.selectionRange)"
-            let lineAnnotations = context.lineAnnotations.isEmpty
+            let lineAnnotations = context.lineAnnotations.isEmpty || isSensitive
                 ? ""
                 : """
                 Line Annotations:\"""
