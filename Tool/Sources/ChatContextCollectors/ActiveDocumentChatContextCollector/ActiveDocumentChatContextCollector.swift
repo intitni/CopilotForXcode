@@ -130,7 +130,10 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
 
             let code = context.selectionRange.isEmpty && isSensitive
-                ? ""
+                ? """
+                The file is in gitignore, you can't read the file.
+                Ask the user to select the code in the editor to get help. Also tell them the file is in gitignore.
+                """
                 : """
                 Focused Code (start from line \(focusedContext.codeRange.start.line + 1)):
                 ```\(context.language.rawValue)

@@ -35,7 +35,7 @@ public extension Workspace {
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
         
-        guard await filespace.isGitIgnored else { return [] }
+        guard !(await filespace.isGitIgnored) else { throw SuggestionFeatureDisabledError() }
 
         if !editor.uti.isEmpty {
             filespace.codeMetadata.uti = editor.uti
