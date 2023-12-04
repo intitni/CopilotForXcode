@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this feature request! 
+        Thanks for taking the time to fill out this feature request! But please firstly [post your idea in discussion](https://github.com/intitni/CopilotForXcode/discussions/new?category=ideas) so that we can discuss about it in advance.
   - type: checkboxes
     id: before-reporting
     attributes:
