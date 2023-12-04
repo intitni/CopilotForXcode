@@ -52,12 +52,13 @@ public struct DefaultGitIgnoredChecker: GitIgnoredChecker {
             return false
         }
         do {
-            _ = try await terminal.runCommand(
+            let result = try await terminal.runCommand(
                 "/bin/bash",
-                arguments: ["-i", "-c", "git check-ignore \"\(fileURL.path)\""],
+                arguments: ["-c", "git check-ignore \"\(fileURL.path)\""],
                 currentDirectoryPath: gitFolderURL.path,
                 environment: [:]
             )
+            if result.isEmpty { return false }
             return true
         } catch {
             return false
@@ -75,7 +76,7 @@ public struct DefaultGitIgnoredChecker: GitIgnoredChecker {
         do {
             let result = try await terminal.runCommand(
                 "/bin/bash",
-                arguments: ["-i", "-c", "git check-ignore \(filePaths)"],
+                arguments: ["-c", "git check-ignore \(filePaths)"],
                 currentDirectoryPath: gitFolderURL.path,
                 environment: [:]
             )
