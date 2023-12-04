@@ -112,7 +112,7 @@ struct OpenAICompletionAPI: CompletionAPI {
             return try JSONDecoder().decode(CompletionResponseBody.self, from: result)
         } catch {
             dump(error)
-            fatalError()
+            throw error
         }
     }
 }
