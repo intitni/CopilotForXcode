@@ -101,6 +101,7 @@ final class DynamicContextController {
             .flatMap(\.retrievedContent)
             .filter { !$0.document.content.isEmpty }
             .sorted { $0.priority > $1.priority }
+            .prefix(15)
 
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")

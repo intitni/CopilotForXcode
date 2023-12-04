@@ -105,6 +105,7 @@ let package = Package(
             name: "Environment",
             dependencies: [
                 "ActiveApplicationMonitor",
+                "XcodeInspector",
                 "AXExtension",
                 "Preferences",
             ]
@@ -173,7 +174,6 @@ let package = Package(
             dependencies: [
                 "AXExtension",
                 "SuggestionModel",
-                "Environment",
                 "AXNotificationStream",
                 "Logger",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),

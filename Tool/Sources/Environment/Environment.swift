@@ -4,6 +4,7 @@ import AXExtension
 import Foundation
 import Logger
 import Preferences
+import XcodeInspector
 
 public struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
     public var errorDescription: String? {
@@ -149,9 +150,16 @@ public enum Environment {
     }
 
     public static var triggerAction: (_ name: String) async throws -> Void = { name in
-        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode
-            ?? ActiveApplicationMonitor.shared.latestXcode
-        else { return }
+        struct CantRunCommand: Error, LocalizedError {
+            let name: String
+            var errorDescription: String? {
+                "Can't run command \(name)."
+            }
+        }
+
+        guard let activeXcode = XcodeInspector.shared.latestActiveXcode?.runningApplication
+        else { throw CantRunCommand(name: name) }
+
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
 
@@ -184,12 +192,6 @@ public enum Environment {
                     throw error
                 } else {
                     return
-                }
-            }
-            struct CantRunCommand: Error, LocalizedError {
-                let name: String
-                var errorDescription: String? {
-                    "Can't run command \(name)."
                 }
             }
 

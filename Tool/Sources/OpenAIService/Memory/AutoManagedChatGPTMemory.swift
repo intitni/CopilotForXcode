@@ -30,7 +30,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     static let encoder: TokenEncoder = TiktokenCl100kBaseTokenEncoder()
 
     var onHistoryChange: () -> Void = {}
-    
+
     let composeHistory: HistoryComposer
 
     public init(
@@ -251,6 +251,9 @@ extension AutoManagedChatGPTMemory {
         usage: Int,
         references: [ChatMessage.Reference]
     ) {
+        /// the available tokens count for retrieved content
+        let thresholdMaxTokenCount = min(maxTokenCount, configuration.maxTokens / 2)
+
         var retrievedContentTokenCount = 0
         let separator = String(repeating: "=", count: 32) // only 1 token
         var message = ""
@@ -258,7 +261,7 @@ extension AutoManagedChatGPTMemory {
 
         func appendToMessage(_ text: String) -> Bool {
             let tokensCount = encoder.countToken(text: text)
-            if tokensCount + retrievedContentTokenCount > maxTokenCount { return false }
+            if tokensCount + retrievedContentTokenCount > thresholdMaxTokenCount { return false }
             retrievedContentTokenCount += tokensCount
             message += text
             return true

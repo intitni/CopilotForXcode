@@ -67,6 +67,14 @@ For chat and prompt to code features:
 
 ## Installation and Setup
 
+> The installation process is a bit complicated. Here is a quick overview:
+> 
+> 1. Install the app into the Applications folder, open it once.
+> 2. Enable the source editor extension.
+> 3. Grant Accessibility API permission to the extension app.
+> 4. Setup accounts and models in the host app.
+> 5. Optionally, update the settings of each feature in the host app, and setup keybindings.
+
 ### Install
 
 You can install it via [Homebrew](http://brew.sh/):
@@ -172,19 +180,15 @@ You can also set it to quit automatically when the above 2 apps are closed.
 
 ## Update
 
-If the app was installed via Homebrew, you can update it by running:
-
-```bash
-brew upgrade --cask copilot-for-xcode
-```
-
-Alternatively, You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).
+You can use the in-app updater or download the latest version manually from the latest [release](https://github.com/intitni/CopilotForXcode/releases).
 
 After updating, please open Copilot for Xcode.app once and restart Xcode to allow the extension to reload.
 
 If you find that some of the features are no longer working, please first try regranting permissions to the app.
 
 ## Feature
+
+> Files in gitignore will not receive suggestion. Both chat and prompt to code feature will not have access to them unless you manually select code from them.
 
 ### Suggestion
 
@@ -302,6 +306,18 @@ This feature is recommended when you need to update a specific piece of code. So
 - Polishing and correcting grammar and spelling errors in the documentation.
 - Translating a localizable strings file.
 
+#### Prompt to Code Scope
+
+The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
+
+|   Scope    | Description                                                                              |
+| :--------: | ---------------------------------------------------------------------------------------- |
+|  `@sense`  | Experimental. Read the relevant information of the focused code                          |
+
+To use scopes, you can prefix a message with `@sense`.
+
+You can use shorthand to represent a scope, such as `@sense`, and enable multiple scopes with `@c+web`.
+
 #### Commands
 
 - Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
@@ -334,6 +350,9 @@ These features are included in another repo, and are not open sourced.
 
 The currently available Plus features include:
 
+- `@project` scope in chat.
+- Suggestion Cheatsheet that provides relevant content to the suggestion service.
+- `@sense` scope in chat and prompt to code.
 - Terminal tab in chat panel.
 - Unlimited chat/embedding models.
 - Tab to accept suggestions.
