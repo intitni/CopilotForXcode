@@ -35,7 +35,7 @@ public struct DefaultGitIgnoredChecker: GitIgnoredChecker {
     var isTest = false
     
     var noCheck: Bool {
-        if isTest { return false }
+        if isTest { return true }
         return UserDefaults.shared.value(for: \.disableGitIgnoreCheck)
     }
     
