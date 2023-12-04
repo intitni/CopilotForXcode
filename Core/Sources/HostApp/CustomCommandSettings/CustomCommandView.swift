@@ -2,8 +2,8 @@ import ComposableArchitecture
 import MarkdownUI
 import PlusFeatureFlag
 import Preferences
-import SwiftUI
 import SharedUIComponents
+import SwiftUI
 
 extension List {
     @ViewBuilder
@@ -155,27 +155,29 @@ struct CustomCommandView: View {
         )) { store in
             EditCustomCommandView(store: store)
         } else: {
-            CustomCommandTypeDescription(text: """
-            # Send Message
-
-            This command sends a message to the active chat tab. You can provide additional context through the "Extra System Prompt" as well.
-
-            # Prompt to Code
-
-            This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the "Extra Context" as well.
-
-            # Custom Chat
-
-            This command will overwrite the system prompt to let the bot behave differently.
-
-            # Single Round Dialog
-
-            This command allows you to send a message to a temporary chat without opening the chat panel.
-
-            It is particularly useful for one-time commands, such as running a terminal command with `/run`.
-
-            For example, you can set the prompt to `/run open .` to open the project in Finder.
-            """)
+            VStack {
+                SubSection(title: Text("Send Message")) {
+                    Text(
+                        "This command sends a message to the active chat tab. You can provide additional context through the \"Extra System Prompt\" as well."
+                    )
+                }
+                SubSection(title: Text("Prompt to Code")) {
+                    Text(
+                        "This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the \"Extra Context\" as well."
+                    )
+                }
+                SubSection(title: Text("Custom Chat")) {
+                    Text(
+                        "This command will overwrite the system prompt to let the bot behave differently."
+                    )
+                }
+                SubSection(title: Text("Single Round Dialog")) {
+                    Text(
+                        "This command allows you to send a message to a temporary chat without opening the chat panel. It is particularly useful for one-time commands, such as running a terminal command with `/run`. For example, you can set the prompt to `/run open .` to open the project in Finder."
+                    )
+                }
+            }
+            .padding()
         }
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftTreeSitter
 
-extension TreeCursor {
+public extension TreeCursor {
     /// Deep first search nodes.
     /// - Parameter skipChildren: Check if children of a `Node` should be skipped.
     func deepFirstSearch(
@@ -13,7 +13,7 @@ extension TreeCursor {
 
 // MARK: - Search
 
-protocol Cursor {
+public protocol Cursor {
     associatedtype Node
     var currentNode: Node? { get }
     func goToFirstChild() -> Bool
@@ -22,32 +22,32 @@ protocol Cursor {
 }
 
 extension TreeCursor: Cursor {
-    func goToNextSibling() -> Bool {
+    public func goToNextSibling() -> Bool {
         gotoNextSibling()
     }
-    
-    func goToParent() -> Bool {
+
+    public func goToParent() -> Bool {
         gotoParent()
     }
 }
 
-struct CursorDeepFirstSearchSequence<C: Cursor>: Sequence {
+public struct CursorDeepFirstSearchSequence<C: Cursor>: Sequence {
     let cursor: C
     let skipChildren: (C.Node) -> Bool
 
-    func makeIterator() -> CursorDeepFirstSearchIterator<C> {
+    public func makeIterator() -> CursorDeepFirstSearchIterator {
         return CursorDeepFirstSearchIterator(
             cursor: cursor,
             skipChildren: skipChildren
         )
     }
 
-    struct CursorDeepFirstSearchIterator<C: Cursor>: IteratorProtocol {
+    public struct CursorDeepFirstSearchIterator: IteratorProtocol {
         let cursor: C
         let skipChildren: (C.Node) -> Bool
         var isEnded = false
 
-        mutating func next() -> C.Node? {
+        public mutating func next() -> C.Node? {
             guard !isEnded else { return nil }
             let currentNode = cursor.currentNode
             let hasChild = {

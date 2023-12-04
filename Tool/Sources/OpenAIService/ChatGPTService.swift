@@ -1,4 +1,5 @@
 import AsyncAlgorithms
+import Dependencies
 import Foundation
 import Preferences
 
@@ -40,11 +41,16 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 
     public struct ErrorContent: Codable {
         public var message: String
-        public var type: String
+        public var type: String?
         public var param: String?
         public var code: String?
 
-        public init(message: String, type: String, param: String? = nil, code: String? = nil) {
+        public init(
+            message: String,
+            type: String? = nil,
+            param: String? = nil,
+            code: String? = nil
+        ) {
             self.message = message
             self.type = type
             self.param = param
@@ -62,8 +68,7 @@ public class ChatGPTService: ChatGPTServiceType {
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
-    var uuidGenerator: () -> String = { UUID().uuidString }
-    var cancelTask: Cancellable?
+    var runningTask: Task<Void, Never>?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
     var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
 
@@ -81,6 +86,9 @@ public class ChatGPTService: ChatGPTServiceType {
         self.functionProvider = functionProvider
     }
 
+    @Dependency(\.uuid) var uuid
+    @Dependency(\.date) var date
+
     /// Send a message and stream the reply.
     public func send(
         content: String,
@@ -88,12 +96,13 @@ public class ChatGPTService: ChatGPTServiceType {
     ) async throws -> AsyncThrowingStream<String, Error> {
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
-                id: uuidGenerator(),
+                id: uuid().uuidString,
                 role: .user,
                 content: content,
                 name: nil,
                 functionCall: nil,
-                summary: summary
+                summary: summary,
+                references: []
             )
             await memory.appendMessage(newMessage)
         }
@@ -131,7 +140,7 @@ public class ChatGPTService: ChatGPTServiceType {
                                     #endif
                                 case let .functionCall(call):
                                     if functionCall == nil {
-                                        functionCallMessageID = uuidGenerator()
+                                        functionCallMessageID = uuid().uuidString
                                         functionCall = call
                                     } else {
                                         functionCall?.name.append(call.name)
@@ -170,7 +179,7 @@ public class ChatGPTService: ChatGPTServiceType {
     ) async throws -> String? {
         if !content.isEmpty || summary != nil {
             let newMessage = ChatMessage(
-                id: uuidGenerator(),
+                id: uuid().uuidString,
                 role: .user,
                 content: content,
                 summary: summary
@@ -202,9 +211,10 @@ public class ChatGPTService: ChatGPTServiceType {
         }
     }
 
+    #warning("TODO: remove this and let the concurrency system handle it")
     public func stopReceivingMessage() {
-        cancelTask?()
-        cancelTask = nil
+        runningTask?.cancel()
+        runningTask = nil
     }
 }
 
@@ -218,7 +228,7 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
     func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
-        await memory.refresh()
+        let prompt = await memory.generatePrompt()
 
         guard let model = configuration.model else {
             throw ChatGPTServiceError.chatModelNotAvailable
@@ -227,7 +237,7 @@ extension ChatGPTService {
             throw ChatGPTServiceError.endpointIncorrect
         }
 
-        let messages = await memory.messages.map {
+        let messages = prompt.history.map {
             CompletionRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
@@ -237,7 +247,7 @@ extension ChatGPTService {
                 }
             )
         }
-        let remainingTokens = await memory.remainingTokens
+        let remainingTokens = prompt.remainingTokenCount
 
         let requestBody = CompletionRequestBody(
             model: model.info.modelName,
@@ -275,14 +285,21 @@ extension ChatGPTService {
         Debugger.didSendRequestBody(body: requestBody)
         #endif
 
+        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
+
         return AsyncThrowingStream<StreamContent, Error> { continuation in
             let task = Task {
                 do {
+                    await memory.streamMessage(
+                        id: proposedId,
+                        references: prompt.references
+                    )
                     let (trunks, cancel) = try await api()
-                    cancelTask = cancel
-                    let proposedId = UUID().uuidString + String(Date().timeIntervalSince1970)
                     for try await trunk in trunks {
-                        try Task.checkCancellation()
+                        if Task.isCancelled {
+                            cancel()
+                            throw CancellationError()
+                        }
                         guard let delta = trunk.choices?.first?.delta else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -327,7 +344,9 @@ extension ChatGPTService {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
+            runningTask = task
+
             continuation.onTermination = { _ in
                 task.cancel()
             }
@@ -336,7 +355,8 @@ extension ChatGPTService {
 
     /// Send the memory as prompt to ChatGPT, with stream disabled.
     func sendMemoryAndWait() async throws -> ChatMessage? {
-        await memory.refresh()
+        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
+        let prompt = await memory.generatePrompt()
 
         guard let model = configuration.model else {
             throw ChatGPTServiceError.chatModelNotAvailable
@@ -345,7 +365,7 @@ extension ChatGPTService {
             throw ChatGPTServiceError.endpointIncorrect
         }
 
-        let messages = await memory.messages.map {
+        let messages = prompt.history.map {
             CompletionRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
@@ -355,7 +375,7 @@ extension ChatGPTService {
                 }
             )
         }
-        let remainingTokens = await memory.remainingTokens
+        let remainingTokens = prompt.remainingTokenCount
 
         let requestBody = CompletionRequestBody(
             model: model.info.modelName,
@@ -397,13 +417,14 @@ extension ChatGPTService {
 
         guard let choice = response.choices.first else { return nil }
         let message = ChatMessage(
-            id: response.id ?? UUID().uuidString,
+            id: proposedId,
             role: choice.message.role,
             content: choice.message.content,
             name: choice.message.name,
             functionCall: choice.message.function_call.map {
                 ChatMessage.FunctionCall(name: $0.name, arguments: $0.arguments ?? "")
-            }
+            },
+            references: prompt.references
         )
         await memory.appendMessage(message)
         return message
@@ -413,13 +434,7 @@ extension ChatGPTService {
     /// to insert a message placeholder in memory.
     func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
         guard let function = functionProvider.function(named: call.name) else { return }
-        let responseMessage = ChatMessage(
-            id: messageId,
-            role: .function,
-            content: nil,
-            name: call.name
-        )
-        await memory.appendMessage(responseMessage)
+        await memory.streamMessage(id: messageId, role: .function, name: call.name)
         await function.prepare { [weak self] summary in
             await self?.memory.updateMessage(id: messageId) { message in
                 message.summary = summary
@@ -437,21 +452,13 @@ extension ChatGPTService {
         Debugger.didReceiveFunction(name: call.name, arguments: call.arguments)
         #endif
 
-        let messageId = messageId ?? uuidGenerator()
+        let messageId = messageId ?? uuid().uuidString
 
         guard let function = functionProvider.function(named: call.name) else {
             return await fallbackFunctionCall(call, messageId: messageId)
         }
 
-        // Insert the chat message into memory to indicate the start of the function.
-        let responseMessage = ChatMessage(
-            id: messageId,
-            role: .function,
-            content: nil,
-            name: call.name
-        )
-
-        await memory.appendMessage(responseMessage)
+        await memory.streamMessage(id: messageId, role: .function, name: call.name)
 
         do {
             // Run the function
@@ -525,14 +532,13 @@ extension ChatGPTService {
                 return "No result."
             }
         }()
-        let responseMessage = ChatMessage(
+        await memory.streamMessage(
             id: messageId,
             role: .function,
             content: content,
             name: call.name,
             summary: "Finished running function."
         )
-        await memory.appendMessage(responseMessage)
         return content
     }
 }
@@ -540,10 +546,6 @@ extension ChatGPTService {
 extension ChatGPTService {
     func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
-    }
-
-    func changeUUIDGenerator(_ generator: @escaping () -> String) {
-        uuidGenerator = generator
     }
 }
 

@@ -142,72 +142,67 @@ struct GitHubCopilotView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Form {
-                    TextField(
-                        text: $settings.nodePath,
-                        prompt: Text(
-                            "node"
+                SubSection(
+                    title: Text("Node Settings"),
+                    description: """
+                    You may have to restart the extension app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a tentacle, it will automatically restart as needed.
+                    """
+                ) {
+                    Form {
+                        TextField(
+                            text: $settings.nodePath,
+                            prompt: Text(
+                                "node"
+                            )
+                        ) {
+                            Text("Path to Node (v18+)")
+                        }
+                        
+                        Text(
+                            "Provide the path to the executable if it can't be found by the app, shim executable is not supported"
                         )
-                    ) {
-                        Text("Path to Node (v18+)")
-                    }
-
-                    Text(
-                        "Provide the path to the executable if it can't be found by the app, shim executable is not supported"
-                    )
-                    .lineLimit(10)
-                    .foregroundColor(.secondary)
-                    .font(.callout)
-                    .dynamicHeightTextInFormWorkaround()
-
-                    Picker(selection: $settings.runNodeWith) {
-                        ForEach(NodeRunner.allCases, id: \.rawValue) { runner in
-                            switch runner {
+                        .lineLimit(10)
+                        .foregroundColor(.secondary)
+                        .font(.callout)
+                        .dynamicHeightTextInFormWorkaround()
+                        
+                        Picker(selection: $settings.runNodeWith) {
+                            ForEach(NodeRunner.allCases, id: \.rawValue) { runner in
+                                switch runner {
+                                case .env:
+                                    Text("/usr/bin/env").tag(runner)
+                                case .bash:
+                                    Text("/bin/bash -i -l").tag(runner)
+                                case .shell:
+                                    Text("$SHELL -i -l").tag(runner)
+                                }
+                            }
+                        } label: {
+                            Text("Run Node with")
+                        }
+                        
+                        Group {
+                            switch settings.runNodeWith {
                             case .env:
-                                Text("/usr/bin/env").tag(runner)
+                                Text(
+                                    "PATH: `/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`"
+                                )
                             case .bash:
-                                Text("/bin/bash -i -l").tag(runner)
+                                Text("PATH inherited from bash configurations.")
                             case .shell:
-                                Text("$SHELL -i -l").tag(runner)
+                                Text("PATH inherited from $SHELL configurations.")
                             }
                         }
-                    } label: {
-                        Text("Run Node with")
+                        .lineLimit(10)
+                        .foregroundColor(.secondary)
+                        .font(.callout)
+                        .dynamicHeightTextInFormWorkaround()
                     }
-
-                    Group {
-                        switch settings.runNodeWith {
-                        case .env:
-                            Text(
-                                "PATH: `/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`"
-                            )
-                        case .bash:
-                            Text("PATH inherited from bash configurations.")
-                        case .shell:
-                            Text("PATH inherited from $SHELL configurations.")
-                        }
-                    }
-                    .lineLimit(10)
-                    .foregroundColor(.secondary)
-                    .font(.callout)
-                    .dynamicHeightTextInFormWorkaround()
-
-                    Spacer()
-                    
-                    Text("""
-                    You may have to restart the helper app to apply the changes. To do so, simply close the helper app by clicking on the menu bar icon that looks like a tentacle, it will automatically restart as needed.
-                    """)
-                    .lineLimit(6)
-                    .dynamicHeightTextInFormWorkaround()
-                    .foregroundColor(.secondary)
-                }
-                .padding(8)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
                 }
 
-                VStack(alignment: .leading) {
+                SubSection(
+                    title: Text("GitHub Copilot Language Server")
+                ) {
                     HStack {
                         switch viewModel.installationStatus {
                         case .none:
@@ -262,12 +257,6 @@ struct GitHubCopilotView: View {
                     }
                     .opacity(isRunningAction ? 0.8 : 1)
                     .disabled(isRunningAction)
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(nsColor: .separatorColor), style: .init(lineWidth: 1))
                 }
 
                 SettingsDivider("Advanced")

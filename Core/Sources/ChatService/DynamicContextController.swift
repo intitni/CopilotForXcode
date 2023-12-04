@@ -41,21 +41,21 @@ final class DynamicContextController {
         var content = content
         var scopes = Self.parseScopes(&content)
         scopes.formUnion(defaultScopes)
-        
+
         let overridingChatModelId = {
             var ids = [String]()
             if scopes.contains(.sense) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForSenseScope))
             }
-            
+
             if scopes.contains(.project) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForProjectScope))
             }
-            
+
             if scopes.contains(.web) {
                 ids.append(UserDefaults.shared.value(for: \.preferredChatModelIdForWebScope))
             }
-            
+
             let chatModels = UserDefaults.shared.value(for: \.chatModels)
             let idIndexMap = chatModels.enumerated().reduce(into: [String: Int]()) {
                 $0[$1.element.id] = $1.offset
@@ -66,7 +66,7 @@ final class DynamicContextController {
                 return lhs < rhs
             }).first
         }()
-        
+
         configuration.overriding.modelId = overridingChatModelId
 
         functionProvider.removeAll()
@@ -97,10 +97,11 @@ final class DynamicContextController {
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
 
-        let contextPrompts = contexts
+        let retrievedContent = contexts
             .flatMap(\.retrievedContent)
-            .filter { !$0.content.isEmpty }
+            .filter { !$0.document.content.isEmpty }
             .sorted { $0.priority > $1.priority }
+            .prefix(15)
 
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
@@ -108,7 +109,7 @@ final class DynamicContextController {
         """
         await memory.mutateSystemPrompt(contextualSystemPrompt)
         await memory.mutateContextSystemPrompt(contextSystemPrompt)
-        await memory.mutateRetrievedContent(contextPrompts.map(\.content))
+        await memory.mutateRetrievedContent(retrievedContent.map(\.document))
         functionProvider.append(functions: contexts.flatMap(\.functions))
     }
 }

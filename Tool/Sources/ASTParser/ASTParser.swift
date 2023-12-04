@@ -2,16 +2,12 @@ import SuggestionModel
 import SwiftTreeSitter
 import tree_sitter
 import TreeSitterObjC
-import TreeSitterSwift
 
 public enum ParsableLanguage {
-    case swift
     case objectiveC
 
     var tsLanguage: UnsafeMutablePointer<TSLanguage> {
         switch self {
-        case .swift:
-            return tree_sitter_swift()
         case .objectiveC:
             return tree_sitter_objc()
         }

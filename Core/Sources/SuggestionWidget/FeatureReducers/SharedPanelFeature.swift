@@ -6,7 +6,7 @@ import SwiftUI
 public struct SharedPanelFeature: ReducerProtocol {
     public struct Content: Equatable {
         public var promptToCodeGroup = PromptToCodeGroup.State()
-        var suggestion: SuggestionProvider?
+        var suggestion: CodeSuggestionProvider?
         public var promptToCode: PromptToCode.State? { promptToCodeGroup.activePromptToCode }
         var error: String?
     }

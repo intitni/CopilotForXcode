@@ -3,24 +3,45 @@ import ComposableArchitecture
 import Foundation
 import OpenAIService
 import Preferences
+import Terminal
 
-public struct ChatMessage: Equatable {
-    public enum Role {
+public struct DisplayedChatMessage: Equatable {
+    public enum Role: Equatable {
         case user
         case assistant
         case function
         case ignored
     }
 
+    public struct Reference: Equatable {
+        public var title: String
+        public var subtitle: String
+        public var uri: String
+        public var startLine: Int?
+
+        public init(title: String, subtitle: String, uri: String, startLine: Int?) {
+            self.title = title
+            self.subtitle = subtitle
+            self.uri = uri
+            self.startLine = startLine
+        }
+    }
+
     public var id: String
     public var role: Role
     public var text: String
+    public var references: [Reference] = []
 
-    public init(id: String, role: Role, text: String) {
+    public init(id: String, role: Role, text: String, references: [Reference]) {
         self.id = id
         self.role = role
         self.text = text
+        self.references = references
     }
+}
+
+private var isPreview: Bool {
+    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 }
 
 struct Chat: ReducerProtocol {
@@ -29,7 +50,7 @@ struct Chat: ReducerProtocol {
     struct State: Equatable {
         var title: String = "Chat"
         @BindingState var typedMessage = ""
-        var history: [ChatMessage] = []
+        var history: [DisplayedChatMessage] = []
         @BindingState var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
         @BindingState var focusedField: Field?
@@ -51,6 +72,7 @@ struct Chat: ReducerProtocol {
         case resendMessageButtonTapped(MessageID)
         case setAsExtraPromptButtonTapped(MessageID)
         case focusOnTextField
+        case referenceClicked(DisplayedChatMessage.Reference)
 
         case observeChatService
         case observeHistoryChange
@@ -77,7 +99,10 @@ struct Chat: ReducerProtocol {
         case observeSystemPromptChange(UUID)
         case observeExtraSystemPromptChange(UUID)
         case observeDefaultScopesChange(UUID)
+        case sendMessage(UUID)
     }
+
+    @Dependency(\.openURL) var openURL
 
     var body: some ReducerProtocol<State, Action> {
         BindingReducer()
@@ -90,6 +115,7 @@ struct Chat: ReducerProtocol {
             switch action {
             case .appear:
                 return .run { send in
+                    if isPreview { return }
                     await send(.observeChatService)
                     await send(.historyChanged)
                     await send(.isReceivingMessageChanged)
@@ -104,16 +130,19 @@ struct Chat: ReducerProtocol {
                 state.typedMessage = ""
                 return .run { _ in
                     try await service.send(content: message)
-                }
+                }.cancellable(id: CancelID.sendMessage(id))
 
             case .returnButtonTapped:
                 state.typedMessage += "\n"
                 return .none
 
             case .stopRespondingButtonTapped:
-                return .run { _ in
-                    await service.stopReceivingMessage()
-                }
+                return .merge(
+                    .run { _ in
+                        await service.stopReceivingMessage()
+                    },
+                    .cancel(id: CancelID.sendMessage(id))
+                )
 
             case .clearButtonTap:
                 return .run { _ in
@@ -134,7 +163,29 @@ struct Chat: ReducerProtocol {
                 return .run { _ in
                     await service.setMessageAsExtraPrompt(id: id)
                 }
-                
+
+            case let .referenceClicked(reference):
+                let fileURL = URL(fileURLWithPath: reference.uri)
+                return .run { _ in
+                    if FileManager.default.fileExists(atPath: fileURL.path) {
+                        let terminal = Terminal()
+                        do {
+                            _ = try await terminal.runCommand(
+                                "/bin/bash",
+                                arguments: [
+                                    "-c",
+                                    "xed -l \(reference.startLine ?? 0) \"\(reference.uri)\"",
+                                ],
+                                environment: [:]
+                            )
+                        } catch {
+                            print(error)
+                        }
+                    } else if let url = URL(string: reference.uri), url.scheme != nil {
+                        await openURL(url)
+                    }
+                }
+
             case .focusOnTextField:
                 state.focusedField = .textField
                 return .none
@@ -247,7 +298,15 @@ struct Chat: ReducerProtocol {
                             case .function: return .function
                             }
                         }(),
-                        text: message.summary ?? message.content ?? ""
+                        text: message.summary ?? message.content ?? "",
+                        references: message.references.map {
+                            .init(
+                                title: $0.title,
+                                subtitle: $0.subTitle,
+                                uri: $0.uri,
+                                startLine: $0.startLine
+                            )
+                        }
                     )
                 }
 

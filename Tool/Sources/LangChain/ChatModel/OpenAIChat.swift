@@ -42,10 +42,10 @@ public struct OpenAIChat: ChatModel {
                 message.append(trunk)
                 callbackManagers.send(CallbackEvents.LLMDidProduceNewToken(info: trunk))
             }
-            return await memory.messages.last ?? .init(role: .assistant, content: "")
+            return await memory.history.last ?? .init(role: .assistant, content: "")
         } else {
             let _ = try await service.sendAndWait(content: "")
-            return await memory.messages.last ?? .init(role: .assistant, content: "")
+            return await memory.history.last ?? .init(role: .assistant, content: "")
         }
     }
 }

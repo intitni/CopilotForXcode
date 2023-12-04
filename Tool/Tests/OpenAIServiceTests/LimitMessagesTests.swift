@@ -6,7 +6,7 @@ import XCTest
 
 final class AutoManagedChatGPTMemoryTests: XCTestCase {
     func test_send_all_messages_if_not_reached_token_limit() async {
-        let (messages, _, memory) = await runService(
+        let (messages, memory) = await runService(
             systemPrompt: "system", messages: [
                 "hi",
                 "hello",
@@ -31,7 +31,7 @@ final class AutoManagedChatGPTMemoryTests: XCTestCase {
     }
 
     func test_send_max_message_if_not_reached_token_limit() async {
-        let (messages, _, _) = await runService(
+        let (messages, _) = await runService(
             systemPrompt: "system", messages: [
                 "hi",
                 "hello",
@@ -49,7 +49,7 @@ final class AutoManagedChatGPTMemoryTests: XCTestCase {
     }
 
     func test_reached_token_limit() async {
-        let (messages, _, _) = await runService(
+        let (messages, _) = await runService(
             systemPrompt: "system", messages: [
                 "hi",
                 "hello",
@@ -65,7 +65,7 @@ final class AutoManagedChatGPTMemoryTests: XCTestCase {
     }
 
     func test_minimum_reply_tokens_count() async {
-        let (messages, _, _) = await runService(
+        let (messages, _) = await runService(
             systemPrompt: "system", messages: [
                 "hi",
                 "hello",
@@ -94,7 +94,7 @@ private func runService(
     maxTokens: Int,
     minimumReplyTokens: Int,
     maxNumberOfMessages: Int
-) async -> (messages: [String], remainingTokens: Int?, memory: AutoManagedChatGPTMemory) {
+) async -> (messages: [String], memory: AutoManagedChatGPTMemory) {
     let configuration = UserPreferenceChatGPTConfiguration().overriding(.init(
         maxTokens: maxTokens,
         minimumReplyTokens: minimumReplyTokens
@@ -113,12 +113,8 @@ private func runService(
         maxNumberOfMessages: maxNumberOfMessages,
         encoder: MockEncoder()
     )
-    let remainingTokens = await memory.generateRemainingTokens(
-        maxNumberOfMessages: maxNumberOfMessages,
-        encoder: MockEncoder()
-    )
 
-    let contents = messages.map { $0.content ?? "" }
-    return (contents, remainingTokens, memory)
+    let contents = messages.history.map { $0.content ?? "" }
+    return (contents, memory)
 }
 

@@ -16,6 +16,7 @@ final class DebugSettings: ObservableObject {
     var disableGitHubCopilotSettingsAutoRefreshOnAppear
     @AppStorage(\.useUserDefaultsBaseAPIKeychain) var useUserDefaultsBaseAPIKeychain
     @AppStorage(\.disableEnhancedWorkspace) var disableEnhancedWorkspace
+    @AppStorage(\.disableGitIgnoreCheck) var disableGitIgnoreCheck
     init() {}
 }
 
@@ -41,7 +42,7 @@ struct DebugSettingsView: View {
                     Text("Use custom scroll view workaround for smooth scrolling")
                 }
                 Toggle(isOn: $settings.triggerActionWithAccessibilityAPI) {
-                    Text("Trigger command with AccessibilityAPI")
+                    Text("Trigger command with Accessibility API")
                 }
                 Group {
                     Toggle(isOn: $settings.alwaysAcceptSuggestionWithAccessibilityAPI) {
@@ -61,10 +62,14 @@ struct DebugSettingsView: View {
                     }
                     
                     Toggle(isOn: $settings.disableEnhancedWorkspace) {
-                        Text("Disable Enhanced Workspace")
+                        Text("Disable enhanced workspace")
                     }
                     
-                    Button("Reset Migration Version to 0") {
+                    Toggle(isOn: $settings.disableGitIgnoreCheck) {
+                        Text("Disable git ignore check")
+                    }
+                    
+                    Button("Reset migration version to 0") {
                         UserDefaults.shared.set(nil, forKey: "OldMigrationVersion")
                     }
                     

@@ -1,15 +1,16 @@
 import Foundation
 
 public actor EmptyChatGPTMemory: ChatGPTMemory {
-    public var messages: [ChatMessage] = []
-    public var remainingTokens: Int? { nil }
+    public var history: [ChatMessage] = []
 
     public init() {}
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
-        update(&messages)
+        update(&history)
     }
     
-    public func refresh() async {}
+    public func generatePrompt() async -> ChatGPTPrompt {
+        return .init(history: history)
+    }
 }
 

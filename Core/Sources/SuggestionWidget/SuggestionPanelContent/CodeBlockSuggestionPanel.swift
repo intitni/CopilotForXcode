@@ -2,13 +2,13 @@ import SharedUIComponents
 import SwiftUI
 
 struct CodeBlockSuggestionPanel: View {
-    @ObservedObject var suggestion: SuggestionProvider
+    @ObservedObject var suggestion: CodeSuggestionProvider
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFontSize) var fontSize
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
 
     struct ToolBar: View {
-        @ObservedObject var suggestion: SuggestionProvider
+        @ObservedObject var suggestion: CodeSuggestionProvider
 
         var body: some View {
             HStack {
@@ -50,7 +50,7 @@ struct CodeBlockSuggestionPanel: View {
     }
 
     struct CompactToolBar: View {
-        @ObservedObject var suggestion: SuggestionProvider
+        @ObservedObject var suggestion: CodeSuggestionProvider
 
         var body: some View {
             HStack {
@@ -114,7 +114,7 @@ struct CodeBlockSuggestionPanel: View {
 
 struct CodeBlockSuggestionPanel_Dark_Preview: PreviewProvider {
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
             code: """
             LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
             ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -142,7 +142,7 @@ struct CodeBlockSuggestionPanel_Dark_Preview: PreviewProvider {
 
 struct CodeBlockSuggestionPanel_Bright_Preview: PreviewProvider {
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
             code: """
             LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
             ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -176,7 +176,7 @@ struct CodeBlockSuggestionPanel_CompactToolBar_Preview: PreviewProvider {
     }()
 
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
             code: """
             LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
             ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -208,7 +208,7 @@ struct CodeBlockSuggestionPanel_CompactToolBar_Preview: PreviewProvider {
 
 struct CodeBlockSuggestionPanel_Dark_Objc_Preview: PreviewProvider {
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
             code: """
             - (void)addSubview:(UIView *)view {
                 [self addSubview:view];
@@ -233,7 +233,7 @@ struct CodeBlockSuggestionPanel_Dark_Objc_Preview: PreviewProvider {
 
 struct CodeBlockSuggestionPanel_Bright_Objc_Preview: PreviewProvider {
     static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: SuggestionProvider(
+        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
             code: """
             - (void)addSubview:(UIView *)view {
                 [self addSubview:view];

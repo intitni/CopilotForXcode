@@ -85,6 +85,7 @@ public struct EditorInformation {
     }
 
     public static func lines(in code: [String], containing range: CursorRange) -> [String] {
+        guard !code.isEmpty else { return [] }
         let startIndex = min(max(0, range.start.line), code.endIndex - 1)
         let endIndex = min(max(startIndex, range.end.line), code.endIndex - 1)
         let selectedLines = code[startIndex...endIndex]

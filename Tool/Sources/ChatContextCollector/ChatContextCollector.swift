@@ -12,11 +12,11 @@ public struct ChatContext {
     }
 
     public struct RetrievedContent {
-        public var content: String
+        public var document: ChatMessage.Reference
         public var priority: Int
-
-        public init(content: String, priority: Int) {
-            self.content = content
+        
+        public init(document: ChatMessage.Reference, priority: Int) {
+            self.document = document
             self.priority = priority
         }
     }

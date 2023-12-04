@@ -33,8 +33,8 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
         let editor: EditorInformation = XcodeInspector.shared.focusedEditorContent ?? .init(
             editorContent: .init(
-                content: source.allCode,
-                lines: [],
+                content: source.content,
+                lines: source.lines,
                 selections: [source.range],
                 cursorPosition: .outOfScope,
                 lineAnnotations: []

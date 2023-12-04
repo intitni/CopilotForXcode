@@ -1,17 +1,18 @@
 import Foundation
 
 public actor ConversationChatGPTMemory: ChatGPTMemory {
-    public var messages: [ChatMessage] = []
-    public var remainingTokens: Int? { nil }
+    public var history: [ChatMessage] = []
 
     public init(systemPrompt: String, systemMessageId: String = UUID().uuidString) {
-        messages.append(.init(id: systemMessageId, role: .system, content: systemPrompt))
+        history.append(.init(id: systemMessageId, role: .system, content: systemPrompt))
     }
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
-        update(&messages)
+        update(&history)
     }
     
-    public func refresh() async {}
+    public func generatePrompt() async -> ChatGPTPrompt {
+        return .init(history: history)
+    }
 }
 
