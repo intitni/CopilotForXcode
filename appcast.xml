@@ -4,15 +4,15 @@
     <title>Copilot for Xcode</title>
 
     <item>
-      <title>0.28.1</title>
-      <pubDate>Mon, 04 Dec 2023 22:36:27 +0800</pubDate>
-      <sparkle:version>291</sparkle:version>
-      <sparkle:shortVersionString>0.28.1</sparkle:shortVersionString>
+      <title>0.28.2</title>
+      <pubDate>Mon, 04 Dec 2023 23:11:26 +0800</pubDate>
+      <sparkle:version>292</sparkle:version>
+      <sparkle:shortVersionString>0.28.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>
-        https://github.com/intitni/CopilotForXcode/releases/tag/0.28.1
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.28.2
       </sparkle:releaseNotesLink>
-      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.28.1/Copilot.for.Xcode.app.zip" length="36956617" type="application/octet-stream" sparkle:edSignature="e2ck6UD02QCZXoAlYuvbfUd+YzXJ6d/+V5FdzKKY0C5+X8QdqoUHaUXFmf1keulF7IJD7GAiOVQ2ewrl/KYVCA=="/>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.28.2/Copilot.for.Xcode.app.zip" length="36956678" type="application/octet-stream" sparkle:edSignature="kiWm6C0aaxs9cvlSgmH3Y5iVIP5R9hbdgZGXC6qQw8mDG2E8Vc9Rq7ZY8Jz09NDL3GrDXZT3BwoY58Jdev5TAg=="/>
     </item>
 
     <item>
