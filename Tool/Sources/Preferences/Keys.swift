@@ -548,7 +548,7 @@ public extension UserDefaultPreferenceKeys {
     }
     
     var disableGitIgnoreCheck: FeatureFlag {
-        .init(defaultValue: false, key: "FeatureFlag-DisableGitIgnoreCheck")
+        .init(defaultValue: true, key: "FeatureFlag-DisableGitIgnoreCheck")
     }
 
     var disableEnhancedWorkspace: FeatureFlag {
