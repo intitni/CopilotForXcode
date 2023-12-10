@@ -88,7 +88,9 @@ public final class Filespace {
 
     // MARK: Git Ignore
 
+    @WorkspaceActor
     private var gitIgnoreStatus: GitIgnoreStatus?
+    @WorkspaceActor
     public var isGitIgnored: Bool {
         get async {
             @Dependency(\.gitIgnoredChecker) var gitIgnoredChecker
