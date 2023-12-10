@@ -549,20 +549,22 @@ public struct WidgetFeature: ReducerProtocol {
                     }
                 }
 
+                #warning("TODO: control windows in their dedicated reducers.")
             case let .updateWindowOpacity(immediately):
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
                 let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
                 let shouldDebounce = !immediately &&
                     Date().timeIntervalSince(state.lastUpdateWindowOpacityTime) < 1
                 return .run { send in
+                    let activeApp = xcodeInspector.activeApplication
                     if shouldDebounce {
                         try await mainQueue.sleep(for: .seconds(0.2))
                     }
                     try Task.checkCancellation()
                     let task = Task { @MainActor in
-                        if let app = xcodeInspector.activeApplication, app.isXcode {
+                        if let activeApp, activeApp.isXcode {
                             let application = AXUIElementCreateApplication(
-                                app.runningApplication.processIdentifier
+                                activeApp.runningApplication.processIdentifier
                             )
                             /// We need this to hide the windows when Xcode is minimized.
                             let noFocus = application.focusedWindow == nil
@@ -576,10 +578,7 @@ public struct WidgetFeature: ReducerProtocol {
                             } else {
                                 windows.chatPanelWindow.alphaValue = noFocus ? 0 : 1
                             }
-                        } else if
-                            let app = xcodeInspector.activeApplication,
-                            app.runningApplication.bundleIdentifier == Bundle.main.bundleIdentifier
-                        {
+                        } else if let activeApp, activeApp.isExtensionService {
                             let noFocus = {
                                 guard let xcode = xcodeInspector.latestActiveXcode
                                 else { return true }
