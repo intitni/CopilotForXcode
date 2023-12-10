@@ -4,8 +4,8 @@
 <dict>
     <key>com.intii.CopilotForXcode.ExtensionService.Extension</key>
     <dict>
-        <key>ExtensionServiceExtension</key>
-        <false />
+        <key>EXPresentsUserInterface</key>
+        <true />
     </dict>
 </dict>
 </plist>
