@@ -88,6 +88,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         workspace?.refreshUpdateTime()
         workspace?.openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
+            guard !(await filespace.isGitIgnored) else { return }
             // check if file size is larger than 15MB, if so, return immediately
             if let attrs = try? FileManager.default
                 .attributesOfItem(atPath: filespace.fileURL.path),
@@ -106,6 +107,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         filespace.refreshUpdateTime()
         workspace?.refreshUpdateTime()
         Task {
+            guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifyChangeTextDocument(
                 fileURL: filespace.fileURL,
                 content: content
@@ -117,6 +119,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         filespace.refreshUpdateTime()
         workspace?.refreshUpdateTime()
         Task {
+            guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
     }
