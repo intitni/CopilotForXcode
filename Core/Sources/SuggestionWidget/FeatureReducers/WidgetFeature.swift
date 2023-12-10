@@ -115,7 +115,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateColorScheme
 
         case updateWindowLocation(animated: Bool)
-        case updateWindowOpacity
+        case updateWindowOpacity(immediately: Bool)
         case updateFocusingDocumentURL
         case updateWindowOpacityFinished
         case updateKeyWindow(WindowCanBecomeKey)
@@ -206,7 +206,7 @@ public struct WidgetFeature: ReducerProtocol {
                 let isDetached = state.chatPanelState.chatPanelInASeparateWindow
                 return .run { send in
                     await send(.updateWindowLocation(animated: false))
-                    await send(.updateWindowOpacity)
+                    await send(.updateWindowOpacity(immediately: false))
                     if isDetached {
                         Task { @MainActor in
                             windows.chatPanelWindow.alphaValue = 1
@@ -217,7 +217,7 @@ public struct WidgetFeature: ReducerProtocol {
                 let isDetached = state.chatPanelState.chatPanelInASeparateWindow
                 return .run { send in
                     await send(.updateWindowLocation(animated: !isDetached))
-                    await send(.updateWindowOpacity)
+                    await send(.updateWindowOpacity(immediately: false))
                 }
             default: return .none
             }
@@ -278,7 +278,7 @@ public struct WidgetFeature: ReducerProtocol {
                     for await _ in stream {
                         try Task.checkCancellation()
                         await send(.updateWindowLocation(animated: false))
-                        await send(.updateWindowOpacity)
+                        await send(.updateWindowOpacity(immediately: false))
                     }
                 }.cancellable(id: CancelID.observeCompletionPanelChange, cancelInFlight: true)
 
@@ -392,12 +392,12 @@ public struct WidgetFeature: ReducerProtocol {
                             kAXFocusedWindowChangedNotification,
                         ].contains(notification.name) {
                             await send(.updateWindowLocation(animated: false))
-                            await send(.updateWindowOpacity)
+                            await send(.updateWindowOpacity(immediately: false))
                             await send(.observeEditorChange)
                             await send(.panel(.switchToAnotherEditorAndUpdateContent))
                         } else {
                             await send(.updateWindowLocation(animated: false))
-                            await send(.updateWindowOpacity)
+                            await send(.updateWindowOpacity(immediately: false))
                         }
                     }
                 }.cancellable(id: CancelID.observeWindowChange, cancelInFlight: true)
@@ -433,14 +433,14 @@ public struct WidgetFeature: ReducerProtocol {
                             guard xcodeInspector.latestActiveXcode != nil else { return }
                             try Task.checkCancellation()
                             await send(.updateWindowLocation(animated: false))
-                            await send(.updateWindowOpacity)
+                            await send(.updateWindowOpacity(immediately: false))
                         }
                     } else {
                         for await _ in merge(selectionRangeChange, scroll) {
                             guard xcodeInspector.latestActiveXcode != nil else { return }
                             try Task.checkCancellation()
                             await send(.updateWindowLocation(animated: false))
-                            await send(.updateWindowOpacity)
+                            await send(.updateWindowOpacity(immediately: false))
                         }
                     }
 
@@ -451,14 +451,14 @@ public struct WidgetFeature: ReducerProtocol {
                     return .run { send in
                         await send(.panel(.switchToAnotherEditorAndUpdateContent))
                         await send(.updateWindowLocation(animated: false))
-                        await send(.updateWindowOpacity)
+                        await send(.updateWindowOpacity(immediately: true))
                         await windows.orderFront()
                         await send(.observeWindowChange)
                     }
                 }
                 return .run { send in
                     await send(.updateWindowLocation(animated: false))
-                    await send(.updateWindowOpacity)
+                    await send(.updateWindowOpacity(immediately: true))
                 }
 
             case .updateColorScheme:
@@ -549,10 +549,11 @@ public struct WidgetFeature: ReducerProtocol {
                     }
                 }
 
-            case .updateWindowOpacity:
+            case let .updateWindowOpacity(immediately):
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
                 let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
-                let shouldDebounce = Date().timeIntervalSince(state.lastUpdateWindowOpacityTime) < 1
+                let shouldDebounce = !immediately &&
+                    Date().timeIntervalSince(state.lastUpdateWindowOpacityTime) < 1
                 return .run { send in
                     if shouldDebounce {
                         try await mainQueue.sleep(for: .seconds(0.2))
