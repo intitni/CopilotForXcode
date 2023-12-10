@@ -111,7 +111,6 @@ public struct PanelFeature: ReducerProtocol {
 
             case .removeDisplayedContent:
                 state.content.error = nil
-                state.content.promptToCodeGroup.activeDocumentURL = nil
                 state.content.suggestion = nil
                 return .none
 
