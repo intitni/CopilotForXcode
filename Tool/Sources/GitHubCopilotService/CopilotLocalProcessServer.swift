@@ -108,13 +108,13 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
 
         server.sendNotification(notif, completionHandler: completionHandler)
     }
-    
+
     /// Cancel ongoing completion requests.
     public func cancelOngoingTasks() async {
         guard let server = wrappedServer, process.isRunning else {
             return
         }
-        
+
         let task = Task { @MainActor in
             for id in self.ongoingCompletionRequestIDs {
                 switch id {
@@ -126,7 +126,7 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
             }
             self.ongoingCompletionRequestIDs = []
         }
-        
+
         await task.value
     }
 
@@ -200,32 +200,44 @@ extension CustomJSONRPCLanguageServer {
         block: @escaping (Error?) -> Void
     ) -> Bool {
         let methodName = anyNotification.method
+        let debugDescription = {
+            if let params = anyNotification.params {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted
+                if let jsonData = try? encoder.encode(params),
+                   let text = String(data: jsonData, encoding: .utf8)
+                {
+                    return text
+                }
+            }
+            return "N/A"
+        }()
         switch methodName {
         case "window/logMessage":
             if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
                 Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+                    .info("\(anyNotification.method): \(debugDescription)")
             }
             block(nil)
             return true
         case "LogMessage":
             if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
                 Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+                    .info("\(anyNotification.method): \(debugDescription)")
             }
-            block(nil)
+            block(nil)// 
             return true
         case "statusNotification":
             if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
                 Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+                    .info("\(anyNotification.method): \(debugDescription)")
             }
             block(nil)
             return true
         case "featureFlagsNotification":
             if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
                 Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(anyNotification.params.debugDescription)")
+                    .info("\(anyNotification.method): \(debugDescription)")
             }
             block(nil)
             return true
