@@ -108,17 +108,20 @@ struct ReferenceList: View {
                         chat.send(.referenceClicked(reference))
                     }) {
                         HStack(spacing: 8) {
+                            ReferenceIcon(kind: reference.kind)
+                                .layoutPriority(2)
                             Text(reference.title)
                                 .truncationMode(.middle)
                                 .lineLimit(1)
+                                .layoutPriority(1)
                             Text(reference.subtitle)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
-                                .layoutPriority(/*@START_MENU_TOKEN@*/0/*@END_MENU_TOKEN@*/)
                                 .foregroundStyle(.tertiary)
+                                .layoutPriority(/*@START_MENU_TOKEN@*/0/*@END_MENU_TOKEN@*/)
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 4)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .overlay {
                             RoundedRectangle(cornerRadius: 4)
@@ -131,6 +134,83 @@ struct ReferenceList: View {
             .padding()
         }
         .frame(maxWidth: 500, maxHeight: 500)
+    }
+}
+
+struct ReferenceIcon: View {
+    let kind: DisplayedChatMessage.Reference.Kind
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill({
+                switch kind {
+                case .class:
+                    Color.purple
+                case .struct:
+                    Color.purple
+                case .enum:
+                    Color.purple
+                case .actor:
+                    Color.purple
+                case .protocol:
+                    Color.purple
+                case .extension:
+                    Color.indigo
+                case .case:
+                    Color.green
+                case .property:
+                    Color.teal
+                case .typealias:
+                    Color.orange
+                case .function:
+                    Color.teal
+                case .method:
+                    Color.blue
+                case .text:
+                    Color.gray
+                case .webpage:
+                    Color.blue
+                case .other:
+                    Color.gray
+                }
+            }())
+            .frame(width: 22, height: 22)
+            .overlay(alignment: .center) {
+                Group {
+                    switch kind {
+                    case .class:
+                        Text("C")
+                    case .struct:
+                        Text("S")
+                    case .enum:
+                        Text("E")
+                    case .actor:
+                        Text("A")
+                    case .protocol:
+                        Text("Pr")
+                    case .extension:
+                        Text("Ex")
+                    case .case:
+                        Text("K")
+                    case .property:
+                        Text("P")
+                    case .typealias:
+                        Text("T")
+                    case .function:
+                        Text("𝑓")
+                    case .method:
+                        Text("M")
+                    case .text:
+                        Text("Tx")
+                    case .webpage:
+                        Text("Wb")
+                    case .other:
+                        Text("Ot")
+                    }
+                }
+                .font(.system(size: 12).monospaced())
+                .foregroundColor(.white)
+            }
     }
 }
 
@@ -147,7 +227,8 @@ struct ReferenceList: View {
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .class
         ), count: 20),
         chat: .init(initialState: .init(), reducer: Chat(service: .init()))
     )
@@ -161,37 +242,43 @@ struct ReferenceList: View {
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .class
         ),
         .init(
             title: "BotMessage.swift:100-102",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .struct
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .function
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .case
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .extension
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
-            startLine: nil
+            startLine: nil,
+            kind: .webpage
         ),
     ], chat: .init(initialState: .init(), reducer: Chat(service: .init())))
 }

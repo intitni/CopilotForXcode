@@ -440,7 +440,8 @@ struct ChatPanel_Preview: PreviewProvider {
                     title: "Hello Hello Hello Hello",
                     subtitle: "Hi Hi Hi Hi",
                     uri: "https://google.com",
-                    startLine: nil
+                    startLine: nil,
+                    kind: .class
                 ),
             ]
         ),

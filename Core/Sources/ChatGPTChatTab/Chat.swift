@@ -14,16 +14,26 @@ public struct DisplayedChatMessage: Equatable {
     }
 
     public struct Reference: Equatable {
+        public typealias Kind = ChatMessage.Reference.Kind
+        
         public var title: String
         public var subtitle: String
         public var uri: String
         public var startLine: Int?
+        public var kind: Kind
 
-        public init(title: String, subtitle: String, uri: String, startLine: Int?) {
+        public init(
+            title: String,
+            subtitle: String,
+            uri: String,
+            startLine: Int?,
+            kind: Kind
+        ) {
             self.title = title
             self.subtitle = subtitle
             self.uri = uri
             self.startLine = startLine
+            self.kind = kind
         }
     }
 
@@ -304,7 +314,8 @@ struct Chat: ReducerProtocol {
                                 title: $0.title,
                                 subtitle: $0.subTitle,
                                 uri: $0.uri,
-                                startLine: $0.startLine
+                                startLine: $0.startLine,
+                                kind: $0.kind
                             )
                         }
                     )
