@@ -19,7 +19,6 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 return promptToCodes[id: id]
             }
             set {
-                activeDocumentURL = newValue?.id
                 if let id = newValue?.id {
                     promptToCodes[id: id] = newValue
                 }

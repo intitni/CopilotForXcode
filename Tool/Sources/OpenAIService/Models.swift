@@ -28,12 +28,31 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     public struct Reference: Codable, Equatable {
+        public enum Kind: String, Codable {
+            case `class`
+            case `struct`
+            case `enum`
+            case `actor`
+            case `protocol`
+            case `extension`
+            case `case`
+            case property
+            case `typealias`
+            case function
+            case method
+            case text
+            case webpage
+            case other
+        }
+        
         public var title: String
         public var subTitle: String
         public var uri: String
         public var content: String
         public var startLine: Int?
         public var endLine: Int?
+        @FallbackDecoding<ReferenceKindFallback>
+        public var kind: Kind
 
         public init(
             title: String,
@@ -41,7 +60,8 @@ public struct ChatMessage: Equatable, Codable {
             content: String,
             uri: String,
             startLine: Int?,
-            endLine: Int?
+            endLine: Int?,
+            kind: Kind
         ) {
             self.title = title
             self.subTitle = subTitle
@@ -49,6 +69,7 @@ public struct ChatMessage: Equatable, Codable {
             self.uri = uri
             self.startLine = startLine
             self.endLine = endLine
+            self.kind = kind
         }
     }
 
@@ -110,5 +131,9 @@ public struct ChatMessage: Equatable, Codable {
         tokensCount = tokenCount
         self.references = references
     }
+}
+
+public struct ReferenceKindFallback: FallbackValueProvider {
+    public static var defaultValue: ChatMessage.Reference.Kind { .other }
 }
 

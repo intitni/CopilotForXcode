@@ -312,7 +312,6 @@ enum UpdateLocationStrategy {
             let caseConsiderCompletionPanel = {
                 (completionPanelRect: CGRect) -> WidgetLocation.PanelLocation? in
                 let completionPanelBelowCursor = completionPanelRect.minY >= selectionFrame.midY
-
                 switch (completionPanelBelowCursor, alignPanelTopToAnchor) {
                 case (true, false), (false, true):
                     // case: different position, place the suggestion as it should be
@@ -394,6 +393,9 @@ enum UpdateLocationStrategy {
         var firstLineRange: CFRange = .init()
         let foundFirstLine = AXValueGetValue(selectedRange, .cfRange, &firstLineRange)
         firstLineRange.length = 0
+        
+        #warning("FIXME: When selection is too low and out of the screen, the selection range becomes something else.")
+        
         if foundFirstLine,
            let firstLineSelectionRange = AXValueCreate(.cfRange, &firstLineRange),
            let firstLineRect: AXValue = try? editor.copyParameterizedValue(
@@ -411,4 +413,3 @@ enum UpdateLocationStrategy {
         return selectionFrame
     }
 }
-

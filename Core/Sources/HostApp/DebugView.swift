@@ -17,6 +17,8 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.useUserDefaultsBaseAPIKeychain) var useUserDefaultsBaseAPIKeychain
     @AppStorage(\.disableEnhancedWorkspace) var disableEnhancedWorkspace
     @AppStorage(\.disableGitIgnoreCheck) var disableGitIgnoreCheck
+    @AppStorage(\.disableFileContentManipulationByCheatsheet)
+    var disableFileContentManipulationByCheatsheet
     init() {}
 }
 
@@ -60,19 +62,23 @@ struct DebugSettingsView: View {
                     Toggle(isOn: $settings.useUserDefaultsBaseAPIKeychain) {
                         Text("Store API keys in UserDefaults")
                     }
-                    
+
                     Toggle(isOn: $settings.disableEnhancedWorkspace) {
                         Text("Disable enhanced workspace")
                     }
-                    
+
                     Toggle(isOn: $settings.disableGitIgnoreCheck) {
                         Text("Disable git ignore check")
                     }
-                    
+
+                    Toggle(isOn: $settings.disableFileContentManipulationByCheatsheet) {
+                        Text("Disable file content manipulation by cheatsheet")
+                    }
+
                     Button("Reset migration version to 0") {
                         UserDefaults.shared.set(nil, forKey: "OldMigrationVersion")
                     }
-                    
+
                     Button("Reset 0.23.0 migration") {
                         UserDefaults.shared.set("239", forKey: "OldMigrationVersion")
                         UserDefaults.shared.set(nil, forKey: "MigrateTo240Finished")
@@ -91,5 +97,4 @@ struct DebugSettingsView_Preview: PreviewProvider {
         DebugSettingsView()
     }
 }
-
 
