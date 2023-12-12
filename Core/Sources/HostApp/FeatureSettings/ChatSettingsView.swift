@@ -404,13 +404,14 @@ struct ChatSettingsView: View {
 }
 
 // MARK: - Preview
-
-#Preview {
-    ScrollView {
-        ChatSettingsView()
-            .padding()
-    }
-    .frame(height: 800)
-    .environment(\.overrideFeatureFlag, \.never)
-}
+//
+//#Preview {
+//    ScrollView {
+//        ChatSettingsView()
+//            .padding()
+//    }
+//    .frame(height: 800)
+//    .environment(\.overrideFeatureFlag, \.never)
+//}
+//
 
