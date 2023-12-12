@@ -550,6 +550,10 @@ public extension UserDefaultPreferenceKeys {
     var disableGitIgnoreCheck: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DisableGitIgnoreCheck")
     }
+    
+    var disableFileContentManipulationByCheatsheet: FeatureFlag {
+        .init(defaultValue: true, key: "FeatureFlag-DisableFileContentManipulationByCheatsheet")
+    }
 
     var disableEnhancedWorkspace: FeatureFlag {
         .init(
