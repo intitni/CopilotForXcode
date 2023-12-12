@@ -118,7 +118,7 @@ struct ReferenceList: View {
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                                 .foregroundStyle(.tertiary)
-                                .layoutPriority(/*@START_MENU_TOKEN@*/0/*@END_MENU_TOKEN@*/)
+                                .layoutPriority(0)
                         }
                         .padding(.vertical, 4)
                         .padding(.horizontal, 4)
