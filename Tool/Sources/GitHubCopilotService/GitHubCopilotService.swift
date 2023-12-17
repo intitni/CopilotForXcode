@@ -339,13 +339,13 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
 
     public func notifyAccepted(_ completion: CodeSuggestion) async {
         _ = try? await server.sendRequest(
-            GitHubCopilotRequest.NotifyAccepted(completionUUID: completion.uuid)
+            GitHubCopilotRequest.NotifyAccepted(completionUUID: completion.id)
         )
     }
 
     public func notifyRejected(_ completions: [CodeSuggestion]) async {
         _ = try? await server.sendRequest(
-            GitHubCopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.uuid))
+            GitHubCopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.id))
         )
     }
 

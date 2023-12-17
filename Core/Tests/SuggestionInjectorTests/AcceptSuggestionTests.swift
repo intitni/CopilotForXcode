@@ -15,14 +15,13 @@ final class AcceptSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 1),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 1, character: 0)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakIntoEditorStyleLines()
@@ -62,14 +61,13 @@ final class AcceptSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 12),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 12)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -106,14 +104,13 @@ final class AcceptSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 12),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 1, character: 12)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -150,14 +147,13 @@ final class AcceptSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 12),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 1, character: 12)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -191,14 +187,13 @@ final class AcceptSuggestionTests: XCTestCase {
         print("Hello World!")
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 6),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 6)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -229,14 +224,13 @@ final class AcceptSuggestionTests: XCTestCase {
         print("Hello World!
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 6),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 6)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -271,14 +265,13 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 6),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 6)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -316,14 +309,13 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 18),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 20)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -363,14 +355,13 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 18),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 1, character: 0)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -413,14 +404,13 @@ final class AcceptSuggestionTests: XCTestCase {
         }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 7),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 2, character: 1)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -467,14 +457,13 @@ final class AcceptSuggestionTests: XCTestCase {
             }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 5, character: 34),
-            uuid: "",
             range: .init(
                 start: .init(line: 4, character: 7),
                 end: .init(line: 5, character: 34)
-            ),
-            displayText: ""
+            )
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
@@ -515,14 +504,13 @@ final class AcceptSuggestionTests: XCTestCase {
         """
 
         let suggestion = CodeSuggestion(
+            id: "",
             text: "apiKeyName: azureOpenAIAPIKeyName",
             position: .init(line: 0, character: 12),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 12)
-            ),
-            displayText: ""
+            )
         )
 
         var lines = content.breakIntoEditorStyleLines()
@@ -549,14 +537,13 @@ final class AcceptSuggestionTests: XCTestCase {
         """
 
         let suggestion = CodeSuggestion(
+            id: "",
             text: "apiKeyName: azureOpenAIAPIKeyName",
             position: .init(line: 0, character: 12),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 0, character: 12)
-            ),
-            displayText: ""
+            )
         )
 
         var lines = content.breakIntoEditorStyleLines()

@@ -13,25 +13,22 @@ final class FetchSuggestionTests: XCTestCase {
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
+                        id: "uuid",
                         text: "Hello World\n",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        range: .init(start: .init((0, 0)), end: .init((0, 4)))
                     ),
                     .init(
+                        id: "uuid",
                         text: " ",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: " "
+                        range: .init(start: .init((0, 0)), end: .init((0, 1)))
                     ),
                     .init(
+                        id: "uuid",
                         text: " \n",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: " \n"
+                        range: .init(start: .init((0, 0)), end: .init((0, 2)))
                     ),
                 ]) as! E.Response
             }
@@ -59,25 +56,22 @@ final class FetchSuggestionTests: XCTestCase {
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
+                        id: "uuid",
                         text: "Hello World\n",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        range: .init(start: .init((0, 0)), end: .init((0, 4)))
                     ),
                     .init(
+                        id: "uuid",
                         text: " ",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: " "
+                        range: .init(start: .init((0, 0)), end: .init((0, 1)))
                     ),
                     .init(
+                        id: "uuid",
                         text: " \n",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: " \n"
+                        range: .init(start: .init((0, 0)), end: .init((0, 2)))
                     ),
                 ]) as! E.Response
             }
@@ -112,11 +106,10 @@ final class FetchSuggestionTests: XCTestCase {
             func sendRequest<E>(_ r: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
+                        id: "uuid",
                         text: "Hello World\n",
                         position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        range: .init(start: .init((0, 0)), end: .init((0, 4)))
                     ),
                 ]) as! E.Response
             }

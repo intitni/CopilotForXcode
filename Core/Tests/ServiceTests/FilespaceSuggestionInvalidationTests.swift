@@ -13,11 +13,10 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             .fetchOrCreateWorkspaceAndFilespace(fileURL: URL(fileURLWithPath: "file/path/to.swift"))
         filespace.suggestions = [
             .init(
+                id: "",
                 text: suggestionText,
                 position: cursorPosition,
-                uuid: "",
-                range: .outOfScope,
-                displayText: ""
+                range: .outOfScope
             ),
         ]
         return filespace
