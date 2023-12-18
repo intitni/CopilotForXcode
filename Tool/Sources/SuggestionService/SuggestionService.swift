@@ -94,7 +94,7 @@ public actor SuggestionService: SuggestionServiceType {
 
     lazy var suggestionProvider: SuggestionServiceProvider = buildService()
 
-    var serviceType: SuggestionFeatureProvider {
+    var serviceType: BuiltInSuggestionFeatureProvider {
         UserDefaults.shared.value(for: \.suggestionFeatureProvider)
     }
 

@@ -286,7 +286,7 @@ public extension UserDefaultPreferenceKeys {
 // MARK: - Suggestion
 
 public extension UserDefaultPreferenceKeys {
-    var suggestionFeatureProvider: PreferenceKey<SuggestionFeatureProvider> {
+    var suggestionFeatureProvider: PreferenceKey<BuiltInSuggestionFeatureProvider> {
         .init(defaultValue: .gitHubCopilot, key: "SuggestionFeatureProvider")
     }
 

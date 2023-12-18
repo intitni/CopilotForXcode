@@ -53,7 +53,7 @@ struct SuggestionSettingsView: View {
             }
 
             Picker(selection: $settings.suggestionFeatureProvider) {
-                ForEach(SuggestionFeatureProvider.allCases, id: \.rawValue) {
+                ForEach(BuiltInSuggestionFeatureProvider.allCases, id: \.rawValue) {
                     switch $0 {
                     case .gitHubCopilot:
                         Text("GitHub Copilot").tag($0)
