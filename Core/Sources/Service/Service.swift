@@ -1,5 +1,6 @@
 import Dependencies
 import Foundation
+import SuggestionService
 import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
@@ -33,7 +34,11 @@ public final class Service {
         @Dependency(\.workspacePool) var workspacePool
 
         scheduledCleaner = .init()
-        workspacePool.registerPlugin { SuggestionServiceWorkspacePlugin(workspace: $0) }
+        workspacePool.registerPlugin {
+            SuggestionServiceWorkspacePlugin(workspace: $0) { projectRootURL, onLaunched in
+                SuggestionService(projectRootURL: projectRootURL, onServiceLaunched: onLaunched)
+            }
+        }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
 

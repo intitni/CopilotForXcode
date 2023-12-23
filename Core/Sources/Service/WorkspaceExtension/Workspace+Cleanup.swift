@@ -1,6 +1,6 @@
 import Foundation
 import Workspace
-import SuggestionService
+import SuggestionProvider
 import WorkspaceSuggestionService
 
 extension Workspace {

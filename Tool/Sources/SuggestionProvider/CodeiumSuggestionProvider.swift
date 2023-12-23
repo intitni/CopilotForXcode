@@ -3,12 +3,15 @@ import Foundation
 import Preferences
 import SuggestionModel
 
-actor CodeiumSuggestionProvider: SuggestionServiceProvider {
+public actor CodeiumSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
-    let onServiceLaunched: (SuggestionServiceType) -> Void
+    let onServiceLaunched: (SuggestionServiceProvider) -> Void
     var codeiumService: CodeiumSuggestionServiceType?
 
-    init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
+    public init(
+        projectRootURL: URL,
+        onServiceLaunched: @escaping (SuggestionServiceProvider) -> Void
+    ) {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
     }
@@ -27,7 +30,7 @@ actor CodeiumSuggestionProvider: SuggestionServiceProvider {
     }
 }
 
-extension CodeiumSuggestionProvider {
+public extension CodeiumSuggestionProvider {
     func getSuggestions(_ request: SuggestionRequest) async throws
         -> [SuggestionModel.CodeSuggestion]
     {
