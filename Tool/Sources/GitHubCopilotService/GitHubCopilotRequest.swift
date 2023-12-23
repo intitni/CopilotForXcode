@@ -186,7 +186,7 @@ enum GitHubCopilotRequest {
 
     struct GetCompletionsCycling: GitHubCopilotRequestType {
         struct Response: Codable {
-            var completions: [CodeSuggestion]
+            var completions: [GitHubCopilotCodeSuggestion]
         }
 
         var doc: GitHubCopilotDoc
