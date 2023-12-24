@@ -310,7 +310,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                     return true
                 }
                 .map {
-                    var suggestion = CodeSuggestion(
+                    let suggestion = CodeSuggestion(
                         id: $0.uuid,
                         text: $0.text,
                         position: $0.position,
