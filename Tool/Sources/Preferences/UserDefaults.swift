@@ -23,7 +23,7 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.embeddingModels)
         shared.setupDefaultValue(
             for: \.suggestionFeatureProvider,
-            defaultValue: .builtIn(shared.value(for: \.oldSuggestionFeatureProvider))
+            defaultValue: .builtIn(shared.deprecatedValue(for: \.oldSuggestionFeatureProvider))
         )
     }
 }
