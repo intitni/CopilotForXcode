@@ -1,6 +1,7 @@
+import ComposableArchitecture
+import Dependencies
 import Foundation
 import SwiftUI
-import Dependencies
 
 public enum ToastType {
     case info
@@ -28,14 +29,12 @@ public extension DependencyValues {
         get { self[ToastControllerDependencyKey.self] }
         set { self[ToastControllerDependencyKey.self] = newValue }
     }
-    
-    var toast: (String, ToastType) -> Void {
-        get { toastController.toast }
-    }
+
+    var toast: (String, ToastType) -> Void { toastController.toast }
 }
 
 public class ToastController: ObservableObject {
-    public struct Message: Identifiable {
+    public struct Message: Identifiable, Equatable {
         public var id: UUID
         public var type: ToastType
         public var content: Text
@@ -64,6 +63,53 @@ public class ToastController: ObservableObject {
             try await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation(.easeInOut(duration: 0.2)) {
                 messages.removeAll { $0.id == id }
+            }
+        }
+    }
+}
+
+public struct Toast: ReducerProtocol {
+    public typealias Message = ToastController.Message
+    public struct State: Equatable {
+        public var messages: [Message] = []
+    }
+
+    public enum Action: Equatable {
+        case appear
+        case updateMessages([Message])
+        case toast(String, ToastType)
+    }
+
+    @Dependency(\.toastController) var toastController
+
+    struct CancelID: Hashable {}
+    
+    public init() {}
+
+    public var body: some ReducerProtocol<State, Action> {
+        Reduce { state, action in
+            switch action {
+            case .appear:
+                return .run { send in
+                    let stream = AsyncStream<[Message]> { continuation in
+                        let cancellable = toastController.$messages.sink { newValue in
+                            continuation.yield(newValue)
+                        }
+                        continuation.onTermination = { _ in
+                            cancellable.cancel()
+                        }
+                    }
+                    for await newValue in stream {
+                        try Task.checkCancellation()
+                        await send(.updateMessages(newValue))
+                    }
+                }.cancellable(id: CancelID(), cancelInFlight: true)
+            case let .updateMessages(messages):
+                state.messages = messages
+                return .none
+            case let .toast(content, type):
+                toastController.toast(content: content, type: type)
+                return .none
             }
         }
     }
