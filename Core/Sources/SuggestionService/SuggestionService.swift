@@ -4,6 +4,10 @@ import SuggestionModel
 import SuggestionProvider
 import UserDefaultsObserver
 
+#if canImport(ProExtension)
+import ProExtension
+#endif
+
 public protocol SuggestionServiceType: SuggestionServiceProvider {}
 
 public actor SuggestionService: SuggestionServiceType {
@@ -15,13 +19,13 @@ public actor SuggestionService: SuggestionServiceType {
     let onServiceLaunched: (SuggestionServiceProvider) -> Void
     let providerChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
-        forKeyPaths: [UserDefaultPreferenceKeys().suggestionFeatureProvider.key],
+        forKeyPaths: [UserDefaultPreferenceKeys().oldSuggestionFeatureProvider.key],
         context: nil
     )
 
     lazy var suggestionProvider: SuggestionServiceProvider = buildService()
 
-    var serviceType: BuiltInSuggestionFeatureProvider {
+    var serviceType: SuggestionFeatureProvider {
         UserDefaults.shared.value(for: \.suggestionFeatureProvider)
     }
 
@@ -41,13 +45,19 @@ public actor SuggestionService: SuggestionServiceType {
     }
 
     func buildService() -> SuggestionServiceProvider {
+        #if canImport(ProExtension)
+        if let provider = ProExtension.suggestionProviderFactory(serviceType) {
+            return provider
+        }
+        #endif
+        
         switch serviceType {
-        case .codeium:
+        case .builtIn(.codeium):
             return CodeiumSuggestionProvider(
                 projectRootURL: projectRootURL,
                 onServiceLaunched: onServiceLaunched
             )
-        case .gitHubCopilot:
+        case .builtIn(.gitHubCopilot), .extension:
             return GitHubCopilotSuggestionProvider(
                 projectRootURL: projectRootURL,
                 onServiceLaunched: onServiceLaunched

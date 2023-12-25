@@ -186,7 +186,9 @@ let package = Package(
             dependencies: [
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool")
-            ]
+            ].pro([
+                "ProExtension",
+            ])
         ),
         .target(
             name: "SuggestionInjector",

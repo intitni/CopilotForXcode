@@ -56,9 +56,9 @@ struct SuggestionSettingsView: View {
                 ForEach(BuiltInSuggestionFeatureProvider.allCases, id: \.rawValue) {
                     switch $0 {
                     case .gitHubCopilot:
-                        Text("GitHub Copilot").tag($0)
+                        Text("GitHub Copilot").tag(SuggestionFeatureProvider.builtIn($0))
                     case .codeium:
-                        Text("Codeium").tag($0)
+                        Text("Codeium").tag(SuggestionFeatureProvider.builtIn($0))
                     }
                 }
             } label: {
