@@ -7,6 +7,7 @@ import Environment
 import Foundation
 import Preferences
 import SwiftUI
+import Toast
 import XcodeInspector
 
 public struct WidgetFeature: ReducerProtocol {
@@ -32,6 +33,8 @@ public struct WidgetFeature: ReducerProtocol {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
 
+        public var toast = Toast.State()
+        
         // MARK: Panels
 
         public var panelState = PanelFeature.State()
@@ -120,6 +123,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateWindowOpacityFinished
         case updateKeyWindow(WindowCanBecomeKey)
 
+        case toast(Toast.Action)
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
         case circularWidget(CircularWidgetFeature.Action)
@@ -143,6 +147,10 @@ public struct WidgetFeature: ReducerProtocol {
     public init() {}
 
     public var body: some ReducerProtocol<State, Action> {
+        Scope(state: \.toast, action: /Action.toast) {
+            Toast()
+        }
+        
         Scope(state: \._circularWidgetState, action: /Action.circularWidget) {
             CircularWidgetFeature()
         }
@@ -227,11 +235,14 @@ public struct WidgetFeature: ReducerProtocol {
             switch action {
             case .startup:
                 return .merge(
-                    .run { send in await send(.observeActiveApplicationChange) },
-                    .run { send in await send(.observeCompletionPanelChange) },
-                    .run { send in await send(.observeFullscreenChange) },
-                    .run { send in await send(.observeColorSchemeChange) },
-                    .run { send in await send(.observePresentationModeChange) }
+                    .run { send in
+                        await send(.toast(.start))
+                        await send(.observeActiveApplicationChange)
+                        await send(.observeCompletionPanelChange)
+                        await send(.observeFullscreenChange)
+                        await send(.observeColorSchemeChange)
+                        await send(.observePresentationModeChange)
+                    }
                 )
 
             case .observeActiveApplicationChange:
@@ -628,6 +639,9 @@ public struct WidgetFeature: ReducerProtocol {
                         await windows.sharedPanelWindow.makeKeyAndOrderFront(nil)
                     }
                 }
+                
+            case .toast:
+                return .none
 
             case .circularWidget:
                 return .none

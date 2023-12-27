@@ -71,11 +71,16 @@ public class ToastController: ObservableObject {
 public struct Toast: ReducerProtocol {
     public typealias Message = ToastController.Message
     public struct State: Equatable {
+        var isObservingToastController = false
         public var messages: [Message] = []
+        
+        public init(messages: [Message] = []) {
+            self.messages = messages
+        }
     }
 
     public enum Action: Equatable {
-        case appear
+        case start
         case updateMessages([Message])
         case toast(String, ToastType)
     }
@@ -89,7 +94,9 @@ public struct Toast: ReducerProtocol {
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
-            case .appear:
+            case .start:
+                guard !state.isObservingToastController else { return .none }
+                state.isObservingToastController = true
                 return .run { send in
                     let stream = AsyncStream<[Message]> { continuation in
                         let cancellable = toastController.$messages.sink { newValue in
