@@ -58,30 +58,6 @@ public final class SuggestionWidgetController: NSObject {
         return it
     }()
 
-    private lazy var tabWindow = {
-        let it = CanBecomeKeyWindow(
-            contentRect: .zero,
-            styleMask: .borderless,
-            backing: .buffered,
-            defer: false
-        )
-        it.isReleasedWhenClosed = false
-        it.isOpaque = false
-        it.backgroundColor = .clear
-        it.level = .floating
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
-        it.hasShadow = true
-        it.contentView = NSHostingView(
-            rootView: TabView(store: store.scope(
-                state: \.chatPanelState,
-                action: WidgetFeature.Action.chatPanel
-            ))
-        )
-        it.setIsVisible(true)
-        it.canBecomeKeyChecker = { false }
-        return it
-    }()
-
     private lazy var sharedPanelWindow = {
         let it = CanBecomeKeyWindow(
             contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
@@ -171,6 +147,31 @@ public final class SuggestionWidgetController: NSObject {
         return it
     }()
 
+    private lazy var toastWindow = {
+        let it = CanBecomeKeyWindow(
+            contentRect: .zero,
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = true
+        it.backgroundColor = .clear
+        it.level = .floating
+        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.hasShadow = false
+        it.contentView = NSHostingView(
+            rootView: ToastPanelView(store: store.scope(
+                state: \.toastPanel,
+                action: WidgetFeature.Action.toastPanel
+            ))
+        )
+        it.setIsVisible(true)
+        it.ignoresMouseEvents = true
+        it.canBecomeKeyChecker = { false }
+        return it
+    }()
+
     let store: StoreOf<WidgetFeature>
     let viewStore: ViewStoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
@@ -193,7 +194,7 @@ public final class SuggestionWidgetController: NSObject {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
 
         dependency.windows.chatPanelWindow = chatPanelWindow
-        dependency.windows.tabWindow = tabWindow
+        dependency.windows.toastWindow = toastWindow
         dependency.windows.sharedPanelWindow = sharedPanelWindow
         dependency.windows.suggestionPanelWindow = suggestionPanelWindow
         dependency.windows.fullscreenDetector = fullscreenDetector
@@ -223,7 +224,7 @@ public extension SuggestionWidgetController {
     }
 
     func presentError(_ errorDescription: String) {
-        store.send(.panel(.presentError(errorDescription)))
+        store.send(.toastPanel(.toast(.toast(errorDescription, .error))))
     }
 
     func presentChatRoom() {

@@ -1,6 +1,7 @@
 import Dependencies
 import Foundation
 import SuggestionService
+import Toast
 import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
@@ -30,6 +31,8 @@ public final class Service {
     let proService: ProService
     #endif
 
+    @Dependency(\.toast) var toast
+    
     private init() {
         @Dependency(\.workspacePool) var workspacePool
 

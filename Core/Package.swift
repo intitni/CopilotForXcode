@@ -273,6 +273,7 @@ let package = Package(
             dependencies: [
                 "PromptToCodeService",
                 "ChatGPTChatTab",
+                .product(name: "Toast", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),

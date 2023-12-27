@@ -108,7 +108,7 @@ public struct Toast: ReducerProtocol {
                     }
                     for await newValue in stream {
                         try Task.checkCancellation()
-                        await send(.updateMessages(newValue))
+                        await send(.updateMessages(newValue), animation: .linear(duration: 0.2))
                     }
                 }.cancellable(id: CancelID(), cancelInFlight: true)
             case let .updateMessages(messages):
