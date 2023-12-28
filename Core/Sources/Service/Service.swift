@@ -90,7 +90,10 @@ public extension Service {
             return
         } catch {
             reply(nil, error)
+            return
         }
+        
+        reply(nil, XPCRequestNotHandledError())
     }
 }
 
