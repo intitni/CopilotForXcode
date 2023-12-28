@@ -3,6 +3,7 @@ import ComposableArchitecture
 import Foundation
 import LaunchAgentManager
 import SwiftUI
+import XPCShared
 
 struct General: ReducerProtocol {
     struct State: Equatable {
@@ -14,6 +15,7 @@ struct General: ReducerProtocol {
     enum Action: Equatable {
         case appear
         case setupLaunchAgentIfNeeded
+        case openExtensionManager
         case reloadStatus
         case finishReloading(xpcServiceVersion: String, permissionGranted: Bool)
         case failedReloading
@@ -28,6 +30,7 @@ struct General: ReducerProtocol {
                 return .run { send in
                     await send(.setupLaunchAgentIfNeeded)
                 }
+                
             case .setupLaunchAgentIfNeeded:
                 return .run { send in
                     #if DEBUG
@@ -44,6 +47,19 @@ struct General: ReducerProtocol {
                     #endif
                     await send(.reloadStatus)
                 }
+                
+            case .openExtensionManager:
+                return .run { send in
+                    let service = try getService()
+                    do {
+                        _ = try await service
+                            .send(requestBody: ExtensionServiceRequests.OpenExtensionManager())
+                    } catch {
+                        toast(error.localizedDescription, .error)
+                        await send(.failedReloading)
+                    }
+                }
+
             case .reloadStatus:
                 state.isReloading = true
                 return .run { send in
