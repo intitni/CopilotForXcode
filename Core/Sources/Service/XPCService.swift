@@ -192,33 +192,17 @@ public class XPCService: NSObject, XPCServiceProtocol {
     }
 
     // MARK: - Requests
-    
+
     public func send(
         endpoint: String,
         requestBody: Data,
         reply: @escaping (Data?, Error?) -> Void
     ) {
-        do {
-            try ExtensionServiceRequests.OpenExtensionManager.handle(
-                endpoint: endpoint,
-                requestBody: requestBody,
-                reply: reply
-            ) { _ in
-                .none
-            }
-
-            try ExtensionServiceRequests.GetExtensionSuggestionServices.handle(
-                endpoint: endpoint,
-                requestBody: requestBody,
-                reply: reply
-            ) { _ in
-                []
-            }
-        } catch is XPCRequestHandlerHitError {
-            return
-        } catch {
-            reply(nil, error)
-        }
+        Service.shared.handleXPCServiceRequests(
+            endpoint: endpoint,
+            requestBody: requestBody,
+            reply: reply
+        )
     }
 }
 

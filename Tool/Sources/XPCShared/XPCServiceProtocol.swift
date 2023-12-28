@@ -79,6 +79,11 @@ public enum ExtensionServiceRequests {
         public struct ServiceInfo: Codable {
             public var bundleIdentifier: String
             public var name: String
+            
+            public init(bundleIdentifier: String, name: String) {
+                self.bundleIdentifier = bundleIdentifier
+                self.name = name
+            }
         }
 
         public typealias ResponseBody = [ServiceInfo]
