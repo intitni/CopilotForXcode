@@ -55,12 +55,19 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
         Logger.service.debug("""
         Get suggestion for \(request.fileURL) at \(request.cursorPosition)
         """)
-        let suggestions = try await next(request)
-        Logger.service.debug("""
-        Receive \(suggestions.count) suggestions for \(request.fileURL) at \(request.cursorPosition)
-        """)
-
-        return suggestions
+        do {
+            let suggestions = try await next(request)
+            Logger.service.debug("""
+            Receive \(suggestions.count) suggestions for \(request.fileURL) \
+            at \(request.cursorPosition)
+            """)
+            return suggestions
+        } catch {
+            Logger.service.debug("""
+            Error: \(error.localizedDescription)
+            """)
+            throw error
+        }
     }
 }
 
