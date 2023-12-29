@@ -1,6 +1,8 @@
+import Client
 import Preferences
 import SharedUIComponents
 import SwiftUI
+import XPCShared
 
 #if canImport(ProHostApp)
 import ProHostApp
@@ -30,7 +32,45 @@ struct SuggestionSettingsView: View {
         var acceptSuggestionWithTab
         @AppStorage(\.isSuggestionSenseEnabled)
         var isSuggestionSenseEnabled
-        init() {}
+
+        var refreshExtensionSuggestionFeatureProvidersTask: Task<Void, Never>?
+
+        @MainActor
+        @Published var extensionSuggestionFeatureProviders = [ExtensionSuggestionFeatureProvider]()
+
+        init() {
+            Task { @MainActor in
+                refreshExtensionSuggestionFeatureProviders()
+            }
+            refreshExtensionSuggestionFeatureProvidersTask = Task { [weak self] in
+                let sequence = await NotificationCenter.default
+                    .notifications(named: NSApplication.didBecomeActiveNotification)
+                for await _ in sequence {
+                    guard let self else { return }
+                    await MainActor.run {
+                        self.refreshExtensionSuggestionFeatureProviders()
+                    }
+                }
+            }
+        }
+
+        struct ExtensionSuggestionFeatureProvider: Identifiable {
+            var id: String { bundleIdentifier }
+            var name: String
+            var bundleIdentifier: String
+        }
+
+        @MainActor
+        func refreshExtensionSuggestionFeatureProviders() {
+            guard let service = try? getService() else { return }
+            Task { @MainActor in
+                let services = try await service
+                    .send(requestBody: ExtensionServiceRequests.GetExtensionSuggestionServices())
+                extensionSuggestionFeatureProviders = services.map {
+                    .init(name: $0.name, bundleIdentifier: $0.bundleIdentifier)
+                }
+            }
+        }
     }
 
     @StateObject var settings = Settings()
@@ -60,6 +100,13 @@ struct SuggestionSettingsView: View {
                     case .codeium:
                         Text("Codeium").tag(SuggestionFeatureProvider.builtIn($0))
                     }
+                }
+
+                ForEach(settings.extensionSuggestionFeatureProviders, id: \.id) {
+                    Text($0.name).tag(SuggestionFeatureProvider.extension(
+                        name: $0.name,
+                        bundleIdentifier: $0.bundleIdentifier
+                    ))
                 }
             } label: {
                 Text("Feature Provider")
