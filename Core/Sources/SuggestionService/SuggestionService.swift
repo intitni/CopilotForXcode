@@ -1,91 +1,22 @@
-import AppKit
 import Foundation
 import Preferences
 import SuggestionModel
+import SuggestionProvider
 import UserDefaultsObserver
 
-public struct SuggestionRequest {
-    public var fileURL: URL
-    public var content: String
-    public var cursorPosition: CursorPosition
-    public var tabSize: Int
-    public var indentSize: Int
-    public var usesTabsForIndentation: Bool
-    public var ignoreSpaceOnlySuggestions: Bool
+#if canImport(ProExtension)
+import ProExtension
+#endif
 
-    public init(
-        fileURL: URL,
-        content: String,
-        cursorPosition: CursorPosition,
-        tabSize: Int,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
-    ) {
-        self.fileURL = fileURL
-        self.content = content
-        self.cursorPosition = cursorPosition
-        self.tabSize = tabSize
-        self.indentSize = indentSize
-        self.usesTabsForIndentation = usesTabsForIndentation
-        self.ignoreSpaceOnlySuggestions = ignoreSpaceOnlySuggestions
-    }
-}
-
-public protocol SuggestionServiceType {
-    func getSuggestions(_ request: SuggestionRequest) async throws -> [CodeSuggestion]
-
-    func notifyAccepted(_ suggestion: CodeSuggestion) async
-    func notifyRejected(_ suggestions: [CodeSuggestion]) async
-    func notifyOpenTextDocument(fileURL: URL, content: String) async throws
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
-    func notifyCloseTextDocument(fileURL: URL) async throws
-    func notifySaveTextDocument(fileURL: URL) async throws
-    func cancelRequest() async
-    func terminate() async
-}
-
-public extension SuggestionServiceType {
-    func getSuggestions(
-        fileURL: URL,
-        content: String,
-        cursorPosition: CursorPosition,
-        tabSize: Int,
-        indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
-    ) async throws -> [CodeSuggestion] {
-        return try await getSuggestions(.init(
-            fileURL: fileURL,
-            content: content,
-            cursorPosition: cursorPosition,
-            tabSize: tabSize,
-            indentSize: indentSize,
-            usesTabsForIndentation: usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: ignoreSpaceOnlySuggestions
-        ))
-    }
-}
-
-protocol SuggestionServiceProvider: SuggestionServiceType {}
+public protocol SuggestionServiceType: SuggestionServiceProvider {}
 
 public actor SuggestionService: SuggestionServiceType {
-    static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
-        DisabledLanguageSuggestionServiceMiddleware(),
-    ]
-
-    static var customMiddlewares: [SuggestionServiceMiddleware] = []
-
-    static var middlewares: [SuggestionServiceMiddleware] {
-        builtInMiddlewares + customMiddlewares
-    }
-
-    public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
-        customMiddlewares.append(middleware)
+    var middlewares: [SuggestionServiceMiddleware] {
+        SuggestionServiceMiddlewareContainer.middlewares
     }
 
     let projectRootURL: URL
-    let onServiceLaunched: (SuggestionServiceType) -> Void
+    let onServiceLaunched: (SuggestionServiceProvider) -> Void
     let providerChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
         forKeyPaths: [UserDefaultPreferenceKeys().suggestionFeatureProvider.key],
@@ -98,7 +29,10 @@ public actor SuggestionService: SuggestionServiceType {
         UserDefaults.shared.value(for: \.suggestionFeatureProvider)
     }
 
-    public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
+    public init(
+        projectRootURL: URL,
+        onServiceLaunched: @escaping (SuggestionServiceProvider) -> Void
+    ) {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
 
@@ -111,13 +45,19 @@ public actor SuggestionService: SuggestionServiceType {
     }
 
     func buildService() -> SuggestionServiceProvider {
+        #if canImport(ProExtension)
+        if let provider = ProExtension.suggestionProviderFactory(serviceType) {
+            return provider
+        }
+        #endif
+        
         switch serviceType {
-        case .codeium:
+        case .builtIn(.codeium):
             return CodeiumSuggestionProvider(
                 projectRootURL: projectRootURL,
                 onServiceLaunched: onServiceLaunched
             )
-        case .gitHubCopilot:
+        case .builtIn(.gitHubCopilot), .extension:
             return GitHubCopilotSuggestionProvider(
                 projectRootURL: projectRootURL,
                 onServiceLaunched: onServiceLaunched
@@ -131,12 +71,12 @@ public actor SuggestionService: SuggestionServiceType {
 }
 
 public extension SuggestionService {
-    func getSuggestions( 
+    func getSuggestions(
         _ request: SuggestionRequest
     ) async throws -> [SuggestionModel.CodeSuggestion] {
         var getSuggestion = suggestionProvider.getSuggestions
- 
-        for middleware in Self.middlewares.reversed() {
+
+        for middleware in middlewares.reversed() {
             getSuggestion = { [getSuggestion] request in
                 try await middleware.getSuggestion(request, next: getSuggestion)
             }

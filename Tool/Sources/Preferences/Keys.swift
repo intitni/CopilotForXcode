@@ -286,8 +286,12 @@ public extension UserDefaultPreferenceKeys {
 // MARK: - Suggestion
 
 public extension UserDefaultPreferenceKeys {
-    var suggestionFeatureProvider: PreferenceKey<SuggestionFeatureProvider> {
+    var oldSuggestionFeatureProvider: DeprecatedPreferenceKey<BuiltInSuggestionFeatureProvider> {
         .init(defaultValue: .gitHubCopilot, key: "SuggestionFeatureProvider")
+    }
+    
+    var suggestionFeatureProvider: PreferenceKey<SuggestionFeatureProvider> {
+        .init(defaultValue: .builtIn(.gitHubCopilot), key: "NewSuggestionFeatureProvider")
     }
 
     var realtimeSuggestionToggle: PreferenceKey<Bool> {

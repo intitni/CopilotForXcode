@@ -56,7 +56,7 @@ struct SharedPanelView: View {
                                     animation: .easeInOut(duration: 0.2)
                                 )
                             }
-                        } else if let promptToCode = viewStore.state.promptToCode {
+                        } else if let _ = viewStore.state.promptToCode {
                             IfLetStore(store.scope(
                                 state: { $0.content.promptToCodeGroup.activePromptToCode },
                                 action: {
@@ -66,7 +66,7 @@ struct SharedPanelView: View {
                             )) {
                                 PromptToCodePanel(store: $0)
                             }
-                            
+
                         } else if let suggestion = viewStore.state.suggestion {
                             switch suggestionPresentationMode {
                             case .nearbyTextCursor:

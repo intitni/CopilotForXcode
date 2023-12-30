@@ -1,6 +1,6 @@
 import Foundation
 import SuggestionModel
-import SuggestionService
+import SuggestionProvider
 import Workspace
 import XPCShared
 
@@ -9,7 +9,7 @@ public extension Workspace {
         plugin(for: SuggestionServiceWorkspacePlugin.self)
     }
 
-    var suggestionService: SuggestionServiceType? {
+    var suggestionService: SuggestionServiceProvider? {
         suggestionPlugin?.suggestionService
     }
 
@@ -34,7 +34,7 @@ public extension Workspace {
         refreshUpdateTime()
 
         let filespace = createFilespaceIfNeeded(fileURL: fileURL)
-        
+
         guard !(await filespace.isGitIgnored) else { return [] }
 
         if !editor.uti.isEmpty {
@@ -53,13 +53,15 @@ public extension Workspace {
 
         guard let suggestionService else { throw SuggestionFeatureDisabledError() }
         let completions = try await suggestionService.getSuggestions(
-            fileURL: fileURL,
-            content: editor.lines.joined(separator: ""),
-            cursorPosition: editor.cursorPosition,
-            tabSize: editor.tabSize,
-            indentSize: editor.indentSize,
-            usesTabsForIndentation: editor.usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: true
+            .init(
+                fileURL: fileURL,
+                content: editor.lines.joined(separator: ""),
+                cursorPosition: editor.cursorPosition,
+                tabSize: editor.tabSize,
+                indentSize: editor.indentSize,
+                usesTabsForIndentation: editor.usesTabsForIndentation,
+                ignoreSpaceOnlySuggestions: true
+            )
         )
 
         filespace.setSuggestions(completions)

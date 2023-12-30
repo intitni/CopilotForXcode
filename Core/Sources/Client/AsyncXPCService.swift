@@ -20,7 +20,7 @@ public struct AsyncXPCService {
             }
         }
     }
-    
+
     public func getXPCServiceAccessibilityPermission() async throws -> Bool {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
@@ -85,7 +85,7 @@ public struct AsyncXPCService {
             { $0.getRealtimeSuggestedCode }
         )
     }
-    
+
     public func getPromptToCodeAcceptedCode(editorContent: EditorContent) async throws
         -> UpdatedContent?
     {
@@ -144,7 +144,7 @@ public struct AsyncXPCService {
             { service in { service.customCommand(id: id, editorContent: $0, withReply: $1) } }
         )
     }
-    
+
     public func postNotification(name: String) async throws {
         try await withXPCServiceConnected(connection: connection) {
             service, continuation in
@@ -153,16 +153,40 @@ public struct AsyncXPCService {
             }
         }
     }
-    
-    public func performAction(name: String, arguments: String) async throws -> String {
-        try await withXPCServiceConnected(connection: connection) {
-            service, continuation in
-            service.performAction(name: name, arguments: arguments) {
-                continuation.resume($0)
+
+    public func send<M: ExtensionServiceRequestType>(
+        requestBody: M
+    ) async throws -> M.ResponseBody {
+        try await withXPCServiceConnected(connection: connection) { service, continuation in
+            do {
+                let requestBodyData = try JSONEncoder().encode(requestBody)
+                service.send(endpoint: M.endpoint, requestBody: requestBodyData) { data, error in
+                    if let error {
+                        continuation.reject(error)
+                    } else {
+                        do {
+                            guard let data = data else {
+                                continuation.reject(NoDataError())
+                                return
+                            }
+                            let responseBody = try JSONDecoder().decode(
+                                M.ResponseBody.self,
+                                from: data
+                            )
+                            continuation.resume(responseBody)
+                        } catch {
+                            continuation.reject(error)
+                        }
+                    }
+                }
+            } catch {
+                continuation.reject(error)
             }
         }
     }
 }
+
+struct NoDataError: Error {}
 
 struct AutoFinishContinuation<T> {
     var continuation: AsyncThrowingStream<T, Error>.Continuation

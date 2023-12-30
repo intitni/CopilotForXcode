@@ -3,12 +3,12 @@ import GitHubCopilotService
 import Preferences
 import SuggestionModel
 
-actor GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
+public actor GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
     let projectRootURL: URL
-    let onServiceLaunched: (SuggestionServiceType) -> Void
+    let onServiceLaunched: (SuggestionServiceProvider) -> Void
     var gitHubCopilotService: GitHubCopilotSuggestionServiceType?
 
-    init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceType) -> Void) {
+    public init(projectRootURL: URL, onServiceLaunched: @escaping (SuggestionServiceProvider) -> Void) {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
     }
@@ -25,7 +25,7 @@ actor GitHubCopilotSuggestionProvider: SuggestionServiceProvider {
     }
 }
 
-extension GitHubCopilotSuggestionProvider {
+public extension GitHubCopilotSuggestionProvider {
     func getSuggestions(_ request: SuggestionRequest) async throws
         -> [SuggestionModel.CodeSuggestion]
     {

@@ -11,7 +11,7 @@ import XPCShared
 @testable import Service
 
 func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSuggestion {
-    .init(text: text, position: range.start, uuid: uuid, range: range, displayText: text)
+    .init(id: uuid, text: text, position: range.start, range: range)
 }
 
 class MockSuggestionService: GitHubCopilotSuggestionServiceType {
@@ -61,11 +61,11 @@ class MockSuggestionService: GitHubCopilotSuggestionServiceType {
     }
 
     func notifyAccepted(_ completion: CodeSuggestion) async {
-        accepted = completion.uuid
+        accepted = completion.id
     }
 
     func notifyRejected(_ completions: [CodeSuggestion]) async {
-        rejected = completions.map(\.uuid)
+        rejected = completions.map(\.id)
     }
 }
 

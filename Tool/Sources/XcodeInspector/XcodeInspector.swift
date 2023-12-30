@@ -88,9 +88,11 @@ public final class XcodeInspector: ObservableObject {
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
 
-        Task { @MainActor in // Did activate app
+        #warning("Test Me")
+
+        Task { // Did activate app
             if let activeXcode {
-                setActiveXcode(activeXcode)
+                await setActiveXcode(activeXcode)
             }
 
             let sequence = NSWorkspace.shared.notificationCenter
@@ -101,23 +103,30 @@ public final class XcodeInspector: ObservableObject {
                     .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
                 else { continue }
                 if app.isXcode {
-                    if let existed = xcodes.first(
-                        where: { $0.runningApplication.processIdentifier == app.processIdentifier }
-                    ) {
-                        setActiveXcode(existed)
+                    if let existed = xcodes.first(where: {
+                        $0.runningApplication.processIdentifier == app.processIdentifier
+                    }) {
+                        await MainActor.run {
+                            setActiveXcode(existed)
+                        }
                     } else {
                         let new = XcodeAppInstanceInspector(runningApplication: app)
-                        xcodes.append(new)
-                        setActiveXcode(new)
+                        await MainActor.run {
+                            xcodes.append(new)
+                            setActiveXcode(new)
+                        }
                     }
                 } else {
-                    previousActiveApplication = activeApplication
-                    activeApplication = AppInstanceInspector(runningApplication: app)
+                    let appInspector = AppInstanceInspector(runningApplication: app)
+                    await MainActor.run {
+                        previousActiveApplication = activeApplication
+                        activeApplication = appInspector
+                    }
                 }
             }
         }
 
-        Task { @MainActor in // Did terminate app
+        Task { // Did terminate app
             let sequence = NSWorkspace.shared.notificationCenter
                 .notifications(named: NSWorkspace.didTerminateApplicationNotification)
             for await notification in sequence {
@@ -126,25 +135,26 @@ public final class XcodeInspector: ObservableObject {
                     .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
                 else { continue }
                 if app.isXcode {
-                    xcodes.removeAll {
-                        $0.runningApplication.processIdentifier == app.processIdentifier
-                    }
-                    if latestActiveXcode?.runningApplication.processIdentifier
-                        == app.processIdentifier
-                    {
-                        latestActiveXcode = nil
-                    }
+                    let processIdentifier = app.processIdentifier
+                    await MainActor.run {
+                        xcodes.removeAll {
+                            $0.runningApplication.processIdentifier == processIdentifier
+                        }
+                        if latestActiveXcode?.runningApplication
+                            .processIdentifier == processIdentifier
+                        {
+                            latestActiveXcode = nil
+                        }
 
-                    if let activeXcode = xcodes.first(where: \.isActive) {
-                        setActiveXcode(activeXcode)
+                        if let activeXcode = xcodes.first(where: \.isActive) {
+                            setActiveXcode(activeXcode)
+                        }
                     }
                 }
             }
         }
     }
 
-    #warning("TODO: Double check before releasing 0.27.0")
-    
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication

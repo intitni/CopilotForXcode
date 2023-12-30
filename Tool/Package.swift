@@ -29,8 +29,8 @@ let package = Package(
         .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
         .library(name: "Workspace", targets: ["Workspace", "WorkspaceSuggestionService"]),
         .library(
-            name: "SuggestionService",
-            targets: ["SuggestionService", "GitHubCopilotService", "CodeiumService"]
+            name: "SuggestionProvider",
+            targets: ["SuggestionProvider", "GitHubCopilotService", "CodeiumService"]
         ),
         .library(
             name: "AppMonitoring",
@@ -217,7 +217,7 @@ let package = Package(
             name: "WorkspaceSuggestionService",
             dependencies: [
                 "Workspace",
-                "SuggestionService",
+                "SuggestionProvider",
                 "XPCShared",
             ]
         ),
@@ -264,7 +264,7 @@ let package = Package(
 
         .target(name: "BingSearchService"),
 
-        .target(name: "SuggestionService", dependencies: [
+        .target(name: "SuggestionProvider", dependencies: [
             "GitHubCopilotService",
             "CodeiumService",
             "UserDefaultsObserver",

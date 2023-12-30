@@ -5,7 +5,7 @@ import Workspace
 public struct FilespaceSuggestionSnapshot: Equatable {
     public var linesHash: Int
     public var cursorPosition: CursorPosition
-    
+
     public init(linesHash: Int, cursorPosition: CursorPosition) {
         self.linesHash = linesHash
         self.cursorPosition = cursorPosition
@@ -59,14 +59,45 @@ public extension Filespace {
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
         let suggestionLines = presentingSuggestion.text.split(separator: "\n")
         let suggestionFirstLine = suggestionLines.first ?? ""
+        
+        /// For example:
+        /// ```
+        /// ABCD012     // typed text
+        ///     ^
+        ///     0123456 // suggestion range 4-11, generated after `ABCD`
+        /// ```
+        /// The suggestion should contain `012`, aka, the suggestion that is typed.
+        ///
+        /// Another case is that the suggestion may contain the whole line.
+        /// /// ```
+        /// ABCD012     // typed text
+        /// ----^
+        /// ABCD0123456 // suggestion range 0-11, generated after `ABCD`
+        /// The suggestion should contain `ABCD012`, aka, the suggestion that is typed.
+        /// ```
+        let typedSuggestion = {
+            let startIndex = editingLine.index(
+                editingLine.startIndex,
+                offsetBy: presentingSuggestion.range.start.character,
+                limitedBy: editingLine.endIndex
+            ) ?? editingLine.startIndex
+            
+            let endIndex = editingLine.index(
+                editingLine.startIndex,
+                offsetBy: cursorPosition.character,
+                limitedBy: editingLine.endIndex
+            ) ?? editingLine.endIndex
+            
+            if endIndex > startIndex {
+                return editingLine[startIndex..<endIndex]
+            }
+            
+            return ""
+        }()
 
         // the line content doesn't match the suggestion
         if cursorPosition.character > 0,
-           !suggestionFirstLine.hasPrefix(editingLine[..<(editingLine.index(
-               editingLine.startIndex,
-               offsetBy: cursorPosition.character,
-               limitedBy: editingLine.endIndex
-           ) ?? editingLine.endIndex)])
+           !suggestionFirstLine.hasPrefix(typedSuggestion)
         {
             reset()
             resetSnapshot()
@@ -74,7 +105,7 @@ public extension Filespace {
         }
 
         // finished typing the whole suggestion when the suggestion has only one line
-        if editingLine.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
+        if typedSuggestion.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
             reset()
             resetSnapshot()
             return false

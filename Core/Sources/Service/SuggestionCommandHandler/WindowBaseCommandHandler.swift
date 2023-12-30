@@ -214,11 +214,10 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             }()
 
             let suggestion = CodeSuggestion(
+                id: UUID().uuidString,
                 text: promptToCode.code,
                 position: range.start,
-                uuid: UUID().uuidString,
-                range: range,
-                displayText: promptToCode.code
+                range: range
             )
 
             injector.acceptSuggestion(

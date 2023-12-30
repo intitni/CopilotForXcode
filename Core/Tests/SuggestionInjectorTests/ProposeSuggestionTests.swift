@@ -15,14 +15,13 @@ final class ProposeSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 2, character: 19),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 2, character: 18)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -62,14 +61,13 @@ final class ProposeSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 2, character: 18)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -105,14 +103,13 @@ final class ProposeSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 2, character: 18)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -149,14 +146,13 @@ final class ProposeSuggestionTests: XCTestCase {
             var age: String
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 2, character: 18)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -197,14 +193,13 @@ final class ProposeSuggestionTests: XCTestCase {
             print(array)
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 1, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 1, character: 0),
                 end: .init(line: 2, character: 18)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -247,14 +242,13 @@ final class ProposeSuggestionTests: XCTestCase {
         }
         """
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 0, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 0, character: 0),
                 end: .init(line: 5, character: 15)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
@@ -294,14 +288,13 @@ final class ProposeSuggestionTests: XCTestCase {
         """
         let text = "} else {\n"
         let suggestion = CodeSuggestion(
+            id: "",
             text: text,
             position: .init(line: 2, character: 0),
-            uuid: "",
             range: .init(
                 start: .init(line: 2, character: 0),
                 end: .init(line: 2, character: 8)
-            ),
-            displayText: ""
+            )
         )
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakLines()
