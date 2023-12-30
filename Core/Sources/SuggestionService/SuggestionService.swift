@@ -19,7 +19,7 @@ public actor SuggestionService: SuggestionServiceType {
     let onServiceLaunched: (SuggestionServiceProvider) -> Void
     let providerChangeObserver = UserDefaultsObserver(
         object: UserDefaults.shared,
-        forKeyPaths: [UserDefaultPreferenceKeys().oldSuggestionFeatureProvider.key],
+        forKeyPaths: [UserDefaultPreferenceKeys().suggestionFeatureProvider.key],
         context: nil
     )
 
