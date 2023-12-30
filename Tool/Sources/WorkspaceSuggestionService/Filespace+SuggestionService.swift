@@ -78,7 +78,7 @@ public extension Filespace {
         let typedSuggestion = {
             let startIndex = editingLine.index(
                 editingLine.startIndex,
-                offsetBy: presentingSuggestion.position.character,
+                offsetBy: presentingSuggestion.range.start.character,
                 limitedBy: editingLine.endIndex
             ) ?? editingLine.startIndex
             
