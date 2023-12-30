@@ -9,6 +9,30 @@ import ProHostApp
 #endif
 
 struct SuggestionSettingsView: View {
+    struct SuggestionFeatureProviderOption: Identifiable, Hashable {
+        var id: String {
+            (builtInProvider?.rawValue).map(String.init) ?? bundleIdentifier ?? "n/A"
+        }
+
+        var name: String
+        var builtInProvider: BuiltInSuggestionFeatureProvider?
+        var bundleIdentifier: String?
+
+        func hash(into hasher: inout Hasher) {
+            id.hash(into: &hasher)
+        }
+
+        init(
+            name: String,
+            builtInProvider: BuiltInSuggestionFeatureProvider? = nil,
+            bundleIdentifier: String? = nil
+        ) {
+            self.name = name
+            self.builtInProvider = builtInProvider
+            self.bundleIdentifier = bundleIdentifier
+        }
+    }
+
     final class Settings: ObservableObject {
         @AppStorage(\.realtimeSuggestionToggle)
         var realtimeSuggestionToggle
@@ -36,7 +60,8 @@ struct SuggestionSettingsView: View {
         var refreshExtensionSuggestionFeatureProvidersTask: Task<Void, Never>?
 
         @MainActor
-        @Published var extensionSuggestionFeatureProviders = [ExtensionSuggestionFeatureProvider]()
+        @Published
+        var extensionSuggestionFeatureProviderOptions = [SuggestionFeatureProviderOption]()
 
         init() {
             Task { @MainActor in
@@ -54,21 +79,17 @@ struct SuggestionSettingsView: View {
             }
         }
 
-        struct ExtensionSuggestionFeatureProvider: Identifiable {
-            var id: String { bundleIdentifier }
-            var name: String
-            var bundleIdentifier: String
-        }
-
         @MainActor
         func refreshExtensionSuggestionFeatureProviders() {
             guard let service = try? getService() else { return }
             Task { @MainActor in
                 let services = try await service
                     .send(requestBody: ExtensionServiceRequests.GetExtensionSuggestionServices())
-                extensionSuggestionFeatureProviders = services.map {
+                extensionSuggestionFeatureProviderOptions = services.map {
                     .init(name: $0.name, bundleIdentifier: $0.bundleIdentifier)
                 }
+                print(services.map(\.bundleIdentifier))
+                print(suggestionFeatureProvider)
             }
         }
     }
@@ -92,21 +113,55 @@ struct SuggestionSettingsView: View {
                 Text("Presentation")
             }
 
-            Picker(selection: $settings.suggestionFeatureProvider) {
+            Picker(selection: Binding(get: {
+                switch settings.suggestionFeatureProvider {
+                case let .builtIn(provider):
+                    return SuggestionFeatureProviderOption(
+                        name: "",
+                        builtInProvider: provider
+                    )
+                case let .extension(name, identifier):
+                    return SuggestionFeatureProviderOption(
+                        name: name,
+                        bundleIdentifier: identifier
+                    )
+                }
+            }, set: { (option: SuggestionFeatureProviderOption) in
+                if let provider = option.builtInProvider {
+                    settings.suggestionFeatureProvider = .builtIn(provider)
+                } else {
+                    settings.suggestionFeatureProvider = .extension(
+                        name: option.name,
+                        bundleIdentifier: option.bundleIdentifier ?? ""
+                    )
+                }
+            })) {
                 ForEach(BuiltInSuggestionFeatureProvider.allCases, id: \.rawValue) {
                     switch $0 {
                     case .gitHubCopilot:
-                        Text("GitHub Copilot").tag(SuggestionFeatureProvider.builtIn($0))
+                        Text("GitHub Copilot")
+                            .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
                     case .codeium:
-                        Text("Codeium").tag(SuggestionFeatureProvider.builtIn($0))
+                        Text("Codeium")
+                            .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
                     }
                 }
 
-                ForEach(settings.extensionSuggestionFeatureProviders, id: \.id) {
-                    Text($0.name).tag(SuggestionFeatureProvider.extension(
-                        name: $0.name,
-                        bundleIdentifier: $0.bundleIdentifier
-                    ))
+                ForEach(settings.extensionSuggestionFeatureProviderOptions, id: \.self) { item in
+                    Text(item.name).tag(item)
+                }
+
+                if case let .extension(name, identifier) = settings.suggestionFeatureProvider {
+                    if !settings.extensionSuggestionFeatureProviderOptions.contains(where: {
+                        $0.bundleIdentifier == identifier
+                    }) {
+                        Text("\(name) (Not Found)").tag(
+                            SuggestionFeatureProviderOption(
+                                name: name,
+                                bundleIdentifier: identifier
+                            )
+                        )
+                    }
                 }
             } label: {
                 Text("Feature Provider")
