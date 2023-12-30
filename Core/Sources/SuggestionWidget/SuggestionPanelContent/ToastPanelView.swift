@@ -37,7 +37,10 @@ struct ToastPanelView: View {
                                 case .warning: return Color(nsColor: .systemOrange)
                                 }
                             }() as Color, in: RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: Color.black.opacity(0.2), radius: 4)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.black.opacity(0.3), lineWidth: 1)
+                            }
                     }
                 }
                 
