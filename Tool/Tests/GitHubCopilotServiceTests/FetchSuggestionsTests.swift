@@ -98,12 +98,6 @@ final class FetchSuggestionTests: XCTestCase {
     }
 
     func test_if_language_identifier_is_unknown_returns_correctly() async throws {
-        struct Err: Error, LocalizedError {
-            var errorDescription: String? {
-                "sendRequest Should not be falled"
-            }
-        }
-
         class TestServer: GitHubCopilotLSP {
             func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
                 // unimplemented
