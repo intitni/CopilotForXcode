@@ -45,12 +45,6 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         var functions = [any ChatGPTFunction]()
 
         if !isSensitive {
-            // When the bot is already focusing on a piece of code, it can expand the range.
-
-            if context.focusedContext != nil {
-                functions.append(ExpandFocusRangeFunction(contextCollector: self))
-            }
-
             // When the bot is not focusing on any code, or the focusing area is not the user's
             // selection, it can move the focus back to the user's selection.
 
@@ -104,7 +98,9 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         let start = """
         ## File and Code Scope
 
-        You can use the following context to answer my questions about the editing document or code. The context shows only a part of the code in the editing document, and will change during the conversation, so it may not match our conversation.
+        You can use the following context to answer my questions about the editing document \
+        or code. The context shows only a part of the code in the editing document, and will \
+        change during the conversation, so it may not match our conversation.
 
         \(
             context.focusedContext == nil
