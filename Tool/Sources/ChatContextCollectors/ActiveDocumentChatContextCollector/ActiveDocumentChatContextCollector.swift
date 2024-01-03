@@ -45,15 +45,6 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         var functions = [any ChatGPTFunction]()
 
         if !isSensitive {
-            // When the bot is not focusing on any code, or the focusing area is not the user's
-            // selection, it can move the focus back to the user's selection.
-
-            if context.focusedContext == nil ||
-                !(context.focusedContext?.codeRange.contains(context.selectionRange) ?? false)
-            {
-                functions.append(MoveToFocusedCodeFunction(contextCollector: self))
-            }
-
             // When there is a line annotation not in the focused area, the bot can move the focus
             // area
             // to the code covering the line of the annotation.
