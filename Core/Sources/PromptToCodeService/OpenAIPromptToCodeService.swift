@@ -266,7 +266,7 @@ extension OpenAIPromptToCodeService {
     }
 
     func getCommonLeadingSpaceCount(_ code: String) -> Int {
-        let lines = code.split(separator: "\n")
+        let lines = code.split(whereSeparator: \.isNewline)
         guard !lines.isEmpty else { return 0 }
         var commonCount = Int.max
         for line in lines {

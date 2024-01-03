@@ -130,11 +130,11 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             }
         }
 
-        prefix = prefix.split(separator: "\n")
+        prefix = prefix.split(whereSeparator: \.isNewline)
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        extra = extra.split(separator: "\n")
+        extra = extra.split(whereSeparator: \.isNewline)
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
