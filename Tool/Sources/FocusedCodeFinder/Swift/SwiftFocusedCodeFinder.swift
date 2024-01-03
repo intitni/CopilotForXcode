@@ -156,7 +156,7 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             let type = node.funcKeyword.text
             let name = node.identifier.text
             let signature = node.signature.trimmedDescription
-                .split(separator: "\n")
+                .split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .joined(separator: " ")
 

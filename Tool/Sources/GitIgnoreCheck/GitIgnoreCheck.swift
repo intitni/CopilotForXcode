@@ -81,7 +81,7 @@ public struct DefaultGitIgnoredChecker: GitIgnoredChecker {
                 environment: [:]
             )
             return result
-                .split(separator: "\n")
+                .split(whereSeparator: \.isNewline)
                 .map(String.init)
                 .compactMap(URL.init(fileURLWithPath:))
         } catch {

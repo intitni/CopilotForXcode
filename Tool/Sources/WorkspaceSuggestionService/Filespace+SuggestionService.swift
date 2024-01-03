@@ -57,7 +57,7 @@ public extension Filespace {
         }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
-        let suggestionLines = presentingSuggestion.text.split(separator: "\n")
+        let suggestionLines = presentingSuggestion.text.split(whereSeparator: \.isNewline)
         let suggestionFirstLine = suggestionLines.first ?? ""
         
         /// For example:

@@ -129,7 +129,7 @@ public extension SourceEditor {
     }
 
     static func breakLines(_ string: String) -> [String] {
-        let lines = string.split(separator: "\n", omittingEmptySubsequences: false)
+        let lines = string.split(whereSeparator: \.isNewline, omittingEmptySubsequences: false)
         var all = [String]()
         for (index, line) in lines.enumerated() {
             if index == lines.endIndex - 1 {

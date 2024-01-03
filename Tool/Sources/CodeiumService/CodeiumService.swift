@@ -359,7 +359,7 @@ func getXcodeVersion() async throws -> String {
                     if let data = try outpipe.fileHandleForReading.readToEnd(),
                        let content = String(data: data, encoding: .utf8)
                     {
-                        let firstLine = content.split(separator: "\n").first ?? ""
+                        let firstLine = content.split(whereSeparator: \.isNewline).first ?? ""
                         var version = firstLine.replacingOccurrences(of: "Xcode ", with: "")
                         if version.isEmpty {
                             version = "14.0"
