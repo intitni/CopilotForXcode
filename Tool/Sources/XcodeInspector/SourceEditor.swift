@@ -18,7 +18,7 @@ public class SourceEditor {
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
         if let selectionRange = element.selectedTextRange {
-            let range = Self.convertRangeToCursorRange(selectionRange, in: content)
+            let range = Self.convertRangeToCursorRange(selectionRange, in: split)
             return .init(
                 content: content,
                 lines: split,
@@ -104,15 +104,21 @@ public extension SourceEditor {
         var countE = 0
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
-            if countS <= range.lowerBound, range.lowerBound < countS + line.count {
+            // The range is counted in UTF8, which causes line endings like \r\n to be of length 2.
+            let lineEndingAddition = (line.lineEnding?.utf8.count ?? 1) - 1
+            if countS <= range.lowerBound,
+               range.lowerBound < countS + line.count + lineEndingAddition
+            {
                 cursorRange.start = .init(line: i, character: range.lowerBound - countS)
             }
-            if countE <= range.upperBound, range.upperBound < countE + line.count {
+            if countE <= range.upperBound,
+               range.upperBound < countE + line.count + lineEndingAddition
+            {
                 cursorRange.end = .init(line: i, character: range.upperBound - countE)
                 break
             }
-            countS += line.count
-            countE += line.count
+            countS += line.count + lineEndingAddition
+            countE += line.count + lineEndingAddition
         }
         if cursorRange.end == .outOfScope {
             cursorRange.end = .init(line: lines.endIndex - 1, character: lines.last?.count ?? 0)
