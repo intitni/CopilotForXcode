@@ -192,7 +192,8 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             signaturePointRange
         ) = node.extractInformationBeforeNode(withFieldName: "body")
         let signature = textProvider(.range(range: signatureRange, pointRange: signaturePointRange))
-            .replacingOccurrences(of: "\n", with: " ")
+            .breakLines(proposedLineEnding: " ", appendLineBreakToLastLine: false)
+            .joined()
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if signature.isEmpty { return nil }
         return .init(
@@ -219,7 +220,8 @@ extension ObjectiveCFocusedCodeFinder {
             signaturePointRange
         ) = node.extractInformationBeforeNode(withFieldName: "body")
         let signature = textProvider(.range(range: signatureRange, pointRange: signaturePointRange))
-            .replacingOccurrences(of: "\n", with: "")
+            .breakLines(proposedLineEnding: " ", appendLineBreakToLastLine: false)
+            .joined()
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if signature.isEmpty { return nil }
         return .init(

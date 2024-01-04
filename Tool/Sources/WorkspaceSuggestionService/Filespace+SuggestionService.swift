@@ -59,7 +59,7 @@ public extension Filespace {
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
         let suggestionLines = presentingSuggestion.text.split(whereSeparator: \.isNewline)
         let suggestionFirstLine = suggestionLines.first ?? ""
-        
+
         /// For example:
         /// ```
         /// ABCD012     // typed text
@@ -76,22 +76,27 @@ public extension Filespace {
         /// The suggestion should contain `ABCD012`, aka, the suggestion that is typed.
         /// ```
         let typedSuggestion = {
+            assert(
+                presentingSuggestion.range.start.character >= 0,
+                "Generating suggestion with invalid range"
+            )
+
             let startIndex = editingLine.index(
                 editingLine.startIndex,
-                offsetBy: presentingSuggestion.range.start.character,
+                offsetBy: max(0, presentingSuggestion.range.start.character),
                 limitedBy: editingLine.endIndex
             ) ?? editingLine.startIndex
-            
+
             let endIndex = editingLine.index(
                 editingLine.startIndex,
                 offsetBy: cursorPosition.character,
                 limitedBy: editingLine.endIndex
             ) ?? editingLine.endIndex
-            
+
             if endIndex > startIndex {
-                return editingLine[startIndex..<endIndex]
+                return String(editingLine[startIndex..<endIndex])
             }
-            
+
             return ""
         }()
 

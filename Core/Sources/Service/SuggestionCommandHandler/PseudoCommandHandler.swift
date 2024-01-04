@@ -316,7 +316,7 @@ extension PseudoCommandHandler {
         else { return nil }
         guard let selectionRange = focusElement.selectedTextRange else { return nil }
         let content = focusElement.value
-        let split = content.breakLines()
+        let split = content.breakLines(appendLineBreakToLastLine: false)
         let range = convertRangeToCursorRange(selectionRange, in: content)
         return (content, split, [range], range.start)
     }
@@ -409,20 +409,3 @@ extension PseudoCommandHandler {
         return cursorRange
     }
 }
-
-public extension String {
-    /// Break a string into lines.
-    func breakLines() -> [String] {
-        let lines = split(separator: "\n", omittingEmptySubsequences: false)
-        var all = [String]()
-        for (index, line) in lines.enumerated() {
-            if index == lines.endIndex - 1 {
-                all.append(String(line))
-            } else {
-                all.append(String(line) + "\n")
-            }
-        }
-        return all
-    }
-}
-

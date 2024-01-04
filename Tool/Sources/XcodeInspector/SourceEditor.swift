@@ -13,7 +13,7 @@ public class SourceEditor {
     /// The content of the source editor.
     public var content: Content {
         let content = element.value
-        let split = Self.breakLines(content)
+        let split = content.breakLines(appendLineBreakToLastLine: false)
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
@@ -91,7 +91,7 @@ public extension SourceEditor {
         _ cursorRange: CursorRange,
         in content: String
     ) -> CFRange {
-        let lines = breakLines(content)
+        let lines = content.breakLines(appendLineBreakToLastLine: false)
         return convertCursorRangeToRange(cursorRange, in: lines)
     }
 
@@ -124,22 +124,8 @@ public extension SourceEditor {
         _ range: ClosedRange<Int>,
         in content: String
     ) -> CursorRange {
-        let lines = breakLines(content)
+        let lines = content.breakLines(appendLineBreakToLastLine: false)
         return convertRangeToCursorRange(range, in: lines)
-    }
-
-    static func breakLines(_ string: String) -> [String] {
-        let lineEnding = string.first(where: \.isNewline) ?? "\n"
-        let lines = string.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
-        var all = [String]()
-        for (index, line) in lines.enumerated() {
-            if index == lines.endIndex - 1 {
-                all.append(String(line))
-            } else {
-                all.append(String(line) + String(lineEnding))
-            }
-        }
-        return all
     }
 }
 

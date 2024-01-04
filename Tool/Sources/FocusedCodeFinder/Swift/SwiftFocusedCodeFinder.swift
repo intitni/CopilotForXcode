@@ -77,7 +77,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -89,7 +90,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -101,7 +103,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -113,7 +116,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: ""),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -124,7 +128,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -136,7 +141,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -148,7 +154,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 signature: "\(type) \(name)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
                     .suffixedInheritance(node.inheritanceClauseTexts(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name
             )
 
@@ -156,7 +163,7 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             let type = node.funcKeyword.text
             let name = node.identifier.text
             let signature = node.signature.trimmedDescription
-                .split(whereSeparator: \.isNewline)
+                .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .joined(separator: " ")
 
@@ -176,7 +183,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: "\(type) \(name)\(signature.isEmpty ? "" : "\(signature)")"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: name,
                 canBeUsedAsCodeRange: false
             )
@@ -189,7 +197,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: keyword
             )
 
@@ -203,7 +212,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "subscript"
             )
 
@@ -214,7 +224,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: "\(signature)"
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "init"
             )
 
@@ -225,7 +236,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                 node: node,
                 signature: signature
                     .prefixedModifiers(node.modifierAndAttributeText(extractText))
-                    .replacingOccurrences(of: "\n", with: " "),
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "deinit"
             )
 
@@ -234,7 +246,9 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 
             return .init(
                 node: node,
-                signature: signature.replacingOccurrences(of: "\n", with: " "),
+                signature: signature
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "closure"
             )
 
@@ -243,7 +257,9 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 
             return .init(
                 node: node,
-                signature: signature.replacingOccurrences(of: "\n", with: " "),
+                signature: signature
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "function call",
                 canBeUsedAsCodeRange: false
             )
@@ -251,7 +267,9 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
         case let node as SwitchCaseSyntax:
             return .init(
                 node: node,
-                signature: node.trimmedDescription.replacingOccurrences(of: "\n", with: " "),
+                signature: node.trimmedDescription
+                    .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+                    .joined(separator: " "),
                 name: "switch"
             )
 
