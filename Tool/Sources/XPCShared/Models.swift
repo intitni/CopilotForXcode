@@ -33,6 +33,7 @@ public struct EditorContent: Codable {
     }
 
     public var content: String
+    /// Every line has a trailing newline character.
     public var lines: [String]
     public var uti: String
     public var cursorPosition: CursorPosition

@@ -44,6 +44,8 @@ public extension Workspace {
             filespace.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
 
+        filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
+
         let snapshot = FilespaceSuggestionSnapshot(
             linesHash: editor.lines.hashValue,
             cursorPosition: editor.cursorPosition
@@ -97,6 +99,7 @@ public extension Workspace {
             filespaces[fileURL]?.codeMetadata.indentSize = editor.indentSize
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
+        
         Task {
             await suggestionService?.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
         }

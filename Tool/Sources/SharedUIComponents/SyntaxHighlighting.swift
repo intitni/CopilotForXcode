@@ -82,7 +82,8 @@ func convertToCodeLines(
         return false
     }
 
-    let separatedInput = input.components(separatedBy: "\n")
+    let separatedInput = input.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+        .map { String($0) }
     let commonLeadingSpaceCount = {
         if !droppingLeadingSpaces { return 0 }
         let split = separatedInput

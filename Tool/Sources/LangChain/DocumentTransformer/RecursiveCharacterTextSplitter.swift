@@ -19,7 +19,7 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
     ///    - chunkOverlap: The maximum overlap between chunks.
     ///    - lengthFunction: A function to compute the length of text.
     public init(
-        separators: [String] = ["\n\n", "\n", " ", ""],
+        separators: [String] = ["\n\n", "\r\n", "\n", "\r", " ", ""],
         chunkSize: Int = 4000,
         chunkOverlap: Int = 200,
         lengthFunction: @escaping (String) -> Int = { $0.count }

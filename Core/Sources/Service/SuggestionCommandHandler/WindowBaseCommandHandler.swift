@@ -267,6 +267,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         filespace.codeMetadata.tabSize = editor.tabSize
         filespace.codeMetadata.indentSize = editor.indentSize
         filespace.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
+        filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
         return nil
     }
 
