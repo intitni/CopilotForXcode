@@ -1,15 +1,15 @@
 import Foundation
 
 public protocol TokenEncoder: TokenCounter {
-    func encode(text: String) -> [Int]
+    func encode(text: String) async -> [Int]
 }
 
-extension TokenEncoder {
-    func countToken(text: String) -> Int {
-        encode(text: text).count
+public extension TokenEncoder {
+    func countToken(text: String) async -> Int {
+        await encode(text: text).count
     }
 }
 
 public protocol TokenCounter {
-    func countToken(text: String) -> Int
+    func countToken(text: String) async -> Int
 }
