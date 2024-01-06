@@ -140,6 +140,7 @@ public class WorkspacePool {
         return (workspace, filespace)
     }
     
+    @WorkspaceActor
     public func removeWorkspace(url: URL) {
         workspaces[url] = nil
     }
