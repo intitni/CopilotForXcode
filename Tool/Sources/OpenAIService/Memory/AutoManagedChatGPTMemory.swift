@@ -3,6 +3,18 @@ import Logger
 import Preferences
 import TokenEncoder
 
+@globalActor
+public enum AutoManagedChatGPTMemoryActor: GlobalActor {
+    public actor Actor {}
+    public static let shared = Actor()
+}
+
+protocol AutoManagedChatGPTMemoryStrategy {
+    func countToken(_ message: ChatMessage) async -> Int
+    func countToken<F: ChatGPTFunction>(_ function: F) async -> Int
+    func reformat(_ prompt: ChatGPTPrompt) async -> ChatGPTPrompt
+}
+
 /// A memory that automatically manages the history according to max tokens and max message count.
 public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public struct ComposableMessages {
@@ -26,8 +38,6 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public var retrievedContent: [ChatMessage.Reference] = []
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
-
-    static let encoder: TokenEncoder = TiktokenCl100kBaseTokenEncoder()
 
     var onHistoryChange: () -> Void = {}
 
@@ -60,7 +70,6 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         self.configuration = configuration
         self.functionProvider = functionProvider
         self.composeHistory = composeHistory
-        _ = Self.encoder // force pre-initialize
     }
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
@@ -87,30 +96,42 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     }
 
     public func generatePrompt() async -> ChatGPTPrompt {
-        return generateSendingHistory()
+        let strategy: AutoManagedChatGPTMemoryStrategy = switch configuration.model?.format {
+        case .googleAI: GoogleAIStrategy(configuration: configuration)
+        default: OpenAIStrategy()
+        }
+        return await generateSendingHistory(strategy: strategy)
     }
 
+    func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
+        onHistoryChange = onChange
+    }
+}
+
+extension AutoManagedChatGPTMemory {
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     func generateSendingHistory(
         maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        encoder: TokenEncoder = AutoManagedChatGPTMemory.encoder
-    ) -> ChatGPTPrompt {
+        strategy: AutoManagedChatGPTMemoryStrategy
+    ) async -> ChatGPTPrompt {
+        // handle no function support models
+
         let (
             systemPromptMessage,
             contextSystemPromptMessage,
             availableTokenCountForMessages,
             mandatoryUsage
-        ) = generateMandatoryMessages(encoder: encoder)
+        ) = await generateMandatoryMessages(strategy: strategy)
 
         let (
             historyMessage,
             newMessage,
             availableTokenCountForRetrievedContent,
             messageUsage
-        ) = generateMessageHistory(
+        ) = await generateMessageHistory(
             maxNumberOfMessages: maxNumberOfMessages - 1, // for the new message
             maxTokenCount: availableTokenCountForMessages,
-            encoder: encoder
+            strategy: strategy
         )
 
         let (
@@ -118,9 +139,9 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
             _,
             retrievedContentUsage,
             retrievedContent
-        ) = generateRetrievedContentMessage(
+        ) = await generateRetrievedContentMessage(
             maxTokenCount: availableTokenCountForRetrievedContent,
-            encoder: encoder
+            strategy: strategy
         )
 
         let allMessages = composeHistory(.init(
@@ -151,38 +172,42 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         """)
         #endif
 
-        return .init(history: allMessages, references: retrievedContent)
+        let reformattedPrompt = await strategy.reformat(.init(
+            history: allMessages,
+            references: retrievedContent
+        ))
+
+        return reformattedPrompt
     }
 
-    func setOnHistoryChangeBlock(_ onChange: @escaping () -> Void) {
-        onHistoryChange = onChange
-    }
-}
-
-extension AutoManagedChatGPTMemory {
-    func generateMandatoryMessages(encoder: TokenEncoder) -> (
+    func generateMandatoryMessages(strategy: AutoManagedChatGPTMemoryStrategy) async -> (
         systemPrompt: ChatMessage,
         contextSystemPrompt: ChatMessage,
         remainingTokenCount: Int,
         usage: (systemPrompt: Int, contextSystemPrompt: Int, functions: Int)
     ) {
-        var smallestSystemPromptMessage = ChatMessage(role: .system, content: systemPrompt)
-        var contextSystemPromptMessage = ChatMessage(role: .user, content: contextSystemPrompt)
-        let smallestSystemMessageTokenCount = encoder.countToken(&smallestSystemPromptMessage)
+        let smallestSystemPromptMessage = ChatMessage(
+            role: .system,
+            content: systemPrompt
+        )
+        let contextSystemPromptMessage = ChatMessage(
+            role: .user,
+            content: contextSystemPrompt
+        )
+        let smallestSystemMessageTokenCount = await strategy
+            .countToken(smallestSystemPromptMessage)
         let contextSystemPromptTokenCount = !contextSystemPrompt.isEmpty
-            ? encoder.countToken(&contextSystemPromptMessage)
+            ? (await strategy.countToken(contextSystemPromptMessage))
             : 0
 
-        let functionTokenCount = functionProvider.functions.reduce(into: 0) { partial, function in
-            var count = encoder.countToken(text: function.name)
-                + encoder.countToken(text: function.description)
-            if let data = try? JSONEncoder().encode(function.argumentSchema),
-               let string = String(data: data, encoding: .utf8)
-            {
-                count += encoder.countToken(text: string)
+        let functionTokenCount = await {
+            var totalTokenCount = 0
+            for function in self.functionProvider.functions {
+                totalTokenCount += await strategy.countToken(function)
             }
-            partial += count
-        }
+            return totalTokenCount
+        }()
+
         let mandatoryContentTokensCount = smallestSystemMessageTokenCount
             + contextSystemPromptTokenCount
             + functionTokenCount
@@ -210,8 +235,8 @@ extension AutoManagedChatGPTMemory {
     func generateMessageHistory(
         maxNumberOfMessages: Int,
         maxTokenCount: Int,
-        encoder: TokenEncoder
-    ) -> (
+        strategy: AutoManagedChatGPTMemoryStrategy
+    ) async -> (
         history: [ChatMessage],
         newMessage: ChatMessage,
         remainingTokenCount: Int,
@@ -224,7 +249,7 @@ extension AutoManagedChatGPTMemory {
         for (index, message) in history.enumerated().reversed() {
             if maxNumberOfMessages > 0, allMessages.count >= maxNumberOfMessages { break }
             if message.isEmpty { continue }
-            let tokensCount = encoder.countToken(&history[index])
+            let tokensCount = await strategy.countToken(message)
             if tokensCount + messageTokenCount > maxTokenCount { break }
             messageTokenCount += tokensCount
             if index == history.endIndex - 1 {
@@ -244,8 +269,8 @@ extension AutoManagedChatGPTMemory {
 
     func generateRetrievedContentMessage(
         maxTokenCount: Int,
-        encoder: TokenEncoder
-    ) -> (
+        strategy: AutoManagedChatGPTMemoryStrategy
+    ) async -> (
         retrievedContent: ChatMessage,
         remainingTokenCount: Int,
         usage: Int,
@@ -253,68 +278,99 @@ extension AutoManagedChatGPTMemory {
     ) {
         /// the available tokens count for retrieved content
         let thresholdMaxTokenCount = min(maxTokenCount, configuration.maxTokens / 2)
+        /// A separator that costs only 1 token
+        let separator = String(repeating: "=", count: 32)
+        let retrievedContent = retrievedContent.filter { !$0.content.isEmpty }
 
-        var retrievedContentTokenCount = 0
-        let separator = String(repeating: "=", count: 32) // only 1 token
-        var message = ""
-        var references = [ChatMessage.Reference]()
-
-        func appendToMessage(_ text: String) -> Bool {
-            let tokensCount = encoder.countToken(text: text)
-            if tokensCount + retrievedContentTokenCount > thresholdMaxTokenCount { return false }
-            retrievedContentTokenCount += tokensCount
-            message += text
-            return true
-        }
-
-        for (index, content) in retrievedContent.filter({ !$0.content.isEmpty }).enumerated() {
-            if index == 0 {
-                if !appendToMessage("""
-                Here are the information you know about the system and the project, \
-                separated by \(separator)
+        func buildMessage(retrievedContent: [ChatMessage.Reference]) -> ChatMessage {
+            var text = ""
+            for (index, content) in retrievedContent.enumerated() {
+                if index == 0 {
+                    text += """
+                    Here are the information you know about the system and the project, \
+                    separated by \(separator)
 
 
-                """) { break }
-            } else {
-                if !appendToMessage("\n\(separator)\n") { break }
+                    """
+                } else {
+                    text += "\n\(separator)\n"
+                }
+
+                text += content.content
             }
 
-            if !appendToMessage(content.content) { break }
-            references.append(content)
+            return .init(role: .user, content: text)
         }
+
+        func buildMessageThatFits() async
+            -> (message: ChatMessage, references: [ChatMessage.Reference], tokenCount: Int)
+        {
+            var right = retrievedContent.count
+            var left = 0
+            var retrievedContent = retrievedContent
+            var tokenCount: Int?
+            var proposedMessage = buildMessage(retrievedContent: [])
+
+            func checkValid(proposedMessage: ChatMessage) async
+                -> (isValid: Bool, tokenCount: Int?)
+            {
+                // if the size is way below the threshold
+                let characterCount = proposedMessage.content?.count ?? 0
+
+                if characterCount <= thresholdMaxTokenCount {
+                    return (true, nil) // guessing token count.
+                }
+
+                let tokensCount = await strategy.countToken(proposedMessage)
+                if tokensCount <= thresholdMaxTokenCount {
+                    return (true, tokenCount)
+                }
+                return (false, tokenCount)
+            }
+
+            // check if all retrieved content included
+            let maxMessage = buildMessage(retrievedContent: retrievedContent)
+            let (isValid, maxTokenCount) = await checkValid(proposedMessage: maxMessage)
+            if isValid {
+                let tokenCount = if let maxTokenCount { maxTokenCount }
+                else { await strategy.countToken(maxMessage) }
+                return (maxMessage, retrievedContent, tokenCount)
+            }
+
+            // binary search to reduce countToken calls
+            while left <= right {
+                let count = (right + left) / 2
+                let _retrievedContent = Array(retrievedContent.prefix(count))
+                let _proposedMessage = buildMessage(retrievedContent: retrievedContent)
+                let (isValid, _tokenCount) = await checkValid(proposedMessage: _proposedMessage)
+                if isValid {
+                    proposedMessage = _proposedMessage
+                    retrievedContent = _retrievedContent
+                    tokenCount = _tokenCount
+                    left = count + 1
+                } else {
+                    right = count - 1
+                }
+            }
+
+            let finalCount = if let tokenCount {
+                tokenCount
+            } else if proposedMessage.content?.isEmpty ?? true {
+                0
+            } else {
+                await strategy.countToken(proposedMessage)
+            }
+            return (proposedMessage, retrievedContent, finalCount)
+        }
+
+        let (message, references, tokensCount) = await buildMessageThatFits()
 
         return (
-            .init(role: .user, content: message),
-            maxTokenCount - retrievedContentTokenCount,
-            retrievedContentTokenCount,
+            message,
+            maxTokenCount - tokensCount,
+            tokensCount,
             references
         )
-    }
-}
-
-public extension TokenEncoder {
-    /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    func countToken(message: ChatMessage) -> Int {
-        var total = 3
-        if let content = message.content {
-            total += encode(text: content).count
-        }
-        if let name = message.name {
-            total += encode(text: name).count
-            total += 1
-        }
-        if let functionCall = message.functionCall {
-            total += encode(text: functionCall.name).count
-            total += encode(text: functionCall.arguments).count
-        }
-        return total
-    }
-
-    func countToken(_ message: inout ChatMessage) -> Int {
-        if let count = message.tokensCount { return count }
-        let count = countToken(message: message)
-        message.tokensCount = count
-        return count
     }
 }
 

@@ -20,6 +20,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         case openAI
         case azureOpenAI
         case openAICompatible
+        case googleAI
     }
 
     public struct Info: Codable, Equatable {
@@ -69,6 +70,10 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             let version = "2023-07-01-preview"
             if baseURL.isEmpty { return "" }
             return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
+        case .googleAI:
+            let baseURL = info.baseURL
+            if baseURL.isEmpty { return "https://generativelanguage.googleapis.com/v1" }
+            return "\(baseURL)/v1/chat/completions"
         }
     }
 }

@@ -1,16 +1,13 @@
+import AIModel
 import AsyncAlgorithms
 import Foundation
 import Preferences
-import AIModel
 
 typealias CompletionStreamAPIBuilder = (String, ChatModel, URL, CompletionRequestBody)
-    -> CompletionStreamAPI
+    -> any CompletionStreamAPI
 
 protocol CompletionStreamAPI {
-    func callAsFunction() async throws -> (
-        trunkStream: AsyncThrowingStream<CompletionStreamDataTrunk, Error>,
-        cancel: Cancellable
-    )
+    func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error>
 }
 
 public enum FunctionCallStrategy: Codable, Equatable {
@@ -128,7 +125,7 @@ struct CompletionRequestBody: Codable, Equatable {
     }
 }
 
-struct CompletionStreamDataTrunk: Codable {
+struct CompletionStreamDataChunk: Codable {
     var id: String?
     var object: String?
     var model: String?
@@ -171,10 +168,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         self.model = model
     }
 
-    func callAsFunction() async throws -> (
-        trunkStream: AsyncThrowingStream<CompletionStreamDataTrunk, Error>,
-        cancel: Cancellable
-    ) {
+    func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error> {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -186,6 +180,8 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .googleAI:
+                assertionFailure("Unsupported")
             }
         }
 
@@ -205,35 +201,31 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
             throw error ?? ChatGPTServiceError.responseInvalid
         }
 
-        var receivingDataTask: Task<Void, Error>?
-
-        let stream = AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
-            receivingDataTask = Task {
+        let stream = AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
+            let task = Task {
                 do {
                     for try await line in result.lines {
                         if Task.isCancelled { break }
                         let prefix = "data: "
                         guard line.hasPrefix(prefix),
                               let content = line.dropFirst(prefix.count).data(using: .utf8),
-                              let trunk = try? JSONDecoder()
-                              .decode(CompletionStreamDataTrunk.self, from: content)
+                              let chunk = try? JSONDecoder()
+                              .decode(CompletionStreamDataChunk.self, from: content)
                         else { continue }
-                        continuation.yield(trunk)
+                        continuation.yield(chunk)
                     }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in
+                task.cancel()
+                result.task.cancel()
+            }
         }
 
-        return (
-            stream,
-            Cancellable {
-                result.task.cancel()
-                receivingDataTask?.cancel()
-            }
-        )
+        return stream
     }
 }
 

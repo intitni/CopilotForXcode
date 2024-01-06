@@ -24,9 +24,9 @@ public extension TextSplitter {
         let paddingLength = texts.count - metadata.count
         let metadata = metadata + .init(repeating: [:], count: paddingLength)
         for (text, metadata) in zip(texts, metadata) {
-            let trunks = try await split(text: text)
-            for trunk in trunks {
-                let document = Document(pageContent: trunk, metadata: metadata)
+            let chunks = try await split(text: text)
+            for chunk in chunks {
+                let document = Document(pageContent: chunk, metadata: metadata)
                 documents.append(document)
             }
         }

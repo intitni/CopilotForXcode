@@ -63,6 +63,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
+        .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -130,6 +131,7 @@ let package = Package(
             name: "TokenEncoder",
             dependencies: [
                 .product(name: "Tiktoken", package: "Tiktoken"),
+                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
             ],
             resources: [
                 .copy("Resources/cl100k_base.tiktoken"),
@@ -313,6 +315,7 @@ let package = Package(
                 "Keychain",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
