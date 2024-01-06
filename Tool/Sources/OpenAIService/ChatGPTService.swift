@@ -69,8 +69,35 @@ public class ChatGPTService: ChatGPTServiceType {
     public var functionProvider: ChatGPTFunctionProvider
 
     var runningTask: Task<Void, Never>?
-    var buildCompletionStreamAPI: CompletionStreamAPIBuilder = OpenAICompletionStreamAPI.init
-    var buildCompletionAPI: CompletionAPIBuilder = OpenAICompletionAPI.init
+    var buildCompletionStreamAPI: CompletionStreamAPIBuilder = {
+        apiKey, model, endpoint, requestBody in
+        switch model.format {
+        case .googleAI:
+            fatalError()
+        case .openAI, .openAICompatible, .azureOpenAI:
+            return OpenAICompletionStreamAPI(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        }
+    }
+
+    var buildCompletionAPI: CompletionAPIBuilder = {
+        apiKey, model, endpoint, requestBody in
+        switch model.format {
+        case .googleAI:
+            fatalError()
+        case .openAI, .openAICompatible, .azureOpenAI:
+            return OpenAICompletionAPI(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        }
+    }
 
     public init(
         memory: ChatGPTMemory = AutoManagedChatGPTMemory(
