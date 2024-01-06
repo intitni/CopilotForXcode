@@ -40,17 +40,19 @@ extension AutoManagedChatGPTMemory {
                     reformattedHistory.append(message)
                     continue
                 }
-                
+
                 let lastMessage = reformattedHistory[lastIndex]
-                
-                if ModelContent.convertRole(lastMessage.role) == ModelContent.convertRole(message.role) {
+
+                if ModelContent.convertRole(lastMessage.role) == ModelContent
+                    .convertRole(message.role)
+                {
                     let newMessage = ChatMessage(
                         role: message.role == .assistant ? .assistant : .user,
                         content: """
                         \(ModelContent.convertContent(of: lastMessage))
-                        
+
                         ======
-                        
+
                         \(ModelContent.convertContent(of: message))
                         """
                     )
@@ -59,9 +61,12 @@ extension AutoManagedChatGPTMemory {
                     reformattedHistory.append(message)
                 }
             }
-            
+
             if let newUserMessage {
-                if let last = reformattedHistory.last, ModelContent.convertRole(last.role) == ModelContent.convertRole(newUserMessage.role) {
+                if let last = reformattedHistory.last,
+                   ModelContent.convertRole(last.role) == ModelContent
+                   .convertRole(newUserMessage.role)
+                {
                     // Add dummy message
                     let dummyMessage = ChatMessage(
                         role: .assistant,
@@ -90,7 +95,7 @@ extension ModelContent {
             return "model"
         }
     }
-    
+
     static func convertContent(of message: ChatMessage) -> String {
         switch message.role {
         case .user, .system, .function:
@@ -106,7 +111,7 @@ extension ModelContent {
             }
         }
     }
-    
+
     init(_ message: ChatMessage) {
         let role = Self.convertRole(message.role)
         let parts = [ModelContent.Part.text(Self.convertContent(of: message))]
