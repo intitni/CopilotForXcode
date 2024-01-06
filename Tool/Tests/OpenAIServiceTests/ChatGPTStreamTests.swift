@@ -240,13 +240,13 @@ extension ChatGPTStreamTests {
     struct MockCompletionStreamAPI_Message: CompletionStreamAPI {
         @Dependency(\.uuid) var uuid
         func callAsFunction() async throws -> (
-            trunkStream: AsyncThrowingStream<CompletionStreamDataTrunk, Error>,
+            chunkStream: AsyncThrowingStream<CompletionStreamDataChunk, Error>,
             cancel: OpenAIService.Cancellable
         ) {
             let id = uuid().uuidString
             return (
-                AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
-                    let trunks: [CompletionStreamDataTrunk] = [
+                AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
+                    let chunks: [CompletionStreamDataChunk] = [
                         .init(id: id, object: "", model: "", choices: [
                             .init(delta: .init(role: .assistant), index: 0, finish_reason: ""),
                         ]),
@@ -260,8 +260,8 @@ extension ChatGPTStreamTests {
                             .init(delta: .init(content: "friends"), index: 0, finish_reason: ""),
                         ]),
                     ]
-                    for trunk in trunks {
-                        continuation.yield(trunk)
+                    for chunk in chunks {
+                        continuation.yield(chunk)
                     }
                     continuation.finish()
                 },
@@ -273,13 +273,13 @@ extension ChatGPTStreamTests {
     struct MockCompletionStreamAPI_Function: CompletionStreamAPI {
         @Dependency(\.uuid) var uuid
         func callAsFunction() async throws -> (
-            trunkStream: AsyncThrowingStream<CompletionStreamDataTrunk, Error>,
+            chunkStream: AsyncThrowingStream<CompletionStreamDataChunk, Error>,
             cancel: OpenAIService.Cancellable
         ) {
             let id = uuid().uuidString
             return (
-                AsyncThrowingStream<CompletionStreamDataTrunk, Error> { continuation in
-                    let trunks: [CompletionStreamDataTrunk] = [
+                AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
+                    let chunks: [CompletionStreamDataChunk] = [
                         .init(id: id, object: "", model: "", choices: [
                             .init(
                                 delta: .init(
@@ -317,8 +317,8 @@ extension ChatGPTStreamTests {
                                 finish_reason: ""
                             )]),
                     ]
-                    for trunk in trunks {
-                        continuation.yield(trunk)
+                    for chunk in chunks {
+                        continuation.yield(chunk)
                     }
                     continuation.finish()
                 },

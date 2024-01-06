@@ -128,7 +128,7 @@ public struct PromptToCode: ReducerProtocol {
         case revertButtonTapped
         case stopRespondingButtonTapped
         case modifyCodeFinished
-        case modifyCodeTrunkReceived(code: String, description: String)
+        case modifyCodeChunkReceived(code: String, description: String)
         case modifyCodeFailed(error: String)
         case modifyCodeCancelled
         case cancelButtonTapped
@@ -189,7 +189,7 @@ public struct PromptToCode: ReducerProtocol {
                         )
                         for try await fragment in stream {
                             try Task.checkCancellation()
-                            await send(.modifyCodeTrunkReceived(
+                            await send(.modifyCodeChunkReceived(
                                 code: fragment.code,
                                 description: fragment.description
                             ))
@@ -221,7 +221,7 @@ public struct PromptToCode: ReducerProtocol {
                 promptToCodeService.stopResponding()
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
-            case let .modifyCodeTrunkReceived(code, description):
+            case let .modifyCodeChunkReceived(code, description):
                 state.code = code
                 state.description = description
                 return .none
