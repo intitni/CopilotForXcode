@@ -10,7 +10,7 @@ extension AutoManagedChatGPTMemory {
             guard let model = configuration.model else {
                 return 0
             }
-            let aiModel = GenerativeModel(name: model.name, apiKey: configuration.apiKey)
+            let aiModel = GenerativeModel(name: model.info.modelName, apiKey: configuration.apiKey)
             if message.isEmpty { return 0 }
             let modelMessage = ModelContent(message)
             return (try? await aiModel.countTokens([modelMessage]).totalTokens) ?? 0

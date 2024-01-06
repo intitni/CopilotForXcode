@@ -10,7 +10,7 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
 
     func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error> {
         let aiModel = GenerativeModel(
-            name: model.name,
+            name: model.info.modelName,
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init),
@@ -38,7 +38,7 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
                         if Task.isCancelled { break }
                         let chunk = CompletionStreamDataChunk(
                             object: "",
-                            model: model.name,
+                            model: model.info.modelName,
                             choices: response.candidates.map { candidate in
                                 .init(delta: .init(
                                     role: .assistant,
@@ -50,6 +50,24 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
                         continuation.yield(chunk)
                     }
                     continuation.finish()
+                } catch let error as GenerateContentError {
+                    struct ErrorWrapper: Error, LocalizedError {
+                        let error: Error
+                        var errorDescription: String? {
+                            var s = ""
+                            dump(error, to: &s)
+                            return "Internal Error: \(s)"
+                        }
+                    }
+                    
+                    switch error {
+                    case let .internalError(underlying):
+                        continuation.finish(throwing: ErrorWrapper(error: underlying))
+                    case .promptBlocked:
+                        continuation.finish(throwing: error)
+                    case .responseStoppedEarly:
+                        continuation.finish(throwing: error)
+                    }
                 } catch {
                     continuation.finish(throwing: error)
                 }

@@ -10,7 +10,7 @@ struct GoogleCompletionAPI: CompletionAPI {
 
     func callAsFunction() async throws -> CompletionResponseBody {
         let aiModel = GenerativeModel(
-            name: model.name,
+            name: model.info.modelName,
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init),
@@ -30,30 +30,52 @@ struct GoogleCompletionAPI: CompletionAPI {
             )
         }
 
-        let response = try await aiModel.generateContent(history)
-
-        return .init(
-            object: "chat.completion",
-            model: model.name,
-            usage: .init(prompt_tokens: 0, completion_tokens: 0, total_tokens: 0),
-            choices: response.candidates.enumerated().map {
-                let (index, candidate) = $0
-                return .init(
-                    message: .init(
-                        role: .assistant,
-                        content: candidate.content.parts.first(where: { part in
-                            if let text = part.text {
-                                return !text.isEmpty
-                            } else {
-                                return false
-                            }
-                        })?.text ?? ""
-                    ),
-                    index: index,
-                    finish_reason: candidate.finishReason?.rawValue ?? ""
-                )
+        do {
+            let response = try await aiModel.generateContent(history)
+            
+            return .init(
+                object: "chat.completion",
+                model: model.info.modelName,
+                usage: .init(prompt_tokens: 0, completion_tokens: 0, total_tokens: 0),
+                choices: response.candidates.enumerated().map {
+                    let (index, candidate) = $0
+                    return .init(
+                        message: .init(
+                            role: .assistant,
+                            content: candidate.content.parts.first(where: { part in
+                                if let text = part.text {
+                                    return !text.isEmpty
+                                } else {
+                                    return false
+                                }
+                            })?.text ?? ""
+                        ),
+                        index: index,
+                        finish_reason: candidate.finishReason?.rawValue ?? ""
+                    )
+                }
+            )
+        } catch let error as GenerateContentError {
+            struct ErrorWrapper: Error, LocalizedError {
+                let error: Error
+                var errorDescription: String? {
+                    var s = ""
+                    dump(error, to: &s)
+                    return "Internal Error: \(s)"
+                }
             }
-        )
+            
+            switch error {
+            case let .internalError(underlying):
+                throw ErrorWrapper(error: underlying)
+            case .promptBlocked:
+                throw error
+            case .responseStoppedEarly:
+                throw error
+            }
+        } catch {
+            throw error
+        }
     }
 }
 
