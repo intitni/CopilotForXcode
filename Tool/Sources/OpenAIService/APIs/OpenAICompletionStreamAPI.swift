@@ -186,6 +186,8 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .googleAI:
+                assert(false, "Unsupported")
             }
         }
 
