@@ -182,6 +182,13 @@ public final class XcodeInspector: ObservableObject {
                     runningApplication: xcode.runningApplication,
                     element: editorElement
                 )
+            } else if let element = focusedElement,
+                      let editorElement = element.firstParent(where: \.isSourceEditor)
+            {
+                focusedEditor = .init(
+                    runningApplication: xcode.runningApplication,
+                    element: editorElement
+                )
             } else {
                 focusedEditor = nil
             }

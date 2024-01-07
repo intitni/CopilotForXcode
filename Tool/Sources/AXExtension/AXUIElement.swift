@@ -183,6 +183,12 @@ public extension AXUIElement {
         }
         return all
     }
+    
+    func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
+        guard let parent = self.parent else { return nil }
+        if match(parent) { return parent }
+        return parent.firstParent(where: match)
+    }
 
     func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
         for child in children {
