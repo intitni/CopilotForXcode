@@ -74,6 +74,7 @@ struct Chat: ReducerProtocol {
         case binding(BindingAction<State>)
 
         case appear
+        case refresh
         case sendButtonTapped
         case returnButtonTapped
         case stopRespondingButtonTapped
@@ -132,6 +133,12 @@ struct Chat: ReducerProtocol {
                     await send(.systemPromptChanged)
                     await send(.extraSystemPromptChanged)
                     await send(.focusOnTextField)
+                    await send(.refresh)
+                }
+                
+            case .refresh:
+                return .run { send in
+                    await send(.chatMenu(.refresh))
                 }
 
             case .sendButtonTapped:
@@ -376,6 +383,7 @@ struct ChatMenu: ReducerProtocol {
 
     enum Action: Equatable {
         case appear
+        case refresh
         case resetPromptButtonTapped
         case temperatureOverrideSelected(Double?)
         case chatModelIdOverrideSelected(String?)
@@ -390,6 +398,11 @@ struct ChatMenu: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case .appear:
+                return .run {
+                    await $0(.refresh)
+                }
+                
+            case .refresh:
                 state.temperatureOverride = service.configuration.overriding.temperature
                 state.chatModelIdOverride = service.configuration.overriding.modelId
                 return .none

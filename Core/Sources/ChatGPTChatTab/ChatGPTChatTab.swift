@@ -89,6 +89,7 @@ public class ChatGPTChatTab: ChatTab {
             await tab.service.memory.mutateHistory { history in
                 history = state.history
             }
+            tab.viewStore.send(.refresh)
         }
         return builder
     }
@@ -140,7 +141,10 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        viewStore.publisher.removeDuplicates().sink { [weak self] _ in
+        viewStore.publisher.removeDuplicates().debounce(
+            for: .milliseconds(500),
+            scheduler: DispatchQueue.main
+        ).sink { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.chatTabViewStore.send(.tabContentUpdated)
             }
