@@ -350,9 +350,9 @@ These features are included in another repo, and are not open sourced.
 
 The currently available Plus features include:
 
-- `@project` scope in chat.
-- Suggestion Cheatsheet that provides relevant content to the suggestion service.
-- `@sense` scope in chat and prompt to code.
+- `@project` scope in chat to include project information in conversations. (experiment)
+- Suggestion Cheatsheet that provides relevant content to the suggestion service. (experiment)
+- `@sense` scope in chat and prompt to code to include relevant information of the focusing code.
 - Terminal tab in chat panel.
 - Unlimited chat/embedding models.
 - Tab to accept suggestions.
