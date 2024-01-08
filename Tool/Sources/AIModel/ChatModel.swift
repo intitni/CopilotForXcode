@@ -14,10 +14,6 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         self.name = name
         self.format = format
         self.info = info
-        
-        if format == .googleAI {
-            self.info.supportsFunctionCalling = false
-        }
     }
 
     public enum Format: String, Codable, Equatable, CaseIterable {

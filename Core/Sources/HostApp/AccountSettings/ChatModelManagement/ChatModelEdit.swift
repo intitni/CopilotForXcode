@@ -186,7 +186,12 @@ extension ChatModel {
                 apiKeyName: state.apiKeyName,
                 baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
                 maxTokens: state.maxTokens,
-                supportsFunctionCalling: state.supportsFunctionCalling,
+                supportsFunctionCalling: {
+                    if case .googleAI = state.format {
+                        return false
+                    }
+                    return state.supportsFunctionCalling
+                }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
             )
         )
