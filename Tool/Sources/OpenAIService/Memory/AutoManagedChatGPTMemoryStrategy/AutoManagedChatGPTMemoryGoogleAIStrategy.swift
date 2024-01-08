@@ -7,15 +7,16 @@ extension AutoManagedChatGPTMemory {
         let configuration: ChatGPTConfiguration
 
         func countToken(_ message: ChatMessage) async -> Int {
-            (await OpenAIStrategy().countToken(message)) + 10
+            (await OpenAIStrategy().countToken(message)) + 20
             // Using local tiktoken instead until I find a faster solution.
             // The official solution requires sending a lot of requests when adjusting the prompt.
-            // adding 10 just incase.
-            
+            // adding 20 just incase.
+
 //            guard let model = configuration.model else {
 //                return 0
 //            }
-//            let aiModel = GenerativeModel(name: model.info.modelName, apiKey: configuration.apiKey)
+//            let aiModel = GenerativeModel(name: model.info.modelName, apiKey:
+//            configuration.apiKey)
 //            if message.isEmpty { return 0 }
 //            let modelMessage = ModelContent(message)
 //            return (try? await aiModel.countTokens([modelMessage]).totalTokens) ?? 0
@@ -41,7 +42,19 @@ extension AutoManagedChatGPTMemory {
 
             for message in history {
                 let lastIndex = reformattedHistory.endIndex - 1
-                guard lastIndex >= 0 else {
+                guard lastIndex >= 0 else { // first message
+                    if message.role == .system {
+                        reformattedHistory.append(.init(
+                            role: .user,
+                            content: ModelContent.convertContent(of: message)
+                        ))
+                        reformattedHistory.append(.init(
+                            role: .assistant,
+                            content: "Got it. Let's start our conversation."
+                        ))
+                        continue
+                    }
+
                     reformattedHistory.append(message)
                     continue
                 }
@@ -103,8 +116,10 @@ extension ModelContent {
 
     static func convertContent(of message: ChatMessage) -> String {
         switch message.role {
-        case .user, .system, .function:
-            return message.content ?? ""
+        case .system:
+            return "System Prompt: \n\(message.content ?? " ")"
+        case .user, .function:
+            return message.content ?? " "
         case .assistant:
             if let functionCall = message.functionCall {
                 return """
@@ -112,7 +127,7 @@ extension ModelContent {
                 arguments: \(functionCall.arguments)
                 """
             } else {
-                return message.content ?? ""
+                return message.content ?? " "
             }
         }
     }
