@@ -60,7 +60,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
+        .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
         .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
