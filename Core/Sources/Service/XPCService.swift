@@ -1,5 +1,4 @@
 import AppKit
-import Environment
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
@@ -204,5 +203,13 @@ public class XPCService: NSObject, XPCServiceProtocol {
             reply: reply
         )
     }
+}
+
+struct NoAccessToAccessibilityAPIError: Error, LocalizedError {
+    var errorDescription: String? {
+        "Accessibility API permission is not granted. Please enable in System Settings.app."
+    }
+
+    init() {}
 }
 
