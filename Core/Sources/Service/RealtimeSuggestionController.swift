@@ -21,7 +21,7 @@ public actor RealtimeSuggestionController {
     private var sourceEditor: SourceEditor?
 
     init() {}
-    
+
     deinit {
         task?.cancel()
         inflightPrefetchTask?.cancel()
@@ -34,7 +34,7 @@ public actor RealtimeSuggestionController {
     func start() {
         Task { await observeXcodeChange() }
     }
-    
+
     private func observeXcodeChange() {
         task?.cancel()
         task = Task { [weak self] in
@@ -150,7 +150,8 @@ public actor RealtimeSuggestionController {
                 // avoid the command get called twice
                 filespace.codeMetadata.uti = ""
                 do {
-                    try await Environment.triggerAction("Real-time Suggestions")
+                    try await XcodeInspector.shared.latestActiveXcode?
+                        .triggerCopilotCommand(name: "Real-time Suggestions")
                 } catch {
                     if filespace.codeMetadata.uti?.isEmpty ?? true {
                         filespace.codeMetadata.uti = nil

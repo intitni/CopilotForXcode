@@ -145,7 +145,8 @@ struct PseudoCommandHandler {
             }
         }() else {
             do {
-                try await Environment.triggerAction(command.name)
+                try await XcodeInspector.shared.latestActiveXcode?
+                    .triggerCopilotCommand(name: command.name)
             } catch {
                 let presenter = PresentInWindowSuggestionPresenter()
                 presenter.presentError(error)
@@ -167,7 +168,8 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await Environment.triggerAction("Accept Prompt to Code")
+            try await XcodeInspector.shared.latestActiveXcode?
+                .triggerCopilotCommand(name: "Accept Prompt to Code")
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }
@@ -206,7 +208,8 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await Environment.triggerAction("Accept Suggestion")
+            try await XcodeInspector.shared.latestActiveXcode?
+                .triggerCopilotCommand(name: "Accept Suggestion")
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }

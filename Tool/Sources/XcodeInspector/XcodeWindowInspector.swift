@@ -38,7 +38,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             notificationNames: kAXFocusedUIElementChangedNotification
         )
 
-        #warning("Test Me")
         focusedElementChangedTask = Task { [weak self] in
             await self?.updateURLs()
 

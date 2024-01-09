@@ -25,24 +25,6 @@ public struct FailedToFetchFileURLError: Error, LocalizedError {
 public enum Environment {
     public static var now = { Date() }
 
-    public static var isXcodeActive: () async -> Bool = {
-        ActiveApplicationMonitor.shared.activeXcode != nil
-    }
-
-    public static var frontmostXcodeWindowIsEditor: () async -> Bool = {
-        let appleScript = """
-        tell application "Xcode"
-            return path of document of the first window
-        end tell
-        """
-        do {
-            let result = try await runAppleScript(appleScript)
-            return !result.isEmpty
-        } catch {
-            return false
-        }
-    }
-
     #warning("TODO: Use XcodeInspector instead.")
     public static var fetchCurrentWorkspaceURLFromXcode: () async throws -> URL? = {
         if let xcode = ActiveApplicationMonitor.shared.activeXcode
@@ -146,114 +128,6 @@ public enum Environment {
             return try await fetchCurrentFileURL()
         } catch {
             return windowElement
-        }
-    }
-
-    public static var triggerAction: (_ name: String) async throws -> Void = { name in
-        struct CantRunCommand: Error, LocalizedError {
-            let name: String
-            var errorDescription: String? {
-                "Can't run command \(name)."
-            }
-        }
-
-        guard let activeXcode = XcodeInspector.shared.latestActiveXcode?.runningApplication
-        else { throw CantRunCommand(name: name) }
-
-        let bundleName = Bundle.main
-            .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-
-        await Task.yield()
-
-        if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
-            if !activeXcode.isActive { activeXcode.activate() }
-            let app = AXUIElementCreateApplication(activeXcode.processIdentifier)
-
-            if let editorMenu = app.menuBar?.child(title: "Editor"),
-               let commandMenu = editorMenu.child(title: bundleName)
-            {
-                if let button = commandMenu.child(title: name, role: "AXMenuItem") {
-                    let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
-                    if error != AXError.success {
-                        Logger.service
-                            .error("Trigger command \(name) failed: \(error.localizedDescription)")
-                        throw error
-                    } else {
-                        return
-                    }
-                }
-            } else if let commandMenu = app.menuBar?.child(title: bundleName),
-                      let button = commandMenu.child(title: name, role: "AXMenuItem")
-            {
-                let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
-                if error != AXError.success {
-                    Logger.service
-                        .error("Trigger command \(name) failed: \(error.localizedDescription)")
-                    throw error
-                } else {
-                    return
-                }
-            }
-
-            throw CantRunCommand(name: name)
-        } else {
-            /// check if menu is open, if not, click the menu item.
-            let appleScript = """
-            tell application "System Events"
-                set theprocs to every process whose unix id is \(activeXcode.processIdentifier)
-                repeat with proc in theprocs
-                set the frontmost of proc to true
-                    tell proc
-                        repeat with theMenu in menus of menu bar 1
-                            set theValue to value of attribute "AXVisibleChildren" of theMenu
-                            if theValue is not {} then
-                                return
-                            end if
-                        end repeat
-                        click menu item "\(name)" of menu 1 of menu item "\(bundleName)" of menu 1 of menu bar item "Editor" of menu bar 1
-                    end tell
-                end repeat
-            end tell
-            """
-
-            do {
-                try await runAppleScript(appleScript)
-            } catch {
-                Logger.service
-                    .error("Trigger command \(name) failed: \(error.localizedDescription)")
-                throw error
-            }
-        }
-    }
-}
-
-@discardableResult
-func runAppleScript(_ appleScript: String) async throws -> String {
-    let task = Process()
-    task.launchPath = "/usr/bin/osascript"
-    task.arguments = ["-e", appleScript]
-    let outpipe = Pipe()
-    task.standardOutput = outpipe
-    task.standardError = Pipe()
-
-    return try await withUnsafeThrowingContinuation { continuation in
-        do {
-            task.terminationHandler = { _ in
-                do {
-                    if let data = try outpipe.fileHandleForReading.readToEnd(),
-                       let content = String(data: data, encoding: .utf8)
-                    {
-                        continuation.resume(returning: content)
-                        return
-                    }
-                    continuation.resume(returning: "")
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-            try task.run()
-        } catch {
-            continuation.resume(throwing: error)
         }
     }
 }
