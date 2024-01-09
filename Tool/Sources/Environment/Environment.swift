@@ -107,29 +107,6 @@ public enum Environment {
         }
         throw FailedToFetchFileURLError()
     }
-
-    public static var fetchFocusedElementURI: () async throws -> URL = {
-        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
-            ?? ActiveApplicationMonitor.shared.latestXcode
-        else { return URL(fileURLWithPath: "/global") }
-
-        let application = AXUIElementCreateApplication(xcode.processIdentifier)
-        let focusedElement = application.focusedElement
-        var windowElement: URL {
-            let window = application.focusedWindow
-            let id = window?.identifier.hashValue
-            return URL(fileURLWithPath: "/xcode-focused-element/\(id ?? 0)")
-        }
-        if focusedElement?.description != "Source Editor" {
-            return windowElement
-        }
-
-        do {
-            return try await fetchCurrentFileURL()
-        } catch {
-            return windowElement
-        }
-    }
 }
 
 public extension FileManager {
