@@ -13,12 +13,12 @@ public class SourceEditor {
     /// The content of the source editor.
     public var content: Content {
         let content = element.value
-        let split = Self.breakLines(content)
+        let split = content.breakLines(appendLineBreakToLastLine: false)
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
         if let selectionRange = element.selectedTextRange {
-            let range = Self.convertRangeToCursorRange(selectionRange, in: content)
+            let range = Self.convertRangeToCursorRange(selectionRange, in: split)
             return .init(
                 content: content,
                 lines: split,
@@ -91,7 +91,7 @@ public extension SourceEditor {
         _ cursorRange: CursorRange,
         in content: String
     ) -> CFRange {
-        let lines = breakLines(content)
+        let lines = content.breakLines(appendLineBreakToLastLine: false)
         return convertCursorRangeToRange(cursorRange, in: lines)
     }
 
@@ -104,15 +104,21 @@ public extension SourceEditor {
         var countE = 0
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
-            if countS <= range.lowerBound, range.lowerBound < countS + line.count {
+            // The range is counted in UTF8, which causes line endings like \r\n to be of length 2.
+            let lineEndingAddition = (line.lineEnding?.utf8.count ?? 1) - 1
+            if countS <= range.lowerBound,
+               range.lowerBound < countS + line.count + lineEndingAddition
+            {
                 cursorRange.start = .init(line: i, character: range.lowerBound - countS)
             }
-            if countE <= range.upperBound, range.upperBound < countE + line.count {
+            if countE <= range.upperBound,
+               range.upperBound < countE + line.count + lineEndingAddition
+            {
                 cursorRange.end = .init(line: i, character: range.upperBound - countE)
                 break
             }
-            countS += line.count
-            countE += line.count
+            countS += line.count + lineEndingAddition
+            countE += line.count + lineEndingAddition
         }
         if cursorRange.end == .outOfScope {
             cursorRange.end = .init(line: lines.endIndex - 1, character: lines.last?.count ?? 0)
@@ -124,21 +130,8 @@ public extension SourceEditor {
         _ range: ClosedRange<Int>,
         in content: String
     ) -> CursorRange {
-        let lines = breakLines(content)
+        let lines = content.breakLines(appendLineBreakToLastLine: false)
         return convertRangeToCursorRange(range, in: lines)
-    }
-
-    static func breakLines(_ string: String) -> [String] {
-        let lines = string.split(separator: "\n", omittingEmptySubsequences: false)
-        var all = [String]()
-        for (index, line) in lines.enumerated() {
-            if index == lines.endIndex - 1 {
-                all.append(String(line))
-            } else {
-                all.append(String(line) + "\n")
-            }
-        }
-        return all
     }
 }
 

@@ -7,20 +7,13 @@ import Environment
 import Foundation
 import Preferences
 import SwiftUI
+import Toast
 import XcodeInspector
 
 public struct WidgetFeature: ReducerProtocol {
     public struct WindowState: Equatable {
         var alphaValue: Double = 0
         var frame: CGRect = .zero
-    }
-
-    public struct Windows: Equatable {
-        public var widgetWindowState = WindowState()
-        public var chatWindowState = WindowState()
-        public var suggestionPanelWindowState = WindowState()
-        public var sharedPanelWindowState = WindowState()
-        public var tabWindowState = WindowState()
     }
 
     public enum WindowCanBecomeKey: Equatable {
@@ -31,6 +24,8 @@ public struct WidgetFeature: ReducerProtocol {
     public struct State: Equatable {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
+
+        var toastPanel = ToastPanel.State()
 
         // MARK: Panels
 
@@ -120,6 +115,7 @@ public struct WidgetFeature: ReducerProtocol {
         case updateWindowOpacityFinished
         case updateKeyWindow(WindowCanBecomeKey)
 
+        case toastPanel(ToastPanel.Action)
         case panel(PanelFeature.Action)
         case chatPanel(ChatPanelFeature.Action)
         case circularWidget(CircularWidgetFeature.Action)
@@ -143,6 +139,10 @@ public struct WidgetFeature: ReducerProtocol {
     public init() {}
 
     public var body: some ReducerProtocol<State, Action> {
+        Scope(state: \.toastPanel, action: /Action.toastPanel) {
+            ToastPanel()
+        }
+
         Scope(state: \._circularWidgetState, action: /Action.circularWidget) {
             CircularWidgetFeature()
         }
@@ -227,11 +227,14 @@ public struct WidgetFeature: ReducerProtocol {
             switch action {
             case .startup:
                 return .merge(
-                    .run { send in await send(.observeActiveApplicationChange) },
-                    .run { send in await send(.observeCompletionPanelChange) },
-                    .run { send in await send(.observeFullscreenChange) },
-                    .run { send in await send(.observeColorSchemeChange) },
-                    .run { send in await send(.observePresentationModeChange) }
+                    .run { send in
+                        await send(.toastPanel(.start))
+                        await send(.observeActiveApplicationChange)
+                        await send(.observeCompletionPanelChange)
+                        await send(.observeFullscreenChange)
+                        await send(.observeColorSchemeChange)
+                        await send(.observePresentationModeChange)
+                    }
                 )
 
             case .observeActiveApplicationChange:
@@ -479,6 +482,7 @@ public struct WidgetFeature: ReducerProtocol {
                 }()
 
                 state.colorScheme = scheme
+                state.toastPanel.colorScheme = scheme
                 state.panelState.sharedPanelState.colorScheme = scheme
                 state.panelState.suggestionPanelState.colorScheme = scheme
                 state.chatPanelState.colorScheme = scheme
@@ -503,6 +507,10 @@ public struct WidgetFeature: ReducerProtocol {
                     state.panelState.suggestionPanelState.isPanelOutOfFrame = true
                 }
 
+                state.toastPanel.alignTopToAnchor = widgetLocation
+                    .defaultPanelLocation
+                    .alignPanelTop
+
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
 
                 return .run { _ in
@@ -512,8 +520,8 @@ public struct WidgetFeature: ReducerProtocol {
                             display: false,
                             animate: animated
                         )
-                        windows.tabWindow.setFrame(
-                            widgetLocation.tabFrame,
+                        windows.toastWindow.setFrame(
+                            widgetLocation.defaultPanelLocation.frame,
                             display: false,
                             animate: animated
                         )
@@ -571,7 +579,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = 0
+                            windows.toastWindow.alphaValue = noFocus ? 0 : 1
 
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
@@ -593,7 +601,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                            windows.tabWindow.alphaValue = 0
+                            windows.toastWindow.alphaValue = noFocus ? 0 : 1
                             if isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
                             } else {
@@ -604,7 +612,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.sharedPanelWindow.alphaValue = 0
                             windows.suggestionPanelWindow.alphaValue = 0
                             windows.widgetWindow.alphaValue = 0
-                            windows.tabWindow.alphaValue = 0
+                            windows.toastWindow.alphaValue = 0
                             if !isChatPanelDetached {
                                 windows.chatPanelWindow.alphaValue = 0
                             }
@@ -628,6 +636,9 @@ public struct WidgetFeature: ReducerProtocol {
                         await windows.sharedPanelWindow.makeKeyAndOrderFront(nil)
                     }
                 }
+
+            case .toastPanel:
+                return .none
 
             case .circularWidget:
                 return .none

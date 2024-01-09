@@ -21,6 +21,10 @@ public extension UserDefaults {
         shared.setupDefaultValue(for: \.runNodeWith, defaultValue: .env)
         shared.setupDefaultValue(for: \.chatModels)
         shared.setupDefaultValue(for: \.embeddingModels)
+        shared.setupDefaultValue(
+            for: \.suggestionFeatureProvider,
+            defaultValue: .builtIn(shared.deprecatedValue(for: \.oldSuggestionFeatureProvider))
+        )
     }
 }
 

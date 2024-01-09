@@ -1,12 +1,17 @@
 import Environment
 import Foundation
+import Preferences
+import SuggestionModel
+import SuggestionProvider
 import UserDefaultsObserver
 import Workspace
-import SuggestionService
-import SuggestionModel
-import Preferences
 
 public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
+    public typealias SuggestionServiceFactory = (
+        _ projectRootURL: URL,
+        _ onServiceLaunched: @escaping (any SuggestionServiceProvider) -> Void
+    ) -> any SuggestionServiceProvider
+    
     let userDefaultsObserver = UserDefaultsObserver(
         object: UserDefaults.shared, forKeyPaths: [
             UserDefaultPreferenceKeys().suggestionFeatureEnabledProjectList.key,
@@ -18,9 +23,11 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
     }
 
-    private var _suggestionService: SuggestionServiceType?
+    let suggestionServiceFactory: SuggestionServiceFactory
 
-    public var suggestionService: SuggestionServiceType? {
+    private var _suggestionService: SuggestionServiceProvider?
+
+    public var suggestionService: SuggestionServiceProvider? {
         // Check if the workspace is disabled.
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
@@ -34,7 +41,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
 
         if _suggestionService == nil {
-            _suggestionService = SuggestionService(projectRootURL: projectRootURL) {
+            _suggestionService = suggestionServiceFactory(projectRootURL) {
                 [weak self] _ in
                 guard let self else { return }
                 for (_, filespace) in filespaces {
@@ -56,8 +63,12 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
         return true
     }
-
-    public override init(workspace: Workspace) {
+    
+    public init(
+        workspace: Workspace,
+        suggestionProviderFactory: @escaping SuggestionServiceFactory
+    ) {
+        self.suggestionServiceFactory = suggestionProviderFactory
         super.init(workspace: workspace)
 
         userDefaultsObserver.onChange = { [weak self] in
@@ -66,19 +77,19 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         }
     }
 
-    public override func didOpenFilespace(_ filespace: Filespace) {
+    override public func didOpenFilespace(_ filespace: Filespace) {
         notifyOpenFile(filespace: filespace)
     }
 
-    public override func didSaveFilespace(_ filespace: Filespace) {
+    override public func didSaveFilespace(_ filespace: Filespace) {
         notifySaveFile(filespace: filespace)
     }
-    
-    public override func didUpdateFilespace(_ filespace: Filespace, content: String) {
+
+    override public func didUpdateFilespace(_ filespace: Filespace, content: String) {
         notifyUpdateFile(filespace: filespace, content: content)
     }
 
-    public override func didCloseFilespace(_ fileURL: URL) {
+    override public func didCloseFilespace(_ fileURL: URL) {
         Task {
             try await suggestionService?.notifyCloseTextDocument(fileURL: fileURL)
         }
@@ -98,7 +109,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
 
             try await suggestionService?.notifyOpenTextDocument(
                 fileURL: filespace.fileURL,
-                content: try String(contentsOf: filespace.fileURL, encoding: .utf8)
+                content: String(contentsOf: filespace.fileURL, encoding: .utf8)
             )
         }
     }

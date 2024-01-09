@@ -1,9 +1,6 @@
 import Foundation
 import SuggestionModel
 
-let suggestionStart = "/*========== Copilot Suggestion"
-let suggestionEnd = "*///======== End of Copilot Suggestion"
-
 // NOTE: Every lines from Xcode Extension has a line break at its end, even the last line.
 // NOTE: Copilot's completion always start at character 0, no matter where the cursor is.
 
@@ -18,116 +15,6 @@ public struct SuggestionInjector {
         public init() {}
     }
 
-    public func rejectCurrentSuggestions(
-        from content: inout [String],
-        cursorPosition: inout CursorPosition,
-        extraInfo: inout ExtraInfo
-    ) {
-        var ranges = [ClosedRange<Int>]()
-        var suggestionStartIndex = -1
-
-        // find ranges of suggestion comments
-        for (index, line) in content.enumerated() {
-            if line.hasPrefix(suggestionStart) {
-                suggestionStartIndex = index
-            }
-            if suggestionStartIndex >= 0, line.hasPrefix(suggestionEnd) {
-                ranges.append(.init(uncheckedBounds: (suggestionStartIndex, index)))
-                suggestionStartIndex = -1
-            }
-        }
-
-        let reversedRanges = ranges.reversed()
-
-        extraInfo.modifications.append(contentsOf: reversedRanges.map(Modification.deleted))
-        extraInfo.didChangeContent = !ranges.isEmpty
-
-        // remove the lines from bottom to top
-        for range in reversedRanges {
-            for i in stride(from: range.upperBound, through: range.lowerBound, by: -1) {
-                if i <= cursorPosition.line, cursorPosition.line >= 0 {
-                    cursorPosition = .init(
-                        line: cursorPosition.line - 1,
-                        character: i == cursorPosition.line ? 0 : cursorPosition.character
-                    )
-                    extraInfo.didChangeCursorPosition = true
-                }
-                content.remove(at: i)
-            }
-        }
-
-        extraInfo.suggestionRange = nil
-    }
-
-    public func proposeSuggestion(
-        intoContentWithoutSuggestion content: inout [String],
-        completion: CodeSuggestion,
-        index: Int,
-        count: Int,
-        extraInfo: inout ExtraInfo
-    ) {
-        // assemble suggestion comment
-        let start = completion.range.start
-        let startText = "\(suggestionStart) \(index + 1)/\(count)"
-        var lines = [startText + "\n"]
-        lines.append(contentsOf: completion.text.breakLines(appendLineBreakToLastLine: true))
-        lines.append(suggestionEnd + "\n")
-
-        // if suggestion is empty, returns without modifying the code
-        guard lines.count > 2 else { return }
-
-        // replace the common prefix of the first line with space and carrot
-        let existedLine = start.line < content.endIndex ? content[start.line] : nil
-        let commonPrefix = longestCommonPrefix(of: lines[1], and: existedLine ?? "")
-
-        if !commonPrefix.isEmpty {
-            let replacingText = {
-                switch (commonPrefix.hasSuffix("\n"), commonPrefix.count) {
-                case (false, let count):
-                    return String(repeating: " ", count: count - 1) + "^"
-                case (true, let count) where count > 1:
-                    return String(repeating: " ", count: count - 2) + "^\n"
-                case (true, _):
-                    return "\n"
-                }
-            }()
-
-            lines[1].replaceSubrange(
-                lines[1].startIndex..<(
-                    lines[1].index(
-                        lines[1].startIndex,
-                        offsetBy: commonPrefix.count,
-                        limitedBy: lines[1].endIndex
-                    ) ?? lines[1].endIndex
-                ),
-                with: replacingText
-            )
-        }
-
-        // if the suggestion is only appending new lines and spaces, return without modification
-        if completion.text.dropFirst(commonPrefix.count)
-            .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return }
-
-        // determine if it's inserted to the current line or the next line
-        let lineIndex = start.line + {
-            guard let existedLine else { return 0 }
-            if existedLine.isEmptyOrNewLine { return 1 }
-            if commonPrefix.isEmpty { return 0 }
-            return 1
-        }()
-        if content.endIndex < lineIndex {
-            extraInfo.didChangeContent = true
-            extraInfo.suggestionRange = content.endIndex...content.endIndex + lines.count - 1
-            extraInfo.modifications.append(.inserted(content.endIndex, lines))
-            content.append(contentsOf: lines)
-        } else {
-            extraInfo.didChangeContent = true
-            extraInfo.suggestionRange = lineIndex...lineIndex + lines.count - 1
-            extraInfo.modifications.append(.inserted(lineIndex, lines))
-            content.insert(contentsOf: lines, at: lineIndex)
-        }
-    }
-
     public func acceptSuggestion(
         intoContentWithoutSuggestion content: inout [String],
         cursorPosition: inout CursorPosition,
@@ -140,6 +27,11 @@ public struct SuggestionInjector {
         let start = completion.range.start
         let end = completion.range.end
         let suggestionContent = completion.text
+        let lineEnding = if let ending = content.first?.last, ending.isNewline {
+            String(ending)
+        } else {
+            "\n"
+        }
 
         let firstRemovedLine = content[safe: start.line]
         let lastRemovedLine = content[safe: end.line]
@@ -150,7 +42,10 @@ public struct SuggestionInjector {
             content.removeSubrange(startLine...endLine)
         }
 
-        var toBeInserted = suggestionContent.breakLines(appendLineBreakToLastLine: true)
+        var toBeInserted = suggestionContent.breakLines(
+            proposedLineEnding: lineEnding,
+            appendLineBreakToLastLine: true
+        )
 
         // prepending prefix text not in range if needed.
         if let firstRemovedLine,
@@ -165,7 +60,7 @@ public struct SuggestionInjector {
                 limitedBy: firstRemovedLine.endIndex
             ) ?? firstRemovedLine.endIndex)
             var leftover = firstRemovedLine[leftoverRange]
-            if leftover.hasSuffix("\n") {
+            if leftover.last?.isNewline ?? false {
                 leftover.removeLast(1)
             }
             toBeInserted[0].insert(
@@ -177,7 +72,8 @@ public struct SuggestionInjector {
         let recoveredSuffixLength = recoverSuffixIfNeeded(
             endOfReplacedContent: end,
             toBeInserted: &toBeInserted,
-            lastRemovedLine: lastRemovedLine
+            lastRemovedLine: lastRemovedLine,
+            lineEnding: lineEnding
         )
 
         let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1 - recoveredSuffixLength
@@ -193,7 +89,8 @@ public struct SuggestionInjector {
     func recoverSuffixIfNeeded(
         endOfReplacedContent end: CursorPosition,
         toBeInserted: inout [String],
-        lastRemovedLine: String?
+        lastRemovedLine: String?,
+        lineEnding: String
     ) -> Int {
         // If there is no line removed, there is no need to recover anything.
         guard let lastRemovedLine, !lastRemovedLine.isEmptyOrNewLine else { return 0 }
@@ -255,7 +152,7 @@ public struct SuggestionInjector {
         let lastInsertingLine = toBeInserted[toBeInserted.endIndex - 1]
             .droppedLineBreak()
             .appending(suffix)
-            .recoveredLineBreak()
+            .recoveredLineBreak(lineEnding: lineEnding)
 
         toBeInserted[toBeInserted.endIndex - 1] = lastInsertingLine
 
@@ -280,36 +177,22 @@ public struct SuggestionAnalyzer {
 }
 
 extension String {
-    /// Break a string into lines.
-    func breakLines(appendLineBreakToLastLine: Bool = false) -> [String] {
-        let lines = split(separator: "\n", omittingEmptySubsequences: false)
-        var all = [String]()
-        for (index, line) in lines.enumerated() {
-            if !appendLineBreakToLastLine, index == lines.endIndex - 1 {
-                all.append(String(line))
-            } else {
-                all.append(String(line) + "\n")
-            }
-        }
-        return all
-    }
-
     var isEmptyOrNewLine: Bool {
-        isEmpty || self == "\n"
+        isEmpty || self == "\n" || self == "\r\n" || self == "\r"
     }
 
     func droppedLineBreak() -> String {
-        if hasSuffix("\n") {
+        if last?.isNewline ?? false {
             return String(dropLast(1))
         }
         return self
     }
 
-    func recoveredLineBreak() -> String {
-        if hasSuffix("\n") {
+    func recoveredLineBreak(lineEnding: String) -> String {
+        if hasSuffix(lineEnding) {
             return self
         }
-        return self + "\n"
+        return self + lineEnding
     }
 }
 

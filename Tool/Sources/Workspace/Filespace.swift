@@ -33,17 +33,32 @@ public struct FilespaceCodeMetadata: Equatable {
     public var tabSize: Int?
     public var indentSize: Int?
     public var usesTabsForIndentation: Bool?
+    public var lineEnding: String = "\n"
 
     init(
         uti: String? = nil,
         tabSize: Int? = nil,
         indentSize: Int? = nil,
-        usesTabsForIndentation: Bool? = nil
+        usesTabsForIndentation: Bool? = nil,
+        lineEnding: String = "\n"
     ) {
         self.uti = uti
         self.tabSize = tabSize
         self.indentSize = indentSize
         self.usesTabsForIndentation = usesTabsForIndentation
+        self.lineEnding = lineEnding
+    }
+    
+    public mutating func guessLineEnding(from text: String?) {
+        lineEnding = if let proposedEnding = text?.last {
+            if proposedEnding.isNewline {
+                String(proposedEnding)
+            } else {
+                "\n"
+            }
+        } else {
+            "\n"
+        }
     }
 }
 

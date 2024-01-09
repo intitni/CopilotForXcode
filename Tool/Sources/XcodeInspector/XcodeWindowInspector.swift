@@ -26,36 +26,43 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     }
 
     public func refresh() {
-        updateURLs()
+        Task { @MainActor in updateURLs() }
     }
 
     public init(app: NSRunningApplication, uiElement: AXUIElement) {
         self.app = app
         super.init(uiElement: uiElement)
 
-        focusedElementChangedTask = Task { @MainActor in
-            updateURLs()
+        let notifications = AXNotificationStream(
+            app: app,
+            notificationNames: kAXFocusedUIElementChangedNotification
+        )
 
-            Task { @MainActor in
-                // prevent that documentURL may not be available yet
-                try await Task.sleep(nanoseconds: 500_000_000)
-                if documentURL == .init(fileURLWithPath: "/") {
-                    updateURLs()
+        #warning("Test Me")
+        focusedElementChangedTask = Task { [weak self] in
+            await self?.updateURLs()
+
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                group.addTask { [weak self] in
+                    // prevent that documentURL may not be available yet
+                    try await Task.sleep(nanoseconds: 500_000_000)
+                    if self?.documentURL == .init(fileURLWithPath: "/") {
+                        await self?.updateURLs()
+                    }
                 }
-            }
 
-            let notifications = AXNotificationStream(
-                app: app,
-                notificationNames: kAXFocusedUIElementChangedNotification
-            )
-
-            for await _ in notifications {
-                try Task.checkCancellation()
-                updateURLs()
+                group.addTask { [weak self] in
+                    for await _ in notifications {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        await self.updateURLs()
+                    }
+                }
             }
         }
     }
 
+    @MainActor
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {

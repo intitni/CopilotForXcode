@@ -214,11 +214,10 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             }()
 
             let suggestion = CodeSuggestion(
+                id: UUID().uuidString,
                 text: promptToCode.code,
                 position: range.start,
-                uuid: UUID().uuidString,
-                range: range,
-                displayText: promptToCode.code
+                range: range
             )
 
             injector.acceptSuggestion(
@@ -268,6 +267,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         filespace.codeMetadata.tabSize = editor.tabSize
         filespace.codeMetadata.indentSize = editor.indentSize
         filespace.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
+        filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
         return nil
     }
 

@@ -45,7 +45,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
                     return
                 }
                 try Task.checkCancellation()
-                reply(try JSONEncoder().encode(updatedContent), nil)
+                try reply(JSONEncoder().encode(updatedContent), nil)
             } catch {
                 Logger.service.error("\(file):\(line) \(error.localizedDescription)")
                 reply(nil, NSError.from(error))
@@ -102,7 +102,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
             try await handler.acceptSuggestion(editor: editor)
         }
     }
-    
+
     public func getPromptToCodeAcceptedCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
@@ -191,12 +191,18 @@ public class XPCService: NSObject, XPCServiceProtocol {
         NSWorkspace.shared.notificationCenter.post(name: .init(name), object: nil)
     }
 
-    public func performAction(
-        name: String,
-        arguments: String,
-        withReply reply: @escaping (String) -> Void
+    // MARK: - Requests
+
+    public func send(
+        endpoint: String,
+        requestBody: Data,
+        reply: @escaping (Data?, Error?) -> Void
     ) {
-        reply("None")
+        Service.shared.handleXPCServiceRequests(
+            endpoint: endpoint,
+            requestBody: requestBody,
+            reply: reply
+        )
     }
 }
 

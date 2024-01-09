@@ -114,15 +114,26 @@ struct ChatModelEdit: ReducerProtocol {
                 return .none
 
             case .checkSuggestedMaxTokens:
-                guard state.format == .openAI,
-                      let knownModel = ChatGPTModel(rawValue: state.modelName)
-                else {
+                switch state.format {
+                case .openAI:
+                    if let knownModel = ChatGPTModel(rawValue: state.modelName) {
+                        state.suggestedMaxTokens = knownModel.maxToken
+                    } else {
+                        state.suggestedMaxTokens = nil
+                    }
+                    return .none
+                case .googleAI:
+                    if let knownModel = GoogleGenerativeAIModel(rawValue: state.modelName) {
+                        state.suggestedMaxTokens = knownModel.maxToken
+                    } else {
+                        state.suggestedMaxTokens = nil
+                    }
+                    return .none
+                default:
                     state.suggestedMaxTokens = nil
                     return .none
                 }
-                state.suggestedMaxTokens = knownModel.maxToken
-                return .none
-
+                
             case .apiKeySelection:
                 return .none
                 
@@ -175,7 +186,12 @@ extension ChatModel {
                 apiKeyName: state.apiKeyName,
                 baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
                 maxTokens: state.maxTokens,
-                supportsFunctionCalling: state.supportsFunctionCalling,
+                supportsFunctionCalling: {
+                    if case .googleAI = state.format {
+                        return false
+                    }
+                    return state.supportsFunctionCalling
+                }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
             )
         )

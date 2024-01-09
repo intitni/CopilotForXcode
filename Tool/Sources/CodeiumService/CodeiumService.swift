@@ -278,9 +278,9 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                 return true
             }.map { item in
                 CodeSuggestion(
+                    id: item.completion.completionId,
                     text: item.completion.text,
                     position: cursorPosition,
-                    uuid: item.completion.completionId,
                     range: CursorRange(
                         start: .init(
                             line: item.range.startPosition?.row.flatMap(Int.init) ?? 0,
@@ -290,8 +290,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
                             line: item.range.endPosition?.row.flatMap(Int.init) ?? 0,
                             character: item.range.endPosition?.col.flatMap(Int.init) ?? 0
                         )
-                    ),
-                    displayText: item.completion.text
+                    )
                 )
             } ?? []
         }
@@ -314,7 +313,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         _ = try? await (try setupServerIfNeeded())
             .sendRequest(CodeiumRequest.AcceptCompletion(requestBody: .init(
                 metadata: getMetadata(),
-                completion_id: suggestion.uuid
+                completion_id: suggestion.id
             )))
     }
 
@@ -360,7 +359,7 @@ func getXcodeVersion() async throws -> String {
                     if let data = try outpipe.fileHandleForReading.readToEnd(),
                        let content = String(data: data, encoding: .utf8)
                     {
-                        let firstLine = content.split(separator: "\n").first ?? ""
+                        let firstLine = content.split(whereSeparator: \.isNewline).first ?? ""
                         var version = firstLine.replacingOccurrences(of: "Xcode ", with: "")
                         if version.isEmpty {
                             version = "14.0"

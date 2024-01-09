@@ -22,17 +22,17 @@ public final class SuggestionWidgetControllerDependency {
 public final class WidgetWindows {
     var fullscreenDetector: NSWindow!
     var widgetWindow: NSWindow!
-    var tabWindow: NSWindow!
     var sharedPanelWindow: NSWindow!
     var suggestionPanelWindow: NSWindow!
     var chatPanelWindow: NSWindow!
+    var toastWindow: NSWindow!
 
     nonisolated
     init() {}
 
     func orderFront() {
         widgetWindow?.orderFrontRegardless()
-        tabWindow?.orderFrontRegardless()
+        toastWindow?.orderFrontRegardless()
         sharedPanelWindow?.orderFrontRegardless()
         suggestionPanelWindow?.orderFrontRegardless()
         chatPanelWindow?.orderFrontRegardless()

@@ -37,7 +37,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -60,7 +62,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -87,7 +91,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -107,7 +113,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -130,7 +138,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -151,7 +161,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ncase ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -174,7 +186,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\ndefault ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -188,7 +202,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\n\tdef ",
             // Now split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -209,7 +225,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\nconst ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -230,7 +248,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "\nrescue ",
             // Split by the normal type of lines
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -256,7 +276,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             // Note that this splitter doesn't handle horizontal lines defined
             // by *three or more* of ***, ---, or ___, but this is not handled
             "\n\n",
+            "\r\n",
             "\n",
+            "\r",
             " ",
             "",
         ]
@@ -318,6 +340,10 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "<script>",
             "<meta>",
             "<title>",
+            "\n\n",
+            "\r\n",
+            "\n",
+            "\r",
             "",
         ]
     }

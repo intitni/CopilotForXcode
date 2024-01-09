@@ -12,7 +12,7 @@ struct GeneralView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                AppInfoView()
+                AppInfoView(store: store)
                 SettingsDivider()
                 ExtensionServiceView(store: store)
                 SettingsDivider()
@@ -30,6 +30,7 @@ struct GeneralView: View {
 struct AppInfoView: View {
     @State var appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     @Environment(\.updateChecker) var updateChecker
+    let store: StoreOf<General>
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -45,6 +46,15 @@ struct AppInfoView: View {
                     .foregroundColor(.secondary)
 
                 Spacer()
+                
+                Button(action: {
+                    store.send(.openExtensionManager)
+                }) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "puzzlepiece.extension.fill")
+                        Text("Extensions")
+                    }
+                }
 
                 Button(action: {
                     updateChecker.checkForUpdates()

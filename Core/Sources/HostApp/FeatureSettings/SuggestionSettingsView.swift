@@ -1,12 +1,38 @@
+import Client
 import Preferences
 import SharedUIComponents
 import SwiftUI
+import XPCShared
 
 #if canImport(ProHostApp)
 import ProHostApp
 #endif
 
 struct SuggestionSettingsView: View {
+    struct SuggestionFeatureProviderOption: Identifiable, Hashable {
+        var id: String {
+            (builtInProvider?.rawValue).map(String.init) ?? bundleIdentifier ?? "n/A"
+        }
+
+        var name: String
+        var builtInProvider: BuiltInSuggestionFeatureProvider?
+        var bundleIdentifier: String?
+
+        func hash(into hasher: inout Hasher) {
+            id.hash(into: &hasher)
+        }
+
+        init(
+            name: String,
+            builtInProvider: BuiltInSuggestionFeatureProvider? = nil,
+            bundleIdentifier: String? = nil
+        ) {
+            self.name = name
+            self.builtInProvider = builtInProvider
+            self.bundleIdentifier = bundleIdentifier
+        }
+    }
+
     final class Settings: ObservableObject {
         @AppStorage(\.realtimeSuggestionToggle)
         var realtimeSuggestionToggle
@@ -30,7 +56,42 @@ struct SuggestionSettingsView: View {
         var acceptSuggestionWithTab
         @AppStorage(\.isSuggestionSenseEnabled)
         var isSuggestionSenseEnabled
-        init() {}
+
+        var refreshExtensionSuggestionFeatureProvidersTask: Task<Void, Never>?
+
+        @MainActor
+        @Published
+        var extensionSuggestionFeatureProviderOptions = [SuggestionFeatureProviderOption]()
+
+        init() {
+            Task { @MainActor in
+                refreshExtensionSuggestionFeatureProviders()
+            }
+            refreshExtensionSuggestionFeatureProvidersTask = Task { [weak self] in
+                let sequence = await NotificationCenter.default
+                    .notifications(named: NSApplication.didBecomeActiveNotification)
+                for await _ in sequence {
+                    guard let self else { return }
+                    await MainActor.run {
+                        self.refreshExtensionSuggestionFeatureProviders()
+                    }
+                }
+            }
+        }
+
+        @MainActor
+        func refreshExtensionSuggestionFeatureProviders() {
+            guard let service = try? getService() else { return }
+            Task { @MainActor in
+                let services = try await service
+                    .send(requestBody: ExtensionServiceRequests.GetExtensionSuggestionServices())
+                extensionSuggestionFeatureProviderOptions = services.map {
+                    .init(name: $0.name, bundleIdentifier: $0.bundleIdentifier)
+                }
+                print(services.map(\.bundleIdentifier))
+                print(suggestionFeatureProvider)
+            }
+        }
     }
 
     @StateObject var settings = Settings()
@@ -52,13 +113,54 @@ struct SuggestionSettingsView: View {
                 Text("Presentation")
             }
 
-            Picker(selection: $settings.suggestionFeatureProvider) {
-                ForEach(SuggestionFeatureProvider.allCases, id: \.rawValue) {
+            Picker(selection: Binding(get: {
+                switch settings.suggestionFeatureProvider {
+                case let .builtIn(provider):
+                    return SuggestionFeatureProviderOption(
+                        name: "",
+                        builtInProvider: provider
+                    )
+                case let .extension(name, identifier):
+                    return SuggestionFeatureProviderOption(
+                        name: name,
+                        bundleIdentifier: identifier
+                    )
+                }
+            }, set: { (option: SuggestionFeatureProviderOption) in
+                if let provider = option.builtInProvider {
+                    settings.suggestionFeatureProvider = .builtIn(provider)
+                } else {
+                    settings.suggestionFeatureProvider = .extension(
+                        name: option.name,
+                        bundleIdentifier: option.bundleIdentifier ?? ""
+                    )
+                }
+            })) {
+                ForEach(BuiltInSuggestionFeatureProvider.allCases, id: \.rawValue) {
                     switch $0 {
                     case .gitHubCopilot:
-                        Text("GitHub Copilot").tag($0)
+                        Text("GitHub Copilot")
+                            .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
                     case .codeium:
-                        Text("Codeium").tag($0)
+                        Text("Codeium")
+                            .tag(SuggestionFeatureProviderOption(name: "", builtInProvider: $0))
+                    }
+                }
+
+                ForEach(settings.extensionSuggestionFeatureProviderOptions, id: \.self) { item in
+                    Text(item.name).tag(item)
+                }
+
+                if case let .extension(name, identifier) = settings.suggestionFeatureProvider {
+                    if !settings.extensionSuggestionFeatureProviderOptions.contains(where: {
+                        $0.bundleIdentifier == identifier
+                    }) {
+                        Text("\(name) (Not Found)").tag(
+                            SuggestionFeatureProviderOption(
+                                name: name,
+                                bundleIdentifier: identifier
+                            )
+                        )
                     }
                 }
             } label: {

@@ -22,6 +22,8 @@ struct ChatModelEditView: View {
                             azureOpenAI
                         case .openAICompatible:
                             openAICompatible
+                        case .googleAI:
+                            googleAI
                         }
                     }
                 }
@@ -88,6 +90,8 @@ struct ChatModelEditView: View {
                             Text("Azure OpenAI").tag(format)
                         case .openAICompatible:
                             Text("OpenAI Compatible").tag(format)
+                        case .googleAI:
+                            Text("Google Generative AI").tag(format)
                         }
                     }
                 },
@@ -268,6 +272,35 @@ struct ChatModelEditView: View {
 
         maxTokensTextField
         supportsFunctionCallingToggle
+    }
+    
+    @ViewBuilder
+    var googleAI: some View {
+        apiKeyNamePicker
+        
+        WithViewStore(
+            store,
+            removeDuplicates: { $0.modelName == $1.modelName }
+        ) { viewStore in
+            TextField("Model Name", text: viewStore.$modelName)
+                .overlay(alignment: .trailing) {
+                    Picker(
+                        "",
+                        selection: viewStore.$modelName,
+                        content: {
+                            if GoogleGenerativeAIModel(rawValue: viewStore.state.modelName) == nil {
+                                Text("Custom Model").tag(viewStore.state.modelName)
+                            }
+                            ForEach(GoogleGenerativeAIModel.allCases, id: \.self) { model in
+                                Text(model.rawValue).tag(model.rawValue)
+                            }
+                        }
+                    )
+                    .frame(width: 20)
+                }
+        }
+
+        maxTokensTextField
     }
 }
 

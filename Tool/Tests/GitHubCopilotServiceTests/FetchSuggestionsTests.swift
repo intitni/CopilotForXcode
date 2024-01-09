@@ -6,10 +6,10 @@ import XCTest
 final class FetchSuggestionTests: XCTestCase {
     func test_process_suggestions_from_server() async throws {
         struct TestServer: GitHubCopilotLSP {
-            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+            func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
                 fatalError()
             }
-            
+
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
@@ -17,21 +17,21 @@ final class FetchSuggestionTests: XCTestCase {
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        displayText: ""
                     ),
                     .init(
                         text: " ",
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: " "
+                        displayText: ""
                     ),
                     .init(
                         text: " \n",
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: " \n"
+                        displayText: ""
                     ),
                 ]) as! E.Response
             }
@@ -52,10 +52,10 @@ final class FetchSuggestionTests: XCTestCase {
 
     func test_ignore_empty_suggestions() async throws {
         struct TestServer: GitHubCopilotLSP {
-            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+            func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
                 fatalError()
             }
-            
+
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
@@ -63,21 +63,21 @@ final class FetchSuggestionTests: XCTestCase {
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        displayText: ""
                     ),
                     .init(
                         text: " ",
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: " "
+                        displayText: ""
                     ),
                     .init(
                         text: " \n",
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: " \n"
+                        displayText: ""
                     ),
                 ]) as! E.Response
             }
@@ -98,25 +98,19 @@ final class FetchSuggestionTests: XCTestCase {
     }
 
     func test_if_language_identifier_is_unknown_returns_correctly() async throws {
-        struct Err: Error, LocalizedError {
-            var errorDescription: String? {
-                "sendRequest Should not be falled"
-            }
-        }
-
         class TestServer: GitHubCopilotLSP {
-            func sendNotification(_ notif: LanguageServerProtocol.ClientNotification) async throws {
+            func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
                 // unimplemented
             }
-            
-            func sendRequest<E>(_ r: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+
+            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
                 return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
                     .init(
                         text: "Hello World\n",
                         position: .init((0, 0)),
                         uuid: "uuid",
                         range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: "Hello"
+                        displayText: ""
                     ),
                 ]) as! E.Response
             }
@@ -137,3 +131,4 @@ final class FetchSuggestionTests: XCTestCase {
         XCTAssertEqual(completions.first?.text, "Hello World")
     }
 }
+

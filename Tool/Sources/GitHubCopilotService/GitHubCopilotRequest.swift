@@ -22,6 +22,34 @@ protocol GitHubCopilotRequestType {
     var request: ClientRequest { get }
 }
 
+public struct GitHubCopilotCodeSuggestion: Codable, Equatable {
+    public init(
+        text: String,
+        position: CursorPosition,
+        uuid: String,
+        range: CursorRange,
+        displayText: String
+    ) {
+        self.text = text
+        self.position = position
+        self.uuid = uuid
+        self.range = range
+        self.displayText = displayText
+    }
+
+    /// The new code to be inserted and the original code on the first line.
+    public var text: String
+    /// The position of the cursor before generating the completion.
+    public var position: CursorPosition
+    /// An id.
+    public var uuid: String
+    /// The range of the original code that should be replaced.
+    public var range: CursorRange
+    /// The new code to be inserted.
+    public var displayText: String
+}
+
+
 enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
         struct Response: Codable {}
@@ -142,7 +170,7 @@ enum GitHubCopilotRequest {
 
     struct GetCompletions: GitHubCopilotRequestType {
         struct Response: Codable {
-            var completions: [CodeSuggestion]
+            var completions: [GitHubCopilotCodeSuggestion]
         }
 
         var doc: GitHubCopilotDoc
@@ -158,7 +186,7 @@ enum GitHubCopilotRequest {
 
     struct GetCompletionsCycling: GitHubCopilotRequestType {
         struct Response: Codable {
-            var completions: [CodeSuggestion]
+            var completions: [GitHubCopilotCodeSuggestion]
         }
 
         var doc: GitHubCopilotDoc
@@ -174,7 +202,7 @@ enum GitHubCopilotRequest {
 
     struct GetPanelCompletions: GitHubCopilotRequestType {
         struct Response: Codable {
-            var completions: [CodeSuggestion]
+            var completions: [GitHubCopilotCodeSuggestion]
         }
 
         var doc: GitHubCopilotDoc
