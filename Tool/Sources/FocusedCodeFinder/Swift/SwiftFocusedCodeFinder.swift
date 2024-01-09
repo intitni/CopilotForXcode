@@ -62,7 +62,8 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 
     public func contextContainingNode(
         _ node: SyntaxProtocol,
-        textProvider: @escaping TextProvider
+        textProvider: @escaping TextProvider,
+        rangeConverter: @escaping RangeConverter
     ) -> NodeInfo? {
         func extractText(_ node: SyntaxProtocol) -> String {
             textProvider(node)
@@ -243,18 +244,19 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 
         case let node as ClosureExprSyntax:
             let signature = "closure"
+            let range = rangeConverter(node)
 
             return .init(
                 node: node,
                 signature: signature
                     .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
                     .joined(separator: " "),
-                name: "closure"
+                name: "closure",
+                canBeUsedAsCodeRange: range.lineCount > 80
             )
 
         case let node as FunctionCallExprSyntax:
             let signature = "function call"
-
             return .init(
                 node: node,
                 signature: signature
@@ -265,12 +267,15 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
             )
 
         case let node as SwitchCaseSyntax:
+            let range = rangeConverter(node)
+            
             return .init(
                 node: node,
                 signature: node.trimmedDescription
                     .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
                     .joined(separator: " "),
-                name: "switch"
+                name: "switch",
+                canBeUsedAsCodeRange: range.lineCount > 80
             )
 
         default:

@@ -65,7 +65,8 @@ public class ObjectiveCFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
 
     public func contextContainingNode(
         _ node: Node,
-        textProvider: @escaping TextProvider
+        textProvider: @escaping TextProvider,
+        rangeConverter: @escaping RangeConverter
     ) -> NodeInfo? {
         switch ObjectiveCNodeType(rawValue: node.nodeType ?? "") {
         case .classInterface, .categoryInterface:
