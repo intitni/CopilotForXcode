@@ -76,7 +76,7 @@ public actor ShortcutChatPlugin: ChatPlugin {
             _ = try await terminal.runCommand(
                 shell,
                 arguments: ["-i", "-l", "-c", command],
-                currentDirectoryPath: "/",
+                currentDirectoryURL: nil,
                 environment: [:]
             )
 

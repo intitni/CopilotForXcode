@@ -5,14 +5,14 @@ public protocol TerminalType {
     func streamCommand(
         _ command: String,
         arguments: [String],
-        currentDirectoryPath: String,
+        currentDirectoryURL: URL?,
         environment: [String: String]
     ) -> AsyncThrowingStream<String, Error>
 
     func runCommand(
         _ command: String,
         arguments: [String],
-        currentDirectoryPath: String,
+        currentDirectoryURL: URL?,
         environment: [String: String]
     ) async throws -> String
 
@@ -44,7 +44,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
     public func streamCommand(
         _ command: String = "/bin/bash",
         arguments: [String],
-        currentDirectoryPath: String = "/",
+        currentDirectoryURL: URL? = nil,
         environment: [String: String]
     ) -> AsyncThrowingStream<String, Error> {
         self.process?.terminate()
@@ -52,7 +52,7 @@ public final class Terminal: TerminalType, @unchecked Sendable {
         self.process = process
 
         process.launchPath = command
-        process.currentDirectoryPath = currentDirectoryPath
+        process.currentDirectoryURL = currentDirectoryURL
         process.arguments = arguments
         process.environment = getEnvironmentVariables()
             .merging(environment, uniquingKeysWith: { $1 })
@@ -128,12 +128,12 @@ public final class Terminal: TerminalType, @unchecked Sendable {
     public func runCommand(
         _ command: String = "/bin/bash",
         arguments: [String],
-        currentDirectoryPath: String = "/",
+        currentDirectoryURL: URL? = nil,
         environment: [String: String]
     ) async throws -> String {
         let process = Process()
         process.launchPath = command
-        process.currentDirectoryPath = currentDirectoryPath
+        process.currentDirectoryURL = currentDirectoryURL
         process.arguments = arguments
         process.environment = getEnvironmentVariables()
             .merging(environment, uniquingKeysWith: { $1 })

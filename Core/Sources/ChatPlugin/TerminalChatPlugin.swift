@@ -34,10 +34,16 @@ public actor TerminalChatPlugin: ChatPlugin {
         }
 
         do {
+            let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
+            let projectURL = XcodeInspector.shared.realtimeActiveProjectURL
             
-            guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL,
-                let projectURL = XcodeInspector.shared.realtimeActiveProjectURL
-            else { return }
+            var environment = [String: String]()
+            if let fileURL {
+                environment["FILE_PATH"] = fileURL.path
+            }
+            if let projectURL {
+                environment["PROJECT_ROOT"] = projectURL.path
+            }
 
             await chatGPTService.memory.mutateHistory { history in
                 history.append(
@@ -56,11 +62,8 @@ public actor TerminalChatPlugin: ChatPlugin {
             let output = terminal.streamCommand(
                 shell,
                 arguments: ["-i", "-l", "-c", content],
-                currentDirectoryPath: projectURL.path,
-                environment: [
-                    "PROJECT_ROOT": projectURL.path,
-                    "FILE_PATH": fileURL.path,
-                ]
+                currentDirectoryURL: projectURL,
+                environment: environment
             )
 
             for try await content in output {
