@@ -1,9 +1,12 @@
-import Environment
 import Foundation
 import Preferences
 import SuggestionModel
 import UserDefaultsObserver
 import XcodeInspector
+
+enum Environment {
+    static var now = { Date() }
+}
 
 public protocol WorkspacePropertyKey {
     associatedtype Value
@@ -55,6 +58,12 @@ public final class Workspace {
 
         public init(extensionName: String) {
             self.extensionName = extensionName
+        }
+    }
+
+    public struct CantFindWorkspaceError: Error, LocalizedError {
+        public var errorDescription: String? {
+            "Can't find workspace."
         }
     }
 
