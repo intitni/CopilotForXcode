@@ -19,7 +19,6 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
@@ -100,16 +99,6 @@ let package = Package(
                 name: "ComposableArchitecture",
                 package: "swift-composable-architecture"
             )]
-        ),
-
-        .target(
-            name: "Environment",
-            dependencies: [
-                "ActiveApplicationMonitor",
-                "XcodeInspector",
-                "AXExtension",
-                "Preferences",
-            ]
         ),
 
         .target(
@@ -208,7 +197,6 @@ let package = Package(
                 "GitIgnoreCheck",
                 "UserDefaultsObserver",
                 "SuggestionModel",
-                "Environment",
                 "Logger",
                 "Preferences",
                 "XcodeInspector",

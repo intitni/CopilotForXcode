@@ -1,6 +1,5 @@
 import ActiveApplicationMonitor
 import AppKit
-import Environment
 import Preferences
 import SuggestionInjector
 import SuggestionModel
@@ -324,14 +323,14 @@ extension PseudoCommandHandler {
         return (content, split, [range], range.start)
     }
 
-    func getFileURL() async -> URL? {
-        try? await Environment.fetchCurrentFileURL()
+    func getFileURL() -> URL? {
+        XcodeInspector.shared.realtimeActiveDocumentURL
     }
 
     @WorkspaceActor
     func getFilespace() async -> Filespace? {
         guard
-            let fileURL = await getFileURL(),
+            let fileURL = getFileURL(),
             let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return nil }

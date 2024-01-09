@@ -129,7 +129,6 @@ let package = Package(
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
@@ -152,7 +151,6 @@ let package = Package(
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -206,7 +204,6 @@ let package = Package(
             dependencies: [
                 .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
@@ -234,7 +231,6 @@ let package = Package(
 
                 .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -246,7 +242,6 @@ let package = Package(
         .target(
             name: "ChatPlugin",
             dependencies: [
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]
@@ -277,7 +272,6 @@ let package = Package(
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Environment", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),

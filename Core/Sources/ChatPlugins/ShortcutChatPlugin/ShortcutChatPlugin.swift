@@ -1,5 +1,4 @@
 import ChatPlugin
-import Environment
 import Foundation
 import OpenAIService
 import Parsing
@@ -77,7 +76,7 @@ public actor ShortcutChatPlugin: ChatPlugin {
             _ = try await terminal.runCommand(
                 shell,
                 arguments: ["-i", "-l", "-c", command],
-                currentDirectoryPath: "/",
+                currentDirectoryURL: nil,
                 environment: [:]
             )
 

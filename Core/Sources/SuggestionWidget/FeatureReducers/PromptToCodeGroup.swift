@@ -1,5 +1,4 @@
 import ComposableArchitecture
-import Environment
 import Foundation
 import PromptToCodeService
 import SuggestionModel

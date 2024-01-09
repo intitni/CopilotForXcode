@@ -5,7 +5,6 @@ import AXNotificationStream
 import ChatTab
 import Combine
 import ComposableArchitecture
-import Environment
 import Preferences
 import SwiftUI
 import UserDefaultsObserver

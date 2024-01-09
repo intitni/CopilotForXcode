@@ -1,5 +1,4 @@
 import ChatPlugin
-import Environment
 import Foundation
 import OpenAIService
 

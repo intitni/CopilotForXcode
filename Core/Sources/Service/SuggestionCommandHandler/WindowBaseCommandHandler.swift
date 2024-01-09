@@ -1,6 +1,5 @@
 import AppKit
 import ChatService
-import Environment
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
@@ -12,6 +11,7 @@ import SuggestionWidget
 import UserNotifications
 import Workspace
 import WorkspaceSuggestionService
+import XcodeInspector
 import XPCShared
 
 struct WindowBaseCommandHandler: SuggestionCommandHandler {
@@ -39,7 +39,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer {
             presenter.markAsProcessing(false)
         }
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
@@ -82,7 +82,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     private func _presentNextSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectNextSuggestion(forFileAt: fileURL)
@@ -109,7 +109,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     private func _presentPreviousSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectPreviousSuggestion(forFileAt: fileURL)
@@ -136,7 +136,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     private func _rejectSuggestion(editor: EditorContent) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
 
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -149,7 +149,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return nil }
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
@@ -185,7 +185,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return nil }
 
         let injector = SuggestionInjector()
         var lines = editor.lines
@@ -260,7 +260,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     func prepareCache(editor: EditorContent) async throws -> UpdatedContent? {
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return nil }
         let (_, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         filespace.codeMetadata.uti = editor.uti
@@ -365,7 +365,7 @@ extension WindowBaseCommandHandler {
     ) async throws {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
-        let fileURL = try await Environment.fetchCurrentFileURL()
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         guard workspace.suggestionPlugin?.isSuggestionFeatureEnabled ?? false else {
@@ -425,7 +425,7 @@ extension WindowBaseCommandHandler {
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
                 documentURL: fileURL,
                 projectRootURL: workspace.projectRootURL,
-                allCode: editor.content, 
+                allCode: editor.content,
                 allLines: editor.lines,
                 isContinuous: isContinuous,
                 commandName: name,

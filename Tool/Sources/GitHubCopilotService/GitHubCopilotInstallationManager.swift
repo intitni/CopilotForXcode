@@ -104,7 +104,7 @@ public struct GitHubCopilotInstallationManager {
                     _ = try await terminal.runCommand(
                         "/usr/bin/unzip",
                         arguments: [targetURL.path],
-                        currentDirectoryPath: urls.executableURL.path,
+                        currentDirectoryURL: urls.executableURL,
                         environment: [:]
                     )
 

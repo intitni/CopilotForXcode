@@ -3,7 +3,6 @@ import AppActivator
 import AsyncAlgorithms
 import AXNotificationStream
 import ComposableArchitecture
-import Environment
 import Foundation
 import Preferences
 import SwiftUI
