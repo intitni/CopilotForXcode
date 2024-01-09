@@ -76,7 +76,7 @@ public final class XcodeInspector: ObservableObject {
     }
 
     public var realtimeActiveProjectURL: URL? {
-        latestActiveXcode?.realtimeProjectURL ?? activeWorkspaceURL
+        latestActiveXcode?.realtimeProjectURL ?? activeProjectRootURL
     }
 
     init() {
