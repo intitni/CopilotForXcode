@@ -1,6 +1,5 @@
 import AppKit
 import Client
-import Environment
 import Foundation
 import GitHubCopilotService
 import SuggestionModel

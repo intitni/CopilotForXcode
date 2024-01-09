@@ -1,4 +1,3 @@
-import Environment
 import Foundation
 import Preferences
 import SuggestionModel

@@ -5,7 +5,6 @@ import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import Dependencies
-import Environment
 import Preferences
 import SuggestionModel
 import SuggestionWidget
