@@ -1,7 +1,7 @@
-import Environment
 import Foundation
 import OpenAIService
 import Terminal
+import XcodeInspector
 
 public actor TerminalChatPlugin: ChatPlugin {
     public static var command: String { "run" }
@@ -34,13 +34,10 @@ public actor TerminalChatPlugin: ChatPlugin {
         }
 
         do {
-            let fileURL = try await Environment.fetchCurrentFileURL()
-            let projectURL = try await {
-                if let url = try await Environment.fetchCurrentProjectRootURLFromXcode() {
-                    return url
-                }
-                return try await Environment.guessProjectRootURLForFile(fileURL)
-            }()
+            
+            guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL,
+                let projectURL = XcodeInspector.shared.realtimeActiveProjectURL
+            else { return }
 
             await chatGPTService.memory.mutateHistory { history in
                 history.append(
