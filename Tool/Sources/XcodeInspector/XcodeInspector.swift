@@ -549,15 +549,16 @@ extension XcodeAppInstanceInspector {
 // MARK: - Triggering Command
 
 public extension XcodeAppInstanceInspector {
-    func triggerCopilotCommand(name: String) async throws {
+    func triggerCopilotCommand(name: String, activateXcode: Bool = true) async throws {
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-        try await triggerMenuItem(path: ["Editor", bundleName, name])
+        try await triggerMenuItem(path: ["Editor", bundleName, name], activateXcode: activateXcode)
     }
 }
 
 public extension AppInstanceInspector {
-    func triggerMenuItem(path: [String]) async throws {
+    @MainActor
+    func triggerMenuItem(path: [String], activateXcode: Bool) async throws {
         guard !path.isEmpty else { return }
 
         struct CantRunCommand: Error, LocalizedError {
@@ -567,7 +568,17 @@ public extension AppInstanceInspector {
             }
         }
 
-        if !runningApplication.isActive { runningApplication.activate() }
+        if activateXcode {
+            if !runningApplication.activate() {
+                throw CantRunCommand(path: path)
+            }
+        } else {
+            if !runningApplication.isActive {
+                throw CantRunCommand(path: path)
+            }
+        }
+
+        await Task.yield()  
 
         if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
             let app = AXUIElementCreateApplication(runningApplication.processIdentifier)
@@ -617,7 +628,6 @@ public extension AppInstanceInspector {
                 set theprocs to every process whose unix id is \
                 \(runningApplication.processIdentifier)
                 repeat with proc in theprocs
-                set the frontmost of proc to true
                     tell proc
                         repeat with theMenu in menus of menu bar 1
                             set theValue to value of attribute "AXVisibleChildren" of theMenu
