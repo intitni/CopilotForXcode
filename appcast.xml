@@ -3,7 +3,18 @@
   <channel>
     <title>Copilot for Xcode</title>
 
-    <title>Copilot for Xcode</title>
+    <item>
+      <title>0.29.1</title>
+      <pubDate>Tue, 16 Jan 2024 01:12:50 +0800</pubDate>
+      <sparkle:version>301</sparkle:version>
+      <sparkle:shortVersionString>0.29.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.29.1
+      </sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.29.1/Copilot.for.Xcode.app.zip" length="37836607" type="application/octet-stream" sparkle:edSignature="vr1qJns96ydxEeW67NDoxuk3Ucchs3JgrPR4nbUfxU9c3K2rlaYAYYgwtVQ8LNbzSjnlAnum9p6hbyQ0ylAfDg=="/>
+    </item>
+
     <item>
       <title>0.29.0</title>
       <pubDate>Tue, 09 Jan 2024 00:36:06 +0800</pubDate>
