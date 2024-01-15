@@ -341,7 +341,7 @@ extension AutoManagedChatGPTMemory {
             while left <= right {
                 let count = (right + left) / 2
                 let _retrievedContent = Array(retrievedContent.prefix(count))
-                let _proposedMessage = buildMessage(retrievedContent: retrievedContent)
+                let _proposedMessage = buildMessage(retrievedContent: _retrievedContent)
                 let (isValid, _tokenCount) = await checkValid(proposedMessage: _proposedMessage)
                 if isValid {
                     proposedMessage = _proposedMessage
