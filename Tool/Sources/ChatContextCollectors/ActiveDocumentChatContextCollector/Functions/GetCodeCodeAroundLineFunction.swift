@@ -32,7 +32,7 @@ struct GetCodeCodeAroundLineFunction: ChatGPTFunction {
     }
 
     var description: String {
-        "Get the code at the given line. You must ONLY call it when the user give you a specific line or the user ask about an out of scope annotation."
+        "Get the code at the given line. You must ONLY call it when the user give you a specific line or the user ask about an out of scope annotation. \n\(additionalDescription)"
     }
 
     var argumentSchema: JSONSchemaValue { [
@@ -47,9 +47,12 @@ struct GetCodeCodeAroundLineFunction: ChatGPTFunction {
     ] }
 
     weak var contextCollector: ActiveDocumentChatContextCollector?
+    
+    let additionalDescription: String
 
-    init(contextCollector: ActiveDocumentChatContextCollector) {
+    init(contextCollector: ActiveDocumentChatContextCollector, additionalDescription: String = "") {
         self.contextCollector = contextCollector
+        self.additionalDescription = additionalDescription
     }
 
     func prepare(reportProgress: @escaping (String) async -> Void) async {
