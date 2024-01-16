@@ -18,6 +18,7 @@ public final class CodeSuggestionProvider: ObservableObject, Equatable {
     public var onSelectNextSuggestionTapped: () -> Void
     public var onRejectSuggestionTapped: () -> Void
     public var onAcceptSuggestionTapped: () -> Void
+    public var onDismissSuggestionTapped: () -> Void
 
     public init(
         code: String = "",
@@ -28,7 +29,8 @@ public final class CodeSuggestionProvider: ObservableObject, Equatable {
         onSelectPreviousSuggestionTapped: @escaping () -> Void = {},
         onSelectNextSuggestionTapped: @escaping () -> Void = {},
         onRejectSuggestionTapped: @escaping () -> Void = {},
-        onAcceptSuggestionTapped: @escaping () -> Void = {}
+        onAcceptSuggestionTapped: @escaping () -> Void = {},
+        onDismissSuggestionTapped: @escaping () -> Void = {}
     ) {
         self.code = code
         self.language = language
@@ -39,11 +41,13 @@ public final class CodeSuggestionProvider: ObservableObject, Equatable {
         self.onSelectNextSuggestionTapped = onSelectNextSuggestionTapped
         self.onRejectSuggestionTapped = onRejectSuggestionTapped
         self.onAcceptSuggestionTapped = onAcceptSuggestionTapped
+        self.onDismissSuggestionTapped = onDismissSuggestionTapped
     }
 
     func selectPreviousSuggestion() { onSelectPreviousSuggestionTapped() }
     func selectNextSuggestion() { onSelectNextSuggestionTapped() }
     func rejectSuggestion() { onRejectSuggestionTapped() }
     func acceptSuggestion() { onAcceptSuggestionTapped() }
+    func dismissSuggestion() { onDismissSuggestionTapped() }
 }
 

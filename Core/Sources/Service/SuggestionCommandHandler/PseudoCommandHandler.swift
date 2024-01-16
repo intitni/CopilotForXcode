@@ -241,6 +241,15 @@ struct PseudoCommandHandler {
             }
         }
     }
+    
+    func dismissSuggestion() async {
+        guard let documentURL = XcodeInspector.shared.activeDocumentURL else { return }
+        guard let (_, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
+        
+        await filespace.reset()
+        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
+    }
 }
 
 extension PseudoCommandHandler {

@@ -74,7 +74,7 @@ struct CodeBlockSuggestionPanel: View {
                 Spacer()
                 
                 Button(action: {
-                    suggestion.rejectSuggestion()
+                    suggestion.dismissSuggestion()
                 }) {
                     Image(systemName: "xmark")
                 }.buttonStyle(.plain)
