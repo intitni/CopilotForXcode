@@ -302,6 +302,12 @@ class ChatWindow: NSWindow {
             alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
         }
     }
+    
+    override var alphaValue: CGFloat {
+        didSet {
+            ignoresMouseEvents = alphaValue <= 0
+        }
+    }
 
     override func miniaturize(_: Any?) {
         minimizeWindow()
