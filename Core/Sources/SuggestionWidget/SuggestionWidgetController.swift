@@ -129,6 +129,18 @@ public final class SuggestionWidgetController: NSObject {
         it.minimizeWindow = { [weak self] in
             self?.store.send(.chatPanel(.hideButtonClicked))
         }
+        it.titleVisibility = .hidden
+        it.addTitlebarAccessoryViewController({
+            let controller = NSTitlebarAccessoryViewController()
+            let view = NSHostingView(rootView: ChatTitleBar(store: store.scope(
+                state: \.chatPanelState,
+                action: WidgetFeature.Action.chatPanel
+            )))
+            controller.view = view
+            view.frame = .init(x: 0, y: 0, width: 100, height: 40)
+            controller.layoutAttribute = .left
+            return controller
+        }())
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
@@ -138,7 +150,7 @@ public final class SuggestionWidgetController: NSObject {
             .transient,
             .fullScreenPrimary,
             .fullScreenAllowsTiling,
-            if #available(macOS 13, *) { [.primary] }
+            if #available(macOS 13, *) { [.primary] },
         ]
         it.hasShadow = true
         it.contentView = NSHostingView(
@@ -276,21 +288,22 @@ class CanBecomeKeyWindow: NSWindow {
 class ChatWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
-    
+
     var minimizeWindow: () -> Void = {}
-    
+
     var isWindowHidden: Bool = false {
         didSet {
             alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
         }
     }
+
     var isPanelDisplayed: Bool = false {
         didSet {
             alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
         }
     }
-    
-    override func miniaturize(_ sender: Any?) {
+
+    override func miniaturize(_: Any?) {
         minimizeWindow()
     }
 }
