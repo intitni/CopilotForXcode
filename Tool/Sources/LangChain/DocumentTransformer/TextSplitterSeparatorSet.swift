@@ -347,5 +347,9 @@ public struct TextSplitterSeparatorSet: ExpressibleByArrayLiteral {
             "",
         ]
     }
+
+    public static var `default`: TextSplitterSeparatorSet {
+        ["\n\n", "\r\n", "\n", "\r", " ", ""]
+    }
 }
 

@@ -45,7 +45,10 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         var functions = [any ChatGPTFunction]()
 
         if !isSensitive {
-            functions.append(GetCodeCodeAroundLineFunction(contextCollector: self))
+            functions.append(GetCodeCodeAroundLineFunction(
+                contextCollector: self,
+                additionalDescription: "You already have the code in focusing range, don't get it again!"
+            ))
         }
 
         return .init(
