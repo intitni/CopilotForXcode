@@ -9,6 +9,7 @@ private let r: Double = 8
 
 struct ChatWindowView: View {
     let store: StoreOf<ChatPanelFeature>
+    let toggleVisibility: (Bool) -> Void
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -28,10 +29,6 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
-                ChatTitleBar(store: store)
-
-                Divider()
-
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -41,9 +38,9 @@ struct ChatWindowView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(.regularMaterial)
-            .xcodeStyleFrame()
-            .opacity(viewStore.state.isPanelDisplayed ? 1 : 0)
-            .frame(minWidth: Style.panelWidth, minHeight: Style.panelHeight)
+            .onChange(of: viewStore.state.isPanelDisplayed) { isDisplayed in
+                toggleVisibility(isDisplayed)
+            }
             .preferredColorScheme(viewStore.state.colorScheme)
         }
     }
@@ -453,7 +450,7 @@ struct ChatWindowView_Previews: PreviewProvider {
     }
 
     static var previews: some View {
-        ChatWindowView(store: createStore())
+        ChatWindowView(store: createStore(), toggleVisibility: { _ in })
             .xcodeStyleFrame()
             .padding()
             .environment(\.chatTabPool, pool)
