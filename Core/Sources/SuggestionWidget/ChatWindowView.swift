@@ -9,6 +9,7 @@ private let r: Double = 8
 
 struct ChatWindowView: View {
     let store: StoreOf<ChatPanelFeature>
+    let toggleVisibility: (Bool) -> Void
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -28,10 +29,6 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
-                ChatTitleBar(store: store)
-
-                Divider()
-
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -41,9 +38,9 @@ struct ChatWindowView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(.regularMaterial)
-            .xcodeStyleFrame()
-            .opacity(viewStore.state.isPanelDisplayed ? 1 : 0)
-            .frame(minWidth: Style.panelWidth, minHeight: Style.panelHeight)
+            .onChange(of: viewStore.state.isPanelDisplayed) { isDisplayed in
+                toggleVisibility(isDisplayed)
+            }
             .preferredColorScheme(viewStore.state.colorScheme)
         }
     }
@@ -55,20 +52,6 @@ struct ChatTitleBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            TrafficLightButton(
-                isHovering: isHovering,
-                isActive: true,
-                color: Color(nsColor: .systemOrange),
-                action: {
-                    store.send(.hideButtonClicked)
-                }
-            ) {
-                Image(systemName: "minus")
-                    .foregroundStyle(.black.opacity(0.5))
-                    .font(Font.system(size: 8).weight(.heavy))
-            }
-            .keyboardShortcut("m", modifiers: [.command])
-
             WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
                 TrafficLightButton(
                     isHovering: isHovering,
@@ -85,6 +68,8 @@ struct ChatTitleBar: View {
                 }
             }
 
+            Spacer()
+            
             Button(action: {
                 store.send(.closeActiveTabClicked)
             }) {
@@ -93,25 +78,20 @@ struct ChatTitleBar: View {
             .opacity(0)
             .keyboardShortcut("w", modifiers: [.command])
 
-            Spacer()
+            Button(
+                action: {
+                    store.send(.hideButtonClicked)
+                }
+            ) {
+                Image(systemName: "minus")
+                    .foregroundStyle(.black.opacity(0.5))
+                    .font(Font.system(size: 8).weight(.heavy))
+            }
+            .opacity(0)
+            .keyboardShortcut("m", modifiers: [.command])
         }
         .buttonStyle(.plain)
-        .overlay {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(.tertiary)
-                .frame(width: 120, height: 4)
-                .background {
-                    if isHovering {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(.tertiary.opacity(0.3))
-                            .frame(width: 128, height: 12)
-                    }
-                }
-        }
-        .padding(.horizontal, 6)
-        .padding(.top, 1)
-        .frame(maxWidth: .infinity)
-        .frame(height: Style.chatWindowTitleBarHeight)
+        .padding(.leading, 2)
         .onHover(perform: { hovering in
             isHovering = hovering
         })
@@ -453,7 +433,7 @@ struct ChatWindowView_Previews: PreviewProvider {
     }
 
     static var previews: some View {
-        ChatWindowView(store: createStore())
+        ChatWindowView(store: createStore(), toggleVisibility: { _ in })
             .xcodeStyleFrame()
             .padding()
             .environment(\.chatTabPool, pool)
