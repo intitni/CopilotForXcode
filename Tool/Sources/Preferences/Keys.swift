@@ -334,6 +334,10 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: true, key: "AcceptSuggestionWithTab")
     }
     
+    var dismissSuggestionWithEsc: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "DismissSuggestionWithEsc")
+    }
+    
     var isSuggestionSenseEnabled: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "IsSuggestionSenseEnabled")
     }
