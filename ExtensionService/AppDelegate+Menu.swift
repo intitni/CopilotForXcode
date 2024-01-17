@@ -12,6 +12,10 @@ extension AppDelegate {
         .init("xcodeInspectorDebugMenu")
     }
 
+    fileprivate var accessibilityAPIPermissionMenuItemIdentifier: NSUserInterfaceItemIdentifier {
+        .init("accessibilitAPIPermissionMenuItem")
+    }
+
     @objc func buildStatusBarMenu() {
         let statusBar = NSStatusBar.system
         statusBarItem = statusBar.statusItem(
@@ -61,6 +65,13 @@ extension AppDelegate {
         xcodeInspectorDebug.submenu = xcodeInspectorDebugMenu
         xcodeInspectorDebug.isHidden = false
 
+        let accessibilityAPIPermission = NSMenuItem(
+            title: "Accessibility API Permission: N/A",
+            action: nil,
+            keyEquivalent: ""
+        )
+        accessibilityAPIPermission.identifier = accessibilityAPIPermissionMenuItemIdentifier
+
         let quitItem = NSMenuItem(
             title: "Quit",
             action: #selector(quit),
@@ -75,6 +86,7 @@ extension AppDelegate {
         statusBarMenu.addItem(openGlobalChat)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(xcodeInspectorDebug)
+        statusBarMenu.addItem(accessibilityAPIPermission)
         statusBarMenu.addItem(quitItem)
 
         statusBarMenu.delegate = self
@@ -92,6 +104,15 @@ extension AppDelegate: NSMenuDelegate {
                 xcodeInspectorDebug.isHidden = !UserDefaults.shared
                     .value(for: \.enableXcodeInspectorDebugMenu)
             }
+
+            if let accessibilityAPIPermission = menu.items.first(where: { item in
+                item.identifier == accessibilityAPIPermissionMenuItemIdentifier
+            }) {
+                AXIsProcessTrusted()
+                accessibilityAPIPermission.title =
+                    "Accessibility API Permission: \(AXIsProcessTrusted() ? "Granted" : "Not Granted")"
+            }
+
         case xcodeInspectorDebugMenuIdentifier:
             let inspector = XcodeInspector.shared
             menu.items.removeAll()
@@ -117,7 +138,7 @@ extension AppDelegate: NSMenuDelegate {
                     .append(.text("Active Workspace: \(xcode.workspaceURL?.path ?? "N/A")"))
                 xcodeMenu.items
                     .append(.text("Active Document: \(xcode.documentURL?.path ?? "N/A")"))
-                
+
                 for (key, workspace) in xcode.realtimeWorkspaces {
                     let workspaceItem = NSMenuItem(
                         title: "Workspace \(key)",
@@ -157,3 +178,4 @@ private extension NSMenuItem {
         return item
     }
 }
+
