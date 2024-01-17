@@ -118,15 +118,14 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .none
 
             case .toggleChatPanelDetachedButtonClicked:
-                if state.chatPanelInASeparateWindow {
+                if state.isFullScreen, state.chatPanelInASeparateWindow {
                     return .run { send in
                         await send(.attachChatPanel)
                     }
-                } else {
-                    return .run { send in
-                        await send(.detachChatPanel)
-                    }
                 }
+                
+                state.chatPanelInASeparateWindow.toggle()
+                return .none
 
             case .detachChatPanel:
                 state.chatPanelInASeparateWindow = true
