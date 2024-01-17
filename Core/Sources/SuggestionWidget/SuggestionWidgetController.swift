@@ -275,6 +275,22 @@ extension SuggestionWidgetController: NSWindowDelegate {
             store.send(.chatPanel(.detachChatPanel))
         }
     }
+    
+    public func windowWillEnterFullScreen(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatPanelWindow else { return }
+        Task { @MainActor in
+            await Task.yield()
+            store.send(.chatPanel(.enterFullScreen))
+        }
+    }
+    
+    public func windowWillExitFullScreen(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatPanelWindow else { return }
+        Task { @MainActor in
+            await Task.yield()
+            store.send(.chatPanel(.exitFullScreen))
+        }
+    }
 }
 
 // MARK: - Window Subclasses
@@ -289,6 +305,7 @@ class ChatWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
+    
     var minimizeWindow: () -> Void = {}
 
     var isWindowHidden: Bool = false {
