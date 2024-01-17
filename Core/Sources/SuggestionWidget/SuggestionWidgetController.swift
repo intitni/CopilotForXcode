@@ -122,7 +122,7 @@ public final class SuggestionWidgetController: NSObject {
     private lazy var chatPanelWindow = {
         let it = ChatWindow(
             contentRect: .zero,
-            styleMask: [.resizable, .titled, .miniaturizable],
+            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -141,6 +141,7 @@ public final class SuggestionWidgetController: NSObject {
             controller.layoutAttribute = .left
             return controller
         }())
+        it.titlebarAppearsTransparent = true
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
@@ -150,7 +151,6 @@ public final class SuggestionWidgetController: NSObject {
             .transient,
             .fullScreenPrimary,
             .fullScreenAllowsTiling,
-            if #available(macOS 13, *) { [.primary] },
         ]
         it.hasShadow = true
         it.contentView = NSHostingView(

@@ -29,6 +29,10 @@ struct ChatWindowView: View {
             }
         ) { viewStore in
             VStack(spacing: 0) {
+                Rectangle().fill(.regularMaterial).frame(height: 28)
+                
+                Divider()
+
                 ChatTabBar(store: store)
                     .frame(height: 26)
 
@@ -37,6 +41,8 @@ struct ChatWindowView: View {
                 ChatTabContainer(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .xcodeStyleFrame(cornerRadius: 10)
+            .ignoresSafeArea(edges: .top)
             .background(.regularMaterial)
             .onChange(of: viewStore.state.isPanelDisplayed) { isDisplayed in
                 toggleVisibility(isDisplayed)
@@ -69,7 +75,7 @@ struct ChatTitleBar: View {
             }
 
             Spacer()
-            
+
             Button(action: {
                 store.send(.closeActiveTabClicked)
             }) {
