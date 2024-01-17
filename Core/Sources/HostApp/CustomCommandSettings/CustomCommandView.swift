@@ -111,7 +111,6 @@ struct CustomCommandView: View {
                 file.loadInPlaceFileRepresentation(forTypeIdentifier: "public.json") { url, _, error in
                     Task { @MainActor in
                         if let url {
-                            print(url)
                             store.send(.importCommand(at: url))
                         } else if let error {
                             toast(error.localizedDescription, .error)
