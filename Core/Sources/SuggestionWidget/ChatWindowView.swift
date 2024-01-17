@@ -30,7 +30,7 @@ struct ChatWindowView: View {
         ) { viewStore in
             VStack(spacing: 0) {
                 Rectangle().fill(.regularMaterial).frame(height: 28)
-                
+
                 Divider()
 
                 ChatTabBar(store: store)
@@ -58,24 +58,6 @@ struct ChatTitleBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
-                TrafficLightButton(
-                    isHovering: isHovering,
-                    isActive: viewStore.state,
-                    color: Color(nsColor: .systemCyan),
-                    action: {
-                        store.send(.toggleChatPanelDetachedButtonClicked)
-                    }
-                ) {
-                    Image(systemName: "pin.fill")
-                        .foregroundStyle(.black.opacity(0.5))
-                        .font(Font.system(size: 6).weight(.black))
-                        .transformEffect(.init(translationX: 0, y: 0.5))
-                }
-            }
-
-            Spacer()
-
             Button(action: {
                 store.send(.closeActiveTabClicked)
             }) {
@@ -95,9 +77,27 @@ struct ChatTitleBar: View {
             }
             .opacity(0)
             .keyboardShortcut("m", modifiers: [.command])
+
+            Spacer()
+
+            WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
+                TrafficLightButton(
+                    isHovering: isHovering,
+                    isActive: viewStore.state,
+                    color: Color(nsColor: .systemCyan),
+                    action: {
+                        store.send(.toggleChatPanelDetachedButtonClicked)
+                    }
+                ) {
+                    Image(systemName: "pin.fill")
+                        .foregroundStyle(.black.opacity(0.5))
+                        .font(Font.system(size: 6).weight(.black))
+                        .transformEffect(.init(translationX: 0, y: 0.5))
+                }
+            }
         }
         .buttonStyle(.plain)
-        .padding(.leading, 2)
+        .padding(.trailing, 8)
         .onHover(perform: { hovering in
             isHovering = hovering
         })

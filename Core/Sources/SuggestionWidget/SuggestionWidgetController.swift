@@ -138,7 +138,7 @@ public final class SuggestionWidgetController: NSObject {
             )))
             controller.view = view
             view.frame = .init(x: 0, y: 0, width: 100, height: 40)
-            controller.layoutAttribute = .left
+            controller.layoutAttribute = .right
             return controller
         }())
         it.titlebarAppearsTransparent = true
