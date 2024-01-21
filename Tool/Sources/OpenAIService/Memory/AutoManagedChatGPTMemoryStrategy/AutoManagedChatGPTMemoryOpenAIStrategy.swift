@@ -22,10 +22,6 @@ extension AutoManagedChatGPTMemory {
 
             return await (nameTokenCount + descriptionTokenCount + schemaTokenCount)
         }
-
-        func reformat(_ prompt: ChatGPTPrompt) async -> ChatGPTPrompt {
-            prompt
-        }
     }
 }
 

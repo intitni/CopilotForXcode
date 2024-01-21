@@ -12,7 +12,6 @@ public enum AutoManagedChatGPTMemoryActor: GlobalActor {
 protocol AutoManagedChatGPTMemoryStrategy {
     func countToken(_ message: ChatMessage) async -> Int
     func countToken<F: ChatGPTFunction>(_ function: F) async -> Int
-    func reformat(_ prompt: ChatGPTPrompt) async -> ChatGPTPrompt
 }
 
 /// A memory that automatically manages the history according to max tokens and max message count.
@@ -172,12 +171,10 @@ extension AutoManagedChatGPTMemory {
         """)
         #endif
 
-        let reformattedPrompt = await strategy.reformat(.init(
+        return .init(
             history: allMessages,
             references: retrievedContent
-        ))
-
-        return reformattedPrompt
+        )
     }
 
     func generateMandatoryMessages(strategy: AutoManagedChatGPTMemoryStrategy) async -> (
