@@ -84,6 +84,13 @@ struct CustomCommandFeature: ReducerProtocol {
                 }
 
             case let .importCommand(url):
+                if !isFeatureAvailable(\.unlimitedCustomCommands),
+                   settings.customCommands.count >= 10
+                {
+                    toast("Upgrade to Plus to add more commands", .info)
+                    return .none
+                }
+                
                 do {
                     let data = try Data(contentsOf: url)
                     var command = try JSONDecoder().decode(CustomCommand.self, from: data)
