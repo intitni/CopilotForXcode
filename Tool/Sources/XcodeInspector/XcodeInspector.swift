@@ -13,20 +13,21 @@ public final class XcodeInspector: ObservableObject {
 
     private var cancellable = Set<AnyCancellable>()
     private var activeXcodeObservations = Set<Task<Void, Error>>()
+    private var appChangeObservations = Set<Task<Void, Never>>()
     private var activeXcodeCancellable = Set<AnyCancellable>()
 
-    @Published public internal(set) var activeApplication: AppInstanceInspector?
-    @Published public internal(set) var previousActiveApplication: AppInstanceInspector?
-    @Published public internal(set) var activeXcode: XcodeAppInstanceInspector?
-    @Published public internal(set) var latestActiveXcode: XcodeAppInstanceInspector?
-    @Published public internal(set) var xcodes: [XcodeAppInstanceInspector] = []
-    @Published public internal(set) var activeProjectRootURL: URL? = nil
-    @Published public internal(set) var activeDocumentURL: URL? = nil
-    @Published public internal(set) var activeWorkspaceURL: URL? = nil
-    @Published public internal(set) var focusedWindow: XcodeWindowInspector?
-    @Published public internal(set) var focusedEditor: SourceEditor?
-    @Published public internal(set) var focusedElement: AXUIElement?
-    @Published public internal(set) var completionPanel: AXUIElement?
+    @Published public fileprivate(set) var activeApplication: AppInstanceInspector?
+    @Published public fileprivate(set) var previousActiveApplication: AppInstanceInspector?
+    @Published public fileprivate(set) var activeXcode: XcodeAppInstanceInspector?
+    @Published public fileprivate(set) var latestActiveXcode: XcodeAppInstanceInspector?
+    @Published public fileprivate(set) var xcodes: [XcodeAppInstanceInspector] = []
+    @Published public fileprivate(set) var activeProjectRootURL: URL? = nil
+    @Published public fileprivate(set) var activeDocumentURL: URL? = nil
+    @Published public fileprivate(set) var activeWorkspaceURL: URL? = nil
+    @Published public fileprivate(set) var focusedWindow: XcodeWindowInspector?
+    @Published public fileprivate(set) var focusedEditor: SourceEditor?
+    @Published public fileprivate(set) var focusedElement: AXUIElement?
+    @Published public fileprivate(set) var completionPanel: AXUIElement?
 
     public var focusedEditorContent: EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
@@ -79,6 +80,10 @@ public final class XcodeInspector: ObservableObject {
         latestActiveXcode?.realtimeProjectURL ?? activeProjectRootURL
     }
 
+    init() {
+        restart()
+    }
+    
     public func restart(cleanUp: Bool = false) {
         if cleanUp {
             activeXcodeObservations.forEach { $0.cancel() }
@@ -96,7 +101,7 @@ public final class XcodeInspector: ObservableObject {
             focusedElement = nil
             completionPanel = nil
         }
-        
+
         let runningApplications = NSWorkspace.shared.runningApplications
         xcodes = runningApplications
             .filter { $0.isXcode }
@@ -106,75 +111,84 @@ public final class XcodeInspector: ObservableObject {
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
-    }
+        
+        appChangeObservations.forEach { $0.cancel() }
+        appChangeObservations.removeAll()
 
-    init() {
-        restart()
-
-        Task { // Did activate app
+        let appChangeTask = Task { [weak self] in
+            guard let self else { return }
             if let activeXcode {
                 await setActiveXcode(activeXcode)
             }
-
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didActivateApplicationNotification)
-            for await notification in sequence {
-                try Task.checkCancellation()
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                if app.isXcode {
-                    if let existed = xcodes.first(where: {
-                        $0.runningApplication.processIdentifier == app.processIdentifier
-                    }) {
-                        await MainActor.run {
-                            setActiveXcode(existed)
-                        }
-                    } else {
-                        let new = XcodeAppInstanceInspector(runningApplication: app)
-                        await MainActor.run {
-                            xcodes.append(new)
-                            setActiveXcode(new)
+            
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                group.addTask { [weak self] in  // Did activate app
+                    let sequence = NSWorkspace.shared.notificationCenter
+                        .notifications(named: NSWorkspace.didActivateApplicationNotification)
+                    for await notification in sequence {
+                        try Task.checkCancellation()
+                        guard let self else { return }
+                        guard let app = notification
+                            .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                        else { continue }
+                        if app.isXcode {
+                            if let existed = xcodes.first(where: {
+                                $0.runningApplication.processIdentifier == app.processIdentifier
+                            }) {
+                                await MainActor.run {
+                                    self.setActiveXcode(existed)
+                                }
+                            } else {
+                                let new = XcodeAppInstanceInspector(runningApplication: app)
+                                await MainActor.run {
+                                    self.xcodes.append(new)
+                                    self.setActiveXcode(new)
+                                }
+                            }
+                        } else {
+                            let appInspector = AppInstanceInspector(runningApplication: app)
+                            await MainActor.run {
+                                self.previousActiveApplication = self.activeApplication
+                                self.activeApplication = appInspector
+                            }
                         }
                     }
-                } else {
-                    let appInspector = AppInstanceInspector(runningApplication: app)
-                    await MainActor.run {
-                        previousActiveApplication = activeApplication
-                        activeApplication = appInspector
+                }
+                
+                group.addTask { [weak self] in // Did terminate app
+                    let sequence = NSWorkspace.shared.notificationCenter
+                        .notifications(named: NSWorkspace.didTerminateApplicationNotification)
+                    for await notification in sequence {
+                        try Task.checkCancellation()
+                        guard let self else { return }
+                        guard let app = notification
+                            .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                        else { continue }
+                        if app.isXcode {
+                            let processIdentifier = app.processIdentifier
+                            await MainActor.run {
+                                self.xcodes.removeAll {
+                                    $0.runningApplication.processIdentifier == processIdentifier
+                                }
+                                if self.latestActiveXcode?.runningApplication
+                                    .processIdentifier == processIdentifier
+                                {
+                                    self.latestActiveXcode = nil
+                                }
+
+                                if let activeXcode = self.xcodes.first(where: \.isActive) {
+                                    self.setActiveXcode(activeXcode)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-
-        Task { // Did terminate app
-            let sequence = NSWorkspace.shared.notificationCenter
-                .notifications(named: NSWorkspace.didTerminateApplicationNotification)
-            for await notification in sequence {
-                try Task.checkCancellation()
-                guard let app = notification
-                    .userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                else { continue }
-                if app.isXcode {
-                    let processIdentifier = app.processIdentifier
-                    await MainActor.run {
-                        xcodes.removeAll {
-                            $0.runningApplication.processIdentifier == processIdentifier
-                        }
-                        if latestActiveXcode?.runningApplication
-                            .processIdentifier == processIdentifier
-                        {
-                            latestActiveXcode = nil
-                        }
-
-                        if let activeXcode = xcodes.first(where: \.isActive) {
-                            setActiveXcode(activeXcode)
-                        }
-                    }
-                }
-            }
-        }
+        
+        appChangeObservations.insert(appChangeTask)
     }
+
 
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
@@ -229,23 +243,23 @@ public final class XcodeInspector: ObservableObject {
 
         activeXcodeObservations.insert(focusedElementChanged)
 
-        xcode.$completionPanel.sink { [weak self] element in
+        xcode.$completionPanel.receive(on: DispatchQueue.main).sink { [weak self] element in
             self?.completionPanel = element
         }.store(in: &activeXcodeCancellable)
 
-        xcode.$documentURL.sink { [weak self] url in
+        xcode.$documentURL.receive(on: DispatchQueue.main).sink { [weak self] url in
             self?.activeDocumentURL = url
         }.store(in: &activeXcodeCancellable)
 
-        xcode.$workspaceURL.sink { [weak self] url in
+        xcode.$workspaceURL.receive(on: DispatchQueue.main).sink { [weak self] url in
             self?.activeWorkspaceURL = url
         }.store(in: &activeXcodeCancellable)
 
-        xcode.$projectRootURL.sink { [weak self] url in
+        xcode.$projectRootURL.receive(on: DispatchQueue.main).sink { [weak self] url in
             self?.activeProjectRootURL = url
         }.store(in: &activeXcodeCancellable)
 
-        xcode.$focusedWindow.sink { [weak self] window in
+        xcode.$focusedWindow.receive(on: DispatchQueue.main).sink { [weak self] window in
             self?.focusedWindow = window
         }.store(in: &activeXcodeCancellable)
     }
