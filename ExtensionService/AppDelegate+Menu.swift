@@ -16,6 +16,10 @@ extension AppDelegate {
         .init("accessibilitAPIPermissionMenuItem")
     }
 
+    fileprivate var sourceEditorDebugMenu: NSUserInterfaceItemIdentifier {
+        .init("sourceEditorDebugMenu")
+    }
+
     @objc func buildStatusBarMenu() {
         let statusBar = NSStatusBar.system
         statusBarItem = statusBar.statusItem(
@@ -122,6 +126,17 @@ extension AppDelegate: NSMenuDelegate {
                 .append(.text("Active Workspace: \(inspector.activeWorkspaceURL?.path ?? "N/A")"))
             menu.items
                 .append(.text("Active Document: \(inspector.activeDocumentURL?.path ?? "N/A")"))
+
+            if let sourceEditor = inspector.focusedEditor {
+                menu.items.append(.text(
+                    "Active Source Editor: \(sourceEditor.element.isSourceEditor ? "Found" : "Error")"
+                ))
+            } else {
+                menu.items.append(.text("Active Source Editor: N/A"))
+            }
+
+            menu.items.append(.separator())
+
             for xcode in inspector.xcodes {
                 let item = NSMenuItem(
                     title: "Xcode \(xcode.runningApplication.processIdentifier)",
@@ -161,9 +176,24 @@ extension AppDelegate: NSMenuDelegate {
                     }
                 }
             }
+
+            menu.items.append(.separator())
+
+            menu.items.append(NSMenuItem(
+                title: "Restart Xcode Inspector",
+                action: #selector(restartXcodeInspector),
+                keyEquivalent: ""
+            ))
+
         default:
             break
         }
+    }
+}
+
+private extension AppDelegate {
+    @objc func restartXcodeInspector() {
+        XcodeInspector.shared.restart(cleanUp: true)
     }
 }
 
