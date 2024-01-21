@@ -290,13 +290,11 @@ extension AutoManagedChatGPTMemory {
                     Here are the information you know about the system and the project, \
                     separated by \(separator)
 
-
+                    
                     """
-                } else {
-                    text += "\n\(separator)\n"
                 }
 
-                text += content.content
+                text += "\n\n\(separator)[DOCUMENT \(index)]\n\n" + content.content
             }
 
             return .init(role: .user, content: text)
