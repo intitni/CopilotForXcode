@@ -17,8 +17,16 @@ final class RecursiveCharacterTextSplitterTests: XCTestCase {
         let result = try await splitter.split(text: text)
 
         XCTAssertEqual(result, [
-            "Madam Speaker, Madam Vice President, our First Lady and Second Gentleman. Members of Congress and",
-            "of Congress and the Cabinet. Justices of the Supreme Court. My fellow Americans.",
+            .init(
+                text: "Madam Speaker, Madam Vice President, our First Lady and Second Gentleman. Members of Congress and",
+                startUTF16Offset: 0,
+                endUTF16Offset: 97
+            ),
+            .init(
+                text: "of Congress and the Cabinet. Justices of the Supreme Court. My fellow Americans.",
+                startUTF16Offset: 97,
+                endUTF16Offset: 110
+            ),
         ])
     }
 
@@ -65,14 +73,48 @@ final class RecursiveCharacterTextSplitterTests: XCTestCase {
         let result = try await splitter.split(text: code)
         XCTAssertEqual(
             result,
-            ["protocol Animal {\n    var name: String { get }\n    var legs: Int { get }\n    func makeSound()\n}\n",
-             "\n@MainActor",
-             "\nprivate class Dog: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs:",
-             "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
-             "func makeSound() {\n        print(\"Woof!\")\n    }\n}\n",
-             "\nfinal class Cat: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs: Int)",
-             "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
-             "func makeSound() {\n        print(\"Meow!\")\n    }\n}"]
+            [
+                .init(
+                    text: "protocol Animal {\n    var name: String { get }\n    var legs: Int { get }\n    func makeSound()\n}\n",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "\n@MainActor",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "\nprivate class Dog: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs:",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "func makeSound() {\n        print(\"Woof!\")\n    }\n}\n",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "\nfinal class Cat: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs: Int)",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+                .init(
+                    text: "func makeSound() {\n        print(\"Meow!\")\n    }\n}",
+                    startUTF16Offset: 97,
+                    endUTF16Offset: 110
+                ),
+            ]
         )
     }
 }

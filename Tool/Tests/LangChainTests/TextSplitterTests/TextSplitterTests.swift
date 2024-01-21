@@ -7,7 +7,7 @@ final class TextSplitterTests: XCTestCase {
         var chunkSize: Int
         var chunkOverlap: Int
         var lengthFunction: (String) -> Int = { $0.count }
-        func split(text: String) async throws -> [String] {
+        func split(text: String) async throws -> [TextChunk] {
             []
         }
     }
@@ -25,7 +25,15 @@ final class TextSplitterTests: XCTestCase {
 
         XCTAssertEqual(
             result,
-            ["Madam", " Speaker,", " Madam", " Vice", " President,", " our", " First"]
+            [
+                .init(text: "Madam", startUTF16Offset: 0, endUTF16Offset: 5),
+                .init(text: " Speaker,", startUTF16Offset: 5, endUTF16Offset: 14),
+                .init(text: " Madam", startUTF16Offset: 14, endUTF16Offset: 20),
+                .init(text: " Vice", startUTF16Offset: 20, endUTF16Offset: 25),
+                .init(text: " President,", startUTF16Offset: 25, endUTF16Offset: 36),
+                .init(text: " our", startUTF16Offset: 36, endUTF16Offset: 40),
+                .init(text: " First", startUTF16Offset: 40, endUTF16Offset: 46),
+            ]
         )
     }
 
@@ -42,7 +50,10 @@ final class TextSplitterTests: XCTestCase {
 
         XCTAssertEqual(
             result,
-            ["Madam Speaker, Madam", " Vice President, our First"]
+            [
+                .init(text: "Madam Speaker, Madam", startUTF16Offset: 0, endUTF16Offset: 20),
+                .init(text: " Vice President, our First", startUTF16Offset: 20, endUTF16Offset: 46),
+            ]
         )
     }
 
@@ -53,14 +64,27 @@ final class TextSplitterTests: XCTestCase {
         )
 
         let result = splitter.mergeSplits(
-            ["Madam", " Speaker,", " Madam", " Vice", " President,", " our", " First"]
+            [
+                .init(text: "Madam", startUTF16Offset: 0, endUTF16Offset: 5),
+                .init(text: " Speaker,", startUTF16Offset: 5, endUTF16Offset: 14),
+                .init(text: " Madam", startUTF16Offset: 14, endUTF16Offset: 20),
+                .init(text: " Vice", startUTF16Offset: 20, endUTF16Offset: 25),
+                .init(text: " President,", startUTF16Offset: 25, endUTF16Offset: 36),
+                .init(text: " our", startUTF16Offset: 36, endUTF16Offset: 40),
+                .init(text: " First", startUTF16Offset: 40, endUTF16Offset: 46),
+            ]
         )
 
         XCTAssertEqual(
             result,
-            ["Madam Speaker,", "Madam Vice", "President, our", "our First"]
+            [
+                .init(text: "Madam Speaker,", startUTF16Offset: 0, endUTF16Offset: 14),
+                .init(text: " Madam Vice", startUTF16Offset: 14, endUTF16Offset: 25),
+                .init(text: " President, our", startUTF16Offset: 25, endUTF16Offset: 40),
+                .init(text: " our First", startUTF16Offset: 36, endUTF16Offset: 46),
+            ]
         )
-        XCTAssertTrue(result.allSatisfy { $0.count <= 15 })
+        XCTAssertTrue(result.allSatisfy { $0.text.count <= 15 })
     }
 }
 
