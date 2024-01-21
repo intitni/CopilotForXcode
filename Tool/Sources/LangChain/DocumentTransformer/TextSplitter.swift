@@ -50,10 +50,23 @@ public extension TextSplitter {
     }
 }
 
-public struct TextChunk {
+public struct TextChunk: Equatable {
     public var text: String
     public var startUTF16Offset: Int
     public var endUTF16Offset: Int
+
+    /// Merge the current chunk with another chunk if the 2 chunks are overlapping or adjacent.
+    public func merged(with chunk: TextChunk, force: Bool = false) -> TextChunk? {
+        let frontChunk = startUTF16Offset < chunk.startUTF16Offset ? self : chunk
+        let backChunk = startUTF16Offset < chunk.startUTF16Offset ? chunk : self
+        let overlap = frontChunk.endUTF16Offset - backChunk.startUTF16Offset
+        guard overlap >= 0 || force else { return nil }
+
+        let text = frontChunk.text + backChunk.text.dropFirst(max(0, overlap))
+        let start = frontChunk.startUTF16Offset
+        let end = backChunk.endUTF16Offset
+        return TextChunk(text: text, startUTF16Offset: start, endUTF16Offset: end)
+    }
 }
 
 public extension TextSplitter {
