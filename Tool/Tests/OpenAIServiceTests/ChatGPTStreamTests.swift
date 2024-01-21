@@ -15,7 +15,7 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: CompletionRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody in
+        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             return MockCompletionStreamAPI_Message()
         }
@@ -76,7 +76,7 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: CompletionRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody in
+        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             if _requestBody.messages.count <= 2 {
                 return MockCompletionStreamAPI_Function()
@@ -160,7 +160,7 @@ final class ChatGPTStreamTests: XCTestCase {
         )
         var requestBody: CompletionRequestBody?
 
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody in
+        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             if _requestBody.messages.count <= 4 {
                 return MockCompletionStreamAPI_Function()
@@ -266,7 +266,7 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: CompletionRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody in
+        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             if _requestBody.messages.count <= 2 {
                 return MockCompletionStreamAPI_Function()

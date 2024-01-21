@@ -70,10 +70,15 @@ public class ChatGPTService: ChatGPTServiceType {
 
     var runningTask: Task<Void, Never>?
     var buildCompletionStreamAPI: CompletionStreamAPIBuilder = {
-        apiKey, model, endpoint, requestBody in
+        apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionStreamAPI(apiKey: apiKey, model: model, requestBody: requestBody)
+            return GoogleCompletionStreamAPI(
+                apiKey: apiKey,
+                model: model,
+                requestBody: requestBody,
+                prompt: prompt
+            )
         case .openAI, .openAICompatible, .azureOpenAI:
             return OpenAICompletionStreamAPI(
                 apiKey: apiKey,
@@ -85,10 +90,15 @@ public class ChatGPTService: ChatGPTServiceType {
     }
 
     var buildCompletionAPI: CompletionAPIBuilder = {
-        apiKey, model, endpoint, requestBody in
+        apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionAPI(apiKey: apiKey, model: model, requestBody: requestBody)
+            return GoogleCompletionAPI(
+                apiKey: apiKey,
+                model: model,
+                requestBody: requestBody,
+                prompt: prompt
+            )
         case .openAI, .openAICompatible, .azureOpenAI:
             return OpenAICompletionAPI(
                 apiKey: apiKey,
@@ -305,7 +315,8 @@ extension ChatGPTService {
             configuration.apiKey,
             model,
             url,
-            requestBody
+            requestBody,
+            prompt
         )
 
         #if DEBUG
@@ -432,7 +443,8 @@ extension ChatGPTService {
             configuration.apiKey,
             model,
             url,
-            requestBody
+            requestBody,
+            prompt
         )
 
         #if DEBUG
