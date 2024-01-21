@@ -5,11 +5,11 @@ import Combine
 import Foundation
 
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
-    @Published public var focusedWindow: XcodeWindowInspector?
-    @Published public var documentURL: URL? = nil
-    @Published public var workspaceURL: URL? = nil
-    @Published public var projectRootURL: URL? = nil
-    @Published public var workspaces = [WorkspaceIdentifier: Workspace]()
+    @Published public fileprivate(set) var focusedWindow: XcodeWindowInspector?
+    @Published public fileprivate(set) var documentURL: URL? = nil
+    @Published public fileprivate(set) var workspaceURL: URL? = nil
+    @Published public fileprivate(set) var projectRootURL: URL? = nil
+    @Published public fileprivate(set) var workspaces = [WorkspaceIdentifier: Workspace]()
     public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
         updateWorkspaceInfo()
         return workspaces.mapValues(\.info)
@@ -72,10 +72,10 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     override init(runningApplication: NSRunningApplication) {
         super.init(runningApplication: runningApplication)
 
-        observeFocusedWindow()
-        observeAXNotifications()
-
-        Task {
+        Task { @MainActor in
+            observeFocusedWindow()
+            observeAXNotifications()
+            
             try await Task.sleep(nanoseconds: 3_000_000_000)
             // Sometimes the focused window may not be ready on app launch.
             if !(focusedWindow is WorkspaceXcodeWindowInspector) {
@@ -84,6 +84,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
+    @MainActor
     func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
             if window.identifier == "Xcode.WorkspaceWindow" {
@@ -104,16 +105,19 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
                     window.$documentURL
                         .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
                         .sink { [weak self] url in
                             self?.documentURL = url
                         }.store(in: &focusedWindowObservations)
                     window.$workspaceURL
                         .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
                         .sink { [weak self] url in
                             self?.workspaceURL = url
                         }.store(in: &focusedWindowObservations)
                     window.$projectRootURL
                         .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
                         .sink { [weak self] url in
                             self?.projectRootURL = url
                         }.store(in: &focusedWindowObservations)
@@ -127,6 +131,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
+    @MainActor
     func refresh() {
         if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
             focusedWindow.refresh()
@@ -135,16 +140,19 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
+    @MainActor
     func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
 
-        let focusedWindowChanged = Task {
-            let notification = AXNotificationStream(
-                app: runningApplication,
-                notificationNames: kAXFocusedWindowChangedNotification
-            )
-            for await _ in notification {
+        let windowChangeNotification = AXNotificationStream(
+            app: runningApplication,
+            notificationNames: kAXFocusedWindowChangedNotification
+        )
+
+        let focusedWindowChanged = Task { @MainActor [weak self] in
+            for await _ in windowChangeNotification {
+                guard let self else { return }
                 try Task.checkCancellation()
                 observeFocusedWindow()
             }
@@ -153,19 +161,23 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         longRunningTasks.insert(focusedWindowChanged)
 
         updateWorkspaceInfo()
-        let updateTabsTask = Task { @MainActor in
-            let notification = AXNotificationStream(
-                app: runningApplication,
-                notificationNames: kAXFocusedUIElementChangedNotification,
-                kAXApplicationDeactivatedNotification
-            )
+
+        let elementChangeNotification = AXNotificationStream(
+            app: runningApplication,
+            notificationNames: kAXFocusedUIElementChangedNotification,
+            kAXApplicationDeactivatedNotification
+        )
+
+        let updateTabsTask = Task { @MainActor [weak self] in
             if #available(macOS 13.0, *) {
-                for await _ in notification.debounce(for: .seconds(2)) {
+                for await _ in elementChangeNotification.debounce(for: .seconds(2)) {
+                    guard let self else { return }
                     try Task.checkCancellation()
                     updateWorkspaceInfo()
                 }
             } else {
-                for await _ in notification {
+                for await _ in elementChangeNotification {
+                    guard let self else { return }
                     try Task.checkCancellation()
                     updateWorkspaceInfo()
                 }
@@ -174,19 +186,22 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(updateTabsTask)
 
-        let completionPanelTask = Task {
-            let stream = AXNotificationStream(
-                app: runningApplication,
-                notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
-            )
+        let completionPanelNotification = AXNotificationStream(
+            app: runningApplication,
+            notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
+        )
 
-            for await event in stream {
+        let completionPanelTask = Task { @MainActor [weak self] in
+            for await event in completionPanelNotification {
+                guard let self else { return }
+
                 // We can only observe the creation and closing of the parent
                 // of the completion panel.
                 let isCompletionPanel = {
-                    event.element.firstChild { element in
-                        element.identifier == "_XC_COMPLETION_TABLE_"
-                    } != nil
+                    event.element.identifier == "_XC_COMPLETION_TABLE_"
+                        || event.element.firstChild { element in
+                            element.identifier == "_XC_COMPLETION_TABLE_"
+                        } != nil
                 }
                 switch event.name {
                 case kAXCreatedNotification:
