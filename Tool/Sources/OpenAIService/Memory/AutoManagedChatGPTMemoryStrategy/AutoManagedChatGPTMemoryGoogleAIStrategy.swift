@@ -29,38 +29,4 @@ extension AutoManagedChatGPTMemory {
     }
 }
 
-extension ModelContent {
-    static func convertRole(_ role: ChatMessage.Role) -> String {
-        switch role {
-        case .user, .system, .function:
-            return "user"
-        case .assistant:
-            return "model"
-        }
-    }
-
-    static func convertContent(of message: ChatMessage) -> String {
-        switch message.role {
-        case .system:
-            return "System Prompt: \n\(message.content ?? " ")"
-        case .user, .function:
-            return message.content ?? " "
-        case .assistant:
-            if let functionCall = message.functionCall {
-                return """
-                call function: \(functionCall.name)
-                arguments: \(functionCall.arguments)
-                """
-            } else {
-                return message.content ?? " "
-            }
-        }
-    }
-
-    init(_ message: ChatMessage) {
-        let role = Self.convertRole(message.role)
-        let parts = [ModelContent.Part.text(Self.convertContent(of: message))]
-        self = .init(role: role, parts: parts)
-    }
-}
 
