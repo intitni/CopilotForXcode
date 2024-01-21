@@ -23,9 +23,9 @@ final class RecursiveCharacterTextSplitterTests: XCTestCase {
                 endUTF16Offset: 97
             ),
             .init(
-                text: "of Congress and the Cabinet. Justices of the Supreme Court. My fellow Americans.",
-                startUTF16Offset: 97,
-                endUTF16Offset: 110
+                text: " of Congress and the Cabinet. Justices of the Supreme Court. My fellow Americans.",
+                startUTF16Offset: 81,
+                endUTF16Offset: 162
             ),
         ])
     }
@@ -76,43 +76,43 @@ final class RecursiveCharacterTextSplitterTests: XCTestCase {
             [
                 .init(
                     text: "protocol Animal {\n    var name: String { get }\n    var legs: Int { get }\n    func makeSound()\n}\n",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    startUTF16Offset: 0,
+                    endUTF16Offset: 96
                 ),
                 .init(
                     text: "\n@MainActor",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    startUTF16Offset: 96,
+                    endUTF16Offset: 107
                 ),
                 .init(
                     text: "\nprivate class Dog: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs:",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    startUTF16Offset: 107,
+                    endUTF16Offset: 203
                 ),
                 .init(
-                    text: "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    text: " String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
+                    startUTF16Offset: 189,
+                    endUTF16Offset: 287
                 ),
                 .init(
-                    text: "func makeSound() {\n        print(\"Woof!\")\n    }\n}\n",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    text: "    func makeSound() {\n        print(\"Woof!\")\n    }\n}\n",
+                    startUTF16Offset:267,
+                    endUTF16Offset: 321
                 ),
                 .init(
                     text: "\nfinal class Cat: Animal {\n    var name: String\n    var legs: Int\n    init(name: String, legs: Int)",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    startUTF16Offset: 321,
+                    endUTF16Offset: 420
                 ),
                 .init(
-                    text: "String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    text: " String, legs: Int) {\n        self.name = name\n        self.legs = legs\n    }\n    func makeSound()",
+                    startUTF16Offset: 401,
+                    endUTF16Offset: 499
                 ),
                 .init(
-                    text: "func makeSound() {\n        print(\"Meow!\")\n    }\n}",
-                    startUTF16Offset: 97,
-                    endUTF16Offset: 110
+                    text: "    func makeSound() {\n        print(\"Meow!\")\n    }\n}",
+                    startUTF16Offset: 479,
+                    endUTF16Offset: 532
                 ),
             ]
         )
