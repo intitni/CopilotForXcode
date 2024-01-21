@@ -79,25 +79,24 @@ public final class XcodeInspector: ObservableObject {
         latestActiveXcode?.realtimeProjectURL ?? activeProjectRootURL
     }
 
-    public func restart() {
-        activeXcodeObservations.forEach { $0.cancel() }
-        activeXcodeObservations.removeAll()
-        activeXcodeCancellable.forEach { $0.cancel() }
-        activeXcodeCancellable.removeAll()
-        activeXcode = nil
-        latestActiveXcode = nil
-        activeApplication = nil
-        activeProjectRootURL = nil
-        activeDocumentURL = nil
-        activeWorkspaceURL = nil
-        focusedWindow = nil
-        focusedEditor = nil
-        focusedElement = nil
-        completionPanel = nil
-        xcodes = []
-    }
-
-    init() {
+    public func restart(cleanUp: Bool = false) {
+        if cleanUp {
+            activeXcodeObservations.forEach { $0.cancel() }
+            activeXcodeObservations.removeAll()
+            activeXcodeCancellable.forEach { $0.cancel() }
+            activeXcodeCancellable.removeAll()
+            activeXcode = nil
+            latestActiveXcode = nil
+            activeApplication = nil
+            activeProjectRootURL = nil
+            activeDocumentURL = nil
+            activeWorkspaceURL = nil
+            focusedWindow = nil
+            focusedEditor = nil
+            focusedElement = nil
+            completionPanel = nil
+        }
+        
         let runningApplications = NSWorkspace.shared.runningApplications
         xcodes = runningApplications
             .filter { $0.isXcode }
@@ -107,6 +106,10 @@ public final class XcodeInspector: ObservableObject {
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
+    }
+
+    init() {
+        restart()
 
         Task { // Did activate app
             if let activeXcode {
