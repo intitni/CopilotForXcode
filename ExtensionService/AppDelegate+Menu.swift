@@ -126,6 +126,22 @@ extension AppDelegate: NSMenuDelegate {
                 .append(.text("Active Workspace: \(inspector.activeWorkspaceURL?.path ?? "N/A")"))
             menu.items
                 .append(.text("Active Document: \(inspector.activeDocumentURL?.path ?? "N/A")"))
+            
+            if let focusedWindow = inspector.focusedWindow {
+                menu.items.append(.text(
+                    "Active Window: \(focusedWindow.uiElement.identifier)"
+                ))
+            } else {
+                menu.items.append(.text("Active Window: N/A"))
+            }
+            
+            if let focusedElement = inspector.focusedElement {
+                menu.items.append(.text(
+                    "Focused Element: \(focusedElement.description)"
+                ))
+            } else {
+                menu.items.append(.text("Focused Element: N/A"))
+            }
 
             if let sourceEditor = inspector.focusedEditor {
                 menu.items.append(.text(
