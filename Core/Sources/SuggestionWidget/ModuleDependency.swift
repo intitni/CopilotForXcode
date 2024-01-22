@@ -24,7 +24,7 @@ public final class WidgetWindows {
     var widgetWindow: NSWindow!
     var sharedPanelWindow: NSWindow!
     var suggestionPanelWindow: NSWindow!
-    var chatPanelWindow: NSWindow!
+    var chatPanelWindow: ChatWindow!
     var toastWindow: NSWindow!
 
     nonisolated

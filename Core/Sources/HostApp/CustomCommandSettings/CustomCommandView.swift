@@ -4,6 +4,7 @@ import PlusFeatureFlag
 import Preferences
 import SharedUIComponents
 import SwiftUI
+import Toast
 
 extension List {
     @ViewBuilder
@@ -51,7 +52,7 @@ struct CustomCommandView: View {
     @ViewBuilder
     var leftPane: some View {
         List {
-            ForEach(settings.customCommands, id: \.name) { command in
+            ForEach(settings.customCommands, id: \.commandId) { command in
                 CommandButton(store: store, command: command)
             }
             .onMove(perform: { indices, newOffset in
@@ -92,6 +93,33 @@ struct CustomCommandView: View {
             }
             .buttonStyle(.plain)
             .padding()
+            .contextMenu {
+                Button("Import") {
+                    store.send(.importCommandClicked)
+                }
+            }
+        }
+        .onDrop(of: [.json], delegate: FileDropDelegate(store: store, toast: toast))
+    }
+
+    struct FileDropDelegate: DropDelegate {
+        let store: StoreOf<CustomCommandFeature>
+        let toast: (String, ToastType) -> Void
+        func performDrop(info: DropInfo) -> Bool {
+            let jsonFiles = info.itemProviders(for: [.json])
+            for file in jsonFiles {
+                file.loadInPlaceFileRepresentation(forTypeIdentifier: "public.json") { url, _, error in
+                    Task { @MainActor in
+                        if let url {
+                            store.send(.importCommand(at: url))
+                        } else if let error {
+                            toast(error.localizedDescription, .error)
+                        }
+                    }
+                }
+            }
+
+            return !jsonFiles.isEmpty
         }
     }
 
@@ -142,6 +170,10 @@ struct CustomCommandView: View {
             .contextMenu {
                 Button("Remove") {
                     store.send(.deleteCommand(command))
+                }
+
+                Button("Export") {
+                    store.send(.exportCommand(command))
                 }
             }
         }

@@ -1,6 +1,5 @@
 import ActiveApplicationMonitor
 import ComposableArchitecture
-import Environment
 import Preferences
 import SuggestionModel
 import SwiftUI

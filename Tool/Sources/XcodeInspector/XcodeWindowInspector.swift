@@ -5,7 +5,7 @@ import Combine
 import Foundation
 
 public class XcodeWindowInspector: ObservableObject {
-    let uiElement: AXUIElement
+    public let uiElement: AXUIElement
 
     init(uiElement: AXUIElement) {
         self.uiElement = uiElement
@@ -17,11 +17,9 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     @Published var documentURL: URL = .init(fileURLWithPath: "/")
     @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
     @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
-    private var updateTabsTask: Task<Void, Error>?
     private var focusedElementChangedTask: Task<Void, Error>?
 
     deinit {
-        updateTabsTask?.cancel()
         focusedElementChangedTask?.cancel()
     }
 
@@ -38,7 +36,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
             notificationNames: kAXFocusedUIElementChangedNotification
         )
 
-        #warning("Test Me")
         focusedElementChangedTask = Task { [weak self] in
             await self?.updateURLs()
 

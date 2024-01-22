@@ -19,7 +19,7 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
     ///    - chunkOverlap: The maximum overlap between chunks.
     ///    - lengthFunction: A function to compute the length of text.
     public init(
-        separators: [String] = ["\n\n", "\r\n", "\n", "\r", " ", ""],
+        separators: [String],
         chunkSize: Int = 4000,
         chunkOverlap: Int = 200,
         lengthFunction: @escaping (String) -> Int = { $0.count }
@@ -39,7 +39,7 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
     ///    - chunkOverlap: The maximum overlap between chunks.
     ///    - lengthFunction: A function to compute the length of text.
     public init(
-        separatorSet: TextSplitterSeparatorSet,
+        separatorSet: TextSplitterSeparatorSet = .default,
         chunkSize: Int = 4000,
         chunkOverlap: Int = 200,
         lengthFunction: @escaping (String) -> Int = { $0.count }
@@ -51,12 +51,12 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
         separators = separatorSet.separators
     }
 
-    public func split(text: String) async throws -> [String] {
-        return split(text: text, separators: separators)
+    public func split(text: String) async throws -> [TextChunk] {
+        return split(text: text, separators: separators, startIndex: 0)
     }
 
-    private func split(text: String, separators: [String]) -> [String] {
-        var finalChunks = [String]()
+    private func split(text: String, separators: [String], startIndex: Int) -> [TextChunk] {
+        var finalChunks = [TextChunk]()
 
         // Get appropriate separator to use
         let firstSeparatorIndex = separators.firstIndex {
@@ -83,12 +83,12 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
             nextSeparators = []
         }
 
-        let splits = split(text: text, separator: separator)
+        let splits = split(text: text, separator: separator, startIndex: startIndex)
 
         // Now go merging things, recursively splitting longer texts.
-        var goodSplits = [String]()
+        var goodSplits = [TextChunk]()
         for s in splits {
-            if lengthFunction(s) < chunkSize {
+            if lengthFunction(s.text) < chunkSize {
                 goodSplits.append(s)
             } else {
                 if !goodSplits.isEmpty {
@@ -99,7 +99,11 @@ public class RecursiveCharacterTextSplitter: TextSplitter {
                 if nextSeparators.isEmpty {
                     finalChunks.append(s)
                 } else {
-                    let other_info = split(text: s, separators: nextSeparators)
+                    let other_info = split(
+                        text: s.text,
+                        separators: nextSeparators,
+                        startIndex: s.startUTF16Offset
+                    )
                     finalChunks.append(contentsOf: other_info)
                 }
             }

@@ -3,7 +3,6 @@ import AppActivator
 import AsyncAlgorithms
 import AXNotificationStream
 import ComposableArchitecture
-import Environment
 import Foundation
 import Preferences
 import SwiftUI
@@ -582,9 +581,9 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.toastWindow.alphaValue = noFocus ? 0 : 1
 
                             if isChatPanelDetached {
-                                windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
+                                windows.chatPanelWindow.isWindowHidden = !hasChat
                             } else {
-                                windows.chatPanelWindow.alphaValue = noFocus ? 0 : 1
+                                windows.chatPanelWindow.isWindowHidden = noFocus
                             }
                         } else if let activeApp, activeApp.isExtensionService {
                             let noFocus = {
@@ -603,10 +602,10 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.widgetWindow.alphaValue = noFocus ? 0 : 1
                             windows.toastWindow.alphaValue = noFocus ? 0 : 1
                             if isChatPanelDetached {
-                                windows.chatPanelWindow.alphaValue = hasChat ? 1 : 0
+                                windows.chatPanelWindow.isWindowHidden = !hasChat
                             } else {
-                                windows.chatPanelWindow.alphaValue = noFocus && !windows
-                                    .chatPanelWindow.isKeyWindow ? 0 : 1
+                                windows.chatPanelWindow.isWindowHidden = noFocus && !windows
+                                    .chatPanelWindow.isKeyWindow
                             }
                         } else {
                             windows.sharedPanelWindow.alphaValue = 0
@@ -614,7 +613,7 @@ public struct WidgetFeature: ReducerProtocol {
                             windows.widgetWindow.alphaValue = 0
                             windows.toastWindow.alphaValue = 0
                             if !isChatPanelDetached {
-                                windows.chatPanelWindow.alphaValue = 0
+                                windows.chatPanelWindow.isWindowHidden = true
                             }
                         }
                     }

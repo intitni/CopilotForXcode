@@ -47,13 +47,14 @@ public final class Service {
         globalShortcutManager = .init(guiController: guiController)
 
         #if canImport(ProService)
-        proService = withDependencies { dependencyValues in
-            dependencyValues.proServiceAcceptSuggestion = {
+        proService = ProService(
+            acceptSuggestion: {
                 Task { await PseudoCommandHandler().acceptSuggestion() }
+            },
+            dismissSuggestion: {
+                Task { await PseudoCommandHandler().dismissSuggestion() }
             }
-        } operation: {
-            ProService()
-        }
+        )
         #endif
 
         scheduledCleaner.service = self
@@ -92,7 +93,7 @@ public extension Service {
             reply(nil, error)
             return
         }
-        
+
         reply(nil, XPCRequestNotHandledError())
     }
 }

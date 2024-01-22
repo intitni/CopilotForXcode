@@ -3,8 +3,13 @@ import AsyncAlgorithms
 import Foundation
 import Preferences
 
-typealias CompletionStreamAPIBuilder = (String, ChatModel, URL, CompletionRequestBody)
-    -> any CompletionStreamAPI
+typealias CompletionStreamAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    CompletionRequestBody,
+    ChatGPTPrompt
+) -> any CompletionStreamAPI
 
 protocol CompletionStreamAPI {
     func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error>

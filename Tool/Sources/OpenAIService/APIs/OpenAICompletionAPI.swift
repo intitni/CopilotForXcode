@@ -2,7 +2,7 @@ import AIModel
 import Foundation
 import Preferences
 
-typealias CompletionAPIBuilder = (String, ChatModel, URL, CompletionRequestBody)
+typealias CompletionAPIBuilder = (String, ChatModel, URL, CompletionRequestBody, ChatGPTPrompt)
     -> CompletionAPI
 
 protocol CompletionAPI {

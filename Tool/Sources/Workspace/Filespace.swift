@@ -1,5 +1,4 @@
 import Dependencies
-import Environment
 import Foundation
 import GitIgnoreCheck
 import SuggestionModel

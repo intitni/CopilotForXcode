@@ -49,6 +49,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         var colorScheme: ColorScheme = .light
         public internal(set) var isPanelDisplayed = false
         var chatPanelInASeparateWindow = false
+        var isFullScreen = false
     }
 
     public enum Action: Equatable {
@@ -58,6 +59,8 @@ public struct ChatPanelFeature: ReducerProtocol {
         case toggleChatPanelDetachedButtonClicked
         case detachChatPanel
         case attachChatPanel
+        case enterFullScreen
+        case exitFullScreen
         case presentChatPanel(forceDetach: Bool)
 
         // Tabs
@@ -81,11 +84,24 @@ public struct ChatPanelFeature: ReducerProtocol {
     @Dependency(\.activateThisApp) var activateExtensionService
     @Dependency(\.chatTabBuilderCollection) var chatTabBuilderCollection
 
+    @MainActor func toggleFullScreen() {
+        let window = suggestionWidgetControllerDependency.windows
+            .chatPanelWindow
+        window?.toggleFullScreen(nil)
+    }
+
     public var body: some ReducerProtocol<State, Action> {
         Reduce { state, action in
             switch action {
             case .hideButtonClicked:
                 state.isPanelDisplayed = false
+
+                if state.isFullScreen {
+                    return .run { _ in
+                        await MainActor.run { toggleFullScreen() }
+                        activatePreviouslyActiveXcode()
+                    }
+                }
 
                 return .run { _ in
                     activatePreviouslyActiveXcode()
@@ -102,6 +118,12 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .none
 
             case .toggleChatPanelDetachedButtonClicked:
+                if state.isFullScreen, state.chatPanelInASeparateWindow {
+                    return .run { send in
+                        await send(.attachChatPanel)
+                    }
+                }
+                
                 state.chatPanelInASeparateWindow.toggle()
                 return .none
 
@@ -110,7 +132,25 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .none
 
             case .attachChatPanel:
+                if state.isFullScreen {
+                    return .run { send in
+                        await MainActor.run { toggleFullScreen() }
+                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                        await send(.attachChatPanel)
+                    }
+                }
+
                 state.chatPanelInASeparateWindow = false
+                return .none
+
+            case .enterFullScreen:
+                state.isFullScreen = true
+                return .run { send in
+                    await send(.detachChatPanel)
+                }
+
+            case .exitFullScreen:
+                state.isFullScreen = false
                 return .none
 
             case let .presentChatPanel(forceDetach):
@@ -227,7 +267,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                 state.chatTabGroup.tabInfo.remove(at: from)
                 state.chatTabGroup.tabInfo.insert(tab, at: to)
                 return .none
-                
+
             case .focusActiveChatTab:
                 let id = state.chatTabGroup.selectedTabInfo?.id
                 guard let id else { return .none }
@@ -239,7 +279,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .run { send in
                     await send(.closeTabButtonClicked(id: id))
                 }
-                
+
             case .chatTab:
                 return .none
             }

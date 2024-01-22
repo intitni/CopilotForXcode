@@ -5,7 +5,6 @@ import AXNotificationStream
 import ChatTab
 import Combine
 import ComposableArchitecture
-import Environment
 import Preferences
 import SwiftUI
 import UserDefaultsObserver
@@ -123,26 +122,52 @@ public final class SuggestionWidgetController: NSObject {
     private lazy var chatPanelWindow = {
         let it = ChatWindow(
             contentRect: .zero,
-            styleMask: [.resizable],
+            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
+        it.minimizeWindow = { [weak self] in
+            self?.store.send(.chatPanel(.hideButtonClicked))
+        }
+        it.titleVisibility = .hidden
+        it.addTitlebarAccessoryViewController({
+            let controller = NSTitlebarAccessoryViewController()
+            let view = NSHostingView(rootView: ChatTitleBar(store: store.scope(
+                state: \.chatPanelState,
+                action: WidgetFeature.Action.chatPanel
+            )))
+            controller.view = view
+            view.frame = .init(x: 0, y: 0, width: 100, height: 40)
+            controller.layoutAttribute = .right
+            return controller
+        }())
+        it.titlebarAppearsTransparent = true
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.collectionBehavior = [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+        ]
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: ChatWindowView(
                 store: store.scope(
                     state: \.chatPanelState,
                     action: WidgetFeature.Action.chatPanel
-                )
+                ),
+                toggleVisibility: { [weak it] isDisplayed in
+                    guard let window = it else { return }
+                    window.isPanelDisplayed = isDisplayed
+                }
             )
             .environment(\.chatTabPool, chatTabPool)
         )
         it.setIsVisible(true)
+        it.isPanelDisplayed = false
         it.delegate = self
         return it
     }()
@@ -250,29 +275,20 @@ extension SuggestionWidgetController: NSWindowDelegate {
             store.send(.chatPanel(.detachChatPanel))
         }
     }
-
-    public func windowDidBecomeKey(_ notification: Notification) {
+    
+    public func windowWillEnterFullScreen(_ notification: Notification) {
         guard (notification.object as? NSWindow) === chatPanelWindow else { return }
-        let screenFrame = NSScreen.screens.first(where: { $0.frame.origin == .zero })?
-            .frame ?? .zero
-        var mouseLocation = NSEvent.mouseLocation
-        let windowFrame = chatPanelWindow.frame
-        if mouseLocation.y > windowFrame.maxY - Style.chatWindowTitleBarHeight,
-           mouseLocation.y < windowFrame.maxY,
-           mouseLocation.x > windowFrame.minX,
-           mouseLocation.x < windowFrame.maxX
-        {
-            mouseLocation.y = screenFrame.size.height - mouseLocation.y
-            if let cgEvent = CGEvent(
-                mouseEventSource: nil,
-                mouseType: .leftMouseDown,
-                mouseCursorPosition: mouseLocation,
-                mouseButton: .left
-            ),
-                let event = NSEvent(cgEvent: cgEvent)
-            {
-                chatPanelWindow.performDrag(with: event)
-            }
+        Task { @MainActor in
+            await Task.yield()
+            store.send(.chatPanel(.enterFullScreen))
+        }
+    }
+    
+    public func windowWillExitFullScreen(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === chatPanelWindow else { return }
+        Task { @MainActor in
+            await Task.yield()
+            store.send(.chatPanel(.exitFullScreen))
         }
     }
 }
@@ -289,16 +305,29 @@ class ChatWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
-    override func mouseDown(with event: NSEvent) {
-        let windowFrame = frame
-        let currentLocation = event.locationInWindow
-        if currentLocation.y > windowFrame.size.height - Style.chatWindowTitleBarHeight,
-           currentLocation.y < windowFrame.size.height,
-           currentLocation.x > 0,
-           currentLocation.x < windowFrame.width
-        {
-            performDrag(with: event)
+    
+    var minimizeWindow: () -> Void = {}
+
+    var isWindowHidden: Bool = false {
+        didSet {
+            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
         }
+    }
+
+    var isPanelDisplayed: Bool = false {
+        didSet {
+            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
+        }
+    }
+    
+    override var alphaValue: CGFloat {
+        didSet {
+            ignoresMouseEvents = alphaValue <= 0
+        }
+    }
+
+    override func miniaturize(_: Any?) {
+        minimizeWindow()
     }
 }
 

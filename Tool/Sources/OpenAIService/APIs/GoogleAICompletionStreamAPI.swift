@@ -7,6 +7,7 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
     let apiKey: String
     let model: ChatModel
     var requestBody: CompletionRequestBody
+    let prompt: ChatGPTPrompt
 
     func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error> {
         let aiModel = GenerativeModel(
@@ -17,14 +18,14 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
                 topP: requestBody.top_p.map(Float.init)
             ))
         )
-        let history = requestBody.messages.map { message in
+        let history = prompt.googleAICompatible.history.map { message in
             ModelContent(
                 ChatMessage(
                     role: message.role,
                     content: message.content,
                     name: message.name,
-                    functionCall: message.function_call.map {
-                        .init(name: $0.name, arguments: $0.arguments ?? "")
+                    functionCall: message.functionCall.map {
+                        .init(name: $0.name, arguments: $0.arguments)
                     }
                 )
             )

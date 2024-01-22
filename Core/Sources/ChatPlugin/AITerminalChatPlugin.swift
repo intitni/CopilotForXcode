@@ -1,4 +1,3 @@
-import Environment
 import Foundation
 import OpenAIService
 import Terminal

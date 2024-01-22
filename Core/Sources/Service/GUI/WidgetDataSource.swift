@@ -50,6 +50,13 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                             await handler.acceptSuggestion()
                             NSWorkspace.activatePreviousActiveXcode()
                         }
+                    },
+                    onDismissSuggestionTapped: {
+                        Task {
+                            let handler = PseudoCommandHandler()
+                            await handler.dismissSuggestion()
+                            NSWorkspace.activatePreviousActiveXcode()
+                        }
                     }
                 )
             }

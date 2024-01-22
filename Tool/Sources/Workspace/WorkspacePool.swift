@@ -1,6 +1,6 @@
-import Environment
-import Foundation
 import Dependencies
+import Foundation
+import XcodeInspector
 
 public struct WorkspacePoolDependencyKey: DependencyKey {
     public static var liveValue: WorkspacePool = .init()
@@ -21,15 +21,15 @@ public extension DependencyValues {
 public class WorkspacePool {
     public enum Error: Swift.Error, LocalizedError {
         case invalidWorkspaceURL(URL)
-        
+
         public var errorDescription: String? {
             switch self {
-            case .invalidWorkspaceURL(let url):
+            case let .invalidWorkspaceURL(url):
                 return "Invalid workspace URL: \(url)"
             }
         }
     }
-    
+
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
 
@@ -59,7 +59,7 @@ public class WorkspacePool {
             removePlugin(id: id, from: workspace)
         }
     }
-    
+
     public func fetchFilespaceIfExisted(fileURL: URL) -> Filespace? {
         for workspace in workspaces.values {
             if let filespace = workspace.filespaces[fileURL] {
@@ -68,13 +68,13 @@ public class WorkspacePool {
         }
         return nil
     }
-    
+
     @WorkspaceActor
     public func fetchOrCreateWorkspace(workspaceURL: URL) async throws -> Workspace {
         guard workspaceURL != URL(fileURLWithPath: "/") else {
             throw Error.invalidWorkspaceURL(workspaceURL)
         }
-        
+
         if let existed = workspaces[workspaceURL] {
             return existed
         }
@@ -93,9 +93,10 @@ public class WorkspacePool {
             throw Workspace.UnsupportedFileError(extensionName: fileURL.pathExtension)
         }
 
-        // If we know which project is opened.
-        if let currentWorkspaceURL = try await Environment.fetchCurrentWorkspaceURLFromXcode() {
+        // If we can get the workspace URL directly.
+        if let currentWorkspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL {
             if let existed = workspaces[currentWorkspaceURL] {
+                // Reuse the existed workspace.
                 let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
                 return (existed, filespace)
             }
@@ -116,30 +117,35 @@ public class WorkspacePool {
             }
         }
 
-        // If we can't find an existed one, we will try to guess it.
+        // If we can't find the workspace URL, we will try to guess it.
         // Most of the time we won't enter this branch, just incase.
 
-        let workspaceURL = try await Environment.guessProjectRootURLForFile(fileURL)
-
-        let workspace = {
-            if let existed = workspaces[workspaceURL] {
-                return existed
-            }
-            // Reuse existed workspace if possible
-            for (_, workspace) in workspaces {
-                if fileURL.path.hasPrefix(workspace.projectRootURL.path) {
-                    return workspace
+        if let workspaceURL = WorkspaceXcodeWindowInspector.extractProjectURL(
+            workspaceURL: nil,
+            documentURL: fileURL
+        ) {
+            let workspace = {
+                if let existed = workspaces[workspaceURL] {
+                    return existed
                 }
-            }
-            return createNewWorkspace(workspaceURL: workspaceURL)
-        }()
+                // Reuse existed workspace if possible
+                for (_, workspace) in workspaces {
+                    if fileURL.path.hasPrefix(workspace.projectRootURL.path) {
+                        return workspace
+                    }
+                }
+                return createNewWorkspace(workspaceURL: workspaceURL)
+            }()
 
-        let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
-        workspaces[workspaceURL] = workspace
-        workspace.refreshUpdateTime()
-        return (workspace, filespace)
+            let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
+            workspaces[workspaceURL] = workspace
+            workspace.refreshUpdateTime()
+            return (workspace, filespace)
+        }
+        
+        throw Workspace.CantFindWorkspaceError()
     }
-    
+
     @WorkspaceActor
     public func removeWorkspace(url: URL) {
         workspaces[url] = nil

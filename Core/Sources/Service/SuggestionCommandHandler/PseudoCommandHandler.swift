@@ -1,6 +1,5 @@
 import ActiveApplicationMonitor
 import AppKit
-import Environment
 import Preferences
 import SuggestionInjector
 import SuggestionModel
@@ -145,7 +144,8 @@ struct PseudoCommandHandler {
             }
         }() else {
             do {
-                try await Environment.triggerAction(command.name)
+                try await XcodeInspector.shared.latestActiveXcode?
+                    .triggerCopilotCommand(name: command.name)
             } catch {
                 let presenter = PresentInWindowSuggestionPresenter()
                 presenter.presentError(error)
@@ -167,7 +167,8 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await Environment.triggerAction("Accept Prompt to Code")
+            try await XcodeInspector.shared.latestActiveXcode?
+                .triggerCopilotCommand(name: "Accept Prompt to Code")
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }
@@ -206,7 +207,8 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await Environment.triggerAction("Accept Suggestion")
+            try await XcodeInspector.shared.latestActiveXcode?
+                .triggerCopilotCommand(name: "Accept Suggestion")
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }
@@ -238,6 +240,15 @@ struct PseudoCommandHandler {
                 PresentInWindowSuggestionPresenter().presentError(error)
             }
         }
+    }
+    
+    func dismissSuggestion() async {
+        guard let documentURL = XcodeInspector.shared.activeDocumentURL else { return }
+        guard let (_, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
+        
+        await filespace.reset()
+        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
 }
 
@@ -321,14 +332,14 @@ extension PseudoCommandHandler {
         return (content, split, [range], range.start)
     }
 
-    func getFileURL() async -> URL? {
-        try? await Environment.fetchCurrentFileURL()
+    func getFileURL() -> URL? {
+        XcodeInspector.shared.realtimeActiveDocumentURL
     }
 
     @WorkspaceActor
     func getFilespace() async -> Filespace? {
         guard
-            let fileURL = await getFileURL(),
+            let fileURL = getFileURL(),
             let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return nil }

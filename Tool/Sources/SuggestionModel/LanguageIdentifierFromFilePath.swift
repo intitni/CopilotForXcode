@@ -30,6 +30,14 @@ public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
             self = .other(rawValue)
         }
     }
+    
+    public init(fileURL: URL) {
+        self = languageIdentifierFromFileURL(fileURL)
+    }
+    
+    public init(filePath: String) {
+        self = languageIdentifierFromFileURL(URL(fileURLWithPath: filePath))
+    }
 
     public static var allCases: [CodeLanguage] {
         var all = LanguageIdentifier.allCases.map(CodeLanguage.builtIn)

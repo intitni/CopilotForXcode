@@ -46,14 +46,14 @@ extension NSAppearance {
 }
 
 extension View {
-    func xcodeStyleFrame() -> some View {
-        clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    func xcodeStyleFrame(cornerRadius: Double = 8) -> some View {
+        clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: max(0, cornerRadius - 1), style: .continuous)
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )

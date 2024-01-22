@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ChatGPTPrompt {
+public struct ChatGPTPrompt: Equatable {
     public var history: [ChatMessage]
     public var references: [ChatMessage.Reference]
     public var remainingTokenCount: Int?
