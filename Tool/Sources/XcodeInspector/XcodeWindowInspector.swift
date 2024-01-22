@@ -5,7 +5,7 @@ import Combine
 import Foundation
 
 public class XcodeWindowInspector: ObservableObject {
-    let uiElement: AXUIElement
+    public let uiElement: AXUIElement
 
     init(uiElement: AXUIElement) {
         self.uiElement = uiElement

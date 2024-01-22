@@ -4,7 +4,7 @@ import XCTest
 
 @testable import OpenAIService
 
-final class AutoManagedChatGPTMemoryTests: XCTestCase {
+final class AutoManagedChatGPTMemoryLimitTests: XCTestCase {
     func test_send_all_messages_if_not_reached_token_limit() async {
         let (messages, memory) = await runService(
             systemPrompt: "system", 

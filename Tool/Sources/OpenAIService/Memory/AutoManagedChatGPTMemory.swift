@@ -286,8 +286,6 @@ extension AutoManagedChatGPTMemory {
                     text += """
                     Here are the information you know about the system and the project, \
                     separated by \(separator)
-
-                    
                     """
                 }
 
@@ -302,7 +300,7 @@ extension AutoManagedChatGPTMemory {
         {
             var right = retrievedContent.count
             var left = 0
-            var retrievedContent = retrievedContent
+            var gappedRetrievedContent = retrievedContent
             var tokenCount: Int?
             var proposedMessage = buildMessage(retrievedContent: [])
 
@@ -340,7 +338,7 @@ extension AutoManagedChatGPTMemory {
                 let (isValid, _tokenCount) = await checkValid(proposedMessage: _proposedMessage)
                 if isValid {
                     proposedMessage = _proposedMessage
-                    retrievedContent = _retrievedContent
+                    gappedRetrievedContent = _retrievedContent
                     tokenCount = _tokenCount
                     left = count + 1
                 } else {
@@ -355,7 +353,7 @@ extension AutoManagedChatGPTMemory {
             } else {
                 await strategy.countToken(proposedMessage)
             }
-            return (proposedMessage, retrievedContent, finalCount)
+            return (proposedMessage, gappedRetrievedContent, finalCount)
         }
 
         let (message, references, tokensCount) = await buildMessageThatFits()
