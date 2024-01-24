@@ -569,5 +569,12 @@ public extension UserDefaultPreferenceKeys {
             key: "FeatureFlag-DisableEnhancedWorkspace"
         )
     }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
+        )
+    }
 }
 

@@ -19,6 +19,8 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.disableGitIgnoreCheck) var disableGitIgnoreCheck
     @AppStorage(\.disableFileContentManipulationByCheatsheet)
     var disableFileContentManipulationByCheatsheet
+    @AppStorage(\.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning)
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning
     init() {}
 }
 
@@ -73,6 +75,10 @@ struct DebugSettingsView: View {
 
                     Toggle(isOn: $settings.disableFileContentManipulationByCheatsheet) {
                         Text("Disable file content manipulation by cheatsheet")
+                    }
+                    
+                    Toggle(isOn: $settings.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning) {
+                        Text("Re-activate Xcode Inspector when Accessibility API malfunctioning detected")
                     }
 
                     Button("Reset migration version to 0") {
