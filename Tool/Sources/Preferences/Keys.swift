@@ -572,8 +572,22 @@ public extension UserDefaultPreferenceKeys {
     
     var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
         .init(
-            defaultValue: false,
+            defaultValue: true,
             key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
+        )
+    }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer: FeatureFlag {
+        .init(
+            defaultValue: true,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer"
+        )
+    }
+    
+    var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-ToastForTheReasonWhyXcodeInspectorNeedsToBeRestarted"
         )
     }
 }

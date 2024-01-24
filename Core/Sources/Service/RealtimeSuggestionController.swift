@@ -71,12 +71,10 @@ public actor RealtimeSuggestionController {
 
                 switch notification.kind {
                 case .valueChanged:
-                    Logger.service.debug("Receive valueChanged from editor")
                     await cancelInFlightTasks()
                     await self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: sourceEditor.element)
                 case .selectedTextChanged:
-                    Logger.service.debug("Receive selectedTextChanged from editor")
                     guard let fileURL = XcodeInspector.shared.activeDocumentURL
                     else { break }
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(

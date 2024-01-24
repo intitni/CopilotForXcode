@@ -356,8 +356,6 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
 
                     for await notification in notifications {
-                        Logger.service.debug("Receive \(notification.kind) from Xcode")
-
                         try Task.checkCancellation()
 
                         // Hide the widgets before switching to another window/editor
@@ -402,11 +400,10 @@ public struct WidgetFeature: ReducerProtocol {
 
                 return .run { send in
                     if #available(macOS 13.0, *) {
-                        for await notification in merge(
+                        for await _ in merge(
                             selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                             scroll
                         ) {
-                            Logger.service.debug("Receive \(notification.kind) from editor")
                             guard xcodeInspector.latestActiveXcode != nil else { return }
                             try Task.checkCancellation()
                             await send(.updateWindowLocation(animated: false))
