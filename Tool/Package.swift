@@ -63,6 +63,7 @@ let package = Package(
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
         .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
+        .package(url: "https://github.com/sideeffect-io/AsyncExtensions", from: "0.5.2"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -167,6 +168,7 @@ let package = Package(
                 "SuggestionModel",
                 "AXNotificationStream",
                 "Logger",
+                .product(name: "AsyncExtensions", package: "AsyncExtensions"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
