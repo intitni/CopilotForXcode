@@ -1,7 +1,6 @@
 import AppKit
 import AsyncAlgorithms
 import AXExtension
-import AXNotificationStream
 import Combine
 import Foundation
 import Logger
@@ -83,7 +82,7 @@ public final class XcodeInspector: ObservableObject {
     init() {
         restart()
     }
-    
+
     public func restart(cleanUp: Bool = false) {
         if cleanUp {
             activeXcodeObservations.forEach { $0.cancel() }
@@ -111,7 +110,7 @@ public final class XcodeInspector: ObservableObject {
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
-        
+
         appChangeObservations.forEach { $0.cancel() }
         appChangeObservations.removeAll()
 
@@ -120,9 +119,9 @@ public final class XcodeInspector: ObservableObject {
             if let activeXcode {
                 await setActiveXcode(activeXcode)
             }
-            
+
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
-                group.addTask { [weak self] in  // Did activate app
+                group.addTask { [weak self] in // Did activate app
                     let sequence = NSWorkspace.shared.notificationCenter
                         .notifications(named: NSWorkspace.didActivateApplicationNotification)
                     for await notification in sequence {
@@ -154,7 +153,7 @@ public final class XcodeInspector: ObservableObject {
                         }
                     }
                 }
-                
+
                 group.addTask { [weak self] in // Did terminate app
                     let sequence = NSWorkspace.shared.notificationCenter
                         .notifications(named: NSWorkspace.didTerminateApplicationNotification)
@@ -185,10 +184,9 @@ public final class XcodeInspector: ObservableObject {
                 }
             }
         }
-        
+
         appChangeObservations.insert(appChangeTask)
     }
-
 
     @MainActor
     func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
@@ -231,11 +229,9 @@ public final class XcodeInspector: ObservableObject {
 
         setFocusedElement()
         let focusedElementChanged = Task { @MainActor in
-            let notification = AXNotificationStream(
-                app: xcode.runningApplication,
-                notificationNames: kAXFocusedUIElementChangedNotification
-            )
-            for await _ in notification {
+            for await notification in xcode.axNotifications {
+                guard notification.kind == .focusedUIElementChanged else { continue }
+                Logger.service.debug("Update focused element")
                 try Task.checkCancellation()
                 setFocusedElement()
             }

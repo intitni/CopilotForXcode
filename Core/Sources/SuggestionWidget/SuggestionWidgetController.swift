@@ -1,7 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
-import AXNotificationStream
 import ChatTab
 import Combine
 import ComposableArchitecture
