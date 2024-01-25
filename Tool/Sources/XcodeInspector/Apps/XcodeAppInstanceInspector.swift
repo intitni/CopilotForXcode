@@ -1,4 +1,5 @@
 import AppKit
+import AsyncExtensions
 import AXExtension
 import AXNotificationStream
 import Combine
@@ -14,6 +15,63 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         updateWorkspaceInfo()
         return workspaces.mapValues(\.info)
     }
+
+    public struct AXNotification {
+        public var kind: AXNotificationKind
+        public var element: AXUIElement
+    }
+
+    public enum AXNotificationKind {
+        case applicationActivated
+        case applicationDeactivated
+        case moved
+        case resized
+        case mainWindowChanged
+        case focusedWindowChanged
+        case focusedUIElementChanged
+        case windowMoved
+        case windowResized
+        case windowMiniaturized
+        case windowDeminiaturized
+        case created
+        case uiElementDestroyed
+        case xcodeCompletionPanelChanged
+
+        public init?(rawValue: String) {
+            switch rawValue {
+            case kAXApplicationActivatedNotification:
+                self = .applicationActivated
+            case kAXApplicationDeactivatedNotification:
+                self = .applicationDeactivated
+            case kAXMovedNotification:
+                self = .moved
+            case kAXResizedNotification:
+                self = .resized
+            case kAXMainWindowChangedNotification:
+                self = .mainWindowChanged
+            case kAXFocusedWindowChangedNotification:
+                self = .focusedWindowChanged
+            case kAXFocusedUIElementChangedNotification:
+                self = .focusedUIElementChanged
+            case kAXWindowMovedNotification:
+                self = .windowMoved
+            case kAXWindowResizedNotification:
+                self = .windowResized
+            case kAXWindowMiniaturizedNotification:
+                self = .windowMiniaturized
+            case kAXWindowDeminiaturizedNotification:
+                self = .windowDeminiaturized
+            case kAXCreatedNotification:
+                self = .created
+            case kAXUIElementDestroyedNotification:
+                self = .uiElementDestroyed
+            default:
+                return nil
+            }
+        }
+    }
+
+    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     @Published public private(set) var completionPanel: AXUIElement?
 
@@ -66,6 +124,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     private var focusedWindowObservations = Set<AnyCancellable>()
 
     deinit {
+        axNotifications.send(.finished)
         for task in longRunningTasks { task.cancel() }
     }
 
@@ -75,9 +134,9 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         Task { @MainActor in
             observeFocusedWindow()
             observeAXNotifications()
-            
+
             try await Task.sleep(nanoseconds: 3_000_000_000)
-            // Sometimes the focused window may not be ready on app launch.
+            // Sometimes the focused window may not be rea?dy on app launch.
             if !(focusedWindow is WorkspaceXcodeWindowInspector) {
                 observeFocusedWindow()
             }
@@ -90,7 +149,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             if window.identifier == "Xcode.WorkspaceWindow" {
                 let window = WorkspaceXcodeWindowInspector(
                     app: runningApplication,
-                    uiElement: window
+                    uiElement: window,
+                    axNotifications: axNotifications
                 )
                 focusedWindow = window
 
@@ -145,81 +205,85 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
 
-        let windowChangeNotification = AXNotificationStream(
+        let axNotificationStream = AXNotificationStream(
             app: runningApplication,
-            notificationNames: kAXFocusedWindowChangedNotification
+            notificationNames:
+            kAXApplicationActivatedNotification,
+            kAXApplicationDeactivatedNotification,
+            kAXMovedNotification,
+            kAXResizedNotification,
+            kAXMainWindowChangedNotification,
+            kAXFocusedWindowChangedNotification,
+            kAXFocusedUIElementChangedNotification,
+            kAXWindowMovedNotification,
+            kAXWindowResizedNotification,
+            kAXWindowMiniaturizedNotification,
+            kAXWindowDeminiaturizedNotification,
+            kAXCreatedNotification,
+            kAXUIElementDestroyedNotification
         )
 
-        let focusedWindowChanged = Task { @MainActor [weak self] in
-            for await _ in windowChangeNotification {
+        let observeAXNotificationTask = Task { @MainActor [weak self] in
+            var updateWorkspaceInfoTask: Task<Void, Error>?
+
+            for await notification in axNotificationStream {
                 guard let self else { return }
                 try Task.checkCancellation()
-                observeFocusedWindow()
+
+                guard let event = AXNotificationKind(rawValue: notification.name) else {
+                    continue
+                }
+
+                self.axNotifications.send(.init(kind: event, element: notification.element))
+
+                if event == .focusedWindowChanged {
+                    observeFocusedWindow()
+                }
+
+                if event == .focusedUIElementChanged || event == .applicationDeactivated {
+                    updateWorkspaceInfoTask?.cancel()
+                    updateWorkspaceInfoTask = Task { [weak self] in
+                        guard let self else { return }
+                        try await Task.sleep(nanoseconds: 2_000_000_000)
+                        try Task.checkCancellation()
+                        self.updateWorkspaceInfo()
+                    }
+                }
+
+                if event == .created || event == .uiElementDestroyed {
+                    let isCompletionPanel = {
+                        notification.element.identifier == "_XC_COMPLETION_TABLE_"
+                            || notification.element.firstChild { element in
+                                element.identifier == "_XC_COMPLETION_TABLE_"
+                            } != nil
+                    }
+
+                    switch event {
+                    case .created:
+                        if isCompletionPanel() {
+                            completionPanel = notification.element
+                            self.axNotifications.send(.init(
+                                kind: .xcodeCompletionPanelChanged,
+                                element: notification.element
+                            ))
+                        }
+                    case .uiElementDestroyed:
+                        if isCompletionPanel() {
+                            completionPanel = nil
+                            self.axNotifications.send(.init(
+                                kind: .xcodeCompletionPanelChanged,
+                                element: notification.element
+                            ))
+                        }
+                    default: continue
+                    }
+                }
             }
         }
 
-        longRunningTasks.insert(focusedWindowChanged)
+        longRunningTasks.insert(observeAXNotificationTask)
 
         updateWorkspaceInfo()
-
-        let elementChangeNotification = AXNotificationStream(
-            app: runningApplication,
-            notificationNames: kAXFocusedUIElementChangedNotification,
-            kAXApplicationDeactivatedNotification
-        )
-
-        let updateTabsTask = Task { @MainActor [weak self] in
-            if #available(macOS 13.0, *) {
-                for await _ in elementChangeNotification.debounce(for: .seconds(2)) {
-                    guard let self else { return }
-                    try Task.checkCancellation()
-                    updateWorkspaceInfo()
-                }
-            } else {
-                for await _ in elementChangeNotification {
-                    guard let self else { return }
-                    try Task.checkCancellation()
-                    updateWorkspaceInfo()
-                }
-            }
-        }
-
-        longRunningTasks.insert(updateTabsTask)
-
-        let completionPanelNotification = AXNotificationStream(
-            app: runningApplication,
-            notificationNames: kAXCreatedNotification, kAXUIElementDestroyedNotification
-        )
-
-        let completionPanelTask = Task { @MainActor [weak self] in
-            for await event in completionPanelNotification {
-                guard let self else { return }
-
-                // We can only observe the creation and closing of the parent
-                // of the completion panel.
-                let isCompletionPanel = {
-                    event.element.identifier == "_XC_COMPLETION_TABLE_"
-                        || event.element.firstChild { element in
-                            element.identifier == "_XC_COMPLETION_TABLE_"
-                        } != nil
-                }
-                switch event.name {
-                case kAXCreatedNotification:
-                    if isCompletionPanel() {
-                        completionPanel = event.element
-                    }
-                case kAXUIElementDestroyedNotification:
-                    if isCompletionPanel() {
-                        completionPanel = nil
-                    }
-                default: break
-                }
-
-                try Task.checkCancellation()
-            }
-        }
-
-        longRunningTasks.insert(completionPanelTask)
     }
 }
 
