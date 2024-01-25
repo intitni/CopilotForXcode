@@ -208,7 +208,7 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.updateWindowOpacity(immediately: false))
                     if isDetached {
                         Task { @MainActor in
-                            windows.chatPanelWindow.alphaValue = 1
+                            windows.chatPanelWindow.isWindowHidden = false
                         }
                     }
                 }
@@ -539,13 +539,7 @@ public struct WidgetFeature: ReducerProtocol {
                         }
 
                         if isChatPanelDetached {
-                            if windows.chatPanelWindow.alphaValue == 0 {
-                                windows.chatPanelWindow.setFrame(
-                                    widgetLocation.defaultPanelLocation.frame,
-                                    display: false,
-                                    animate: animated
-                                )
-                            }
+                            // don't update it!
                         } else {
                             windows.chatPanelWindow.setFrame(
                                 widgetLocation.defaultPanelLocation.frame,
