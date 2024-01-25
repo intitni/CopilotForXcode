@@ -208,7 +208,7 @@ public struct WidgetFeature: ReducerProtocol {
                     await send(.updateWindowOpacity(immediately: false))
                     if isDetached {
                         Task { @MainActor in
-                            windows.chatPanelWindow.alphaValue = 1
+                            windows.chatPanelWindow.isWindowHidden = false
                         }
                     }
                 }
