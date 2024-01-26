@@ -52,7 +52,7 @@ extension PromptToCodePanel {
                         ) }
                     ) { viewStore in
                         let isAttached = viewStore.state.isAttachedToSelectionRange
-                        let color: Color = isAttached ? .indigo : .secondary.opacity(0.6)
+                        let color: Color = isAttached ? .accentColor : .secondary.opacity(0.6)
                         HStack(spacing: 4) {
                             Image(
                                 systemName: isAttached ? "link" : "character.cursor.ibeam"
@@ -180,7 +180,7 @@ extension PromptToCodePanel {
                                 }) {
                                     Text("Accept(⌘ + ⏎)")
                                 }
-                                .buttonStyle(CommandButtonStyle(color: .indigo))
+                                .buttonStyle(CommandButtonStyle(color: .accentColor))
                                 .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                             }
                         }

@@ -32,7 +32,7 @@ struct ToastPanelView: View {
                             .frame(maxWidth: .infinity)
                             .background({
                                 switch message.type {
-                                case .info: return Color(nsColor: .systemIndigo)
+                                case .info: return Color.accentColor
                                 case .error: return Color(nsColor: .systemRed)
                                 case .warning: return Color(nsColor: .systemOrange)
                                 }
