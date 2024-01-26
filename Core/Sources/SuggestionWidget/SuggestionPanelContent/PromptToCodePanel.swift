@@ -73,6 +73,8 @@ extension PromptToCodePanel {
                             if isAttached {
                                 HStack(spacing: 4) {
                                     Text(viewStore.state.attachedToFilename)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
                                     if let range = viewStore.state.selectionRange {
                                         Text(range.description)
                                     }
@@ -435,6 +437,37 @@ struct PromptToCodePanel_Preview: PreviewProvider {
         ), reducer: PromptToCode()))
             .frame(width: 450, height: 400)
     }
+}
+
+#Preview("Prompt to Code Panel Super Long File Name") {
+    PromptToCodePanel(store: .init(initialState: .init(
+        code: """
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        prompt: "",
+        language: .builtIn(.swift),
+        indentSize: 4,
+        usesTabsForIndentation: false,
+        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+        documentURL: URL(
+            fileURLWithPath: "path/to/file-name-is-super-long-what-should-we-do-with-it-hah.txt"
+        ),
+        allCode: "",
+        allLines: [],
+        commandName: "Generate Code",
+        description: "Hello world",
+        isResponding: false,
+        isAttachedToSelectionRange: true,
+        selectionRange: .init(
+            start: .init(line: 8, character: 0),
+            end: .init(line: 12, character: 2)
+        )
+    ), reducer: PromptToCode()))
+        .frame(width: 450, height: 400)
 }
 
 struct PromptToCodePanel_Error_Detached_Preview: PreviewProvider {
