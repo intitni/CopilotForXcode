@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion = "1.6.6"
+    static let latestSupportedVersion = "1.6.9"
 
     public init() {}
 
