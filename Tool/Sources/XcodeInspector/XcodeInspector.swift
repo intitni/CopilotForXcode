@@ -189,7 +189,7 @@ public final class XcodeInspector: ObservableObject {
     }
 
     @MainActor
-    func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
+    private func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication
         activeApplication = xcode
         xcode.refresh()

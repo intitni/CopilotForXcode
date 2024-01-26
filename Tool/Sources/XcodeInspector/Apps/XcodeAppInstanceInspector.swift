@@ -6,16 +6,6 @@ import Combine
 import Foundation
 
 public final class XcodeAppInstanceInspector: AppInstanceInspector {
-    @Published public fileprivate(set) var focusedWindow: XcodeWindowInspector?
-    @Published public fileprivate(set) var documentURL: URL? = nil
-    @Published public fileprivate(set) var workspaceURL: URL? = nil
-    @Published public fileprivate(set) var projectRootURL: URL? = nil
-    @Published public fileprivate(set) var workspaces = [WorkspaceIdentifier: Workspace]()
-    public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
-        updateWorkspaceInfo()
-        return workspaces.mapValues(\.info)
-    }
-
     public struct AXNotification {
         public var kind: AXNotificationKind
         public var element: AXUIElement
@@ -71,9 +61,18 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
-
+    @Published public fileprivate(set) var focusedWindow: XcodeWindowInspector?
+    @Published public fileprivate(set) var documentURL: URL? = nil
+    @Published public fileprivate(set) var workspaceURL: URL? = nil
+    @Published public fileprivate(set) var projectRootURL: URL? = nil
+    @Published public fileprivate(set) var workspaces = [WorkspaceIdentifier: Workspace]()
     @Published public private(set) var completionPanel: AXUIElement?
+    public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
+        updateWorkspaceInfo()
+        return workspaces.mapValues(\.info)
+    }
+
+    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     public var realtimeDocumentURL: URL? {
         guard let window = appElement.focusedWindow,
@@ -144,7 +143,16 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
 
     @MainActor
-    func observeFocusedWindow() {
+    func refresh() {
+        if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
+            focusedWindow.refresh()
+        } else {
+            observeFocusedWindow()
+        }
+    }
+
+    @MainActor
+    private func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
             if window.identifier == "Xcode.WorkspaceWindow" {
                 let window = WorkspaceXcodeWindowInspector(
@@ -192,16 +200,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
 
     @MainActor
-    func refresh() {
-        if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
-            focusedWindow.refresh()
-        } else {
-            observeFocusedWindow()
-        }
-    }
-
-    @MainActor
-    func observeAXNotifications() {
+    private func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
 

@@ -19,10 +19,10 @@ public class SourceEditor {
         case scrollPositionChanged
     }
 
-    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
     let runningApplication: NSRunningApplication
     public let element: AXUIElement
     var observeAXNotificationsTask: Task<Void, Never>?
+    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     /// The content of the source editor.
     public var content: Content {
@@ -53,18 +53,14 @@ public class SourceEditor {
     public init(runningApplication: NSRunningApplication, element: AXUIElement) {
         self.runningApplication = runningApplication
         self.element = element
-
-        Task { @MainActor in
-            observeAXNotifications()
-        }
+        observeAXNotifications()
     }
 
-    @MainActor
-    func observeAXNotifications() {
+    private func observeAXNotifications() {
         observeAXNotificationsTask?.cancel()
         observeAXNotificationsTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            await withTaskGroup(of: Void.self) { [weak self] group in
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 guard let self else { return }
                 let editorNotifications = AXNotificationStream(
                     app: runningApplication,
@@ -76,6 +72,7 @@ public class SourceEditor {
 
                 group.addTask { [weak self] in
                     for await notification in editorNotifications {
+                        try Task.checkCancellation()
                         guard let self else { return }
                         if let kind: AXNotificationKind = {
                             switch notification.name {
@@ -101,6 +98,7 @@ public class SourceEditor {
 
                     group.addTask { [weak self] in
                         for await notification in scrollViewNotifications {
+                            try Task.checkCancellation()
                             guard let self else { return }
                             self.axNotifications.send(.init(
                                 kind: .scrollPositionChanged,
@@ -110,7 +108,7 @@ public class SourceEditor {
                     }
                 }
 
-                await group.waitForAll()
+                try? await group.waitForAll()
             }
         }
     }
