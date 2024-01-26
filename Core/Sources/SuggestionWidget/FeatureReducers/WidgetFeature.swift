@@ -1,9 +1,9 @@
 import ActiveApplicationMonitor
 import AppActivator
 import AsyncAlgorithms
-import AXNotificationStream
 import ComposableArchitecture
 import Foundation
+import Logger
 import Preferences
 import SwiftUI
 import Toast
@@ -345,39 +345,27 @@ public struct WidgetFeature: ReducerProtocol {
                 }.cancellable(id: CancelID.observeUserDefaults, cancelInFlight: true)
 
             case .observeWindowChange:
-                guard let app = xcodeInspector.activeApplication else { return .none }
-                guard app.isXcode else { return .none }
+                guard let app = xcodeInspector.activeXcode else { return .none }
 
                 let documentURL = state.focusingDocumentURL
 
-                let notifications = AXNotificationStream(
-                    app: app.runningApplication,
-                    notificationNames:
-                    kAXApplicationActivatedNotification,
-                    kAXMovedNotification,
-                    kAXResizedNotification,
-                    kAXMainWindowChangedNotification,
-                    kAXFocusedWindowChangedNotification,
-                    kAXFocusedUIElementChangedNotification,
-                    kAXWindowMovedNotification,
-                    kAXWindowResizedNotification,
-                    kAXWindowMiniaturizedNotification,
-                    kAXWindowDeminiaturizedNotification
-                )
+                let notifications = app.axNotifications
 
                 return .run { send in
                     await send(.observeEditorChange)
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
 
                     for await notification in notifications {
+                        Logger.service.debug("Receive \(notification.kind) from Xcode")
+
                         try Task.checkCancellation()
 
                         // Hide the widgets before switching to another window/editor
                         // so the transition looks better.
                         if [
-                            kAXFocusedUIElementChangedNotification,
-                            kAXFocusedWindowChangedNotification,
-                        ].contains(notification.name) {
+                            .focusedUIElementChanged,
+                            .focusedWindowChanged,
+                        ].contains(notification.kind) {
                             let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
                             if documentURL != newDocumentURL {
                                 await send(.panel(.removeDisplayedContent))
@@ -388,11 +376,11 @@ public struct WidgetFeature: ReducerProtocol {
 
                         // update widgets.
                         if [
-                            kAXFocusedUIElementChangedNotification,
-                            kAXApplicationActivatedNotification,
-                            kAXMainWindowChangedNotification,
-                            kAXFocusedWindowChangedNotification,
-                        ].contains(notification.name) {
+                            .focusedUIElementChanged,
+                            .applicationActivated,
+                            .mainWindowChanged,
+                            .focusedWindowChanged,
+                        ].contains(notification.kind) {
                             await send(.updateWindowLocation(animated: false))
                             await send(.updateWindowOpacity(immediately: false))
                             await send(.observeEditorChange)
@@ -405,33 +393,20 @@ public struct WidgetFeature: ReducerProtocol {
                 }.cancellable(id: CancelID.observeWindowChange, cancelInFlight: true)
 
             case .observeEditorChange:
-                guard let app = xcodeInspector.activeApplication else { return .none }
-                let appElement = AXUIElementCreateApplication(
-                    app.runningApplication.processIdentifier
-                )
-                guard let focusedElement = appElement.focusedElement,
-                      focusedElement.description == "Source Editor",
-                      let scrollView = focusedElement.parent,
-                      let scrollBar = scrollView.verticalScrollBar
-                else { return .none }
+                guard let editor = xcodeInspector.focusedEditor else { return .none }
 
-                let selectionRangeChange = AXNotificationStream(
-                    app: app.runningApplication,
-                    element: focusedElement,
-                    notificationNames: kAXSelectedTextChangedNotification
-                )
-                let scroll = AXNotificationStream(
-                    app: app.runningApplication,
-                    element: scrollBar,
-                    notificationNames: kAXValueChangedNotification
-                )
+                let selectionRangeChange = editor.axNotifications
+                    .filter { $0.kind == .selectedTextChanged }
+                let scroll = editor.axNotifications
+                    .filter { $0.kind == .scrollPositionChanged }
 
                 return .run { send in
                     if #available(macOS 13.0, *) {
-                        for await _ in merge(
+                        for await notification in merge(
                             selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                             scroll
                         ) {
+                            Logger.service.debug("Receive \(notification.kind) from editor")
                             guard xcodeInspector.latestActiveXcode != nil else { return }
                             try Task.checkCancellation()
                             await send(.updateWindowLocation(animated: false))

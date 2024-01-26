@@ -1,4 +1,5 @@
 import AppKit
+import AsyncExtensions
 import AXNotificationStream
 import Foundation
 import SuggestionModel
@@ -7,8 +8,21 @@ import SuggestionModel
 public class SourceEditor {
     public typealias Content = EditorInformation.SourceEditorContent
 
+    public struct AXNotification {
+        public var kind: AXNotificationKind
+        public var element: AXUIElement
+    }
+
+    public enum AXNotificationKind {
+        case selectedTextChanged
+        case valueChanged
+        case scrollPositionChanged
+    }
+
     let runningApplication: NSRunningApplication
     public let element: AXUIElement
+    var observeAXNotificationsTask: Task<Void, Never>?
+    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     /// The content of the source editor.
     public var content: Content {
@@ -39,25 +53,64 @@ public class SourceEditor {
     public init(runningApplication: NSRunningApplication, element: AXUIElement) {
         self.runningApplication = runningApplication
         self.element = element
+        observeAXNotifications()
     }
 
-    /// Observe to changes in the source editor.
-    public func observe(notificationNames: String...) -> AXNotificationStream {
-        return AXNotificationStream(
-            app: runningApplication,
-            element: element,
-            notificationNames: notificationNames
-        )
-    }
+    private func observeAXNotifications() {
+        observeAXNotificationsTask?.cancel()
+        observeAXNotificationsTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                guard let self else { return }
+                let editorNotifications = AXNotificationStream(
+                    app: runningApplication,
+                    element: element,
+                    notificationNames:
+                    kAXSelectedTextChangedNotification,
+                    kAXValueChangedNotification
+                )
 
-    /// Observe to changes in the source editor scroll view.
-    public func observeScrollView(notificationNames: String...) -> AXNotificationStream? {
-        guard let scrollView = element.parent else { return nil }
-        return AXNotificationStream(
-            app: runningApplication,
-            element: scrollView,
-            notificationNames: notificationNames
-        )
+                group.addTask { [weak self] in
+                    for await notification in editorNotifications {
+                        try Task.checkCancellation()
+                        guard let self else { return }
+                        if let kind: AXNotificationKind = {
+                            switch notification.name {
+                            case kAXSelectedTextChangedNotification: return .selectedTextChanged
+                            case kAXValueChangedNotification: return .valueChanged
+                            default: return nil
+                            }
+                        }() {
+                            self.axNotifications.send(.init(
+                                kind: kind,
+                                element: notification.element
+                            ))
+                        }
+                    }
+                }
+
+                if let scrollView = element.parent, let scrollBar = scrollView.verticalScrollBar {
+                    let scrollViewNotifications = AXNotificationStream(
+                        app: runningApplication,
+                        element: scrollBar,
+                        notificationNames: kAXValueChangedNotification
+                    )
+
+                    group.addTask { [weak self] in
+                        for await notification in scrollViewNotifications {
+                            try Task.checkCancellation()
+                            guard let self else { return }
+                            self.axNotifications.send(.init(
+                                kind: .scrollPositionChanged,
+                                element: notification.element
+                            ))
+                        }
+                    }
+                }
+
+                try? await group.waitForAll()
+            }
+        }
     }
 }
 
