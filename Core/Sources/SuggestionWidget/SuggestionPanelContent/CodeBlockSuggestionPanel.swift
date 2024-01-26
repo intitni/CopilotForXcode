@@ -32,6 +32,12 @@ struct CodeBlockSuggestionPanel: View {
                 Spacer()
 
                 Button(action: {
+                    suggestion.dismissSuggestion()
+                }) {
+                    Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
+                }.buttonStyle(.plain)
+                
+                Button(action: {
                     suggestion.rejectSuggestion()
                 }) {
                     Text("Reject")
@@ -41,7 +47,7 @@ struct CodeBlockSuggestionPanel: View {
                     suggestion.acceptSuggestion()
                 }) {
                     Text("Accept")
-                }.buttonStyle(CommandButtonStyle(color: .indigo))
+                }.buttonStyle(CommandButtonStyle(color: .accentColor))
             }
             .padding()
             .foregroundColor(.secondary)
@@ -72,7 +78,7 @@ struct CodeBlockSuggestionPanel: View {
                 }.buttonStyle(.plain)
 
                 Spacer()
-                
+
                 Button(action: {
                     suggestion.dismissSuggestion()
                 }) {
@@ -112,146 +118,94 @@ struct CodeBlockSuggestionPanel: View {
 
 // MARK: - Previews
 
-struct CodeBlockSuggestionPanel_Dark_Preview: PreviewProvider {
-    static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
-            code: """
-            LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                Text(viewModel.suggestion[index])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-            }
-            """,
-            language: "swift",
-            startLineIndex: 8,
-            suggestionCount: 2,
-            currentSuggestionIndex: 0
-        ))
-        .preferredColorScheme(.dark)
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
+#Preview("Code Block Suggestion Panel") {
+    CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
+        code: """
+        LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        language: "swift",
+        startLineIndex: 8,
+        suggestionCount: 2,
+        currentSuggestionIndex: 0
+    ), suggestionDisplayCompactMode: .init(
+        wrappedValue: false,
+        "suggestionDisplayCompactMode",
+        store: {
+            let userDefault =
+                UserDefaults(suiteName: "CodeBlockSuggestionPanel_CompactToolBar_Preview")
+            userDefault?.set(false, for: \.suggestionDisplayCompactMode)
+            return userDefault!
+        }()
+    ))
+    .frame(width: 450, height: 400)
+    .background {
+        HStack {
+            Color.red
+            Color.green
+            Color.blue
         }
     }
 }
 
-struct CodeBlockSuggestionPanel_Bright_Preview: PreviewProvider {
-    static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
-            code: """
-            LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                Text(viewModel.suggestion[index])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-            }
-            """,
-            language: "swift",
-            startLineIndex: 8,
-            suggestionCount: 2,
-            currentSuggestionIndex: 0
-        ))
-        .preferredColorScheme(.light)
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
+#Preview("Code Block Suggestion Panel Compact Mode") {
+    CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
+        code: """
+        LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        language: "swift",
+        startLineIndex: 8,
+        suggestionCount: 2,
+        currentSuggestionIndex: 0
+    ), suggestionDisplayCompactMode: .init(
+        wrappedValue: true,
+        "suggestionDisplayCompactMode",
+        store: {
+            let userDefault =
+                UserDefaults(suiteName: "CodeBlockSuggestionPanel_CompactToolBar_Preview")
+            userDefault?.set(true, for: \.suggestionDisplayCompactMode)
+            return userDefault!
+        }()
+    ))
+    .preferredColorScheme(.light)
+    .frame(width: 450, height: 400)
+    .background {
+        HStack {
+            Color.red
+            Color.green
+            Color.blue
         }
     }
 }
 
-struct CodeBlockSuggestionPanel_CompactToolBar_Preview: PreviewProvider {
-    static let userDefault = {
-        let userDefault = UserDefaults(suiteName: "CodeBlockSuggestionPanel_CompactToolBar_Preview")
-        userDefault?.set(true, for: \.suggestionDisplayCompactMode)
-        return userDefault!
-    }()
-
-    static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
-            code: """
-            LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
-            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
-                Text(viewModel.suggestion[index])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-            }
-            """,
-            language: "swift",
-            startLineIndex: 8,
-            suggestionCount: 2,
-            currentSuggestionIndex: 0
-        ), suggestionDisplayCompactMode: .init(
-            wrappedValue: true,
-            "suggestionDisplayCompactMode",
-            store: Self.userDefault
-        ))
-        .preferredColorScheme(.light)
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
+#Preview("Code Block Suggestion Panel Highlight ObjC") {
+    CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
+        code: """
+        - (void)addSubview:(UIView *)view {
+            [self addSubview:view];
         }
-    }
-}
-
-struct CodeBlockSuggestionPanel_Dark_Objc_Preview: PreviewProvider {
-    static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
-            code: """
-            - (void)addSubview:(UIView *)view {
-                [self addSubview:view];
-            }
-            """,
-            language: "objective-c",
-            startLineIndex: 8,
-            suggestionCount: 2,
-            currentSuggestionIndex: 0
-        ))
-        .preferredColorScheme(.dark)
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
-struct CodeBlockSuggestionPanel_Bright_Objc_Preview: PreviewProvider {
-    static var previews: some View {
-        CodeBlockSuggestionPanel(suggestion: CodeSuggestionProvider(
-            code: """
-            - (void)addSubview:(UIView *)view {
-                [self addSubview:view];
-            }
-            """,
-            language: "objective-c",
-            startLineIndex: 8,
-            suggestionCount: 2,
-            currentSuggestionIndex: 0
-        ))
-        .preferredColorScheme(.light)
-        .frame(width: 450, height: 400)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
+        """,
+        language: "objective-c",
+        startLineIndex: 8,
+        suggestionCount: 2,
+        currentSuggestionIndex: 0
+    ))
+    .preferredColorScheme(.light)
+    .frame(width: 450, height: 400)
+    .background {
+        HStack {
+            Color.red
+            Color.green
+            Color.blue
         }
     }
 }
