@@ -130,18 +130,14 @@ extension SourceEditor {
                 let selectedRangeMatch = selectedTextRange == sourceSelectedTextRange
                 let lines: [String] = {
                     if contentMatch {
-                        Logger.service.debug("Cache Hit: Lines")
                         return cachedLines
                     }
-                    Logger.service.debug("Cache Missed: Lines")
                     return content.breakLines(appendLineBreakToLastLine: false)
                 }()
                 let selections: [CursorRange] = {
                     if contentMatch, selectedRangeMatch {
-                        Logger.service.debug("Cache Hit: Selections")
                         return cachedSelections
                     }
-                    Logger.service.debug("Cache Missed: Selections")
                     if let selectedTextRange {
                         return [SourceEditor.convertRangeToCursorRange(
                             selectedTextRange,
