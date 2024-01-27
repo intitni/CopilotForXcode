@@ -52,18 +52,18 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
         _ request: SuggestionRequest,
         next: Next
     ) async throws -> [CodeSuggestion] {
-        Logger.service.debug("""
+        Logger.service.info("""
         Get suggestion for \(request.fileURL) at \(request.cursorPosition)
         """)
         do {
             let suggestions = try await next(request)
-            Logger.service.debug("""
+            Logger.service.info("""
             Receive \(suggestions.count) suggestions for \(request.fileURL) \
             at \(request.cursorPosition)
             """)
             return suggestions
         } catch {
-            Logger.service.debug("""
+            Logger.service.info("""
             Error: \(error.localizedDescription)
             """)
             throw error
