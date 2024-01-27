@@ -99,6 +99,10 @@ struct PseudoCommandHandler {
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
+        if filespace.presentingSuggestion == nil {
+            return // skip if there's no suggestion presented.
+        }
+        
         let content = sourceEditor.getContent()
         if !filespace.validateSuggestions(
             lines: content.lines,
