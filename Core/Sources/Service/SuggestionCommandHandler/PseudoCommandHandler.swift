@@ -42,12 +42,15 @@ struct PseudoCommandHandler {
 
     @WorkspaceActor
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
-        // Can't use handler if content is not available.
-        guard
-            let editor = await getEditorContent(sourceEditor: sourceEditor),
-            let filespace = await getFilespace(),
+        guard let filespace = await getFilespace(),
             let (workspace, _) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
+        
+        if Task.isCancelled { return }
+        
+        // Can't use handler if content is not available.
+        guard let editor = await getEditorContent(sourceEditor: sourceEditor)
+        else { return }
 
         let fileURL = filespace.fileURL
         let presenter = PresentInWindowSuggestionPresenter()
@@ -359,6 +362,7 @@ extension PseudoCommandHandler {
         guard let filespace = await getFilespace(),
               let sourceEditor = sourceEditor ?? XcodeInspector.shared.focusedEditor
         else { return nil }
+        if Task.isCancelled { return nil }
         let content = sourceEditor.getContent()
         let uti = filespace.codeMetadata.uti ?? ""
         let tabSize = filespace.codeMetadata.tabSize ?? 4
