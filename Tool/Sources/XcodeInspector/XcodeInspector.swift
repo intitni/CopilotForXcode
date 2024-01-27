@@ -215,7 +215,6 @@ public final class XcodeInspector: ObservableObject {
                         .notifications(named: .accessibilityAPIMalfunctioning)
                     for await notification in sequence {
                         guard let self else { return }
-                        let toast = self.toast
                         await self
                             .recoverFromAccessibilityMalfunctioning(notification.object as? String)
                     }
@@ -297,8 +296,10 @@ public final class XcodeInspector: ObservableObject {
             }
 
             activeXcodeObservations.insert(malfunctionCheck)
+    
+            checkForAccessibilityMalfunction("Reactivate Xcode")
         }
-
+        
         xcode.$completionPanel.receive(on: DispatchQueue.main).sink { [weak self] element in
             self?.completionPanel = element
         }.store(in: &activeXcodeCancellable)
