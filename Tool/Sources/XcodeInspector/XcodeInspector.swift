@@ -287,7 +287,7 @@ public final class XcodeInspector: ObservableObject {
                 if #available(macOS 13.0, *) {
                     let notifications = xcode.axNotifications.filter {
                         $0.kind == .uiElementDestroyed
-                    }.debounce(for: .milliseconds(500))
+                    }.debounce(for: .milliseconds(1000))
                     for await _ in notifications {
                         guard let self else { return }
                         try Task.checkCancellation()
