@@ -202,7 +202,7 @@ public extension SourceEditor {
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
             // The range is counted in UTF8, which causes line endings like \r\n to be of length 2.
-            let lineEndingAddition = (line.lineEnding?.utf8.count ?? 1) - 1
+            let lineEndingAddition = line.lineEnding.utf8.count - 1
             if countS <= range.lowerBound,
                range.lowerBound < countS + line.count + lineEndingAddition
             {
