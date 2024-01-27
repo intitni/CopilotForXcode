@@ -94,7 +94,7 @@ public actor RealtimeSuggestionController {
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
             if filespace.codeMetadata.uti == nil {
-                Logger.service.info("Generate cache for file.")
+                Logger.service.info("Generate cache for file.") 
                 // avoid the command get called twice
                 filespace.codeMetadata.uti = ""
                 do {

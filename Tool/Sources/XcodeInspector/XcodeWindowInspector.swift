@@ -54,7 +54,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                     for await notification in axNotifications {
                         guard notification.kind == .focusedUIElementChanged else { continue }
                         guard let self else { return }
-                        Logger.service.debug("Workspace refresh")
                         try Task.checkCancellation()
                         await self.updateURLs()
                     }
