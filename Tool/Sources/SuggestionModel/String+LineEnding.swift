@@ -7,7 +7,7 @@ public extension String {
     /// will be in the end of the string.
     ///
     /// For other situations, we can assume that they are "\n".
-    var lineEnding: Character? {
+    var lineEnding: Character {
         if let last, last.isNewline { return last }
         return "\n"
     }
@@ -17,7 +17,7 @@ public extension String {
         fast: Bool = true
     ) -> [Substring] {
         if fast {
-            let lineEndingInText = lineEnding ?? "\n"
+            let lineEndingInText = lineEnding
             return split(
                 separator: lineEndingInText,
                 omittingEmptySubsequences: omittingEmptySubsequences
@@ -34,7 +34,7 @@ public extension String {
         proposedLineEnding: String? = nil,
         appendLineBreakToLastLine: Bool = false
     ) -> [String] {
-        let lineEndingInText = lineEnding ?? "\n"
+        let lineEndingInText = lineEnding
         let lineEnding = proposedLineEnding ?? String(lineEndingInText)
         // Split on character for better performance.
         let lines = split(separator: lineEndingInText, omittingEmptySubsequences: false)
