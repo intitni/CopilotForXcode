@@ -2,6 +2,7 @@ import AppKit
 import AsyncExtensions
 import AXNotificationStream
 import Foundation
+import Logger
 import SuggestionModel
 
 /// Representing a source editor inside Xcode.
@@ -24,28 +25,25 @@ public class SourceEditor {
     var observeAXNotificationsTask: Task<Void, Never>?
     public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
-    /// The content of the source editor.
-    public var content: Content {
+    /// To prevent expensive calculations in ``getContent()``.
+    private let cache = Cache()
+
+    /// Get the content of the source editor.
+    ///
+    /// - note: This method is expensive.
+    public func getContent() -> Content {
         let content = element.value
-        let split = content.breakLines(appendLineBreakToLastLine: false)
+        let selectionRange = element.selectedTextRange
+        let (lines, selections) = cache.get(content: content, selectedTextRange: selectionRange)
+
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
-        if let selectionRange = element.selectedTextRange {
-            let range = Self.convertRangeToCursorRange(selectionRange, in: split)
-            return .init(
-                content: content,
-                lines: split,
-                selections: [range],
-                cursorPosition: range.start,
-                lineAnnotations: lineAnnotations
-            )
-        }
         return .init(
             content: content,
-            lines: split,
-            selections: [],
-            cursorPosition: .outOfScope,
+            lines: lines,
+            selections: selections,
+            cursorPosition: selections.first?.start ?? .outOfScope,
             lineAnnotations: lineAnnotations
         )
     }
@@ -109,6 +107,52 @@ public class SourceEditor {
                 }
 
                 try? await group.waitForAll()
+            }
+        }
+    }
+}
+
+extension SourceEditor {
+    final class Cache {
+        static let queue = DispatchQueue(label: "SourceEditor.Cache")
+
+        private var sourceContent: String?
+        private var cachedLines = [String]()
+        private var sourceSelectedTextRange: ClosedRange<Int>?
+        private var cachedSelections = [CursorRange]()
+
+        func get(content: String, selectedTextRange: ClosedRange<Int>?) -> (
+            lines: [String],
+            selections: [CursorRange]
+        ) {
+            Self.queue.sync {
+                let contentMatch = content.hashValue == sourceContent?.hashValue
+                let selectedRangeMatch = selectedTextRange == sourceSelectedTextRange
+                let lines: [String] = {
+                    if contentMatch {
+                        return cachedLines
+                    }
+                    return content.breakLines(appendLineBreakToLastLine: false)
+                }()
+                let selections: [CursorRange] = {
+                    if contentMatch, selectedRangeMatch {
+                        return cachedSelections
+                    }
+                    if let selectedTextRange {
+                        return [SourceEditor.convertRangeToCursorRange(
+                            selectedTextRange,
+                            in: lines
+                        )]
+                    }
+                    return []
+                }()
+
+                sourceContent = content
+                cachedLines = lines
+                sourceSelectedTextRange = selectedTextRange
+                cachedSelections = selections
+
+                return (lines, selections)
             }
         }
     }

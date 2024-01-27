@@ -327,7 +327,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
-        .init(defaultValue: 0, key: "RealtimeSuggestionDebounce")
+        .init(defaultValue: 0.2, key: "RealtimeSuggestionDebounce")
     }
 
     var acceptSuggestionWithTab: PreferenceKey<Bool> {

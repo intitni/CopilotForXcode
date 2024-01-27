@@ -41,7 +41,7 @@ public final class XcodeInspector: ObservableObject {
               let projectURL = XcodeInspector.shared.activeProjectRootURL
         else { return nil }
 
-        let editorContent = XcodeInspector.shared.focusedEditor?.content
+        let editorContent = XcodeInspector.shared.focusedEditor?.getContent()
         let language = languageIdentifierFromFileURL(documentURL)
         let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
 
@@ -327,39 +327,6 @@ public final class XcodeInspector: ObservableObject {
     private func checkForAccessibilityMalfunction(_ source: String) {
         guard Date().timeIntervalSince(lastRecoveryFromAccessibilityMalfunctioningTimeStamp) > 5
         else { return }
-        
-        Logger.service.debug("""
-        Check for Accessibility Malfunctioning:
-        Source Editor: \({
-            if let editor = self.focusedEditor {
-                return editor.element.description
-            }
-            return "Not Found"
-        }())
-        Focused Element: \({
-            if let element = self.focusedElement {
-                return "\(element.description), \(element.identifier), \(element.role)"
-            }
-            return "Not Found"
-        }())
-
-        Accessibility API Permission: \(
-            AXIsProcessTrusted() ? "Granted" :
-                "Not Granted"
-        )
-        App: \(
-            activeApplication?.runningApplication
-                .bundleIdentifier ?? ""
-        )
-        Focused Element: \({
-            guard let element = self.activeApplication?.appElement
-                .focusedElement
-            else {
-                return "Not Found"
-            }
-            return "\(element.description), \(element.identifier), \(element.role)"
-        }())
-        """)
 
         if let editor = focusedEditor, !editor.element.isSourceEditor {
             NSWorkspace.shared.notificationCenter.post(

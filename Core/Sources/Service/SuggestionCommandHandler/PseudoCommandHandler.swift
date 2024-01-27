@@ -42,12 +42,15 @@ struct PseudoCommandHandler {
 
     @WorkspaceActor
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
-        // Can't use handler if content is not available.
-        guard
-            let editor = await getEditorContent(sourceEditor: sourceEditor),
-            let filespace = await getFilespace(),
+        guard let filespace = await getFilespace(),
             let (workspace, _) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
+        
+        if Task.isCancelled { return }
+        
+        // Can't use handler if content is not available.
+        guard let editor = await getEditorContent(sourceEditor: sourceEditor)
+        else { return }
 
         let fileURL = filespace.fileURL
         let presenter = PresentInWindowSuggestionPresenter()
@@ -55,14 +58,16 @@ struct PseudoCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        // Check if the current suggestion is still valid.
-        if filespace.validateSuggestions(
-            lines: editor.lines,
-            cursorPosition: editor.cursorPosition
-        ) {
-            return
-        } else {
-            presenter.discardSuggestion(fileURL: filespace.fileURL)
+        if filespace.presentingSuggestion != nil {
+            // Check if the current suggestion is still valid.
+            if filespace.validateSuggestions(
+                lines: editor.lines,
+                cursorPosition: editor.cursorPosition
+            ) {
+                return
+            } else {
+                presenter.discardSuggestion(fileURL: filespace.fileURL)
+            }
         }
 
         let snapshot = FilespaceSuggestionSnapshot(
@@ -78,9 +83,10 @@ struct PseudoCommandHandler {
                 editor: editor
             )
             if let sourceEditor {
+                let editorContent = sourceEditor.getContent()
                 _ = filespace.validateSuggestions(
-                    lines: sourceEditor.content.lines,
-                    cursorPosition: sourceEditor.content.cursorPosition
+                    lines: editorContent.lines,
+                    cursorPosition: editorContent.cursorPosition
                 )
             }
             if filespace.presentingSuggestion != nil {
@@ -98,9 +104,14 @@ struct PseudoCommandHandler {
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
+        if filespace.presentingSuggestion == nil {
+            return // skip if there's no suggestion presented.
+        }
+        
+        let content = sourceEditor.getContent()
         if !filespace.validateSuggestions(
-            lines: sourceEditor.content.lines,
-            cursorPosition: sourceEditor.content.cursorPosition
+            lines: content.lines,
+            cursorPosition: content.cursorPosition
         ) {
             PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: fileURL)
         }
@@ -351,7 +362,8 @@ extension PseudoCommandHandler {
         guard let filespace = await getFilespace(),
               let sourceEditor = sourceEditor ?? XcodeInspector.shared.focusedEditor
         else { return nil }
-        let content = sourceEditor.content
+        if Task.isCancelled { return nil }
+        let content = sourceEditor.getContent()
         let uti = filespace.codeMetadata.uti ?? ""
         let tabSize = filespace.codeMetadata.tabSize ?? 4
         let indentSize = filespace.codeMetadata.indentSize ?? 4

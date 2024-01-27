@@ -43,7 +43,7 @@ enum ChatTabFactory {
                 guard let editor = XcodeInspector.shared.focusedEditor else {
                     return .init(selectedText: "", language: "", fileContent: "")
                 }
-                let content = editor.content
+                let content = editor.getContent()
                 return .init(
                     selectedText: content.selectedContent,
                     language: (

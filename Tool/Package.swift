@@ -182,6 +182,7 @@ let package = Package(
             dependencies: [
                 "Highlightr",
                 "Preferences",
+                "SuggestionModel",
                 .product(name: "STTextView", package: "STTextView"),
             ]
         ),
