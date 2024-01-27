@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Highlightr
+import SuggestionModel
 import SwiftUI
 
 public func highlightedCodeBlock(
@@ -82,7 +83,7 @@ func convertToCodeLines(
         return false
     }
 
-    let separatedInput = input.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+    let separatedInput = input.splitByNewLine(omittingEmptySubsequences: false)
         .map { String($0) }
     let commonLeadingSpaceCount = {
         if !droppingLeadingSpaces { return 0 }
