@@ -2,6 +2,7 @@ import AppKit
 import AsyncExtensions
 import AXNotificationStream
 import Foundation
+import Logger
 import SuggestionModel
 
 /// Representing a source editor inside Xcode.
@@ -24,43 +25,25 @@ public class SourceEditor {
     var observeAXNotificationsTask: Task<Void, Never>?
     public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
+    /// To prevent expensive calculations in ``getContent()``.
+    private let cache = Cache()
 
-    private var cachedContent: String?
-    private var cachedLines = [String]()
-    
     /// Get the content of the source editor.
     ///
     /// - note: This method is expensive.
     public func getContent() -> Content {
         let content = element.value
-                                                     
-        let split = if element.hashValue == cachedContent?.hashValue {
-            cachedLines
-        } else {
-            content.breakLines(appendLineBreakToLastLine: false)
-        }
-        
-        cachedContent = content
-        cachedLines = split
-        
+        let selectionRange = element.selectedTextRange
+        let (lines, selections) = cache.get(content: content, selectedTextRange: selectionRange)
+
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
-        if let selectionRange = element.selectedTextRange {
-            let range = Self.convertRangeToCursorRange(selectionRange, in: split)
-            return .init(
-                content: content,
-                lines: split,
-                selections: [range],
-                cursorPosition: range.start,
-                lineAnnotations: lineAnnotations
-            )
-        }
         return .init(
             content: content,
-            lines: split,
-            selections: [],
-            cursorPosition: .outOfScope,
+            lines: lines,
+            selections: selections,
+            cursorPosition: selections.first?.start ?? .outOfScope,
             lineAnnotations: lineAnnotations
         )
     }
@@ -124,6 +107,56 @@ public class SourceEditor {
                 }
 
                 try? await group.waitForAll()
+            }
+        }
+    }
+}
+
+extension SourceEditor {
+    final class Cache {
+        static let queue = DispatchQueue(label: "SourceEditor.Cache")
+
+        private var sourceContent: String?
+        private var cachedLines = [String]()
+        private var sourceSelectedTextRange: ClosedRange<Int>?
+        private var cachedSelections = [CursorRange]()
+
+        func get(content: String, selectedTextRange: ClosedRange<Int>?) -> (
+            lines: [String],
+            selections: [CursorRange]
+        ) {
+            Self.queue.sync {
+                let contentMatch = content.hashValue == sourceContent?.hashValue
+                let selectedRangeMatch = selectedTextRange == sourceSelectedTextRange
+                let lines: [String] = {
+                    if contentMatch {
+                        Logger.service.debug("Cache Hit: Lines")
+                        return cachedLines
+                    }
+                    Logger.service.debug("Cache Missed: Lines")
+                    return content.breakLines(appendLineBreakToLastLine: false)
+                }()
+                let selections: [CursorRange] = {
+                    if contentMatch, selectedRangeMatch {
+                        Logger.service.debug("Cache Hit: Selections")
+                        return cachedSelections
+                    }
+                    Logger.service.debug("Cache Missed: Selections")
+                    if let selectedTextRange {
+                        return [SourceEditor.convertRangeToCursorRange(
+                            selectedTextRange,
+                            in: lines
+                        )]
+                    }
+                    return []
+                }()
+
+                sourceContent = content
+                cachedLines = lines
+                sourceSelectedTextRange = selectedTextRange
+                cachedSelections = selections
+
+                return (lines, selections)
             }
         }
     }
