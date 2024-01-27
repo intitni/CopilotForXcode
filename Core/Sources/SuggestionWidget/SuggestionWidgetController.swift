@@ -223,7 +223,7 @@ public final class SuggestionWidgetController: NSObject {
         dependency.windows.suggestionPanelWindow = suggestionPanelWindow
         dependency.windows.fullscreenDetector = fullscreenDetector
         dependency.windows.widgetWindow = widgetWindow
-
+                                                                                             
         store.send(.startup)
     }
 }
@@ -240,10 +240,12 @@ public extension SuggestionWidgetController {
     }
 
     func markAsProcessing(_ isProcessing: Bool) {
-        if isProcessing {
-            store.send(.circularWidget(.markIsProcessing))
-        } else {
-            store.send(.circularWidget(.endIsProcessing))
+        store.withState { state in
+            if isProcessing, !state.circularWidgetState.isProcessing {
+                store.send(.circularWidget(.markIsProcessing))
+            } else if !isProcessing, state.circularWidgetState.isProcessing {
+                store.send(.circularWidget(.endIsProcessing))
+            }
         }
     }
 

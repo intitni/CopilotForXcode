@@ -55,14 +55,16 @@ struct PseudoCommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        // Check if the current suggestion is still valid.
-        if filespace.validateSuggestions(
-            lines: editor.lines,
-            cursorPosition: editor.cursorPosition
-        ) {
-            return
-        } else {
-            presenter.discardSuggestion(fileURL: filespace.fileURL)
+        if filespace.presentingSuggestion != nil {
+            // Check if the current suggestion is still valid.
+            if filespace.validateSuggestions(
+                lines: editor.lines,
+                cursorPosition: editor.cursorPosition
+            ) {
+                return
+            } else {
+                presenter.discardSuggestion(fileURL: filespace.fileURL)
+            }
         }
 
         let snapshot = FilespaceSuggestionSnapshot(
