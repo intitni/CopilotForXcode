@@ -71,12 +71,10 @@ public actor RealtimeSuggestionController {
 
                 switch notification.kind {
                 case .valueChanged:
-                    Logger.service.debug("Receive valueChanged from editor")
                     await cancelInFlightTasks()
                     await self.triggerPrefetchDebounced()
                     await self.notifyEditingFileChange(editor: sourceEditor.element)
                 case .selectedTextChanged:
-                    Logger.service.debug("Receive selectedTextChanged from editor")
                     guard let fileURL = XcodeInspector.shared.activeDocumentURL
                     else { break }
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
@@ -96,7 +94,7 @@ public actor RealtimeSuggestionController {
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
             if filespace.codeMetadata.uti == nil {
-                Logger.service.info("Generate cache for file.")
+                Logger.service.info("Generate cache for file.") 
                 // avoid the command get called twice
                 filespace.codeMetadata.uti = ""
                 do {

@@ -135,7 +135,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             observeAXNotifications()
 
             try await Task.sleep(nanoseconds: 3_000_000_000)
-            // Sometimes the focused window may not be rea?dy on app launch.
+            // Sometimes the focused window may not be ready on app launch.
             if !(focusedWindow is WorkspaceXcodeWindowInspector) {
                 observeFocusedWindow()
             }
@@ -200,7 +200,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
 
     @MainActor
-    private func observeAXNotifications() {
+    func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
 

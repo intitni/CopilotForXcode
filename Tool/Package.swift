@@ -168,6 +168,8 @@ let package = Package(
                 "SuggestionModel",
                 "AXNotificationStream",
                 "Logger",
+                "Toast",
+                "Preferences",
                 .product(name: "AsyncExtensions", package: "AsyncExtensions"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
