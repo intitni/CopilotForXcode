@@ -41,7 +41,7 @@ public final class XcodeInspector: ObservableObject {
               let projectURL = XcodeInspector.shared.activeProjectRootURL
         else { return nil }
 
-        let editorContent = XcodeInspector.shared.focusedEditor?.content
+        let editorContent = XcodeInspector.shared.focusedEditor?.getContent()
         let language = languageIdentifierFromFileURL(documentURL)
         let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
 

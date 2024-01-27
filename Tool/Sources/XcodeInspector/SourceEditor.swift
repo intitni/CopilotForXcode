@@ -24,10 +24,25 @@ public class SourceEditor {
     var observeAXNotificationsTask: Task<Void, Never>?
     public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
-    /// The content of the source editor.
-    public var content: Content {
+
+    private var cachedContent: String?
+    private var cachedLines = [String]()
+    
+    /// Get the content of the source editor.
+    ///
+    /// - note: This method is expensive.
+    public func getContent() -> Content {
         let content = element.value
-        let split = content.breakLines(appendLineBreakToLastLine: false)
+                                                     
+        let split = if element.hashValue == cachedContent?.hashValue {
+            cachedLines
+        } else {
+            content.breakLines(appendLineBreakToLastLine: false)
+        }
+        
+        cachedContent = content
+        cachedLines = split
+        
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 

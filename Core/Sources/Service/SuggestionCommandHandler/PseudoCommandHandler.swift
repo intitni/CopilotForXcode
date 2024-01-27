@@ -78,9 +78,10 @@ struct PseudoCommandHandler {
                 editor: editor
             )
             if let sourceEditor {
+                let editorContent = sourceEditor.getContent()
                 _ = filespace.validateSuggestions(
-                    lines: sourceEditor.content.lines,
-                    cursorPosition: sourceEditor.content.cursorPosition
+                    lines: editorContent.lines,
+                    cursorPosition: editorContent.cursorPosition
                 )
             }
             if filespace.presentingSuggestion != nil {
@@ -98,9 +99,10 @@ struct PseudoCommandHandler {
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
+        let content = sourceEditor.getContent()
         if !filespace.validateSuggestions(
-            lines: sourceEditor.content.lines,
-            cursorPosition: sourceEditor.content.cursorPosition
+            lines: content.lines,
+            cursorPosition: content.cursorPosition
         ) {
             PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: fileURL)
         }
@@ -351,7 +353,7 @@ extension PseudoCommandHandler {
         guard let filespace = await getFilespace(),
               let sourceEditor = sourceEditor ?? XcodeInspector.shared.focusedEditor
         else { return nil }
-        let content = sourceEditor.content
+        let content = sourceEditor.getContent()
         let uti = filespace.codeMetadata.uti ?? ""
         let tabSize = filespace.codeMetadata.tabSize ?? 4
         let indentSize = filespace.codeMetadata.indentSize ?? 4
