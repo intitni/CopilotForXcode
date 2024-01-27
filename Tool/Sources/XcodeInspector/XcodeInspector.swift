@@ -216,24 +216,8 @@ public final class XcodeInspector: ObservableObject {
                     for await notification in sequence {
                         guard let self else { return }
                         let toast = self.toast
-                        if UserDefaults.shared
-                            .value(for: \.toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted)
-                        {
-                            toast.toast(
-                                content: """
-                                Accessibility API malfunction detected: \
-                                \(notification.object as? String ?? "").
-                                Resetting active Xcode.
-                                """,
-                                type: .warning
-                            )
-                        }
-                        if let activeXcode {
-                            await MainActor.run {
-                                self.setActiveXcode(activeXcode)
-                                activeXcode.observeAXNotifications()
-                            }
-                        }
+                        await self
+                            .recoverFromAccessibilityMalfunctioning(notification.object as? String)
                     }
                 }
             }
@@ -335,9 +319,14 @@ public final class XcodeInspector: ObservableObject {
             self?.focusedWindow = window
         }.store(in: &activeXcodeCancellable)
     }
+    
+    private var lastRecoveryFromAccessibilityMalfunctioningTimeStamp = Date()
 
     @MainActor
     private func checkForAccessibilityMalfunction(_ source: String) {
+        guard Date().timeIntervalSince(lastRecoveryFromAccessibilityMalfunctioningTimeStamp) > 5
+        else { return }
+        
         Logger.service.debug("""
         Check for Accessibility Malfunctioning:
         Source Editor: \({
@@ -385,6 +374,25 @@ public final class XcodeInspector: ObservableObject {
                     object: "Element Inconsistency:  \(source)"
                 )
             }
+        }
+    }
+    
+    @MainActor
+    private func recoverFromAccessibilityMalfunctioning(_ source: String?) {
+        if UserDefaults.shared.value(for: \.toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted) {
+            toast.toast(
+                content: """
+                Accessibility API malfunction detected: \
+                \(source ?? "").
+                Resetting active Xcode.
+                """,
+                type: .warning
+            )
+        }
+        if let activeXcode {
+            lastRecoveryFromAccessibilityMalfunctioningTimeStamp = Date()
+            setActiveXcode(activeXcode)
+            activeXcode.observeAXNotifications()
         }
     }
 }
