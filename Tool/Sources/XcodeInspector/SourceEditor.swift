@@ -121,12 +121,24 @@ extension SourceEditor {
         private var sourceSelectedTextRange: ClosedRange<Int>?
         private var cachedSelections = [CursorRange]()
 
+        init(
+            sourceContent: String? = nil,
+            cachedLines: [String] = [String](),
+            sourceSelectedTextRange: ClosedRange<Int>? = nil,
+            cachedSelections: [CursorRange] = [CursorRange]()
+        ) {
+            self.sourceContent = sourceContent
+            self.cachedLines = cachedLines
+            self.sourceSelectedTextRange = sourceSelectedTextRange
+            self.cachedSelections = cachedSelections
+        }
+
         func get(content: String, selectedTextRange: ClosedRange<Int>?) -> (
             lines: [String],
             selections: [CursorRange]
         ) {
             Self.queue.sync {
-                let contentMatch = content.hashValue == sourceContent?.hashValue
+                let contentMatch = content == sourceContent
                 let selectedRangeMatch = selectedTextRange == sourceSelectedTextRange
                 let lines: [String] = {
                     if contentMatch {

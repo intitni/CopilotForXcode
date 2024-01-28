@@ -350,6 +350,8 @@ public struct WidgetFeature: ReducerProtocol {
                 let documentURL = state.focusingDocumentURL
 
                 let notifications = app.axNotifications
+                
+                #warning("TODO: Handling events outside of TCA because the fire rate is too high.")
 
                 return .run { send in
                     await send(.observeEditorChange)
@@ -522,7 +524,6 @@ public struct WidgetFeature: ReducerProtocol {
                     }
                 }
 
-                #warning("TODO: control windows in their dedicated reducers.")
             case let .updateWindowOpacity(immediately):
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
                 let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty

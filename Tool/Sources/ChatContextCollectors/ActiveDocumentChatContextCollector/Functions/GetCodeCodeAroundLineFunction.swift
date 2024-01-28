@@ -32,7 +32,7 @@ struct GetCodeCodeAroundLineFunction: ChatGPTFunction {
     }
 
     var description: String {
-        "Get the code at the given line. You must ONLY call it when the user give you a specific line or the user ask about an out of scope annotation. \n\(additionalDescription)"
+        "Get the code at the given line. \(additionalDescription)"
     }
 
     var argumentSchema: JSONSchemaValue { [

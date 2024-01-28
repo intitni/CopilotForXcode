@@ -45,9 +45,28 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         var functions = [any ChatGPTFunction]()
 
         if !isSensitive {
+            var functionPrompt = """
+            ONLY call it when one of the following conditions are satisfied:
+            - the user ask you about specific line from the latest message, \
+            which is not included in the focused range.
+            """
+
+            if let annotations = context.focusedContext?.otherLineAnnotations,
+               !annotations.isEmpty
+            {
+                functionPrompt += """
+
+                - the user ask about annotations at line \(
+                    Set(annotations.map(\.line)).map(String.init).joined(separator: ",")
+                ).
+                """
+            }
+
+            print(functionPrompt)
+
             functions.append(GetCodeCodeAroundLineFunction(
                 contextCollector: self,
-                additionalDescription: "You already have the code in focusing range, don't get it again!"
+                additionalDescription: functionPrompt
             ))
         }
 
@@ -91,20 +110,20 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         let relativePath = "Document Relative Path: \(context.relativePath)"
         let language = "Language: \(context.language.rawValue)"
 
-        let focusingContextExplanation =
+        let focusedContextExplanation =
             "Below is the code inside the active document that the user is looking at right now:"
 
-        if let focusingContext = context.focusedContext {
-            let codeContext = focusingContext.context.isEmpty || isSensitive
+        if let focusedContext = context.focusedContext {
+            let codeContext = focusedContext.context.isEmpty || isSensitive
                 ? ""
                 : """
-                Focusing Context:
+                Focused Context:
                 ```
-                \(focusingContext.context.map(\.signature).joined(separator: "\n"))
+                \(focusedContext.context.map(\.signature).joined(separator: "\n"))
                 ```
                 """
 
-            let codeRange = "Focusing Range [line, character]: \(focusingContext.codeRange)"
+            let codeRange = "Focused Range [line, character]: \(focusedContext.codeRange)"
 
             let code = context.selectionRange.isEmpty && isSensitive
                 ? """
@@ -112,33 +131,33 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 Ask the user to select the code in the editor to get help. Also tell them the file is in gitignore.
                 """
                 : """
-                Focusing Code (from line \(
-                    focusingContext.codeRange.start.line + 1
-                ) to line \(focusingContext.codeRange.end.line + 1)):
+                Focused Code (from line \(
+                    focusedContext.codeRange.start.line + 1
+                ) to line \(focusedContext.codeRange.end.line + 1)):
                 ```\(context.language.rawValue)
-                \(focusingContext.code)
+                \(focusedContext.code)
                 ```
                 """
 
-            let fileAnnotations = focusingContext.otherLineAnnotations.isEmpty || isSensitive
+            let fileAnnotations = focusedContext.otherLineAnnotations.isEmpty || isSensitive
                 ? ""
                 : """
                 Out-of-scope Annotations:\"""
-                (They are not inside the focusing code. You can get the code at the line for details)
+                (The related code are not inside the focused code.)
                 \(
-                    focusingContext.otherLineAnnotations
+                    focusedContext.otherLineAnnotations
                         .map(convertAnnotationToText)
                         .joined(separator: "\n")
                 )
                 \"""
                 """
 
-            let codeAnnotations = focusingContext.lineAnnotations.isEmpty || isSensitive
+            let codeAnnotations = focusedContext.lineAnnotations.isEmpty || isSensitive
                 ? ""
                 : """
-                Annotations Inside Focusing Range:\"""
+                Annotations Inside Focused Range:\"""
                 \(
-                    focusingContext.lineAnnotations
+                    focusedContext.lineAnnotations
                         .map(convertAnnotationToText)
                         .joined(separator: "\n")
                 )
@@ -149,7 +168,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
                 start,
                 relativePath,
                 language,
-                focusingContextExplanation,
+                focusedContextExplanation,
                 codeContext,
                 codeRange,
                 code,
