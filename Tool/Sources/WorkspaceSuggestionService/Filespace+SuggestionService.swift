@@ -3,6 +3,7 @@ import SuggestionModel
 import Workspace
 
 public struct FilespaceSuggestionSnapshot: Equatable {
+    #warning("TODO: Can we remove it?")
     public var linesHash: Int
     public var cursorPosition: CursorPosition
 

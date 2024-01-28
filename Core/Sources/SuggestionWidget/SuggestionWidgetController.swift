@@ -239,6 +239,7 @@ public extension SuggestionWidgetController {
         store.send(.panel(.discardSuggestion))
     }
 
+    #warning("TODO: Make a progress controller that doesn't use TCA.")
     func markAsProcessing(_ isProcessing: Bool) {
         store.withState { state in
             if isProcessing, !state.circularWidgetState.isProcessing {
