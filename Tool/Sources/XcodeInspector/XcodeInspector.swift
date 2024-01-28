@@ -35,6 +35,7 @@ public final class XcodeInspector: ObservableObject {
     @Published public fileprivate(set) var focusedElement: AXUIElement?
     @Published public fileprivate(set) var completionPanel: AXUIElement?
 
+    #warning("TODO: make it a function and mark it as expensive")
     public var focusedEditorContent: EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
