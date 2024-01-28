@@ -175,6 +175,8 @@ let package = Package(
             ]
         ),
 
+        .testTarget(name: "XcodeInspectorTests", dependencies: ["XcodeInspector"]),
+
         .target(name: "UserDefaultsObserver"),
 
         .target(
