@@ -364,6 +364,7 @@ Since the app needs to manage license keys, it will send network request to `htt
 
 - when you activate the license key
 - when you deactivate the license key
+- when you validate the license key manually
 - when you open the host app or the service app if a license key is available
 - every 24 hours if a license key is available
 
