@@ -126,7 +126,7 @@ extension AppDelegate: NSMenuDelegate {
                 .append(.text("Active Workspace: \(inspector.activeWorkspaceURL?.path ?? "N/A")"))
             menu.items
                 .append(.text("Active Document: \(inspector.activeDocumentURL?.path ?? "N/A")"))
-            
+
             if let focusedWindow = inspector.focusedWindow {
                 menu.items.append(.text(
                     "Active Window: \(focusedWindow.uiElement.identifier)"
@@ -134,7 +134,7 @@ extension AppDelegate: NSMenuDelegate {
             } else {
                 menu.items.append(.text("Active Window: N/A"))
             }
-            
+
             if let focusedElement = inspector.focusedElement {
                 menu.items.append(.text(
                     "Focused Element: \(focusedElement.description)"
@@ -144,9 +144,9 @@ extension AppDelegate: NSMenuDelegate {
             }
 
             if let sourceEditor = inspector.focusedEditor {
-                menu.items.append(.text(
-                    "Active Source Editor: \(sourceEditor.element.isSourceEditor ? "Found" : "Error")"
-                ))
+                let label = sourceEditor.element.description
+                menu.items
+                    .append(.text("Active Source Editor: \(label.isEmpty ? "Unknown" : label)"))
             } else {
                 menu.items.append(.text("Active Source Editor: N/A"))
             }

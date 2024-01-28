@@ -2,7 +2,7 @@ import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
 import AXExtension
-import AXNotificationStream
+import Combine
 import Foundation
 import Logger
 import Preferences
@@ -11,21 +11,16 @@ import Workspace
 import XcodeInspector
 
 public actor RealtimeSuggestionController {
-    private var task: Task<Void, Error>?
+    private var cancellable: Set<AnyCancellable> = []
     private var inflightPrefetchTask: Task<Void, Error>?
-    private var windowChangeObservationTask: Task<Void, Error>?
-    private var activeApplicationMonitorTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
-    private var focusedUIElement: AXUIElement?
     private var sourceEditor: SourceEditor?
 
     init() {}
 
     deinit {
-        task?.cancel()
+        cancellable.forEach { $0.cancel() }
         inflightPrefetchTask?.cancel()
-        windowChangeObservationTask?.cancel()
-        activeApplicationMonitorTask?.cancel()
         editorObservationTask?.cancel()
     }
 
@@ -35,58 +30,19 @@ public actor RealtimeSuggestionController {
     }
 
     private func observeXcodeChange() {
-        task?.cancel()
-        task = Task { [weak self] in
-            if ActiveApplicationMonitor.shared.activeXcode != nil {
-                await self?.handleXcodeChanged()
-            }
-            var previousApp = ActiveApplicationMonitor.shared.activeXcode?.info
-            for await app in ActiveApplicationMonitor.shared.createInfoStream() {
+        cancellable.forEach { $0.cancel() }
+        
+        XcodeInspector.shared.$focusedEditor
+            .sink { [weak self] editor in
                 guard let self else { return }
-                try Task.checkCancellation()
-                defer { previousApp = app }
-
-                if let app = ActiveApplicationMonitor.shared.activeXcode,
-                   app.processIdentifier != previousApp?.processIdentifier
-                {
-                    await self.handleXcodeChanged()
+                Task {
+                    guard let editor  else { return }
+                    await self.handleFocusElementChange(editor)
                 }
-            }
-        }
+            }.store(in: &cancellable)
     }
 
-    private func handleXcodeChanged() {
-        guard let app = ActiveApplicationMonitor.shared.activeXcode else { return }
-        windowChangeObservationTask?.cancel()
-        windowChangeObservationTask = nil
-        observeXcodeWindowChangeIfNeeded(app)
-    }
-
-    private func observeXcodeWindowChangeIfNeeded(_ app: NSRunningApplication) {
-        guard windowChangeObservationTask == nil else { return }
-        handleFocusElementChange()
-
-        let notifications = AXNotificationStream(
-            app: app,
-            notificationNames: kAXFocusedUIElementChangedNotification,
-            kAXMainWindowChangedNotification
-        )
-        windowChangeObservationTask = Task { [weak self] in
-            for await _ in notifications {
-                guard let self else { return }
-                try Task.checkCancellation()
-                await self.handleFocusElementChange()
-            }
-        }
-    }
-
-    private func handleFocusElementChange() {
-        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return }
-        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
-        guard let focusElement = application.focusedElement else { return }
-        let focusElementType = focusElement.description
-        focusedUIElement = focusElement
-
+    private func handleFocusElementChange(_ sourceEditor: SourceEditor) {
         Task { // Notify suggestion service for open file.
             try await Task.sleep(nanoseconds: 500_000_000)
             guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
@@ -94,21 +50,15 @@ public actor RealtimeSuggestionController {
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         }
 
-        guard focusElementType == "Source Editor" else { return }
-        sourceEditor = SourceEditor(runningApplication: activeXcode, element: focusElement)
+        self.sourceEditor = sourceEditor
+        
+        let notificationsFromEditor = sourceEditor.axNotifications
 
         editorObservationTask?.cancel()
         editorObservationTask = nil
 
-        let notificationsFromEditor = AXNotificationStream(
-            app: activeXcode,
-            element: focusElement,
-            notificationNames: kAXValueChangedNotification, kAXSelectedTextChangedNotification
-        )
-
         editorObservationTask = Task { [weak self] in
-            guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL else { return }
-            if let sourceEditor = await self?.sourceEditor {
+            if let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL {
                 await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                     fileURL: fileURL,
                     sourceEditor: sourceEditor
@@ -119,21 +69,20 @@ public actor RealtimeSuggestionController {
                 guard let self else { return }
                 try Task.checkCancellation()
 
-                switch notification.name {
-                case kAXValueChangedNotification:
+                switch notification.kind {
+                case .valueChanged:
                     await cancelInFlightTasks()
                     await self.triggerPrefetchDebounced()
-                    await self.notifyEditingFileChange(editor: focusElement)
-                case kAXSelectedTextChangedNotification:
-                    guard let sourceEditor = await sourceEditor,
-                          let fileURL = XcodeInspector.shared.activeDocumentURL
-                    else { continue }
+                    await self.notifyEditingFileChange(editor: sourceEditor.element)
+                case .selectedTextChanged:
+                    guard let fileURL = XcodeInspector.shared.activeDocumentURL
+                    else { break }
                     await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                         fileURL: fileURL,
                         sourceEditor: sourceEditor
                     )
                 default:
-                    continue
+                    break
                 }
             }
         }
@@ -145,7 +94,7 @@ public actor RealtimeSuggestionController {
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
             if filespace.codeMetadata.uti == nil {
-                Logger.service.info("Generate cache for file.")
+                Logger.service.info("Generate cache for file.") 
                 // avoid the command get called twice
                 filespace.codeMetadata.uti = ""
                 do {
@@ -161,10 +110,12 @@ public actor RealtimeSuggestionController {
     }
 
     func triggerPrefetchDebounced(force: Bool = false) {
-        inflightPrefetchTask = Task { @WorkspaceActor in
+        inflightPrefetchTask = Task(priority: .utility) { @WorkspaceActor in
             try? await Task.sleep(nanoseconds: UInt64((
-                UserDefaults.shared.value(for: \.realtimeSuggestionDebounce)
+                max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.15)
             ) * 1_000_000_000))
+            
+            if Task.isCancelled { return }
 
             guard UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
             else { return }
@@ -178,8 +129,6 @@ public actor RealtimeSuggestionController {
                 if !isEnabled { return }
             }
             if Task.isCancelled { return }
-
-//            Logger.service.info("Prefetch suggestions.")
 
             // So the editor won't be blocked (after information are cached)!
             await PseudoCommandHandler().generateRealtimeSuggestions(sourceEditor: sourceEditor)

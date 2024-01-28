@@ -12,6 +12,10 @@ public final class AXNotificationStream: AsyncSequence {
     private var continuation: Continuation
     private let stream: Stream
 
+    private let file: StaticString
+    private let line: UInt
+    private let function: StaticString
+
     public func makeAsyncIterator() -> Stream.AsyncIterator {
         stream.makeAsyncIterator()
     }
@@ -23,16 +27,32 @@ public final class AXNotificationStream: AsyncSequence {
     public convenience init(
         app: NSRunningApplication,
         element: AXUIElement? = nil,
-        notificationNames: String...
+        notificationNames: String...,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
     ) {
-        self.init(app: app, element: element, notificationNames: notificationNames)
+        self.init(
+            app: app,
+            element: element,
+            notificationNames: notificationNames,
+            file: file,
+            line: line,
+            function: function
+        )
     }
 
     public init(
         app: NSRunningApplication,
         element: AXUIElement? = nil,
-        notificationNames: [String]
+        notificationNames: [String],
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
     ) {
+        self.file = file
+        self.line = line
+        self.function = function
         var cont: Continuation!
         stream = Stream { continuation in
             cont = continuation
@@ -74,7 +94,7 @@ public final class AXNotificationStream: AsyncSequence {
             )
         }
 
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             CFRunLoopAddSource(
                 CFRunLoopGetMain(),
                 AXObserverGetRunLoopSource(observer),
@@ -101,10 +121,12 @@ public final class AXNotificationStream: AsyncSequence {
                         Logger.service.error("AXObserver: Action unsupported: \(name)")
                         pendingRegistrationNames.remove(name)
                     case .apiDisabled:
-                        Logger.service.error("AXObserver: Accessibility API disabled, will try again later")
+                        Logger.service
+                            .error("AXObserver: Accessibility API disabled, will try again later")
                         retry -= 1
                     case .invalidUIElement:
-                        Logger.service.error("AXObserver: Invalid UI element")
+                        Logger.service
+                            .error("AXObserver: Invalid UI element, notification name \(name)")
                         pendingRegistrationNames.remove(name)
                     case .invalidUIElementObserver:
                         Logger.service.error("AXObserver: Invalid UI element observer")
@@ -116,10 +138,13 @@ public final class AXNotificationStream: AsyncSequence {
                         Logger.service.error("AXObserver: Notification unsupported: \(name)")
                         pendingRegistrationNames.remove(name)
                     case .notificationAlreadyRegistered:
+                        Logger.service.info("AXObserver: Notification already registered: \(name)")
                         pendingRegistrationNames.remove(name)
                     default:
                         Logger.service
-                            .error("AXObserver: Unrecognized error \(e) when registering \(name), will try again later")
+                            .error(
+                                "AXObserver: Unrecognized error \(e) when registering \(name), will try again later"
+                            )
                     }
                 }
                 try await Task.sleep(nanoseconds: 1_500_000_000)

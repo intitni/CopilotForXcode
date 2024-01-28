@@ -218,7 +218,7 @@ struct SuggestionSettingsView: View {
             }
 
             HStack {
-                Slider(value: $settings.realtimeSuggestionDebounce, in: 0...2, step: 0.1) {
+                Slider(value: $settings.realtimeSuggestionDebounce, in: 0.1...2, step: 0.1) {
                     Text("Real-time Suggestion Debounce")
                 }
 

@@ -1,8 +1,9 @@
 import AppKit
+import AsyncExtensions
 import AXExtension
-import AXNotificationStream
 import Combine
 import Foundation
+import Logger
 
 public class XcodeWindowInspector: ObservableObject {
     public let uiElement: AXUIElement
@@ -18,6 +19,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
     @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
     private var focusedElementChangedTask: Task<Void, Error>?
+    let axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
 
     deinit {
         focusedElementChangedTask?.cancel()
@@ -27,16 +29,16 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         Task { @MainActor in updateURLs() }
     }
 
-    public init(app: NSRunningApplication, uiElement: AXUIElement) {
+    public init(
+        app: NSRunningApplication,
+        uiElement: AXUIElement,
+        axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
+    ) {
         self.app = app
+        self.axNotifications = axNotifications
         super.init(uiElement: uiElement)
 
-        let notifications = AXNotificationStream(
-            app: app,
-            notificationNames: kAXFocusedUIElementChangedNotification
-        )
-
-        focusedElementChangedTask = Task { [weak self] in
+        focusedElementChangedTask = Task { [weak self, axNotifications] in
             await self?.updateURLs()
 
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
@@ -49,7 +51,8 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                 }
 
                 group.addTask { [weak self] in
-                    for await _ in notifications {
+                    for await notification in axNotifications {
+                        guard notification.kind == .focusedUIElementChanged else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()
                         await self.updateURLs()

@@ -133,6 +133,13 @@
         "identifier" : "FocusedCodeFinderTests",
         "name" : "FocusedCodeFinderTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "XcodeInspectorTests",
+        "name" : "XcodeInspectorTests"
+      }
     }
   ],
   "version" : 1

@@ -327,7 +327,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
-        .init(defaultValue: 0, key: "RealtimeSuggestionDebounce")
+        .init(defaultValue: 0.2, key: "RealtimeSuggestionDebounce")
     }
 
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
@@ -567,6 +567,27 @@ public extension UserDefaultPreferenceKeys {
         .init(
             defaultValue: false,
             key: "FeatureFlag-DisableEnhancedWorkspace"
+        )
+    }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
+        .init(
+            defaultValue: true,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
+        )
+    }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer: FeatureFlag {
+        .init(
+            defaultValue: true,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer"
+        )
+    }
+    
+    var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-ToastForTheReasonWhyXcodeInspectorNeedsToBeRestarted"
         )
     }
 }

@@ -33,7 +33,13 @@ public final class Logger {
         osLog = OSLog(subsystem: subsystem, category: category)
     }
 
-    func log(level: LogLevel, message: String) {
+    func log(
+        level: LogLevel,
+        message: String,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
         let osLogType: OSLogType
         switch level {
         case .debug:
@@ -47,23 +53,60 @@ public final class Logger {
         os_log("%{public}@", log: osLog, type: osLogType, message as CVarArg)
     }
 
-    public func debug(_ message: String) {
-        log(level: .debug, message: message)
+    public func debug(
+        _ message: String,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
+        log(level: .debug, message: """
+        \(message)
+        file: \(file)
+        line: \(line)
+        function: \(function)
+        """, file: file, line: line, function: function)
     }
 
-    public func info(_ message: String) {
-        log(level: .info, message: message)
+    public func info(
+        _ message: String,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
+        log(level: .info, message: message, file: file, line: line, function: function)
     }
 
-    public func error(_ message: String) {
-        log(level: .error, message: message)
+    public func error(
+        _ message: String,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
+        log(level: .error, message: message, file: file, line: line, function: function)
     }
 
-    public func error(_ error: Error) {
-        log(level: .error, message: error.localizedDescription)
+    public func error(
+        _ error: Error,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
+        log(
+            level: .error,
+            message: error.localizedDescription,
+            file: file,
+            line: line,
+            function: function
+        )
     }
     
-    public func signpost(_ type: OSSignpostType, name: StaticString) {
+    public func signpost(
+        _ type: OSSignpostType,
+        name: StaticString,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function
+    ) {
         os_signpost(type, log: osLog, name: name)
     }
 }

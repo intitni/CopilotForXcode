@@ -19,6 +19,12 @@ final class DebugSettings: ObservableObject {
     @AppStorage(\.disableGitIgnoreCheck) var disableGitIgnoreCheck
     @AppStorage(\.disableFileContentManipulationByCheatsheet)
     var disableFileContentManipulationByCheatsheet
+    @AppStorage(\.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning)
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning
+    @AppStorage(\.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer)
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer
+    @AppStorage(\.toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted)
+    var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted
     init() {}
 }
 
@@ -73,6 +79,31 @@ struct DebugSettingsView: View {
 
                     Toggle(isOn: $settings.disableFileContentManipulationByCheatsheet) {
                         Text("Disable file content manipulation by cheatsheet")
+                    }
+
+                    Group {
+                        Toggle(
+                            isOn: $settings
+                                .restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning
+                        ) {
+                            Text(
+                                "Re-activate Xcode Inspector when Accessibility API malfunctioning detected"
+                            )
+                        }
+
+                        Toggle(
+                            isOn: $settings
+                                .restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer
+                        ) {
+                            Text("Trigger malfunctioning detection only with events")
+                        }
+
+                        Toggle(
+                            isOn: $settings
+                                .toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted
+                        ) {
+                            Text("Toast for the reason of re-activation of Xcode Inspector")
+                        }
                     }
 
                     Button("Reset migration version to 0") {

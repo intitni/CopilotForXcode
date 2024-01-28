@@ -1,15 +1,21 @@
 import AppKit
 import AsyncAlgorithms
 import AXExtension
-import AXNotificationStream
 import Combine
 import Foundation
 import Logger
 import Preferences
 import SuggestionModel
+import Toast
+
+public extension Notification.Name {
+    static let accessibilityAPIMalfunctioning = Notification.Name("accessibilityAPIMalfunctioning")
+}
 
 public final class XcodeInspector: ObservableObject {
     public static let shared = XcodeInspector()
+
+    private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
     private var cancellable = Set<AnyCancellable>()
     private var activeXcodeObservations = Set<Task<Void, Error>>()
@@ -29,13 +35,14 @@ public final class XcodeInspector: ObservableObject {
     @Published public fileprivate(set) var focusedElement: AXUIElement?
     @Published public fileprivate(set) var completionPanel: AXUIElement?
 
+    #warning("TODO: make it a function and mark it as expensive")
     public var focusedEditorContent: EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
               let projectURL = XcodeInspector.shared.activeProjectRootURL
         else { return nil }
 
-        let editorContent = XcodeInspector.shared.focusedEditor?.content
+        let editorContent = XcodeInspector.shared.focusedEditor?.getContent()
         let language = languageIdentifierFromFileURL(documentURL)
         let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
 
@@ -83,7 +90,7 @@ public final class XcodeInspector: ObservableObject {
     init() {
         restart()
     }
-    
+
     public func restart(cleanUp: Bool = false) {
         if cleanUp {
             activeXcodeObservations.forEach { $0.cancel() }
@@ -111,7 +118,7 @@ public final class XcodeInspector: ObservableObject {
         activeApplication = activeXcode ?? runningApplications
             .first(where: \.isActive)
             .map(AppInstanceInspector.init(runningApplication:))
-        
+
         appChangeObservations.forEach { $0.cancel() }
         appChangeObservations.removeAll()
 
@@ -120,9 +127,9 @@ public final class XcodeInspector: ObservableObject {
             if let activeXcode {
                 await setActiveXcode(activeXcode)
             }
-            
+
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
-                group.addTask { [weak self] in  // Did activate app
+                group.addTask { [weak self] in // Did activate app
                     let sequence = NSWorkspace.shared.notificationCenter
                         .notifications(named: NSWorkspace.didActivateApplicationNotification)
                     for await notification in sequence {
@@ -154,7 +161,7 @@ public final class XcodeInspector: ObservableObject {
                         }
                     }
                 }
-                
+
                 group.addTask { [weak self] in // Did terminate app
                     let sequence = NSWorkspace.shared.notificationCenter
                         .notifications(named: NSWorkspace.didTerminateApplicationNotification)
@@ -183,15 +190,45 @@ public final class XcodeInspector: ObservableObject {
                         }
                     }
                 }
+
+                if UserDefaults.shared
+                    .value(for: \.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning)
+                {
+                    group.addTask { [weak self] in
+                        while true {
+                            guard let self else { return }
+                            if UserDefaults.shared.value(
+                                for: \.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer
+                            ) {
+                                return
+                            }
+
+                            try await Task.sleep(nanoseconds: 10_000_000_000)
+                            await MainActor.run {
+                                self.checkForAccessibilityMalfunction("Timer")
+                            }
+                        }
+                    }
+                }
+
+                group.addTask { [weak self] in // malfunctioning
+                    let sequence = NSWorkspace.shared.notificationCenter
+                        .notifications(named: .accessibilityAPIMalfunctioning)
+                    for await notification in sequence {
+                        try Task.checkCancellation()
+                        guard let self else { return }
+                        await self
+                            .recoverFromAccessibilityMalfunctioning(notification.object as? String)
+                    }
+                }
             }
         }
-        
+
         appChangeObservations.insert(appChangeTask)
     }
 
-
     @MainActor
-    func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
+    private func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication
         activeApplication = xcode
         xcode.refresh()
@@ -209,7 +246,7 @@ public final class XcodeInspector: ObservableObject {
         activeWorkspaceURL = xcode.workspaceURL
         focusedWindow = xcode.focusedWindow
 
-        let setFocusedElement = { [weak self] in
+        let setFocusedElement = { @MainActor [weak self] in
             guard let self else { return }
             focusedElement = xcode.appElement.focusedElement
             if let editorElement = focusedElement, editorElement.isSourceEditor {
@@ -220,28 +257,50 @@ public final class XcodeInspector: ObservableObject {
             } else if let element = focusedElement,
                       let editorElement = element.firstParent(where: \.isSourceEditor)
             {
+                Logger.service.debug("Focused on child of source editor.")
                 focusedEditor = .init(
                     runningApplication: xcode.runningApplication,
                     element: editorElement
                 )
             } else {
+                Logger.service.debug("No source editor found.")
                 focusedEditor = nil
             }
         }
 
         setFocusedElement()
         let focusedElementChanged = Task { @MainActor in
-            let notification = AXNotificationStream(
-                app: xcode.runningApplication,
-                notificationNames: kAXFocusedUIElementChangedNotification
-            )
-            for await _ in notification {
-                try Task.checkCancellation()
-                setFocusedElement()
+            for await notification in xcode.axNotifications {
+                if notification.kind == .focusedUIElementChanged {
+                    Logger.service.debug("Update focused element")
+                    try Task.checkCancellation()
+                    setFocusedElement()
+                }
             }
         }
 
         activeXcodeObservations.insert(focusedElementChanged)
+
+        if UserDefaults.shared
+            .value(for: \.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning)
+        {
+            let malfunctionCheck = Task { @MainActor [weak self] in
+                if #available(macOS 13.0, *) {
+                    let notifications = xcode.axNotifications.filter {
+                        $0.kind == .uiElementDestroyed
+                    }.debounce(for: .milliseconds(1000))
+                    for await _ in notifications {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        self.checkForAccessibilityMalfunction("Element Destroyed")
+                    }
+                }
+            }
+
+            activeXcodeObservations.insert(malfunctionCheck)
+
+            checkForAccessibilityMalfunction("Reactivate Xcode")
+        }
 
         xcode.$completionPanel.receive(on: DispatchQueue.main).sink { [weak self] element in
             self?.completionPanel = element
@@ -262,6 +321,50 @@ public final class XcodeInspector: ObservableObject {
         xcode.$focusedWindow.receive(on: DispatchQueue.main).sink { [weak self] window in
             self?.focusedWindow = window
         }.store(in: &activeXcodeCancellable)
+    }
+
+    private var lastRecoveryFromAccessibilityMalfunctioningTimeStamp = Date()
+
+    @MainActor
+    private func checkForAccessibilityMalfunction(_ source: String) {
+        guard Date().timeIntervalSince(lastRecoveryFromAccessibilityMalfunctioningTimeStamp) > 5
+        else { return }
+
+        if let editor = focusedEditor, !editor.element.isSourceEditor {
+            NSWorkspace.shared.notificationCenter.post(
+                name: .accessibilityAPIMalfunctioning,
+                object: "Source Editor Element Corrupted: \(source)"
+            )
+        } else if let element = activeXcode?.appElement.focusedElement {
+            if element.description != focusedElement?.description ||
+                element.role != focusedElement?.role
+            {
+                NSWorkspace.shared.notificationCenter.post(
+                    name: .accessibilityAPIMalfunctioning,
+                    object: "Element Inconsistency: \(source)"
+                )
+            }
+        }
+    }
+
+    @MainActor
+    private func recoverFromAccessibilityMalfunctioning(_ source: String?) {
+        let message = """
+        Accessibility API malfunction detected: \
+        \(source ?? "").
+        Resetting active Xcode.
+        """
+
+        if UserDefaults.shared.value(for: \.toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted) {
+            toast.toast(content: message, type: .warning)
+        } else {
+            Logger.service.info(message)
+        }
+        if let activeXcode {
+            lastRecoveryFromAccessibilityMalfunctioningTimeStamp = Date()
+            setActiveXcode(activeXcode)
+            activeXcode.observeAXNotifications()
+        }
     }
 }
 

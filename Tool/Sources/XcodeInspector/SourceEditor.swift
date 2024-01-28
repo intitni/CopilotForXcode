@@ -1,37 +1,49 @@
 import AppKit
+import AsyncExtensions
 import AXNotificationStream
 import Foundation
+import Logger
 import SuggestionModel
 
 /// Representing a source editor inside Xcode.
 public class SourceEditor {
     public typealias Content = EditorInformation.SourceEditorContent
 
+    public struct AXNotification {
+        public var kind: AXNotificationKind
+        public var element: AXUIElement
+    }
+
+    public enum AXNotificationKind {
+        case selectedTextChanged
+        case valueChanged
+        case scrollPositionChanged
+    }
+
     let runningApplication: NSRunningApplication
     public let element: AXUIElement
+    var observeAXNotificationsTask: Task<Void, Never>?
+    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
-    /// The content of the source editor.
-    public var content: Content {
+    /// To prevent expensive calculations in ``getContent()``.
+    private let cache = Cache()
+
+    /// Get the content of the source editor.
+    ///
+    /// - note: This method is expensive.
+    public func getContent() -> Content {
         let content = element.value
-        let split = content.breakLines(appendLineBreakToLastLine: false)
+        let selectionRange = element.selectedTextRange
+        let (lines, selections) = cache.get(content: content, selectedTextRange: selectionRange)
+
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
 
-        if let selectionRange = element.selectedTextRange {
-            let range = Self.convertRangeToCursorRange(selectionRange, in: split)
-            return .init(
-                content: content,
-                lines: split,
-                selections: [range],
-                cursorPosition: range.start,
-                lineAnnotations: lineAnnotations
-            )
-        }
         return .init(
             content: content,
-            lines: split,
-            selections: [],
-            cursorPosition: .outOfScope,
+            lines: lines,
+            selections: selections,
+            cursorPosition: selections.first?.start ?? .outOfScope,
             lineAnnotations: lineAnnotations
         )
     }
@@ -39,25 +51,122 @@ public class SourceEditor {
     public init(runningApplication: NSRunningApplication, element: AXUIElement) {
         self.runningApplication = runningApplication
         self.element = element
+        observeAXNotifications()
     }
 
-    /// Observe to changes in the source editor.
-    public func observe(notificationNames: String...) -> AXNotificationStream {
-        return AXNotificationStream(
-            app: runningApplication,
-            element: element,
-            notificationNames: notificationNames
-        )
-    }
+    private func observeAXNotifications() {
+        observeAXNotificationsTask?.cancel()
+        observeAXNotificationsTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                guard let self else { return }
+                let editorNotifications = AXNotificationStream(
+                    app: runningApplication,
+                    element: element,
+                    notificationNames:
+                    kAXSelectedTextChangedNotification,
+                    kAXValueChangedNotification
+                )
 
-    /// Observe to changes in the source editor scroll view.
-    public func observeScrollView(notificationNames: String...) -> AXNotificationStream? {
-        guard let scrollView = element.parent else { return nil }
-        return AXNotificationStream(
-            app: runningApplication,
-            element: scrollView,
-            notificationNames: notificationNames
-        )
+                group.addTask { [weak self] in
+                    for await notification in editorNotifications {
+                        try Task.checkCancellation()
+                        guard let self else { return }
+                        if let kind: AXNotificationKind = {
+                            switch notification.name {
+                            case kAXSelectedTextChangedNotification: return .selectedTextChanged
+                            case kAXValueChangedNotification: return .valueChanged
+                            default: return nil
+                            }
+                        }() {
+                            self.axNotifications.send(.init(
+                                kind: kind,
+                                element: notification.element
+                            ))
+                        }
+                    }
+                }
+
+                if let scrollView = element.parent, let scrollBar = scrollView.verticalScrollBar {
+                    let scrollViewNotifications = AXNotificationStream(
+                        app: runningApplication,
+                        element: scrollBar,
+                        notificationNames: kAXValueChangedNotification
+                    )
+
+                    group.addTask { [weak self] in
+                        for await notification in scrollViewNotifications {
+                            try Task.checkCancellation()
+                            guard let self else { return }
+                            self.axNotifications.send(.init(
+                                kind: .scrollPositionChanged,
+                                element: notification.element
+                            ))
+                        }
+                    }
+                }
+
+                try? await group.waitForAll()
+            }
+        }
+    }
+}
+
+extension SourceEditor {
+    final class Cache {
+        static let queue = DispatchQueue(label: "SourceEditor.Cache")
+
+        private var sourceContent: String?
+        private var cachedLines = [String]()
+        private var sourceSelectedTextRange: ClosedRange<Int>?
+        private var cachedSelections = [CursorRange]()
+
+        init(
+            sourceContent: String? = nil,
+            cachedLines: [String] = [String](),
+            sourceSelectedTextRange: ClosedRange<Int>? = nil,
+            cachedSelections: [CursorRange] = [CursorRange]()
+        ) {
+            self.sourceContent = sourceContent
+            self.cachedLines = cachedLines
+            self.sourceSelectedTextRange = sourceSelectedTextRange
+            self.cachedSelections = cachedSelections
+        }
+
+        func get(content: String, selectedTextRange: ClosedRange<Int>?) -> (
+            lines: [String],
+            selections: [CursorRange]
+        ) {
+            Self.queue.sync {
+                let contentMatch = content == sourceContent
+                let selectedRangeMatch = selectedTextRange == sourceSelectedTextRange
+                let lines: [String] = {
+                    if contentMatch {
+                        return cachedLines
+                    }
+                    return content.breakLines(appendLineBreakToLastLine: false)
+                }()
+                let selections: [CursorRange] = {
+                    if contentMatch, selectedRangeMatch {
+                        return cachedSelections
+                    }
+                    if let selectedTextRange {
+                        return [SourceEditor.convertRangeToCursorRange(
+                            selectedTextRange,
+                            in: lines
+                        )]
+                    }
+                    return []
+                }()
+
+                sourceContent = content
+                cachedLines = lines
+                sourceSelectedTextRange = selectedTextRange
+                cachedSelections = selections
+
+                return (lines, selections)
+            }
+        }
     }
 }
 
@@ -105,7 +214,7 @@ public extension SourceEditor {
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
             // The range is counted in UTF8, which causes line endings like \r\n to be of length 2.
-            let lineEndingAddition = (line.lineEnding?.utf8.count ?? 1) - 1
+            let lineEndingAddition = line.lineEnding.utf8.count - 1
             if countS <= range.lowerBound,
                range.lowerBound < countS + line.count + lineEndingAddition
             {
