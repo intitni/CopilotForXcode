@@ -3,6 +3,7 @@ import AppKit
 import Preferences
 import SuggestionInjector
 import SuggestionModel
+import Toast
 import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
@@ -12,6 +13,9 @@ import XPCShared
 ///
 /// For example, we can use it to generate real-time suggestions without Apple Scripts.
 struct PseudoCommandHandler {
+    static var lastTimeCommandFailedToTriggerWithAccessibilityAPI = Date(timeIntervalSince1970: 0)
+    private var toast: ToastController { ToastControllerDependencyKey.liveValue }
+
     func presentPreviousSuggestion() async {
         let handler = WindowBaseCommandHandler()
         _ = try? await handler.presentPreviousSuggestion(editor: .init(
@@ -43,11 +47,11 @@ struct PseudoCommandHandler {
     @WorkspaceActor
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
         guard let filespace = await getFilespace(),
-            let (workspace, _) = try? await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
-        
+              let (workspace, _) = try? await Service.shared.workspacePool
+              .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
+
         if Task.isCancelled { return }
-        
+
         // Can't use handler if content is not available.
         guard let editor = await getEditorContent(sourceEditor: sourceEditor)
         else { return }
@@ -107,7 +111,7 @@ struct PseudoCommandHandler {
         if filespace.presentingSuggestion == nil {
             return // skip if there's no suggestion presented.
         }
-        
+
         let content = sourceEditor.getContent()
         if !filespace.validateSuggestions(
             lines: content.lines,
@@ -178,8 +182,23 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await XcodeInspector.shared.latestActiveXcode?
-                .triggerCopilotCommand(name: "Accept Prompt to Code")
+            do {
+                try await XcodeInspector.shared.latestActiveXcode?
+                    .triggerCopilotCommand(name: "Accept Prompt to Code")
+            } catch {
+                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
+                let now = Date()
+                if now.timeIntervalSince(last) > 60 * 60 {
+                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
+                    toast.toast(content: """
+                    The app is using a fallback solution to accept suggestions. \
+                    For better experience, please restart Xcode to re-activate the Copilot \
+                    menu item.
+                    """, type: .warning)
+                }
+
+                throw error
+            }
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }
@@ -218,8 +237,23 @@ struct PseudoCommandHandler {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
             }
-            try await XcodeInspector.shared.latestActiveXcode?
-                .triggerCopilotCommand(name: "Accept Suggestion")
+            do {
+                try await XcodeInspector.shared.latestActiveXcode?
+                    .triggerCopilotCommand(name: "Accept Suggestion")
+            } catch {
+                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
+                let now = Date()
+                if now.timeIntervalSince(last) > 60 * 60 {
+                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
+                    toast.toast(content: """
+                    The app is using a fallback solution to accept suggestions. \
+                    For better experience, please restart Xcode to re-activate the Copilot \
+                    menu item.
+                    """, type: .warning)
+                }
+
+                throw error
+            }
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
                 ?? ActiveApplicationMonitor.shared.latestXcode else { return }
@@ -252,12 +286,12 @@ struct PseudoCommandHandler {
             }
         }
     }
-    
+
     func dismissSuggestion() async {
         guard let documentURL = XcodeInspector.shared.activeDocumentURL else { return }
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
-        
+
         await filespace.reset()
         PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
@@ -432,3 +466,4 @@ extension PseudoCommandHandler {
         return cursorRange
     }
 }
+
