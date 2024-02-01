@@ -7,29 +7,41 @@ public extension XcodeAppInstanceInspector {
     func triggerCopilotCommand(name: String, activateXcode: Bool = true) async throws {
         let bundleName = Bundle.main
             .object(forInfoDictionaryKey: "EXTENSION_BUNDLE_NAME") as! String
-        try await triggerMenuItem(path: ["Editor", bundleName, name], activateXcode: activateXcode)
+        try await triggerMenuItem(path: ["Editor", bundleName, name], activateApp: activateXcode)
     }
 }
 
 public extension AppInstanceInspector {
-    @MainActor
-    func triggerMenuItem(path: [String], activateXcode: Bool) async throws {
-        guard !path.isEmpty else { return }
+    struct CantRunCommand: Error, LocalizedError {
+        let path: String
+        let reason: String
+        public var errorDescription: String? {
+            "Can't run command \(path): \(reason)"
+        }
+    }
 
-        struct CantRunCommand: Error, LocalizedError {
-            let path: [String]
-            var errorDescription: String? {
-                "Can't run command \(path.joined(separator: "/"))."
-            }
+    @MainActor
+    func triggerMenuItem(path: [String], activateApp: Bool) async throws {
+        let sourcePath = path.joined(separator: "/")
+        func cantRunCommand(_ reason: String) -> CantRunCommand {
+            return CantRunCommand(path: sourcePath, reason: reason)
         }
 
-        if activateXcode {
+        guard path.count >= 2 else { throw cantRunCommand("Path too short.") }
+
+        if activateApp {
             if !runningApplication.activate() {
-                throw CantRunCommand(path: path)
+                Logger.service.error("""
+                Trigger menu item \(sourcePath) failed: \
+                Xcode not activated.
+                """)
             }
         } else {
             if !runningApplication.isActive {
-                throw CantRunCommand(path: path)
+                Logger.service.error("""
+                Trigger menu item \(sourcePath) failed: \
+                Xcode not activated.
+                """)
             }
         }
 
@@ -37,7 +49,14 @@ public extension AppInstanceInspector {
 
         if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
             let app = AXUIElementCreateApplication(runningApplication.processIdentifier)
-            guard let menuBar = app.menuBar else { throw CantRunCommand(path: path) }
+
+            guard let menuBar = app.menuBar else {
+                Logger.service.error("""
+                Trigger menu item \(sourcePath) failed: \
+                Menu not found.
+                """)
+                throw cantRunCommand("Menu not found.")
+            }
             var path = path
             var currentMenu = menuBar
             while !path.isEmpty {
@@ -47,22 +66,34 @@ public extension AppInstanceInspector {
                     let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
                     if error != AXError.success {
                         Logger.service.error("""
-                        Trigger menu item \(path.joined(separator: "/")) failed: \
+                        Trigger menu item \(sourcePath) failed: \
                         \(error.localizedDescription)
                         """)
-                        throw error
+                        throw cantRunCommand(error.localizedDescription)
                     } else {
+                        #if DEBUG
+                        Logger.service.info("""
+                        Trigger menu item \(sourcePath) succeeded.
+                        """)
+                        #endif
                         return
                     }
                 } else if let menu = currentMenu.child(title: item) {
+                    #if DEBUG
+                    Logger.service.info("""
+                    Trigger menu item \(sourcePath): Move to \(item).
+                    """)
+                    #endif
                     currentMenu = menu
                 } else {
-                    throw CantRunCommand(path: path)
+                    Logger.service.error("""
+                    Trigger menu item \(sourcePath) failed: \
+                    \(item) is not found.
+                    """)
+                    throw cantRunCommand("\(item) is not found.")
                 }
             }
         } else {
-            guard path.count >= 2 else { throw CantRunCommand(path: path) }
-
             let clickTask = {
                 var path = path
                 let button = path.removeLast()
@@ -103,7 +134,7 @@ public extension AppInstanceInspector {
                 Trigger menu item \(path.joined(separator: "/")) failed: \
                 \(error.localizedDescription)
                 """)
-                throw error
+                throw cantRunCommand(error.localizedDescription)
             }
         }
     }
