@@ -82,6 +82,14 @@ extension AppDelegate {
             keyEquivalent: ""
         )
         quitItem.target = self
+        
+        let reactivateObservationsItem = NSMenuItem(
+            title: "Reactivate Observations to Xcode",
+            action: #selector(reactivateObservationsToXcode),
+            keyEquivalent: ""
+        )
+        
+        reactivateObservationsItem.target = self
 
         statusBarMenu.addItem(copilotName)
         statusBarMenu.addItem(openCopilotForXcode)
@@ -91,6 +99,7 @@ extension AppDelegate {
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(xcodeInspectorDebug)
         statusBarMenu.addItem(accessibilityAPIPermission)
+        statusBarMenu.addItem(reactivateObservationsItem)
         statusBarMenu.addItem(quitItem)
 
         statusBarMenu.delegate = self
@@ -210,6 +219,10 @@ extension AppDelegate: NSMenuDelegate {
 private extension AppDelegate {
     @objc func restartXcodeInspector() {
         XcodeInspector.shared.restart(cleanUp: true)
+    }
+    
+    @objc func reactivateObservationsToXcode() {
+        XcodeInspector.shared.reactivateObservationsToXcode()
     }
 }
 

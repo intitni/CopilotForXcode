@@ -227,6 +227,15 @@ public final class XcodeInspector: ObservableObject {
         appChangeObservations.insert(appChangeTask)
     }
 
+    public func reactivateObservationsToXcode() {
+        Task { @MainActor in
+            if let activeXcode {
+                setActiveXcode(activeXcode)
+                activeXcode.observeAXNotifications()
+            }
+        }
+    }
+
     @MainActor
     private func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication
@@ -257,13 +266,11 @@ public final class XcodeInspector: ObservableObject {
             } else if let element = focusedElement,
                       let editorElement = element.firstParent(where: \.isSourceEditor)
             {
-                Logger.service.debug("Focused on child of source editor.")
                 focusedEditor = .init(
                     runningApplication: xcode.runningApplication,
                     element: editorElement
                 )
             } else {
-                Logger.service.debug("No source editor found.")
                 focusedEditor = nil
             }
         }
@@ -272,7 +279,6 @@ public final class XcodeInspector: ObservableObject {
         let focusedElementChanged = Task { @MainActor in
             for await notification in xcode.axNotifications {
                 if notification.kind == .focusedUIElementChanged {
-                    Logger.service.debug("Update focused element")
                     try Task.checkCancellation()
                     setFocusedElement()
                 }
