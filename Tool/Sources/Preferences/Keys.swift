@@ -93,6 +93,13 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "ShowHideWidgetShortcutGlobally"
     )
+    
+    // MARK: Update Channel
+    
+    public let installBetaBuilds = PreferenceKey(
+        defaultValue: false,
+        key: "InstallBetaBuilds"
+    )
 }
 
 // MARK: - OpenAI Account Settings
