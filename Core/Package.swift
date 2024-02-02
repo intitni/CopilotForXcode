@@ -289,6 +289,7 @@ let package = Package(
             name: "UpdateChecker",
             dependencies: [
                 "Sparkle",
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
             ]
         ),
