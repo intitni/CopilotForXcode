@@ -572,7 +572,7 @@ public extension UserDefaultPreferenceKeys {
     
     var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
         .init(
-            defaultValue: true,
+            defaultValue: false,
             key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
         )
     }
