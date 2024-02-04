@@ -285,78 +285,102 @@ struct ChatSettingsView: View {
                 #if canImport(ProHostApp)
 
                 SubSection(
-                    title: WithFeatureEnabled(\.projectScopeInChat, alignment: .trailing) {
-                        Text("Sense Scope (Experimental)")
-                    },
-                    description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
+                    title: Text("Sense Scope (Experimental)"),
+                    description: IfFeatureEnabled(\.senseScopeInChat) {
+                        Text("""
+                        Enable the bot to access the relevant code \
+                        of the editing document in the project, third party packages and the SDK.
+                        """)
+                    } else: {
+                        VStack(alignment: .leading) {
+                            Text("""
+                            Enable the bot to read the relevant code \
+                            of the editing document in the SDK, and
+                            """)
+
+                            WithFeatureEnabled(\.senseScopeInChat, alignment: .inlineLeading) {
+                                Text("the project and third party packages.")
+                            }
+                        }
+                    }
                 ) {
-                    WithFeatureEnabled(\.senseScopeInChat, alignment: .hidden) {
-                        Form {
-                            Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
-                                Text("Enable by default")
+                    Form {
+                        Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
+                            Text("Enable by default")
+                        }
+
+                        Picker(
+                            "Preferred Chat Model",
+                            selection: $settings.preferredChatModelIdForSenseScope
+                        ) {
+                            Text("None").tag("")
+
+                            if !settings.chatModels
+                                .contains(where: {
+                                    $0.id == settings.preferredChatModelIdForSenseScope
+                                }),
+                                !settings.preferredChatModelIdForSenseScope.isEmpty
+                            {
+                                Text(
+                                    (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                        ?? "No Model Found"
+                                )
+                                .tag(settings.preferredChatModelIdForSenseScope)
                             }
 
-                            Picker(
-                                "Preferred Chat Model",
-                                selection: $settings.preferredChatModelIdForSenseScope
-                            ) {
-                                Text("None").tag("")
-
-                                if !settings.chatModels
-                                    .contains(where: {
-                                        $0.id == settings.preferredChatModelIdForSenseScope
-                                    }),
-                                    !settings.preferredChatModelIdForSenseScope.isEmpty
-                                {
-                                    Text(
-                                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                                            ?? "No Model Found"
-                                    )
-                                    .tag(settings.preferredChatModelIdForSenseScope)
-                                }
-
-                                ForEach(settings.chatModels, id: \.id) { chatModel in
-                                    Text(chatModel.name).tag(chatModel.id)
-                                }
+                            ForEach(settings.chatModels, id: \.id) { chatModel in
+                                Text(chatModel.name).tag(chatModel.id)
                             }
                         }
                     }
                 }
 
                 SubSection(
-                    title: WithFeatureEnabled(\.projectScopeInChat, alignment: .trailing) {
-                        Text("Project Scope (Experimental)")
-                    },
-                    description: "Experimental. Enable the bot to search code symbols in the project, third party packages and the SDK."
+                    title: Text("Project Scope (Experimental)"),
+                    description: IfFeatureEnabled(\.projectScopeInChat) {
+                        Text("""
+                        Enable the bot to search code and texts \
+                        in the project, third party packages and the SDK.
+                        """)
+                    } else: {
+                        VStack(alignment: .leading) {
+                            Text("""
+                            Enable the bot to search code and texts \
+                            in the neighboring files of the editing document, and
+                            """)
+
+                            WithFeatureEnabled(\.senseScopeInChat, alignment: .inlineLeading) {
+                                Text("the project, third party packages and the SDK.")
+                            }
+                        }
+                    }
                 ) {
-                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
-                        Form {
-                            Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
-                                Text("Enable by default")
+                    Form {
+                        Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
+                            Text("Enable by default")
+                        }
+
+                        Picker(
+                            "Preferred Chat Model",
+                            selection: $settings.preferredChatModelIdForProjectScope
+                        ) {
+                            Text("None").tag("")
+
+                            if !settings.chatModels
+                                .contains(where: {
+                                    $0.id == settings.preferredChatModelIdForProjectScope
+                                }),
+                                !settings.preferredChatModelIdForProjectScope.isEmpty
+                            {
+                                Text(
+                                    (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                        ?? "No Model Found"
+                                )
+                                .tag(settings.preferredChatModelIdForProjectScope)
                             }
 
-                            Picker(
-                                "Preferred Chat Model",
-                                selection: $settings.preferredChatModelIdForProjectScope
-                            ) {
-                                Text("None").tag("")
-
-                                if !settings.chatModels
-                                    .contains(where: {
-                                        $0.id == settings.preferredChatModelIdForProjectScope
-                                    }),
-                                    !settings.preferredChatModelIdForProjectScope.isEmpty
-                                {
-                                    Text(
-                                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                                            ?? "No Model Found"
-                                    )
-                                    .tag(settings.preferredChatModelIdForProjectScope)
-                                }
-
-                                ForEach(settings.chatModels, id: \.id) { chatModel in
-                                    Text(chatModel.name).tag(chatModel.id)
-                                }
+                            ForEach(settings.chatModels, id: \.id) { chatModel in
+                                Text(chatModel.name).tag(chatModel.id)
                             }
                         }
                     }
@@ -404,14 +428,15 @@ struct ChatSettingsView: View {
 }
 
 // MARK: - Preview
+
 //
-//#Preview {
+// #Preview {
 //    ScrollView {
 //        ChatSettingsView()
 //            .padding()
 //    }
 //    .frame(height: 800)
 //    .environment(\.overrideFeatureFlag, \.never)
-//}
+// }
 //
 
