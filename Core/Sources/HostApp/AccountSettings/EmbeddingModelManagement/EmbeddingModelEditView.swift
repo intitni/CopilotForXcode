@@ -96,9 +96,10 @@ struct EmbeddingModelEditView: View {
         }
     }
 
-    func baseURLTextField(prompt: Text?) -> some View {
+    func baseURLTextField(prompt: Text?, showIsFullURL: Bool = false) -> some View {
         BaseURLPicker(
             prompt: prompt,
+            showIsFullURL: showIsFullURL,
             store: store.scope(
                 state: \.baseURLSelection,
                 action: EmbeddingModelEdit.Action.baseURLSelection
@@ -223,7 +224,10 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        baseURLTextField(prompt: Text("https://"))
+        baseURLTextField(
+            prompt: Text("https://"),
+            showIsFullURL: true
+        )
         apiKeyNamePicker
 
         WithViewStore(

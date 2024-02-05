@@ -6,6 +6,7 @@ import SwiftUI
 struct BaseURLSelection: ReducerProtocol {
     struct State: Equatable {
         @BindingState var baseURL: String = ""
+        @BindingState var isFullURL: Bool = false
         var availableBaseURLs: [String] = []
     }
 

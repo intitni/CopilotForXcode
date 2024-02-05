@@ -214,6 +214,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
                     supportsFunctionCalling: true,
                     modelName: ChatGPTModel.gpt35Turbo.rawValue

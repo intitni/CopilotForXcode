@@ -27,6 +27,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         public var apiKeyName: String
         @FallbackDecoding<EmptyString>
         public var baseURL: String
+        @FallbackDecoding<EmptyBool>
+        public var isFullURL: Bool
         @FallbackDecoding<EmptyInt>
         public var maxTokens: Int
         @FallbackDecoding<EmptyInt>
@@ -41,12 +43,14 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         public init(
             apiKeyName: String = "",
             baseURL: String = "",
+            isFullURL: Bool = false,
             maxTokens: Int = 8192,
             dimensions: Int = 1536,
             modelName: String = ""
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
+            self.isFullURL = isFullURL
             self.maxTokens = maxTokens
             self.dimensions = dimensions
             self.modelName = modelName
@@ -55,9 +59,14 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
     
     public var endpoint: String {
         switch format {
-        case .openAI, .openAICompatible:
+        case .openAI:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.openai.com/v1/embeddings" }
+            return "\(baseURL)/v1/embeddings"
+        case .openAICompatible:
+            let baseURL = info.baseURL
+            if baseURL.isEmpty { return "https://api.openai.com/v1/embeddings" }
+            if info.isFullURL { return baseURL }
             return "\(baseURL)/v1/embeddings"
         case .azureOpenAI:
             let baseURL = info.baseURL
