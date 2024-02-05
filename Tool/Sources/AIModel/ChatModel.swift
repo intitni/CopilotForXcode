@@ -63,7 +63,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         case .openAI, .openAICompatible:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
-            return "\(baseURL)/v1/chat/completions"
+            return baseURL
         case .azureOpenAI:
             let baseURL = info.baseURL
             let deployment = info.azureOpenAIDeploymentName
