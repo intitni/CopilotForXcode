@@ -248,6 +248,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
                     modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
                 )
