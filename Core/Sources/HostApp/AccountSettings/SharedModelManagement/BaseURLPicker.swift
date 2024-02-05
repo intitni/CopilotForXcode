@@ -33,7 +33,7 @@ struct BaseURLPicker: View {
                     }
                 if showIsFullURL {
                     Toggle(
-                        "Is base URL with full path",
+                        "Is Base URL with Full Path",
                         isOn: viewStore.$isFullURL
                     )
                     
