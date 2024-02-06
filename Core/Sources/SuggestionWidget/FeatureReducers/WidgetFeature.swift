@@ -238,10 +238,10 @@ public struct WidgetFeature: ReducerProtocol {
 
             case .observeActiveApplicationChange:
                 return .run { send in
-                    let stream = AsyncStream<NSRunningApplication> { continuation in
+                    let stream = AsyncStream<AppInstanceInspector> { continuation in
                         let cancellable = xcodeInspector.$activeApplication.sink { newValue in
                             guard let newValue else { return }
-                            continuation.yield(newValue.runningApplication)
+                            continuation.yield(newValue)
                         }
                         continuation.onTermination = { _ in
                             cancellable.cancel()
@@ -293,7 +293,7 @@ public struct WidgetFeature: ReducerProtocol {
                         guard let activeXcode = xcodeInspector.activeXcode else { continue }
                         guard await windows.fullscreenDetector.isOnActiveSpace else { continue }
                         let app = AXUIElementCreateApplication(
-                            activeXcode.runningApplication.processIdentifier
+                            activeXcode.processIdentifier
                         )
                         if let _ = app.focusedWindow {
                             await windows.orderFront()
@@ -538,7 +538,7 @@ public struct WidgetFeature: ReducerProtocol {
                     let task = Task { @MainActor in
                         if let activeApp, activeApp.isXcode {
                             let application = AXUIElementCreateApplication(
-                                activeApp.runningApplication.processIdentifier
+                                activeApp.processIdentifier
                             )
                             /// We need this to hide the windows when Xcode is minimized.
                             let noFocus = application.focusedWindow == nil
