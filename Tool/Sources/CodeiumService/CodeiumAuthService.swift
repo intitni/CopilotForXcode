@@ -38,7 +38,7 @@ public final class CodeiumAuthService {
         let apiUrl = UserDefaults.shared.value(for: \.codeiumApiUrl)
         if UserDefaults.shared.value(for: \.codeiumEnterpriseMode), apiUrl != "" {
             registerUserUrl =
-                URL(string: apiUrl + "/exa.api_server_pb.ApiServerService/RegisterUser")
+                URL(string: apiUrl + "/exa.seat_management_pb.SeatManagementService/RegisterUser")
         }
 
         var request = URLRequest(url: registerUserUrl!)
