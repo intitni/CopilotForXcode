@@ -1,7 +1,7 @@
-name: Bug Report
+name: Bug Report (Beta)
 description: File a bug report
-title: "[Bug]: "
-labels: ["bug"]
+title: "[Bug (Beta)]: "
+labels: ["bug", "beta"]
 assignees:
   - intitni
 body:
@@ -13,7 +13,7 @@ body:
     id: before-reporting
     attributes:
       label: Before Reporting
-      description: Before reporting the bug, we suggestion that you first refer to the [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions) to check if it may address your issue. And search for existing issues to avoid duplication. If you are reporting a bug from a beta build, please use the dedicated template for beta build.
+      description: Before reporting the bug, we suggestion that you first refer to the [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions) to check if it may address your issue. And search for existing issues to avoid duplication.
       options:
         - label: I have checked FAQ, and there is no solution to my issue
           required: true
