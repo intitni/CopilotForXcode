@@ -63,6 +63,7 @@ struct EmbeddingModelEditView: View {
         .onAppear {
             store.send(.appear)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     var nameTextField: some View {
@@ -219,6 +220,17 @@ struct EmbeddingModelEditView: View {
         }
 
         maxTokensTextField
+        
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " To get an API key, please visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)"
+            )
+
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " If you don't have access to GPT-4, you may need to visit [https://platform.openai.com/account/billing/overview](https://platform.openai.com/account/billing/overview) to buy some credits. A ChatGPT Plus subscription is not enough to access GPT-4 through API."
+            )
+        }
+        .padding(.vertical)
     }
 
     @ViewBuilder

@@ -12,7 +12,7 @@ struct EmbeddingModelManagementView: View {
                 action: EmbeddingModelManagement.Action.embeddingModelItem
             )) { store in
                 EmbeddingModelEditView(store: store)
-                    .frame(minWidth: 400)
+                    .frame(width: 800)
             }
     }
 }
