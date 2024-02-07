@@ -96,15 +96,27 @@ struct EmbeddingModelEditView: View {
         }
     }
 
-    func baseURLTextField(prompt: Text?, showIsFullURL: Bool = false) -> some View {
+    func baseURLTextField<V: View>(
+        title: String = "Base URL",
+        prompt: Text?,
+        @ViewBuilder trailingContent: @escaping () -> V
+    ) -> some View {
         BaseURLPicker(
+            title: title,
             prompt: prompt,
-            showIsFullURL: showIsFullURL,
             store: store.scope(
                 state: \.baseURLSelection,
                 action: EmbeddingModelEdit.Action.baseURLSelection
-            )
+            ),
+            trailingContent: trailingContent
         )
+    }
+
+    func baseURLTextField(
+        title: String = "Base URL",
+        prompt: Text?
+    ) -> some View {
+        baseURLTextField(title: title, prompt: prompt, trailingContent: { EmptyView() })
     }
 
     struct MaxTokensTextField: Equatable {
@@ -179,7 +191,9 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAI: some View {
-        baseURLTextField(prompt: Text("https://api.openai.com"))
+        baseURLTextField(prompt: Text("https://api.openai.com")) {
+            Text("/v1/embeddings")
+        }
         apiKeyNamePicker
 
         WithViewStore(
@@ -224,10 +238,34 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        baseURLTextField(
-            prompt: Text("https://"),
-            showIsFullURL: true
-        )
+        WithViewStore(store.scope(
+            state: \.baseURLSelection,
+            action: EmbeddingModelEdit.Action.baseURLSelection
+        ), removeDuplicates: { $0.isFullURL != $1.isFullURL }) { viewStore in
+            Picker(
+                selection: viewStore.$isFullURL,
+                content: {
+                    Text("Base URL").tag(false)
+                    Text("Full URL").tag(true)
+                },
+                label: { Text("URL") }
+            )
+            .pickerStyle(.segmented)
+        }
+
+        WithViewStore(store, observe: \.isFullURL) { viewStore in
+            baseURLTextField(
+                title: "",
+                prompt: viewStore.state
+                    ? Text("https://api.openai.com/v1/embeddings")
+                    : Text("https://api.openai.com")
+            ) {
+                if !viewStore.state {
+                    Text("/v1/embeddings")
+                }
+            }
+        }
+
         apiKeyNamePicker
 
         WithViewStore(
