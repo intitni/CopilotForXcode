@@ -15,6 +15,7 @@ struct EmbeddingModelEdit: ReducerProtocol {
         @BindingState var modelName: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
+        var isFullURL: Bool { baseURLSelection.isFullURL }
         var availableModelNames: [String] = []
         var availableAPIKeys: [String] = []
         var isTesting = false
@@ -75,6 +76,7 @@ struct EmbeddingModelEdit: ReducerProtocol {
                     info: .init(
                         apiKeyName: state.apiKeyName,
                         baseURL: state.baseURL,
+                        isFullURL: state.isFullURL,
                         maxTokens: state.maxTokens,
                         modelName: state.modelName
                     )
@@ -157,7 +159,7 @@ extension EmbeddingModelEdit.State {
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
             ),
-            baseURLSelection: .init(baseURL: model.info.baseURL)
+            baseURLSelection: .init(baseURL: model.info.baseURL, isFullURL: model.info.isFullURL)
         )
     }
 }
@@ -171,6 +173,7 @@ extension EmbeddingModel {
             info: .init(
                 apiKeyName: state.apiKeyName,
                 baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+                isFullURL: state.isFullURL,
                 maxTokens: state.maxTokens,
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
             )

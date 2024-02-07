@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct SubSection<Title: View, Content: View>: View {
+struct SubSection<Title: View, Description: View, Content: View>: View {
     let title: Title
-    let description: String
+    let description: Description
     @ViewBuilder let content: () -> Content
 
-    init(title: Title, description: String = "", @ViewBuilder content: @escaping () -> Content) {
+    init(title: Title, description: Description, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
         self.description = description
         self.content = content
@@ -13,21 +13,19 @@ struct SubSection<Title: View, Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            if !(title is EmptyView && description.isEmpty) {
+            if !(title is EmptyView && description is EmptyView) {
                 VStack(alignment: .leading, spacing: 8) {
                     title
                         .font(.system(size: 14).weight(.semibold))
 
-                    if !description.isEmpty {
-                        Text(description)
-                            .multilineTextAlignment(.leading)
-                            .foregroundStyle(.secondary)
-                    }
+                    description
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            if !(title is EmptyView && description.isEmpty) {
+            if !(title is EmptyView && description is EmptyView) {
                 Divider().padding(.bottom, 4)
             }
 
@@ -45,8 +43,32 @@ struct SubSection<Title: View, Content: View>: View {
     }
 }
 
+extension SubSection where Description == Text {
+    init(title: Title, description: String, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: title, description: Text(description), content: content)
+    }
+}
+
+extension SubSection where Description == EmptyView {
+    init(title: Title, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: title, description: EmptyView(), content: content)
+    }
+}
+
 extension SubSection where Title == EmptyView {
-    init(description: String = "", @ViewBuilder content: @escaping () -> Content) {
+    init(description: Description, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: EmptyView(), description: description, content: content)
+    }
+}
+
+extension SubSection where Title == EmptyView, Description == EmptyView {
+    init(@ViewBuilder content: @escaping () -> Content) {
+        self.init(title: EmptyView(), description: EmptyView(), content: content)
+    }
+}
+
+extension SubSection where Title == EmptyView, Description == Text {
+    init(description: String, @ViewBuilder content: @escaping () -> Content) {
         self.init(title: EmptyView(), description: description, content: content)
     }
 }

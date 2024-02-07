@@ -104,11 +104,11 @@ struct PromptToCodeSettingsView: View {
                     Text("pt")
                 }.disabled(true)
             }
-            
+
             ScopeForm()
         }
     }
-    
+
     struct ScopeForm: View {
         class Settings: ObservableObject {
             @AppStorage(\.enableSenseScopeByDefaultInPromptToCode)
@@ -125,16 +125,28 @@ struct PromptToCodeSettingsView: View {
                 #if canImport(ProHostApp)
 
                 SubSection(
-                    title: WithFeatureEnabled(\.senseScopeInChat, alignment: .trailing) {
-                        Text("Sense Scope (Experimental)")
-                    },
-                    description: "Experimental. Enable the bot to read the relevant code of the editing file in the project, third party packages and the SDK."
-                ) {
-                    WithFeatureEnabled(\.projectScopeInChat, alignment: .hidden) {
-                        Form {
-                            Toggle(isOn: $settings.enableSenseScopeByDefaultInPromptToCode) {
-                                Text("Enable by default")
+                    title: Text("Sense Scope (Experimental)"),
+                    description: IfFeatureEnabled(\.senseScopeInChat) {
+                        Text("""
+                        Enable the bot to access the relevant code \
+                        of the editing document in the project, third party packages and the SDK.
+                        """)
+                    } else: {
+                        VStack(alignment: .leading) {
+                            Text("""
+                            Enable the bot to read the relevant code \
+                            of the editing document in the SDK, and
+                            """)
+
+                            WithFeatureEnabled(\.senseScopeInChat, alignment: .inlineLeading) {
+                                Text("the project and third party packages.")
                             }
+                        }
+                    }
+                ) {
+                    Form {
+                        Toggle(isOn: $settings.enableSenseScopeByDefaultInPromptToCode) {
+                            Text("Enable by default")
                         }
                     }
                 }

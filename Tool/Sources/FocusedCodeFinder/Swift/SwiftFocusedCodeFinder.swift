@@ -187,7 +187,7 @@ public class SwiftFocusedCodeFinder: KnownLanguageFocusedCodeFinder<
                     .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
                     .joined(separator: " "),
                 name: name,
-                canBeUsedAsCodeRange: false
+                canBeUsedAsCodeRange: node.bindings.first?.accessorBlock != nil
             )
 
         case let node as AccessorDeclSyntax:

@@ -238,6 +238,8 @@ struct GeneralSettingsView: View {
         var hideCircularWidget
         @AppStorage(\.showHideWidgetShortcutGlobally)
         var showHideWidgetShortcutGlobally
+        @AppStorage(\.installBetaBuilds)
+        var installBetaBuilds
     }
 
     @StateObject var settings = Settings()
@@ -254,6 +256,10 @@ struct GeneralSettingsView: View {
                 set: { updateChecker.automaticallyChecksForUpdates = $0 }
             )) {
                 Text("Automatically Check for Update")
+            }
+            
+            Toggle(isOn: $settings.installBetaBuilds) {
+                Text("Install beta builds")
             }
 
             Picker(selection: $settings.suggestionWidgetPositionMode) {

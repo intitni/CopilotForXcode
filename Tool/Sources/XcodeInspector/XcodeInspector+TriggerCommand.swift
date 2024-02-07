@@ -32,14 +32,14 @@ public extension AppInstanceInspector {
         if activateApp {
             if !runningApplication.activate() {
                 Logger.service.error("""
-                Trigger menu item \(sourcePath) failed: \
+                Trigger menu item \(sourcePath): \
                 Xcode not activated.
                 """)
             }
         } else {
             if !runningApplication.isActive {
                 Logger.service.error("""
-                Trigger menu item \(sourcePath) failed: \
+                Trigger menu item \(sourcePath): \
                 Xcode not activated.
                 """)
             }

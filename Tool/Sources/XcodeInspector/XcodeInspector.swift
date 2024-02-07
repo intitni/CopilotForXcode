@@ -122,7 +122,7 @@ public final class XcodeInspector: ObservableObject {
         appChangeObservations.forEach { $0.cancel() }
         appChangeObservations.removeAll()
 
-        let appChangeTask = Task { [weak self] in
+        let appChangeTask = Task(priority: .utility) { [weak self] in
             guard let self else { return }
             if let activeXcode {
                 await setActiveXcode(activeXcode)
@@ -140,7 +140,7 @@ public final class XcodeInspector: ObservableObject {
                         else { continue }
                         if app.isXcode {
                             if let existed = xcodes.first(where: {
-                                $0.runningApplication.processIdentifier == app.processIdentifier
+                                $0.processIdentifier == app.processIdentifier && !$0.isTerminated
                             }) {
                                 await MainActor.run {
                                     self.setActiveXcode(existed)
@@ -175,7 +175,7 @@ public final class XcodeInspector: ObservableObject {
                             let processIdentifier = app.processIdentifier
                             await MainActor.run {
                                 self.xcodes.removeAll {
-                                    $0.runningApplication.processIdentifier == processIdentifier
+                                    $0.processIdentifier == processIdentifier || $0.isTerminated
                                 }
                                 if self.latestActiveXcode?.runningApplication
                                     .processIdentifier == processIdentifier
@@ -227,6 +227,15 @@ public final class XcodeInspector: ObservableObject {
         appChangeObservations.insert(appChangeTask)
     }
 
+    public func reactivateObservationsToXcode() {
+        Task { @MainActor in
+            if let activeXcode {
+                setActiveXcode(activeXcode)
+                activeXcode.observeAXNotifications()
+            }
+        }
+    }
+
     @MainActor
     private func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication
@@ -257,13 +266,11 @@ public final class XcodeInspector: ObservableObject {
             } else if let element = focusedElement,
                       let editorElement = element.firstParent(where: \.isSourceEditor)
             {
-                Logger.service.debug("Focused on child of source editor.")
                 focusedEditor = .init(
                     runningApplication: xcode.runningApplication,
                     element: editorElement
                 )
             } else {
-                Logger.service.debug("No source editor found.")
                 focusedEditor = nil
             }
         }
@@ -272,7 +279,6 @@ public final class XcodeInspector: ObservableObject {
         let focusedElementChanged = Task { @MainActor in
             for await notification in xcode.axNotifications {
                 if notification.kind == .focusedUIElementChanged {
-                    Logger.service.debug("Update focused element")
                     try Task.checkCancellation()
                     setFocusedElement()
                 }

@@ -63,6 +63,7 @@ struct EmbeddingModelEditView: View {
         .onAppear {
             store.send(.appear)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     var nameTextField: some View {
@@ -96,14 +97,27 @@ struct EmbeddingModelEditView: View {
         }
     }
 
-    func baseURLTextField(prompt: Text?) -> some View {
+    func baseURLTextField<V: View>(
+        title: String = "Base URL",
+        prompt: Text?,
+        @ViewBuilder trailingContent: @escaping () -> V
+    ) -> some View {
         BaseURLPicker(
+            title: title,
             prompt: prompt,
             store: store.scope(
                 state: \.baseURLSelection,
                 action: EmbeddingModelEdit.Action.baseURLSelection
-            )
+            ),
+            trailingContent: trailingContent
         )
+    }
+
+    func baseURLTextField(
+        title: String = "Base URL",
+        prompt: Text?
+    ) -> some View {
+        baseURLTextField(title: title, prompt: prompt, trailingContent: { EmptyView() })
     }
 
     struct MaxTokensTextField: Equatable {
@@ -178,7 +192,9 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAI: some View {
-        baseURLTextField(prompt: Text("https://api.openai.com"))
+        baseURLTextField(prompt: Text("https://api.openai.com")) {
+            Text("/v1/embeddings")
+        }
         apiKeyNamePicker
 
         WithViewStore(
@@ -204,6 +220,17 @@ struct EmbeddingModelEditView: View {
         }
 
         maxTokensTextField
+        
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " To get an API key, please visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)"
+            )
+
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " If you don't have access to GPT-4, you may need to visit [https://platform.openai.com/account/billing/overview](https://platform.openai.com/account/billing/overview) to buy some credits. A ChatGPT Plus subscription is not enough to access GPT-4 through API."
+            )
+        }
+        .padding(.vertical)
     }
 
     @ViewBuilder
@@ -223,7 +250,34 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        baseURLTextField(prompt: Text("https://"))
+        WithViewStore(store.scope(
+            state: \.baseURLSelection,
+            action: EmbeddingModelEdit.Action.baseURLSelection
+        ), removeDuplicates: { $0.isFullURL != $1.isFullURL }) { viewStore in
+            Picker(
+                selection: viewStore.$isFullURL,
+                content: {
+                    Text("Base URL").tag(false)
+                    Text("Full URL").tag(true)
+                },
+                label: { Text("URL") }
+            )
+            .pickerStyle(.segmented)
+        }
+
+        WithViewStore(store, observe: \.isFullURL) { viewStore in
+            baseURLTextField(
+                title: "",
+                prompt: viewStore.state
+                    ? Text("https://api.openai.com/v1/embeddings")
+                    : Text("https://api.openai.com")
+            ) {
+                if !viewStore.state {
+                    Text("/v1/embeddings")
+                }
+            }
+        }
+
         apiKeyNamePicker
 
         WithViewStore(

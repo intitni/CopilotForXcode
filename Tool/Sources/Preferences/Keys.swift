@@ -93,6 +93,13 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "ShowHideWidgetShortcutGlobally"
     )
+    
+    // MARK: Update Channel
+    
+    public let installBetaBuilds = PreferenceKey(
+        defaultValue: false,
+        key: "InstallBetaBuilds"
+    )
 }
 
 // MARK: - OpenAI Account Settings
@@ -214,6 +221,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
                     supportsFunctionCalling: true,
                     modelName: ChatGPTModel.gpt35Turbo.rawValue
@@ -247,6 +255,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
                     modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
                 )
@@ -572,7 +581,7 @@ public extension UserDefaultPreferenceKeys {
     
     var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
         .init(
-            defaultValue: true,
+            defaultValue: false,
             key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
         )
     }
