@@ -267,7 +267,9 @@ struct CodeiumSignInView: View {
                     }
                 }) {
                     Text(isGeneratingKey ? "Signing In.." : "Sign In")
-                }.disabled(isGeneratingKey)
+                }
+                .disabled(isGeneratingKey)
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding()
