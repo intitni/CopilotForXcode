@@ -164,7 +164,7 @@ extension AppDelegate: NSMenuDelegate {
 
             for xcode in inspector.xcodes {
                 let item = NSMenuItem(
-                    title: "Xcode \(xcode.runningApplication.processIdentifier)",
+                    title: "Xcode \(xcode.processIdentifier)",
                     action: nil,
                     keyEquivalent: ""
                 )

@@ -216,7 +216,7 @@ struct ChatModelEditView: View {
     @ViewBuilder
     var openAI: some View {
         baseURLTextField(prompt: Text("https://api.openai.com")) {
-            Text("/v1/chat/completion")
+            Text("/v1/chat/completions")
         }
         apiKeyNamePicker
 
@@ -294,11 +294,11 @@ struct ChatModelEditView: View {
             baseURLTextField(
                 title: "",
                 prompt: viewStore.state
-                    ? Text("https://api.openai.com/v1/chat/completion")
+                    ? Text("https://api.openai.com/v1/chat/completions")
                     : Text("https://api.openai.com")
             ) {
                 if !viewStore.state {
-                    Text("/v1/chat/completion")
+                    Text("/v1/chat/completions")
                 }
             }
         }

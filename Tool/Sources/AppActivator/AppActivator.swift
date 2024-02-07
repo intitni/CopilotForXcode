@@ -31,7 +31,7 @@ public extension NSWorkspace {
         Task { @MainActor in
             guard let app = XcodeInspector.shared.previousActiveApplication else { return }
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            app.runningApplication.activate()
+            app.activate()
         }
     }
 
@@ -39,7 +39,7 @@ public extension NSWorkspace {
         Task { @MainActor in
             guard let app = XcodeInspector.shared.latestActiveXcode else { return }
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            app.runningApplication.activate()
+            app.activate()
         }
     }
 }

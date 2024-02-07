@@ -162,34 +162,32 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 )
                 focusedWindow = window
 
-                // should find a better solution to do this thread safe
-                Task { @MainActor in
-                    focusedWindowObservations.forEach { $0.cancel() }
-                    focusedWindowObservations.removeAll()
+                focusedWindowObservations.forEach { $0.cancel() }
+                focusedWindowObservations.removeAll()
 
-                    documentURL = window.documentURL
-                    workspaceURL = window.workspaceURL
-                    projectRootURL = window.projectRootURL
+                documentURL = window.documentURL
+                workspaceURL = window.workspaceURL
+                projectRootURL = window.projectRootURL
 
-                    window.$documentURL
-                        .filter { $0 != .init(fileURLWithPath: "/") }
-                        .receive(on: DispatchQueue.main)
-                        .sink { [weak self] url in
-                            self?.documentURL = url
-                        }.store(in: &focusedWindowObservations)
-                    window.$workspaceURL
-                        .filter { $0 != .init(fileURLWithPath: "/") }
-                        .receive(on: DispatchQueue.main)
-                        .sink { [weak self] url in
-                            self?.workspaceURL = url
-                        }.store(in: &focusedWindowObservations)
-                    window.$projectRootURL
-                        .filter { $0 != .init(fileURLWithPath: "/") }
-                        .receive(on: DispatchQueue.main)
-                        .sink { [weak self] url in
-                            self?.projectRootURL = url
-                        }.store(in: &focusedWindowObservations)
-                }
+                window.$documentURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] url in
+                        self?.documentURL = url
+                    }.store(in: &focusedWindowObservations)
+                window.$workspaceURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] url in
+                        self?.workspaceURL = url
+                    }.store(in: &focusedWindowObservations)
+                window.$projectRootURL
+                    .filter { $0 != .init(fileURLWithPath: "/") }
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] url in
+                        self?.projectRootURL = url
+                    }.store(in: &focusedWindowObservations)
+
             } else {
                 let window = XcodeWindowInspector(uiElement: window)
                 focusedWindow = window

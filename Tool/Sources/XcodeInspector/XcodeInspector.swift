@@ -122,7 +122,7 @@ public final class XcodeInspector: ObservableObject {
         appChangeObservations.forEach { $0.cancel() }
         appChangeObservations.removeAll()
 
-        let appChangeTask = Task { [weak self] in
+        let appChangeTask = Task(priority: .utility) { [weak self] in
             guard let self else { return }
             if let activeXcode {
                 await setActiveXcode(activeXcode)
@@ -140,7 +140,7 @@ public final class XcodeInspector: ObservableObject {
                         else { continue }
                         if app.isXcode {
                             if let existed = xcodes.first(where: {
-                                $0.runningApplication.processIdentifier == app.processIdentifier
+                                $0.processIdentifier == app.processIdentifier && !$0.isTerminated
                             }) {
                                 await MainActor.run {
                                     self.setActiveXcode(existed)
@@ -175,7 +175,7 @@ public final class XcodeInspector: ObservableObject {
                             let processIdentifier = app.processIdentifier
                             await MainActor.run {
                                 self.xcodes.removeAll {
-                                    $0.runningApplication.processIdentifier == processIdentifier
+                                    $0.processIdentifier == processIdentifier || $0.isTerminated
                                 }
                                 if self.latestActiveXcode?.runningApplication
                                     .processIdentifier == processIdentifier
