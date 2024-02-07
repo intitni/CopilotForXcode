@@ -101,9 +101,10 @@ struct ChatModelEditView: View {
         }
     }
 
-    func baseURLTextField(prompt: Text?) -> some View {
+    func baseURLTextField(prompt: Text?, showIsFullURL: Bool = false) -> some View {
         BaseURLPicker(
             prompt: prompt,
+            showIsFullURL: showIsFullURL,
             store: store.scope(
                 state: \.baseURLSelection,
                 action: ChatModelEdit.Action.baseURLSelection
@@ -260,7 +261,10 @@ struct ChatModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        baseURLTextField(prompt: Text("https://"))
+        baseURLTextField(
+            prompt: Text("https://"),
+            showIsFullURL: true
+        )
         apiKeyNamePicker
 
         WithViewStore(
@@ -334,6 +338,7 @@ struct ChatModelEditView: View {
                 info: .init(
                     apiKeyName: "key",
                     baseURL: "apple.com",
+                    isFullURL: false,
                     maxTokens: 3000,
                     supportsFunctionCalling: false,
                     modelName: "gpt-3.5-turbo"

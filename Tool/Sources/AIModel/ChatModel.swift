@@ -28,6 +28,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var apiKeyName: String
         @FallbackDecoding<EmptyString>
         public var baseURL: String
+        @FallbackDecoding<EmptyBool>
+        public var isFullURL: Bool
         @FallbackDecoding<EmptyInt>
         public var maxTokens: Int
         @FallbackDecoding<EmptyBool>
@@ -44,6 +46,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public init(
             apiKeyName: String = "",
             baseURL: String = "",
+            isFullURL: Bool = false,
             maxTokens: Int = 4000,
             supportsFunctionCalling: Bool = true,
             supportsOpenAIAPI2023_11: Bool = false,
@@ -51,6 +54,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
+            self.isFullURL = isFullURL
             self.maxTokens = maxTokens
             self.supportsFunctionCalling = supportsFunctionCalling
             self.supportsOpenAIAPI2023_11 = supportsOpenAIAPI2023_11
@@ -60,9 +64,14 @@ public struct ChatModel: Codable, Equatable, Identifiable {
 
     public var endpoint: String {
         switch format {
-        case .openAI, .openAICompatible:
+        case .openAI:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+            return "\(baseURL)/v1/chat/completions"
+        case .openAICompatible:
+            let baseURL = info.baseURL
+            if baseURL.isEmpty { return "https://api.openai.com/v1/chat/completions" }
+            if info.isFullURL { return baseURL }
             return "\(baseURL)/v1/chat/completions"
         case .azureOpenAI:
             let baseURL = info.baseURL
