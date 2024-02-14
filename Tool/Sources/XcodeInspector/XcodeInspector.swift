@@ -35,8 +35,11 @@ public final class XcodeInspector: ObservableObject {
     @Published public fileprivate(set) var focusedElement: AXUIElement?
     @Published public fileprivate(set) var completionPanel: AXUIElement?
 
-    #warning("TODO: make it a function and mark it as expensive")
-    public var focusedEditorContent: EditorInformation? {
+    /// Get the content of the source editor.
+    ///
+    /// - note: This method is expensive. It needs to convert index based ranges to line based
+    /// ranges.
+    public func getFocusedEditorContent() -> EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
               let projectURL = XcodeInspector.shared.activeProjectRootURL

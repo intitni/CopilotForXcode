@@ -31,7 +31,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             return userPreferredLanguage.isEmpty ? "" : " in \(userPreferredLanguage)"
         }()
 
-        let editor: EditorInformation = XcodeInspector.shared.focusedEditorContent ?? .init(
+        let editor: EditorInformation = XcodeInspector.shared.getFocusedEditorContent() ?? .init(
             editorContent: .init(
                 content: source.content,
                 lines: source.lines,

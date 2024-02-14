@@ -30,7 +30,8 @@ public class SourceEditor {
 
     /// Get the content of the source editor.
     ///
-    /// - note: This method is expensive.
+    /// - note: This method is expensive. It needs to convert index based ranges to line based
+    /// ranges.
     public func getContent() -> Content {
         let content = element.value
         let selectionRange = element.selectedTextRange
