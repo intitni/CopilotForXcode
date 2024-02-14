@@ -38,7 +38,7 @@ public struct PanelFeature: ReducerProtocol {
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.activateThisApp) var activateThisApp
-    var windows: WidgetWindows { suggestionWidgetControllerDependency.windows }
+    var windows: WidgetWindows? { suggestionWidgetControllerDependency.windowsController?.windows }
 
     public var body: some ReducerProtocol<State, Action> {
         Scope(state: \.suggestionPanelState, action: /Action.suggestionPanel) {
@@ -122,7 +122,9 @@ public struct PanelFeature: ReducerProtocol {
 
                     if hasPromptToCode {
                         activateThisApp()
-                        await windows.sharedPanelWindow.makeKey()
+                        await MainActor.run {
+                            windows?.sharedPanelWindow.makeKey()
+                        }
                     }
                 }.animation(.easeInOut(duration: 0.2))
 

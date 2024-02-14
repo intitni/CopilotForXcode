@@ -13,30 +13,9 @@ public final class SuggestionWidgetControllerDependency {
     public var suggestionWidgetDataSource: SuggestionWidgetDataSource?
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
-    public var windows: WidgetWindows = .init()
+    var windowsController: WindowsController?
 
     public init() {}
-}
-
-@MainActor
-public final class WidgetWindows {
-    var fullscreenDetector: NSWindow!
-    var widgetWindow: NSWindow!
-    var sharedPanelWindow: NSWindow!
-    var suggestionPanelWindow: NSWindow!
-    var chatPanelWindow: ChatWindow!
-    var toastWindow: NSWindow!
-
-    nonisolated
-    init() {}
-
-    func orderFront() {
-        widgetWindow?.orderFrontRegardless()
-        toastWindow?.orderFrontRegardless()
-        sharedPanelWindow?.orderFrontRegardless()
-        suggestionPanelWindow?.orderFrontRegardless()
-        chatPanelWindow?.orderFrontRegardless()
-    }
 }
 
 public final class WidgetUserDefaultsObservers {

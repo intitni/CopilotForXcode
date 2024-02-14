@@ -85,7 +85,7 @@ public struct ChatPanelFeature: ReducerProtocol {
     @Dependency(\.chatTabBuilderCollection) var chatTabBuilderCollection
 
     @MainActor func toggleFullScreen() {
-        let window = suggestionWidgetControllerDependency.windows
+        let window = suggestionWidgetControllerDependency.windowsController?.windows
             .chatPanelWindow
         window?.toggleFullScreen(nil)
     }

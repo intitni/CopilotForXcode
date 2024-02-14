@@ -1,8 +1,8 @@
 import AppKit
 import Foundation
 
-struct WidgetLocation {
-    struct PanelLocation {
+public struct WidgetLocation: Equatable {
+    struct PanelLocation: Equatable {
         var frame: CGRect
         var alignPanelTop: Bool
     }
