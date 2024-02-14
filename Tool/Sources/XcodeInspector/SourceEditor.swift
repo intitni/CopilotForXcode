@@ -9,12 +9,16 @@ import SuggestionModel
 public class SourceEditor {
     public typealias Content = EditorInformation.SourceEditorContent
 
-    public struct AXNotification {
+    public struct AXNotification: Hashable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
+        
+        public func hash(into hasher: inout Hasher) {
+            kind.hash(into: &hasher)
+        }
     }
 
-    public enum AXNotificationKind {
+    public enum AXNotificationKind: Hashable, Equatable {
         case selectedTextChanged
         case valueChanged
         case scrollPositionChanged
