@@ -143,6 +143,7 @@ final class WidgetWindowsController: NSObject {
                 }
             }
         }
+        updateWindowOpacityTask = task
         _ = try? await task.value
     }
 
