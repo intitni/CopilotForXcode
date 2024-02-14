@@ -8,7 +8,7 @@ import Foundation
 import SwiftUI
 import XcodeInspector
 
-final class WindowsController: NSObject {
+final class WidgetWindowsController: NSObject {
     let userDefaultsObservers = WidgetUserDefaultsObservers()
     var xcodeInspector: XcodeInspector { .shared }
 
@@ -192,7 +192,7 @@ final class WindowsController: NSObject {
     }
 }
 
-extension WindowsController: NSWindowDelegate {
+extension WidgetWindowsController: NSWindowDelegate {
     func windowWillMove(_ notification: Notification) {
         guard (notification.object as? NSWindow) === windows.chatPanelWindow else { return }
         Task { @MainActor in
@@ -218,7 +218,7 @@ extension WindowsController: NSWindowDelegate {
     }
 }
 
-private extension WindowsController {
+private extension WidgetWindowsController {
     func activate(_ app: AppInstanceInspector) {
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
@@ -310,7 +310,7 @@ private extension WindowsController {
     }
 }
 
-extension WindowsController {
+extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
         windows.sharedPanelWindow.alphaValue = 0
@@ -423,7 +423,7 @@ extension WindowsController {
 public final class WidgetWindows {
     let store: StoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
-    weak var controller: WindowsController?
+    weak var controller: WidgetWindowsController?
 
     // you should make these window `.transient` so they never show up in the mission control.
 

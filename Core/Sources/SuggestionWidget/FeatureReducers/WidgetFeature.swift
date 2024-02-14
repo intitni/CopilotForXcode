@@ -111,7 +111,7 @@ public struct WidgetFeature: ReducerProtocol {
         case circularWidget(CircularWidgetFeature.Action)
     }
 
-    var windowsController: WindowsController? {
+    var windowsController: WidgetWindowsController? {
         suggestionWidgetControllerDependency.windowsController
     }
 

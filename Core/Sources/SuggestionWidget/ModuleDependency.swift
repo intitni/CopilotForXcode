@@ -13,7 +13,7 @@ public final class SuggestionWidgetControllerDependency {
     public var suggestionWidgetDataSource: SuggestionWidgetDataSource?
     public var onOpenChatClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
-    var windowsController: WindowsController?
+    var windowsController: WidgetWindowsController?
 
     public init() {}
 }

@@ -14,7 +14,7 @@ public final class SuggestionWidgetController: NSObject {
     let store: StoreOf<WidgetFeature>
     let viewStore: ViewStoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
-    let windowsController: WindowsController
+    let windowsController: WidgetWindowsController
     private var cancellable = Set<AnyCancellable>()
 
     public let dependency: SuggestionWidgetControllerDependency
