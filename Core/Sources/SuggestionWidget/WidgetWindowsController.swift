@@ -19,10 +19,20 @@ final class WidgetWindowsController: NSObject {
     var currentApplicationProcessIdentifier: pid_t?
 
     var cancellable: Set<AnyCancellable> = []
+    @MainActor
     var observeToAppTask: Task<Void, Error>?
+    @MainActor
     var observeToFocusedEditorTask: Task<Void, Error>?
+
+    @MainActor
     var updateWindowOpacityTask: Task<Void, Error>?
+    @MainActor
     var lastUpdateWindowOpacityTime = Date(timeIntervalSince1970: 0)
+
+    @MainActor
+    var updateWindowLocationTask: Task<Void, Error>?
+    @MainActor
+    var lastUpdateWindowLocationTime = Date(timeIntervalSince1970: 0)
 
     deinit {
         userDefaultsObservers.presentationModeChangeObserver.onChange = {}
@@ -47,7 +57,7 @@ final class WidgetWindowsController: NSObject {
 
         xcodeInspector.$activeApplication.sink { [weak self] app in
             guard let app else { return }
-            self?.activate(app)
+            Task { [weak self] in await self?.activate(app) }
         }.store(in: &cancellable)
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
@@ -59,14 +69,14 @@ final class WidgetWindowsController: NSObject {
                     // suggestion panel
                     try await Task.sleep(nanoseconds: 400_000_000)
                 }
-                await self?.updateWindowLocation(animated: false)
+                await self?.updateWindowLocation(animated: false, immediately: false)
                 await self?.updateWindowOpacity(immediately: false)
             }
         }.store(in: &cancellable)
 
         userDefaultsObservers.presentationModeChangeObserver.onChange = { [weak self] in
             Task { [weak self] in
-                await self?.updateWindowLocation(animated: false)
+                await self?.updateWindowLocation(animated: false, immediately: false)
                 await self?.send(.updateColorScheme)
             }
         }
@@ -81,18 +91,21 @@ final class WidgetWindowsController: NSObject {
 
         let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
         let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
-        let shouldDebounce = !immediately &&
-            Date().timeIntervalSince(lastUpdateWindowOpacityTime) < 1
-        lastUpdateWindowOpacityTime = Date()
+        let shouldDebounce = await MainActor.run {
+            defer {lastUpdateWindowOpacityTime = Date() }
+            return (!immediately &&
+                !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5))
+        }
         let activeApp = xcodeInspector.activeApplication
 
-        updateWindowOpacityTask?.cancel()
+        await updateWindowOpacityTask?.cancel()
 
         let task = Task {
             if shouldDebounce {
                 try await Task.sleep(nanoseconds: 200_000_000)
             }
             try Task.checkCancellation()
+            let xcodeInspector = self.xcodeInspector
             await MainActor.run {
                 if let activeApp, activeApp.isXcode {
                     let application = AXUIElementCreateApplication(
@@ -143,19 +156,26 @@ final class WidgetWindowsController: NSObject {
                 }
             }
         }
-        updateWindowOpacityTask = task
-        _ = try? await task.value
+        
+        await MainActor.run {
+            updateWindowOpacityTask = task
+        }
     }
 
-    func updateWindowLocation(animated: Bool) async {
+    func updateWindowLocation(
+        animated: Bool,
+        immediately: Bool,
+        function: StaticString = #function,
+        line: UInt = #line
+    ) async {
         let state = store.withState { $0 }
-
-        guard let widgetLocation = generateWidgetLocation() else { return }
-        await updatePanelState(widgetLocation)
-
         let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
 
-        await MainActor.run {
+        @Sendable @MainActor
+        func update() async {
+            guard let widgetLocation = generateWidgetLocation() else { return }
+            await updatePanelState(widgetLocation)
+
             windows.widgetWindow.setFrame(
                 widgetLocation.widgetFrame,
                 display: false,
@@ -190,29 +210,67 @@ final class WidgetWindowsController: NSObject {
                 )
             }
         }
+
+        let now = Date()
+        let shouldThrottle = await MainActor.run {
+            !immediately &&
+                !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
+        }
+
+        await updateWindowLocationTask?.cancel()
+        let interval: TimeInterval = 0.1
+
+        if shouldThrottle {
+            let delay = await max(
+                0,
+                interval - now.timeIntervalSince(lastUpdateWindowLocationTime)
+            )
+
+            let task = Task { @MainActor in
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                try Task.checkCancellation()
+                await update()
+            }
+            await MainActor.run {
+                updateWindowLocationTask = task
+            }
+        } else {
+            Task {
+                await update()
+            }
+        }
+        await MainActor.run {
+            lastUpdateWindowLocationTime = Date()
+        }
     }
 }
 
 extension WidgetWindowsController: NSWindowDelegate {
+    nonisolated
     func windowWillMove(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === windows.chatPanelWindow else { return }
+        guard let window = notification.object as? NSWindow else { return }
         Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
             await Task.yield()
             store.send(.chatPanel(.detachChatPanel))
         }
     }
 
+    nonisolated
     func windowWillEnterFullScreen(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === windows.chatPanelWindow else { return }
+        guard let window = notification.object as? NSWindow else { return }
         Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
             await Task.yield()
             store.send(.chatPanel(.enterFullScreen))
         }
     }
 
+    nonisolated
     func windowWillExitFullScreen(_ notification: Notification) {
-        guard (notification.object as? NSWindow) === windows.chatPanelWindow else { return }
+        guard let window = notification.object as? NSWindow else { return }
         Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
             await Task.yield()
             store.send(.chatPanel(.exitFullScreen))
         }
@@ -220,30 +278,33 @@ extension WidgetWindowsController: NSWindowDelegate {
 }
 
 private extension WidgetWindowsController {
-    func activate(_ app: AppInstanceInspector) {
+    func activate(_ app: AppInstanceInspector) async {
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
-        observe(to: app)
+        await observe(to: app)
     }
 
-    func observe(to app: AppInstanceInspector) {
+    func observe(to app: AppInstanceInspector) async {
         guard let app = app as? XcodeAppInstanceInspector else {
             Task {
-                await updateWindowLocation(animated: false)
+                await updateWindowLocation(animated: false, immediately: true)
                 await updateWindowOpacity(immediately: true)
             }
             return
         }
         let notifications = app.axNotifications
         if let focusedEditor = xcodeInspector.focusedEditor {
-            observe(to: focusedEditor)
+            await observe(to: focusedEditor)
         }
-        observeToAppTask?.cancel()
-        observeToAppTask = Task {
+        
+        let task = Task {
             await windows.orderFront()
 
             let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
             for await notification in notifications {
+                if [.uiElementDestroyed, .created, .xcodeCompletionPanelChanged]
+                    .contains(notification.kind) { continue }
+
                 try Task.checkCancellation()
 
                 // Hide the widgets before switching to another window/editor
@@ -267,23 +328,27 @@ private extension WidgetWindowsController {
                     .mainWindowChanged,
                     .focusedWindowChanged,
                 ].contains(notification.kind) {
-                    await updateWindowLocation(animated: false)
+                    await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                     if let editor = xcodeInspector.focusedEditor {
-                        observe(to: editor)
+                        await observe(to: editor)
                     }
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
                 } else {
-                    await updateWindowLocation(animated: false)
+                    await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
             }
         }
+        
+        await MainActor.run {
+            observeToAppTask?.cancel()
+            observeToAppTask = task
+        }
     }
 
-    func observe(to editor: SourceEditor) {
-        observeToFocusedEditorTask?.cancel()
-        observeToFocusedEditorTask = Task {
+    func observe(to editor: SourceEditor) async {
+        let task = Task {
             let selectionRangeChange = editor.axNotifications
                 .filter { $0.kind == .selectedTextChanged }
             let scroll = editor.axNotifications
@@ -292,21 +357,26 @@ private extension WidgetWindowsController {
             if #available(macOS 13.0, *) {
                 for await _ in merge(
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
-                    scroll
+                    scroll.throttle(for: .milliseconds(200))
                 ) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
-                    await updateWindowLocation(animated: false)
+                    await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
             } else {
                 for await _ in merge(selectionRangeChange, scroll) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
-                    await updateWindowLocation(animated: false)
+                    await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
             }
+        }
+        
+        await MainActor.run {
+            observeToFocusedEditorTask?.cancel()
+            observeToFocusedEditorTask = task
         }
     }
 }

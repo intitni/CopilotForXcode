@@ -195,7 +195,10 @@ public struct WidgetFeature: ReducerProtocol {
             case .chatPanel(.presentChatPanel):
                 let isDetached = state.chatPanelState.chatPanelInASeparateWindow
                 return .run { _ in
-                    await windowsController?.updateWindowLocation(animated: false)
+                    await windowsController?.updateWindowLocation(
+                        animated: false,
+                        immediately: false
+                    )
                     await windowsController?.updateWindowOpacity(immediately: false)
                     if isDetached {
                         Task { @MainActor in
@@ -207,7 +210,10 @@ public struct WidgetFeature: ReducerProtocol {
             case .chatPanel(.toggleChatPanelDetachedButtonClicked):
                 let isDetached = state.chatPanelState.chatPanelInASeparateWindow
                 return .run { _ in
-                    await windowsController?.updateWindowLocation(animated: !isDetached)
+                    await windowsController?.updateWindowLocation(
+                        animated: !isDetached,
+                        immediately: false
+                    )
                     await windowsController?.updateWindowOpacity(immediately: false)
                 }
             default: return .none
