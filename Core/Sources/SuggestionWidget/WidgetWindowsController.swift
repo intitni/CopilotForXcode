@@ -357,7 +357,7 @@ private extension WidgetWindowsController {
             if #available(macOS 13.0, *) {
                 for await _ in merge(
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
-                    scroll.throttle(for: .milliseconds(200))
+                    scroll
                 ) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
