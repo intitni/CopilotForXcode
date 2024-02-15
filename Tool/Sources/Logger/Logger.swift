@@ -99,14 +99,47 @@ public final class Logger {
             function: function
         )
     }
-    
-    public func signpost(
-        _ type: OSSignpostType,
+
+    public func signpostBegin(
         name: StaticString,
         file: StaticString = #file,
         line: UInt = #line,
         function: StaticString = #function
-    ) {
-        os_signpost(type, log: osLog, name: name)
+    ) -> Signposter {
+        let poster = OSSignposter(logHandle: osLog)
+        let id = poster.makeSignpostID()
+        let state = poster.beginInterval(name, id: id)
+        return .init(log: osLog, id: id, name: name, signposter: poster, beginState: state)
+    }
+
+    public struct Signposter {
+        let log: OSLog
+        let id: OSSignpostID
+        let name: StaticString
+        let signposter: OSSignposter
+        let state: OSSignpostIntervalState
+
+        init(
+            log: OSLog,
+            id: OSSignpostID,
+            name: StaticString,
+            signposter: OSSignposter,
+            beginState: OSSignpostIntervalState
+        ) {
+            self.id = id
+            self.log = log
+            self.name = name
+            self.signposter = signposter
+            state = beginState
+        }
+
+        public func end() {
+            signposter.endInterval(name, state)
+        }
+
+        public func event(_ text: String) {
+            signposter.emitEvent(name, id: id, "\(text, privacy: .public)")
+        }
     }
 }
+
