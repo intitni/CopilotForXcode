@@ -37,7 +37,9 @@ public final class SuggestionWidgetController: NSObject {
         dependency.windowsController = windowsController
 
         store.send(.startup)
-        windowsController.start()
+        Task {
+            await windowsController.start()
+        }
     }
 }
 

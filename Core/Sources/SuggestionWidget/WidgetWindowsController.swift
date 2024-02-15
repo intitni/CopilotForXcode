@@ -8,7 +8,7 @@ import Foundation
 import SwiftUI
 import XcodeInspector
 
-final class WidgetWindowsController: NSObject {
+actor WidgetWindowsController: NSObject {
     let userDefaultsObservers = WidgetUserDefaultsObservers()
     var xcodeInspector: XcodeInspector { .shared }
 
@@ -90,11 +90,9 @@ final class WidgetWindowsController: NSObject {
 
         let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
         let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
-        let shouldDebounce = await MainActor.run {
-            defer { lastUpdateWindowOpacityTime = Date() }
-            return !immediately &&
-                !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
-        }
+        let shouldDebounce = !immediately &&
+        !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
+        lastUpdateWindowOpacityTime = Date()
         let activeApp = xcodeInspector.activeApplication
 
         updateWindowOpacityTask?.cancel()
@@ -169,7 +167,7 @@ final class WidgetWindowsController: NSObject {
         func update() async {
             let state = store.withState { $0 }
             let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-            guard let widgetLocation = generateWidgetLocation() else { return }
+            guard let widgetLocation = await generateWidgetLocation() else { return }
             await updatePanelState(widgetLocation)
 
             windows.widgetWindow.setFrame(
@@ -208,10 +206,8 @@ final class WidgetWindowsController: NSObject {
         }
 
         let now = Date()
-        let shouldThrottle = await MainActor.run {
-            !immediately &&
-                !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
-        }
+        let shouldThrottle = !immediately &&
+        !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
 
         updateWindowLocationTask?.cancel()
         let interval: TimeInterval = 0.1
@@ -222,13 +218,10 @@ final class WidgetWindowsController: NSObject {
                 interval - now.timeIntervalSince(lastUpdateWindowLocationTime)
             )
 
-            let task = Task {
+            updateWindowLocationTask = Task {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 try Task.checkCancellation()
                 await update()
-            }
-            await MainActor.run {
-                updateWindowLocationTask = task
             }
         } else {
             Task {
@@ -272,13 +265,13 @@ extension WidgetWindowsController: NSWindowDelegate {
 }
 
 private extension WidgetWindowsController {
-    func activate(_ app: AppInstanceInspector) async {
+    func activate(_ app: AppInstanceInspector) {
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
-        await observe(to: app)
+        observe(to: app)
     }
 
-    func observe(to app: AppInstanceInspector) async {
+    func observe(to app: AppInstanceInspector) {
         Task {
             await updateWindowLocation(animated: false, immediately: true)
             await updateWindowOpacity(immediately: true)
@@ -287,7 +280,8 @@ private extension WidgetWindowsController {
             return
         }
         let notifications = app.axNotifications
-        let task = Task {
+        observeToAppTask?.cancel()
+        observeToAppTask = Task {
             await windows.orderFront()
 
             let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
@@ -335,13 +329,11 @@ private extension WidgetWindowsController {
                 }
             }
         }
-
-        observeToAppTask?.cancel()
-        observeToAppTask = task
     }
 
-    func observe(to editor: SourceEditor) async {
-        let task = Task {
+    func observe(to editor: SourceEditor) {
+        observeToFocusedEditorTask?.cancel()
+        observeToFocusedEditorTask = Task {
             let selectionRangeChange = editor.axNotifications
                 .filter { $0.kind == .selectedTextChanged }
             let scroll = editor.axNotifications
@@ -378,9 +370,6 @@ private extension WidgetWindowsController {
                 }
             }
         }
-
-        observeToFocusedEditorTask?.cancel()
-        observeToFocusedEditorTask = task
     }
 }
 
