@@ -21,7 +21,7 @@ struct WidgetView: View {
                         store.send(.widgetClicked)
                     }
                 }
-                .overlay { overlayCircle }
+                .overlay { WidgetAnimatedCircle(store: store) }
                 .onHover { yes in
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isHovering = yes
@@ -40,84 +40,99 @@ struct WidgetView: View {
                 )
         }
     }
+}
+
+struct WidgetAnimatedCircle: View {
+    let store: StoreOf<CircularWidgetFeature>
+    @State var processingProgress: Double = 0
 
     struct OverlayCircleState: Equatable {
         var isProcessing: Bool
         var isContentEmpty: Bool
     }
 
-    @ViewBuilder var overlayCircle: some View {
-        WithViewStore(store, observe: { $0.animationProgress }) { viewStore in
-            let processingProgress = viewStore.state
-            let minimumLineWidth: Double = 3
-            let lineWidth = (1 - processingProgress) *
-                (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
-            let scale = max(processingProgress * 1, 0.0001)
-            ZStack {
-                Circle()
-                    .stroke(
-                        Color(nsColor: .darkGray),
-                        style: .init(lineWidth: minimumLineWidth)
-                    )
-                    .padding(minimumLineWidth / 2)
+    var body: some View {
+        let minimumLineWidth: Double = 3
+        let lineWidth = (1 - processingProgress) *
+            (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
+        let scale = max(processingProgress * 1, 0.0001)
+        ZStack {
+            Circle()
+                .stroke(
+                    Color(nsColor: .darkGray),
+                    style: .init(lineWidth: minimumLineWidth)
+                )
+                .padding(minimumLineWidth / 2)
 
-                // how do I stop the repeatForever animation without removing the view?
-                // I tried many solutions found on stackoverflow but non of them works.
-                WithViewStore(
-                    store,
-                    observe: {
-                        OverlayCircleState(
-                            isProcessing: $0.isProcessing,
-                            isContentEmpty: $0.isContentEmpty
-                        )
-                    }
-                ) { viewStore in
-                    Group {
-                        if viewStore.isProcessing {
-                            Circle()
-                                .stroke(
-                                    Color.accentColor,
-                                    style: .init(lineWidth: lineWidth)
-                                )
-                                .padding(minimumLineWidth / 2)
-                                .scaleEffect(x: scale, y: scale)
-                                .opacity(
-                                    !viewStore.isContentEmpty || viewStore
-                                        .isProcessing ? 1 : 0
-                                )
-                                .animation(
-                                    featureFlag: \.animationCCrashSuggestion,
-                                    .easeInOut(duration: 1)
-                                        .repeatForever(autoreverses: true),
-                                    value: processingProgress
-                                )
-                        } else {
-                            Circle()
-                                .stroke(
-                                    Color.accentColor,
-                                    style: .init(lineWidth: lineWidth)
-                                )
-                                .padding(minimumLineWidth / 2)
-                                .scaleEffect(x: scale, y: scale)
-                                .opacity(
-                                    !viewStore.isContentEmpty || viewStore
-                                        .isProcessing ? 1 : 0
-                                )
-                                .animation(
-                                    featureFlag: \.animationCCrashSuggestion,
-                                    .easeInOut(duration: 1),
-                                    value: processingProgress
-                                )
-                        }
-                    }
-                    .onChange(of: viewStore.isProcessing) { _ in
-                        viewStore.send(._refreshRing)
-                    }
-                    .onChange(of: viewStore.isContentEmpty) { _ in
-                        viewStore.send(._refreshRing)
+            // how do I stop the repeatForever animation without removing the view?
+            // I tried many solutions found on stackoverflow but non of them works.
+            WithViewStore(
+                store,
+                observe: {
+                    OverlayCircleState(
+                        isProcessing: $0.isProcessing,
+                        isContentEmpty: $0.isContentEmpty
+                    )
+                }
+            ) { viewStore in
+                Group {
+                    if viewStore.isProcessing {
+                        Circle()
+                            .stroke(
+                                Color.accentColor,
+                                style: .init(lineWidth: lineWidth)
+                            )
+                            .padding(minimumLineWidth / 2)
+                            .scaleEffect(x: scale, y: scale)
+                            .opacity(
+                                !viewStore.isContentEmpty || viewStore.isProcessing ? 1 : 0
+                            )
+                            .animation(
+                                featureFlag: \.animationCCrashSuggestion,
+                                .easeInOut(duration: 1)
+                                    .repeatForever(autoreverses: true),
+                                value: processingProgress
+                            )
+                    } else {
+                        Circle()
+                            .stroke(
+                                Color.accentColor,
+                                style: .init(lineWidth: lineWidth)
+                            )
+                            .padding(minimumLineWidth / 2)
+                            .scaleEffect(x: scale, y: scale)
+                            .opacity(
+                                !viewStore.isContentEmpty || viewStore
+                                    .isProcessing ? 1 : 0
+                            )
+                            .animation(
+                                featureFlag: \.animationCCrashSuggestion,
+                                .easeInOut(duration: 1),
+                                value: processingProgress
+                            )
                     }
                 }
+                .onChange(of: viewStore.isProcessing) { _ in
+                    refreshRing(
+                        isProcessing: viewStore.state.isProcessing,
+                        isContentEmpty: viewStore.state.isContentEmpty
+                    )
+                }
+                .onChange(of: viewStore.isContentEmpty) { _ in
+                    refreshRing(
+                        isProcessing: viewStore.state.isProcessing,
+                        isContentEmpty: viewStore.state.isContentEmpty
+                    )
+                }
             }
+        }
+    }
+
+    func refreshRing(isProcessing: Bool, isContentEmpty: Bool) {
+        if isProcessing {
+            processingProgress = 1 - processingProgress
+        } else {
+            processingProgress = isContentEmpty ? 0 : 1
         }
     }
 }

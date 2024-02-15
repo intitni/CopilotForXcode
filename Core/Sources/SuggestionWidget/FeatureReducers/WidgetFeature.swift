@@ -39,7 +39,6 @@ public struct WidgetFeature: ReducerProtocol {
         public struct CircularWidgetState: Equatable {
             var isProcessingCounters = [CircularWidgetFeature.IsProcessingCounter]()
             var isProcessing: Bool = false
-            var animationProgress: Double = 0
         }
 
         public var circularWidgetState = CircularWidgetState()
@@ -67,15 +66,13 @@ public struct WidgetFeature: ReducerProtocol {
                     isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
                         && panelState.sharedPanelState.isEmpty,
                     isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
-                    isChatOpen: chatPanelState.isPanelDisplayed,
-                    animationProgress: circularWidgetState.animationProgress
+                    isChatOpen: chatPanelState.isPanelDisplayed
                 )
             }
             set {
                 circularWidgetState = .init(
                     isProcessingCounters: newValue.isProcessingCounters,
-                    isProcessing: newValue.isProcessing,
-                    animationProgress: newValue.animationProgress
+                    isProcessing: newValue.isProcessing
                 )
             }
         }
