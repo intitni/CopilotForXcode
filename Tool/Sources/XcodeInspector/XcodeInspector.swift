@@ -152,13 +152,13 @@ public final class XcodeInspector: ObservableObject {
                                 $0.processIdentifier == app.processIdentifier && !$0.isTerminated
                             }) {
                                 Task { @XcodeInspectorActor in
-                                    await self.setActiveXcode(existed)
+                                    self.setActiveXcode(existed)
                                 }
                             } else {
                                 let new = XcodeAppInstanceInspector(runningApplication: app)
                                 Task { @XcodeInspectorActor in
                                     self.xcodes.append(new)
-                                    await self.setActiveXcode(new)
+                                    self.setActiveXcode(new)
                                 }
                             }
                         } else {

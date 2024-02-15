@@ -53,6 +53,11 @@ final class WidgetWindowsController: NSObject {
             guard let app else { return }
             Task { [weak self] in await self?.activate(app) }
         }.store(in: &cancellable)
+        
+        xcodeInspector.$focusedEditor.sink { [weak self] editor in
+            guard let editor else { return }
+            Task { [weak self] in await self?.observe(to: editor) }
+        }.store(in: &cancellable)
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
             Task { [weak self] in
@@ -160,11 +165,10 @@ final class WidgetWindowsController: NSObject {
         function: StaticString = #function,
         line: UInt = #line
     ) async {
-        let state = store.withState { $0 }
-        let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-
         @Sendable @MainActor
         func update() async {
+            let state = store.withState { $0 }
+            let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
             guard let widgetLocation = generateWidgetLocation() else { return }
             await updatePanelState(widgetLocation)
 
@@ -275,34 +279,24 @@ private extension WidgetWindowsController {
     }
 
     func observe(to app: AppInstanceInspector) async {
+        Task {
+            await updateWindowLocation(animated: false, immediately: true)
+            await updateWindowOpacity(immediately: true)
+        }
         guard let app = app as? XcodeAppInstanceInspector else {
-            Task {
-                await updateWindowLocation(animated: false, immediately: true)
-                await updateWindowOpacity(immediately: true)
-            }
             return
         }
         let notifications = app.axNotifications
-        if let focusedEditor = xcodeInspector.focusedEditor {
-            await observe(to: focusedEditor)
-        }
-
         let task = Task {
             await windows.orderFront()
 
             let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
             for await notification in notifications {
-                if [.uiElementDestroyed, .created, .xcodeCompletionPanelChanged]
-                    .contains(notification.kind) { continue }
-
                 try Task.checkCancellation()
 
-                // Hide the widgets before switching to another window/editor
-                // so the transition looks better.
-                if [
-                    .focusedUIElementChanged,
-                    .focusedWindowChanged,
-                ].contains(notification.kind) {
+                /// Hide the widgets before switching to another window/editor
+                /// so the transition looks better.
+                func hideWidgetForTransitions() async {
                     let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
@@ -311,22 +305,33 @@ private extension WidgetWindowsController {
                     await send(.updateFocusingDocumentURL)
                 }
 
-                // update widgets.
-                if [
-                    .focusedUIElementChanged,
-                    .applicationActivated,
-                    .mainWindowChanged,
-                    .focusedWindowChanged,
-                ].contains(notification.kind) {
+                func updateWidgetsAndNotifyChangeOfEditor() async {
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
-                    if let editor = xcodeInspector.focusedEditor {
-                        await observe(to: editor)
-                    }
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                } else {
+                }
+
+                func updateWidgets() async {
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
+                }
+
+                switch notification.kind {
+                case .focusedWindowChanged, .focusedUIElementChanged:
+                    await hideWidgetForTransitions()
+                    await updateWidgetsAndNotifyChangeOfEditor()
+                case .applicationActivated, .mainWindowChanged:
+                    await updateWidgetsAndNotifyChangeOfEditor()
+                case .applicationDeactivated,
+                     .moved,
+                     .resized,
+                     .windowMoved,
+                     .windowResized,
+                     .windowMiniaturized,
+                     .windowDeminiaturized:
+                    await updateWidgets()
+                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged:
+                    continue
                 }
             }
         }
@@ -343,19 +348,31 @@ private extension WidgetWindowsController {
                 .filter { $0.kind == .scrollPositionChanged }
 
             if #available(macOS 13.0, *) {
-                for await _ in merge(
+                for await notification in merge(
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                     scroll
                 ) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
+                    
+                    // for better looking
+                    if notification.kind == .scrollPositionChanged {
+                        await hideSuggestionPanelWindow()
+                    }
+                    
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
             } else {
-                for await _ in merge(selectionRangeChange, scroll) {
+                for await notification in merge(selectionRangeChange, scroll) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
+                    
+                    // for better looking
+                    if notification.kind == .scrollPositionChanged {
+                        await hideSuggestionPanelWindow()
+                    }
+                    
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
@@ -371,6 +388,11 @@ extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
         windows.sharedPanelWindow.alphaValue = 0
+        windows.suggestionPanelWindow.alphaValue = 0
+    }
+    
+    @MainActor
+    func hideSuggestionPanelWindow() {
         windows.suggestionPanelWindow.alphaValue = 0
     }
 
