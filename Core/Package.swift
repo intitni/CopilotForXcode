@@ -242,6 +242,7 @@ let package = Package(
         .target(
             name: "ChatPlugin",
             dependencies: [
+                .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
             ]
