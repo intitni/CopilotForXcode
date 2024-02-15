@@ -61,7 +61,7 @@ public class SourceEditor {
 
     private func observeAXNotifications() {
         observeAXNotificationsTask?.cancel()
-        observeAXNotificationsTask = Task { @MainActor [weak self] in
+        observeAXNotificationsTask = Task { @XcodeInspectorActor [weak self] in
             guard let self else { return }
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 guard let self else { return }

@@ -130,7 +130,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     override init(runningApplication: NSRunningApplication) {
         super.init(runningApplication: runningApplication)
 
-        Task { @MainActor in
+        Task { @XcodeInspectorActor in
             observeFocusedWindow()
             observeAXNotifications()
 
@@ -142,7 +142,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func refresh() {
         if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
             focusedWindow.refresh()
@@ -151,7 +151,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     private func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
             if window.identifier == "Xcode.WorkspaceWindow" {
@@ -197,7 +197,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
@@ -220,7 +220,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             kAXUIElementDestroyedNotification
         )
 
-        let observeAXNotificationTask = Task { @MainActor [weak self] in
+        let observeAXNotificationTask = Task { @XcodeInspectorActor [weak self] in
             var updateWorkspaceInfoTask: Task<Void, Error>?
 
             for await notification in axNotificationStream {

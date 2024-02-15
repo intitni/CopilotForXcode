@@ -106,6 +106,7 @@ public final class AXNotificationStream: AsyncSequence {
                 guard let self else { return }
                 retry += 1
                 for name in notificationNames {
+                    await Task.yield()
                     let e = withUnsafeMutablePointer(to: &self.continuation) { pointer in
                         AXObserverAddNotification(
                             observer,

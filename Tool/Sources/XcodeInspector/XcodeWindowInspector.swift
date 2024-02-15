@@ -26,7 +26,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     }
 
     public func refresh() {
-        Task { @MainActor in updateURLs() }
+        Task { @XcodeInspectorActor in updateURLs() }
     }
 
     public init(
@@ -62,7 +62,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {

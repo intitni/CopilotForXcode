@@ -19,19 +19,13 @@ final class WidgetWindowsController: NSObject {
     var currentApplicationProcessIdentifier: pid_t?
 
     var cancellable: Set<AnyCancellable> = []
-    @MainActor
     var observeToAppTask: Task<Void, Error>?
-    @MainActor
     var observeToFocusedEditorTask: Task<Void, Error>?
 
-    @MainActor
     var updateWindowOpacityTask: Task<Void, Error>?
-    @MainActor
     var lastUpdateWindowOpacityTime = Date(timeIntervalSince1970: 0)
 
-    @MainActor
     var updateWindowLocationTask: Task<Void, Error>?
-    @MainActor
     var lastUpdateWindowLocationTime = Date(timeIntervalSince1970: 0)
 
     deinit {
@@ -92,13 +86,13 @@ final class WidgetWindowsController: NSObject {
         let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
         let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
         let shouldDebounce = await MainActor.run {
-            defer {lastUpdateWindowOpacityTime = Date() }
-            return (!immediately &&
-                !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5))
+            defer { lastUpdateWindowOpacityTime = Date() }
+            return !immediately &&
+                !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
         }
         let activeApp = xcodeInspector.activeApplication
 
-        await updateWindowOpacityTask?.cancel()
+        updateWindowOpacityTask?.cancel()
 
         let task = Task {
             if shouldDebounce {
@@ -156,10 +150,8 @@ final class WidgetWindowsController: NSObject {
                 }
             }
         }
-        
-        await MainActor.run {
-            updateWindowOpacityTask = task
-        }
+
+        updateWindowOpacityTask = task
     }
 
     func updateWindowLocation(
@@ -217,16 +209,16 @@ final class WidgetWindowsController: NSObject {
                 !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
         }
 
-        await updateWindowLocationTask?.cancel()
+        updateWindowLocationTask?.cancel()
         let interval: TimeInterval = 0.1
 
         if shouldThrottle {
-            let delay = await max(
+            let delay = max(
                 0,
                 interval - now.timeIntervalSince(lastUpdateWindowLocationTime)
             )
 
-            let task = Task { @MainActor in
+            let task = Task {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 try Task.checkCancellation()
                 await update()
@@ -239,9 +231,7 @@ final class WidgetWindowsController: NSObject {
                 await update()
             }
         }
-        await MainActor.run {
-            lastUpdateWindowLocationTime = Date()
-        }
+        lastUpdateWindowLocationTime = Date()
     }
 }
 
@@ -296,7 +286,7 @@ private extension WidgetWindowsController {
         if let focusedEditor = xcodeInspector.focusedEditor {
             await observe(to: focusedEditor)
         }
-        
+
         let task = Task {
             await windows.orderFront()
 
@@ -340,11 +330,9 @@ private extension WidgetWindowsController {
                 }
             }
         }
-        
-        await MainActor.run {
-            observeToAppTask?.cancel()
-            observeToAppTask = task
-        }
+
+        observeToAppTask?.cancel()
+        observeToAppTask = task
     }
 
     func observe(to editor: SourceEditor) async {
@@ -373,11 +361,9 @@ private extension WidgetWindowsController {
                 }
             }
         }
-        
-        await MainActor.run {
-            observeToFocusedEditorTask?.cancel()
-            observeToFocusedEditorTask = task
-        }
+
+        observeToFocusedEditorTask?.cancel()
+        observeToFocusedEditorTask = task
     }
 }
 
