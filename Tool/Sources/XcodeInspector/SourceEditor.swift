@@ -76,6 +76,7 @@ public class SourceEditor {
                 group.addTask { [weak self] in
                     for await notification in editorNotifications {
                         try Task.checkCancellation()
+                        await Task.yield()
                         guard let self else { return }
                         if let kind: AXNotificationKind = {
                             switch notification.name {
@@ -102,6 +103,7 @@ public class SourceEditor {
                     group.addTask { [weak self] in
                         for await notification in scrollViewNotifications {
                             try Task.checkCancellation()
+                            await Task.yield()
                             guard let self else { return }
                             self.axNotifications.send(.init(
                                 kind: .scrollPositionChanged,
