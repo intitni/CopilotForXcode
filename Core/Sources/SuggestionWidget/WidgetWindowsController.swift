@@ -53,7 +53,7 @@ actor WidgetWindowsController: NSObject {
             guard let app else { return }
             Task { [weak self] in await self?.activate(app) }
         }.store(in: &cancellable)
-        
+
         xcodeInspector.$focusedEditor.sink { [weak self] editor in
             guard let editor else { return }
             Task { [weak self] in await self?.observe(to: editor) }
@@ -91,7 +91,7 @@ actor WidgetWindowsController: NSObject {
         let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
         let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
         let shouldDebounce = !immediately &&
-        !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
+            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
         lastUpdateWindowOpacityTime = Date()
         let activeApp = xcodeInspector.activeApplication
 
@@ -207,7 +207,7 @@ actor WidgetWindowsController: NSObject {
 
         let now = Date()
         let shouldThrottle = !immediately &&
-        !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
+            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
 
         updateWindowLocationTask?.cancel()
         let interval: TimeInterval = 0.1
@@ -266,19 +266,22 @@ extension WidgetWindowsController: NSWindowDelegate {
 
 private extension WidgetWindowsController {
     func activate(_ app: AppInstanceInspector) {
+        Task {
+            if app.isXcode {
+                await updateWindowLocation(animated: false, immediately: true)
+                await updateWindowOpacity(immediately: false)
+            } else {
+                await updateWindowOpacity(immediately: true)
+                await updateWindowLocation(animated: false, immediately: false)
+            }
+        }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
         observe(to: app)
     }
 
     func observe(to app: AppInstanceInspector) {
-        Task {
-            await updateWindowLocation(animated: false, immediately: true)
-            await updateWindowOpacity(immediately: true)
-        }
-        guard let app = app as? XcodeAppInstanceInspector else {
-            return
-        }
+        guard let app = app as? XcodeAppInstanceInspector else { return }
         let notifications = app.axNotifications
         observeToAppTask?.cancel()
         observeToAppTask = Task {
@@ -346,12 +349,12 @@ private extension WidgetWindowsController {
                 ) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
-                    
+
                     // for better looking
                     if notification.kind == .scrollPositionChanged {
                         await hideSuggestionPanelWindow()
                     }
-                    
+
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
@@ -359,12 +362,12 @@ private extension WidgetWindowsController {
                 for await notification in merge(selectionRangeChange, scroll) {
                     guard xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
-                    
+
                     // for better looking
                     if notification.kind == .scrollPositionChanged {
                         await hideSuggestionPanelWindow()
                     }
-                    
+
                     await updateWindowLocation(animated: false, immediately: false)
                     await updateWindowOpacity(immediately: false)
                 }
@@ -379,7 +382,7 @@ extension WidgetWindowsController {
         windows.sharedPanelWindow.alphaValue = 0
         windows.suggestionPanelWindow.alphaValue = 0
     }
-    
+
     @MainActor
     func hideSuggestionPanelWindow() {
         windows.suggestionPanelWindow.alphaValue = 0
