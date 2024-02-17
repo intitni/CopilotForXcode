@@ -12,6 +12,12 @@ public extension Notification.Name {
     static let accessibilityAPIMalfunctioning = Notification.Name("accessibilityAPIMalfunctioning")
 }
 
+@globalActor
+public enum XcodeInspectorActor: GlobalActor {
+    public actor Actor {}
+    public static let shared = Actor()
+}
+
 public final class XcodeInspector: ObservableObject {
     public static let shared = XcodeInspector()
 
@@ -35,8 +41,11 @@ public final class XcodeInspector: ObservableObject {
     @Published public fileprivate(set) var focusedElement: AXUIElement?
     @Published public fileprivate(set) var completionPanel: AXUIElement?
 
-    #warning("TODO: make it a function and mark it as expensive")
-    public var focusedEditorContent: EditorInformation? {
+    /// Get the content of the source editor.
+    ///
+    /// - note: This method is expensive. It needs to convert index based ranges to line based
+    /// ranges.
+    public func getFocusedEditorContent() -> EditorInformation? {
         guard let documentURL = XcodeInspector.shared.realtimeActiveDocumentURL,
               let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
               let projectURL = XcodeInspector.shared.activeProjectRootURL
@@ -142,19 +151,19 @@ public final class XcodeInspector: ObservableObject {
                             if let existed = xcodes.first(where: {
                                 $0.processIdentifier == app.processIdentifier && !$0.isTerminated
                             }) {
-                                await MainActor.run {
+                                Task { @XcodeInspectorActor in
                                     self.setActiveXcode(existed)
                                 }
                             } else {
                                 let new = XcodeAppInstanceInspector(runningApplication: app)
-                                await MainActor.run {
+                                Task { @XcodeInspectorActor in
                                     self.xcodes.append(new)
                                     self.setActiveXcode(new)
                                 }
                             }
                         } else {
                             let appInspector = AppInstanceInspector(runningApplication: app)
-                            await MainActor.run {
+                            Task { @XcodeInspectorActor in
                                 self.previousActiveApplication = self.activeApplication
                                 self.activeApplication = appInspector
                             }
@@ -173,7 +182,7 @@ public final class XcodeInspector: ObservableObject {
                         else { continue }
                         if app.isXcode {
                             let processIdentifier = app.processIdentifier
-                            await MainActor.run {
+                            Task { @XcodeInspectorActor in
                                 self.xcodes.removeAll {
                                     $0.processIdentifier == processIdentifier || $0.isTerminated
                                 }
@@ -204,7 +213,7 @@ public final class XcodeInspector: ObservableObject {
                             }
 
                             try await Task.sleep(nanoseconds: 10_000_000_000)
-                            await MainActor.run {
+                            Task { @XcodeInspectorActor in
                                 self.checkForAccessibilityMalfunction("Timer")
                             }
                         }
@@ -228,7 +237,7 @@ public final class XcodeInspector: ObservableObject {
     }
 
     public func reactivateObservationsToXcode() {
-        Task { @MainActor in
+        Task { @XcodeInspectorActor in
             if let activeXcode {
                 setActiveXcode(activeXcode)
                 activeXcode.observeAXNotifications()
@@ -236,7 +245,7 @@ public final class XcodeInspector: ObservableObject {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     private func setActiveXcode(_ xcode: XcodeAppInstanceInspector) {
         previousActiveApplication = activeApplication
         activeApplication = xcode
@@ -255,7 +264,7 @@ public final class XcodeInspector: ObservableObject {
         activeWorkspaceURL = xcode.workspaceURL
         focusedWindow = xcode.focusedWindow
 
-        let setFocusedElement = { @MainActor [weak self] in
+        let setFocusedElement = { @XcodeInspectorActor [weak self] in
             guard let self else { return }
             focusedElement = xcode.appElement.focusedElement
             if let editorElement = focusedElement, editorElement.isSourceEditor {
@@ -276,7 +285,7 @@ public final class XcodeInspector: ObservableObject {
         }
 
         setFocusedElement()
-        let focusedElementChanged = Task { @MainActor in
+        let focusedElementChanged = Task { @XcodeInspectorActor in
             for await notification in xcode.axNotifications {
                 if notification.kind == .focusedUIElementChanged {
                     try Task.checkCancellation()
@@ -290,7 +299,7 @@ public final class XcodeInspector: ObservableObject {
         if UserDefaults.shared
             .value(for: \.restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning)
         {
-            let malfunctionCheck = Task { @MainActor [weak self] in
+            let malfunctionCheck = Task { @XcodeInspectorActor [weak self] in
                 if #available(macOS 13.0, *) {
                     let notifications = xcode.axNotifications.filter {
                         $0.kind == .uiElementDestroyed
@@ -331,7 +340,7 @@ public final class XcodeInspector: ObservableObject {
 
     private var lastRecoveryFromAccessibilityMalfunctioningTimeStamp = Date()
 
-    @MainActor
+    @XcodeInspectorActor
     private func checkForAccessibilityMalfunction(_ source: String) {
         guard Date().timeIntervalSince(lastRecoveryFromAccessibilityMalfunctioningTimeStamp) > 5
         else { return }
@@ -353,7 +362,7 @@ public final class XcodeInspector: ObservableObject {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     private func recoverFromAccessibilityMalfunctioning(_ source: String?) {
         let message = """
         Accessibility API malfunction detected: \

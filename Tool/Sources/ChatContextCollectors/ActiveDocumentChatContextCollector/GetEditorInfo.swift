@@ -3,6 +3,6 @@ import SuggestionModel
 import XcodeInspector
 
 func getEditorInformation() -> EditorInformation? {
-    return XcodeInspector.shared.focusedEditorContent
+    return XcodeInspector.shared.getFocusedEditorContent()
 }
 

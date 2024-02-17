@@ -42,6 +42,7 @@ let package = Package(
             ]
         ),
         .library(name: "GitIgnoreCheck", targets: ["GitIgnoreCheck"]),
+        .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -101,6 +102,8 @@ let package = Package(
                 package: "swift-composable-architecture"
             )]
         ),
+
+        .target(name: "DebounceFunction"),
 
         .target(
             name: "AppActivator",

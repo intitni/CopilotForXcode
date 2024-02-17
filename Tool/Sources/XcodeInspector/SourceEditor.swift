@@ -9,12 +9,16 @@ import SuggestionModel
 public class SourceEditor {
     public typealias Content = EditorInformation.SourceEditorContent
 
-    public struct AXNotification {
+    public struct AXNotification: Hashable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
+        
+        public func hash(into hasher: inout Hasher) {
+            kind.hash(into: &hasher)
+        }
     }
 
-    public enum AXNotificationKind {
+    public enum AXNotificationKind: Hashable, Equatable {
         case selectedTextChanged
         case valueChanged
         case scrollPositionChanged
@@ -30,7 +34,8 @@ public class SourceEditor {
 
     /// Get the content of the source editor.
     ///
-    /// - note: This method is expensive.
+    /// - note: This method is expensive. It needs to convert index based ranges to line based
+    /// ranges.
     public func getContent() -> Content {
         let content = element.value
         let selectionRange = element.selectedTextRange
@@ -56,7 +61,7 @@ public class SourceEditor {
 
     private func observeAXNotifications() {
         observeAXNotificationsTask?.cancel()
-        observeAXNotificationsTask = Task { @MainActor [weak self] in
+        observeAXNotificationsTask = Task { @XcodeInspectorActor [weak self] in
             guard let self else { return }
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 guard let self else { return }
@@ -71,6 +76,7 @@ public class SourceEditor {
                 group.addTask { [weak self] in
                     for await notification in editorNotifications {
                         try Task.checkCancellation()
+                        await Task.yield()
                         guard let self else { return }
                         if let kind: AXNotificationKind = {
                             switch notification.name {
@@ -97,6 +103,7 @@ public class SourceEditor {
                     group.addTask { [weak self] in
                         for await notification in scrollViewNotifications {
                             try Task.checkCancellation()
+                            await Task.yield()
                             guard let self else { return }
                             self.axNotifications.send(.init(
                                 kind: .scrollPositionChanged,

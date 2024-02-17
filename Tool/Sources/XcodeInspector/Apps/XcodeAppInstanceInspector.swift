@@ -130,7 +130,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     override init(runningApplication: NSRunningApplication) {
         super.init(runningApplication: runningApplication)
 
-        Task { @MainActor in
+        Task { @XcodeInspectorActor in
             observeFocusedWindow()
             observeAXNotifications()
 
@@ -142,7 +142,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func refresh() {
         if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
             focusedWindow.refresh()
@@ -151,7 +151,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     private func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
             if window.identifier == "Xcode.WorkspaceWindow" {
@@ -160,14 +160,16 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     uiElement: window,
                     axNotifications: axNotifications
                 )
-                focusedWindow = window
 
                 focusedWindowObservations.forEach { $0.cancel() }
                 focusedWindowObservations.removeAll()
 
-                documentURL = window.documentURL
-                workspaceURL = window.workspaceURL
-                projectRootURL = window.projectRootURL
+                Task { @MainActor in
+                    focusedWindow = window
+                    documentURL = window.documentURL
+                    workspaceURL = window.workspaceURL
+                    projectRootURL = window.projectRootURL
+                }
 
                 window.$documentURL
                     .filter { $0 != .init(fileURLWithPath: "/") }
@@ -190,14 +192,18 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
             } else {
                 let window = XcodeWindowInspector(uiElement: window)
-                focusedWindow = window
+                Task { @MainActor in
+                    focusedWindow = window
+                }
             }
         } else {
-            focusedWindow = nil
+            Task { @MainActor in
+                focusedWindow = nil
+            }
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
@@ -220,13 +226,14 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
             kAXUIElementDestroyedNotification
         )
 
-        let observeAXNotificationTask = Task { @MainActor [weak self] in
+        let observeAXNotificationTask = Task { @XcodeInspectorActor [weak self] in
             var updateWorkspaceInfoTask: Task<Void, Error>?
 
             for await notification in axNotificationStream {
                 guard let self else { return }
                 try Task.checkCancellation()
-
+                await Task.yield()
+            
                 guard let event = AXNotificationKind(rawValue: notification.name) else {
                     continue
                 }
@@ -258,19 +265,23 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     switch event {
                     case .created:
                         if isCompletionPanel() {
-                            completionPanel = notification.element
-                            self.axNotifications.send(.init(
-                                kind: .xcodeCompletionPanelChanged,
-                                element: notification.element
-                            ))
+                            await MainActor.run {
+                                self.completionPanel = notification.element
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
+                            }
                         }
                     case .uiElementDestroyed:
                         if isCompletionPanel() {
-                            completionPanel = nil
-                            self.axNotifications.send(.init(
-                                kind: .xcodeCompletionPanelChanged,
-                                element: notification.element
-                            ))
+                            await MainActor.run {
+                                self.completionPanel = nil
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
+                            }
                         }
                     default: continue
                     }
@@ -319,7 +330,10 @@ extension XcodeAppInstanceInspector {
 
     func updateWorkspaceInfo() {
         let workspaceInfoInVisibleSpace = Self.fetchVisibleWorkspaces(runningApplication)
-        workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
+        let workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
+        Task { @MainActor in
+            self.workspaces = workspaces
+        }
     }
 
     /// Use the project path as the workspace identifier.

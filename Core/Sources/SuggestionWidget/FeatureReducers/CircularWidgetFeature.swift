@@ -16,7 +16,6 @@ public struct CircularWidgetFeature: ReducerProtocol {
         var isContentEmpty: Bool
         var isChatPanelDetached: Bool
         var isChatOpen: Bool
-        var animationProgress: Double = 0
     }
 
     public enum Action: Equatable {
@@ -27,7 +26,6 @@ public struct CircularWidgetFeature: ReducerProtocol {
         case markIsProcessing
         case endIsProcessing
         case _forceEndIsProcessing
-        case _refreshRing
     }
 
     struct CancelAutoEndIsProcessKey: Hashable {}
@@ -74,14 +72,6 @@ public struct CircularWidgetFeature: ReducerProtocol {
         case ._forceEndIsProcessing:
             state.isProcessingCounters.removeAll()
             state.isProcessing = false
-            return .none
-
-        case ._refreshRing:
-            if state.isProcessing {
-                state.animationProgress = 1 - state.animationProgress
-            } else {
-                state.animationProgress = state.isContentEmpty ? 0 : 1
-            }
             return .none
         }
     }

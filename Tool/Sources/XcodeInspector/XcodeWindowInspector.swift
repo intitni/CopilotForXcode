@@ -26,7 +26,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     }
 
     public func refresh() {
-        Task { @MainActor in updateURLs() }
+        Task { @XcodeInspectorActor in updateURLs() }
     }
 
     public init(
@@ -55,6 +55,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                         guard notification.kind == .focusedUIElementChanged else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()
+                        await Task.yield()
                         await self.updateURLs()
                     }
                 }
@@ -62,22 +63,28 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {
-            self.documentURL = documentURL
+            Task { @MainActor in
+                self.documentURL = documentURL
+            }
         }
         let workspaceURL = Self.extractWorkspaceURL(windowElement: uiElement)
         if let workspaceURL {
-            self.workspaceURL = workspaceURL
+            Task { @MainActor in
+                self.workspaceURL = workspaceURL
+            }
         }
         let projectURL = Self.extractProjectURL(
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
         if let projectURL {
-            projectRootURL = projectURL
+            Task { @MainActor in
+                self.projectRootURL = projectURL
+            }
         }
     }
 
