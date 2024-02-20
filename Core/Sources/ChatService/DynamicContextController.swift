@@ -106,7 +106,7 @@ final class DynamicContextController {
         let contextualSystemPrompt = """
         \(language.isEmpty ? "" : "You must always reply in \(language)")
         \(systemPrompt)
-        """
+        """.trimmingCharacters(in: .whitespacesAndNewlines)
         await memory.mutateSystemPrompt(contextualSystemPrompt)
         await memory.mutateContextSystemPrompt(contextSystemPrompt)
         await memory.mutateRetrievedContent(retrievedContent.map(\.document))
