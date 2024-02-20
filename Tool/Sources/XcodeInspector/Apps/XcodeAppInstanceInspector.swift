@@ -1,5 +1,5 @@
 import AppKit
-import AsyncExtensions
+import AsyncPassthroughSubject
 import AXExtension
 import AXNotificationStream
 import Combine
@@ -123,7 +123,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     private var focusedWindowObservations = Set<AnyCancellable>()
 
     deinit {
-        axNotifications.send(.finished)
+        axNotifications.finish()
         for task in longRunningTasks { task.cancel() }
     }
 

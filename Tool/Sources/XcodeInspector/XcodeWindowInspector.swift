@@ -1,5 +1,5 @@
 import AppKit
-import AsyncExtensions
+import AsyncPassthroughSubject
 import AXExtension
 import Combine
 import Foundation
@@ -19,11 +19,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
     @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
     private var focusedElementChangedTask: Task<Void, Error>?
-    let axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
-
-    deinit {
-        focusedElementChangedTask?.cancel()
-    }
 
     public func refresh() {
         Task { @XcodeInspectorActor in updateURLs() }
@@ -35,7 +30,6 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
     ) {
         self.app = app
-        self.axNotifications = axNotifications
         super.init(uiElement: uiElement)
 
         focusedElementChangedTask = Task { [weak self, axNotifications] in
@@ -51,7 +45,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                 }
 
                 group.addTask { [weak self] in
-                    for await notification in axNotifications {
+                    for await notification in await axNotifications.notifications() {
                         guard notification.kind == .focusedUIElementChanged else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()

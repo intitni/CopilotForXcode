@@ -65,8 +65,9 @@ public actor RealtimeSuggestionController {
                 )
             }
 
-            let valueChange = notificationsFromEditor.filter { $0.kind == .valueChanged }
-            let selectedTextChanged = notificationsFromEditor
+            let valueChange = await notificationsFromEditor.notifications()
+                .filter { $0.kind == .valueChanged }
+            let selectedTextChanged = await notificationsFromEditor.notifications()
                 .filter { $0.kind == .selectedTextChanged }
 
             await withTaskGroup(of: Void.self) { [weak self] group in
