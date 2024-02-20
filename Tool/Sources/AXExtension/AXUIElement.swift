@@ -4,27 +4,37 @@ import Foundation
 // MARK: - State
 
 public extension AXUIElement {
-    var identifier: String {
+    /// Set global timeout in seconds.
+    static func setGlobalMessagingTimeout(_ timeout: Float) {
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), timeout)
+    }
+
+    /// Set timeout in seconds for this element.
+    func setMessagingTimeout(_ timeout: Float) {
+        AXUIElementSetMessagingTimeout(self, timeout)
+    }
+
+    func identifier() throws -> String {
         (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
     }
 
-    var value: String {
+    func value() throws -> String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
 
-    var title: String {
+    func title() throws -> String {
         (try? copyValue(key: kAXTitleAttribute)) ?? ""
     }
 
-    var role: String {
+    func role() throws -> String {
         (try? copyValue(key: kAXRoleAttribute)) ?? ""
     }
 
-    var doubleValue: Double {
+    func doubleValue() throws -> Double {
         (try? copyValue(key: kAXValueAttribute)) ?? 0.0
     }
 
-    var document: String? {
+    func document() throws -> String? {
         try? copyValue(key: kAXDocumentAttribute)
     }
 
