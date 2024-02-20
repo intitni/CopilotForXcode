@@ -12,7 +12,7 @@ public class SourceEditor {
     public struct AXNotification: Hashable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
-        
+
         public func hash(into hasher: inout Hasher) {
             kind.hash(into: &hasher)
         }
@@ -37,20 +37,35 @@ public class SourceEditor {
     /// - note: This method is expensive. It needs to convert index based ranges to line based
     /// ranges.
     public func getContent() -> Content {
-        let content = element.value
-        let selectionRange = element.selectedTextRange
-        let (lines, selections) = cache.get(content: content, selectedTextRange: selectionRange)
+        do {
+            let content = try element.value()
+            let selectionRange = try element.selectedTextRange()
+            let (lines, selections) = cache.get(content: content, selectedTextRange: selectionRange)
+            let children = try element.children(messagingTimeout: 0.5)
+            var lineAnnotations: [String] = []
+            for item in children {
+                guard (try? item.identifier()) == "Line Annotation" else { continue }
+                if let description = try? item.description() {
+                    lineAnnotations.append(description)
+                }
+            }
 
-        let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
-        let lineAnnotations = lineAnnotationElements.map(\.description)
-
-        return .init(
-            content: content,
-            lines: lines,
-            selections: selections,
-            cursorPosition: selections.first?.start ?? .outOfScope,
-            lineAnnotations: lineAnnotations
-        )
+            return .init(
+                content: content,
+                lines: lines,
+                selections: selections,
+                cursorPosition: selections.first?.start ?? .outOfScope,
+                lineAnnotations: lineAnnotations
+            )
+        } catch {
+            return .init(
+                content: "",
+                lines: [],
+                selections: [],
+                cursorPosition: .outOfScope,
+                lineAnnotations: []
+            )
+        }
     }
 
     public init(runningApplication: NSRunningApplication, element: AXUIElement) {
@@ -94,7 +109,9 @@ public class SourceEditor {
                     }
                 }
 
-                if let scrollView = element.parent, let scrollBar = scrollView.verticalScrollBar {
+                if let scrollView = try? element.parent(),
+                   let scrollBar = try? scrollView.verticalScrollBar()
+                {
                     let scrollViewNotifications = AXNotificationStream(
                         app: runningApplication,
                         element: scrollBar,
