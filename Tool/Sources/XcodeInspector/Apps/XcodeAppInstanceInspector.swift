@@ -75,19 +75,27 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     public var realtimeDocumentURL: URL? {
-        guard let window = appElement.focusedWindow,
-              window.identifier == "Xcode.WorkspaceWindow"
-        else { return nil }
+        do {
+            guard let window = try appElement.focusedWindow(),
+                  try window.identifier() == "Xcode.WorkspaceWindow"
+            else { return nil }
 
-        return WorkspaceXcodeWindowInspector.extractDocumentURL(windowElement: window)
+            return WorkspaceXcodeWindowInspector.extractDocumentURL(windowElement: window)
+        } catch {
+            return nil
+        }
     }
 
     public var realtimeWorkspaceURL: URL? {
-        guard let window = appElement.focusedWindow,
-              window.identifier == "Xcode.WorkspaceWindow"
-        else { return nil }
+        do {
+            guard let window = try appElement.focusedWindow(),
+                  try window.identifier() == "Xcode.WorkspaceWindow"
+            else { return nil }
 
-        return WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window)
+            return WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window)
+        } catch {
+            return nil
+        }
     }
 
     public var realtimeProjectURL: URL? {
@@ -153,50 +161,56 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
     @XcodeInspectorActor
     private func observeFocusedWindow() {
-        if let window = appElement.focusedWindow {
-            if window.identifier == "Xcode.WorkspaceWindow" {
-                let window = WorkspaceXcodeWindowInspector(
-                    app: runningApplication,
-                    uiElement: window,
-                    axNotifications: axNotifications
-                )
+        do {
+            if let window = try appElement.focusedWindow() {
+                if (try? window.identifier()) == "Xcode.WorkspaceWindow" {
+                    let window = WorkspaceXcodeWindowInspector(
+                        app: runningApplication,
+                        uiElement: window,
+                        axNotifications: axNotifications
+                    )
 
-                focusedWindowObservations.forEach { $0.cancel() }
-                focusedWindowObservations.removeAll()
+                    focusedWindowObservations.forEach { $0.cancel() }
+                    focusedWindowObservations.removeAll()
 
-                Task { @MainActor in
-                    focusedWindow = window
-                    documentURL = window.documentURL
-                    workspaceURL = window.workspaceURL
-                    projectRootURL = window.projectRootURL
+                    Task { @MainActor in
+                        focusedWindow = window
+                        documentURL = window.documentURL
+                        workspaceURL = window.workspaceURL
+                        projectRootURL = window.projectRootURL
+                    }
+
+                    window.$documentURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
+                        .sink { [weak self] url in
+                            self?.documentURL = url
+                        }.store(in: &focusedWindowObservations)
+                    window.$workspaceURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
+                        .sink { [weak self] url in
+                            self?.workspaceURL = url
+                        }.store(in: &focusedWindowObservations)
+                    window.$projectRootURL
+                        .filter { $0 != .init(fileURLWithPath: "/") }
+                        .receive(on: DispatchQueue.main)
+                        .sink { [weak self] url in
+                            self?.projectRootURL = url
+                        }.store(in: &focusedWindowObservations)
+
+                } else {
+                    let window = XcodeWindowInspector(uiElement: window)
+                    Task { @MainActor in
+                        focusedWindow = window
+                    }
                 }
-
-                window.$documentURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.documentURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$workspaceURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.workspaceURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$projectRootURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.projectRootURL = url
-                    }.store(in: &focusedWindowObservations)
-
             } else {
-                let window = XcodeWindowInspector(uiElement: window)
                 Task { @MainActor in
-                    focusedWindow = window
+                    focusedWindow = nil
                 }
             }
-        } else {
+        } catch {
             Task { @MainActor in
                 focusedWindow = nil
             }
@@ -233,7 +247,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 guard let self else { return }
                 try Task.checkCancellation()
                 await Task.yield()
-            
+
                 guard let event = AXNotificationKind(rawValue: notification.name) else {
                     continue
                 }
@@ -256,17 +270,23 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
                 if event == .created || event == .uiElementDestroyed {
                     let isCompletionPanel = {
-                        notification.element.identifier == "_XC_COMPLETION_TABLE_"
-                            || notification.element.firstChild { element in
-                                element.identifier == "_XC_COMPLETION_TABLE_"
-                            } != nil
+                        do {
+                            return try notification.element.identifier() == "_XC_COMPLETION_TABLE_"
+                                || notification.element.firstChild { element in
+                                    (try? element.identifier()) == "_XC_COMPLETION_TABLE_"
+                                } != nil
+                        } catch {
+                            return false
+                        }
                     }
 
                     switch event {
                     case .created:
                         if isCompletionPanel() {
                             await MainActor.run {
-                                self.completionPanel = notification.element
+                                let completionPanel = notification.element
+                                completionPanel.setMessagingTimeout(0.2)
+                                self.completionPanel = completionPanel
                                 self.axNotifications.send(.init(
                                     kind: .xcodeCompletionPanelChanged,
                                     element: notification.element
@@ -311,7 +331,11 @@ extension XcodeAppInstanceInspector {
         /// Since we can't get notification for window closing,
         /// we will use it to check if the window is closed.
         var isValid: Bool {
-            element.parent != nil
+            do {
+                return try element.parent() != nil
+            } catch {
+                return false
+            }
         }
 
         init(element: AXUIElement) {
@@ -329,7 +353,7 @@ extension XcodeAppInstanceInspector {
     }
 
     func updateWorkspaceInfo() {
-        let workspaceInfoInVisibleSpace = Self.fetchVisibleWorkspaces(runningApplication)
+        let workspaceInfoInVisibleSpace = Self.fetchVisibleWorkspaces(appElement)
         let workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
         Task { @MainActor in
             self.workspaces = workspaces
@@ -346,35 +370,43 @@ extension XcodeAppInstanceInspector {
 
     /// With Accessibility API, we can ONLY get the information of visible windows.
     static func fetchVisibleWorkspaces(
-        _ app: NSRunningApplication
+        _ app: AXUIElement
     ) -> [WorkspaceIdentifier: Workspace] {
-        let app = AXUIElementCreateApplication(app.processIdentifier)
-        let windows = app.windows.filter { $0.identifier == "Xcode.WorkspaceWindow" }
+        do {
+            let windows = try app.windows(messagingTimeout: 1)
+                .filter { (try? $0.identifier()) == "Xcode.WorkspaceWindow" }
 
-        var dict = [WorkspaceIdentifier: Workspace]()
+            var dict = [WorkspaceIdentifier: Workspace]()
 
-        for window in windows {
-            let workspaceIdentifier = workspaceIdentifier(window)
+            for window in windows {
+                let workspaceIdentifier = workspaceIdentifier(window)
 
-            let tabs = {
-                guard let editArea = window.firstChild(where: { $0.description == "editor area" })
-                else { return Set<String>() }
-                var allTabs = Set<String>()
-                let tabBars = editArea.children { $0.description == "tab bar" }
-                for tabBar in tabBars {
-                    let tabs = tabBar.children { $0.roleDescription == "tab" }
-                    for tab in tabs {
-                        allTabs.insert(tab.title)
+                let tabs = try? {
+                    guard let editArea = try window
+                        .firstChild(where: { (try? $0.description()) == "editor area" })
+                    else { return Set<String>() }
+                    var allTabs = Set<String>()
+                    let tabBars = try editArea.children { (try? $0.description()) == "tab bar" }
+                    for tabBar in tabBars {
+                        let tabs = try tabBar.children { (try? $0.roleDescription()) == "tab" }
+                        for tab in tabs {
+                            guard let title = try? tab.title() else { continue }
+                            allTabs.insert(title)
+                        }
                     }
-                }
-                return allTabs
-            }()
+                    return allTabs
+                }()
 
-            let workspace = Workspace(element: window)
-            workspace.info = .init(tabs: tabs)
-            dict[workspaceIdentifier] = workspace
+                let workspace = Workspace(element: window)
+                if let tabs {
+                    workspace.info = .init(tabs: tabs)
+                }
+                dict[workspaceIdentifier] = workspace
+            }
+            return dict
+        } catch {
+            return [:]
         }
-        return dict
     }
 
     static func updateWorkspace(
