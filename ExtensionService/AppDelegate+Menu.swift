@@ -82,13 +82,13 @@ extension AppDelegate {
             keyEquivalent: ""
         )
         quitItem.target = self
-        
+
         let reactivateObservationsItem = NSMenuItem(
             title: "Reactivate Observations to Xcode",
             action: #selector(reactivateObservationsToXcode),
             keyEquivalent: ""
         )
-        
+
         reactivateObservationsItem.target = self
 
         statusBarMenu.addItem(copilotName)
@@ -138,7 +138,7 @@ extension AppDelegate: NSMenuDelegate {
 
             if let focusedWindow = inspector.focusedWindow {
                 menu.items.append(.text(
-                    "Active Window: \(focusedWindow.uiElement.identifier)"
+                    "Active Window: \((try? focusedWindow.uiElement.identifier()) ?? "N/A")"
                 ))
             } else {
                 menu.items.append(.text("Active Window: N/A"))
@@ -146,14 +146,14 @@ extension AppDelegate: NSMenuDelegate {
 
             if let focusedElement = inspector.focusedElement {
                 menu.items.append(.text(
-                    "Focused Element: \(focusedElement.description)"
+                    "Focused Element: \((try? focusedElement.description()) ?? "N/A")"
                 ))
             } else {
                 menu.items.append(.text("Focused Element: N/A"))
             }
 
             if let sourceEditor = inspector.focusedEditor {
-                let label = sourceEditor.element.description
+                let label = (try? sourceEditor.element.description()) ?? "N/A"
                 menu.items
                     .append(.text("Active Source Editor: \(label.isEmpty ? "Unknown" : label)"))
             } else {
@@ -220,7 +220,7 @@ private extension AppDelegate {
     @objc func restartXcodeInspector() {
         XcodeInspector.shared.restart(cleanUp: true)
     }
-    
+
     @objc func reactivateObservationsToXcode() {
         XcodeInspector.shared.reactivateObservationsToXcode()
     }
