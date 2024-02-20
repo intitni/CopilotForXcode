@@ -288,7 +288,7 @@ private extension WidgetWindowsController {
             await windows.orderFront()
 
             let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
-            for await notification in notifications {
+            for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
 
                 /// Hide the widgets before switching to another window/editor
@@ -337,9 +337,9 @@ private extension WidgetWindowsController {
     func observe(to editor: SourceEditor) {
         observeToFocusedEditorTask?.cancel()
         observeToFocusedEditorTask = Task {
-            let selectionRangeChange = editor.axNotifications
+            let selectionRangeChange = await editor.axNotifications.notifications()
                 .filter { $0.kind == .selectedTextChanged }
-            let scroll = editor.axNotifications
+            let scroll = await editor.axNotifications.notifications()
                 .filter { $0.kind == .scrollPositionChanged }
 
             if #available(macOS 13.0, *) {
