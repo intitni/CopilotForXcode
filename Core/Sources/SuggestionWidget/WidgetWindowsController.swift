@@ -93,8 +93,6 @@ actor WidgetWindowsController: NSObject {
         let shouldDebounce = !immediately &&
             !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
         lastUpdateWindowOpacityTime = Date()
-        let activeApp = xcodeInspector.activeApplication
-
         updateWindowOpacityTask?.cancel()
 
         let task = Task {
@@ -103,11 +101,10 @@ actor WidgetWindowsController: NSObject {
             }
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
+            let activeApp = xcodeInspector.activeApplication
             await MainActor.run {
                 if let activeApp, activeApp.isXcode {
-                    let application = AXUIElementCreateApplication(
-                        activeApp.processIdentifier
-                    )
+                    let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
