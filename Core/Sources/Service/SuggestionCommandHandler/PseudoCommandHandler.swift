@@ -200,20 +200,24 @@ struct PseudoCommandHandler {
                 throw error
             }
         } catch {
-            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
-                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            guard let focusElement = application.focusedElement,
-                  focusElement.description == "Source Editor"
-            else { return }
-            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
-            else {
-                PresentInWindowSuggestionPresenter()
-                    .presentErrorMessage("Unable to get file content.")
-                return
-            }
-            let handler = WindowBaseCommandHandler()
+            guard let xcode = XcodeInspector.shared.latestActiveXcode else { return }
+            let application = xcode.appElement
             do {
+                guard let focusElement = try application.focusedElement(messagingTimeout: 1),
+                      try focusElement.description() == "Source Editor"
+                else { return }
+                guard let (
+                    content,
+                    lines,
+                    _,
+                    cursorPosition
+                ) = await getFileContent(sourceEditor: nil)
+                else {
+                    PresentInWindowSuggestionPresenter()
+                        .presentErrorMessage("Unable to get file content.")
+                    return
+                }
+                let handler = WindowBaseCommandHandler()
                 guard let result = try await handler.acceptPromptToCode(editor: .init(
                     content: content,
                     lines: lines,
@@ -255,20 +259,24 @@ struct PseudoCommandHandler {
                 throw error
             }
         } catch {
-            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
-                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            guard let focusElement = application.focusedElement,
-                  focusElement.description == "Source Editor"
-            else { return }
-            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
-            else {
-                PresentInWindowSuggestionPresenter()
-                    .presentErrorMessage("Unable to get file content.")
-                return
-            }
-            let handler = WindowBaseCommandHandler()
+            guard let xcode = XcodeInspector.shared.latestActiveXcode else { return }
+            let application = xcode.appElement
             do {
+                guard let focusElement = try application.focusedElement(messagingTimeout: 1),
+                      try focusElement.description() == "Source Editor"
+                else { return }
+                guard let (
+                    content,
+                    lines,
+                    _,
+                    cursorPosition
+                ) = await getFileContent(sourceEditor: nil)
+                else {
+                    PresentInWindowSuggestionPresenter()
+                        .presentErrorMessage("Unable to get file content.")
+                    return
+                }
+                let handler = WindowBaseCommandHandler()
                 guard let result = try await handler.acceptSuggestion(editor: .init(
                     content: content,
                     lines: lines,
@@ -304,8 +312,8 @@ extension PseudoCommandHandler {
         _ result: UpdatedContent,
         focusElement: AXUIElement
     ) throws {
-        let oldPosition = focusElement.selectedTextRange
-        let oldScrollPosition = focusElement.parent?.verticalScrollBar?.doubleValue
+        let oldPosition = try focusElement.selectedTextRange()
+        let oldScrollPosition = try focusElement.parent()?.verticalScrollBar()?.doubleValue
 
         let error = AXUIElementSetAttributeValue(
             focusElement,
@@ -346,7 +354,7 @@ extension PseudoCommandHandler {
         // recover scroll position
 
         if let oldScrollPosition,
-           let scrollBar = focusElement.parent?.verticalScrollBar
+           let scrollBar = try focusElement.parent()?.verticalScrollBar()
         {
             AXUIElementSetAttributeValue(
                 scrollBar,
@@ -364,17 +372,20 @@ extension PseudoCommandHandler {
             cursorPosition: CursorPosition
         )?
     {
-        guard let xcode = ActiveApplicationMonitor.shared.activeXcode
-            ?? ActiveApplicationMonitor.shared.latestXcode else { return nil }
-        let application = AXUIElementCreateApplication(xcode.processIdentifier)
-        guard let focusElement = sourceEditor ?? application.focusedElement,
-              focusElement.description == "Source Editor"
-        else { return nil }
-        guard let selectionRange = focusElement.selectedTextRange else { return nil }
-        let content = focusElement.value
-        let split = content.breakLines(appendLineBreakToLastLine: false)
-        let range = convertRangeToCursorRange(selectionRange, in: content)
-        return (content, split, [range], range.start)
+        guard let xcode = XcodeInspector.shared.latestActiveXcode else { return nil }
+        let application = xcode.appElement
+        do {
+            guard let focusElement = try sourceEditor ?? application.focusedElement(),
+                  try focusElement.description() == "Source Editor"
+            else { return nil }
+            guard let selectionRange = try focusElement.selectedTextRange() else { return nil }
+            let content = try focusElement.value()
+            let split = content.breakLines(appendLineBreakToLastLine: false)
+            let range = convertRangeToCursorRange(selectionRange, in: content)
+            return (content, split, [range], range.start)
+        } catch {
+            return nil
+        }
     }
 
     func getFileURL() -> URL? {
