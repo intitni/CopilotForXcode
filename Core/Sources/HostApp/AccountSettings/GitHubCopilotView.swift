@@ -19,6 +19,7 @@ struct GitHubCopilotView: View {
         @AppStorage(\.gitHubCopilotProxyUsername) var gitHubCopilotProxyUsername
         @AppStorage(\.gitHubCopilotProxyPassword) var gitHubCopilotProxyPassword
         @AppStorage(\.gitHubCopilotUseStrictSSL) var gitHubCopilotUseStrictSSL
+        @AppStorage(\.gitHubCopilotEnterpriseURI) var gitHubCopilotEnterpriseURI
         @AppStorage(\.gitHubCopilotIgnoreTrailingNewLines)
         var gitHubCopilotIgnoreTrailingNewLines
         @AppStorage(\.disableGitHubCopilotSettingsAutoRefreshOnAppear)
@@ -274,6 +275,17 @@ struct GitHubCopilotView: View {
                     .font(.callout)
                     .dynamicHeightTextInFormWorkaround()
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
+                }
+                
+                SettingsDivider("Enterprise")
+                
+                Form {
+                    TextField(
+                        text: $settings.gitHubCopilotEnterpriseURI,
+                        prompt: Text("Leave it blank if non is available.")
+                    ) {
+                        Text("Auth Provider URL")
+                    }
                 }
 
                 SettingsDivider("Proxy")

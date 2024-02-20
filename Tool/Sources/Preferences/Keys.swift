@@ -163,6 +163,10 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotProxyPort: PreferenceKey<String> {
         .init(defaultValue: "", key: "GitHubCopilotProxyPort")
     }
+    
+    var gitHubCopilotEnterpriseURI: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotEnterpriseURI")
+    }
 
     var gitHubCopilotUseStrictSSL: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "GitHubCopilotUseStrictSSL")

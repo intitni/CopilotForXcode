@@ -80,9 +80,26 @@ enum GitHubCopilotRequest {
                 ])
             }
         }
+        
+        var editorConfiguration: JSONValue? {
+            var dict: [String: JSONValue] = [:]
+            if let networkProxy {
+                dict["http"] = networkProxy
+            }
+            
+            let enterpriseURI = UserDefaults.shared.value(for: \.gitHubCopilotEnterpriseURI)
+            if !enterpriseURI.isEmpty {
+                dict["github-enterprise"] = .hash([
+                    "uri": .string(enterpriseURI)
+                ])
+            }
+            
+            if dict.isEmpty { return nil }
+            return .hash(dict)
+        }
 
         var request: ClientRequest {
-            if let networkProxy {
+            if let editorConfiguration {
                 return .custom("setEditorInfo", .hash([
                     "editorInfo": .hash([
                         "name": "Xcode",
@@ -92,7 +109,7 @@ enum GitHubCopilotRequest {
                         "name": "Copilot for Xcode",
                         "version": "",
                     ]),
-                    "networkProxy": networkProxy,
+                    "editorConfiguration": editorConfiguration,
                 ]))
             }
 
