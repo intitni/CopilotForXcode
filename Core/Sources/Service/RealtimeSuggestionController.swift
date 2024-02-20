@@ -182,9 +182,14 @@ public actor RealtimeSuggestionController {
     /// Looks like the Xcode will keep the panel around until content is changed,
     /// not sure how to observe that it's hidden.
     func isCompletionPanelPresenting() -> Bool {
-        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return false }
-        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
-        return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
+        guard let activeXcode = XcodeInspector.shared.activeXcode else { return false }
+        let application = activeXcode.appElement
+        do {
+            return try application.focusedWindow()?
+                .child(identifier: "_XC_COMPLETION_TABLE_") != nil
+        } catch {
+            return false
+        }
     }
 
     func notifyEditingFileChange(editor: AXUIElement) async {
@@ -192,7 +197,11 @@ public actor RealtimeSuggestionController {
               let (workspace, _) = try? await Service.shared.workspacePool
               .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
-        await workspace.didUpdateFilespace(fileURL: fileURL, content: editor.value)
+        do {
+            try await workspace.didUpdateFilespace(fileURL: fileURL, content: editor.value())
+        } catch {
+            return
+        }
     }
 }
 
