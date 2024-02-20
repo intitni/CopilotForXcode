@@ -1,3 +1,4 @@
+import AppKit
 import Dependencies
 import Foundation
 import SuggestionService
@@ -70,6 +71,8 @@ public final class Service {
         #endif
         DependencyUpdater().update()
         globalShortcutManager.start()
+        
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 3)
     }
 }
 
