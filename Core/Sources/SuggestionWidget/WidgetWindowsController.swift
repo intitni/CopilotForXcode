@@ -93,8 +93,6 @@ actor WidgetWindowsController: NSObject {
         let shouldDebounce = !immediately &&
             !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
         lastUpdateWindowOpacityTime = Date()
-        let activeApp = xcodeInspector.activeApplication
-
         updateWindowOpacityTask?.cancel()
 
         let task = Task {
@@ -103,6 +101,7 @@ actor WidgetWindowsController: NSObject {
             }
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
+            let activeApp = xcodeInspector.activeApplication
             await MainActor.run {
                 if let activeApp, activeApp.isXcode {
                     let application = AXUIElementCreateApplication(
