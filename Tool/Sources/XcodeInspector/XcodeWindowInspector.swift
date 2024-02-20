@@ -93,7 +93,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         windowElement: AXUIElement
     ) -> URL? {
         // fetch file path of the frontmost window of Xcode through Accessibility API.
-        let path = windowElement.document
+        let path = try? windowElement.document()
         if let path = path?.removingPercentEncoding {
             let url = URL(
                 fileURLWithPath: path
@@ -107,15 +107,23 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     static func extractWorkspaceURL(
         windowElement: AXUIElement
     ) -> URL? {
-        for child in windowElement.children {
-            if child.description.starts(with: "/"), child.description.count > 1 {
-                let path = child.description
-                let trimmedNewLine = path.trimmingCharacters(in: .newlines)
-                let url = URL(fileURLWithPath: trimmedNewLine)
-                return url
+        do {
+            for child in try windowElement.children() {
+                do {
+                    let path = try child.description()
+                    if path.starts(with: "/"), path.count > 1 {
+                        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+                        let url = URL(fileURLWithPath: trimmedNewLine)
+                        return url
+                    }
+                } catch {
+                    continue
+                }
             }
+            return nil
+        } catch {
+            return nil
         }
-        return nil
     }
 
     public static func extractProjectURL(
