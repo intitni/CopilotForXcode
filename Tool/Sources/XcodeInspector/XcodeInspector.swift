@@ -286,7 +286,7 @@ public final class XcodeInspector: ObservableObject {
 
         setFocusedElement()
         let focusedElementChanged = Task { @XcodeInspectorActor in
-            for await notification in xcode.axNotifications {
+            for await notification in await xcode.axNotifications.notifications() {
                 if notification.kind == .focusedUIElementChanged {
                     try Task.checkCancellation()
                     setFocusedElement()
@@ -301,7 +301,7 @@ public final class XcodeInspector: ObservableObject {
         {
             let malfunctionCheck = Task { @XcodeInspectorActor [weak self] in
                 if #available(macOS 13.0, *) {
-                    let notifications = xcode.axNotifications.filter {
+                    let notifications = await xcode.axNotifications.notifications().filter {
                         $0.kind == .uiElementDestroyed
                     }.debounce(for: .milliseconds(1000))
                     for await _ in notifications {

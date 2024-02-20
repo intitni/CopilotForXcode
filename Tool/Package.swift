@@ -43,6 +43,7 @@ let package = Package(
         ),
         .library(name: "GitIgnoreCheck", targets: ["GitIgnoreCheck"]),
         .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
+        .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -64,7 +65,6 @@ let package = Package(
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
         .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
-        .package(url: "https://github.com/sideeffect-io/AsyncExtensions", from: "0.5.2"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -173,7 +173,7 @@ let package = Package(
                 "Logger",
                 "Toast",
                 "Preferences",
-                .product(name: "AsyncExtensions", package: "AsyncExtensions"),
+                "AsyncPassthroughSubject",
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
@@ -181,6 +181,8 @@ let package = Package(
         .testTarget(name: "XcodeInspectorTests", dependencies: ["XcodeInspector"]),
 
         .target(name: "UserDefaultsObserver"),
+
+        .target(name: "AsyncPassthroughSubject"),
 
         .target(
             name: "SharedUIComponents",

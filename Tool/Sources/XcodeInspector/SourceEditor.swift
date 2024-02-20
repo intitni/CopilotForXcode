@@ -1,5 +1,5 @@
 import AppKit
-import AsyncExtensions
+import AsyncPassthroughSubject
 import AXNotificationStream
 import Foundation
 import Logger
