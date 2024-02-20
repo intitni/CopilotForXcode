@@ -106,7 +106,13 @@ actor WidgetWindowsController: NSObject {
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
-                    let noFocus = application.focusedWindow == nil
+                    let noFocus = {
+                        do {
+                            return try application.focusedWindow() == nil
+                        } catch {
+                            return true
+                        }
+                    }()
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = noFocus ? 0 : 1
@@ -121,12 +127,16 @@ actor WidgetWindowsController: NSObject {
                     let noFocus = {
                         guard let xcode = xcodeInspector.latestActiveXcode
                         else { return true }
-                        if let window = xcode.appElement.focusedWindow,
-                           window.role == "AXWindow"
-                        {
-                            return false
+                        do {
+                            if let window = try xcode.appElement.focusedWindow(),
+                               try window.role() == "AXWindow"
+                            {
+                                return false
+                            }
+                            return true
+                        } catch {
+                            return true
                         }
-                        return true
                     }()
 
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
@@ -388,8 +398,8 @@ extension WidgetWindowsController {
     func generateWidgetLocation() -> WidgetLocation? {
         if let application = xcodeInspector.latestActiveXcode?.appElement {
             if let focusElement = xcodeInspector.focusedEditor?.element,
-               let parent = focusElement.parent,
-               let frame = parent.rect,
+               let parent = try? focusElement.parent(messagingTimeout: 0.2),
+               let frame = try? parent.rect(),
                let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                let firstScreen = NSScreen.main
             {
@@ -441,49 +451,57 @@ extension WidgetWindowsController {
                     }
                     return result
                 }
-            } else if var window = application.focusedWindow,
-                      var frame = application.focusedWindow?.rect,
-                      !["menu bar", "menu bar item"].contains(window.description),
+            } else if var window = try? application.focusedWindow(messagingTimeout: 0.2),
+                      var frame = try? window.rect(),
+                      let description = try? window.description(),
+                      !["menu bar", "menu bar item"].contains(description),
                       frame.size.height > 300,
                       let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
                       let firstScreen = NSScreen.main
             {
-                if ["open_quickly"].contains(window.identifier)
-                    || ["alert"].contains(window.label)
-                {
-                    // fallback to use workspace window
-                    guard let workspaceWindow = application.windows
-                        .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
-                        let rect = workspaceWindow.rect
-                    else {
-                        return WidgetLocation(
-                            widgetFrame: .zero,
-                            tabFrame: .zero,
-                            defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
-                        )
+                do {
+                    let identifier = try window.identifier()
+                    let label = try window.label()
+                    if ["open_quickly"].contains(identifier)
+                        || ["alert"].contains(label)
+                    {
+                        // fallback to use workspace window
+                        guard let workspaceWindow = try? application.windows(messagingTimeout: 0.2)
+                            .first(where: { (try? $0.identifier()) == "Xcode.WorkspaceWindow" }),
+                            let rect = try? workspaceWindow.rect()
+                        else {
+                            return WidgetLocation(
+                                widgetFrame: .zero,
+                                tabFrame: .zero,
+                                defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
+                            )
+                        }
+
+                        window = workspaceWindow
+                        frame = rect
                     }
 
-                    window = workspaceWindow
-                    frame = rect
-                }
+                    if ["Xcode.WorkspaceWindow"].contains(identifier) {
+                        // extra padding to bottom so buttons won't be covered
+                        frame.size.height -= 40
+                    } else {
+                        // move a bit away from the window so buttons won't be covered
+                        frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
+                        frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                    }
 
-                if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
-                    // extra padding to bottom so buttons won't be covered
-                    frame.size.height -= 40
-                } else {
-                    // move a bit away from the window so buttons won't be covered
-                    frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
-                    frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                    return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen,
+                        preferredInsideEditorMinWidth: 9_999_999_999 // never
+                    )
+                } catch {
+                    // ignore
                 }
-
-                return UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                    editorFrame: frame,
-                    mainScreen: screen,
-                    activeScreen: firstScreen,
-                    preferredInsideEditorMinWidth: 9_999_999_999 // never
-                )
             }
         }
+
         return nil
     }
 }

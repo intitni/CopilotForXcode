@@ -349,7 +349,7 @@ enum UpdateLocationStrategy {
                 }
             }
 
-            if let completionPanel, let completionPanelRect = completionPanel.rect {
+            if let completionPanel, let completionPanelRect = try? completionPanel.rect() {
                 return caseConsiderCompletionPanel(completionPanelRect)
             } else {
                 return caseIgnoreCompletionPanel(alignPanelTopToAnchor)
