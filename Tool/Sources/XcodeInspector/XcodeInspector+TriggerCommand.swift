@@ -48,9 +48,9 @@ public extension AppInstanceInspector {
         await Task.yield()
 
         if UserDefaults.shared.value(for: \.triggerActionWithAccessibilityAPI) {
-            let app = AXUIElementCreateApplication(runningApplication.processIdentifier)
+            let app = appElement
 
-            guard let menuBar = app.menuBar else {
+            guard let menuBar = try? app.menuBar() else {
                 Logger.service.error("""
                 Trigger menu item \(sourcePath) failed: \
                 Menu not found.
@@ -62,7 +62,7 @@ public extension AppInstanceInspector {
             while !path.isEmpty {
                 let item = path.removeFirst()
 
-                if path.isEmpty, let button = currentMenu.child(title: item, role: "AXMenuItem") {
+                if path.isEmpty, let button = try? currentMenu.child(title: item, role: "AXMenuItem") {
                     let error = AXUIElementPerformAction(button, kAXPressAction as CFString)
                     if error != AXError.success {
                         Logger.service.error("""
@@ -78,7 +78,7 @@ public extension AppInstanceInspector {
                         #endif
                         return
                     }
-                } else if let menu = currentMenu.child(title: item) {
+                } else if let menu = try? currentMenu.child(title: item) {
                     #if DEBUG
                     Logger.service.info("""
                     Trigger menu item \(sourcePath): Move to \(item).

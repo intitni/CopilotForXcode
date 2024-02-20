@@ -266,20 +266,30 @@ public final class XcodeInspector: ObservableObject {
 
         let setFocusedElement = { @XcodeInspectorActor [weak self] in
             guard let self else { return }
-            focusedElement = xcode.appElement.focusedElement
-            if let editorElement = focusedElement, editorElement.isSourceEditor {
-                focusedEditor = .init(
-                    runningApplication: xcode.runningApplication,
-                    element: editorElement
-                )
-            } else if let element = focusedElement,
-                      let editorElement = element.firstParent(where: \.isSourceEditor)
-            {
-                focusedEditor = .init(
-                    runningApplication: xcode.runningApplication,
-                    element: editorElement
-                )
-            } else {
+            do {
+                let element = try xcode.appElement.focusedElement(messagingTimeout: 1)
+                focusedElement = element
+                if let element, try element.isSourceEditor() {
+                    focusedEditor = .init(
+                        runningApplication: xcode.runningApplication,
+                        element: element
+                    )
+                } else if
+                    let element,
+                    let editorElement = try element.firstParent(
+                        messagingTimeout: 1,
+                        where: { (try? $0.isSourceEditor()) ?? false }
+                    )
+                {
+                    focusedEditor = .init(
+                        runningApplication: xcode.runningApplication,
+                        element: editorElement
+                    )
+                } else {
+                    focusedEditor = nil
+                }
+            } catch {
+                focusedElement = nil
                 focusedEditor = nil
             }
         }
@@ -345,20 +355,27 @@ public final class XcodeInspector: ObservableObject {
         guard Date().timeIntervalSince(lastRecoveryFromAccessibilityMalfunctioningTimeStamp) > 5
         else { return }
 
-        if let editor = focusedEditor, !editor.element.isSourceEditor {
+        do {
+            if let editor = focusedEditor, try !(editor.element.isSourceEditor()) {
+                NSWorkspace.shared.notificationCenter.post(
+                    name: .accessibilityAPIMalfunctioning,
+                    object: "Source Editor Element Corrupted: \(source)"
+                )
+            } else if let element = try activeXcode?.appElement.focusedElement() {
+                if try element.description() != focusedElement?.description() ||
+                    element.role() != focusedElement?.role()
+                {
+                    NSWorkspace.shared.notificationCenter.post(
+                        name: .accessibilityAPIMalfunctioning,
+                        object: "Element Inconsistency: \(source)"
+                    )
+                }
+            }
+        } catch {
             NSWorkspace.shared.notificationCenter.post(
                 name: .accessibilityAPIMalfunctioning,
                 object: "Source Editor Element Corrupted: \(source)"
             )
-        } else if let element = activeXcode?.appElement.focusedElement {
-            if element.description != focusedElement?.description ||
-                element.role != focusedElement?.role
-            {
-                NSWorkspace.shared.notificationCenter.post(
-                    name: .accessibilityAPIMalfunctioning,
-                    object: "Element Inconsistency: \(source)"
-                )
-            }
         }
     }
 
