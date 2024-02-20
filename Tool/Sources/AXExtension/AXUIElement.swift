@@ -39,25 +39,25 @@ public extension AXUIElement {
     }
 
     /// Label in Accessibility Inspector.
-    var description: String {
+    func description() throws -> String {
         (try? copyValue(key: kAXDescriptionAttribute)) ?? ""
     }
 
     /// Type in Accessibility Inspector.
-    var roleDescription: String {
+    func roleDescription() throws -> String {
         (try? copyValue(key: kAXRoleDescriptionAttribute)) ?? ""
     }
 
-    var label: String {
+    func label() throws -> String {
         (try? copyValue(key: kAXLabelValueAttribute)) ?? ""
     }
 
-    var isSourceEditor: Bool {
-        description == "Source Editor"
+    func isSourceEditor() throws -> Bool {
+        try description() == "Source Editor"
     }
 
-    var selectedTextRange: ClosedRange<Int>? {
-        guard let value: AXValue = try? copyValue(key: kAXSelectedTextRangeAttribute)
+    func selectedTextRange() throws -> ClosedRange<Int>? {
+        guard let value: AXValue = try copyValue(key: kAXSelectedTextRangeAttribute)
         else { return nil }
         var range: CFRange = .init(location: 0, length: 0)
         if AXValueGetValue(value, .cfRange, &range) {
@@ -66,24 +66,24 @@ public extension AXUIElement {
         return nil
     }
 
-    var isFocused: Bool {
-        (try? copyValue(key: kAXFocusedAttribute)) ?? false
+    func isFocused() throws -> Bool {
+        try copyValue(key: kAXFocusedAttribute) ?? false
     }
 
-    var isEnabled: Bool {
-        (try? copyValue(key: kAXEnabledAttribute)) ?? false
+    func isEnabled() throws -> Bool {
+        try copyValue(key: kAXEnabledAttribute) ?? false
     }
-    
-    var isHidden: Bool {
-        (try? copyValue(key: kAXHiddenAttribute)) ?? false
+
+    func isHidden() throws -> Bool {
+        try copyValue(key: kAXHiddenAttribute) ?? false
     }
 }
 
 // MARK: - Rect
 
 public extension AXUIElement {
-    var position: CGPoint? {
-        guard let value: AXValue = try? copyValue(key: kAXPositionAttribute)
+    func position() throws -> CGPoint? {
+        guard let value: AXValue = try copyValue(key: kAXPositionAttribute)
         else { return nil }
         var point: CGPoint = .zero
         if AXValueGetValue(value, .cgPoint, &point) {
@@ -92,8 +92,8 @@ public extension AXUIElement {
         return nil
     }
 
-    var size: CGSize? {
-        guard let value: AXValue = try? copyValue(key: kAXSizeAttribute)
+    func size() throws -> CGSize? {
+        guard let value: AXValue = try copyValue(key: kAXSizeAttribute)
         else { return nil }
         var size: CGSize = .zero
         if AXValueGetValue(value, .cgSize, &size) {
@@ -102,126 +102,226 @@ public extension AXUIElement {
         return nil
     }
 
-    var rect: CGRect? {
-        guard let position, let size else { return nil }
+    func rect() throws -> CGRect? {
+        guard let position = try position(), let size = try size() else { return nil }
         return .init(origin: position, size: size)
+    }
+    
+    func isFullScreen() throws -> Bool {
+        try copyValue(key: "AXFullScreen") ?? false
     }
 }
 
 // MARK: - Relationship
 
 public extension AXUIElement {
-    var focusedElement: AXUIElement? {
-        try? copyValue(key: kAXFocusedUIElementAttribute)
+    func focusedElement(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXFocusedUIElementAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var sharedFocusElements: [AXUIElement] {
-        (try? copyValue(key: kAXChildrenAttribute)) ?? []
+    func sharedFocusElements(messagingTimeout: Float? = nil) throws -> [AXUIElement] {
+        let elements: [AXUIElement] = try copyValue(key: kAXChildrenAttribute) ?? []
+        if let messagingTimeout {
+            elements.forEach { $0.setMessagingTimeout(messagingTimeout) }
+        }
+        return elements
     }
 
-    var window: AXUIElement? {
-        try? copyValue(key: kAXWindowAttribute)
+    func window(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXWindowAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var windows: [AXUIElement] {
-        (try? copyValue(key: kAXWindowsAttribute)) ?? []
+    func windows(messagingTimeout: Float? = nil) throws -> [AXUIElement] {
+        let elements: [AXUIElement] = try copyValue(key: kAXWindowsAttribute) ?? []
+        if let messagingTimeout {
+            elements.forEach { $0.setMessagingTimeout(messagingTimeout) }
+        }
+        return elements
     }
 
-    var isFullScreen: Bool {
-        (try? copyValue(key: "AXFullScreen")) ?? false
+    func focusedWindow(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXFocusedWindowAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var focusedWindow: AXUIElement? {
-        try? copyValue(key: kAXFocusedWindowAttribute)
+    func topLevelElement(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXTopLevelUIElementAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var topLevelElement: AXUIElement? {
-        try? copyValue(key: kAXTopLevelUIElementAttribute)
+    func rows(messagingTimeout: Float? = nil) throws -> [AXUIElement] {
+        let elements: [AXUIElement] = try copyValue(key: kAXRowsAttribute) ?? []
+        if let messagingTimeout {
+            elements.forEach { $0.setMessagingTimeout(messagingTimeout) }
+        }
+        return elements
     }
 
-    var rows: [AXUIElement] {
-        (try? copyValue(key: kAXRowsAttribute)) ?? []
+    func parent(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXParentAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var parent: AXUIElement? {
-        try? copyValue(key: kAXParentAttribute)
+    func children(messagingTimeout: Float? = nil) throws -> [AXUIElement] {
+        let elements: [AXUIElement] = try copyValue(key: kAXChildrenAttribute) ?? []
+        if let messagingTimeout {
+            elements.forEach { $0.setMessagingTimeout(messagingTimeout) }
+        }
+        return elements
     }
 
-    var children: [AXUIElement] {
-        (try? copyValue(key: kAXChildrenAttribute)) ?? []
+    func menuBar(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXMenuBarAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 
-    var menuBar: AXUIElement? {
-        try? copyValue(key: kAXMenuBarAttribute)
-    }
-
-    var visibleChildren: [AXUIElement] {
-        (try? copyValue(key: kAXVisibleChildrenAttribute)) ?? []
+    func visibleChildren(messagingTimeout: Float? = nil) throws -> [AXUIElement] {
+        let elements: [AXUIElement] = try copyValue(key: kAXVisibleChildrenAttribute) ?? []
+        if let messagingTimeout {
+            elements.forEach { $0.setMessagingTimeout(messagingTimeout) }
+        }
+        return elements
     }
 
     func child(
         identifier: String? = nil,
         title: String? = nil,
-        role: String? = nil
-    ) -> AXUIElement? {
-        for child in children {
-            let match = {
-                if let identifier, child.identifier != identifier { return false }
-                if let title, child.title != title { return false }
-                if let role, child.role != role { return false }
+        role: String? = nil,
+        messagingTimeout: Float? = nil
+    ) throws -> AXUIElement? {
+        for child in try children() {
+            let match = try {
+                if let identifier, try child.identifier() != identifier { return false }
+                if let title, try child.title() != title { return false }
+                if let role, try child.role() != role { return false }
                 return true
             }()
-            if match { return child }
+            if match {
+                if let messagingTimeout {
+                    child.setMessagingTimeout(messagingTimeout)
+                }
+                return child
+            }
         }
-        for child in children {
-            if let target = child.child(
+
+        for child in try children() {
+            if let target = try child.child(
                 identifier: identifier,
                 title: title,
                 role: role
-            ) { return target }
+            ) {
+                if let messagingTimeout {
+                    target.setMessagingTimeout(messagingTimeout)
+                }
+                return target
+            }
         }
+
         return nil
     }
 
-    func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
+    func children(
+        messagingTimeout: Float? = nil,
+        where match: (AXUIElement) -> Bool
+    ) throws -> [AXUIElement] {
         var all = [AXUIElement]()
-        for child in children {
+        for child in try children() {
             if match(child) { all.append(child) }
         }
-        for child in children {
-            all.append(contentsOf: child.children(where: match))
+        for child in try children() {
+            try all.append(contentsOf: child.children(where: match))
+        }
+        if let messagingTimeout {
+            all.forEach { $0.setMessagingTimeout(messagingTimeout) }
         }
         return all
     }
-    
-    func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-        guard let parent = self.parent else { return nil }
-        if match(parent) { return parent }
-        return parent.firstParent(where: match)
+
+    func firstParent(
+        messagingTimeout: Float? = nil,
+        where match: (AXUIElement) -> Bool
+    ) throws -> AXUIElement? {
+        guard let parent = try parent() else { return nil }
+        if match(parent) {
+            if let messagingTimeout {
+                parent.setMessagingTimeout(messagingTimeout)
+            }
+            return parent
+        }
+        return try parent.firstParent(messagingTimeout: messagingTimeout, where: match)
     }
 
-    func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-        for child in children {
-            if match(child) { return child }
+    func firstChild(
+        messagingTimeout: Float? = nil,
+        where match: (AXUIElement) -> Bool
+    ) throws -> AXUIElement? {
+        for child in try children() {
+            if match(child) {
+                if let messagingTimeout {
+                    child.setMessagingTimeout(messagingTimeout)
+                }
+                return child
+            }
         }
-        for child in children {
-            if let target = child.firstChild(where: match) {
+        for child in try children() {
+            if let target = try child.firstChild(where: match) {
+                if let messagingTimeout {
+                    target.setMessagingTimeout(messagingTimeout)
+                }
                 return target
             }
         }
         return nil
     }
 
-    func visibleChild(identifier: String) -> AXUIElement? {
-        for child in visibleChildren {
-            if child.identifier == identifier { return child }
-            if let target = child.visibleChild(identifier: identifier) { return target }
+    func visibleChild(identifier: String, messagingTimeout: Float? = nil) -> AXUIElement? {
+        do {
+            for child in try visibleChildren() {
+                if try child.identifier() == identifier {
+                    if let messagingTimeout {
+                        child.setMessagingTimeout(messagingTimeout)
+                    }
+                    return child
+                }
+                if let target = child.visibleChild(identifier: identifier) {
+                    if let messagingTimeout {
+                        target.setMessagingTimeout(messagingTimeout)
+                    }
+                    return target
+                }
+            }
+            return nil
+        } catch {
+            return nil
         }
-        return nil
     }
 
-    var verticalScrollBar: AXUIElement? {
-        try? copyValue(key: kAXVerticalScrollBarAttribute)
+    func verticalScrollBar(messagingTimeout: Float? = nil) throws -> AXUIElement? {
+        let element: AXUIElement? = try copyValue(key: kAXVerticalScrollBarAttribute)
+        if let messagingTimeout {
+            element?.setMessagingTimeout(messagingTimeout)
+        }
+        return element
     }
 }
 
