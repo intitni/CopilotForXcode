@@ -261,10 +261,8 @@ public struct WidgetFeature: ReducerProtocol {
                         guard let windowsController,
                               await windowsController.windows.fullscreenDetector.isOnActiveSpace
                         else { continue }
-                        let app = AXUIElementCreateApplication(
-                            activeXcode.processIdentifier
-                        )
-                        if let _ = app.focusedWindow {
+                        let app = activeXcode.appElement
+                        if let _ = try? app.focusedWindow() {
                             await windowsController.windows.orderFront()
                         }
                     }
