@@ -104,9 +104,7 @@ actor WidgetWindowsController: NSObject {
             let activeApp = xcodeInspector.activeApplication
             await MainActor.run {
                 if let activeApp, activeApp.isXcode {
-                    let application = AXUIElementCreateApplication(
-                        activeApp.processIdentifier
-                    )
+                    let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
