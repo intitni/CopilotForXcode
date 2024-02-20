@@ -4,6 +4,16 @@ import Foundation
 // MARK: - State
 
 public extension AXUIElement {
+    /// Set global timeout in seconds.
+    static func setGlobalMessagingTimeout(_ timeout: Float) {
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), timeout)
+    }
+
+    /// Set timeout in seconds for this element.
+    func setMessagingTimeout(_ timeout: Float) {
+        AXUIElementSetMessagingTimeout(self, timeout)
+    }
+
     var identifier: String {
         (try? copyValue(key: kAXIdentifierAttribute)) ?? ""
     }
@@ -63,7 +73,7 @@ public extension AXUIElement {
     var isEnabled: Bool {
         (try? copyValue(key: kAXEnabledAttribute)) ?? false
     }
-    
+
     var isHidden: Bool {
         (try? copyValue(key: kAXHiddenAttribute)) ?? false
     }
@@ -183,9 +193,9 @@ public extension AXUIElement {
         }
         return all
     }
-    
+
     func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-        guard let parent = self.parent else { return nil }
+        guard let parent = parent else { return nil }
         if match(parent) { return parent }
         return parent.firstParent(where: match)
     }

@@ -10,6 +10,7 @@ public class XcodeWindowInspector: ObservableObject {
 
     init(uiElement: AXUIElement) {
         self.uiElement = uiElement
+        uiElement.setMessagingTimeout(2)
     }
 }
 

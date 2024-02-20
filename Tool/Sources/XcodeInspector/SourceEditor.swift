@@ -56,6 +56,7 @@ public class SourceEditor {
     public init(runningApplication: NSRunningApplication, element: AXUIElement) {
         self.runningApplication = runningApplication
         self.element = element
+        element.setMessagingTimeout(2)
         observeAXNotifications()
     }
 

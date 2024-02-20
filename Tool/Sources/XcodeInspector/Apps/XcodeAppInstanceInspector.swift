@@ -267,6 +267,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                         if isCompletionPanel() {
                             await MainActor.run {
                                 self.completionPanel = notification.element
+                                self.completionPanel?.setMessagingTimeout(1)
                                 self.axNotifications.send(.init(
                                     kind: .xcodeCompletionPanelChanged,
                                     element: notification.element

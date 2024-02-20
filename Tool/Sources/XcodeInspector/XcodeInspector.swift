@@ -97,6 +97,7 @@ public final class XcodeInspector: ObservableObject {
     }
 
     init() {
+        AXUIElement.setGlobalMessagingTimeout(3)
         restart()
     }
 
