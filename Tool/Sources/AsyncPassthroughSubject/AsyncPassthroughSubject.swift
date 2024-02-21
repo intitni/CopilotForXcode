@@ -20,7 +20,7 @@ public actor AsyncPassthroughSubject<Element> {
         AsyncStream { [weak self, name] continuation in
             let task = Task { [weak self] in
                 await self?.storeContinuation(continuation)
-                let notifications = NSWorkspace.shared.notificationCenter.notifications(named: name)
+                let notifications = NotificationCenter.default.notifications(named: name)
                     .compactMap {
                         $0.object as? Element
                     }
@@ -46,7 +46,7 @@ public actor AsyncPassthroughSubject<Element> {
     }
     
     func _send(_ element: Element) {
-        NSWorkspace.shared.notificationCenter.post(name: name, object: element)
+        NotificationCenter.default.post(name: name, object: element)
     }
     
     func storeContinuation(_ continuation: AsyncStream<Element>.Continuation) {
