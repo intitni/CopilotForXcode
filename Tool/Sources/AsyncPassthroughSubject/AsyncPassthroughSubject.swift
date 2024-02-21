@@ -1,37 +1,19 @@
 import AppKit
 import Foundation
 
-/// It uses notification center to mimic the behavior of a passthrough subject.
 public actor AsyncPassthroughSubject<Element> {
-    let name: Notification.Name
     var tasks: [AsyncStream<Element>.Continuation] = []
 
     deinit {
         tasks.forEach { $0.finish() }
     }
     
-    public init() {
-        name = NSNotification.Name(
-            "AsyncPassthroughSubject-\(UUID().uuidString)-\(String(describing: Element.self))"
-        )
-    }
+    public init() {}
 
     public func notifications() -> AsyncStream<Element> {
-        AsyncStream { [weak self, name] continuation in
+        AsyncStream { [weak self] continuation in
             let task = Task { [weak self] in
                 await self?.storeContinuation(continuation)
-                let notifications = NotificationCenter.default.notifications(named: name)
-                    .compactMap {
-                        $0.object as? Element
-                    }
-                for await notification in notifications {
-                    try Task.checkCancellation()
-                    guard self != nil else {
-                        continuation.finish()
-                        return
-                    }
-                    continuation.yield(notification)
-                }
             }
             
             continuation.onTermination = { termination in
@@ -46,7 +28,10 @@ public actor AsyncPassthroughSubject<Element> {
     }
     
     func _send(_ element: Element) {
-        NotificationCenter.default.post(name: name, object: element)
+        let tasks = tasks
+        for task in tasks {
+            task.yield(element)
+        }
     }
     
     func storeContinuation(_ continuation: AsyncStream<Element>.Continuation) {
