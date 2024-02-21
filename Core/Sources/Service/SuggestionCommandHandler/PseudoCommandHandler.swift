@@ -159,7 +159,7 @@ struct PseudoCommandHandler {
             }
         }() else {
             do {
-                try await XcodeInspector.shared.latestActiveXcode?
+                try await XcodeInspector.shared.safe.latestActiveXcode?
                     .triggerCopilotCommand(name: command.name)
             } catch {
                 let presenter = PresentInWindowSuggestionPresenter()
@@ -183,7 +183,7 @@ struct PseudoCommandHandler {
                 throw CancellationError()
             }
             do {
-                try await XcodeInspector.shared.latestActiveXcode?
+                try await XcodeInspector.shared.safe.latestActiveXcode?
                     .triggerCopilotCommand(name: "Accept Prompt to Code")
             } catch {
                 let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
@@ -238,7 +238,7 @@ struct PseudoCommandHandler {
                 throw CancellationError()
             }
             do {
-                try await XcodeInspector.shared.latestActiveXcode?
+                try await XcodeInspector.shared.safe.latestActiveXcode?
                     .triggerCopilotCommand(name: "Accept Suggestion")
             } catch {
                 let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
@@ -288,7 +288,7 @@ struct PseudoCommandHandler {
     }
 
     func dismissSuggestion() async {
-        guard let documentURL = XcodeInspector.shared.activeDocumentURL else { return }
+        guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
 
@@ -377,14 +377,14 @@ extension PseudoCommandHandler {
         return (content, split, [range], range.start)
     }
 
-    func getFileURL() -> URL? {
-        XcodeInspector.shared.realtimeActiveDocumentURL
+    func getFileURL() async -> URL? {
+        await XcodeInspector.shared.safe.realtimeActiveDocumentURL
     }
 
     @WorkspaceActor
     func getFilespace() async -> Filespace? {
         guard
-            let fileURL = getFileURL(),
+            let fileURL = await getFileURL(),
             let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return nil }
@@ -394,7 +394,10 @@ extension PseudoCommandHandler {
     @WorkspaceActor
     func getEditorContent(sourceEditor: SourceEditor?) async -> EditorContent? {
         guard let filespace = await getFilespace(),
-              let sourceEditor = sourceEditor ?? XcodeInspector.shared.focusedEditor
+              let sourceEditor = await {
+                  if let sourceEditor { sourceEditor }
+                  else { await XcodeInspector.shared.safe.focusedEditor }
+              }()
         else { return nil }
         if Task.isCancelled { return nil }
         let content = sourceEditor.getContent()

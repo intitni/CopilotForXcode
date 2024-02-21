@@ -217,8 +217,14 @@ public final class ChatService: ObservableObject {
         guard let info else { return }
 
         let templateProcessor = CustomCommandTemplateProcessor()
-        mutateSystemPrompt(info.specifiedSystemPrompt.map(templateProcessor.process))
-        mutateExtraSystemPrompt(info.extraSystemPrompt.map(templateProcessor.process) ?? "")
+        if let specifiedSystemPrompt = info.specifiedSystemPrompt {
+            await mutateSystemPrompt(templateProcessor.process(specifiedSystemPrompt))
+        }
+        if let extraSystemPrompt = info.extraSystemPrompt {
+            await mutateExtraSystemPrompt(templateProcessor.process(extraSystemPrompt))
+        } else {
+            mutateExtraSystemPrompt("")
+        }
 
         let customCommandPrefix = {
             if let name = info.name { return "[\(name)] " }
@@ -250,9 +256,9 @@ public final class ChatService: ObservableObject {
         let templateProcessor = CustomCommandTemplateProcessor()
         if let systemPrompt {
             if overwriteSystemPrompt {
-                mutateSystemPrompt(templateProcessor.process(systemPrompt))
+                await mutateSystemPrompt(templateProcessor.process(systemPrompt))
             } else {
-                mutateExtraSystemPrompt(templateProcessor.process(systemPrompt))
+                await mutateExtraSystemPrompt(templateProcessor.process(systemPrompt))
             }
         }
         return try await sendAndWait(content: templateProcessor.process(prompt))
@@ -265,10 +271,10 @@ public final class ChatService: ObservableObject {
     ) async throws -> String {
         let templateProcessor = CustomCommandTemplateProcessor()
         if let systemPrompt {
-            mutateSystemPrompt(templateProcessor.process(systemPrompt))
+            await mutateSystemPrompt(templateProcessor.process(systemPrompt))
         }
         if let extraSystemPrompt {
-            mutateExtraSystemPrompt(templateProcessor.process(extraSystemPrompt))
+            await mutateExtraSystemPrompt(templateProcessor.process(extraSystemPrompt))
         }
         return try await sendAndWait(content: templateProcessor.process(prompt))
     }

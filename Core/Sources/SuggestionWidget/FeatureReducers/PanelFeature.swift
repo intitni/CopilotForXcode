@@ -53,7 +53,7 @@ public struct PanelFeature: ReducerProtocol {
             switch action {
             case .presentSuggestion:
                 return .run { send in
-                    guard let fileURL = xcodeInspector.activeDocumentURL,
+                    guard let fileURL = await xcodeInspector.safe.activeDocumentURL,
                           let provider = await fetchSuggestionProvider(fileURL: fileURL)
                     else { return }
                     await send(.presentSuggestionProvider(provider, displayContent: true))
@@ -98,8 +98,9 @@ public struct PanelFeature: ReducerProtocol {
                 state.content.error = nil
                 state.content.suggestion = nil
                 return .run { send in
-                    guard let fileURL = xcodeInspector.realtimeActiveDocumentURL else { return }
-                    
+                    guard let fileURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                    else { return }
+
                     await send(.sharedPanel(
                         .promptToCodeGroup(
                             .updateActivePromptToCode(documentURL: fileURL)
