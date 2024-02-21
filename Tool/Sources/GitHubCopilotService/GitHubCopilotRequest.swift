@@ -49,7 +49,6 @@ public struct GitHubCopilotCodeSuggestion: Codable, Equatable {
     public var displayText: String
 }
 
-
 enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
         struct Response: Codable {}
@@ -81,22 +80,58 @@ enum GitHubCopilotRequest {
             }
         }
 
-        var request: ClientRequest {
-            if let networkProxy {
-                return .custom("setEditorInfo", .hash([
-                    "editorInfo": .hash([
-                        "name": "Xcode",
-                        "version": "",
-                    ]),
-                    "editorPluginInfo": .hash([
-                        "name": "Copilot for Xcode",
-                        "version": "",
-                    ]),
-                    "networkProxy": networkProxy,
-                ]))
+        var http: JSONValue? {
+            var dict: [String: JSONValue] = [:]
+            let host = UserDefaults.shared.value(for: \.gitHubCopilotProxyHost)
+            if host.isEmpty { return nil }
+            var port = UserDefaults.shared.value(for: \.gitHubCopilotProxyPort)
+            if port.isEmpty { port = "80" }
+            let username = UserDefaults.shared.value(for: \.gitHubCopilotProxyUsername)
+            let password = UserDefaults.shared.value(for: \.gitHubCopilotProxyPassword)
+            let strictSSL = UserDefaults.shared.value(for: \.gitHubCopilotUseStrictSSL)
+
+            let url = if !username.isEmpty {
+                "http://\(username):\(password)@\(host):\(port)"
+            } else {
+                "http://\(host):\(port)"
             }
 
-            return .custom("setEditorInfo", .hash([
+            dict["proxy"] = .string(url)
+            dict["proxyStrictSSL"] = .bool(strictSSL)
+
+            if dict.isEmpty { return nil }
+
+            return .hash(dict)
+        }
+
+        var editorConfiguration: JSONValue? {
+            var dict: [String: JSONValue] = [:]
+            dict["http"] = http
+
+            let enterpriseURI = UserDefaults.shared.value(for: \.gitHubCopilotEnterpriseURI)
+            if !enterpriseURI.isEmpty {
+                dict["github-enterprise"] = .hash([
+                    "uri": .string(enterpriseURI),
+                ])
+            }
+
+            if dict.isEmpty { return nil }
+            return .hash(dict)
+        }
+
+        var authProvider: JSONValue? {
+            var dict: [String: JSONValue] = [:]
+            let enterpriseURI = UserDefaults.shared.value(for: \.gitHubCopilotEnterpriseURI)
+            if !enterpriseURI.isEmpty {
+                dict["url"] = .string(enterpriseURI)
+            }
+
+            if dict.isEmpty { return nil }
+            return .hash(dict)
+        }
+
+        var request: ClientRequest {
+            var dict: [String: JSONValue] = [
                 "editorInfo": .hash([
                     "name": "Xcode",
                     "version": "",
@@ -105,7 +140,13 @@ enum GitHubCopilotRequest {
                     "name": "Copilot for Xcode",
                     "version": "",
                 ]),
-            ]))
+            ]
+
+            dict["editorConfiguration"] = editorConfiguration
+            dict["authProvider"] = authProvider
+            dict["networkProxy"] = networkProxy
+
+            return .custom("setEditorInfo", .hash(dict))
         }
     }
 

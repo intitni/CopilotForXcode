@@ -187,7 +187,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
 
     public func postNotification(name: String, withReply reply: @escaping () -> Void) {
         reply()
-        NSWorkspace.shared.notificationCenter.post(name: .init(name), object: nil)
+        NotificationCenter.default.post(name: .init(name), object: nil)
     }
 
     // MARK: - Requests

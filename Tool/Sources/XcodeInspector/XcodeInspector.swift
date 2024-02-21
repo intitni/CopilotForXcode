@@ -222,7 +222,7 @@ public final class XcodeInspector: ObservableObject {
                 }
 
                 group.addTask { [weak self] in // malfunctioning
-                    let sequence = NSWorkspace.shared.notificationCenter
+                    let sequence = NotificationCenter.default
                         .notifications(named: .accessibilityAPIMalfunctioning)
                     for await notification in sequence {
                         try Task.checkCancellation()
@@ -347,7 +347,7 @@ public final class XcodeInspector: ObservableObject {
         else { return }
 
         if let editor = focusedEditor, !editor.element.isSourceEditor {
-            NSWorkspace.shared.notificationCenter.post(
+            NotificationCenter.default.post(
                 name: .accessibilityAPIMalfunctioning,
                 object: "Source Editor Element Corrupted: \(source)"
             )
@@ -355,7 +355,7 @@ public final class XcodeInspector: ObservableObject {
             if element.description != focusedElement?.description ||
                 element.role != focusedElement?.role
             {
-                NSWorkspace.shared.notificationCenter.post(
+                NotificationCenter.default.post(
                     name: .accessibilityAPIMalfunctioning,
                     object: "Element Inconsistency: \(source)"
                 )
