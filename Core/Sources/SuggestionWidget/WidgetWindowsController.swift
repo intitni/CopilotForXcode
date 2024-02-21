@@ -28,6 +28,8 @@ actor WidgetWindowsController: NSObject {
     var updateWindowLocationTask: Task<Void, Error>?
     var lastUpdateWindowLocationTime = Date(timeIntervalSince1970: 0)
 
+    var beatingCompletionPanelTask: Task<Void, Error>?
+
     deinit {
         userDefaultsObservers.presentationModeChangeObserver.onChange = {}
         observeToAppTask?.cancel()
@@ -61,15 +63,7 @@ actor WidgetWindowsController: NSObject {
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
             Task { [weak self] in
-                if newValue == nil {
-                    // so that the buttons on the suggestion panel could be
-                    // clicked
-                    // before the completion panel updates the location of the
-                    // suggestion panel
-                    try await Task.sleep(nanoseconds: 400_000_000)
-                }
-                await self?.updateWindowLocation(animated: false, immediately: false)
-                await self?.updateWindowOpacity(immediately: false)
+                await self?.handleCompletionPanelChange(isDisplaying: newValue != nil)
             }
         }.store(in: &cancellable)
 
@@ -299,10 +293,10 @@ private extension WidgetWindowsController {
                     await send(.updateFocusingDocumentURL)
                 }
 
-                func updateWidgetsAndNotifyChangeOfEditor() async {
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                    await updateWindowLocation(animated: false, immediately: immediately)
+                    await updateWindowOpacity(immediately: immediately)
                 }
 
                 func updateWidgets() async {
@@ -313,9 +307,11 @@ private extension WidgetWindowsController {
                 switch notification.kind {
                 case .focusedWindowChanged, .focusedUIElementChanged:
                     await hideWidgetForTransitions()
-                    await updateWidgetsAndNotifyChangeOfEditor()
-                case .applicationActivated, .mainWindowChanged:
-                    await updateWidgetsAndNotifyChangeOfEditor()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+                case .applicationActivated:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .mainWindowChanged:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .applicationDeactivated,
                      .moved,
                      .resized,
@@ -369,6 +365,22 @@ private extension WidgetWindowsController {
                     await updateWindowOpacity(immediately: false)
                 }
             }
+        }
+    }
+
+    func handleCompletionPanelChange(isDisplaying: Bool) {
+        beatingCompletionPanelTask?.cancel()
+        beatingCompletionPanelTask = Task {
+            if !isDisplaying {
+                // so that the buttons on the suggestion panel could be
+                // clicked
+                // before the completion panel updates the location of the
+                // suggestion panel
+                try await Task.sleep(nanoseconds: 400_000_000)
+            }
+
+            await updateWindowLocation(animated: false, immediately: false)
+            await updateWindowOpacity(immediately: false)
         }
     }
 }

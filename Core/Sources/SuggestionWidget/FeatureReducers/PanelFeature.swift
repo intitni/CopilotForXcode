@@ -96,12 +96,10 @@ public struct PanelFeature: ReducerProtocol {
 
             case .switchToAnotherEditorAndUpdateContent:
                 state.content.error = nil
+                state.content.suggestion = nil
                 return .run { send in
                     guard let fileURL = xcodeInspector.realtimeActiveDocumentURL else { return }
-                    if let suggestion = await fetchSuggestionProvider(fileURL: fileURL) {
-                        await send(.presentSuggestionProvider(suggestion, displayContent: false))
-                    }
-
+                    
                     await send(.sharedPanel(
                         .promptToCodeGroup(
                             .updateActivePromptToCode(documentURL: fileURL)
