@@ -79,11 +79,7 @@ actor WidgetWindowsController: NSObject {
         await send(.updatePanelStateToMatch(location))
     }
 
-    func updateWindowOpacity(immediately: Bool) async {
-        let state = store.withState { $0 }
-
-        let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-        let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
+    func updateWindowOpacity(immediately: Bool) {
         let shouldDebounce = !immediately &&
             !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
         lastUpdateWindowOpacityTime = Date()
@@ -153,7 +149,7 @@ actor WidgetWindowsController: NSObject {
         immediately: Bool,
         function: StaticString = #function,
         line: UInt = #line
-    ) async {
+    ) {
         @Sendable @MainActor
         func update() async {
             let state = store.withState { $0 }
@@ -259,11 +255,12 @@ private extension WidgetWindowsController {
     func activate(_ app: AppInstanceInspector) {
         Task {
             if app.isXcode {
-                await updateWindowLocation(animated: false, immediately: true)
-                await updateWindowOpacity(immediately: false)
+                updateWindowLocation(animated: false, immediately: true)
+                updateWindowOpacity(immediately: false)
             } else {
-                await updateWindowOpacity(immediately: true)
-                await updateWindowLocation(animated: false, immediately: false)
+                updateWindowOpacity(immediately: true)
+                updateWindowLocation(animated: false, immediately: false)
+                await hideSuggestionPanelWindow()
             }
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
@@ -295,13 +292,13 @@ private extension WidgetWindowsController {
 
                 func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                    await updateWindowLocation(animated: false, immediately: immediately)
-                    await updateWindowOpacity(immediately: immediately)
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
                 }
 
                 func updateWidgets() async {
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
 
                 switch notification.kind {
@@ -348,8 +345,8 @@ private extension WidgetWindowsController {
                         await hideSuggestionPanelWindow()
                     }
 
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
             } else {
                 for await notification in merge(selectionRangeChange, scroll) {
@@ -361,8 +358,8 @@ private extension WidgetWindowsController {
                         await hideSuggestionPanelWindow()
                     }
 
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
             }
         }
@@ -379,8 +376,8 @@ private extension WidgetWindowsController {
                 try await Task.sleep(nanoseconds: 400_000_000)
             }
 
-            await updateWindowLocation(animated: false, immediately: false)
-            await updateWindowOpacity(immediately: false)
+            updateWindowLocation(animated: false, immediately: false)
+            updateWindowOpacity(immediately: false)
         }
     }
 }
