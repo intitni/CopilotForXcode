@@ -93,6 +93,10 @@ actor WidgetWindowsController: NSObject {
             let xcodeInspector = self.xcodeInspector
             let activeApp = xcodeInspector.activeApplication
             await MainActor.run {
+                let state = store.withState { $0 }
+                let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
+                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
+
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
