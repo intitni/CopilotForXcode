@@ -123,9 +123,7 @@ enum GitHubCopilotRequest {
             var dict: [String: JSONValue] = [:]
             let enterpriseURI = UserDefaults.shared.value(for: \.gitHubCopilotEnterpriseURI)
             if !enterpriseURI.isEmpty {
-                dict["github-enterprise"] = .hash([
-                    "url": .string(enterpriseURI),
-                ])
+                dict["url"] = .string(enterpriseURI)
             }
 
             if dict.isEmpty { return nil }
