@@ -57,7 +57,9 @@ public extension Workspace {
         let completions = try await suggestionService.getSuggestions(
             .init(
                 fileURL: fileURL,
+                relativePath: fileURL.path.replacingOccurrences(of: projectRootURL.path, with: ""),
                 content: editor.lines.joined(separator: ""),
+                lines: editor.lines,
                 cursorPosition: editor.cursorPosition,
                 tabSize: editor.tabSize,
                 indentSize: editor.indentSize,
