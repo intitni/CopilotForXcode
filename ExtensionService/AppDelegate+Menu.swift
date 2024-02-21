@@ -218,7 +218,9 @@ extension AppDelegate: NSMenuDelegate {
 
 private extension AppDelegate {
     @objc func restartXcodeInspector() {
-        XcodeInspector.shared.restart(cleanUp: true)
+        Task {
+            await XcodeInspector.shared.restart(cleanUp: true)
+        }
     }
     
     @objc func reactivateObservationsToXcode() {
