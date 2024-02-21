@@ -299,10 +299,10 @@ private extension WidgetWindowsController {
                     await send(.updateFocusingDocumentURL)
                 }
 
-                func updateWidgetsAndNotifyChangeOfEditor() async {
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                    await updateWindowLocation(animated: false, immediately: immediately)
+                    await updateWindowOpacity(immediately: immediately)
                 }
 
                 func updateWidgets() async {
@@ -313,9 +313,11 @@ private extension WidgetWindowsController {
                 switch notification.kind {
                 case .focusedWindowChanged, .focusedUIElementChanged:
                     await hideWidgetForTransitions()
-                    await updateWidgetsAndNotifyChangeOfEditor()
-                case .applicationActivated, .mainWindowChanged:
-                    await updateWidgetsAndNotifyChangeOfEditor()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+                case .applicationActivated:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .mainWindowChanged:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .applicationDeactivated,
                      .moved,
                      .resized,
