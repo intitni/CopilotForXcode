@@ -81,7 +81,7 @@ actor WidgetWindowsController: NSObject {
 
     func updateWindowOpacity(immediately: Bool) {
         let shouldDebounce = !immediately &&
-            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
+            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 3)
         lastUpdateWindowOpacityTime = Date()
         updateWindowOpacityTask?.cancel()
 
@@ -194,7 +194,7 @@ actor WidgetWindowsController: NSObject {
 
         let now = Date()
         let shouldThrottle = !immediately &&
-            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
+            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 3)
 
         updateWindowLocationTask?.cancel()
         let interval: TimeInterval = 0.1
