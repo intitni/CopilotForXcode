@@ -158,7 +158,7 @@ struct GitHubCopilotView: View {
                         ) {
                             Text("Path to Node (v18+)")
                         }
-                        
+
                         Text(
                             "Provide the path to the executable if it can't be found by the app, shim executable is not supported"
                         )
@@ -166,7 +166,7 @@ struct GitHubCopilotView: View {
                         .foregroundColor(.secondary)
                         .font(.callout)
                         .dynamicHeightTextInFormWorkaround()
-                        
+
                         Picker(selection: $settings.runNodeWith) {
                             ForEach(NodeRunner.allCases, id: \.rawValue) { runner in
                                 switch runner {
@@ -181,7 +181,7 @@ struct GitHubCopilotView: View {
                         } label: {
                             Text("Run Node with")
                         }
-                        
+
                         Group {
                             switch settings.runNodeWith {
                             case .env:
@@ -258,6 +258,10 @@ struct GitHubCopilotView: View {
                     }
                     .opacity(isRunningAction ? 0.8 : 1)
                     .disabled(isRunningAction)
+
+                    Button("Refresh Configuration for Enterprise and Proxy") {
+                        refreshConfiguration()
+                    }
                 }
 
                 SettingsDivider("Advanced")
@@ -276,9 +280,9 @@ struct GitHubCopilotView: View {
                     .dynamicHeightTextInFormWorkaround()
                     Toggle("Verbose Log", isOn: $settings.gitHubCopilotVerboseLog)
                 }
-                
+
                 SettingsDivider("Enterprise")
-                
+
                 Form {
                     TextField(
                         text: $settings.gitHubCopilotEnterpriseURI,
@@ -410,6 +414,25 @@ struct GitHubCopilotView: View {
             do {
                 let service = try getGitHubCopilotAuthService()
                 status = try await service.signOut()
+            } catch {
+                toast(error.localizedDescription, .error)
+            }
+        }
+    }
+
+    func refreshConfiguration() {
+        NotificationCenter.default.post(
+            name: .gitHubCopilotShouldRefreshEditorInformation,
+            object: nil
+        )
+
+        Task {
+            let service = try getService()
+            do {
+                try await service.postNotification(
+                    name: Notification.Name
+                        .gitHubCopilotShouldRefreshEditorInformation.rawValue
+                )
             } catch {
                 toast(error.localizedDescription, .error)
             }
