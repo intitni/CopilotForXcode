@@ -312,15 +312,15 @@ private extension WidgetWindowsController {
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .mainWindowChanged:
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
-                case .applicationDeactivated,
-                     .moved,
+                case .moved,
                      .resized,
                      .windowMoved,
                      .windowResized,
                      .windowMiniaturized,
                      .windowDeminiaturized:
                     await updateWidgets()
-                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged:
+                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
+                     .applicationDeactivated:
                     continue
                 }
             }
