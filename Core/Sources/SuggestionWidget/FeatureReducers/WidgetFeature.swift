@@ -100,6 +100,7 @@ public struct WidgetFeature: ReducerProtocol {
 
         case updatePanelStateToMatch(WidgetLocation)
         case updateFocusingDocumentURL
+        case setFocusingDocumentURL(to: URL?)
         case updateKeyWindow(WindowCanBecomeKey)
 
         case toastPanel(ToastPanel.Action)
@@ -257,7 +258,8 @@ public struct WidgetFeature: ReducerProtocol {
                         .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
                     for await _ in sequence {
                         try Task.checkCancellation()
-                        guard let activeXcode = xcodeInspector.activeXcode else { continue }
+                        guard let activeXcode = await xcodeInspector.safe.activeXcode
+                        else { continue }
                         guard let windowsController,
                               await windowsController.windows.fullscreenDetector.isOnActiveSpace
                         else { continue }
@@ -324,7 +326,15 @@ public struct WidgetFeature: ReducerProtocol {
                 return .none
 
             case .updateFocusingDocumentURL:
-                state.focusingDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                return .run { send in
+                    await send(.setFocusingDocumentURL(
+                        to: await xcodeInspector.safe
+                            .realtimeActiveDocumentURL
+                    ))
+                }
+
+            case let .setFocusingDocumentURL(url):
+                state.focusingDocumentURL = url
                 return .none
 
             case let .updatePanelStateToMatch(widgetLocation):

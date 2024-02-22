@@ -92,6 +92,7 @@ actor WidgetWindowsController: NSObject {
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
             let activeApp = await xcodeInspector.safe.activeApplication
+            let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
             await MainActor.run {
                 let state = store.withState { $0 }
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
@@ -113,8 +114,7 @@ actor WidgetWindowsController: NSObject {
                     }
                 } else if let activeApp, activeApp.isExtensionService {
                     let noFocus = {
-                        guard let xcode = xcodeInspector.latestActiveXcode
-                        else { return true }
+                        guard let xcode = latestActiveXcode else { return true }
                         if let window = xcode.appElement.focusedWindow,
                            window.role == "AXWindow"
                         {
@@ -341,7 +341,7 @@ private extension WidgetWindowsController {
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                     scroll
                 ) {
-                    guard xcodeInspector.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
@@ -354,7 +354,7 @@ private extension WidgetWindowsController {
                 }
             } else {
                 for await notification in merge(selectionRangeChange, scroll) {
-                    guard xcodeInspector.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
