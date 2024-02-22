@@ -10,7 +10,7 @@ public struct GitHubCopilotInstallationManager {
         return URL(string: link)!
     }
 
-    static let latestSupportedVersion = "1.17.0"
+    static let latestSupportedVersion = "1.19.2"
 
     public init() {}
 

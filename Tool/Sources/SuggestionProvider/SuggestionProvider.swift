@@ -1,4 +1,4 @@
-import AppKit
+import AppKit 
 import Foundation
 import Preferences
 import SuggestionModel
@@ -6,16 +6,20 @@ import UserDefaultsObserver
 
 public struct SuggestionRequest {
     public var fileURL: URL
+    public var relativePath: String
     public var content: String
+    public var lines: [String]
     public var cursorPosition: CursorPosition
     public var tabSize: Int
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
-    public var ignoreSpaceOnlySuggestions: Bool
+    public var ignoreSpaceOnlySuggestions: Bool 
 
     public init(
         fileURL: URL,
+        relativePath: String,
         content: String,
+        lines: [String],
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
@@ -23,7 +27,9 @@ public struct SuggestionRequest {
         ignoreSpaceOnlySuggestions: Bool
     ) {
         self.fileURL = fileURL
+        self.relativePath = relativePath
         self.content = content
+        self.lines = lines
         self.cursorPosition = cursorPosition
         self.tabSize = tabSize
         self.indentSize = indentSize

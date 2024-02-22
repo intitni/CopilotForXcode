@@ -28,6 +28,8 @@ actor WidgetWindowsController: NSObject {
     var updateWindowLocationTask: Task<Void, Error>?
     var lastUpdateWindowLocationTime = Date(timeIntervalSince1970: 0)
 
+    var beatingCompletionPanelTask: Task<Void, Error>?
+
     deinit {
         userDefaultsObservers.presentationModeChangeObserver.onChange = {}
         observeToAppTask?.cancel()
@@ -61,15 +63,7 @@ actor WidgetWindowsController: NSObject {
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
             Task { [weak self] in
-                if newValue == nil {
-                    // so that the buttons on the suggestion panel could be
-                    // clicked
-                    // before the completion panel updates the location of the
-                    // suggestion panel
-                    try await Task.sleep(nanoseconds: 400_000_000)
-                }
-                await self?.updateWindowLocation(animated: false, immediately: false)
-                await self?.updateWindowOpacity(immediately: false)
+                await self?.handleCompletionPanelChange(isDisplaying: newValue != nil)
             }
         }.store(in: &cancellable)
 
@@ -85,16 +79,10 @@ actor WidgetWindowsController: NSObject {
         await send(.updatePanelStateToMatch(location))
     }
 
-    func updateWindowOpacity(immediately: Bool) async {
-        let state = store.withState { $0 }
-
-        let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-        let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
+    func updateWindowOpacity(immediately: Bool) {
         let shouldDebounce = !immediately &&
-            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 5)
+            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 3)
         lastUpdateWindowOpacityTime = Date()
-        let activeApp = xcodeInspector.activeApplication
-
         updateWindowOpacityTask?.cancel()
 
         let task = Task {
@@ -103,11 +91,15 @@ actor WidgetWindowsController: NSObject {
             }
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
+            let activeApp = await xcodeInspector.safe.activeApplication
+            let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
             await MainActor.run {
+                let state = store.withState { $0 }
+                let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
+                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
+
                 if let activeApp, activeApp.isXcode {
-                    let application = AXUIElementCreateApplication(
-                        activeApp.processIdentifier
-                    )
+                    let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
@@ -122,8 +114,7 @@ actor WidgetWindowsController: NSObject {
                     }
                 } else if let activeApp, activeApp.isExtensionService {
                     let noFocus = {
-                        guard let xcode = xcodeInspector.latestActiveXcode
-                        else { return true }
+                        guard let xcode = latestActiveXcode else { return true }
                         if let window = xcode.appElement.focusedWindow,
                            window.role == "AXWindow"
                         {
@@ -162,7 +153,7 @@ actor WidgetWindowsController: NSObject {
         immediately: Bool,
         function: StaticString = #function,
         line: UInt = #line
-    ) async {
+    ) {
         @Sendable @MainActor
         func update() async {
             let state = store.withState { $0 }
@@ -207,7 +198,7 @@ actor WidgetWindowsController: NSObject {
 
         let now = Date()
         let shouldThrottle = !immediately &&
-            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 5)
+            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 3)
 
         updateWindowLocationTask?.cancel()
         let interval: TimeInterval = 0.1
@@ -268,11 +259,12 @@ private extension WidgetWindowsController {
     func activate(_ app: AppInstanceInspector) {
         Task {
             if app.isXcode {
-                await updateWindowLocation(animated: false, immediately: true)
-                await updateWindowOpacity(immediately: false)
+                updateWindowLocation(animated: false, immediately: true)
+                updateWindowOpacity(immediately: false)
             } else {
-                await updateWindowOpacity(immediately: true)
-                await updateWindowLocation(animated: false, immediately: false)
+                updateWindowOpacity(immediately: true)
+                updateWindowLocation(animated: false, immediately: false)
+                await hideSuggestionPanelWindow()
             }
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
@@ -288,13 +280,13 @@ private extension WidgetWindowsController {
             await windows.orderFront()
 
             let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
-            for await notification in notifications {
+            for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
 
                 /// Hide the widgets before switching to another window/editor
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
-                    let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
@@ -302,32 +294,34 @@ private extension WidgetWindowsController {
                     await send(.updateFocusingDocumentURL)
                 }
 
-                func updateWidgetsAndNotifyChangeOfEditor() async {
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
                     await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
                 }
 
                 func updateWidgets() async {
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
 
                 switch notification.kind {
                 case .focusedWindowChanged, .focusedUIElementChanged:
                     await hideWidgetForTransitions()
-                    await updateWidgetsAndNotifyChangeOfEditor()
-                case .applicationActivated, .mainWindowChanged:
-                    await updateWidgetsAndNotifyChangeOfEditor()
-                case .applicationDeactivated,
-                     .moved,
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+                case .applicationActivated:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .mainWindowChanged:
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .moved,
                      .resized,
                      .windowMoved,
                      .windowResized,
                      .windowMiniaturized,
                      .windowDeminiaturized:
                     await updateWidgets()
-                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged:
+                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
+                     .applicationDeactivated:
                     continue
                 }
             }
@@ -337,9 +331,9 @@ private extension WidgetWindowsController {
     func observe(to editor: SourceEditor) {
         observeToFocusedEditorTask?.cancel()
         observeToFocusedEditorTask = Task {
-            let selectionRangeChange = editor.axNotifications
+            let selectionRangeChange = await editor.axNotifications.notifications()
                 .filter { $0.kind == .selectedTextChanged }
-            let scroll = editor.axNotifications
+            let scroll = await editor.axNotifications.notifications()
                 .filter { $0.kind == .scrollPositionChanged }
 
             if #available(macOS 13.0, *) {
@@ -347,7 +341,7 @@ private extension WidgetWindowsController {
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                     scroll
                 ) {
-                    guard xcodeInspector.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
@@ -355,12 +349,12 @@ private extension WidgetWindowsController {
                         await hideSuggestionPanelWindow()
                     }
 
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
             } else {
                 for await notification in merge(selectionRangeChange, scroll) {
-                    guard xcodeInspector.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
@@ -368,10 +362,26 @@ private extension WidgetWindowsController {
                         await hideSuggestionPanelWindow()
                     }
 
-                    await updateWindowLocation(animated: false, immediately: false)
-                    await updateWindowOpacity(immediately: false)
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
                 }
             }
+        }
+    }
+
+    func handleCompletionPanelChange(isDisplaying: Bool) {
+        beatingCompletionPanelTask?.cancel()
+        beatingCompletionPanelTask = Task {
+            if !isDisplaying {
+                // so that the buttons on the suggestion panel could be
+                // clicked
+                // before the completion panel updates the location of the
+                // suggestion panel
+                try await Task.sleep(nanoseconds: 400_000_000)
+            }
+
+            updateWindowLocation(animated: false, immediately: false)
+            updateWindowOpacity(immediately: false)
         }
     }
 }

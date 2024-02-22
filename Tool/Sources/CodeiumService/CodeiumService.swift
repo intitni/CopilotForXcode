@@ -95,7 +95,7 @@ public class CodeiumSuggestionService {
             throw CodeiumError.languageServerOutdated
         }
 
-        let metadata = try getMetadata()
+        let metadata = try await getMetadata()
         let tempFolderURL = FileManager.default.temporaryDirectory
         let managerDirectoryURL = tempFolderURL
             .appendingPathComponent("com.intii.CopilotForXcode")
@@ -179,14 +179,15 @@ public class CodeiumSuggestionService {
 }
 
 extension CodeiumSuggestionService {
-    func getMetadata() throws -> Metadata {
+    func getMetadata() async throws -> Metadata {
         guard let key = authService.key else {
             struct E: Error, LocalizedError {
                 var errorDescription: String? { "Codeium not signed in." }
             }
             throw E()
         }
-        var ideVersion = XcodeInspector.shared.latestActiveXcode?.version ?? fallbackXcodeVersion
+        var ideVersion = await XcodeInspector.shared.safe.latestActiveXcode?.version
+        ?? fallbackXcodeVersion
         let versionNumberSegmentCount = ideVersion.split(separator: ".").count
         if versionNumberSegmentCount == 2 {
             ideVersion += ".0"

@@ -100,6 +100,7 @@ public struct WidgetFeature: ReducerProtocol {
 
         case updatePanelStateToMatch(WidgetLocation)
         case updateFocusingDocumentURL
+        case setFocusingDocumentURL(to: URL?)
         case updateKeyWindow(WindowCanBecomeKey)
 
         case toastPanel(ToastPanel.Action)
@@ -257,13 +258,12 @@ public struct WidgetFeature: ReducerProtocol {
                         .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
                     for await _ in sequence {
                         try Task.checkCancellation()
-                        guard let activeXcode = xcodeInspector.activeXcode else { continue }
+                        guard let activeXcode = await xcodeInspector.safe.activeXcode
+                        else { continue }
                         guard let windowsController,
                               await windowsController.windows.fullscreenDetector.isOnActiveSpace
                         else { continue }
-                        let app = AXUIElementCreateApplication(
-                            activeXcode.processIdentifier
-                        )
+                        let app = activeXcode.appElement
                         if let _ = app.focusedWindow {
                             await windowsController.windows.orderFront()
                         }
@@ -295,12 +295,11 @@ public struct WidgetFeature: ReducerProtocol {
                 }.cancellable(id: CancelID.observeUserDefaults, cancelInFlight: true)
 
             case .updateActiveApplication:
-                if let app = xcodeInspector.activeApplication, app.isXcode {
-                    return .run { send in
+                return .run { send in
+                    if let app = await xcodeInspector.safe.activeApplication, app.isXcode {
                         await send(.panel(.switchToAnotherEditorAndUpdateContent))
                     }
                 }
-                return .none
 
             case .updateColorScheme:
                 let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
@@ -327,7 +326,15 @@ public struct WidgetFeature: ReducerProtocol {
                 return .none
 
             case .updateFocusingDocumentURL:
-                state.focusingDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                return .run { send in
+                    await send(.setFocusingDocumentURL(
+                        to: await xcodeInspector.safe
+                            .realtimeActiveDocumentURL
+                    ))
+                }
+
+            case let .setFocusingDocumentURL(url):
+                state.focusingDocumentURL = url
                 return .none
 
             case let .updatePanelStateToMatch(widgetLocation):

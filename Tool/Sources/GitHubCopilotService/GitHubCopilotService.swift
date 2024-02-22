@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
@@ -49,6 +50,11 @@ enum GitHubCopilotError: Error, LocalizedError {
             return "Language server is not installed."
         }
     }
+}
+
+public extension Notification.Name {
+    static let gitHubCopilotShouldRefreshEditorInformation = Notification
+        .Name("com.intii.CopilotForXcode.GitHubCopilotShouldRefreshEditorInformation")
 }
 
 public class GitHubCopilotBaseService {
@@ -160,8 +166,16 @@ public class GitHubCopilotBaseService {
         self.server = server
         localProcessServer = localServer
 
-        Task {
-            try await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+        Task { [weak self] in
+            _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+
+            for await notification in NotificationCenter.default
+                .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
+            {
+                print("Yes!")
+                guard let self else { return }
+                _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+            }
         }
     }
 

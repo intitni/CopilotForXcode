@@ -9,7 +9,7 @@ enum Debugger {
     static func didSendRequestBody(body: CompletionRequestBody) {
         do {
             let json = try JSONEncoder().encode(body)
-            let center = NSWorkspace.shared.notificationCenter
+            let center = NotificationCenter.default
             center.post(
                 name: .init("ServiceDebugger.ChatRequestDebug.requestSent"),
                 object: nil,
@@ -24,7 +24,7 @@ enum Debugger {
     }
 
     static func didReceiveFunction(name: String, arguments: String) {
-        let center = NSWorkspace.shared.notificationCenter
+        let center = NotificationCenter.default
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.receivedFunctionCall"),
             object: nil,
@@ -37,7 +37,7 @@ enum Debugger {
     }
 
     static func didReceiveFunctionResult(result: String) {
-        let center = NSWorkspace.shared.notificationCenter
+        let center = NotificationCenter.default
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.receivedFunctionResult"),
             object: nil,
@@ -49,7 +49,7 @@ enum Debugger {
     }
 
     static func didReceiveResponse(content: String) {
-        let center = NSWorkspace.shared.notificationCenter
+        let center = NotificationCenter.default
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.responseReceived"),
             object: nil,
@@ -61,7 +61,7 @@ enum Debugger {
     }
 
     static func didFinish() {
-        let center = NSWorkspace.shared.notificationCenter
+        let center = NotificationCenter.default
         center.post(
             name: .init("ServiceDebugger.ChatRequestDebug.finished"),
             object: nil,

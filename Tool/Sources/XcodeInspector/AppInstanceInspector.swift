@@ -8,7 +8,9 @@ public class AppInstanceInspector: ObservableObject {
     public let bundleIdentifier: String?
 
     public var appElement: AXUIElement {
-        return AXUIElementCreateApplication(runningApplication.processIdentifier)
+        let app = AXUIElementCreateApplication(runningApplication.processIdentifier)
+        app.setMessagingTimeout(2)
+        return app
     }
 
     public var isTerminated: Bool {

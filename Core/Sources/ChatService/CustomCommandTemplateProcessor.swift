@@ -6,8 +6,8 @@ import XcodeInspector
 public struct CustomCommandTemplateProcessor {
     public init() {}
     
-    public func process(_ text: String) -> String {
-        let info = getEditorInformation()
+    public func process(_ text: String) async -> String {
+        let info = await getEditorInformation()
         let editorContent = info.editorContent
         let updatedText = text
             .replacingOccurrences(of: "{{selected_code}}", with: """
@@ -38,9 +38,9 @@ public struct CustomCommandTemplateProcessor {
         let documentURL: URL?
     }
 
-    func getEditorInformation() -> EditorInformation {
-        let editorContent = XcodeInspector.shared.focusedEditor?.getContent()
-        let documentURL = XcodeInspector.shared.activeDocumentURL
+    func getEditorInformation() async -> EditorInformation {
+        let editorContent = await XcodeInspector.shared.safe.focusedEditor?.getContent()
+        let documentURL = await XcodeInspector.shared.safe.activeDocumentURL
         let language = documentURL.map(languageIdentifierFromFileURL) ?? .plaintext
 
         return .init(

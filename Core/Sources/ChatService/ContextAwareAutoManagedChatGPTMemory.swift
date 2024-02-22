@@ -44,7 +44,7 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
             systemPrompt: """
             \(chatService?.systemPrompt ?? "")
             \(chatService?.extraSystemPrompt ?? "")
-            """,
+            """.trimmingCharacters(in: .whitespacesAndNewlines),
             content: content ?? ""
         )
         return await memory.generatePrompt()

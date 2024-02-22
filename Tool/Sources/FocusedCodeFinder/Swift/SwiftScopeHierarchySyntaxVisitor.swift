@@ -59,11 +59,11 @@ final class SwiftScopeHierarchySyntaxVisitor: SyntaxVisitor {
 
     // skip if possible
 
-    override func visit(_ node: MemberDeclBlockSyntax) -> SyntaxVisitorContinueKind {
+    override func visit(_ node: MemberBlockSyntax) -> SyntaxVisitorContinueKind {
         skipChildrenIfPossible(node)
     }
 
-    override func visit(_ node: MemberDeclListItemSyntax) -> SyntaxVisitorContinueKind {
+    override func visit(_ node: MemberBlockItemSyntax) -> SyntaxVisitorContinueKind {
         skipChildrenIfPossible(node)
     }
 
