@@ -1,4 +1,4 @@
-import AppKit
+import AppKit 
 import Foundation
 import Preferences
 import SuggestionModel
@@ -13,7 +13,7 @@ public struct SuggestionRequest {
     public var tabSize: Int
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
-    public var ignoreSpaceOnlySuggestions: Bool
+    public var ignoreSpaceOnlySuggestions: Bool 
 
     public init(
         fileURL: URL,
