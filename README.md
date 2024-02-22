@@ -52,11 +52,12 @@ For suggestion features:
   - Active GitHub Copilot subscription.
 - For Codeium users:
   - Active Codeium account.
+- Access to other LLMs.
 
 For chat and prompt to code features:
 
 - A valid OpenAI API key.
-- Access to other LLMs, such as Azure OpenAI and LocalAI.
+- Access to other LLMs.
 
 ## Permissions Required
 
@@ -164,6 +165,15 @@ The installed language server is located at `~/Library/Application Support/com.i
 > The key is stored in the keychain. When the helper app tries to access the key for the first time, it will prompt you to enter the password to access the keychain. Please select "Always Allow" to let the helper app access the key.
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
+
+#### Using Locally run LLMs
+
+You can also use locally run LLMs or as a suggestion provider using the [Custom Suggestion Service](https://github.com/intitni/CustomSuggestionServiceForCopilotForXcode) extension. It supports:
+
+- LLM with OpenAI compatible completions API
+- LLM with OpenAI compatible chat completions API
+- [Tabby](https://tabby.tabbyml.com)
+- etc.
 
 ### Setting Up Chat Feature
 
