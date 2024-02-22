@@ -31,22 +31,23 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             return userPreferredLanguage.isEmpty ? "" : " in \(userPreferredLanguage)"
         }()
 
-        let editor: EditorInformation = XcodeInspector.shared.getFocusedEditorContent() ?? .init(
-            editorContent: .init(
-                content: source.content,
-                lines: source.lines,
-                selections: [source.range],
-                cursorPosition: .outOfScope,
-                lineAnnotations: []
-            ),
-            selectedContent: code,
-            selectedLines: [],
-            documentURL: source.documentURL,
-            workspaceURL: source.projectRootURL,
-            projectRootURL: source.projectRootURL,
-            relativePath: "",
-            language: source.language
-        )
+        let editor: EditorInformation = await XcodeInspector.shared.getFocusedEditorContent()
+            ?? .init(
+                editorContent: .init(
+                    content: source.content,
+                    lines: source.lines,
+                    selections: [source.range],
+                    cursorPosition: .outOfScope,
+                    lineAnnotations: []
+                ),
+                selectedContent: code,
+                selectedLines: [],
+                documentURL: source.documentURL,
+                workspaceURL: source.projectRootURL,
+                projectRootURL: source.projectRootURL,
+                relativePath: "",
+                language: source.language
+            )
 
         let rule: String = {
             func generateDescription(index: Int) -> String {

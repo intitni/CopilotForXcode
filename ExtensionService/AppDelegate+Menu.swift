@@ -46,6 +46,12 @@ extension AppDelegate {
             keyEquivalent: ""
         )
 
+        let openExtensionManager = NSMenuItem(
+            title: "Open Extension Manager",
+            action: #selector(openExtensionManager),
+            keyEquivalent: ""
+        )
+
         let openCopilotForXcode = NSMenuItem(
             title: "Open \(hostAppName)",
             action: #selector(openCopilotForXcode),
@@ -82,18 +88,19 @@ extension AppDelegate {
             keyEquivalent: ""
         )
         quitItem.target = self
-        
+
         let reactivateObservationsItem = NSMenuItem(
             title: "Reactivate Observations to Xcode",
             action: #selector(reactivateObservationsToXcode),
             keyEquivalent: ""
         )
-        
+
         reactivateObservationsItem.target = self
 
         statusBarMenu.addItem(copilotName)
         statusBarMenu.addItem(openCopilotForXcode)
         statusBarMenu.addItem(checkForUpdate)
+        statusBarMenu.addItem(openExtensionManager)
         statusBarMenu.addItem(.separator())
         statusBarMenu.addItem(openGlobalChat)
         statusBarMenu.addItem(.separator())
@@ -216,13 +223,27 @@ extension AppDelegate: NSMenuDelegate {
     }
 }
 
+import XPCShared
+
 private extension AppDelegate {
     @objc func restartXcodeInspector() {
-        XcodeInspector.shared.restart(cleanUp: true)
+        Task {
+            await XcodeInspector.shared.restart(cleanUp: true)
+        }
     }
-    
+
     @objc func reactivateObservationsToXcode() {
         XcodeInspector.shared.reactivateObservationsToXcode()
+    }
+
+    @objc func openExtensionManager() {
+        guard let data = try? JSONEncoder().encode(ExtensionServiceRequests.OpenExtensionManager())
+        else { return }
+        service.handleXPCServiceRequests(
+            endpoint: ExtensionServiceRequests.OpenExtensionManager.endpoint,
+            requestBody: data,
+            reply: { _, _ in }
+        )
     }
 }
 

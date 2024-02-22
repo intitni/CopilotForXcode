@@ -91,7 +91,7 @@ actor WidgetWindowsController: NSObject {
             }
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
-            let activeApp = xcodeInspector.activeApplication
+            let activeApp = await xcodeInspector.safe.activeApplication
             await MainActor.run {
                 let state = store.withState { $0 }
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
@@ -286,7 +286,7 @@ private extension WidgetWindowsController {
                 /// Hide the widgets before switching to another window/editor
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
-                    let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
+                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()

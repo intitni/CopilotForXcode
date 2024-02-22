@@ -94,7 +94,7 @@ public class WorkspacePool {
         }
 
         // If we can get the workspace URL directly.
-        if let currentWorkspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL {
+        if let currentWorkspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL {
             if let existed = workspaces[currentWorkspaceURL] {
                 // Reuse the existed workspace.
                 let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)

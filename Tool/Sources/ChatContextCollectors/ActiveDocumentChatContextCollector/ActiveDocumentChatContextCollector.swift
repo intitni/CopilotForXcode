@@ -22,7 +22,8 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         content: String,
         configuration: ChatGPTConfiguration
     ) async -> ChatContext {
-        guard let info = getEditorInformation() else { return .empty }
+        guard let info = await XcodeInspector.shared.getFocusedEditorContent()
+        else { return .empty }
         let context = getActiveDocumentContext(info)
         activeDocumentContext = context
 

@@ -293,12 +293,11 @@ public struct WidgetFeature: ReducerProtocol {
                 }.cancellable(id: CancelID.observeUserDefaults, cancelInFlight: true)
 
             case .updateActiveApplication:
-                if let app = xcodeInspector.activeApplication, app.isXcode {
-                    return .run { send in
+                return .run { send in
+                    if let app = await xcodeInspector.safe.activeApplication, app.isXcode {
                         await send(.panel(.switchToAnotherEditorAndUpdateContent))
                     }
                 }
-                return .none
 
             case .updateColorScheme:
                 let widgetColorScheme = UserDefaults.shared.value(for: \.widgetColorScheme)
