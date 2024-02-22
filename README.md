@@ -27,6 +27,7 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
   - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
     - [Setting Up GitHub Copilot](#setting-up-github-copilot)
     - [Setting Up Codeium](#setting-up-codeium)
+    - [Using Locally Run LLMs](#using-locally-run-llms)
   - [Setting Up Chat Feature](#setting-up-chat-feature)
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
@@ -166,7 +167,7 @@ The installed language server is located at `~/Library/Application Support/com.i
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
 
-#### Using Locally run LLMs
+#### Using Locally Run LLMs
 
 You can also use locally run LLMs or as a suggestion provider using the [Custom Suggestion Service](https://github.com/intitni/CustomSuggestionServiceForCopilotForXcode) extension. It supports:
 
