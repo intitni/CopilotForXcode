@@ -84,14 +84,13 @@ struct EmbeddingModelEdit: ReducerProtocol {
                 )
                 return .run { send in
                     do {
-                        let tokenUsage =
-                            try await EmbeddingService(
-                                configuration: UserPreferenceEmbeddingConfiguration()
-                                    .overriding {
-                                        $0.model = model
-                                    }
-                            ).embed(text: "Hello").usage.total_tokens
-                        await send(.testSucceeded("Used \(tokenUsage) tokens."))
+                        _ = try await EmbeddingService(
+                            configuration: UserPreferenceEmbeddingConfiguration()
+                                .overriding {
+                                    $0.model = model
+                                }
+                        ).embed(text: "Hello")
+                        await send(.testSucceeded("Succeeded!"))
                     } catch {
                         await send(.testFailed(error.localizedDescription))
                     }
@@ -156,7 +155,7 @@ extension EmbeddingModelEdit.State {
             format: model.format,
             maxTokens: model.info.maxTokens,
             modelName: model.info.modelName,
-            ollamaKeepAlive: model.info.ollamaKeepAlive, 
+            ollamaKeepAlive: model.info.ollamaKeepAlive,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])

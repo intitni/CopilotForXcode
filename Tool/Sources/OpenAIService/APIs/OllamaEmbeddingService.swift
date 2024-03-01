@@ -44,9 +44,9 @@ struct OllamaEmbeddingService: EmbeddingAPI {
         #if DEBUG
         Logger.service.info("""
         Embedding usage
-        - number of strings: \(text.count)
+        - number of strings: 1
         - prompt tokens: N/A
-        - total tokens: \(embeddingResponse.embedding.count)
+        - total tokens: N/A
 
         """)
         #endif
@@ -57,7 +57,7 @@ struct OllamaEmbeddingService: EmbeddingAPI {
                 object: model.info.modelName
             )],
             model: model.info.modelName,
-            usage: .init(prompt_tokens: 0, total_tokens: embeddingResponse.embedding.count)
+            usage: .init(prompt_tokens: 0, total_tokens: 0)
         )
     }
 
