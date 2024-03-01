@@ -2,7 +2,7 @@ import AIModel
 import Foundation
 import Preferences
 
-public actor OllamaService {
+public actor OllamaChatCompletionsService {
     var apiKey: String
     var endpoint: URL
     var requestBody: ChatCompletionsRequestBody
@@ -26,7 +26,7 @@ public actor OllamaService {
     }
 }
 
-extension OllamaService: ChatCompletionsAPI {
+extension OllamaChatCompletionsService: ChatCompletionsAPI {
     func callAsFunction() async throws -> ChatCompletionResponseBody {
         let requestBody = ChatCompletionRequestBody(
             model: model.info.modelName,
@@ -105,7 +105,7 @@ extension OllamaService: ChatCompletionsAPI {
     }
 }
 
-extension OllamaService: ChatCompletionsStreamAPI {
+extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
     func callAsFunction() async throws
         -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Swift.Error>
     {
@@ -192,7 +192,7 @@ extension OllamaService: ChatCompletionsStreamAPI {
     }
 }
 
-extension OllamaService {
+extension OllamaChatCompletionsService {
     struct Message: Codable, Equatable {
         public enum Role: String, Codable {
             case user
@@ -224,7 +224,7 @@ extension OllamaService {
 // MARK: - Chat Completion API
 
 /// https://github.com/ollama/ollama/blob/main/docs/api.md#chat-request-streaming
-extension OllamaService {
+extension OllamaChatCompletionsService {
     struct ChatCompletionRequestBody: Codable {
         struct Options: Codable {
             var temperature: Double?

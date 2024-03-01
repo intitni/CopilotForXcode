@@ -3,7 +3,7 @@ import Foundation
 import GoogleGenerativeAI
 import Preferences
 
-actor GoogleAIService: ChatCompletionsAPI, ChatCompletionsStreamAPI {
+actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamAPI {
     let apiKey: String
     let model: ChatModel
     var requestBody: ChatCompletionsRequestBody

@@ -90,21 +90,21 @@ public class ChatGPTService: ChatGPTServiceType {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleAIService(
+            return GoogleAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAIService(
+            return OpenAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
                 requestBody: requestBody
             )
         case .ollama:
-            return OllamaService(
+            return OllamaChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
@@ -117,21 +117,21 @@ public class ChatGPTService: ChatGPTServiceType {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleAIService(
+            return GoogleAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAIService(
+            return OpenAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
                 requestBody: requestBody
             )
         case .ollama:
-            return OllamaService(
+            return OllamaChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,

@@ -3,7 +3,7 @@ import AsyncAlgorithms
 import Foundation
 import Preferences
 
-actor OpenAIService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
+actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
     struct CompletionAPIError: Error, Codable, LocalizedError {
         struct E: Codable {
             var message: String
