@@ -3,13 +3,13 @@ import Foundation
 import GoogleGenerativeAI
 import Preferences
 
-struct GoogleCompletionStreamAPI: CompletionStreamAPI {
+struct GoogleCompletionStreamAPI: ChatCompletionsStreamAPI {
     let apiKey: String
     let model: ChatModel
-    var requestBody: CompletionRequestBody
+    var requestBody: ChatCompletionsRequestBody
     let prompt: ChatGPTPrompt
 
-    func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error> {
+    func callAsFunction() async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> {
         let aiModel = GenerativeModel(
             name: model.info.modelName,
             apiKey: apiKey,
@@ -31,13 +31,13 @@ struct GoogleCompletionStreamAPI: CompletionStreamAPI {
             )
         }
 
-        let stream = AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
+        let stream = AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
             let stream = aiModel.generateContentStream(history)
             let task = Task {
                 do {
                     for try await response in stream {
                         if Task.isCancelled { break }
-                        let chunk = CompletionStreamDataChunk(
+                        let chunk = ChatCompletionsStreamDataChunk(
                             object: "",
                             model: model.info.modelName,
                             choices: response.candidates.map { candidate in

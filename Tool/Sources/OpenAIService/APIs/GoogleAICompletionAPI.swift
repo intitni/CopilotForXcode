@@ -3,13 +3,13 @@ import Foundation
 import GoogleGenerativeAI
 import Preferences
 
-struct GoogleCompletionAPI: CompletionAPI {
+struct GoogleCompletionAPI: ChatCompletionsAPI {
     let apiKey: String
     let model: ChatModel
-    var requestBody: CompletionRequestBody
+    var requestBody: ChatCompletionsRequestBody
     let prompt: ChatGPTPrompt
 
-    func callAsFunction() async throws -> CompletionResponseBody {
+    func callAsFunction() async throws -> ChatCompletionResponseBody {
         let aiModel = GenerativeModel(
             name: model.info.modelName,
             apiKey: apiKey,

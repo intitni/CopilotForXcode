@@ -15,17 +15,17 @@ struct CompletionAPIError: Error, Codable, LocalizedError {
     var errorDescription: String? { error.message }
 }
 
-struct OpenAICompletionAPI: CompletionAPI {
+struct OpenAICompletionAPI: ChatCompletionsAPI {
     var apiKey: String
     var endpoint: URL
-    var requestBody: CompletionRequestBody
+    var requestBody: ChatCompletionsRequestBody
     var model: ChatModel
 
     init(
         apiKey: String,
         model: ChatModel,
         endpoint: URL,
-        requestBody: CompletionRequestBody
+        requestBody: ChatCompletionsRequestBody
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
@@ -34,7 +34,7 @@ struct OpenAICompletionAPI: CompletionAPI {
         self.model = model
     }
 
-    func callAsFunction() async throws -> CompletionResponseBody {
+    func callAsFunction() async throws -> ChatCompletionResponseBody {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -63,7 +63,7 @@ struct OpenAICompletionAPI: CompletionAPI {
         }
 
         do {
-            return try JSONDecoder().decode(CompletionResponseBody.self, from: result)
+            return try JSONDecoder().decode(ChatCompletionResponseBody.self, from: result)
         } catch {
             dump(error)
             throw error

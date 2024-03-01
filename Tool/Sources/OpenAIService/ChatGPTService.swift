@@ -69,7 +69,7 @@ public class ChatGPTService: ChatGPTServiceType {
     public var functionProvider: ChatGPTFunctionProvider
 
     var runningTask: Task<Void, Never>?
-    var buildCompletionStreamAPI: CompletionStreamAPIBuilder = {
+    var buildCompletionStreamAPI: ChatCompletionsStreamAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
@@ -89,7 +89,7 @@ public class ChatGPTService: ChatGPTServiceType {
         }
     }
 
-    var buildCompletionAPI: CompletionAPIBuilder = {
+    var buildCompletionAPI: ChatCompletionsAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
@@ -275,7 +275,7 @@ extension ChatGPTService {
         }
 
         let messages = prompt.history.map {
-            CompletionRequestBody.Message(
+            ChatCompletionsRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
                 name: $0.name,
@@ -286,7 +286,7 @@ extension ChatGPTService {
         }
         let remainingTokens = prompt.remainingTokenCount
 
-        let requestBody = CompletionRequestBody(
+        let requestBody = ChatCompletionsRequestBody(
             model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
@@ -403,7 +403,7 @@ extension ChatGPTService {
         }
 
         let messages = prompt.history.map {
-            CompletionRequestBody.Message(
+            ChatCompletionsRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
                 name: $0.name,
@@ -414,7 +414,7 @@ extension ChatGPTService {
         }
         let remainingTokens = prompt.remainingTokenCount
 
-        let requestBody = CompletionRequestBody(
+        let requestBody = ChatCompletionsRequestBody(
             model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
@@ -582,7 +582,7 @@ extension ChatGPTService {
 }
 
 extension ChatGPTService {
-    func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
+    func changeBuildCompletionStreamAPI(_ builder: @escaping ChatCompletionsStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
     }
 }

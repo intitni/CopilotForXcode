@@ -3,7 +3,7 @@ import Foundation
 import Preferences
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionRequestBody: Codable, Equatable {
+struct ChatCompletionsRequestBody: Codable, Equatable {
     struct Message: Codable, Equatable {
         /// The role of the message.
         var role: ChatMessage.Role
@@ -21,7 +21,7 @@ struct CompletionRequestBody: Codable, Equatable {
         ///   "arguments": "{ \"location\": \"earth\" }"
         /// }
         /// ```
-        var function_call: CompletionRequestBody.MessageFunctionCall?
+        var function_call: ChatCompletionsRequestBody.MessageFunctionCall?
     }
 
     struct MessageFunctionCall: Codable, Equatable {
@@ -119,21 +119,21 @@ public enum FunctionCallStrategy: Codable, Equatable {
 
 // MARK: - Stream API
 
-typealias CompletionStreamAPIBuilder = (
+typealias ChatCompletionsStreamAPIBuilder = (
     String,
     ChatModel,
     URL,
-    CompletionRequestBody,
+    ChatCompletionsRequestBody,
     ChatGPTPrompt
-) -> any CompletionStreamAPI
+) -> any ChatCompletionsStreamAPI
 
-protocol CompletionStreamAPI {
+protocol ChatCompletionsStreamAPI {
     associatedtype CompletionSequence: AsyncSequence
-        where CompletionSequence.Element == CompletionStreamDataChunk
+        where CompletionSequence.Element == ChatCompletionsStreamDataChunk
     func callAsFunction() async throws -> CompletionSequence
 }
 
-struct CompletionStreamDataChunk: Codable {
+struct ChatCompletionsStreamDataChunk: Codable {
     var id: String?
     var object: String?
     var model: String?
@@ -159,15 +159,15 @@ struct CompletionStreamDataChunk: Codable {
 
 // MARK: - Non Stream API
 
-typealias CompletionAPIBuilder = (String, ChatModel, URL, CompletionRequestBody, ChatGPTPrompt)
-    -> any CompletionAPI
+typealias ChatCompletionsAPIBuilder = (String, ChatModel, URL, ChatCompletionsRequestBody, ChatGPTPrompt)
+    -> any ChatCompletionsAPI
 
-protocol CompletionAPI {
-    func callAsFunction() async throws -> CompletionResponseBody
+protocol ChatCompletionsAPI {
+    func callAsFunction() async throws -> ChatCompletionResponseBody
 }
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionResponseBody: Codable, Equatable {
+struct ChatCompletionResponseBody: Codable, Equatable {
     struct Message: Codable, Equatable {
         /// The role of the message.
         var role: ChatMessage.Role
@@ -185,7 +185,7 @@ struct CompletionResponseBody: Codable, Equatable {
         ///   "arguments": "{ \"location\": \"earth\" }"
         /// }
         /// ```
-        var function_call: CompletionRequestBody.MessageFunctionCall?
+        var function_call: ChatCompletionsRequestBody.MessageFunctionCall?
     }
 
     struct Choice: Codable, Equatable {

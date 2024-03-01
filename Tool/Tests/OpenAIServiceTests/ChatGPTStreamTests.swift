@@ -14,7 +14,7 @@ final class ChatGPTStreamTests: XCTestCase {
             configuration: configuration,
             functionProvider: functionProvider
         )
-        var requestBody: CompletionRequestBody?
+        var requestBody: ChatCompletionsRequestBody?
         service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             return MockCompletionStreamAPI_Message()
@@ -75,7 +75,7 @@ final class ChatGPTStreamTests: XCTestCase {
             configuration: configuration,
             functionProvider: functionProvider
         )
-        var requestBody: CompletionRequestBody?
+        var requestBody: ChatCompletionsRequestBody?
         service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             if _requestBody.messages.count <= 2 {
@@ -158,7 +158,7 @@ final class ChatGPTStreamTests: XCTestCase {
             configuration: configuration,
             functionProvider: functionProvider
         )
-        var requestBody: CompletionRequestBody?
+        var requestBody: ChatCompletionsRequestBody?
 
         service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
@@ -265,7 +265,7 @@ final class ChatGPTStreamTests: XCTestCase {
             configuration: configuration,
             functionProvider: functionProvider
         )
-        var requestBody: CompletionRequestBody?
+        var requestBody: ChatCompletionsRequestBody?
         service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
             requestBody = _requestBody
             if _requestBody.messages.count <= 2 {
@@ -335,14 +335,14 @@ final class ChatGPTStreamTests: XCTestCase {
 }
 
 extension ChatGPTStreamTests {
-    struct MockCompletionStreamAPI_Message: CompletionStreamAPI {
+    struct MockCompletionStreamAPI_Message: ChatCompletionsStreamAPI {
         @Dependency(\.uuid) var uuid
         func callAsFunction() async throws
-            -> AsyncThrowingStream<OpenAIService.CompletionStreamDataChunk, Error>
+            -> AsyncThrowingStream<OpenAIService.ChatCompletionsStreamDataChunk, Error>
         {
             let id = uuid().uuidString
-            return AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
-                let chunks: [CompletionStreamDataChunk] = [
+            return AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
+                let chunks: [ChatCompletionsStreamDataChunk] = [
                     .init(id: id, object: "", model: "", choices: [
                         .init(delta: .init(role: .assistant), index: 0, finish_reason: ""),
                     ]),
@@ -364,14 +364,14 @@ extension ChatGPTStreamTests {
         }
     }
 
-    struct MockCompletionStreamAPI_Function: CompletionStreamAPI {
+    struct MockCompletionStreamAPI_Function: ChatCompletionsStreamAPI {
         @Dependency(\.uuid) var uuid
         func callAsFunction() async throws
-            -> AsyncThrowingStream<OpenAIService.CompletionStreamDataChunk, Error>
+            -> AsyncThrowingStream<OpenAIService.ChatCompletionsStreamDataChunk, Error>
         {
             let id = uuid().uuidString
-            return AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
-                let chunks: [CompletionStreamDataChunk] = [
+            return AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
+                let chunks: [ChatCompletionsStreamDataChunk] = [
                     .init(id: id, object: "", model: "", choices: [
                         .init(
                             delta: .init(

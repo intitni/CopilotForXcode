@@ -3,17 +3,17 @@ import AsyncAlgorithms
 import Foundation
 import Preferences
 
-struct OpenAICompletionStreamAPI: CompletionStreamAPI {
+struct OpenAICompletionStreamAPI: ChatCompletionsStreamAPI {
     var apiKey: String
     var endpoint: URL
-    var requestBody: CompletionRequestBody
+    var requestBody: ChatCompletionsRequestBody
     var model: ChatModel
 
     init(
         apiKey: String,
         model: ChatModel,
         endpoint: URL,
-        requestBody: CompletionRequestBody
+        requestBody: ChatCompletionsRequestBody
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
@@ -22,7 +22,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
         self.model = model
     }
 
-    func callAsFunction() async throws -> AsyncThrowingStream<CompletionStreamDataChunk, Error> {
+    func callAsFunction() async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -55,7 +55,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
             throw error ?? ChatGPTServiceError.responseInvalid
         }
 
-        let stream = AsyncThrowingStream<CompletionStreamDataChunk, Error> { continuation in
+        let stream = AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
             let task = Task {
                 do {
                     for try await line in result.lines {
@@ -64,7 +64,7 @@ struct OpenAICompletionStreamAPI: CompletionStreamAPI {
                         guard line.hasPrefix(prefix),
                               let content = line.dropFirst(prefix.count).data(using: .utf8),
                               let chunk = try? JSONDecoder()
-                              .decode(CompletionStreamDataChunk.self, from: content)
+                              .decode(ChatCompletionsStreamDataChunk.self, from: content)
                         else { continue }
                         continuation.yield(chunk)
                     }
