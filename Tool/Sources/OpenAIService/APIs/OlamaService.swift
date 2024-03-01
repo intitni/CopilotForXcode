@@ -33,9 +33,9 @@ extension OllamaService: ChatCompletionsAPI {
 }
 
 extension OllamaService: ChatCompletionsStreamAPI {
-    typealias CompletionSequence = AsyncMapSequence<ResponseStream<OllamaService.ChatCompletionResponseChunk>, ChatCompletionsStreamDataChunk>
-
-    func callAsFunction() async throws -> CompletionSequence {
+    func callAsFunction() async throws
+        -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Swift.Error>
+    {
         let requestBody = ChatCompletionRequestBody(
             model: model.info.modelName,
             messages: requestBody.messages.map { message in
@@ -115,7 +115,7 @@ extension OllamaService: ChatCompletionsStreamAPI {
             )
         }
 
-        return sequence
+        return sequence.toStream()
     }
 }
 

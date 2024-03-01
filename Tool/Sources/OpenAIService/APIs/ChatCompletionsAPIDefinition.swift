@@ -128,9 +128,28 @@ typealias ChatCompletionsStreamAPIBuilder = (
 ) -> any ChatCompletionsStreamAPI
 
 protocol ChatCompletionsStreamAPI {
-    associatedtype CompletionSequence: AsyncSequence
-        where CompletionSequence.Element == ChatCompletionsStreamDataChunk
-    func callAsFunction() async throws -> CompletionSequence
+    func callAsFunction() async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error>
+}
+
+extension AsyncSequence {
+    func toStream() -> AsyncThrowingStream<Element, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await element in self {
+                        continuation.yield(element)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
 }
 
 struct ChatCompletionsStreamDataChunk: Codable {
@@ -159,7 +178,13 @@ struct ChatCompletionsStreamDataChunk: Codable {
 
 // MARK: - Non Stream API
 
-typealias ChatCompletionsAPIBuilder = (String, ChatModel, URL, ChatCompletionsRequestBody, ChatGPTPrompt)
+typealias ChatCompletionsAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    ChatCompletionsRequestBody,
+    ChatGPTPrompt
+)
     -> any ChatCompletionsAPI
 
 protocol ChatCompletionsAPI {

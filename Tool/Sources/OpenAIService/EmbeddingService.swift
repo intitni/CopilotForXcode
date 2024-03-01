@@ -73,7 +73,10 @@ public struct EmbeddingService {
         }
 
         guard response.statusCode == 200 else {
-            let error = try? JSONDecoder().decode(CompletionAPIError.self, from: result)
+            let error = try? JSONDecoder().decode(
+                OpenAIService.CompletionAPIError.self,
+                from: result
+            )
             throw error ?? ChatGPTServiceError
                 .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
         }
@@ -124,7 +127,10 @@ public struct EmbeddingService {
         }
 
         guard response.statusCode == 200 else {
-            let error = try? JSONDecoder().decode(CompletionAPIError.self, from: result)
+            let error = try? JSONDecoder().decode(
+                OpenAIService.CompletionAPIError.self,
+                from: result
+            )
             throw error ?? ChatGPTServiceError
                 .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
         }

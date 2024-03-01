@@ -73,14 +73,14 @@ public class ChatGPTService: ChatGPTServiceType {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionStreamAPI(
+            return GoogleAIService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAICompletionStreamAPI(
+            return OpenAIService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
@@ -93,14 +93,14 @@ public class ChatGPTService: ChatGPTServiceType {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionAPI(
+            return GoogleAIService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAICompletionAPI(
+            return OpenAIService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
