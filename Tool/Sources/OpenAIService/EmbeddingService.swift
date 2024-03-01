@@ -21,8 +21,10 @@ public struct EmbeddingService {
                 endpoint: configuration.endpoint
             ).embed(text: text)
         case .ollama:
-            #warning("MUSTDO:")
-            fatalError()
+            embeddingResponse = try await OllamaEmbeddingService(
+                model: model,
+                endpoint: configuration.endpoint
+            ).embed(text: text)
         }
 
         #if DEBUG
@@ -50,8 +52,10 @@ public struct EmbeddingService {
                 endpoint: configuration.endpoint
             ).embed(texts: text)
         case .ollama:
-            #warning("MUSTDO:")
-            fatalError()
+            embeddingResponse = try await OllamaEmbeddingService(
+                model: model,
+                endpoint: configuration.endpoint
+            ).embed(texts: text)
         }
 
         #if DEBUG
@@ -79,8 +83,10 @@ public struct EmbeddingService {
                 endpoint: configuration.endpoint
             ).embed(tokens: tokens)
         case .ollama:
-            #warning("MUSTDO:")
-            fatalError()
+            embeddingResponse = try await OllamaEmbeddingService(
+                model: model,
+                endpoint: configuration.endpoint
+            ).embed(tokens: tokens)
         }
 
         #if DEBUG

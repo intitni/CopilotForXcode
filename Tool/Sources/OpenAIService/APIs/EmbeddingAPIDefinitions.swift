@@ -26,5 +26,3 @@ public struct EmbeddingResponse: Decodable {
     public var usage: Usage
 }
 
-
-
