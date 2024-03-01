@@ -1,3 +1,4 @@
+import AIModel
 import AsyncAlgorithms
 import Dependencies
 import Foundation
@@ -62,6 +63,22 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
         error.message
     }
 }
+
+typealias ChatCompletionsStreamAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    ChatCompletionsRequestBody,
+    ChatGPTPrompt
+) -> any ChatCompletionsStreamAPI
+
+typealias ChatCompletionsAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    ChatCompletionsRequestBody,
+    ChatGPTPrompt
+) -> any ChatCompletionsAPI
 
 public class ChatGPTService: ChatGPTServiceType {
     public var memory: ChatGPTMemory

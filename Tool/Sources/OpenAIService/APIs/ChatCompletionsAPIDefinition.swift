@@ -119,14 +119,6 @@ public enum FunctionCallStrategy: Codable, Equatable {
 
 // MARK: - Stream API
 
-typealias ChatCompletionsStreamAPIBuilder = (
-    String,
-    ChatModel,
-    URL,
-    ChatCompletionsRequestBody,
-    ChatGPTPrompt
-) -> any ChatCompletionsStreamAPI
-
 protocol ChatCompletionsStreamAPI {
     func callAsFunction() async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error>
 }
@@ -177,15 +169,6 @@ struct ChatCompletionsStreamDataChunk: Codable {
 }
 
 // MARK: - Non Stream API
-
-typealias ChatCompletionsAPIBuilder = (
-    String,
-    ChatModel,
-    URL,
-    ChatCompletionsRequestBody,
-    ChatGPTPrompt
-)
-    -> any ChatCompletionsAPI
 
 protocol ChatCompletionsAPI {
     func callAsFunction() async throws -> ChatCompletionResponseBody
