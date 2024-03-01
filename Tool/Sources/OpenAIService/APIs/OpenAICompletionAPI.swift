@@ -2,54 +2,6 @@ import AIModel
 import Foundation
 import Preferences
 
-typealias CompletionAPIBuilder = (String, ChatModel, URL, CompletionRequestBody, ChatGPTPrompt)
-    -> CompletionAPI
-
-protocol CompletionAPI {
-    func callAsFunction() async throws -> CompletionResponseBody
-}
-
-/// https://platform.openai.com/docs/api-reference/chat/create
-struct CompletionResponseBody: Codable, Equatable {
-    struct Message: Codable, Equatable {
-        /// The role of the message.
-        var role: ChatMessage.Role
-        /// The content of the message.
-        var content: String?
-        /// When we want to reply to a function call with the result, we have to provide the
-        /// name of the function call, and include the result in `content`.
-        ///
-        /// - important: It's required when the role is `function`.
-        var name: String?
-        /// When the bot wants to call a function, it will reply with a function call in format:
-        /// ```json
-        /// {
-        ///   "name": "weather",
-        ///   "arguments": "{ \"location\": \"earth\" }"
-        /// }
-        /// ```
-        var function_call: CompletionRequestBody.MessageFunctionCall?
-    }
-
-    struct Choice: Codable, Equatable {
-        var message: Message
-        var index: Int
-        var finish_reason: String
-    }
-
-    struct Usage: Codable, Equatable {
-        var prompt_tokens: Int
-        var completion_tokens: Int
-        var total_tokens: Int
-    }
-
-    var id: String?
-    var object: String
-    var model: String
-    var usage: Usage
-    var choices: [Choice]
-}
-
 struct CompletionAPIError: Error, Codable, LocalizedError {
     struct E: Codable {
         var message: String
@@ -95,7 +47,7 @@ struct OpenAICompletionAPI: CompletionAPI {
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             case .googleAI:
-                assert(false, "Unsupported")
+                assertionFailure("Unsupported")
             }
         }
 
