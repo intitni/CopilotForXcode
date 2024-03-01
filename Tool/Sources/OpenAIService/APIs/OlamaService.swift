@@ -28,7 +28,80 @@ public actor OllamaService {
 
 extension OllamaService: ChatCompletionsAPI {
     func callAsFunction() async throws -> ChatCompletionResponseBody {
-        fatalError()
+        let requestBody = ChatCompletionRequestBody(
+            model: model.info.modelName,
+            messages: requestBody.messages.map { message in
+                .init(role: {
+                    switch message.role {
+                    case .assistant:
+                        return .assistant
+                    case .user:
+                        return .user
+                    case .system:
+                        return .system
+                    case .function:
+                        return .user
+                    }
+                }(), content: message.content)
+            },
+            stream: false,
+            options: .init(
+                temperature: requestBody.temperature,
+                stop: requestBody.stop,
+                num_predict: requestBody.max_tokens
+            ),
+            keep_alive: nil,
+            format: nil
+        )
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        let encoder = JSONEncoder()
+        request.httpBody = try encoder.encode(requestBody)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let (result, response) = try await URLSession.shared.data(for: request)
+
+        guard let response = response as? HTTPURLResponse else {
+            throw CancellationError()
+        }
+
+        guard response.statusCode == 200 else {
+            let text = String(data: result, encoding: .utf8)
+            throw Error.otherError(text ?? "Unknown error")
+        }
+
+        let body = try JSONDecoder().decode(
+            ChatCompletionResponseChunk.self,
+            from: result
+        )
+
+        return .init(
+            object: body.model,
+            model: body.model,
+            usage: .init(
+                prompt_tokens: body.prompt_eval_count ?? 0,
+                completion_tokens: body.eval_count ?? 0,
+                total_tokens: (body.eval_count ?? 0) + (body.prompt_eval_count ?? 0)
+            ),
+            choices: [
+                .init(
+                    message: body.message.map { message in
+                        .init(role: {
+                            switch message.role {
+                            case .assistant:
+                                return .assistant
+                            case .user:
+                                return .user
+                            case .system:
+                                return .system
+                            }
+                        }(), content: message.content)
+                    } ?? .init(role: .assistant),
+                    index: 0,
+                    finish_reason: ""
+                ),
+            ]
+        )
     }
 }
 
