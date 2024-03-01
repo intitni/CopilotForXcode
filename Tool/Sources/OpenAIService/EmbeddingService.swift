@@ -64,6 +64,9 @@ public struct EmbeddingService {
                 )
             case .azureOpenAI:
                 request.setValue(configuration.apiKey, forHTTPHeaderField: "api-key")
+            case .ollama:
+                #warning("MUSTDO:")
+                fatalError()
             }
         }
 
@@ -118,6 +121,9 @@ public struct EmbeddingService {
                 )
             case .azureOpenAI:
                 request.setValue(configuration.apiKey, forHTTPHeaderField: "api-key")
+            case .ollama:
+                #warning("MUSTDO:")
+                fatalError()
             }
         }
 

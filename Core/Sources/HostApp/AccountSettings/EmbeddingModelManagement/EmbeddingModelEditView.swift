@@ -22,6 +22,8 @@ struct EmbeddingModelEditView: View {
                             azureOpenAI
                         case .openAICompatible:
                             openAICompatible
+                        case .ollama:
+                            ollama
                         }
                     }
                 }
@@ -88,6 +90,8 @@ struct EmbeddingModelEditView: View {
                             Text("Azure OpenAI").tag(format)
                         case .openAICompatible:
                             Text("OpenAI Compatible").tag(format)
+                        case .ollama:
+                            Text("Ollama").tag(format)
                         }
                     }
                 },
@@ -288,6 +292,38 @@ struct EmbeddingModelEditView: View {
         }
 
         maxTokensTextField
+    }
+    
+    @ViewBuilder
+    var ollama: some View {
+        baseURLTextField(prompt: Text("http://127.0.0.1:11434")) {
+            Text("/api/embeddings")
+        }
+
+        WithViewStore(
+            store,
+            removeDuplicates: { $0.modelName == $1.modelName }
+        ) { viewStore in
+            TextField("Model Name", text: viewStore.$modelName)
+        }
+
+        maxTokensTextField
+        
+        WithViewStore(
+            store,
+            removeDuplicates: { $0.ollamaKeepAlive == $1.ollamaKeepAlive }
+        ) { viewStore in
+            TextField(text: viewStore.$ollamaKeepAlive, prompt: Text("Default Value")) {
+                Text("Keep Alive")
+            }
+        }
+        
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                " For more details, please visit [https://ollama.com](https://ollama.com)."
+            )
+        }
+        .padding(.vertical)
     }
 }
 

@@ -51,6 +51,8 @@ actor OpenAIService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             case .googleAI:
                 assertionFailure("Unsupported")
+            case .ollama:
+                assertionFailure("Unsupported")
             }
         }
 
@@ -111,6 +113,8 @@ actor OpenAIService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             case .googleAI:
+                assertionFailure("Unsupported")
+            case .ollama:
                 assertionFailure("Unsupported")
             }
         }

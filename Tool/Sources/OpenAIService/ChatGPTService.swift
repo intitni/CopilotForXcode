@@ -86,6 +86,13 @@ public class ChatGPTService: ChatGPTServiceType {
                 endpoint: endpoint,
                 requestBody: requestBody
             )
+        case .ollama:
+            return OllamaService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
         }
     }
 
@@ -101,6 +108,13 @@ public class ChatGPTService: ChatGPTServiceType {
             )
         case .openAI, .openAICompatible, .azureOpenAI:
             return OpenAIService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        case .ollama:
+            return OllamaService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,

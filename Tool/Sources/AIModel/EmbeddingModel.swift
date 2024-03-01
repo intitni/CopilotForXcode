@@ -20,6 +20,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         case openAI
         case azureOpenAI
         case openAICompatible
+        case ollama
     }
 
     public struct Info: Codable, Equatable {
@@ -39,6 +40,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             get { modelName }
             set { modelName = newValue }
         }
+        @FallbackDecoding<EmptyString>
+        public var ollamaKeepAlive: String
 
         public init(
             apiKeyName: String = "",
@@ -46,7 +49,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             isFullURL: Bool = false,
             maxTokens: Int = 8192,
             dimensions: Int = 1536,
-            modelName: String = ""
+            modelName: String = "",
+            ollamaKeepAlive: String = ""
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -54,6 +58,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             self.maxTokens = maxTokens
             self.dimensions = dimensions
             self.modelName = modelName
+            self.ollamaKeepAlive = ollamaKeepAlive
         }
     }
     
@@ -74,6 +79,10 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             let version = "2024-02-15-preview"
             if baseURL.isEmpty { return "" }
             return "\(baseURL)/openai/deployments/\(deployment)/embeddings?api-version=\(version)"
+        case .ollama:
+            let baseURL = info.baseURL
+            if baseURL.isEmpty { return "http://localhost:11434/api/embeddings" }
+            return "\(baseURL)/api/embeddings"
         }
     }
 }
