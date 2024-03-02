@@ -23,7 +23,7 @@ public protocol ChatGPTMemory {
     func mutateHistory(_ update: (inout [ChatMessage]) -> Void) async
     /// Generate prompt that would be send through the API.
     ///
-    /// A memory should make sure that the history in the prompt 
+    /// A memory should make sure that the history in the prompt
     /// doesn't exceed the maximum token count.
     ///
     /// The history can be different from the actual history.
@@ -64,7 +64,8 @@ public extension ChatGPTMemory {
         role: ChatMessage.Role? = nil,
         content: String? = nil,
         name: String? = nil,
-        functionCall: ChatMessage.FunctionCall? = nil,
+        toolCallId: String? = nil,
+        toolCalls: [ChatMessage.ToolCall]? = nil,
         summary: String? = nil,
         references: [ChatMessage.Reference]? = nil
     ) async {
@@ -80,12 +81,28 @@ public extension ChatGPTMemory {
                 if let role {
                     history[index].role = role
                 }
-                if let functionCall {
-                    if history[index].functionCall == nil {
-                        history[index].functionCall = functionCall
+                if let toolCalls {
+                    if history[index].toolCalls == nil {
+                        history[index].toolCalls = toolCalls
                     } else {
-                        history[index].functionCall?.name.append(functionCall.name)
-                        history[index].functionCall?.arguments.append(functionCall.arguments)
+                        for toolCall in toolCalls {
+                            if let index = history[index].toolCalls?
+                                .firstIndex(where: { $0.id == toolCall.id })
+                            {
+                                if !toolCall.id.isEmpty {
+                                    history[index].toolCalls?[index].id = toolCall.id
+                                }
+                                if !toolCall.type.isEmpty {
+                                    history[index].toolCalls?[index].type = toolCall.type
+                                }
+                                history[index].toolCalls?[index].function.name
+                                    .append(toolCall.function.name)
+                                history[index].toolCalls?[index].function.arguments
+                                    .append(toolCall.function.arguments)
+                            } else {
+                                history[index].toolCalls?.append(toolCall)
+                            }
+                        }
                     }
                 }
                 if let summary {
@@ -97,13 +114,17 @@ public extension ChatGPTMemory {
                 if let name {
                     history[index].name = name
                 }
+                if let toolCallId {
+                    history[index].toolCallId = toolCallId
+                }
             } else {
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
                     content: content,
                     name: name,
-                    functionCall: functionCall,
+                    toolCallId: toolCallId,
+                    toolCalls: toolCalls,
                     summary: summary,
                     references: references ?? []
                 ))

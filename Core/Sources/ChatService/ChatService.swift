@@ -124,9 +124,9 @@ public final class ChatService: ObservableObject {
         await chatGPTService.stopReceivingMessage()
         isReceivingMessage = false
 
-        // if it's stopped before the function finishes, remove the function call.
+        // if it's stopped before the tool calls finish, remove the message.
         await memory.mutateHistory { history in
-            if history.last?.role == .assistant, history.last?.functionCall != nil {
+            if history.last?.role == .assistant, history.last?.toolCalls != nil {
                 history.removeLast()
             }
         }

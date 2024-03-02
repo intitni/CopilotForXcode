@@ -16,6 +16,7 @@ public struct ChatMessage: Equatable, Codable {
         case user
         case assistant
         case function
+        case tool
     }
 
     public struct FunctionCall: Codable, Equatable {
@@ -24,6 +25,17 @@ public struct ChatMessage: Equatable, Codable {
         public init(name: String, arguments: String) {
             self.name = name
             self.arguments = arguments
+        }
+    }
+    
+    public struct ToolCall: Codable, Equatable, Identifiable {
+        public var id: String
+        public var type: String
+        public var function: FunctionCall
+        public init(id: String, type: String, function: FunctionCall) {
+            self.id = id
+            self.type = type
+            self.function = function
         }
     }
 
@@ -82,12 +94,17 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A function call from the bot.
-    public var functionCall: FunctionCall? {
+    public var toolCalls: [ToolCall]? {
         didSet { tokensCount = nil }
     }
 
     /// The function name of a reply to a function call.
     public var name: String? {
+        didSet { tokensCount = nil }
+    }
+    
+    /// The tool id of a reply to a tool call.
+    public var toolCallId: String? {
         didSet { tokensCount = nil }
     }
 
@@ -107,7 +124,7 @@ public struct ChatMessage: Equatable, Codable {
     /// Is the message considered empty.
     var isEmpty: Bool {
         if let content, !content.isEmpty { return false }
-        if let functionCall, !functionCall.name.isEmpty { return false }
+        if let toolCalls, !toolCalls.isEmpty { return false }
         if let name, !name.isEmpty { return false }
         return true
     }
@@ -117,7 +134,8 @@ public struct ChatMessage: Equatable, Codable {
         role: Role,
         content: String?,
         name: String? = nil,
-        functionCall: FunctionCall? = nil,
+        toolCallId: String? = nil,
+        toolCalls: [ToolCall]? = nil,
         summary: String? = nil,
         tokenCount: Int? = nil,
         references: [Reference] = []
@@ -125,7 +143,8 @@ public struct ChatMessage: Equatable, Codable {
         self.role = role
         self.content = content
         self.name = name
-        self.functionCall = functionCall
+        self.toolCallId = toolCallId
+        self.toolCalls = toolCalls
         self.summary = summary
         self.id = id
         tokensCount = tokenCount

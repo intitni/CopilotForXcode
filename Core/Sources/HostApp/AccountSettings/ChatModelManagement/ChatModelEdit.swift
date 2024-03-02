@@ -170,7 +170,7 @@ extension ChatModelEdit.State {
             maxTokens: model.info.maxTokens,
             supportsFunctionCalling: model.info.supportsFunctionCalling,
             modelName: model.info.modelName,
-            ollamaKeepAlive: model.info.ollamaKeepAlive,
+            ollamaKeepAlive: model.info.ollamaInfo.keepAlive,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
@@ -198,7 +198,7 @@ extension ChatModel {
                     return state.supportsFunctionCalling
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
-                ollamaKeepAlive: state.ollamaKeepAlive
+                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
             )
         )
     }

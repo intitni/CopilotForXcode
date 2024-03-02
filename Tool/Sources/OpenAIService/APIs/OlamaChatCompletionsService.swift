@@ -41,6 +41,8 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
                         return .system
                     case .function:
                         return .user
+                    case .tool:
+                        return .user
                     }
                 }(), content: message.content)
             },
@@ -48,7 +50,7 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
             options: .init(
                 temperature: requestBody.temperature,
                 stop: requestBody.stop,
-                num_predict: requestBody.max_tokens
+                num_predict: requestBody.maxTokens
             ),
             keep_alive: nil,
             format: nil
@@ -78,29 +80,23 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
         return .init(
             object: body.model,
             model: body.model,
-            usage: .init(
-                prompt_tokens: body.prompt_eval_count ?? 0,
-                completion_tokens: body.eval_count ?? 0,
-                total_tokens: (body.eval_count ?? 0) + (body.prompt_eval_count ?? 0)
-            ),
-            choices: [
+            message: body.message.map { message in
                 .init(
-                    message: body.message.map { message in
-                        .init(role: {
-                            switch message.role {
-                            case .assistant:
-                                return .assistant
-                            case .user:
-                                return .user
-                            case .system:
-                                return .system
-                            }
-                        }(), content: message.content)
-                    } ?? .init(role: .assistant),
-                    index: 0,
-                    finish_reason: ""
-                ),
-            ]
+                    role: {
+                        switch message.role {
+                        case .assistant:
+                            return .assistant
+                        case .user:
+                            return .user
+                        case .system:
+                            return .system
+                        }
+                    }(),
+                    content: message.content
+                )
+            } ?? .init(role: .assistant, content: ""),
+            otherChoices: [],
+            finishReason: ""
         )
     }
 }
@@ -122,6 +118,8 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
                         return .system
                     case .function:
                         return .user
+                    case .tool:
+                        return .user
                     }
                 }(), content: message.content)
             },
@@ -129,7 +127,7 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
             options: .init(
                 temperature: requestBody.temperature,
                 stop: requestBody.stop,
-                num_predict: requestBody.max_tokens
+                num_predict: requestBody.maxTokens
             ),
             keep_alive: nil,
             format: nil
@@ -166,25 +164,21 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
                 id: UUID().uuidString,
                 object: chunk.model,
                 model: chunk.model,
-                choices: [
-                    .init(
-                        delta: .init(
-                            role: {
-                                switch chunk.message?.role {
-                                case .none:
-                                    return nil
-                                case .assistant:
-                                    return .assistant
-                                case .user:
-                                    return .user
-                                case .system:
-                                    return .system
-                                }
-                            }(),
-                            content: chunk.message?.content
-                        )
-                    ),
-                ]
+                message: .init(
+                    role: {
+                        switch chunk.message?.role {
+                        case .none:
+                            return nil
+                        case .assistant:
+                            return .assistant
+                        case .user:
+                            return .user
+                        case .system:
+                            return .system
+                        }
+                    }(),
+                    content: chunk.message?.content
+                )
             )
         }
 

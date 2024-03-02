@@ -2,6 +2,7 @@ import AIModel
 import AsyncAlgorithms
 import Dependencies
 import Foundation
+import IdentifiedCollections
 import Preferences
 
 public protocol ChatGPTServiceType {
@@ -168,7 +169,7 @@ public class ChatGPTService: ChatGPTServiceType {
                 role: .user,
                 content: content,
                 name: nil,
-                functionCall: nil,
+                toolCalls: nil,
                 summary: summary,
                 references: []
             )
@@ -179,18 +180,20 @@ public class ChatGPTService: ChatGPTServiceType {
             AsyncThrowingStream<String, Error> { continuation in
                 let task = Task(priority: .userInitiated) {
                     do {
-                        var functionCall: ChatMessage.FunctionCall?
-                        var functionCallMessageID = ""
+                        var pendingToolCalls = IdentifiedArrayOf<ChatMessage.ToolCall>()
+                        var functionCallMessageIDs = [String: String]()
                         var isInitialCall = true
-                        loop: while functionCall != nil || isInitialCall {
+                        loop: while !pendingToolCalls.isEmpty || isInitialCall {
                             try Task.checkCancellation()
                             isInitialCall = false
-                            if let call = functionCall {
+                            for toolCall in pendingToolCalls {
                                 if !configuration.runFunctionsAutomatically {
                                     break loop
                                 }
-                                functionCall = nil
-                                await runFunctionCall(call, messageId: functionCallMessageID)
+                                await runFunctionCall(
+                                    toolCall,
+                                    messageId: functionCallMessageIDs[toolCall.id]
+                                )
                             }
                             let stream = try await sendMemory()
 
@@ -206,18 +209,15 @@ public class ChatGPTService: ChatGPTServiceType {
                                     #if DEBUG
                                     reply.append(text)
                                     #endif
-                                case let .functionCall(call):
-                                    if functionCall == nil {
-                                        functionCallMessageID = uuid().uuidString
-                                        functionCall = call
-                                    } else {
-                                        functionCall?.name.append(call.name)
-                                        functionCall?.arguments.append(call.arguments)
-                                    }
-                                    await prepareFunctionCall(
-                                        call,
-                                        messageId: functionCallMessageID
+
+                                case let .toolCall(toolCall):
+                                    let id = storeToolCallsChunks(
+                                        chunk: toolCall,
+                                        into: &pendingToolCalls,
+                                        messageIds: &functionCallMessageIDs
                                     )
+
+                                    await prepareFunctionCall(toolCall, messageId: id)
                                 }
                             }
                             #if DEBUG
@@ -257,17 +257,19 @@ public class ChatGPTService: ChatGPTServiceType {
         return try await Debugger.$id.withValue(.init()) {
             let message = try await sendMemoryAndWait()
             var finalResult = message?.content
-            var functionCall = message?.functionCall
-            while let call = functionCall {
+            var toolCalls = message?.toolCalls
+            while let calls = toolCalls, !calls.isEmpty {
                 try Task.checkCancellation()
                 if !configuration.runFunctionsAutomatically {
                     break
                 }
-                functionCall = nil
-                await runFunctionCall(call)
+                toolCalls = nil
+                for call in calls {
+                    await runFunctionCall(call)
+                }
                 guard let nextMessage = try await sendMemoryAndWait() else { break }
                 finalResult = nextMessage.content
-                functionCall = nextMessage.functionCall
+                toolCalls = nextMessage.toolCalls
             }
 
             #if DEBUG
@@ -291,7 +293,7 @@ public class ChatGPTService: ChatGPTServiceType {
 extension ChatGPTService {
     enum StreamContent {
         case text(String)
-        case functionCall(ChatMessage.FunctionCall)
+        case toolCall(ChatMessage.ToolCall)
     }
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
@@ -305,42 +307,7 @@ extension ChatGPTService {
             throw ChatGPTServiceError.endpointIncorrect
         }
 
-        let messages = prompt.history.map {
-            ChatCompletionsRequestBody.Message(
-                role: $0.role,
-                content: $0.content ?? "",
-                name: $0.name,
-                function_call: $0.functionCall.map {
-                    .init(name: $0.name, arguments: $0.arguments)
-                }
-            )
-        }
-        let remainingTokens = prompt.remainingTokenCount
-
-        let requestBody = ChatCompletionsRequestBody(
-            model: model.info.modelName,
-            messages: messages,
-            temperature: configuration.temperature,
-            stream: true,
-            stop: configuration.stop.isEmpty ? nil : configuration.stop,
-            max_tokens: maxTokenForReply(
-                maxToken: model.info.maxTokens,
-                remainingTokens: remainingTokens
-            ),
-            function_call: model.info.supportsFunctionCalling
-                ? functionProvider.functionCallStrategy
-                : nil,
-            functions:
-            model.info.supportsFunctionCalling
-                ? functionProvider.functions.map {
-                    ChatGPTFunctionSchema(
-                        name: $0.name,
-                        description: $0.description,
-                        parameters: $0.argumentSchema
-                    )
-                }
-                : []
-        )
+        let requestBody = createRequestBody(prompt: prompt, model: model, stream: true)
 
         let api = buildCompletionStreamAPI(
             configuration.apiKey,
@@ -368,16 +335,20 @@ extension ChatGPTService {
                         if Task.isCancelled {
                             throw CancellationError()
                         }
-                        guard let delta = chunk.choices?.first?.delta else { continue }
+                        guard let delta = chunk.message else { continue }
 
                         // The api will always return a function call with JSON object.
                         // The first round will contain the function name and an empty argument.
                         // e.g. {"name":"weather","arguments":""}
                         // The other rounds will contain part of the arguments.
-                        let functionCall = delta.function_call.map {
-                            ChatMessage.FunctionCall(
-                                name: $0.name ?? "",
-                                arguments: $0.arguments ?? ""
+                        let toolCalls = delta.toolCalls?.map {
+                            ChatMessage.ToolCall(
+                                id: $0.id ?? "",
+                                type: $0.type ?? "",
+                                function: .init(
+                                    name: $0.function?.name ?? "",
+                                    arguments: $0.function?.arguments ?? ""
+                                )
                             )
                         }
 
@@ -385,11 +356,13 @@ extension ChatGPTService {
                             id: proposedId,
                             role: delta.role,
                             content: delta.content,
-                            functionCall: functionCall
+                            toolCalls: toolCalls
                         )
 
-                        if let functionCall {
-                            continuation.yield(.functionCall(functionCall))
+                        if let toolCalls {
+                            for toolCall in toolCalls {
+                                continuation.yield(.toolCall(toolCall))
+                            }
                         }
 
                         if let content = delta.content {
@@ -433,42 +406,7 @@ extension ChatGPTService {
             throw ChatGPTServiceError.endpointIncorrect
         }
 
-        let messages = prompt.history.map {
-            ChatCompletionsRequestBody.Message(
-                role: $0.role,
-                content: $0.content ?? "",
-                name: $0.name,
-                function_call: $0.functionCall.map {
-                    .init(name: $0.name, arguments: $0.arguments)
-                }
-            )
-        }
-        let remainingTokens = prompt.remainingTokenCount
-
-        let requestBody = ChatCompletionsRequestBody(
-            model: model.info.modelName,
-            messages: messages,
-            temperature: configuration.temperature,
-            stream: true,
-            stop: configuration.stop.isEmpty ? nil : configuration.stop,
-            max_tokens: maxTokenForReply(
-                maxToken: model.info.maxTokens,
-                remainingTokens: remainingTokens
-            ),
-            function_call: model.info.supportsFunctionCalling
-                ? functionProvider.functionCallStrategy
-                : nil,
-            functions:
-            model.info.supportsFunctionCalling
-                ? functionProvider.functions.map {
-                    ChatGPTFunctionSchema(
-                        name: $0.name,
-                        description: $0.description,
-                        parameters: $0.argumentSchema
-                    )
-                }
-                : []
-        )
+        let requestBody = createRequestBody(prompt: prompt, model: model, stream: false)
 
         let api = buildCompletionAPI(
             configuration.apiKey,
@@ -484,14 +422,17 @@ extension ChatGPTService {
 
         let response = try await api()
 
-        guard let choice = response.choices.first else { return nil }
+        let choice = response.message
         let message = ChatMessage(
             id: proposedId,
-            role: choice.message.role,
-            content: choice.message.content,
-            name: choice.message.name,
-            functionCall: choice.message.function_call.map {
-                ChatMessage.FunctionCall(name: $0.name, arguments: $0.arguments ?? "")
+            role: choice.role,
+            content: choice.content,
+            name: choice.name,
+            toolCalls: choice.toolCalls?.map {
+                ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
+                    name: $0.function.name,
+                    arguments: $0.function.arguments ?? ""
+                ))
             },
             references: prompt.references
         )
@@ -499,11 +440,40 @@ extension ChatGPTService {
         return message
     }
 
+    func storeToolCallsChunks(
+        chunk toolCall: ChatMessage.ToolCall,
+        into toolCalls: inout IdentifiedArrayOf<ChatMessage.ToolCall>,
+        messageIds: inout [String: String]
+    ) -> String {
+        if let index = toolCalls.firstIndex(where: { $0.id == toolCall.id }) {
+            if !toolCall.id.isEmpty {
+                toolCalls[index].id = toolCall.id
+            }
+            if !toolCall.type.isEmpty {
+                toolCalls[index].type = toolCall.type
+            }
+            toolCalls[index].function.name.append(toolCall.function.name)
+            toolCalls[index].function.arguments.append(toolCall.function.arguments)
+
+        } else {
+            toolCalls.append(toolCall)
+        }
+
+        let id = messageIds[toolCall.id] ?? UUID().uuidString
+        messageIds[toolCall.id] = id
+        return id
+    }
+
     /// When a function call is detected, but arguments are not yet ready, we can call this
     /// to insert a message placeholder in memory.
-    func prepareFunctionCall(_ call: ChatMessage.FunctionCall, messageId: String) async {
-        guard let function = functionProvider.function(named: call.name) else { return }
-        await memory.streamMessage(id: messageId, role: .function, name: call.name)
+    func prepareFunctionCall(_ call: ChatMessage.ToolCall, messageId: String) async {
+        guard let function = functionProvider.function(named: call.function.name) else { return }
+        await memory.streamMessage(
+            id: messageId,
+            role: .tool,
+            name: call.function.name,
+            toolCallId: call.id
+        )
         await function.prepare { [weak self] summary in
             await self?.memory.updateMessage(id: messageId) { message in
                 message.summary = summary
@@ -514,24 +484,29 @@ extension ChatGPTService {
     /// Run a function call from the bot, and insert the result in memory.
     @discardableResult
     func runFunctionCall(
-        _ call: ChatMessage.FunctionCall,
+        _ call: ChatMessage.ToolCall,
         messageId: String? = nil
     ) async -> String {
         #if DEBUG
-        Debugger.didReceiveFunction(name: call.name, arguments: call.arguments)
+        Debugger.didReceiveFunction(name: call.function.name, arguments: call.function.arguments)
         #endif
 
         let messageId = messageId ?? uuid().uuidString
 
-        guard let function = functionProvider.function(named: call.name) else {
-            return await fallbackFunctionCall(call, messageId: messageId)
+        guard let function = functionProvider.function(named: call.function.name) else {
+            return await fallbackFunctionCall(call.function, messageId: messageId)
         }
 
-        await memory.streamMessage(id: messageId, role: .function, name: call.name)
+        await memory.streamMessage(
+            id: messageId,
+            role: .function,
+            name: call.function.name,
+            toolCallId: call.id
+        )
 
         do {
             // Run the function
-            let result = try await function.call(argumentsJsonString: call.arguments) {
+            let result = try await function.call(argumentsJsonString: call.function.arguments) {
                 [weak self] summary in
                 await self?.memory.updateMessage(id: messageId) { message in
                     message.summary = summary
@@ -609,6 +584,57 @@ extension ChatGPTService {
             summary: "Finished running function."
         )
         return content
+    }
+
+    func createRequestBody(
+        prompt: ChatGPTPrompt,
+        model: ChatModel,
+        stream: Bool
+    ) -> ChatCompletionsRequestBody {
+        let messages = prompt.history.map {
+            ChatCompletionsRequestBody.Message(
+                role: $0.role,
+                content: $0.content ?? "",
+                name: $0.name,
+                toolCalls: $0.toolCalls?.map {
+                    .init(
+                        id: $0.id,
+                        type: $0.type,
+                        function: .init(
+                            name: $0.function.name,
+                            arguments: $0.function.arguments
+                        )
+                    )
+                }
+            )
+        }
+        let remainingTokens = prompt.remainingTokenCount
+
+        let requestBody = ChatCompletionsRequestBody(
+            model: model.info.modelName,
+            messages: messages,
+            temperature: configuration.temperature,
+            stream: stream,
+            stop: configuration.stop.isEmpty ? nil : configuration.stop,
+            maxTokens: maxTokenForReply(
+                maxToken: model.info.maxTokens,
+                remainingTokens: remainingTokens
+            ),
+            toolChoice: model.info.supportsFunctionCalling
+                ? functionProvider.functionCallStrategy
+                : nil,
+            tools: model.info.supportsFunctionCalling
+                ? functionProvider.functions.map {
+                    .init(function: ChatGPTFunctionSchema(
+                        name: $0.name,
+                        description: $0.description,
+                        parameters: $0.argumentSchema
+                    ))
+                }
+                : []
+        )
+
+        return requestBody
     }
 }
 

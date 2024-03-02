@@ -53,7 +53,7 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
         }
 
         var functionCallStrategy: FunctionCallStrategy? {
-            .name(endFunction.name)
+            .function(name: endFunction.name)
         }
     }
 
@@ -108,7 +108,7 @@ public class StructuredOutputChatModelChain<Output: Decodable>: Chain {
     }
 
     public func parseOutput(_ message: ChatMessage) async -> Output? {
-        if let functionCall = message.functionCall {
+        if let functionCall = message.toolCalls?.first?.function {
             do {
                 let result = try JSONDecoder().decode(
                     EndFunction.Arguments.self,

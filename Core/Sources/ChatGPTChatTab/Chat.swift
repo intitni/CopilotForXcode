@@ -313,6 +313,7 @@ struct Chat: ReducerProtocol {
                                 }
                                 return .ignored
                             case .function: return .function
+                            case .tool: return .function
                             }
                         }(),
                         text: message.summary ?? message.content ?? "",

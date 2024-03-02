@@ -155,7 +155,7 @@ extension EmbeddingModelEdit.State {
             format: model.format,
             maxTokens: model.info.maxTokens,
             modelName: model.info.modelName,
-            ollamaKeepAlive: model.info.ollamaKeepAlive,
+            ollamaKeepAlive: model.info.ollamaInfo.keepAlive,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
@@ -177,7 +177,7 @@ extension EmbeddingModel {
                 isFullURL: state.isFullURL,
                 maxTokens: state.maxTokens,
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
-                ollamaKeepAlive: state.ollamaKeepAlive
+                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
             )
         )
     }

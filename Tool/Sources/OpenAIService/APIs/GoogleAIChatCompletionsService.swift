@@ -26,48 +26,16 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             name: model.info.modelName,
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
-                temperature: requestBody.temperature.map(Float.init),
-                topP: requestBody.top_p.map(Float.init)
+                temperature: requestBody.temperature.map(Float.init)
             ))
         )
         let history = prompt.googleAICompatible.history.map { message in
-            ModelContent(
-                ChatMessage(
-                    role: message.role,
-                    content: message.content,
-                    name: message.name,
-                    functionCall: message.functionCall.map {
-                        .init(name: $0.name, arguments: $0.arguments)
-                    }
-                )
-            )
+            ModelContent(message)
         }
 
         do {
             let response = try await aiModel.generateContent(history)
-
-            return .init(
-                object: "chat.completion",
-                model: model.info.modelName,
-                usage: .init(prompt_tokens: 0, completion_tokens: 0, total_tokens: 0),
-                choices: response.candidates.enumerated().map {
-                    let (index, candidate) = $0
-                    return .init(
-                        message: .init(
-                            role: .assistant,
-                            content: candidate.content.parts.first(where: { part in
-                                if let text = part.text {
-                                    return !text.isEmpty
-                                } else {
-                                    return false
-                                }
-                            })?.text ?? ""
-                        ),
-                        index: index,
-                        finish_reason: candidate.finishReason?.rawValue ?? ""
-                    )
-                }
-            )
+            return response.formalized()
         } catch let error as GenerateContentError {
             struct ErrorWrapper: Error, LocalizedError {
                 let error: Error
@@ -98,21 +66,11 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             name: model.info.modelName,
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
-                temperature: requestBody.temperature.map(Float.init),
-                topP: requestBody.top_p.map(Float.init)
+                temperature: requestBody.temperature.map(Float.init)
             ))
         )
         let history = prompt.googleAICompatible.history.map { message in
-            ModelContent(
-                ChatMessage(
-                    role: message.role,
-                    content: message.content,
-                    name: message.name,
-                    functionCall: message.functionCall.map {
-                        .init(name: $0.name, arguments: $0.arguments)
-                    }
-                )
-            )
+            ModelContent(message)
         }
 
         let stream = AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
@@ -121,17 +79,7 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 do {
                     for try await response in stream {
                         if Task.isCancelled { break }
-                        let chunk = ChatCompletionsStreamDataChunk(
-                            object: "",
-                            model: model.info.modelName,
-                            choices: response.candidates.map { candidate in
-                                .init(delta: .init(
-                                    role: .assistant,
-                                    content: candidate.content.parts
-                                        .first(where: { $0.text != nil })?.text ?? ""
-                                ))
-                            }
-                        )
+                        let chunk = response.formalizedAsChunk()
                         continuation.yield(chunk)
                     }
                     continuation.finish()
@@ -246,7 +194,7 @@ extension ChatGPTPrompt {
 extension ModelContent {
     static func convertRole(_ role: ChatMessage.Role) -> String {
         switch role {
-        case .user, .system, .function:
+        case .user, .system, .function, .tool:
             return "user"
         case .assistant:
             return "model"
@@ -263,12 +211,18 @@ extension ModelContent {
             return """
             Result of \(message.name ?? "function"): \(message.content ?? "N/A")
             """
+        case .tool:
+            return """
+            Result of \(message.toolCallId ?? "tool"): \(message.content ?? "N/A")
+            """
         case .assistant:
-            if let functionCall = message.functionCall {
-                return """
-                Call function: \(functionCall.name)
-                Arguments: \(functionCall.arguments)
-                """
+            if let toolCalls = message.toolCalls {
+                return toolCalls.map {
+                    """
+                    Call function: \($0.function.name) - \($0.id)
+                    Arguments: \($0.function.arguments)
+                    """
+                }.joined(separator: "\n")
             } else {
                 return message.content ?? " "
             }
@@ -279,6 +233,60 @@ extension ModelContent {
         let role = Self.convertRole(message.role)
         let parts = [ModelContent.Part.text(Self.convertContent(of: message))]
         self = .init(role: role, parts: parts)
+    }
+}
+
+extension GenerateContentResponse {
+    func formalized() -> ChatCompletionResponseBody {
+        let message: ChatCompletionResponseBody.Message
+        let otherMessages: [ChatCompletionResponseBody.Message]
+
+        func convertMessage(_ candidate: CandidateResponse) -> ChatCompletionResponseBody.Message {
+            .init(
+                role: .assistant,
+                content: candidate.content.parts.first(where: { part in
+                    if let text = part.text {
+                        return !text.isEmpty
+                    } else {
+                        return false
+                    }
+                })?.text ?? ""
+            )
+        }
+
+        if let first = candidates.first {
+            message = convertMessage(first)
+            otherMessages = candidates.dropFirst().map { convertMessage($0) }
+        } else {
+            message = .init(role: .assistant, content: "")
+            otherMessages = []
+        }
+
+        return .init(
+            object: "chat.completion",
+            model: "",
+            message: message,
+            otherChoices: otherMessages,
+            finishReason: candidates.first?.finishReason?.rawValue ?? ""
+        )
+    }
+
+    func formalizedAsChunk() -> ChatCompletionsStreamDataChunk {
+        func convertMessage(
+            _ candidate: CandidateResponse
+        ) -> ChatCompletionsStreamDataChunk.Delta {
+            .init(
+                role: .assistant,
+                content: candidate.content.parts
+                    .first(where: { $0.text != nil })?.text ?? ""
+            )
+        }
+
+        return .init(
+            object: "",
+            model: "",
+            message: candidates.first.map(convertMessage)
+        )
     }
 }
 
