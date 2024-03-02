@@ -175,7 +175,7 @@ struct ChatModelEditView: View {
                 )
 
                 TextField(text: textFieldBinding) {
-                    Text("Max Tokens (Including Reply)")
+                    Text("Context Window")
                         .multilineTextAlignment(.trailing)
                 }
                 .overlay(alignment: .trailing) {
