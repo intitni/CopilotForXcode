@@ -1,5 +1,5 @@
-import Foundation
 import CodableWrappers
+import Foundation
 
 public struct EmbeddingModel: Codable, Equatable, Identifiable {
     public var id: String
@@ -24,6 +24,9 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
     }
 
     public struct Info: Codable, Equatable {
+        public typealias OllamaInfo = ChatModel.Info.OllamaInfo
+        public typealias OpenAIInfo = ChatModel.Info.OpenAIInfo
+
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
         @FallbackDecoding<EmptyString>
@@ -36,12 +39,11 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         public var dimensions: Int
         @FallbackDecoding<EmptyString>
         public var modelName: String
-        public var azureOpenAIDeploymentName: String {
-            get { modelName }
-            set { modelName = newValue }
-        }
-        @FallbackDecoding<EmptyString>
-        public var ollamaKeepAlive: String
+
+        @FallbackDecoding<EmptyChatModelOpenAIInfo>
+        public var openAIInfo: OpenAIInfo
+        @FallbackDecoding<EmptyChatModelOllamaInfo>
+        public var ollamaInfo: OllamaInfo
 
         public init(
             apiKeyName: String = "",
@@ -50,7 +52,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             maxTokens: Int = 8192,
             dimensions: Int = 1536,
             modelName: String = "",
-            ollamaKeepAlive: String = ""
+            openAIInfo: OpenAIInfo = OpenAIInfo(),
+            ollamaInfo: OllamaInfo = OllamaInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -58,10 +61,11 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             self.maxTokens = maxTokens
             self.dimensions = dimensions
             self.modelName = modelName
-            self.ollamaKeepAlive = ollamaKeepAlive
+            self.openAIInfo = openAIInfo
+            self.ollamaInfo = ollamaInfo
         }
     }
-    
+
     public var endpoint: String {
         switch format {
         case .openAI:
@@ -75,7 +79,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             return "\(baseURL)/v1/embeddings"
         case .azureOpenAI:
             let baseURL = info.baseURL
-            let deployment = info.azureOpenAIDeploymentName
+            let deployment = info.modelName
             let version = "2024-02-15-preview"
             if baseURL.isEmpty { return "" }
             return "\(baseURL)/openai/deployments/\(deployment)/embeddings?api-version=\(version)"
@@ -87,7 +91,6 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
     }
 }
 
-
 public struct EmptyEmbeddingModelInfo: FallbackValueProvider {
     public static var defaultValue: EmbeddingModel.Info { .init() }
 }
@@ -95,3 +98,4 @@ public struct EmptyEmbeddingModelInfo: FallbackValueProvider {
 public struct EmptyEmbeddingModelFormat: FallbackValueProvider {
     public static var defaultValue: EmbeddingModel.Format { .openAI }
 }
+
