@@ -9,7 +9,7 @@ public struct DisplayedChatMessage: Equatable {
     public enum Role: Equatable {
         case user
         case assistant
-        case function
+        case tool
         case ignored
     }
 
@@ -312,8 +312,7 @@ struct Chat: ReducerProtocol {
                                     return .assistant
                                 }
                                 return .ignored
-                            case .function: return .function
-                            case .tool: return .function
+                            case .tool: return .tool
                             }
                         }(),
                         text: message.summary ?? message.content ?? "",

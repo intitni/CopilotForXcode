@@ -258,7 +258,7 @@ struct ChatHistory: View {
                         trailing: -8
                     ))
                     .padding(.vertical, 4)
-                case .function:
+                case .tool:
                     FunctionMessage(id: message.id, text: text)
                 case .ignored:
                     EmptyView()
@@ -453,7 +453,7 @@ struct ChatPanel_Preview: PreviewProvider {
         ),
         .init(
             id: "6",
-            role: .function,
+            role: .tool,
             text: """
             Searching for something...
             - abc

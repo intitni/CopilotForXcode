@@ -39,8 +39,6 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
                         return .user
                     case .system:
                         return .system
-                    case .function:
-                        return .user
                     case .tool:
                         return .user
                     }
@@ -116,8 +114,6 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
                         return .user
                     case .system:
                         return .system
-                    case .function:
-                        return .user
                     case .tool:
                         return .user
                     }

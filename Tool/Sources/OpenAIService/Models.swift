@@ -15,7 +15,6 @@ public struct ChatMessage: Equatable, Codable {
         case system
         case user
         case assistant
-        case function
         case tool
     }
 

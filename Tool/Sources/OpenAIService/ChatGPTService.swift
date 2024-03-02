@@ -499,7 +499,7 @@ extension ChatGPTService {
 
         await memory.streamMessage(
             id: messageId,
-            role: .function,
+            role: .tool,
             name: call.function.name,
             toolCallId: call.id
         )
@@ -578,7 +578,7 @@ extension ChatGPTService {
         }()
         await memory.streamMessage(
             id: messageId,
-            role: .function,
+            role: .tool,
             content: content,
             name: call.name,
             summary: "Finished running function."
