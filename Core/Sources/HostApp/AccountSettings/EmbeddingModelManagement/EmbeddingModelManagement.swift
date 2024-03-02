@@ -10,6 +10,7 @@ extension EmbeddingModel: ManageableAIModel {
         case .openAI: return "OpenAI"
         case .azureOpenAI: return "Azure OpenAI"
         case .openAICompatible: return "OpenAI Compatible"
+        case .ollama: return "Ollama"
         }
     }
 

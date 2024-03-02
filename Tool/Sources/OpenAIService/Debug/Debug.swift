@@ -6,7 +6,7 @@ enum Debugger {
     static var id: UUID?
 
     #if DEBUG
-    static func didSendRequestBody(body: CompletionRequestBody) {
+    static func didSendRequestBody(body: ChatCompletionsRequestBody) {
         do {
             let json = try JSONEncoder().encode(body)
             let center = NotificationCenter.default

@@ -1,3 +1,4 @@
+import AIModel
 import AsyncAlgorithms
 import Dependencies
 import Foundation
@@ -63,24 +64,47 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
     }
 }
 
+typealias ChatCompletionsStreamAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    ChatCompletionsRequestBody,
+    ChatGPTPrompt
+) -> any ChatCompletionsStreamAPI
+
+typealias ChatCompletionsAPIBuilder = (
+    String,
+    ChatModel,
+    URL,
+    ChatCompletionsRequestBody,
+    ChatGPTPrompt
+) -> any ChatCompletionsAPI
+
 public class ChatGPTService: ChatGPTServiceType {
     public var memory: ChatGPTMemory
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
     var runningTask: Task<Void, Never>?
-    var buildCompletionStreamAPI: CompletionStreamAPIBuilder = {
+    var buildCompletionStreamAPI: ChatCompletionsStreamAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionStreamAPI(
+            return GoogleAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAICompletionStreamAPI(
+            return OpenAIChatCompletionsService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        case .ollama:
+            return OllamaChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
@@ -89,18 +113,25 @@ public class ChatGPTService: ChatGPTServiceType {
         }
     }
 
-    var buildCompletionAPI: CompletionAPIBuilder = {
+    var buildCompletionAPI: ChatCompletionsAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
         switch model.format {
         case .googleAI:
-            return GoogleCompletionAPI(
+            return GoogleAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
                 prompt: prompt
             )
         case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAICompletionAPI(
+            return OpenAIChatCompletionsService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        case .ollama:
+            return OllamaChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
@@ -275,7 +306,7 @@ extension ChatGPTService {
         }
 
         let messages = prompt.history.map {
-            CompletionRequestBody.Message(
+            ChatCompletionsRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
                 name: $0.name,
@@ -286,7 +317,7 @@ extension ChatGPTService {
         }
         let remainingTokens = prompt.remainingTokenCount
 
-        let requestBody = CompletionRequestBody(
+        let requestBody = ChatCompletionsRequestBody(
             model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
@@ -403,7 +434,7 @@ extension ChatGPTService {
         }
 
         let messages = prompt.history.map {
-            CompletionRequestBody.Message(
+            ChatCompletionsRequestBody.Message(
                 role: $0.role,
                 content: $0.content ?? "",
                 name: $0.name,
@@ -414,7 +445,7 @@ extension ChatGPTService {
         }
         let remainingTokens = prompt.remainingTokenCount
 
-        let requestBody = CompletionRequestBody(
+        let requestBody = ChatCompletionsRequestBody(
             model: model.info.modelName,
             messages: messages,
             temperature: configuration.temperature,
@@ -582,7 +613,7 @@ extension ChatGPTService {
 }
 
 extension ChatGPTService {
-    func changeBuildCompletionStreamAPI(_ builder: @escaping CompletionStreamAPIBuilder) {
+    func changeBuildCompletionStreamAPI(_ builder: @escaping ChatCompletionsStreamAPIBuilder) {
         buildCompletionStreamAPI = builder
     }
 }

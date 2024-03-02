@@ -11,6 +11,7 @@ extension ChatModel: ManageableAIModel {
         case .azureOpenAI: return "Azure OpenAI"
         case .openAICompatible: return "OpenAI Compatible"
         case .googleAI: return "Google Generative AI"
+        case .ollama: return "Ollama"
         }
     }
 
