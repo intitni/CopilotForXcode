@@ -587,24 +587,37 @@ extension ChatGPTService {
                 }(),
                 content: chatMessage.content ?? "",
                 name: chatMessage.name,
-                toolCalls: chatMessage.toolCalls?.map {
-                    .init(
-                        id: $0.id,
-                        type: $0.type,
-                        function: .init(
-                            name: $0.function.name,
-                            arguments: $0.function.arguments
-                        )
-                    )
-                }
+                toolCalls: {
+                    if model.info.supportsFunctionCalling {
+                        chatMessage.toolCalls?.map {
+                            .init(
+                                id: $0.id,
+                                type: $0.type,
+                                function: .init(
+                                    name: $0.function.name,
+                                    arguments: $0.function.arguments
+                                )
+                            )
+                        }
+                    } else {
+                        nil
+                    }
+                }()
             ))
 
             for call in chatMessage.toolCalls ?? [] {
-                all.append(ChatCompletionsRequestBody.Message(
-                    role: .tool,
-                    content: call.response.content,
-                    toolCallId: call.response.id
-                ))
+                if model.info.supportsFunctionCalling {
+                    all.append(ChatCompletionsRequestBody.Message(
+                        role: .tool,
+                        content: call.response.content,
+                        toolCallId: call.response.id
+                    ))
+                } else {
+                    all.append(ChatCompletionsRequestBody.Message(
+                        role: .user,
+                        content: call.response.content
+                    ))
+                }
             }
 
             return all
