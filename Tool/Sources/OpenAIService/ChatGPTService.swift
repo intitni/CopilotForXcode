@@ -610,7 +610,7 @@ extension ChatGPTService {
                     all.append(ChatCompletionsRequestBody.Message(
                         role: .tool,
                         content: call.response.content,
-                        toolCallId: call.response.id
+                        toolCallId: call.id
                     ))
                 } else {
                     all.append(ChatCompletionsRequestBody.Message(

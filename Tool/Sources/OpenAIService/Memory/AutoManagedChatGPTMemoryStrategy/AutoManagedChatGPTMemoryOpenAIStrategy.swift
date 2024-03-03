@@ -45,7 +45,7 @@ extension TokenEncoder {
                 encodingContent.append(toolCall.function.arguments)
                 total += 4
                 encodingContent.append(toolCall.response.content)
-                encodingContent.append(toolCall.response.id)
+                encodingContent.append(toolCall.id)
             }
         }
         total += await withTaskGroup(of: Int.self, body: { group in

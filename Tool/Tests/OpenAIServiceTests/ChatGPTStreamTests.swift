@@ -133,7 +133,7 @@ final class ChatGPTStreamTests: XCTestCase {
                             id: "id",
                             type: "function",
                             function: .init(name: "function", arguments: "{\n\"foo\": 1\n}"),
-                            response: .init(id: "id", content: "Function is called.", summary: nil)
+                            response: .init(content: "Function is called.", summary: nil)
                         ),
                     ]
                 ),
@@ -254,19 +254,19 @@ final class ChatGPTStreamTests: XCTestCase {
                             id: "id",
                             type: "function",
                             function: .init(name: "function", arguments: "{\n\"foo\": 1\n}"),
-                            response: .init(id: "id", content: "Function is called.", summary: nil)
+                            response: .init(content: "Function is called.", summary: nil)
                         ),
                         .init(
                             id: "id2",
                             type: "function",
                             function: .init(name: "function", arguments: "{\n\"foo\": 1\n}"),
-                            response: .init(id: "id2", content: "Function is called.", summary: nil)
+                            response: .init(content: "Function is called.", summary: nil)
                         ),
                         .init(
                             id: "id3",
                             type: "function",
                             function: .init(name: "function", arguments: "{\n\"foo\": 1\n}"),
-                            response: .init(id: "id3", content: "Function is called.", summary: nil)
+                            response: .init(content: "Function is called.", summary: nil)
                         ),
                     ]
                 ),
@@ -360,7 +360,7 @@ final class ChatGPTStreamTests: XCTestCase {
                             id: "id",
                             type: "function",
                             function: .init(name: "function", arguments: "{\n\"foo\": 1\n}"),
-                            response: .init(id: "id", content: "Function is called.", summary: nil)
+                            response: .init(content: "Function is called.", summary: nil)
                         ),
                     ]
                 ),

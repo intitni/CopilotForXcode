@@ -110,7 +110,7 @@ class ReformatPromptToBeGoogleAICompatibleTests: XCTestCase {
                         id: "id",
                         type: "function",
                         function: .init(name: "ping", arguments: "{ \"ip\": \"127.0.0.1\" }"),
-                        response: .init(id: "id", content: "42ms", summary: nil)
+                        response: .init(content: "42ms", summary: nil)
                     ),
                 ]
             ),

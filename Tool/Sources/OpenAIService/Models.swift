@@ -40,16 +40,14 @@ public struct ChatMessage: Equatable, Codable {
             self.id = id
             self.type = type
             self.function = function
-            self.response = response ?? .init(id: id, content: "", summary: nil)
+            self.response = response ?? .init(content: "", summary: nil)
         }
     }
 
     public struct ToolCallResponse: Codable, Equatable {
-        public var id: String
         public var content: String
         public var summary: String?
-        public init(id: String, content: String, summary: String?) {
-            self.id = id
+        public init(content: String, summary: String?) {
             self.content = content
             self.summary = summary
         }

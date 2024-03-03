@@ -329,7 +329,7 @@ struct Chat: ReducerProtocol {
 
                     for call in message.toolCalls ?? [] {
                         all.append(.init(
-                            id: message.id + call.response.id,
+                            id: message.id + call.id,
                             role: .tool,
                             text: call.response.summary ?? call.response.content,
                             references: []
