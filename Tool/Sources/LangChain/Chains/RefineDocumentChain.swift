@@ -153,7 +153,7 @@ public final class RefineDocumentChain: Chain {
     }
 
     func extractAnswer(_ chatMessage: ChatMessage) -> IntermediateAnswer {
-        for functionCall in chatMessage.toolCallContext?.toolCalls.map(\.function) ?? [] {
+        for functionCall in chatMessage.toolCalls?.map(\.function) ?? [] {
             do {
                 let intermediateAnswer = try JSONDecoder().decode(
                     IntermediateAnswer.self,

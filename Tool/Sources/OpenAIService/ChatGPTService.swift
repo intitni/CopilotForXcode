@@ -169,7 +169,7 @@ public class ChatGPTService: ChatGPTServiceType {
                 role: .user,
                 content: content,
                 name: nil,
-                toolCallContext: nil,
+                toolCalls: nil,
                 summary: summary,
                 references: []
             )
@@ -222,7 +222,7 @@ public class ChatGPTService: ChatGPTServiceType {
 
                             pendingToolCalls = await memory.history
                                 .last { $0.id == sourceMessageId }?
-                                .toolCallContext?.toolCalls ?? []
+                                .toolCalls ?? []
 
                             #if DEBUG
                             Debugger.didReceiveResponse(content: reply)
@@ -261,7 +261,7 @@ public class ChatGPTService: ChatGPTServiceType {
         return try await Debugger.$id.withValue(.init()) {
             let message = try await sendMemoryAndWait()
             var finalResult = message?.content
-            var toolCalls = message?.toolCallContext?.toolCalls
+            var toolCalls = message?.toolCalls
             while let sourceMessageId = message?.id, let calls = toolCalls, !calls.isEmpty {
                 try Task.checkCancellation()
                 if !configuration.runFunctionsAutomatically {
@@ -273,7 +273,7 @@ public class ChatGPTService: ChatGPTServiceType {
                 }
                 guard let nextMessage = try await sendMemoryAndWait() else { break }
                 finalResult = nextMessage.content
-                toolCalls = nextMessage.toolCallContext?.toolCalls
+                toolCalls = nextMessage.toolCalls
             }
 
             #if DEBUG
@@ -438,13 +438,11 @@ extension ChatGPTService {
             }(),
             content: choice.content,
             name: choice.name,
-            toolCallContext: choice.toolCalls.map {
-                .init(toolCalls: $0.map {
-                    ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
-                        name: $0.function.name,
-                        arguments: $0.function.arguments ?? ""
-                    ))
-                }, responses: [])
+            toolCalls: choice.toolCalls?.map {
+                ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
+                    name: $0.function.name,
+                    arguments: $0.function.arguments ?? ""
+                ))
             },
             references: prompt.references
         )
@@ -589,7 +587,7 @@ extension ChatGPTService {
                 }(),
                 content: chatMessage.content ?? "",
                 name: chatMessage.name,
-                toolCalls: chatMessage.toolCallContext?.toolCalls.map {
+                toolCalls: chatMessage.toolCalls?.map {
                     .init(
                         id: $0.id,
                         type: $0.type,
@@ -601,14 +599,12 @@ extension ChatGPTService {
                 }
             ))
 
-            if let responses = chatMessage.toolCallContext?.responses {
-                for response in responses {
-                    all.append(ChatCompletionsRequestBody.Message(
-                        role: .tool,
-                        content: response.content,
-                        toolCallId: response.id
-                    ))
-                }
+            for call in chatMessage.toolCalls ?? [] {
+                all.append(ChatCompletionsRequestBody.Message(
+                    role: .tool,
+                    content: call.response.content,
+                    toolCallId: call.response.id
+                ))
             }
 
             return all

@@ -126,7 +126,7 @@ public final class ChatService: ObservableObject {
 
         // if it's stopped before the tool calls finish, remove the message.
         await memory.mutateHistory { history in
-            if history.last?.role == .assistant, history.last?.toolCallContext?.toolCalls != nil {
+            if history.last?.role == .assistant, history.last?.toolCalls != nil {
                 history.removeLast()
             }
         }

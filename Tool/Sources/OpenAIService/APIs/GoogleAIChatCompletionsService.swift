@@ -208,13 +208,13 @@ extension ModelContent {
         case .user:
             return message.content ?? " "
         case .assistant:
-            if let toolCallContext = message.toolCallContext {
-                return toolCallContext.toolCalls.map { call in
-                    let response = toolCallContext.responses.first(where: { $0.id == call.id })
+            if let toolCalls = message.toolCalls {
+                return toolCalls.map { call in
+                    let response = call.response
                     return """
                     Call function: \(call.function.name)
                     Arguments: \(call.function.arguments)
-                    Result: \(response?.content ?? "N/A")
+                    Result: \(response.content)
                     """
                 }.joined(separator: "\n")
             } else {

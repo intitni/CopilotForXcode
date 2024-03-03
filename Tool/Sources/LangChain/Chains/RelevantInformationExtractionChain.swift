@@ -104,7 +104,7 @@ public final class RelevantInformationExtractionChain: Chain {
                             callbackManagers: callbackManagers
                         )
 
-                        if let functionCall = output.toolCallContext?.toolCalls
+                        if let functionCall = output.toolCalls?
                             .first(where: { $0.function.name == FinalAnswer().name })?.function
                         {
                             do {

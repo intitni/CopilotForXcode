@@ -65,21 +65,15 @@ public extension ChatGPTMemory {
         summary: String? = nil
     ) async {
         await updateMessage(id: id) { message in
-            if let index = message.toolCallContext?.responses.firstIndex(where: {
+            if let index = message.toolCalls?.firstIndex(where: {
                 $0.id == toolCallId
             }) {
                 if let content {
-                    message.toolCallContext?.responses[index].content = content
+                    message.toolCalls?[index].response.content = content
                 }
                 if let summary {
-                    message.toolCallContext?.responses[index].summary = summary
+                    message.toolCalls?[index].response.summary = summary
                 }
-            } else {
-                message.toolCallContext?.responses.append(.init(
-                    id: toolCallId,
-                    content: content ?? "",
-                    summary: summary ?? ""
-                ))
             }
         }
     }
@@ -107,7 +101,7 @@ public extension ChatGPTMemory {
                     message.role = role
                 }
                 if let toolCalls {
-                    if var existedToolCalls = message.toolCallContext?.toolCalls {
+                    if var existedToolCalls = message.toolCalls {
                         for pair in toolCalls.sorted(by: { $0.key <= $1.key }) {
                             let (proposedIndex, toolCall) = pair
                             let index = {
@@ -130,12 +124,9 @@ public extension ChatGPTMemory {
                                 existedToolCalls.append(toolCall)
                             }
                         }
-                        message.toolCallContext?.toolCalls = existedToolCalls
+                        message.toolCalls = existedToolCalls
                     } else {
-                        message.toolCallContext = .init(
-                            toolCalls: toolCalls.sorted(by: { $0.key <= $1.key }).map(\.value),
-                            responses: []
-                        )
+                        message.toolCalls = toolCalls.sorted(by: { $0.key <= $1.key }).map(\.value)
                     }
                 }
                 if let summary {
@@ -155,12 +146,7 @@ public extension ChatGPTMemory {
                     role: role ?? .system,
                     content: content,
                     name: name,
-                    toolCallContext: toolCalls.map { calls in
-                        .init(
-                            toolCalls: calls.sorted(by: { $0.key <= $1.key }).map(\.value),
-                            responses: []
-                        )
-                    },
+                    toolCalls: toolCalls?.sorted(by: { $0.key <= $1.key }).map(\.value),
                     summary: summary,
                     references: references ?? []
                 ))

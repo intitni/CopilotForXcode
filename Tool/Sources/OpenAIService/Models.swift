@@ -30,10 +30,12 @@ public struct ChatMessage: Equatable, Codable {
         public var id: String
         public var type: String
         public var function: FunctionCall
+        public var response: ToolCallResponse
         public init(id: String, type: String, function: FunctionCall) {
             self.id = id
             self.type = type
             self.function = function
+            response = .init(id: id, content: "", summary: nil)
         }
     }
     
@@ -46,11 +48,6 @@ public struct ChatMessage: Equatable, Codable {
             self.content = content
             self.summary = summary
         }
-    }
-    
-    public struct ToolCallContext: Codable, Equatable {
-        public var toolCalls: [ToolCall]
-        public var responses: [ToolCallResponse]
     }
 
     public struct Reference: Codable, Equatable {
@@ -109,7 +106,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A function call from the bot.
-    public var toolCallContext: ToolCallContext? {
+    public var toolCalls: [ToolCall]? {
         didSet { tokensCount = nil }
     }
 
@@ -134,7 +131,7 @@ public struct ChatMessage: Equatable, Codable {
     /// Is the message considered empty.
     var isEmpty: Bool {
         if let content, !content.isEmpty { return false }
-        if let toolCallContext, !toolCallContext.toolCalls.isEmpty { return false }
+        if let toolCalls, !toolCalls.isEmpty { return false }
         if let name, !name.isEmpty { return false }
         return true
     }
@@ -144,7 +141,7 @@ public struct ChatMessage: Equatable, Codable {
         role: Role,
         content: String?,
         name: String? = nil,
-        toolCallContext: ToolCallContext? = nil,
+        toolCalls: [ToolCall]? = nil,
         summary: String? = nil,
         tokenCount: Int? = nil,
         references: [Reference] = []
@@ -152,7 +149,7 @@ public struct ChatMessage: Equatable, Codable {
         self.role = role
         self.content = content
         self.name = name
-        self.toolCallContext = toolCallContext
+        self.toolCalls = toolCalls
         self.summary = summary
         self.id = id
         tokensCount = tokenCount

@@ -327,15 +327,13 @@ struct Chat: ReducerProtocol {
                         }
                     ))
 
-                    if let responses = message.toolCallContext?.responses {
-                        for response in responses {
-                            all.append(.init(
-                                id: message.id + response.id,
-                                role: .tool,
-                                text: response.summary ?? response.content,
-                                references: []
-                            ))
-                        }
+                    for call in message.toolCalls ?? [] {
+                        all.append(.init(
+                            id: message.id + call.response.id,
+                            role: .tool,
+                            text: call.response.summary ?? call.response.content,
+                            references: []
+                        ))
                     }
 
                     return all
