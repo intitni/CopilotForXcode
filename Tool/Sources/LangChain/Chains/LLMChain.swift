@@ -33,7 +33,7 @@ public class ChatModelChain<Input>: Chain {
     public func parseOutput(_ output: Output) -> String {
         if let content = output.content {
             return content
-        } else if let toolCalls = output.toolCalls {
+        } else if let toolCalls = output.toolCallContext?.toolCalls {
             return toolCalls.map { "[\($0.id)] \($0.function.name): \($0.function.arguments)" }
                 .joined(separator: "\n")
         }

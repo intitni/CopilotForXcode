@@ -58,73 +58,109 @@ public extension ChatGPTMemory {
         }
     }
 
+    func streamToolCallResponse(
+        id: String,
+        toolCallId: String,
+        content: String? = nil,
+        summary: String? = nil
+    ) async {
+        await updateMessage(id: id) { message in
+            if let index = message.toolCallContext?.responses.firstIndex(where: {
+                $0.id == toolCallId
+            }) {
+                if let content {
+                    message.toolCallContext?.responses[index].content = content
+                }
+                if let summary {
+                    message.toolCallContext?.responses[index].summary = summary
+                }
+            } else {
+                message.toolCallContext?.responses.append(.init(
+                    id: toolCallId,
+                    content: content ?? "",
+                    summary: summary ?? ""
+                ))
+            }
+        }
+    }
+
     /// Stream a message to the history.
     func streamMessage(
         id: String,
         role: ChatMessage.Role? = nil,
         content: String? = nil,
         name: String? = nil,
-        toolCallId: String? = nil,
-        toolCalls: [ChatMessage.ToolCall]? = nil,
+        toolCalls: [Int: ChatMessage.ToolCall]? = nil,
         summary: String? = nil,
         references: [ChatMessage.Reference]? = nil
     ) async {
-        await mutateHistory { history in
-            if let index = history.firstIndex(where: { $0.id == id }) {
+        if await history.contains(where: { $0.id == id }) {
+            await updateMessage(id: id) { message in
                 if let content {
-                    if history[index].content == nil {
-                        history[index].content = content
+                    if message.content == nil {
+                        message.content = content
                     } else {
-                        history[index].content?.append(content)
+                        message.content?.append(content)
                     }
                 }
                 if let role {
-                    history[index].role = role
+                    message.role = role
                 }
                 if let toolCalls {
-                    if history[index].toolCalls == nil {
-                        history[index].toolCalls = toolCalls
-                    } else {
-                        for toolCall in toolCalls {
-                            if let index = history[index].toolCalls?
-                                .firstIndex(where: { $0.id == toolCall.id })
-                            {
+                    if var existedToolCalls = message.toolCallContext?.toolCalls {
+                        for pair in toolCalls.sorted(by: { $0.key <= $1.key }) {
+                            let (proposedIndex, toolCall) = pair
+                            let index = {
+                                if toolCall.id.isEmpty { return proposedIndex }
+                                return existedToolCalls.lastIndex(where: { $0.id == toolCall.id })
+                                    ?? proposedIndex
+                            }()
+                            if index < existedToolCalls.endIndex {
                                 if !toolCall.id.isEmpty {
-                                    history[index].toolCalls?[index].id = toolCall.id
+                                    existedToolCalls[index].id = toolCall.id
                                 }
                                 if !toolCall.type.isEmpty {
-                                    history[index].toolCalls?[index].type = toolCall.type
+                                    existedToolCalls[index].type = toolCall.type
                                 }
-                                history[index].toolCalls?[index].function.name
+                                existedToolCalls[index].function.name
                                     .append(toolCall.function.name)
-                                history[index].toolCalls?[index].function.arguments
+                                existedToolCalls[index].function.arguments
                                     .append(toolCall.function.arguments)
                             } else {
-                                history[index].toolCalls?.append(toolCall)
+                                existedToolCalls.append(toolCall)
                             }
                         }
+                        message.toolCallContext?.toolCalls = existedToolCalls
+                    } else {
+                        message.toolCallContext = .init(
+                            toolCalls: toolCalls.sorted(by: { $0.key <= $1.key }).map(\.value),
+                            responses: []
+                        )
                     }
                 }
                 if let summary {
-                    history[index].summary = summary
+                    message.summary = summary
                 }
                 if let references {
-                    history[index].references.append(contentsOf: references)
+                    message.references.append(contentsOf: references)
                 }
                 if let name {
-                    history[index].name = name
+                    message.name = name
                 }
-                if let toolCallId {
-                    history[index].toolCallId = toolCallId
-                }
-            } else {
+            }
+        } else {
+            await mutateHistory { history in
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
                     content: content,
                     name: name,
-                    toolCallId: toolCallId,
-                    toolCalls: toolCalls,
+                    toolCallContext: toolCalls.map { calls in
+                        .init(
+                            toolCalls: calls.sorted(by: { $0.key <= $1.key }).map(\.value),
+                            responses: []
+                        )
+                    },
                     summary: summary,
                     references: references ?? []
                 ))

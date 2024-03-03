@@ -194,7 +194,7 @@ extension ChatGPTPrompt {
 extension ModelContent {
     static func convertRole(_ role: ChatMessage.Role) -> String {
         switch role {
-        case .user, .system, .tool:
+        case .user, .system:
             return "user"
         case .assistant:
             return "model"
@@ -207,16 +207,14 @@ extension ModelContent {
             return "System Prompt:\n\(message.content ?? " ")"
         case .user:
             return message.content ?? " "
-        case .tool:
-            return """
-            Result of \(message.toolCallId ?? "tool"): \(message.content ?? "N/A")
-            """
         case .assistant:
-            if let toolCalls = message.toolCalls {
-                return toolCalls.map {
-                    """
-                    Call function: \($0.function.name) - \($0.id)
-                    Arguments: \($0.function.arguments)
+            if let toolCallContext = message.toolCallContext {
+                return toolCallContext.toolCalls.map { call in
+                    let response = toolCallContext.responses.first(where: { $0.id == call.id })
+                    return """
+                    Call function: \(call.function.name)
+                    Arguments: \(call.function.arguments)
+                    Result: \(response?.content ?? "N/A")
                     """
                 }.joined(separator: "\n")
             } else {

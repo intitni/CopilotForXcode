@@ -5,8 +5,28 @@ import Preferences
 
 struct ChatCompletionsRequestBody: Codable, Equatable {
     struct Message: Codable, Equatable {
+        enum Role: String, Codable, Equatable {
+            case system
+            case user
+            case assistant
+            case tool
+            
+            var asChatMessageRole: ChatMessage.Role {
+                switch self {
+                case .system:
+                    return .system
+                case .user:
+                    return .user
+                case .assistant:
+                    return .assistant
+                case .tool:
+                    return .user
+                }
+            }
+        }
+
         /// The role of the message.
-        var role: ChatMessage.Role
+        var role: Role
         /// The content of the message.
         var content: String
         /// When we want to reply to a function call with the result, we have to provide the
@@ -149,12 +169,13 @@ struct ChatCompletionsStreamDataChunk {
         }
 
         struct ToolCall {
+            var index: Int?
             var id: String?
             var type: String?
             var function: FunctionCall?
         }
 
-        var role: ChatMessage.Role?
+        var role: ChatCompletionsRequestBody.Message.Role?
         var content: String?
         var toolCalls: [ToolCall]?
     }
@@ -174,7 +195,7 @@ protocol ChatCompletionsAPI {
 
 struct ChatCompletionResponseBody: Codable, Equatable {
     typealias Message = ChatCompletionsRequestBody.Message
-    
+
     var id: String?
     var object: String
     var model: String

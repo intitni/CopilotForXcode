@@ -15,7 +15,6 @@ public struct ChatMessage: Equatable, Codable {
         case system
         case user
         case assistant
-        case tool
     }
 
     public struct FunctionCall: Codable, Equatable {
@@ -36,6 +35,22 @@ public struct ChatMessage: Equatable, Codable {
             self.type = type
             self.function = function
         }
+    }
+    
+    public struct ToolCallResponse: Codable, Equatable {
+        public var id: String
+        public var content: String
+        public var summary: String?
+        public init(id: String, content: String, summary: String?) {
+            self.id = id
+            self.content = content
+            self.summary = summary
+        }
+    }
+    
+    public struct ToolCallContext: Codable, Equatable {
+        public var toolCalls: [ToolCall]
+        public var responses: [ToolCallResponse]
     }
 
     public struct Reference: Codable, Equatable {
@@ -85,6 +100,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// The role of a message.
+    @FallbackDecoding<ChatMessageRoleFallback>
     public var role: Role
 
     /// The content of the message, either the chat message, or a result of a function call.
@@ -93,17 +109,12 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A function call from the bot.
-    public var toolCalls: [ToolCall]? {
+    public var toolCallContext: ToolCallContext? {
         didSet { tokensCount = nil }
     }
 
     /// The function name of a reply to a function call.
     public var name: String? {
-        didSet { tokensCount = nil }
-    }
-    
-    /// The tool id of a reply to a tool call.
-    public var toolCallId: String? {
         didSet { tokensCount = nil }
     }
 
@@ -123,7 +134,7 @@ public struct ChatMessage: Equatable, Codable {
     /// Is the message considered empty.
     var isEmpty: Bool {
         if let content, !content.isEmpty { return false }
-        if let toolCalls, !toolCalls.isEmpty { return false }
+        if let toolCallContext, !toolCallContext.toolCalls.isEmpty { return false }
         if let name, !name.isEmpty { return false }
         return true
     }
@@ -133,8 +144,7 @@ public struct ChatMessage: Equatable, Codable {
         role: Role,
         content: String?,
         name: String? = nil,
-        toolCallId: String? = nil,
-        toolCalls: [ToolCall]? = nil,
+        toolCallContext: ToolCallContext? = nil,
         summary: String? = nil,
         tokenCount: Int? = nil,
         references: [Reference] = []
@@ -142,8 +152,7 @@ public struct ChatMessage: Equatable, Codable {
         self.role = role
         self.content = content
         self.name = name
-        self.toolCallId = toolCallId
-        self.toolCalls = toolCalls
+        self.toolCallContext = toolCallContext
         self.summary = summary
         self.id = id
         tokensCount = tokenCount
@@ -155,3 +164,6 @@ public struct ReferenceKindFallback: FallbackValueProvider {
     public static var defaultValue: ChatMessage.Reference.Kind { .other }
 }
 
+public struct ChatMessageRoleFallback: FallbackValueProvider {
+    public static var defaultValue: ChatMessage.Role { .user }
+}

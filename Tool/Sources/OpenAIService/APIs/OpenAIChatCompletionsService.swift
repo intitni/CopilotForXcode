@@ -1,6 +1,7 @@
 import AIModel
 import AsyncAlgorithms
 import Foundation
+import Logger
 import Preferences
 
 /// https://platform.openai.com/docs/api-reference/chat/create
@@ -18,6 +19,24 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         var errorDescription: String? { error.message }
     }
 
+    enum MessageRole: String, Codable {
+        case system
+        case user
+        case assistant
+        case function
+        case tool
+
+        var formalized: ChatCompletionsRequestBody.Message.Role {
+            switch self {
+            case .system: return .system
+            case .user: return .user
+            case .assistant: return .assistant
+            case .function: return .tool
+            case .tool: return .tool
+            }
+        }
+    }
+
     struct StreamDataChunk: Codable {
         var id: String?
         var object: String?
@@ -30,7 +49,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var finish_reason: String?
 
             struct Delta: Codable {
-                var role: ChatMessage.Role?
+                var role: MessageRole?
                 var content: String?
                 var function_call: RequestBody.MessageFunctionCall?
                 var tool_calls: [RequestBody.MessageToolCall]?
@@ -41,7 +60,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     struct ResponseBody: Codable, Equatable {
         struct Message: Codable, Equatable {
             /// The role of the message.
-            var role: ChatMessage.Role
+            var role: MessageRole
             /// The content of the message.
             var content: String?
             /// When we want to reply to a function call with the result, we have to provide the
@@ -83,7 +102,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     struct RequestBody: Codable, Equatable {
         struct Message: Codable, Equatable {
             /// The role of the message.
-            var role: ChatMessage.Role
+            var role: MessageRole
             /// The content of the message.
             var content: String
             /// When we want to reply to a function call with the result, we have to provide the
@@ -97,22 +116,28 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             ///
             /// - important: It's required when the role is `tool`.
             var tool_call_id: String?
+            /// When the bot wants to call a function, it will reply with a function call.
+            ///
+            /// Deprecated.
+            var function_call: MessageFunctionCall?
         }
 
         struct MessageFunctionCall: Codable, Equatable {
             /// The name of the
-            var name: String
+            var name: String?
             /// A JSON string.
             var arguments: String?
         }
 
         struct MessageToolCall: Codable, Equatable {
+            /// When it's returned as a data chunk, use the index to identify the tool call.
+            var index: Int?
             /// The id of the tool call.
-            var id: String
+            var id: String?
             /// The type of the tool.
-            var type: String
+            var type: String?
             /// The function call.
-            var function: MessageFunctionCall
+            var function: MessageFunctionCall?
         }
 
         struct Tool: Codable, Equatable {
@@ -200,11 +225,17 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                         if Task.isCancelled { break }
                         let prefix = "data: "
                         guard line.hasPrefix(prefix),
-                              let content = line.dropFirst(prefix.count).data(using: .utf8),
-                              let chunk = try? JSONDecoder()
-                              .decode(StreamDataChunk.self, from: content)
+                              let content = line.dropFirst(prefix.count).data(using: .utf8)
                         else { continue }
-                        continuation.yield(chunk.formalized())
+                        do {
+                            let chunk = try JSONDecoder().decode(
+                                StreamDataChunk.self,
+                                from: content
+                            )
+                            continuation.yield(chunk.formalized())
+                        } catch {
+                            Logger.service.error("Error decoding stream data: \(error)")
+                        }
                     }
                     continuation.finish()
                 } catch {
@@ -276,27 +307,27 @@ extension OpenAIChatCompletionsService.ResponseBody {
 
         func convertMessage(_ message: Message) -> ChatCompletionResponseBody.Message {
             .init(
-                role: message.role,
+                role: message.role.formalized,
                 content: message.content ?? "",
                 toolCalls: {
                     if let toolCalls = message.tool_calls {
                         return toolCalls.map { toolCall in
                             .init(
-                                id: toolCall.id,
-                                type: toolCall.type,
+                                id: toolCall.id ?? "",
+                                type: toolCall.type ?? "function",
                                 function: .init(
-                                    name: toolCall.function.name,
-                                    arguments: toolCall.function.arguments
+                                    name: toolCall.function?.name ?? "",
+                                    arguments: toolCall.function?.arguments
                                 )
                             )
                         }
                     } else if let functionCall = message.function_call {
                         return [
                             .init(
-                                id: functionCall.name,
+                                id: functionCall.name ?? "",
                                 type: "function",
                                 function: .init(
-                                    name: functionCall.name,
+                                    name: functionCall.name ?? "",
                                     arguments: functionCall.arguments
                                 )
                             ),
@@ -336,17 +367,18 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
             message: {
                 if let choice = self.choices?.first {
                     return .init(
-                        role: choice.delta?.role,
+                        role: choice.delta?.role?.formalized,
                         content: choice.delta?.content,
                         toolCalls: {
                             if let toolCalls = choice.delta?.tool_calls {
                                 return toolCalls.map {
                                     .init(
+                                        index: $0.index,
                                         id: $0.id,
                                         type: $0.type,
                                         function: .init(
-                                            name: $0.function.name,
-                                            arguments: $0.function.arguments
+                                            name: $0.function?.name,
+                                            arguments: $0.function?.arguments
                                         )
                                     )
                                 }
@@ -355,6 +387,7 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
                             if let functionCall = choice.delta?.function_call {
                                 return [
                                     .init(
+                                        index: 0,
                                         id: functionCall.name,
                                         type: "function",
                                         function: .init(
@@ -379,12 +412,23 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
 extension OpenAIChatCompletionsService.RequestBody {
     init(_ body: ChatCompletionsRequestBody) {
         model = body.model
-        messages = body.messages.map {
+        messages = body.messages.map { message in
             .init(
-                role: $0.role,
-                content: $0.content,
-                name: $0.name,
-                tool_calls: $0.toolCalls?.map { tool in
+                role: {
+                    switch message.role {
+                    case .user:
+                        return .user
+                    case .assistant:
+                        return .assistant
+                    case .system:
+                        return .system
+                    case .tool:
+                        return .tool
+                    }
+                }(),
+                content: message.content,
+                name: message.name,
+                tool_calls: message.toolCalls?.map { tool in
                     MessageToolCall(
                         id: tool.id,
                         type: tool.type,
@@ -394,7 +438,7 @@ extension OpenAIChatCompletionsService.RequestBody {
                         )
                     )
                 },
-                tool_call_id: $0.toolCallId
+                tool_call_id: message.toolCallId
             )
         }
         temperature = body.temperature

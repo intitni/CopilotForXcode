@@ -169,7 +169,7 @@ public class ChatGPTService: ChatGPTServiceType {
                 role: .user,
                 content: content,
                 name: nil,
-                toolCalls: nil,
+                toolCallContext: nil,
                 summary: summary,
                 references: []
             )
@@ -180,8 +180,8 @@ public class ChatGPTService: ChatGPTServiceType {
             AsyncThrowingStream<String, Error> { continuation in
                 let task = Task(priority: .userInitiated) {
                     do {
-                        var pendingToolCalls = IdentifiedArrayOf<ChatMessage.ToolCall>()
-                        var functionCallMessageIDs = [String: String]()
+                        var pendingToolCalls = [ChatMessage.ToolCall]()
+                        var sourceMessageId = ""
                         var isInitialCall = true
                         loop: while !pendingToolCalls.isEmpty || isInitialCall {
                             try Task.checkCancellation()
@@ -192,10 +192,12 @@ public class ChatGPTService: ChatGPTServiceType {
                                 }
                                 await runFunctionCall(
                                     toolCall,
-                                    messageId: functionCallMessageIDs[toolCall.id]
+                                    sourceMessageId: sourceMessageId
                                 )
                             }
-                            let stream = try await sendMemory()
+                            sourceMessageId = uuid()
+                                .uuidString + String(date().timeIntervalSince1970)
+                            let stream = try await sendMemory(proposedId: sourceMessageId)
 
                             #if DEBUG
                             var reply = ""
@@ -211,15 +213,17 @@ public class ChatGPTService: ChatGPTServiceType {
                                     #endif
 
                                 case let .toolCall(toolCall):
-                                    let id = storeToolCallsChunks(
-                                        chunk: toolCall,
-                                        into: &pendingToolCalls,
-                                        messageIds: &functionCallMessageIDs
+                                    await prepareFunctionCall(
+                                        toolCall,
+                                        sourceMessageId: sourceMessageId
                                     )
-
-                                    await prepareFunctionCall(toolCall, messageId: id)
                                 }
                             }
+
+                            pendingToolCalls = await memory.history
+                                .last { $0.id == sourceMessageId }?
+                                .toolCallContext?.toolCalls ?? []
+
                             #if DEBUG
                             Debugger.didReceiveResponse(content: reply)
                             #endif
@@ -257,19 +261,19 @@ public class ChatGPTService: ChatGPTServiceType {
         return try await Debugger.$id.withValue(.init()) {
             let message = try await sendMemoryAndWait()
             var finalResult = message?.content
-            var toolCalls = message?.toolCalls
-            while let calls = toolCalls, !calls.isEmpty {
+            var toolCalls = message?.toolCallContext?.toolCalls
+            while let sourceMessageId = message?.id, let calls = toolCalls, !calls.isEmpty {
                 try Task.checkCancellation()
                 if !configuration.runFunctionsAutomatically {
                     break
                 }
                 toolCalls = nil
                 for call in calls {
-                    await runFunctionCall(call)
+                    await runFunctionCall(call, sourceMessageId: sourceMessageId)
                 }
                 guard let nextMessage = try await sendMemoryAndWait() else { break }
                 finalResult = nextMessage.content
-                toolCalls = nextMessage.toolCalls
+                toolCalls = nextMessage.toolCallContext?.toolCalls
             }
 
             #if DEBUG
@@ -297,7 +301,7 @@ extension ChatGPTService {
     }
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
-    func sendMemory() async throws -> AsyncThrowingStream<StreamContent, Error> {
+    func sendMemory(proposedId: String) async throws -> AsyncThrowingStream<StreamContent, Error> {
         let prompt = await memory.generatePrompt()
 
         guard let model = configuration.model else {
@@ -321,8 +325,6 @@ extension ChatGPTService {
         Debugger.didSendRequestBody(body: requestBody)
         #endif
 
-        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
-
         return AsyncThrowingStream<StreamContent, Error> { continuation in
             let task = Task {
                 do {
@@ -341,26 +343,27 @@ extension ChatGPTService {
                         // The first round will contain the function name and an empty argument.
                         // e.g. {"name":"weather","arguments":""}
                         // The other rounds will contain part of the arguments.
-                        let toolCalls = delta.toolCalls?.map {
-                            ChatMessage.ToolCall(
-                                id: $0.id ?? "",
-                                type: $0.type ?? "",
-                                function: .init(
-                                    name: $0.function?.name ?? "",
-                                    arguments: $0.function?.arguments ?? ""
+                        let toolCalls = delta.toolCalls?
+                            .reduce(into: [Int: ChatMessage.ToolCall]()) {
+                                $0[$1.index ?? 0] = ChatMessage.ToolCall(
+                                    id: $1.id ?? "",
+                                    type: $1.type ?? "",
+                                    function: .init(
+                                        name: $1.function?.name ?? "",
+                                        arguments: $1.function?.arguments ?? ""
+                                    )
                                 )
-                            )
-                        }
+                            }
 
                         await memory.streamMessage(
                             id: proposedId,
-                            role: delta.role,
+                            role: delta.role?.asChatMessageRole,
                             content: delta.content,
                             toolCalls: toolCalls
                         )
 
                         if let toolCalls {
-                            for toolCall in toolCalls {
+                            for toolCall in toolCalls.values {
                                 continuation.yield(.toolCall(toolCall))
                             }
                         }
@@ -425,14 +428,23 @@ extension ChatGPTService {
         let choice = response.message
         let message = ChatMessage(
             id: proposedId,
-            role: choice.role,
+            role: {
+                switch choice.role {
+                case .system: .system
+                case .user: .user
+                case .assistant: .assistant
+                case .tool: .user
+                }
+            }(),
             content: choice.content,
             name: choice.name,
-            toolCalls: choice.toolCalls?.map {
-                ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
-                    name: $0.function.name,
-                    arguments: $0.function.arguments ?? ""
-                ))
+            toolCallContext: choice.toolCalls.map {
+                .init(toolCalls: $0.map {
+                    ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
+                        name: $0.function.name,
+                        arguments: $0.function.arguments ?? ""
+                    ))
+                }, responses: [])
             },
             references: prompt.references
         )
@@ -440,44 +452,17 @@ extension ChatGPTService {
         return message
     }
 
-    func storeToolCallsChunks(
-        chunk toolCall: ChatMessage.ToolCall,
-        into toolCalls: inout IdentifiedArrayOf<ChatMessage.ToolCall>,
-        messageIds: inout [String: String]
-    ) -> String {
-        if let index = toolCalls.firstIndex(where: { $0.id == toolCall.id }) {
-            if !toolCall.id.isEmpty {
-                toolCalls[index].id = toolCall.id
-            }
-            if !toolCall.type.isEmpty {
-                toolCalls[index].type = toolCall.type
-            }
-            toolCalls[index].function.name.append(toolCall.function.name)
-            toolCalls[index].function.arguments.append(toolCall.function.arguments)
-
-        } else {
-            toolCalls.append(toolCall)
-        }
-
-        let id = messageIds[toolCall.id] ?? UUID().uuidString
-        messageIds[toolCall.id] = id
-        return id
-    }
-
     /// When a function call is detected, but arguments are not yet ready, we can call this
     /// to insert a message placeholder in memory.
-    func prepareFunctionCall(_ call: ChatMessage.ToolCall, messageId: String) async {
+    func prepareFunctionCall(_ call: ChatMessage.ToolCall, sourceMessageId: String) async {
         guard let function = functionProvider.function(named: call.function.name) else { return }
-        await memory.streamMessage(
-            id: messageId,
-            role: .tool,
-            name: call.function.name,
-            toolCallId: call.id
-        )
+        await memory.streamToolCallResponse(id: sourceMessageId, toolCallId: call.id)
         await function.prepare { [weak self] summary in
-            await self?.memory.updateMessage(id: messageId) { message in
-                message.summary = summary
-            }
+            await self?.memory.streamToolCallResponse(
+                id: sourceMessageId,
+                toolCallId: call.id,
+                summary: summary
+            )
         }
     }
 
@@ -485,22 +470,18 @@ extension ChatGPTService {
     @discardableResult
     func runFunctionCall(
         _ call: ChatMessage.ToolCall,
-        messageId: String? = nil
+        sourceMessageId: String
     ) async -> String {
         #if DEBUG
         Debugger.didReceiveFunction(name: call.function.name, arguments: call.function.arguments)
         #endif
 
-        let messageId = messageId ?? uuid().uuidString
-
         guard let function = functionProvider.function(named: call.function.name) else {
-            return await fallbackFunctionCall(call.function, messageId: messageId)
+            return await fallbackFunctionCall(call, sourceMessageId: sourceMessageId)
         }
 
-        await memory.streamMessage(
-            id: messageId,
-            role: .tool,
-            name: call.function.name,
+        await memory.streamToolCallResponse(
+            id: sourceMessageId,
             toolCallId: call.id
         )
 
@@ -508,18 +489,22 @@ extension ChatGPTService {
             // Run the function
             let result = try await function.call(argumentsJsonString: call.function.arguments) {
                 [weak self] summary in
-                await self?.memory.updateMessage(id: messageId) { message in
-                    message.summary = summary
-                }
+                await self?.memory.streamToolCallResponse(
+                    id: sourceMessageId,
+                    toolCallId: call.id,
+                    summary: summary
+                )
             }
 
             #if DEBUG
             Debugger.didReceiveFunctionResult(result: result.botReadableContent)
             #endif
 
-            await memory.updateMessage(id: messageId) { message in
-                message.content = result.botReadableContent
-            }
+            await memory.streamToolCallResponse(
+                id: sourceMessageId,
+                toolCallId: call.id,
+                content: result.botReadableContent
+            )
 
             return result.botReadableContent
         } catch {
@@ -530,20 +515,22 @@ extension ChatGPTService {
             Debugger.didReceiveFunctionResult(result: content)
             #endif
 
-            await memory.updateMessage(id: messageId) { message in
-                message.content = content
-            }
+            await memory.streamToolCallResponse(
+                id: sourceMessageId,
+                toolCallId: call.id,
+                content: content
+            )
             return content
         }
     }
 
     /// Mock a function call result when the bot is calling a function that is not implemented.
     func fallbackFunctionCall(
-        _ call: ChatMessage.FunctionCall,
-        messageId: String
+        _ call: ChatMessage.ToolCall,
+        sourceMessageId: String
     ) async -> String {
         let memory = ConversationChatGPTMemory(systemPrompt: {
-            if call.name == "python" {
+            if call.function.name == "python" {
                 return """
                 Act like a Python interpreter.
                 I will give you Python code and you will execute it.
@@ -551,7 +538,7 @@ extension ChatGPTService {
                 """
             } else {
                 return """
-                You are a function simulator. Your name is \(call.name).
+                You are a function simulator. Your name is \(call.function.name).
                 Act like a function.
                 I will send you the arguments.
                 Reply with output of the function and tell me it's an answer generated by LLM.
@@ -570,17 +557,16 @@ extension ChatGPTService {
         let content: String = await {
             do {
                 return try await service.sendAndWait(content: """
-                \(call.arguments)
+                \(call.function.arguments)
                 """) ?? "No result."
             } catch {
                 return "No result."
             }
         }()
-        await memory.streamMessage(
-            id: messageId,
-            role: .tool,
+        await memory.streamToolCallResponse(
+            id: sourceMessageId,
+            toolCallId: call.id,
             content: content,
-            name: call.name,
             summary: "Finished running function."
         )
         return content
@@ -591,12 +577,19 @@ extension ChatGPTService {
         model: ChatModel,
         stream: Bool
     ) -> ChatCompletionsRequestBody {
-        let messages = prompt.history.map {
-            ChatCompletionsRequestBody.Message(
-                role: $0.role,
-                content: $0.content ?? "",
-                name: $0.name,
-                toolCalls: $0.toolCalls?.map {
+        let messages = prompt.history.flatMap { chatMessage in
+            var all = [ChatCompletionsRequestBody.Message]()
+            all.append(ChatCompletionsRequestBody.Message(
+                role: {
+                    switch chatMessage.role {
+                    case .system: .system
+                    case .user: .user
+                    case .assistant: .assistant
+                    }
+                }(),
+                content: chatMessage.content ?? "",
+                name: chatMessage.name,
+                toolCalls: chatMessage.toolCallContext?.toolCalls.map {
                     .init(
                         id: $0.id,
                         type: $0.type,
@@ -606,8 +599,21 @@ extension ChatGPTService {
                         )
                     )
                 }
-            )
+            ))
+
+            if let responses = chatMessage.toolCallContext?.responses {
+                for response in responses {
+                    all.append(ChatCompletionsRequestBody.Message(
+                        role: .tool,
+                        content: response.content,
+                        toolCallId: response.id
+                    ))
+                }
+            }
+
+            return all
         }
+
         let remainingTokens = prompt.remainingTokenCount
 
         let requestBody = ChatCompletionsRequestBody(
