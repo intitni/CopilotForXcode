@@ -218,37 +218,28 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             throw error ?? ChatGPTServiceError.responseInvalid
         }
 
-        let stream = AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> { continuation in
-            let task = Task {
-                do {
-                    for try await line in result.lines {
-                        if Task.isCancelled { break }
-                        let prefix = "data: "
-                        guard line.hasPrefix(prefix),
-                              let content = line.dropFirst(prefix.count).data(using: .utf8)
-                        else { continue }
-                        do {
-                            let chunk = try JSONDecoder().decode(
-                                StreamDataChunk.self,
-                                from: content
-                            )
-                            continuation.yield(chunk.formalized())
-                        } catch {
-                            Logger.service.error("Error decoding stream data: \(error)")
-                        }
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+        let stream = ResponseStream<StreamDataChunk>(result: result) {
+            var line = $0
+            let prefix = "data: "
+            if line.hasPrefix(prefix) {
+                line.removeFirst(prefix.count)
             }
-            continuation.onTermination = { _ in
-                task.cancel()
-                result.task.cancel()
+
+            if line == "[DONE]" { return .init(chunk: nil, done: true) }
+
+            do {
+                let chunk = try JSONDecoder().decode(
+                    StreamDataChunk.self,
+                    from: line.data(using: .utf8) ?? Data()
+                )
+                return .init(chunk: chunk, done: false)
+            } catch {
+                Logger.service.error("Error decoding stream data: \(error)")
+                throw error
             }
         }
 
-        return stream
+        return stream.map { $0.formalized() }.toStream()
     }
 
     func callAsFunction() async throws -> ChatCompletionResponseBody {
