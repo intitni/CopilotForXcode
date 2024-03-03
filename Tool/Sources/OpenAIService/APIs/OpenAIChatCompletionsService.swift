@@ -9,9 +9,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     struct CompletionAPIError: Error, Decodable, LocalizedError {
         struct ErrorDetail: Decodable {
             var message: String
-            var type: String
-            var param: String
-            var code: String
+            var type: String?
+            var param: String?
+            var code: String?
         }
 
         struct MistralAIErrorMessage: Decodable {
@@ -51,10 +51,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         }
 
         init(from decoder: Decoder) throws {
-            let container: KeyedDecodingContainer<CodingKeys> = try decoder
-                .container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: CodingKeys.self)
 
-            error = try? container.decode(ErrorDetail.self, forKey: .error)
+            do {
+                error = try container.decode(ErrorDetail.self, forKey: .error)
+            } catch {
+                print(error)
+                self.error = nil
+            }
             message = {
                 if let e = try? container.decode(MistralAIErrorMessage.self, forKey: .message) {
                     return CompletionAPIError.Message.mistralAI(e)
