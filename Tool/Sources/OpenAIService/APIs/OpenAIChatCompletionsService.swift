@@ -6,17 +6,65 @@ import Preferences
 
 /// https://platform.openai.com/docs/api-reference/chat/create
 actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
-    struct CompletionAPIError: Error, Codable, LocalizedError {
-        struct E: Codable {
+    struct CompletionAPIError: Error, Decodable, LocalizedError {
+        struct ErrorDetail: Decodable {
             var message: String
             var type: String
             var param: String
             var code: String
         }
 
-        var error: E
+        struct MistralAIErrorMessage: Decodable {
+            struct Detail: Decodable {
+                var msg: String?
+            }
 
-        var errorDescription: String? { error.message }
+            var message: String?
+            var msg: String?
+            var detail: [Detail]?
+        }
+
+        enum Message {
+            case raw(String)
+            case mistralAI(MistralAIErrorMessage)
+        }
+
+        var error: ErrorDetail?
+        var message: Message
+
+        var errorDescription: String? {
+            if let message = error?.message { return message }
+            switch message {
+            case let .raw(string):
+                return string
+            case let .mistralAI(mistralAIErrorMessage):
+                return mistralAIErrorMessage.message
+                    ?? mistralAIErrorMessage.msg
+                    ?? mistralAIErrorMessage.detail?.first?.msg
+                    ?? "Unknown Error"
+            }
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case error
+            case message
+        }
+
+        init(from decoder: Decoder) throws {
+            let container: KeyedDecodingContainer<CodingKeys> = try decoder
+                .container(keyedBy: CodingKeys.self)
+
+            error = try? container.decode(ErrorDetail.self, forKey: .error)
+            message = {
+                if let e = try? container.decode(MistralAIErrorMessage.self, forKey: .message) {
+                    return CompletionAPIError.Message.mistralAI(e)
+                }
+                if let e = try? container.decode(String.self, forKey: .message) {
+                    return .raw(e)
+                }
+                return .raw("Unknown Error")
+            }()
+        }
     }
 
     enum MessageRole: String, Codable {
@@ -214,7 +262,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             guard let data = text.data(using: .utf8)
             else { throw ChatGPTServiceError.responseInvalid }
             let decoder = JSONDecoder()
-            let error = try? decoder.decode(ChatGPTError.self, from: data)
+            let error = try? decoder.decode(CompletionAPIError.self, from: data)
             throw error ?? ChatGPTServiceError.responseInvalid
         }
 
