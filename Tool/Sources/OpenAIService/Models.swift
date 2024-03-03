@@ -25,20 +25,25 @@ public struct ChatMessage: Equatable, Codable {
             self.arguments = arguments
         }
     }
-    
+
     public struct ToolCall: Codable, Equatable, Identifiable {
         public var id: String
         public var type: String
         public var function: FunctionCall
         public var response: ToolCallResponse
-        public init(id: String, type: String, function: FunctionCall) {
+        public init(
+            id: String,
+            type: String,
+            function: FunctionCall,
+            response: ToolCallResponse? = nil
+        ) {
             self.id = id
             self.type = type
             self.function = function
-            response = .init(id: id, content: "", summary: nil)
+            self.response = response ?? .init(id: id, content: "", summary: nil)
         }
     }
-    
+
     public struct ToolCallResponse: Codable, Equatable {
         public var id: String
         public var content: String
@@ -67,7 +72,7 @@ public struct ChatMessage: Equatable, Codable {
             case webpage
             case other
         }
-        
+
         public var title: String
         public var subTitle: String
         public var uri: String
@@ -164,3 +169,4 @@ public struct ReferenceKindFallback: FallbackValueProvider {
 public struct ChatMessageRoleFallback: FallbackValueProvider {
     public static var defaultValue: ChatMessage.Role { .user }
 }
+
