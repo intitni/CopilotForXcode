@@ -575,6 +575,13 @@ extension ChatGPTService {
         model: ChatModel,
         stream: Bool
     ) -> ChatCompletionsRequestBody {
+        let serviceSupportsFunctionCalling = switch model.format {
+        case .openAI, .openAICompatible, .azureOpenAI:
+            model.info.supportsFunctionCalling
+        case .ollama, .googleAI:
+            false
+        }
+
         let messages = prompt.history.flatMap { chatMessage in
             var all = [ChatCompletionsRequestBody.Message]()
             all.append(ChatCompletionsRequestBody.Message(
@@ -588,7 +595,7 @@ extension ChatGPTService {
                 content: chatMessage.content ?? "",
                 name: chatMessage.name,
                 toolCalls: {
-                    if model.info.supportsFunctionCalling {
+                    if serviceSupportsFunctionCalling {
                         chatMessage.toolCalls?.map {
                             .init(
                                 id: $0.id,
@@ -606,7 +613,7 @@ extension ChatGPTService {
             ))
 
             for call in chatMessage.toolCalls ?? [] {
-                if model.info.supportsFunctionCalling {
+                if serviceSupportsFunctionCalling {
                     all.append(ChatCompletionsRequestBody.Message(
                         role: .tool,
                         content: call.response.content,
@@ -635,10 +642,10 @@ extension ChatGPTService {
                 maxToken: model.info.maxTokens,
                 remainingTokens: remainingTokens
             ),
-            toolChoice: model.info.supportsFunctionCalling
+            toolChoice: serviceSupportsFunctionCalling
                 ? functionProvider.functionCallStrategy
                 : nil,
-            tools: model.info.supportsFunctionCalling
+            tools: serviceSupportsFunctionCalling
                 ? functionProvider.functions.map {
                     .init(function: ChatGPTFunctionSchema(
                         name: $0.name,

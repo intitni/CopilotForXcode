@@ -195,6 +195,9 @@ extension ChatModel {
                     if case .googleAI = state.format {
                         return false
                     }
+                    if case .ollama = state.format {
+                        return false
+                    }
                     return state.supportsFunctionCalling
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
