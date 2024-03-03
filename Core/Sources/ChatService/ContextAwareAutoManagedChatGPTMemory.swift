@@ -39,7 +39,7 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
 
     public func generatePrompt() async -> ChatGPTPrompt {
         let content = (await memory.history)
-            .last(where: { $0.role == .user || $0.role == .function })?.content
+            .last(where: { $0.role == .user  })?.content
         try? await contextController.collectContextInformation(
             systemPrompt: """
             \(chatService?.systemPrompt ?? "")

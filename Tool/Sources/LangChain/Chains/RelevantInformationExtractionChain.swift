@@ -15,7 +15,7 @@ public final class RelevantInformationExtractionChain: Chain {
     public typealias Output = String
 
     class FunctionProvider: ChatGPTFunctionProvider {
-        var functionCallStrategy: FunctionCallStrategy? = .name("saveFinalAnswer")
+        var functionCallStrategy: FunctionCallStrategy? = .function(name: "saveFinalAnswer")
         var functions: [any ChatGPTFunction] = [FinalAnswer()]
     }
 
@@ -103,8 +103,10 @@ public final class RelevantInformationExtractionChain: Chain {
                             taskInput,
                             callbackManagers: callbackManagers
                         )
-                        
-                        if let functionCall = output.functionCall {
+
+                        if let functionCall = output.toolCalls?
+                            .first(where: { $0.function.name == FinalAnswer().name })?.function
+                        {
                             do {
                                 let arguments = try JSONDecoder().decode(
                                     FinalAnswer.Arguments.self,
@@ -118,7 +120,7 @@ public final class RelevantInformationExtractionChain: Chain {
                                 return output.content ?? ""
                             }
                         }
-                        
+
                         return output.content ?? ""
                     }
 

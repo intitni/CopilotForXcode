@@ -43,9 +43,14 @@ public extension ChatGPTFunction {
         argumentsJsonString: String,
         reportProgress: @escaping ReportProgress
     ) async throws -> Result {
-        let arguments = try JSONDecoder()
-            .decode(Arguments.self, from: argumentsJsonString.data(using: .utf8) ?? Data())
-        return try await call(arguments: arguments, reportProgress: reportProgress)
+        do {
+            let arguments = try JSONDecoder()
+                .decode(Arguments.self, from: argumentsJsonString.data(using: .utf8) ?? Data())
+            return try await call(arguments: arguments, reportProgress: reportProgress)
+        } catch {
+            await reportProgress("Error: Failed to decode arguments. \(error.localizedDescription)")
+            throw error
+        }
     }
 }
 

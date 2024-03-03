@@ -33,11 +33,16 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
             switch model.format {
-            case .openAI, .openAICompatible:
-                request.setValue(
-                    "Bearer \(apiKey)",
-                    forHTTPHeaderField: "Authorization"
-                )
+            case .openAI:
+                if model.info.openAIInfo.organizationID.isEmpty {
+                    request.setValue(
+                        "OpenAI-Organization",
+                        forHTTPHeaderField: model.info.openAIInfo.organizationID
+                    )
+                }
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .openAICompatible:
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             case .ollama:
@@ -84,11 +89,16 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !apiKey.isEmpty {
             switch model.format {
-            case .openAI, .openAICompatible:
-                request.setValue(
-                    "Bearer \(apiKey)",
-                    forHTTPHeaderField: "Authorization"
-                )
+            case .openAI:
+                if model.info.openAIInfo.organizationID.isEmpty {
+                    request.setValue(
+                        "OpenAI-Organization",
+                        forHTTPHeaderField: model.info.openAIInfo.organizationID
+                    )
+                }
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .openAICompatible:
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
             case .ollama:
