@@ -285,7 +285,7 @@ public class ChatGPTService: ChatGPTServiceType {
         }
     }
 
-    #warning("TODO: remove this and let the concurrency system handle it")
+    #warning("TODO: Move the cancellation up to the caller.")
     public func stopReceivingMessage() {
         runningTask?.cancel()
         runningTask = nil
