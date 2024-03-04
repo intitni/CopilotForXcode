@@ -330,6 +330,7 @@ extension ChatGPTService {
                 do {
                     await memory.streamMessage(
                         id: proposedId,
+                        role: .assistant,
                         references: prompt.references
                     )
                     let chunks = try await api()
