@@ -5,7 +5,11 @@ import SuggestionModel
 public protocol SuggestionServiceMiddleware {
     typealias Next = (SuggestionRequest) async throws -> [CodeSuggestion]
 
-    func getSuggestion(_ request: SuggestionRequest, next: Next) async throws -> [CodeSuggestion]
+    func getSuggestion(
+        _ request: SuggestionRequest,
+        configuration: SuggestionServiceConfiguration,
+        next: Next
+    ) async throws -> [CodeSuggestion]
 }
 
 public enum SuggestionServiceMiddlewareContainer {
@@ -29,6 +33,7 @@ public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMidd
 
     public func getSuggestion(
         _ request: SuggestionRequest,
+        configuration: SuggestionServiceConfiguration,
         next: Next
     ) async throws -> [CodeSuggestion] {
         let language = languageIdentifierFromFileURL(request.fileURL)
@@ -50,6 +55,7 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
 
     public func getSuggestion(
         _ request: SuggestionRequest,
+        configuration: SuggestionServiceConfiguration,
         next: Next
     ) async throws -> [CodeSuggestion] {
         Logger.service.info("""
