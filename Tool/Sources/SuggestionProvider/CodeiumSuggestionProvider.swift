@@ -4,6 +4,14 @@ import Preferences
 import SuggestionModel
 
 public actor CodeiumSuggestionProvider: SuggestionServiceProvider {
+    public nonisolated var configuration: SuggestionServiceConfiguration {
+        .init(
+            acceptsRelevantCodeSnippets: true,
+            mixRelevantCodeSnippetsInSource: true,
+            acceptsRelevantSnippetsFromOpenedFiles: false
+        )
+    }
+
     let projectRootURL: URL
     let onServiceLaunched: (SuggestionServiceProvider) -> Void
     var codeiumService: CodeiumSuggestionServiceType?
