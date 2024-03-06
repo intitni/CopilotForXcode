@@ -93,6 +93,7 @@ actor WidgetWindowsController: NSObject {
             let xcodeInspector = self.xcodeInspector
             let activeApp = await xcodeInspector.safe.activeApplication
             let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
+            let previousActiveApplication = xcodeInspector.previousActiveApplication
             await MainActor.run {
                 let state = store.withState { $0 }
                 let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
@@ -123,9 +124,17 @@ actor WidgetWindowsController: NSObject {
                         return true
                     }()
 
+                    let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
+
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.widgetWindow.alphaValue = noFocus ? 0 : 1
+                    windows.widgetWindow.alphaValue = if noFocus {
+                        0
+                    } else if previousAppIsXcode {
+                        1
+                    } else {
+                        0
+                    }
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
                     if isChatPanelDetached {
                         windows.chatPanelWindow.isWindowHidden = !hasChat
