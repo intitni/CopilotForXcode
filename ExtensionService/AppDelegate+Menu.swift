@@ -20,6 +20,7 @@ extension AppDelegate {
         .init("sourceEditorDebugMenu")
     }
 
+    @MainActor
     @objc func buildStatusBarMenu() {
         let statusBar = NSStatusBar.system
         statusBarItem = statusBar.statusItem(
