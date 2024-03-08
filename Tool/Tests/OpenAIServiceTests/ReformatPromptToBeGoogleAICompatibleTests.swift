@@ -105,10 +105,17 @@ class ReformatPromptToBeGoogleAICompatibleTests: XCTestCase {
             .init(
                 role: .assistant,
                 content: nil,
-                functionCall: .init(name: "ping", arguments: "{ \"ip\": \"127.0.0.1\" }")
+                toolCalls: [
+                    .init(
+                        id: "id",
+                        type: "function",
+                        function: .init(name: "ping", arguments: "{ \"ip\": \"127.0.0.1\" }"),
+                        response: .init(content: "42ms", summary: nil)
+                    ),
+                ]
             ),
             .init(role: .assistant, content: "Merge me"),
-            .init(role: .function, content: "42ms", name: "ping"),
+            .init(role: .user, content: "Merge me"),
             .init(role: .user, content: "Merge me"),
             .init(role: .assistant, content: "B"),
             .init(role: .user, content: "Hello"),
@@ -119,13 +126,14 @@ class ReformatPromptToBeGoogleAICompatibleTests: XCTestCase {
             .init(role: .assistant, content: """
             Call function: ping
             Arguments: { "ip": "127.0.0.1" }
+            Result: 42ms
 
             ======
 
             Merge me
             """),
             .init(role: .user, content: """
-            Result of ping: 42ms
+            Merge me
 
             ======
 

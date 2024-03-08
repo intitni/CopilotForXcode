@@ -37,9 +37,16 @@ extension TokenEncoder {
             encodingContent.append(name)
             total += 1
         }
-        if let functionCall = message.functionCall {
-            encodingContent.append(functionCall.name)
-            encodingContent.append(functionCall.arguments)
+        if let toolCalls = message.toolCalls {
+            for toolCall in toolCalls {
+                encodingContent.append(toolCall.id)
+                encodingContent.append(toolCall.type)
+                encodingContent.append(toolCall.function.name)
+                encodingContent.append(toolCall.function.arguments)
+                total += 4
+                encodingContent.append(toolCall.response.content)
+                encodingContent.append(toolCall.id)
+            }
         }
         total += await withTaskGroup(of: Int.self, body: { group in
             for content in encodingContent {

@@ -21,9 +21,28 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         case azureOpenAI
         case openAICompatible
         case googleAI
+        case ollama
     }
 
     public struct Info: Codable, Equatable {
+        public struct OllamaInfo: Codable, Equatable {
+            @FallbackDecoding<EmptyString>
+            public var keepAlive: String
+
+            public init(keepAlive: String = "") {
+                self.keepAlive = keepAlive
+            }
+        }
+
+        public struct OpenAIInfo: Codable, Equatable {
+            @FallbackDecoding<EmptyString>
+            public var organizationID: String
+
+            public init(organizationID: String = "") {
+                self.organizationID = organizationID
+            }
+        }
+
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
         @FallbackDecoding<EmptyString>
@@ -34,14 +53,13 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var maxTokens: Int
         @FallbackDecoding<EmptyBool>
         public var supportsFunctionCalling: Bool
-        @FallbackDecoding<EmptyBool>
-        public var supportsOpenAIAPI2023_11: Bool
         @FallbackDecoding<EmptyString>
         public var modelName: String
-        public var azureOpenAIDeploymentName: String {
-            get { modelName }
-            set { modelName = newValue }
-        }
+
+        @FallbackDecoding<EmptyChatModelOpenAIInfo>
+        public var openAIInfo: OpenAIInfo
+        @FallbackDecoding<EmptyChatModelOllamaInfo>
+        public var ollamaInfo: OllamaInfo
 
         public init(
             apiKeyName: String = "",
@@ -49,16 +67,18 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             isFullURL: Bool = false,
             maxTokens: Int = 4000,
             supportsFunctionCalling: Bool = true,
-            supportsOpenAIAPI2023_11: Bool = false,
-            modelName: String = ""
+            modelName: String = "",
+            openAIInfo: OpenAIInfo = OpenAIInfo(),
+            ollamaInfo: OllamaInfo = OllamaInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
             self.isFullURL = isFullURL
             self.maxTokens = maxTokens
             self.supportsFunctionCalling = supportsFunctionCalling
-            self.supportsOpenAIAPI2023_11 = supportsOpenAIAPI2023_11
             self.modelName = modelName
+            self.openAIInfo = openAIInfo
+            self.ollamaInfo = ollamaInfo
         }
     }
 
@@ -75,7 +95,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             return "\(baseURL)/v1/chat/completions"
         case .azureOpenAI:
             let baseURL = info.baseURL
-            let deployment = info.azureOpenAIDeploymentName
+            let deployment = info.modelName
             let version = "2024-02-15-preview"
             if baseURL.isEmpty { return "" }
             return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
@@ -83,6 +103,10 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://generativelanguage.googleapis.com/v1" }
             return "\(baseURL)/v1/chat/completions"
+        case .ollama:
+            let baseURL = info.baseURL
+            if baseURL.isEmpty { return "http://localhost:11434/api/chat" }
+            return "\(baseURL)/api/chat"
         }
     }
 }
@@ -93,5 +117,13 @@ public struct EmptyChatModelInfo: FallbackValueProvider {
 
 public struct EmptyChatModelFormat: FallbackValueProvider {
     public static var defaultValue: ChatModel.Format { .openAI }
+}
+
+public struct EmptyChatModelOllamaInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.OllamaInfo { .init() }
+}
+
+public struct EmptyChatModelOpenAIInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.OpenAIInfo { .init() }
 }
 

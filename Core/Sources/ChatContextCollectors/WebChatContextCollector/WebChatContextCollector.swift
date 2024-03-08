@@ -32,7 +32,7 @@ extension WebChatContextCollector {
     static func detectLinks(from messages: [ChatMessage]) -> [String] {
         return messages.lazy
             .compactMap {
-                $0.content ?? $0.functionCall?.arguments
+                $0.content ?? $0.toolCalls?.map(\.function.arguments).joined(separator: " ") ?? ""
             }
             .map(detectLinks(from:))
             .flatMap { $0 }

@@ -169,11 +169,11 @@ public class GitHubCopilotBaseService {
         Task { [weak self] in
             _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
 
-            for await notification in NotificationCenter.default
+            for await _ in NotificationCenter.default
                 .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
             {
                 print("Yes!")
-                guard let self else { return }
+                guard self != nil else { return }
                 _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
             }
         }

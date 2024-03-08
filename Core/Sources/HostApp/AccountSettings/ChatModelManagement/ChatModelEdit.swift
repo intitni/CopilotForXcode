@@ -14,6 +14,7 @@ struct ChatModelEdit: ReducerProtocol {
         @BindingState var maxTokens: Int = 4000
         @BindingState var supportsFunctionCalling: Bool = true
         @BindingState var modelName: String = ""
+        @BindingState var ollamaKeepAlive: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
         var isFullURL: Bool { baseURLSelection.isFullURL }
@@ -48,7 +49,7 @@ struct ChatModelEdit: ReducerProtocol {
         Scope(state: \.apiKeySelection, action: /Action.apiKeySelection) {
             APIKeySelection()
         }
-        
+
         Scope(state: \.baseURLSelection, action: /Action.baseURLSelection) {
             BaseURLSelection()
         }
@@ -135,10 +136,10 @@ struct ChatModelEdit: ReducerProtocol {
                     state.suggestedMaxTokens = nil
                     return .none
                 }
-                
+
             case .apiKeySelection:
                 return .none
-                
+
             case .baseURLSelection:
                 return .none
 
@@ -169,6 +170,7 @@ extension ChatModelEdit.State {
             maxTokens: model.info.maxTokens,
             supportsFunctionCalling: model.info.supportsFunctionCalling,
             modelName: model.info.modelName,
+            ollamaKeepAlive: model.info.ollamaInfo.keepAlive,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
@@ -193,9 +195,13 @@ extension ChatModel {
                     if case .googleAI = state.format {
                         return false
                     }
+                    if case .ollama = state.format {
+                        return false
+                    }
                     return state.supportsFunctionCalling
                 }(),
-                modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+                modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
+                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
             )
         )
     }

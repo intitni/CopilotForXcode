@@ -42,7 +42,7 @@ public final class RefineDocumentChain: Chain {
     }
 
     class FunctionProvider: ChatGPTFunctionProvider {
-        var functionCallStrategy: FunctionCallStrategy? = .name("respond")
+        var functionCallStrategy: FunctionCallStrategy? = .function(name: "respond")
         var functions: [any ChatGPTFunction] = [RespondFunction()]
     }
 
@@ -153,7 +153,7 @@ public final class RefineDocumentChain: Chain {
     }
 
     func extractAnswer(_ chatMessage: ChatMessage) -> IntermediateAnswer {
-        if let functionCall = chatMessage.functionCall {
+        for functionCall in chatMessage.toolCalls?.map(\.function) ?? [] {
             do {
                 let intermediateAnswer = try JSONDecoder().decode(
                     IntermediateAnswer.self,

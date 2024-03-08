@@ -23,7 +23,7 @@ public protocol ChatGPTMemory {
     func mutateHistory(_ update: (inout [ChatMessage]) -> Void) async
     /// Generate prompt that would be send through the API.
     ///
-    /// A memory should make sure that the history in the prompt 
+    /// A memory should make sure that the history in the prompt
     /// doesn't exceed the maximum token count.
     ///
     /// The history can be different from the actual history.
@@ -58,52 +58,95 @@ public extension ChatGPTMemory {
         }
     }
 
+    func streamToolCallResponse(
+        id: String,
+        toolCallId: String,
+        content: String? = nil,
+        summary: String? = nil
+    ) async {
+        await updateMessage(id: id) { message in
+            if let index = message.toolCalls?.firstIndex(where: {
+                $0.id == toolCallId
+            }) {
+                if let content {
+                    message.toolCalls?[index].response.content = content
+                }
+                if let summary {
+                    message.toolCalls?[index].response.summary = summary
+                }
+            }
+        }
+    }
+
     /// Stream a message to the history.
     func streamMessage(
         id: String,
         role: ChatMessage.Role? = nil,
         content: String? = nil,
         name: String? = nil,
-        functionCall: ChatMessage.FunctionCall? = nil,
+        toolCalls: [Int: ChatMessage.ToolCall]? = nil,
         summary: String? = nil,
         references: [ChatMessage.Reference]? = nil
     ) async {
-        await mutateHistory { history in
-            if let index = history.firstIndex(where: { $0.id == id }) {
+        if await history.contains(where: { $0.id == id }) {
+            await updateMessage(id: id) { message in
                 if let content {
-                    if history[index].content == nil {
-                        history[index].content = content
+                    if message.content == nil {
+                        message.content = content
                     } else {
-                        history[index].content?.append(content)
+                        message.content?.append(content)
                     }
                 }
                 if let role {
-                    history[index].role = role
+                    message.role = role
                 }
-                if let functionCall {
-                    if history[index].functionCall == nil {
-                        history[index].functionCall = functionCall
+                if let toolCalls {
+                    if var existedToolCalls = message.toolCalls {
+                        for pair in toolCalls.sorted(by: { $0.key <= $1.key }) {
+                            let (proposedIndex, toolCall) = pair
+                            let index = {
+                                if toolCall.id.isEmpty { return proposedIndex }
+                                return existedToolCalls.lastIndex(where: { $0.id == toolCall.id })
+                                    ?? proposedIndex
+                            }()
+                            if index < existedToolCalls.endIndex {
+                                if !toolCall.id.isEmpty {
+                                    existedToolCalls[index].id = toolCall.id
+                                }
+                                if !toolCall.type.isEmpty {
+                                    existedToolCalls[index].type = toolCall.type
+                                }
+                                existedToolCalls[index].function.name
+                                    .append(toolCall.function.name)
+                                existedToolCalls[index].function.arguments
+                                    .append(toolCall.function.arguments)
+                            } else {
+                                existedToolCalls.append(toolCall)
+                            }
+                        }
+                        message.toolCalls = existedToolCalls
                     } else {
-                        history[index].functionCall?.name.append(functionCall.name)
-                        history[index].functionCall?.arguments.append(functionCall.arguments)
+                        message.toolCalls = toolCalls.sorted(by: { $0.key <= $1.key }).map(\.value)
                     }
                 }
                 if let summary {
-                    history[index].summary = summary
+                    message.summary = summary
                 }
                 if let references {
-                    history[index].references.append(contentsOf: references)
+                    message.references.append(contentsOf: references)
                 }
                 if let name {
-                    history[index].name = name
+                    message.name = name
                 }
-            } else {
+            }
+        } else {
+            await mutateHistory { history in
                 history.append(.init(
                     id: id,
                     role: role ?? .system,
                     content: content,
                     name: name,
-                    functionCall: functionCall,
+                    toolCalls: toolCalls?.sorted(by: { $0.key <= $1.key }).map(\.value),
                     summary: summary,
                     references: references ?? []
                 ))
