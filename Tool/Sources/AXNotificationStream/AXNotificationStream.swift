@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Foundation
 import Logger
+import Preferences
 
 public final class AXNotificationStream: AsyncSequence {
     public typealias Stream = AsyncStream<Element>
@@ -53,6 +54,15 @@ public final class AXNotificationStream: AsyncSequence {
         self.file = file
         self.line = line
         self.function = function
+
+        let mode: CFRunLoopMode = UserDefaults.shared
+            .value(for: \.observeToAXNotificationWithDefaultMode) ? .defaultMode : .commonModes
+
+        let runLoop: CFRunLoop = UserDefaults.shared
+            .value(for: \.observeToAXNotificationOnAnotherThread)
+            ? DispatchQueue.global(qos: .userInteractive).sync { CFRunLoopGetCurrent() }
+            : CFRunLoopGetMain()
+
         var cont: Continuation!
         stream = Stream { continuation in
             cont = continuation
@@ -88,17 +98,17 @@ public final class AXNotificationStream: AsyncSequence {
                 AXObserverRemoveNotification(observer, observingElement, name as CFString)
             }
             CFRunLoopRemoveSource(
-                CFRunLoopGetMain(),
+                runLoop,
                 AXObserverGetRunLoopSource(observer),
-                .commonModes
+                mode
             )
         }
 
         Task { @MainActor [weak self] in
             CFRunLoopAddSource(
-                CFRunLoopGetMain(),
+                runLoop,
                 AXObserverGetRunLoopSource(observer),
-                .commonModes
+                mode
             )
             var pendingRegistrationNames = Set(notificationNames)
             var retry = 0

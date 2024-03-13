@@ -160,6 +160,7 @@ let package = Package(
         .target(
             name: "AXNotificationStream",
             dependencies: [
+                "Preferences",
                 "Logger",
             ]
         ),
