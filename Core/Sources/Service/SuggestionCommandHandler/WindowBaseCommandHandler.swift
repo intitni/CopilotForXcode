@@ -46,14 +46,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         try Task.checkCancellation()
 
-        let snapshot = FilespaceSuggestionSnapshot(
-            linesHash: editor.lines.hashValue,
-            cursorPosition: editor.cursorPosition
-        )
-
-        // There is no need to regenerate suggestions for the same editor content.
-        guard filespace.suggestionSourceSnapshot != snapshot else { return }
-
         try await workspace.generateSuggestions(
             forFileAt: fileURL,
             editor: editor
