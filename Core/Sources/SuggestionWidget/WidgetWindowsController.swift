@@ -58,7 +58,7 @@ actor WidgetWindowsController: NSObject {
 
         xcodeInspector.$focusedEditor.sink { [weak self] editor in
             guard let editor else { return }
-            Task { [weak self] in await self?.observe(to: editor) }
+            Task { [weak self] in await self?.observe(toEditor: editor) }
         }.store(in: &cancellable)
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
@@ -278,10 +278,10 @@ private extension WidgetWindowsController {
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
-        observe(to: app)
+        observe(toApp: app)
     }
 
-    func observe(to app: AppInstanceInspector) {
+    func observe(toApp app: AppInstanceInspector) {
         guard let app = app as? XcodeAppInstanceInspector else { return }
         let notifications = app.axNotifications
         observeToAppTask?.cancel()
@@ -337,7 +337,7 @@ private extension WidgetWindowsController {
         }
     }
 
-    func observe(to editor: SourceEditor) {
+    func observe(toEditor editor: SourceEditor) {
         observeToFocusedEditorTask?.cancel()
         observeToFocusedEditorTask = Task {
             let selectionRangeChange = await editor.axNotifications.notifications()
