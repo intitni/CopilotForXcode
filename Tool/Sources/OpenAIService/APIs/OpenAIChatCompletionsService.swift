@@ -134,14 +134,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
 
         struct Choice: Codable, Equatable {
             var message: Message
-            var index: Int
-            var finish_reason: String
+            var index: Int?
+            var finish_reason: String?
         }
 
         struct Usage: Codable, Equatable {
-            var prompt_tokens: Int
-            var completion_tokens: Int
-            var total_tokens: Int
+            var prompt_tokens: Int?
+            var completion_tokens: Int?
+            var total_tokens: Int?
         }
 
         var id: String?
@@ -287,7 +287,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 return .init(chunk: chunk, done: false)
             } catch {
                 Logger.service.error("Error decoding stream data: \(error)")
-                throw error
+                return .init(chunk: nil, done: false)
             }
         }
 
