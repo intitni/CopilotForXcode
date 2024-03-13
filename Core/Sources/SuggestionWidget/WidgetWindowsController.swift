@@ -288,7 +288,6 @@ private extension WidgetWindowsController {
         observeToAppTask = Task {
             await windows.orderFront()
 
-            let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
             for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
 
@@ -296,11 +295,16 @@ private extension WidgetWindowsController {
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
                     let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                    let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
                     }
                     await send(.updateFocusingDocumentURL)
+                }
+                
+                func removeContent() async {
+                    await send(.panel(.removeDisplayedContent))
                 }
 
                 func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
@@ -309,9 +313,9 @@ private extension WidgetWindowsController {
                     updateWindowOpacity(immediately: immediately)
                 }
 
-                func updateWidgets() async {
-                    updateWindowLocation(animated: false, immediately: false)
-                    updateWindowOpacity(immediately: false)
+                func updateWidgets(immediately: Bool) async {
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
                 }
 
                 switch notification.kind {
@@ -319,8 +323,10 @@ private extension WidgetWindowsController {
                     await hideWidgetForTransitions()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
                 case .applicationActivated:
+                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .mainWindowChanged:
+                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .moved,
                      .resized,
@@ -328,7 +334,7 @@ private extension WidgetWindowsController {
                      .windowResized,
                      .windowMiniaturized,
                      .windowDeminiaturized:
-                    await updateWidgets()
+                    await updateWidgets(immediately: false)
                 case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
                      .applicationDeactivated:
                     continue
