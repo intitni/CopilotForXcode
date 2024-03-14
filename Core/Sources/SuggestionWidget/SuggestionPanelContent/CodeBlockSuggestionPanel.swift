@@ -143,13 +143,7 @@ struct CodeBlockSuggestionPanel: View {
         }()
     ))
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 
 #Preview("Code Block Suggestion Panel Compact Mode") {
@@ -178,13 +172,7 @@ struct CodeBlockSuggestionPanel: View {
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 
 #Preview("Code Block Suggestion Panel Highlight ObjC") {
@@ -201,12 +189,6 @@ struct CodeBlockSuggestionPanel: View {
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 

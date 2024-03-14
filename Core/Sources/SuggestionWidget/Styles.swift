@@ -45,18 +45,28 @@ extension NSAppearance {
     }
 }
 
-extension View {
-    func xcodeStyleFrame(cornerRadius: Double = 8) -> some View {
-        clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
+struct XcodeLikeFrame<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
+    let content: Content
+    let cornerRadius: Double
+
+    var body: some View {
+        content.clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
+                    .fill(Material.bar)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: max(0, cornerRadius - 1), style: .continuous)
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )
+    }
+}
+
+extension View {
+    func xcodeStyleFrame(cornerRadius: Double = 10) -> some View {
+        XcodeLikeFrame(content: self, cornerRadius: cornerRadius)
     }
 }
 
