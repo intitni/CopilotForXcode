@@ -58,10 +58,7 @@ public final class AXNotificationStream: AsyncSequence {
         let mode: CFRunLoopMode = UserDefaults.shared
             .value(for: \.observeToAXNotificationWithDefaultMode) ? .defaultMode : .commonModes
 
-        let runLoop: CFRunLoop = UserDefaults.shared
-            .value(for: \.observeToAXNotificationOnAnotherThread)
-            ? DispatchQueue.global(qos: .userInteractive).sync { CFRunLoopGetCurrent() }
-            : CFRunLoopGetMain()
+        let runLoop: CFRunLoop = CFRunLoopGetMain()
 
         var cont: Continuation!
         stream = Stream { continuation in

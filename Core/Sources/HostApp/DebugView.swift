@@ -25,8 +25,6 @@ final class DebugSettings: ObservableObject {
     var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer
     @AppStorage(\.toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted)
     var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted
-    @AppStorage(\.observeToAXNotificationOnAnotherThread)
-    var observeToAXNotificationOnAnotherThread
     @AppStorage(\.observeToAXNotificationWithDefaultMode)
     var observeToAXNotificationWithDefaultMode
     init() {}
@@ -120,14 +118,8 @@ struct DebugSettingsView: View {
                         UserDefaults.shared.set(nil, forKey: "ChatModels")
                         UserDefaults.shared.set(nil, forKey: "EmbeddingModels")
                     }
-                    
-                    Group {
-                        Toggle(
-                            isOn: $settings.observeToAXNotificationOnAnotherThread
-                        ) {
-                            Text("Observe to AXNotification on background thread")
-                        }
 
+                    Group {
                         Toggle(
                             isOn: $settings.observeToAXNotificationWithDefaultMode
                         ) {
@@ -136,6 +128,7 @@ struct DebugSettingsView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding()
         }
     }
