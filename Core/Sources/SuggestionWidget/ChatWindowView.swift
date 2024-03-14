@@ -43,7 +43,6 @@ struct ChatWindowView: View {
             }
             .xcodeStyleFrame(cornerRadius: 10)
             .ignoresSafeArea(edges: .top)
-            .background(.regularMaterial)
             .onChange(of: viewStore.state.isPanelDisplayed) { isDisplayed in
                 toggleVisibility(isDisplayed)
             }

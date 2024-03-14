@@ -66,7 +66,7 @@ struct BotMessage: View {
                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             }
             .padding(.leading, 8)
-            .shadow(color: .black.opacity(0.1), radius: 2)
+            .shadow(color: .black.opacity(0.05), radius: 6)
             .contextMenu {
                 Button("Copy") {
                     NSPasteboard.general.clearContents()

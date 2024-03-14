@@ -34,7 +34,7 @@ struct UserMessage: View {
             }
             .padding(.leading)
             .padding(.trailing, 8)
-            .shadow(color: .black.opacity(0.1), radius: 2)
+            .shadow(color: .black.opacity(0.05), radius: 6)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .contextMenu {
                 Button("Copy") {
