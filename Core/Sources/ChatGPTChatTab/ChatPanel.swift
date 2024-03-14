@@ -228,7 +228,10 @@ struct ChatPanelMessages: View {
                             if isInitialLoad {
                                 isInitialLoad = false
                             }
-                            scrollToBottom()
+                            Task {
+                                await Task.yield()
+                                scrollToBottom()
+                            }
                         }
                     }
             }
