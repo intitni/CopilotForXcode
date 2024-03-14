@@ -9,7 +9,7 @@ extension Color {
             if appearance.isDarkMode {
                 return #colorLiteral(red: 0.1580096483, green: 0.1730263829, blue: 0.2026666105, alpha: 1)
             }
-            return .white
+            return #colorLiteral(red: 0.9896564803, green: 0.9896564803, blue: 0.9896564803, alpha: 1)
         }))
     }
 
@@ -18,7 +18,7 @@ extension Color {
             if appearance.isDarkMode {
                 return #colorLiteral(red: 0.2284317913, green: 0.2145925438, blue: 0.3214019983, alpha: 1)
             }
-            return #colorLiteral(red: 0.896820749, green: 0.8709097223, blue: 0.9766687925, alpha: 1)
+            return #colorLiteral(red: 0.9458052187, green: 0.9311983998, blue: 0.9906365955, alpha: 1)
         }))
     }
 }
@@ -89,6 +89,60 @@ extension MarkdownUI.Theme {
                 .workaroundForVerticalScrollingBugInMacOS()
                 .codeBlockStyle(configuration)
             }
+        }
+    }
+
+    static func instruction(fontSize: Double) -> MarkdownUI.Theme {
+        .gitHub.text {
+            ForegroundColor(.primary)
+            BackgroundColor(Color.clear)
+            FontSize(fontSize)
+        }
+        .code {
+            FontFamilyVariant(.monospaced)
+            FontSize(.em(0.85))
+            BackgroundColor(Color.secondary.opacity(0.2))
+        }
+        .codeBlock { configuration in
+            let wrapCode = UserDefaults.shared.value(for: \.wrapCodeInChatCodeBlock)
+
+            if wrapCode {
+                configuration.label
+                    .codeBlockLabelStyle()
+                    .codeBlockStyle(configuration)
+            } else {
+                ScrollView(.horizontal) {
+                    configuration.label
+                        .codeBlockLabelStyle()
+                }
+                .workaroundForVerticalScrollingBugInMacOS()
+                .codeBlockStyle(configuration)
+            }
+        }
+        .table { configuration in
+            configuration.label
+                .fixedSize(horizontal: false, vertical: true)
+                .markdownTableBorderStyle(.init(
+                    color: .init(nsColor: .separatorColor),
+                    strokeStyle: .init(lineWidth: 1)
+                ))
+                .markdownTableBackgroundStyle(
+                    .alternatingRows(Color.secondary.opacity(0.1), Color.secondary.opacity(0.2))
+                )
+                .markdownMargin(top: 0, bottom: 16)
+        }
+        .tableCell { configuration in
+            configuration.label
+                .markdownTextStyle {
+                    if configuration.row == 0 {
+                        FontWeight(.semibold)
+                    }
+                    BackgroundColor(nil)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 13)
+                .relativeLineSpacing(.em(0.25))
         }
     }
 

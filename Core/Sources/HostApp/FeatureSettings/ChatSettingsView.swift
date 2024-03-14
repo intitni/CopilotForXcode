@@ -313,7 +313,7 @@ struct ChatSettingsView: View {
                             "Preferred Chat Model",
                             selection: $settings.preferredChatModelIdForSenseScope
                         ) {
-                            Text("None").tag("")
+                            Text("Use the default model").tag("")
 
                             if !settings.chatModels
                                 .contains(where: {
@@ -364,7 +364,7 @@ struct ChatSettingsView: View {
                             "Preferred Chat Model",
                             selection: $settings.preferredChatModelIdForProjectScope
                         ) {
-                            Text("None").tag("")
+                            Text("Use the default model").tag("")
 
                             if !settings.chatModels
                                 .contains(where: {
@@ -390,7 +390,7 @@ struct ChatSettingsView: View {
 
                 SubSection(
                     title: Text("Web Scope"),
-                    description: "Allow the bot to search on Bing or read a web page."
+                    description: "Allow the bot to search on Bing or read a web page. The current implementation requires function calling."
                 ) {
                     Form {
                         Toggle(isOn: $settings.enableWebScopeByDefaultInChatContext) {
@@ -401,7 +401,7 @@ struct ChatSettingsView: View {
                             "Preferred Chat Model",
                             selection: $settings.preferredChatModelIdForWebScope
                         ) {
-                            Text("None").tag("")
+                            Text("Use the default model").tag("")
 
                             if !settings.chatModels
                                 .contains(where: {

@@ -30,7 +30,7 @@ extension Color {
             if appearance.isDarkMode {
                 return #colorLiteral(red: 0.2284317913, green: 0.2145925438, blue: 0.3214019983, alpha: 1)
             }
-            return #colorLiteral(red: 0.896820749, green: 0.8709097223, blue: 0.9766687925, alpha: 1)
+            return #colorLiteral(red: 0.9458052187, green: 0.9311983998, blue: 0.9906365955, alpha: 1)
         }))
     }
 }
@@ -45,18 +45,28 @@ extension NSAppearance {
     }
 }
 
-extension View {
-    func xcodeStyleFrame(cornerRadius: Double = 8) -> some View {
-        clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
+struct XcodeLikeFrame<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
+    let content: Content
+    let cornerRadius: Double
+
+    var body: some View {
+        content.clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.black.opacity(0.3), style: .init(lineWidth: 1))
+                    .fill(Material.bar)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: max(0, cornerRadius - 1), style: .continuous)
                     .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     .padding(1)
             )
+    }
+}
+
+extension View {
+    func xcodeStyleFrame(cornerRadius: Double? = nil) -> some View {
+        XcodeLikeFrame(content: self, cornerRadius: cornerRadius ?? 10)
     }
 }
 
