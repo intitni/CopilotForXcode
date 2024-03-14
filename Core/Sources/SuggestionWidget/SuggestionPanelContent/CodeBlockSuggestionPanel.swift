@@ -6,6 +6,7 @@ struct CodeBlockSuggestionPanel: View {
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFontSize) var fontSize
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
+    @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
     struct ToolBar: View {
         @ObservedObject var suggestion: CodeSuggestionProvider
@@ -112,7 +113,12 @@ struct CodeBlockSuggestionPanel: View {
                 ToolBar(suggestion: suggestion)
             }
         }
-        .xcodeStyleFrame()
+        .xcodeStyleFrame(cornerRadius: {
+            switch suggestionPresentationMode {
+            case .nearbyTextCursor: 6
+            case .floatingWidget: nil
+            }
+        }())
     }
 }
 

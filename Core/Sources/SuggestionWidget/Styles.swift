@@ -65,8 +65,8 @@ struct XcodeLikeFrame<Content: View>: View {
 }
 
 extension View {
-    func xcodeStyleFrame(cornerRadius: Double = 10) -> some View {
-        XcodeLikeFrame(content: self, cornerRadius: cornerRadius)
+    func xcodeStyleFrame(cornerRadius: Double? = nil) -> some View {
+        XcodeLikeFrame(content: self, cornerRadius: cornerRadius ?? 10)
     }
 }
 
