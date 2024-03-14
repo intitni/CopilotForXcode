@@ -187,6 +187,7 @@ public struct PromptToCode: ReducerProtocol {
                             generateDescriptionRequirement: copiedState
                                 .generateDescriptionRequirement
                         )
+                        #warning("TODO: make the action call debounced.")
                         for try await fragment in stream {
                             try Task.checkCancellation()
                             await send(.modifyCodeChunkReceived(
