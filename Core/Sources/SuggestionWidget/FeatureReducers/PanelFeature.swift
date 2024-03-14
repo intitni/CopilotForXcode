@@ -95,8 +95,6 @@ public struct PanelFeature: ReducerProtocol {
                 return .none
 
             case .switchToAnotherEditorAndUpdateContent:
-                state.content.error = nil
-                state.content.suggestion = nil
                 return .run { send in
                     guard let fileURL = await xcodeInspector.safe.realtimeActiveDocumentURL
                     else { return }

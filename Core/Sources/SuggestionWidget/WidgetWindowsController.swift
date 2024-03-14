@@ -58,7 +58,7 @@ actor WidgetWindowsController: NSObject {
 
         xcodeInspector.$focusedEditor.sink { [weak self] editor in
             guard let editor else { return }
-            Task { [weak self] in await self?.observe(to: editor) }
+            Task { [weak self] in await self?.observe(toEditor: editor) }
         }.store(in: &cancellable)
 
         xcodeInspector.$completionPanel.sink { [weak self] newValue in
@@ -278,17 +278,16 @@ private extension WidgetWindowsController {
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
-        observe(to: app)
+        observe(toApp: app)
     }
 
-    func observe(to app: AppInstanceInspector) {
+    func observe(toApp app: AppInstanceInspector) {
         guard let app = app as? XcodeAppInstanceInspector else { return }
         let notifications = app.axNotifications
         observeToAppTask?.cancel()
         observeToAppTask = Task {
             await windows.orderFront()
 
-            let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
             for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
 
@@ -296,11 +295,16 @@ private extension WidgetWindowsController {
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
                     let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                    let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
                     }
                     await send(.updateFocusingDocumentURL)
+                }
+                
+                func removeContent() async {
+                    await send(.panel(.removeDisplayedContent))
                 }
 
                 func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
@@ -309,9 +313,9 @@ private extension WidgetWindowsController {
                     updateWindowOpacity(immediately: immediately)
                 }
 
-                func updateWidgets() async {
-                    updateWindowLocation(animated: false, immediately: false)
-                    updateWindowOpacity(immediately: false)
+                func updateWidgets(immediately: Bool) async {
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
                 }
 
                 switch notification.kind {
@@ -319,8 +323,10 @@ private extension WidgetWindowsController {
                     await hideWidgetForTransitions()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
                 case .applicationActivated:
+                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .mainWindowChanged:
+                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .moved,
                      .resized,
@@ -328,7 +334,7 @@ private extension WidgetWindowsController {
                      .windowResized,
                      .windowMiniaturized,
                      .windowDeminiaturized:
-                    await updateWidgets()
+                    await updateWidgets(immediately: false)
                 case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
                      .applicationDeactivated:
                     continue
@@ -337,7 +343,7 @@ private extension WidgetWindowsController {
         }
     }
 
-    func observe(to editor: SourceEditor) {
+    func observe(toEditor editor: SourceEditor) {
         observeToFocusedEditorTask?.cancel()
         observeToFocusedEditorTask = Task {
             let selectionRangeChange = await editor.axNotifications.notifications()

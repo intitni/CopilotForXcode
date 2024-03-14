@@ -6,6 +6,7 @@ struct CodeBlockSuggestionPanel: View {
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFontSize) var fontSize
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
+    @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
     struct ToolBar: View {
         @ObservedObject var suggestion: CodeSuggestionProvider
@@ -112,7 +113,12 @@ struct CodeBlockSuggestionPanel: View {
                 ToolBar(suggestion: suggestion)
             }
         }
-        .xcodeStyleFrame()
+        .xcodeStyleFrame(cornerRadius: {
+            switch suggestionPresentationMode {
+            case .nearbyTextCursor: 6
+            case .floatingWidget: nil
+            }
+        }())
     }
 }
 
@@ -143,13 +149,7 @@ struct CodeBlockSuggestionPanel: View {
         }()
     ))
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 
 #Preview("Code Block Suggestion Panel Compact Mode") {
@@ -178,13 +178,7 @@ struct CodeBlockSuggestionPanel: View {
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 
 #Preview("Code Block Suggestion Panel Highlight ObjC") {
@@ -201,12 +195,6 @@ struct CodeBlockSuggestionPanel: View {
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
-    .background {
-        HStack {
-            Color.red
-            Color.green
-            Color.blue
-        }
-    }
+    .padding()
 }
 

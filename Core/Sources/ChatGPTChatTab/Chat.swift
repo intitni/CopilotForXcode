@@ -226,8 +226,12 @@ struct Chat: ReducerProtocol {
                             cancellable.cancel()
                         }
                     }
-                    for await _ in stream {
+                    let debouncedHistoryChange = TimedDebounceFunction(duration: 0.2) {
                         await send(.historyChanged)
+                    }
+                    
+                    for await _ in stream {
+                        await debouncedHistoryChange()
                     }
                 }.cancellable(id: CancelID.observeHistoryChange(id), cancelInFlight: true)
 
@@ -450,3 +454,33 @@ struct ChatMenu: ReducerProtocol {
     }
 }
 
+private actor TimedDebounceFunction {
+    let duration: TimeInterval
+    let block: () async -> Void
+
+    var task: Task<Void, Error>?
+    var lastFireTime: Date = .init(timeIntervalSince1970: 0)
+
+    init(duration: TimeInterval, block: @escaping () async -> Void) {
+        self.duration = duration
+        self.block = block
+    }
+
+    func callAsFunction() async {
+        task?.cancel()
+        if lastFireTime.timeIntervalSinceNow < -duration {
+            await fire()
+            task = nil
+        } else {
+            task = Task.detached { [weak self, duration] in
+                try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                await self?.fire()
+            }
+        }
+    }
+    
+    func fire() async {
+        lastFireTime = Date()
+        await block()
+    }
+}

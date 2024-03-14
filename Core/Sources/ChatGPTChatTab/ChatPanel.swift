@@ -18,7 +18,7 @@ public struct ChatPanel: View {
             Divider()
             ChatPanelInputArea(chat: chat)
         }
-        .background(.regularMaterial)
+        .background(.clear)
         .onAppear { chat.send(.appear) }
     }
 }
@@ -86,13 +86,23 @@ struct ChatPanelMessages: View {
                     }
                     .modify { view in
                         if #available(macOS 13.0, *) {
-                            view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                            view
+                                .listRowSeparator(.hidden)
+                                .listSectionSeparator(.hidden)
                         } else {
                             view
                         }
                     }
                 }
                 .listStyle(.plain)
+                .listRowBackground(EmptyView())
+                .modify { view in
+                    if #available(macOS 13.0, *) {
+                        view.scrollContentBackground(.hidden)
+                    } else {
+                        view
+                    }
+                }
                 .coordinateSpace(name: scrollSpace)
                 .preference(
                     key: ListHeightPreferenceKey.self,
@@ -218,7 +228,10 @@ struct ChatPanelMessages: View {
                             if isInitialLoad {
                                 isInitialLoad = false
                             }
-                            scrollToBottom()
+                            Task {
+                                await Task.yield()
+                                scrollToBottom()
+                            }
                         }
                     }
             }

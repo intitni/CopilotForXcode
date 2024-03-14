@@ -71,7 +71,7 @@ struct Instruction: View {
         func body(content: Content) -> some View {
             content
                 .textSelection(.enabled)
-                .markdownTheme(.custom(fontSize: chatFontSize))
+                .markdownTheme(.instruction(fontSize: chatFontSize))
                 .opacity(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()

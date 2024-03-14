@@ -604,5 +604,9 @@ public extension UserDefaultPreferenceKeys {
             key: "FeatureFlag-ToastForTheReasonWhyXcodeInspectorNeedsToBeRestarted"
         )
     }
+    
+    var observeToAXNotificationWithDefaultMode: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-observeToAXNotificationWithDefaultMode")
+    }
 }
 
