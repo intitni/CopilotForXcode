@@ -30,15 +30,28 @@ public extension DependencyValues {
         set { self[ToastControllerDependencyKey.self] = newValue }
     }
 
-    var toast: (String, ToastType) -> Void { toastController.toast }
+    var toast: (String, ToastType) -> Void {
+        return { content, type in
+            toastController.toast(content: content, type: type, namespace: nil)
+        }
+    }
+
+    var namespacedToast: (String, ToastType, String) -> Void {
+        return {
+            content, type, namespace in
+            toastController.toast(content: content, type: type, namespace: namespace)
+        }
+    }
 }
 
 public class ToastController: ObservableObject {
     public struct Message: Identifiable, Equatable {
+        public var namespace: String?
         public var id: UUID
         public var type: ToastType
         public var content: Text
-        public init(id: UUID, type: ToastType, content: Text) {
+        public init(id: UUID, type: ToastType, namespace: String? = nil, content: Text) {
+            self.namespace = namespace
             self.id = id
             self.type = type
             self.content = content
@@ -51,9 +64,9 @@ public class ToastController: ObservableObject {
         self.messages = messages
     }
 
-    public func toast(content: String, type: ToastType) {
+    public func toast(content: String, type: ToastType, namespace: String? = nil) {
         let id = UUID()
-        let message = Message(id: id, type: type, content: Text(content))
+        let message = Message(id: id, type: type, namespace: namespace, content: Text(content))
 
         Task { @MainActor in
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -73,7 +86,7 @@ public struct Toast: ReducerProtocol {
     public struct State: Equatable {
         var isObservingToastController = false
         public var messages: [Message] = []
-        
+
         public init(messages: [Message] = []) {
             self.messages = messages
         }
@@ -82,13 +95,13 @@ public struct Toast: ReducerProtocol {
     public enum Action: Equatable {
         case start
         case updateMessages([Message])
-        case toast(String, ToastType)
+        case toast(String, ToastType, String?)
     }
 
     @Dependency(\.toastController) var toastController
 
     struct CancelID: Hashable {}
-    
+
     public init() {}
 
     public var body: some ReducerProtocol<State, Action> {
@@ -114,8 +127,8 @@ public struct Toast: ReducerProtocol {
             case let .updateMessages(messages):
                 state.messages = messages
                 return .none
-            case let .toast(content, type):
-                toastController.toast(content: content, type: type)
+            case let .toast(content, type, namespace):
+                toastController.toast(content: content, type: type, namespace: namespace)
                 return .none
             }
         }

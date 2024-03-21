@@ -70,7 +70,7 @@ public extension SuggestionWidgetController {
     }
 
     func presentError(_ errorDescription: String) {
-        store.send(.toastPanel(.toast(.toast(errorDescription, .error))))
+        store.send(.toastPanel(.toast(.toast(errorDescription, .error, nil))))
     }
 
     func presentChatRoom() {

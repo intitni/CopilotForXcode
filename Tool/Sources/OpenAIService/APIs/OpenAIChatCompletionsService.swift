@@ -238,8 +238,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             case .openAI:
                 if !model.info.openAIInfo.organizationID.isEmpty {
                     request.setValue(
-                        "OpenAI-Organization",
-                        forHTTPHeaderField: model.info.openAIInfo.organizationID
+                        model.info.openAIInfo.organizationID,
+                        forHTTPHeaderField: "OpenAI-Organization"
                     )
                 }
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -250,6 +250,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             case .googleAI:
                 assertionFailure("Unsupported")
             case .ollama:
+                assertionFailure("Unsupported")
+            case .claude:
                 assertionFailure("Unsupported")
             }
         }
@@ -319,6 +321,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 assertionFailure("Unsupported")
             case .ollama:
                 assertionFailure("Unsupported")
+            case .claude:
+                assertionFailure("Unsupported")
             }
         }
 
@@ -376,7 +380,7 @@ extension OpenAIChatCompletionsService.ResponseBody {
                             ),
                         ]
                     } else {
-                        return []
+                        return nil
                     }
                 }()
             )
