@@ -1,5 +1,6 @@
 import AppKit
 import ComposableArchitecture
+import AsyncAlgorithms
 import Dependencies
 import Foundation
 import PromptToCodeService
@@ -43,7 +44,7 @@ public struct PromptToCode: ReducerProtocol {
                 }
             }
         }
-        
+
         public enum FocusField: Equatable {
             case textField
         }
@@ -113,7 +114,7 @@ public struct PromptToCode: ReducerProtocol {
             self.generateDescriptionRequirement = generateDescriptionRequirement
             self.isAttachedToSelectionRange = isAttachedToSelectionRange
             self.commandName = commandName
-            
+
             if selectionRange?.isEmpty ?? true {
                 self.isAttachedToSelectionRange = false
             }
@@ -151,7 +152,7 @@ public struct PromptToCode: ReducerProtocol {
             switch action {
             case .binding:
                 return .none
-                
+
             case .focusOnTextField:
                 state.focusedField = .textField
                 return .none
@@ -187,13 +188,23 @@ public struct PromptToCode: ReducerProtocol {
                             generateDescriptionRequirement: copiedState
                                 .generateDescriptionRequirement
                         )
-                        #warning("TODO: make the action call debounced.")
-                        for try await fragment in stream {
-                            try Task.checkCancellation()
-                            await send(.modifyCodeChunkReceived(
-                                code: fragment.code,
-                                description: fragment.description
-                            ))
+
+                        if #available(macOS 13.0, *) {
+                            for try await fragment in stream.debounce(for: .milliseconds(400)) {
+                                try Task.checkCancellation()
+                                await send(.modifyCodeChunkReceived(
+                                    code: fragment.code,
+                                    description: fragment.description
+                                ))
+                            }
+                        } else {
+                            for try await fragment in stream {
+                                try Task.checkCancellation()
+                                await send(.modifyCodeChunkReceived(
+                                    code: fragment.code,
+                                    description: fragment.description
+                                ))
+                            }
                         }
                         try Task.checkCancellation()
                         await send(.modifyCodeFinished)
