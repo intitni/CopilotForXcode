@@ -1,4 +1,5 @@
 import AIModel
+import Toast
 import ComposableArchitecture
 import Dependencies
 import Keychain
@@ -40,7 +41,12 @@ struct ChatModelEdit: ReducerProtocol {
         case baseURLSelection(BaseURLSelection.Action)
     }
 
-    @Dependency(\.toast) var toast
+    var toast: (String, ToastType) -> Void {
+        @Dependency(\.namespacedToast) var toast
+        return {
+            toast($0, $1, "ChatModelEdit")
+        }
+    }
     @Dependency(\.apiKeyKeychain) var keychain
 
     var body: some ReducerProtocol<State, Action> {

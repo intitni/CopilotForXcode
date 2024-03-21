@@ -75,33 +75,12 @@ public struct TabContainer: View {
             }
             .environment(\.tabBarTabTag, tag)
             .frame(minHeight: 400)
-            .overlay(alignment: .bottom) {
-                VStack(spacing: 4) {
-                    ForEach(toastController.messages) { message in
-                        message.content
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background({
-                                switch message.type {
-                                case .info: return Color.accentColor
-                                case .error: return Color(nsColor: .systemRed)
-                                case .warning: return Color(nsColor: .systemOrange)
-                                }
-                            }() as Color, in: RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: Color.black.opacity(0.2), radius: 4)
-                    }
-                }
-                .padding()
-                .allowsHitTesting(false)
-            }
         }
         .focusable(false)
         .padding(.top, 8)
         .background(.ultraThinMaterial.opacity(0.01))
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
-        .environment(\.toast) { [toastController] content, type in
-            toastController.toast(content: content, type: type)
-        }
+        .handleToast()
         .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
             tabBarItems = items
         }
