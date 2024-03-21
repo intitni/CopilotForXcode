@@ -86,14 +86,22 @@ struct ChatModelEdit: ReducerProtocol {
                 )
                 return .run { send in
                     do {
-                        let reply =
-                            try await ChatGPTService(
-                                configuration: UserPreferenceChatGPTConfiguration()
-                                    .overriding {
-                                        $0.model = model
-                                    }
-                            ).sendAndWait(content: "Hello")
+                        let service = ChatGPTService(
+                            configuration: UserPreferenceChatGPTConfiguration()
+                                .overriding {
+                                    $0.model = model
+                                }
+                        )
+                        let reply = try await service
+                            .sendAndWait(content: "Respond with \"Test succeeded\"")
                         await send(.testSucceeded(reply ?? "No Message"))
+                        let stream = try await service
+                            .send(content: "Respond with \"Stream response is working\"")
+                        var streamReply = ""
+                        for try await chunk in stream {
+                            streamReply += chunk
+                        }
+                        await send(.testSucceeded(streamReply))
                     } catch {
                         await send(.testFailed(error.localizedDescription))
                     }
@@ -101,12 +109,12 @@ struct ChatModelEdit: ReducerProtocol {
 
             case let .testSucceeded(message):
                 state.isTesting = false
-                toast(message, .info)
+                toast(message.trimmingCharacters(in: .whitespacesAndNewlines), .info)
                 return .none
 
             case let .testFailed(message):
                 state.isTesting = false
-                toast(message, .error)
+                toast(message.trimmingCharacters(in: .whitespacesAndNewlines), .error)
                 return .none
 
             case .refreshAvailableModelNames:
@@ -128,6 +136,15 @@ struct ChatModelEdit: ReducerProtocol {
                 case .googleAI:
                     if let knownModel = GoogleGenerativeAIModel(rawValue: state.modelName) {
                         state.suggestedMaxTokens = knownModel.maxToken
+                    } else {
+                        state.suggestedMaxTokens = nil
+                    }
+                    return .none
+                case .claude:
+                    if let knownModel = ClaudeChatCompletionsService
+                        .KnownModel(rawValue: state.modelName)
+                    {
+                        state.suggestedMaxTokens = knownModel.contextWindow
                     } else {
                         state.suggestedMaxTokens = nil
                     }
@@ -192,13 +209,12 @@ extension ChatModel {
                 isFullURL: state.isFullURL,
                 maxTokens: state.maxTokens,
                 supportsFunctionCalling: {
-                    if case .googleAI = state.format {
+                    switch state.format {
+                    case .googleAI, .ollama, .claude:
                         return false
+                    case .azureOpenAI, .openAI, .openAICompatible:
+                        return state.supportsFunctionCalling
                     }
-                    if case .ollama = state.format {
-                        return false
-                    }
-                    return state.supportsFunctionCalling
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
