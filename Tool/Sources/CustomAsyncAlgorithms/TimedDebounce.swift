@@ -43,6 +43,8 @@ private actor TimedDebounceFunction<Element> {
 
 public extension AsyncSequence {
     /// Debounce, but only if the value is received within a certain time frame.
+    ///
+    /// In the future when we drop macOS 12 support we should just use chunked from AsyncAlgorithms.
     func timedDebounce(
         for duration: TimeInterval
     ) -> AsyncThrowingStream<Element, Error> {
