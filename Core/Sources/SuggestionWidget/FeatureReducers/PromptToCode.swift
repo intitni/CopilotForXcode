@@ -1,5 +1,6 @@
 import AppKit
 import ComposableArchitecture
+import CustomAsyncAlgorithms
 import Dependencies
 import Foundation
 import PromptToCodeService
@@ -43,7 +44,7 @@ public struct PromptToCode: ReducerProtocol {
                 }
             }
         }
-        
+
         public enum FocusField: Equatable {
             case textField
         }
@@ -113,7 +114,7 @@ public struct PromptToCode: ReducerProtocol {
             self.generateDescriptionRequirement = generateDescriptionRequirement
             self.isAttachedToSelectionRange = isAttachedToSelectionRange
             self.commandName = commandName
-            
+
             if selectionRange?.isEmpty ?? true {
                 self.isAttachedToSelectionRange = false
             }
@@ -151,7 +152,7 @@ public struct PromptToCode: ReducerProtocol {
             switch action {
             case .binding:
                 return .none
-                
+
             case .focusOnTextField:
                 state.focusedField = .textField
                 return .none
@@ -186,8 +187,8 @@ public struct PromptToCode: ReducerProtocol {
                             extraSystemPrompt: copiedState.extraSystemPrompt,
                             generateDescriptionRequirement: copiedState
                                 .generateDescriptionRequirement
-                        )
-                        #warning("TODO: make the action call debounced.")
+                        ).timedDebounce(for: 0.2)
+
                         for try await fragment in stream {
                             try Task.checkCancellation()
                             await send(.modifyCodeChunkReceived(
