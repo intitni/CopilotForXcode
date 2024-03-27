@@ -298,6 +298,10 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeCodeFontSize: PreferenceKey<Double> {
         .init(defaultValue: 13, key: "PromptToCodeCodeFontSize")
     }
+    
+    var hideCommonPrecedingSpacesInPromptToCode: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "HideCommonPrecedingSpacesInPromptToCode")
+    }
 }
 
 // MARK: - Suggestion
