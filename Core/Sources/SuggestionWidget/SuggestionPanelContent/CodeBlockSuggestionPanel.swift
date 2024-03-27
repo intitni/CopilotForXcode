@@ -7,6 +7,7 @@ struct CodeBlockSuggestionPanel: View {
     @AppStorage(\.suggestionCodeFontSize) var fontSize
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
     @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
+    @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpaces
 
     struct ToolBar: View {
         @ObservedObject var suggestion: CodeSuggestionProvider
@@ -101,7 +102,8 @@ struct CodeBlockSuggestionPanel: View {
                     language: suggestion.language,
                     startLineIndex: suggestion.startLineIndex,
                     colorScheme: colorScheme,
-                    fontSize: fontSize
+                    fontSize: fontSize, 
+                    droppingLeadingSpaces: hideCommonPrecedingSpaces
                 )
                 .frame(maxWidth: .infinity)
             }
