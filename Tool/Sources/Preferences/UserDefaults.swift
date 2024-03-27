@@ -25,6 +25,10 @@ public extension UserDefaults {
             for: \.suggestionFeatureProvider,
             defaultValue: .builtIn(shared.deprecatedValue(for: \.oldSuggestionFeatureProvider))
         )
+        shared.setupDefaultValue(
+            for: \.promptToCodeCodeFontSize,
+            defaultValue: shared.value(for: \.suggestionCodeFontSize)
+        )
     }
 }
 
