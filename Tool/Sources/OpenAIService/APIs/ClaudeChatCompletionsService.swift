@@ -11,7 +11,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         case claude3Opus = "claude-3-opus-20240229"
         case claude3Sonnet = "claude-3-sonnet-20240229"
         case claude3Haiku = "claude-3-haiku-20240307"
-        
+
         public var contextWindow: Int {
             switch self {
             case .claude3Opus: return 200_000
@@ -146,6 +146,25 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             var role: MessageRole
             /// The content of the message.
             var content: [MessageContent]
+
+            mutating func appendText(_ text: String) {
+                var otherContents = [MessageContent]()
+                var existedText = ""
+                for existed in content {
+                    switch existed.type {
+                    case .text:
+                        if existedText.isEmpty {
+                            existedText = existed.text ?? ""
+                        } else if let text = existed.text {
+                            existedText += "\n\n" + text
+                        }
+                    default:
+                        otherContents.append(existed)
+                    }
+                }
+
+                content = otherContents + [.init(type: .text, text: existedText + "\n\n\(text)")]
+            }
         }
 
         var model: String
@@ -313,24 +332,27 @@ extension ClaudeChatCompletionsService.RequestBody {
         var nonSystemMessages = [Message]()
 
         for message in body.messages {
-            if message.role == .system {
+            switch message.role {
+            case .system:
                 systemPrompts.append(message.content)
-            } else {
-                nonSystemMessages.append(.init(
-                    role: {
-                        switch message.role {
-                        case .user:
-                            return .user
-                        case .assistant:
-                            return .assistant
-                        case .system:
-                            return .user
-                        case .tool:
-                            return .assistant
-                        }
-                    }(),
-                    content: [.init(type: .text, text: message.content)]
-                ))
+            case .tool, .assistant:
+                if let last = nonSystemMessages.last, last.role == .assistant {
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].appendText(message.content)
+                } else {
+                    nonSystemMessages.append(.init(
+                        role: .assistant,
+                        content: [.init(type: .text, text: message.content)]
+                    ))
+                }
+            case .user:
+                if let last = nonSystemMessages.last, last.role == .user {
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].appendText(message.content)
+                } else {
+                    nonSystemMessages.append(.init(
+                        role: .user,
+                        content: [.init(type: .text, text: message.content)]
+                    ))
+                }
             }
         }
 
