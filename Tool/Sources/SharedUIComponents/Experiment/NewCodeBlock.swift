@@ -12,6 +12,7 @@ struct _CodeBlock: View {
     let commonPrecedingSpaceCount: Int
     let highlightedCode: AttributedString
     let colorScheme: ColorScheme
+    let droppingLeadingSpaces: Bool
 
     /// Create a text edit view with a certain text that uses a certain options.
     /// - Parameters:
@@ -24,11 +25,13 @@ struct _CodeBlock: View {
         firstLinePrecedingSpaceCount: Int,
         colorScheme: ColorScheme,
         fontSize: Double,
+        droppingLeadingSpaces: Bool,
         selection: Binding<NSRange?> = .constant(nil)
     ) {
         _selection = selection
         self.fontSize = fontSize
         self.colorScheme = colorScheme
+        self.droppingLeadingSpaces = droppingLeadingSpaces
 
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
@@ -37,7 +40,8 @@ struct _CodeBlock: View {
             code: padding + code,
             language: language,
             colorScheme: colorScheme,
-            fontSize: fontSize
+            fontSize: fontSize,
+            droppingLeadingSpaces: droppingLeadingSpaces
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
@@ -65,14 +69,14 @@ struct _CodeBlock: View {
         code: String,
         language: String,
         colorScheme: ColorScheme,
-        fontSize: Double
+        fontSize: Double,
+        droppingLeadingSpaces: Bool
     ) -> (code: AttributedString, commonLeadingSpaceCount: Int) {
         let (lines, commonLeadingSpaceCount) = highlighted(
             code: code,
             language: language,
             brightMode: colorScheme != .dark,
-            droppingLeadingSpaces: UserDefaults.shared
-                .value(for: \.hideCommonPrecedingSpacesInSuggestion),
+            droppingLeadingSpaces: droppingLeadingSpaces,
             fontSize: fontSize,
             replaceSpacesWithMiddleDots: false
         )
@@ -142,7 +146,7 @@ private struct _CodeBlockRepresentable: NSViewRepresentable {
         context.coordinator.parent = self
 
         let textView = scrollView.documentView as! STTextViewFrameObservable
-        
+
         textView.onHeightChange = onHeightChange
         textView.showsInvisibleCharacters = true
         textView.textContainer.lineBreakMode = .byCharWrapping
@@ -241,7 +245,10 @@ private class STTextViewFrameObservable: STTextView {
     var onHeightChange: ((Double) -> Void)?
     func recalculateSize() {
         var maxY = 0 as Double
-        textLayoutManager.enumerateTextLayoutFragments(in: textLayoutManager.documentRange, options: [.ensuresLayout]) { fragment in
+        textLayoutManager.enumerateTextLayoutFragments(
+            in: textLayoutManager.documentRange,
+            options: [.ensuresLayout]
+        ) { fragment in
             print(fragment.layoutFragmentFrame)
             maxY = max(maxY, fragment.layoutFragmentFrame.maxY)
             return true
@@ -287,3 +294,4 @@ private final class ColumnRuler: NSRulerView {
         ])
     }
 }
+
