@@ -9,6 +9,7 @@ public struct CodeBlock: View {
     public let highlightedCode: [NSAttributedString]
     public let firstLinePrecedingSpaceCount: Int
     public let fontSize: Double
+    public let droppingLeadingSpaces: Bool
 
     public init(
         code: String,
@@ -16,12 +17,14 @@ public struct CodeBlock: View {
         startLineIndex: Int,
         colorScheme: ColorScheme,
         firstLinePrecedingSpaceCount: Int = 0,
-        fontSize: Double
+        fontSize: Double,
+        droppingLeadingSpaces: Bool
     ) {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
         self.colorScheme = colorScheme
+        self.droppingLeadingSpaces = droppingLeadingSpaces
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
         self.fontSize = fontSize
         let padding = firstLinePrecedingSpaceCount > 0
@@ -31,7 +34,8 @@ public struct CodeBlock: View {
             code: padding + code,
             language: language,
             colorScheme: colorScheme,
-            fontSize: fontSize
+            fontSize: fontSize,
+            droppingLeadingSpaces: droppingLeadingSpaces
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
@@ -72,14 +76,14 @@ public struct CodeBlock: View {
         code: String,
         language: String,
         colorScheme: ColorScheme,
-        fontSize: Double
+        fontSize: Double,
+        droppingLeadingSpaces: Bool
     ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
         return highlighted(
             code: code,
             language: language,
             brightMode: colorScheme != .dark,
-            droppingLeadingSpaces: UserDefaults.shared
-                .value(for: \.hideCommonPrecedingSpacesInSuggestion),
+            droppingLeadingSpaces: droppingLeadingSpaces,
             fontSize: fontSize
         )
     }
@@ -98,7 +102,8 @@ struct CodeBlock_Previews: PreviewProvider {
             startLineIndex: 0,
             colorScheme: .dark,
             firstLinePrecedingSpaceCount: 0,
-            fontSize: 12
+            fontSize: 12,
+            droppingLeadingSpaces: true
         )
     }
 }

@@ -66,6 +66,7 @@ struct EmbeddingModelEditView: View {
             store.send(.appear)
         }
         .fixedSize(horizontal: false, vertical: true)
+        .handleToast(namespace: "EmbeddingModelEdit")
     }
 
     var nameTextField: some View {

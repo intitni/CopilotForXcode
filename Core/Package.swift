@@ -275,6 +275,7 @@ let package = Package(
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
+                .product(name: "CustomAsyncAlgorithms", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),

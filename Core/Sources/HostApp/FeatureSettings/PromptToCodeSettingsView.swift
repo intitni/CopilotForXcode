@@ -8,10 +8,10 @@ import ProHostApp
 
 struct PromptToCodeSettingsView: View {
     final class Settings: ObservableObject {
-        @AppStorage(\.hideCommonPrecedingSpacesInSuggestion)
-        var hideCommonPrecedingSpacesInSuggestion
-        @AppStorage(\.suggestionCodeFontSize)
-        var suggestionCodeFontSize
+        @AppStorage(\.hideCommonPrecedingSpacesInPromptToCode)
+        var hideCommonPrecedingSpaces
+        @AppStorage(\.promptToCodeCodeFontSize)
+        var fontSize
         @AppStorage(\.promptToCodeGenerateDescription)
         var promptToCodeGenerateDescription
         @AppStorage(\.promptToCodeGenerateDescriptionInUserPreferredLanguage)
@@ -84,25 +84,25 @@ struct PromptToCodeSettingsView: View {
                 }
             }
 
-            SettingsDivider("Mirroring Settings of Suggestion Feature")
+            SettingsDivider("UI")
 
             Form {
-                Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
+                Toggle(isOn: $settings.hideCommonPrecedingSpaces) {
                     Text("Hide Common Preceding Spaces")
-                }.disabled(true)
+                }
 
                 HStack {
                     TextField(text: .init(get: {
-                        "\(Int(settings.suggestionCodeFontSize))"
+                        "\(Int(settings.fontSize))"
                     }, set: {
-                        settings.suggestionCodeFontSize = Double(Int($0) ?? 0)
+                        settings.fontSize = Double(Int($0) ?? 0)
                     })) {
                         Text("Font size of suggestion code")
                     }
                     .textFieldStyle(.roundedBorder)
 
                     Text("pt")
-                }.disabled(true)
+                }
             }
 
             ScopeForm()

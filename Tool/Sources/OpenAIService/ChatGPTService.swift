@@ -111,6 +111,13 @@ public class ChatGPTService: ChatGPTServiceType {
                 endpoint: endpoint,
                 requestBody: requestBody
             )
+        case .claude:
+            return ClaudeChatCompletionsService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
         }
     }
 
@@ -133,6 +140,13 @@ public class ChatGPTService: ChatGPTServiceType {
             )
         case .ollama:
             return OllamaChatCompletionsService(
+                apiKey: apiKey,
+                model: model,
+                endpoint: endpoint,
+                requestBody: requestBody
+            )
+        case .claude:
+            return ClaudeChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 endpoint: endpoint,
@@ -579,7 +593,7 @@ extension ChatGPTService {
         let serviceSupportsFunctionCalling = switch model.format {
         case .openAI, .openAICompatible, .azureOpenAI:
             model.info.supportsFunctionCalling
-        case .ollama, .googleAI:
+        case .ollama, .googleAI, .claude:
             false
         }
 

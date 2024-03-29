@@ -294,6 +294,14 @@ public extension UserDefaultPreferenceKeys {
     var enableSenseScopeByDefaultInPromptToCode: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "EnableSenseScopeByDefaultInPromptToCode")
     }
+    
+    var promptToCodeCodeFontSize: PreferenceKey<Double> {
+        .init(defaultValue: 13, key: "PromptToCodeCodeFontSize")
+    }
+    
+    var hideCommonPrecedingSpacesInPromptToCode: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "HideCommonPrecedingSpacesInPromptToCode")
+    }
 }
 
 // MARK: - Suggestion

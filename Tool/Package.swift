@@ -44,6 +44,7 @@ let package = Package(
         .library(name: "GitIgnoreCheck", targets: ["GitIgnoreCheck"]),
         .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
         .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
+        .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -84,6 +85,13 @@ let package = Package(
         .target(name: "Logger"),
 
         .target(name: "ObjectiveCExceptionHandling"),
+
+        .target(
+            name: "CustomAsyncAlgorithms",
+            dependencies: [
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+            ]
+        ),
 
         .target(
             name: "Keychain",

@@ -12,6 +12,7 @@ extension ChatModel: ManageableAIModel {
         case .openAICompatible: return "OpenAI Compatible"
         case .googleAI: return "Google Generative AI"
         case .ollama: return "Ollama"
+        case .claude: return "Claude"
         }
     }
 

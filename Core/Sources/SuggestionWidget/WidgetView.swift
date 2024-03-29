@@ -140,7 +140,6 @@ struct WidgetAnimatedCircle: View {
 struct WidgetContextMenu: View {
     @AppStorage(\.useGlobalChat) var useGlobalChat
     @AppStorage(\.realtimeSuggestionToggle) var realtimeSuggestionToggle
-    @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpacesInSuggestion
     @AppStorage(\.disableSuggestionFeatureGlobally) var disableSuggestionFeatureGlobally
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @AppStorage(\.suggestionFeatureDisabledLanguageList) var suggestionFeatureDisabledLanguageList
@@ -198,15 +197,6 @@ struct WidgetContextMenu: View {
                         Image(systemName: "checkmark")
                     }
                 }
-
-                Button(action: {
-                    hideCommonPrecedingSpacesInSuggestion.toggle()
-                }, label: {
-                    Text("Hide Common Preceding Spaces in Suggestion")
-                    if hideCommonPrecedingSpacesInSuggestion {
-                        Image(systemName: "checkmark")
-                    }
-                })
             }
 
             Divider()

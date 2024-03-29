@@ -202,7 +202,8 @@ extension PromptToCodePanel {
     struct Content: View {
         let store: StoreOf<PromptToCode>
         @Environment(\.colorScheme) var colorScheme
-        @AppStorage(\.suggestionCodeFontSize) var fontSize
+        @AppStorage(\.promptToCodeCodeFontSize) var fontSize
+        @AppStorage(\.hideCommonPrecedingSpacesInPromptToCode) var hideCommonPrecedingSpaces
 
         struct CodeContent: Equatable {
             var code: String
@@ -278,7 +279,8 @@ extension PromptToCodePanel {
                                 colorScheme: colorScheme,
                                 firstLinePrecedingSpaceCount: viewStore.state
                                     .firstLinePrecedingSpaceCount,
-                                fontSize: fontSize
+                                fontSize: fontSize, 
+                                droppingLeadingSpaces: hideCommonPrecedingSpaces
                             )
                             .frame(maxWidth: .infinity)
                             .scaleEffect(x: 1, y: -1, anchor: .center)
