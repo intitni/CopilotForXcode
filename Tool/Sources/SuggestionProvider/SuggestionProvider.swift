@@ -1,4 +1,5 @@
-import AppKit 
+import AppKit
+import struct CopilotForXcodeKit.SuggestionServiceConfiguration
 import Foundation
 import Preferences
 import SuggestionModel
@@ -13,7 +14,8 @@ public struct SuggestionRequest {
     public var tabSize: Int
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
-    public var ignoreSpaceOnlySuggestions: Bool 
+    public var ignoreSpaceOnlySuggestions: Bool
+    public var relevantCodeSnippets: [RelevantCodeSnippet]
 
     public init(
         fileURL: URL,
@@ -24,7 +26,8 @@ public struct SuggestionRequest {
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
+        ignoreSpaceOnlySuggestions: Bool,
+        relevantCodeSnippets: [RelevantCodeSnippet]
     ) {
         self.fileURL = fileURL
         self.relativePath = relativePath
@@ -35,12 +38,24 @@ public struct SuggestionRequest {
         self.indentSize = indentSize
         self.usesTabsForIndentation = usesTabsForIndentation
         self.ignoreSpaceOnlySuggestions = ignoreSpaceOnlySuggestions
+        self.relevantCodeSnippets = relevantCodeSnippets
+    }
+}
+
+public struct RelevantCodeSnippet: Codable {
+    public var content: String
+    public var priority: Int
+    public var filePath: String
+
+    public init(content: String, priority: Int, filePath: String) {
+        self.content = content
+        self.priority = priority
+        self.filePath = filePath
     }
 }
 
 public protocol SuggestionServiceProvider {
     func getSuggestions(_ request: SuggestionRequest) async throws -> [CodeSuggestion]
-
     func notifyAccepted(_ suggestion: CodeSuggestion) async
     func notifyRejected(_ suggestions: [CodeSuggestion]) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
@@ -49,5 +64,8 @@ public protocol SuggestionServiceProvider {
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
     func terminate() async
+
+    var configuration: SuggestionServiceConfiguration { get async }
 }
 
+public typealias SuggestionServiceConfiguration = CopilotForXcodeKit.SuggestionServiceConfiguration

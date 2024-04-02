@@ -81,7 +81,7 @@ public actor RealtimeSuggestionController {
                     }
 
                     if #available(macOS 13.0, *) {
-                        for await _ in valueChange.throttle(for: .milliseconds(200)) {
+                        for await _ in valueChange._throttle(for: .milliseconds(200)) {
                             if Task.isCancelled { return }
                             await handler()
                         }
@@ -103,7 +103,7 @@ public actor RealtimeSuggestionController {
                     }
 
                     if #available(macOS 13.0, *) {
-                        for await _ in selectedTextChanged.throttle(for: .milliseconds(200)) {
+                        for await _ in selectedTextChanged._throttle(for: .milliseconds(200)) {
                             if Task.isCancelled { return }
                             await handler()
                         }
