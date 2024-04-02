@@ -52,7 +52,7 @@ let package = Package(
         // TODO: Update LanguageClient some day.
         .package(url: "https://github.com/ChimeHQ/LanguageClient", exact: "0.3.1"),
         .package(url: "https://github.com/ChimeHQ/LanguageServerProtocol", exact: "0.8.0"),
-        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
