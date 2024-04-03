@@ -57,7 +57,7 @@ let package = Package(
         .package(url: "https://github.com/ChimeHQ/JSONRPC", exact: "0.6.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
         .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
-        .package(url: "https://github.com/intitni/Highlightr", branch: "bump-highlight-js-version"),
+        .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"

@@ -275,7 +275,8 @@ extension PromptToCodePanel {
                             CodeBlock(
                                 code: viewStore.state.code,
                                 language: viewStore.state.language,
-                                startLineIndex: viewStore.state.startLineIndex,
+                                startLineIndex: viewStore.state.startLineIndex, 
+                                scenario: "promptToCode",
                                 colorScheme: colorScheme,
                                 firstLinePrecedingSpaceCount: viewStore.state
                                     .firstLinePrecedingSpaceCount,

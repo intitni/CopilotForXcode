@@ -100,7 +100,8 @@ struct CodeBlockSuggestionPanel: View {
                 CodeBlock(
                     code: suggestion.code,
                     language: suggestion.language,
-                    startLineIndex: suggestion.startLineIndex,
+                    startLineIndex: suggestion.startLineIndex, 
+                    scenario: "suggestion",
                     colorScheme: colorScheme,
                     fontSize: fontSize, 
                     droppingLeadingSpaces: hideCommonPrecedingSpaces

@@ -544,6 +544,7 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
         let content = highlightedCodeBlock(
             code: content,
             language: language ?? "",
+            scenario: "chat",
             brightMode: brightMode,
             fontSize: fontSize
         )

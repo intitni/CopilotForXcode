@@ -4,6 +4,7 @@ public struct CodeBlock: View {
     public let code: String
     public let language: String
     public let startLineIndex: Int
+    public let scenario: String
     public let colorScheme: ColorScheme
     public let commonPrecedingSpaceCount: Int
     public let highlightedCode: [NSAttributedString]
@@ -15,6 +16,7 @@ public struct CodeBlock: View {
         code: String,
         language: String,
         startLineIndex: Int,
+        scenario: String,
         colorScheme: ColorScheme,
         firstLinePrecedingSpaceCount: Int = 0,
         fontSize: Double,
@@ -23,6 +25,7 @@ public struct CodeBlock: View {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
+        self.scenario = scenario
         self.colorScheme = colorScheme
         self.droppingLeadingSpaces = droppingLeadingSpaces
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
@@ -33,6 +36,7 @@ public struct CodeBlock: View {
         let result = Self.highlight(
             code: padding + code,
             language: language,
+            scenario: scenario,
             colorScheme: colorScheme,
             fontSize: fontSize,
             droppingLeadingSpaces: droppingLeadingSpaces
@@ -75,6 +79,7 @@ public struct CodeBlock: View {
     static func highlight(
         code: String,
         language: String,
+        scenario: String,
         colorScheme: ColorScheme,
         fontSize: Double,
         droppingLeadingSpaces: Bool
@@ -82,6 +87,7 @@ public struct CodeBlock: View {
         return highlighted(
             code: code,
             language: language,
+            scenario: scenario,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: droppingLeadingSpaces,
             fontSize: fontSize
@@ -100,6 +106,7 @@ struct CodeBlock_Previews: PreviewProvider {
             """,
             language: "swift",
             startLineIndex: 0,
+            scenario: "",
             colorScheme: .dark,
             firstLinePrecedingSpaceCount: 0,
             fontSize: 12,
