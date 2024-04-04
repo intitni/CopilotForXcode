@@ -13,6 +13,7 @@ struct _CodeBlock: View {
     let highlightedCode: AttributedString
     let colorScheme: ColorScheme
     let droppingLeadingSpaces: Bool
+    let scenario: String
 
     /// Create a text edit view with a certain text that uses a certain options.
     /// - Parameters:
@@ -23,6 +24,7 @@ struct _CodeBlock: View {
         code: String,
         language: String,
         firstLinePrecedingSpaceCount: Int,
+        scenario: String,
         colorScheme: ColorScheme,
         fontSize: Double,
         droppingLeadingSpaces: Bool,
@@ -32,6 +34,7 @@ struct _CodeBlock: View {
         self.fontSize = fontSize
         self.colorScheme = colorScheme
         self.droppingLeadingSpaces = droppingLeadingSpaces
+        self.scenario = scenario
 
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
@@ -39,6 +42,7 @@ struct _CodeBlock: View {
         let result = Self.highlight(
             code: padding + code,
             language: language,
+            scenario: scenario,
             colorScheme: colorScheme,
             fontSize: fontSize,
             droppingLeadingSpaces: droppingLeadingSpaces
@@ -68,13 +72,15 @@ struct _CodeBlock: View {
     static func highlight(
         code: String,
         language: String,
+        scenario: String,
         colorScheme: ColorScheme,
         fontSize: Double,
         droppingLeadingSpaces: Bool
     ) -> (code: AttributedString, commonLeadingSpaceCount: Int) {
         let (lines, commonLeadingSpaceCount) = highlighted(
             code: code,
-            language: language,
+            language: language, 
+            scenario: scenario,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: droppingLeadingSpaces,
             fontSize: fontSize,

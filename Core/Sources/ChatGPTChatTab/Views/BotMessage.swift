@@ -11,8 +11,6 @@ struct BotMessage: View {
     let references: [DisplayedChatMessage.Reference]
     let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
-    @AppStorage(\.chatFontSize) var chatFontSize
-    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
 
     @State var isReferencesPresented = false
     @State var isReferencesHovered = false
@@ -45,15 +43,7 @@ struct BotMessage: View {
                     }
                 }
 
-                Markdown(text)
-                    .textSelection(.enabled)
-                    .markdownTheme(.custom(fontSize: chatFontSize))
-                    .markdownCodeSyntaxHighlighter(
-                        ChatCodeSyntaxHighlighter(
-                            brightMode: colorScheme != .dark,
-                            fontSize: chatCodeFontSize
-                        )
-                    )
+                ThemedMarkdownText(text)
             }
             .frame(alignment: .trailing)
             .padding()

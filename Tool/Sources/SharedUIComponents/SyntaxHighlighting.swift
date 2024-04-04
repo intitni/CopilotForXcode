@@ -7,6 +7,7 @@ import SwiftUI
 public func highlightedCodeBlock(
     code: String,
     language: String,
+    scenario: String,
     brightMode: Bool,
     fontSize: Double
 ) -> NSAttributedString {
@@ -27,7 +28,13 @@ public func highlightedCodeBlock(
     guard let highlighter = Highlightr() else {
         return unhighlightedCode()
     }
-    highlighter.setTheme(to: brightMode ? "xcode" : "atom-one-dark")
+    highlighter.setTheme(to: {
+        let mode = brightMode ? "light" : "dark"
+        if scenario.isEmpty {
+            return mode
+        }
+        return "\(scenario)-\(mode)"
+    }())
     highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: fontSize, weight: .regular))
     guard let formatted = highlighter.highlight(code, as: language) else {
         return unhighlightedCode()
@@ -41,6 +48,7 @@ public func highlightedCodeBlock(
 public func highlighted(
     code: String,
     language: String,
+    scenario: String,
     brightMode: Bool,
     droppingLeadingSpaces: Bool,
     fontSize: Double,
@@ -48,7 +56,8 @@ public func highlighted(
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let formatted = highlightedCodeBlock(
         code: code,
-        language: language,
+        language: language, 
+        scenario: scenario,
         brightMode: brightMode,
         fontSize: fontSize
     )

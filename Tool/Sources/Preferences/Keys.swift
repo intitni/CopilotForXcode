@@ -463,6 +463,38 @@ public extension UserDefaultPreferenceKeys {
     }
 }
 
+// MARK: - Theme
+
+public extension UserDefaultPreferenceKeys {
+    var syncSuggestionHighlightTheme: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SyncSuggestionHighlightTheme")
+    }
+
+    var syncPromptToCodeHighlightTheme: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SyncPromptToCodeHighlightTheme")
+    }
+
+    var syncChatCodeHighlightTheme: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SyncChatCodeHighlightTheme")
+    }
+    
+    var codeForegroundColorLight: PreferenceKey<UserDefaultsStorageBox<StorableColor?>> {
+        .init(defaultValue: .init(nil), key: "CodeForegroundColorLight")
+    }
+    
+    var codeForegroundColorDark: PreferenceKey<UserDefaultsStorageBox<StorableColor?>> {
+        .init(defaultValue: .init(nil), key: "CodeForegroundColorDark")
+    }
+    
+    var codeBackgroundColorLight: PreferenceKey<UserDefaultsStorageBox<StorableColor?>> {
+        .init(defaultValue: .init(nil), key: "CodeBackgroundColorLight")
+    }
+    
+    var codeBackgroundColorDark: PreferenceKey<UserDefaultsStorageBox<StorableColor?>> {
+        .init(defaultValue: .init(nil), key: "CodeBackgroundColorDark")
+    }
+}
+
 // MARK: - Bing Search
 
 public extension UserDefaultPreferenceKeys {

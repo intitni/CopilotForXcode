@@ -103,6 +103,12 @@ struct PromptToCodeSettingsView: View {
 
                     Text("pt")
                 }
+
+                #if canImport(ProHostApp)
+
+                CodeHighlightThemePicker(scenario: .promptToCode)
+
+                #endif
             }
 
             ScopeForm()
