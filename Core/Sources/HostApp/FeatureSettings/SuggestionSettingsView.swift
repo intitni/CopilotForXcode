@@ -187,7 +187,7 @@ struct SuggestionSettingsView: View {
                     Text("Accept Suggestion with Tab")
                 }
             }
-            
+
             Toggle(isOn: $settings.dismissSuggestionWithEsc) {
                 Text("Dismiss Suggestion with ESC")
             }
@@ -259,6 +259,12 @@ struct SuggestionSettingsView: View {
 
                 Text("pt")
             }
+
+            #if canImport(ProHostApp)
+
+            CodeHighlightThemePicker(scenario: .suggestion)
+            
+            #endif
         }
     }
 }

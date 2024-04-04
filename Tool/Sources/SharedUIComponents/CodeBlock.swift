@@ -1,3 +1,4 @@
+import Preferences
 import SwiftUI
 
 public struct CodeBlock: View {
@@ -11,6 +12,7 @@ public struct CodeBlock: View {
     public let firstLinePrecedingSpaceCount: Int
     public let fontSize: Double
     public let droppingLeadingSpaces: Bool
+    public let proposedForegroundColor: Color?
 
     public init(
         code: String,
@@ -20,7 +22,8 @@ public struct CodeBlock: View {
         colorScheme: ColorScheme,
         firstLinePrecedingSpaceCount: Int = 0,
         fontSize: Double,
-        droppingLeadingSpaces: Bool
+        droppingLeadingSpaces: Bool,
+        proposedForegroundColor: Color?
     ) {
         self.code = code
         self.language = language
@@ -30,6 +33,7 @@ public struct CodeBlock: View {
         self.droppingLeadingSpaces = droppingLeadingSpaces
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
         self.fontSize = fontSize
+        self.proposedForegroundColor = proposedForegroundColor
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
             : ""
@@ -44,6 +48,10 @@ public struct CodeBlock: View {
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
     }
+    
+    var foregroundColor: Color {
+        proposedForegroundColor ?? (colorScheme == .dark ? .white : .black)
+    }
 
     public var body: some View {
         VStack(spacing: 2) {
@@ -51,10 +59,10 @@ public struct CodeBlock: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(index + startLineIndex + 1)")
                         .multilineTextAlignment(.trailing)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(foregroundColor.opacity(0.5))
                         .frame(minWidth: 40)
                     Text(AttributedString(highlightedCode[index]))
-                        .foregroundColor(.white.opacity(0.1))
+                        .foregroundColor(foregroundColor.opacity(0.3))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(4)
@@ -63,7 +71,7 @@ public struct CodeBlock: View {
                                 Text("\(commonPrecedingSpaceCount + 1)")
                                     .padding(.top, -12)
                                     .font(.footnote)
-                                    .foregroundStyle(colorScheme == .dark ? .white : .black)
+                                    .foregroundStyle(foregroundColor)
                                     .opacity(0.3)
                             }
                         }
@@ -110,7 +118,8 @@ struct CodeBlock_Previews: PreviewProvider {
             colorScheme: .dark,
             firstLinePrecedingSpaceCount: 0,
             fontSize: 12,
-            droppingLeadingSpaces: true
+            droppingLeadingSpaces: true,
+            proposedForegroundColor: nil
         )
     }
 }

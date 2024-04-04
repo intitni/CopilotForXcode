@@ -8,6 +8,11 @@ struct CodeBlockSuggestionPanel: View {
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
     @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpaces
+    @AppStorage(\.syncSuggestionHighlightTheme) var syncHighlightTheme
+    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
+    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
+    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
+    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
 
     struct ToolBar: View {
         @ObservedObject var suggestion: CodeSuggestionProvider
@@ -38,7 +43,7 @@ struct CodeBlockSuggestionPanel: View {
                 }) {
                     Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
                 }.buttonStyle(.plain)
-                
+
                 Button(action: {
                     suggestion.rejectSuggestion()
                 }) {
@@ -100,15 +105,38 @@ struct CodeBlockSuggestionPanel: View {
                 CodeBlock(
                     code: suggestion.code,
                     language: suggestion.language,
-                    startLineIndex: suggestion.startLineIndex, 
+                    startLineIndex: suggestion.startLineIndex,
                     scenario: "suggestion",
                     colorScheme: colorScheme,
-                    fontSize: fontSize, 
-                    droppingLeadingSpaces: hideCommonPrecedingSpaces
+                    fontSize: fontSize,
+                    droppingLeadingSpaces: hideCommonPrecedingSpaces,
+                    proposedForegroundColor: {
+                        if syncHighlightTheme {
+                            if colorScheme == .light,
+                               let color = codeForegroundColorLight.value?.swiftUIColor
+                            {
+                                return color
+                            } else if let color = codeForegroundColorDark.value?.swiftUIColor {
+                                return color
+                            }
+                        }
+                        return nil
+                    }()
                 )
                 .frame(maxWidth: .infinity)
+                .background({ () -> Color in
+                    if syncHighlightTheme {
+                        if colorScheme == .light,
+                           let color = codeBackgroundColorLight.value?.swiftUIColor
+                        {
+                            return color
+                        } else if let color = codeBackgroundColorDark.value?.swiftUIColor {
+                            return color
+                        }
+                    }
+                    return Color.contentBackground
+                }())
             }
-            .background(Color.contentBackground)
 
             if suggestionDisplayCompactMode {
                 CompactToolBar(suggestion: suggestion)

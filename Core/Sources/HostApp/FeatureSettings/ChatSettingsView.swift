@@ -166,6 +166,12 @@ struct ChatSettingsView: View {
             Toggle(isOn: $settings.wrapCodeInCodeBlock) {
                 Text("Wrap code in code block")
             }
+
+            #if canImport(ProHostApp)
+
+            CodeHighlightThemePicker(scenario: .chat)
+
+            #endif
         }
     }
 

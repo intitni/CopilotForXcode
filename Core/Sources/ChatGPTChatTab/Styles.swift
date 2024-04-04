@@ -37,7 +37,26 @@ extension View {
     var messageBubbleCornerRadius: Double { 8 }
 
     func codeBlockLabelStyle() -> some View {
-        relativeLineSpacing(.em(0.225))
+        CodeBlockLabelStyle(content: self)
+    }
+
+    func codeBlockStyle(_ configuration: CodeBlockConfiguration) -> some View {
+        CodeBlockStyle(configuration: configuration, content: self)
+    }
+}
+
+struct CodeBlockLabelStyle<Content: View>: View {
+    @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
+    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
+    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
+    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
+    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
+
+    let content: Content
+
+    var body: some View {
+        content
+            .relativeLineSpacing(.em(0.225))
             .markdownTextStyle {
                 FontFamilyVariant(.monospaced)
                 FontSize(.em(0.85))
@@ -45,14 +64,48 @@ extension View {
             .padding(16)
             .padding(.top, 14)
     }
+}
 
-    func codeBlockStyle(_ configuration: CodeBlockConfiguration) -> some View {
-        background(Color(nsColor: .textBackgroundColor).opacity(0.7))
+struct CodeBlockStyle<Content: View>: View {
+    @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
+    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
+    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
+    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
+    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
+    @Environment(\.colorScheme) var colorScheme
+
+    let configuration: CodeBlockConfiguration
+    let content: Content
+
+    var body: some View {
+        content
+            .background({
+                if syncCodeHighlightTheme {
+                    if colorScheme == .light, let color = codeBackgroundColorLight.value {
+                        return color.swiftUIColor
+                    } else if let color = codeBackgroundColorDark.value {
+                        return color.swiftUIColor
+                    }
+                }
+
+                return Color(nsColor: .textBackgroundColor).opacity(0.7)
+            }() as Color)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(alignment: .top) {
                 HStack(alignment: .center) {
                     Text(configuration.language ?? "code")
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle({
+                            if syncCodeHighlightTheme {
+                                if colorScheme == .light,
+                                   let color = codeForegroundColorLight.value
+                                {
+                                    return color.swiftUIColor.opacity(0.5)
+                                } else if let color = codeForegroundColorDark.value {
+                                    return color.swiftUIColor.opacity(0.5)
+                                }
+                            }
+                            return Color.secondary.opacity(0.7)
+                        }() as Color)
                         .font(.callout)
                         .padding(.leading, 8)
                         .lineLimit(1)
@@ -62,6 +115,9 @@ extension View {
                         NSPasteboard.general.setString(configuration.content, forType: .string)
                     }
                 }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.05), lineWidth: 1)
             }
             .markdownMargin(top: 4, bottom: 16)
     }
