@@ -37,26 +37,7 @@ extension View {
     var messageBubbleCornerRadius: Double { 8 }
 
     func codeBlockLabelStyle() -> some View {
-        CodeBlockLabelStyle(content: self)
-    }
-
-    func codeBlockStyle(_ configuration: CodeBlockConfiguration) -> some View {
-        CodeBlockStyle(configuration: configuration, content: self)
-    }
-}
-
-struct CodeBlockLabelStyle<Content: View>: View {
-    @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
-    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
-    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
-    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
-    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
-
-    let content: Content
-
-    var body: some View {
-        content
-            .relativeLineSpacing(.em(0.225))
+        relativeLineSpacing(.em(0.225))
             .markdownTextStyle {
                 FontFamilyVariant(.monospaced)
                 FontSize(.em(0.85))
@@ -64,48 +45,18 @@ struct CodeBlockLabelStyle<Content: View>: View {
             .padding(16)
             .padding(.top, 14)
     }
-}
 
-struct CodeBlockStyle<Content: View>: View {
-    @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
-    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
-    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
-    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
-    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
-    @Environment(\.colorScheme) var colorScheme
-
-    let configuration: CodeBlockConfiguration
-    let content: Content
-
-    var body: some View {
-        content
-            .background({
-                if syncCodeHighlightTheme {
-                    if colorScheme == .light, let color = codeBackgroundColorLight.value {
-                        return color.swiftUIColor
-                    } else if let color = codeBackgroundColorDark.value {
-                        return color.swiftUIColor
-                    }
-                }
-
-                return Color(nsColor: .textBackgroundColor).opacity(0.7)
-            }() as Color)
+    func codeBlockStyle(
+        _ configuration: CodeBlockConfiguration,
+        backgroundColor: Color,
+        labelColor: Color
+    ) -> some View {
+        background(backgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(alignment: .top) {
                 HStack(alignment: .center) {
                     Text(configuration.language ?? "code")
-                        .foregroundStyle({
-                            if syncCodeHighlightTheme {
-                                if colorScheme == .light,
-                                   let color = codeForegroundColorLight.value
-                                {
-                                    return color.swiftUIColor.opacity(0.5)
-                                } else if let color = codeForegroundColorDark.value {
-                                    return color.swiftUIColor.opacity(0.5)
-                                }
-                            }
-                            return Color.secondary.opacity(0.7)
-                        }() as Color)
+                        .foregroundStyle(labelColor)
                         .font(.callout)
                         .padding(.leading, 8)
                         .lineLimit(1)
@@ -123,8 +74,69 @@ struct CodeBlockStyle<Content: View>: View {
     }
 }
 
+struct ThemedMarkdownText: View {
+    @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
+    @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
+    @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
+    @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
+    @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
+    @AppStorage(\.chatFontSize) var chatFontSize
+    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
+    @Environment(\.colorScheme) var colorScheme
+
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Markdown(text)
+            .textSelection(.enabled)
+            .markdownTheme(.custom(
+                fontSize: chatFontSize,
+                codeBlockBackgroundColor: {
+                    if syncCodeHighlightTheme {
+                        if colorScheme == .light, let color = codeBackgroundColorLight.value {
+                            return color.swiftUIColor
+                        } else if let color = codeBackgroundColorDark.value {
+                            return color.swiftUIColor
+                        }
+                    }
+
+                    return Color(nsColor: .textBackgroundColor).opacity(0.7)
+                }(),
+                codeBlockLabelColor: {
+                    if syncCodeHighlightTheme {
+                        if colorScheme == .light,
+                           let color = codeForegroundColorLight.value
+                        {
+                            return color.swiftUIColor.opacity(0.5)
+                        } else if let color = codeForegroundColorDark.value {
+                            return color.swiftUIColor.opacity(0.5)
+                        }
+                    }
+                    return Color.secondary.opacity(0.7)
+                }()
+            ))
+            .markdownCodeSyntaxHighlighter(
+                ChatCodeSyntaxHighlighter(
+                    brightMode: colorScheme != .dark,
+                    fontSize: chatCodeFontSize,
+                    colorChange: colorScheme == .dark
+                        ? codeForegroundColorDark.value?.swiftUIColor
+                        : codeForegroundColorLight.value?.swiftUIColor
+                )
+            )
+    }
+}
+
 extension MarkdownUI.Theme {
-    static func custom(fontSize: Double) -> MarkdownUI.Theme {
+    static func custom(
+        fontSize: Double,
+        codeBlockBackgroundColor: Color,
+        codeBlockLabelColor: Color
+    ) -> MarkdownUI.Theme {
         .gitHub.text {
             ForegroundColor(.primary)
             BackgroundColor(Color.clear)
@@ -136,14 +148,22 @@ extension MarkdownUI.Theme {
             if wrapCode {
                 configuration.label
                     .codeBlockLabelStyle()
-                    .codeBlockStyle(configuration)
+                    .codeBlockStyle(
+                        configuration,
+                        backgroundColor: codeBlockBackgroundColor,
+                        labelColor: codeBlockLabelColor
+                    )
             } else {
                 ScrollView(.horizontal) {
                     configuration.label
                         .codeBlockLabelStyle()
                 }
                 .workaroundForVerticalScrollingBugInMacOS()
-                .codeBlockStyle(configuration)
+                .codeBlockStyle(
+                    configuration,
+                    backgroundColor: codeBlockBackgroundColor,
+                    labelColor: codeBlockLabelColor
+                )
             }
         }
     }
@@ -165,14 +185,22 @@ extension MarkdownUI.Theme {
             if wrapCode {
                 configuration.label
                     .codeBlockLabelStyle()
-                    .codeBlockStyle(configuration)
+                    .codeBlockStyle(
+                        configuration,
+                        backgroundColor: Color(nsColor: .textBackgroundColor).opacity(0.7),
+                        labelColor: Color.secondary.opacity(0.7)
+                    )
             } else {
                 ScrollView(.horizontal) {
                     configuration.label
                         .codeBlockLabelStyle()
                 }
                 .workaroundForVerticalScrollingBugInMacOS()
-                .codeBlockStyle(configuration)
+                .codeBlockStyle(
+                    configuration,
+                    backgroundColor: Color(nsColor: .textBackgroundColor).opacity(0.7),
+                    labelColor: Color.secondary.opacity(0.7)
+                )
             }
         }
         .table { configuration in
