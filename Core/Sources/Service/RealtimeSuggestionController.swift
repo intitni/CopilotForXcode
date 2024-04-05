@@ -145,7 +145,7 @@ public actor RealtimeSuggestionController {
     func triggerPrefetchDebounced(force: Bool = false) {
         inflightPrefetchTask = Task(priority: .utility) { @WorkspaceActor in
             try? await Task.sleep(nanoseconds: UInt64(
-                max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.25)
+                max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.15)
                     * 1_000_000_000
             ))
 
