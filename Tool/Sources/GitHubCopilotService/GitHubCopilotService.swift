@@ -62,7 +62,7 @@ enum GitHubCopilotError: Error, LocalizedError {
             case let .clientDataUnavailable(error):
                 return "Language server error: Client data unavailable: \(error)"
             case .serverUnavailable:
-                return "Language server error: Server unavailable, please make sure that:\n1. The path is node is correctly set.\n2. The node is not a shim executable.\n3. the node version is high enough."
+                return "Language server error: Server unavailable, please make sure that:\n1. The path to node is correctly set.\n2. The node is not a shim executable.\n3. the node version is high enough."
             case .missingExpectedParameter:
                 return "Language server error: Missing expected parameter"
             case .missingExpectedResult:
