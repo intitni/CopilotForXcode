@@ -10,7 +10,7 @@ public struct CodeBlock: View {
     public let commonPrecedingSpaceCount: Int
     public let highlightedCode: [NSAttributedString]
     public let firstLinePrecedingSpaceCount: Int
-    public let fontSize: Double
+    public let font: NSFont
     public let droppingLeadingSpaces: Bool
     public let proposedForegroundColor: Color?
 
@@ -21,7 +21,7 @@ public struct CodeBlock: View {
         scenario: String,
         colorScheme: ColorScheme,
         firstLinePrecedingSpaceCount: Int = 0,
-        fontSize: Double,
+        font: NSFont,
         droppingLeadingSpaces: Bool,
         proposedForegroundColor: Color?
     ) {
@@ -32,7 +32,7 @@ public struct CodeBlock: View {
         self.colorScheme = colorScheme
         self.droppingLeadingSpaces = droppingLeadingSpaces
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
-        self.fontSize = fontSize
+        self.font = font
         self.proposedForegroundColor = proposedForegroundColor
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
@@ -42,7 +42,7 @@ public struct CodeBlock: View {
             language: language,
             scenario: scenario,
             colorScheme: colorScheme,
-            fontSize: fontSize,
+            font: font,
             droppingLeadingSpaces: droppingLeadingSpaces
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
@@ -79,7 +79,7 @@ public struct CodeBlock: View {
             }
         }
         .foregroundColor(.white)
-        .font(.system(size: fontSize, design: .monospaced))
+        .font(.init(font))
         .padding(.leading, 4)
         .padding([.trailing, .top, .bottom])
     }
@@ -89,7 +89,7 @@ public struct CodeBlock: View {
         language: String,
         scenario: String,
         colorScheme: ColorScheme,
-        fontSize: Double,
+        font: NSFont,
         droppingLeadingSpaces: Bool
     ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
         return highlighted(
@@ -98,7 +98,7 @@ public struct CodeBlock: View {
             scenario: scenario,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: droppingLeadingSpaces,
-            fontSize: fontSize
+            font: font
         )
     }
 }
@@ -117,7 +117,7 @@ struct CodeBlock_Previews: PreviewProvider {
             scenario: "",
             colorScheme: .dark,
             firstLinePrecedingSpaceCount: 0,
-            fontSize: 12,
+            font: .monospacedSystemFont(ofSize: 12, weight: .regular),
             droppingLeadingSpaces: true,
             proposedForegroundColor: nil
         )

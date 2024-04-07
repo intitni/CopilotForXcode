@@ -46,8 +46,8 @@ struct SuggestionSettingsView: View {
         var suggestionFeatureEnabledProjectList
         @AppStorage(\.hideCommonPrecedingSpacesInSuggestion)
         var hideCommonPrecedingSpacesInSuggestion
-        @AppStorage(\.suggestionCodeFontSize)
-        var suggestionCodeFontSize
+        @AppStorage(\.suggestionCodeFont)
+        var font
         @AppStorage(\.suggestionFeatureProvider)
         var suggestionFeatureProvider
         @AppStorage(\.suggestionDisplayCompactMode)
@@ -247,24 +247,15 @@ struct SuggestionSettingsView: View {
                 Text("Hide Common Preceding Spaces")
             }
 
-            HStack {
-                TextField(text: .init(get: {
-                    "\(Int(settings.suggestionCodeFontSize))"
-                }, set: {
-                    settings.suggestionCodeFontSize = Double(Int($0) ?? 0)
-                })) {
-                    Text("Font size of suggestion code")
-                }
-                .textFieldStyle(.roundedBorder)
-
-                Text("pt")
-            }
-
             #if canImport(ProHostApp)
 
             CodeHighlightThemePicker(scenario: .suggestion)
-            
+
             #endif
+
+            FontPicker(font: $settings.font) {
+                Text("Font")
+            }
         }
     }
 }

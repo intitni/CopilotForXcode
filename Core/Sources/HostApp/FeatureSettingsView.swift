@@ -34,6 +34,18 @@ struct FeatureSettingsView: View {
                 subtitle: "Write code with natural language",
                 image: "paintbrush"
             )
+            
+//            #if canImport(ProHostApp)
+//            ScrollView {
+//                TerminalSettingsView().padding()
+//            }
+//            .sidebarItem(
+//                tag: 3,
+//                title: "Terminal",
+//                subtitle: "Terminal chat tab",
+//                image: "terminal"
+//            )
+//            #endif
         }
     }
 }
