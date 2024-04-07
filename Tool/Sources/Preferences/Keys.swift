@@ -648,5 +648,9 @@ public extension UserDefaultPreferenceKeys {
     var observeToAXNotificationWithDefaultMode: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-observeToAXNotificationWithDefaultMode")
     }
+    
+    var useCloudflareDomainNameForLicenseCheck: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-UseCloudflareDomainNameForLicenseCheck")
+    }
 }
 
