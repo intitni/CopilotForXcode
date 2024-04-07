@@ -244,7 +244,8 @@ struct GeneralSettingsView: View {
 
     @StateObject var settings = Settings()
     @Environment(\.updateChecker) var updateChecker
-
+    @State var automaticallyCheckForUpdate: Bool?
+    
     var body: some View {
         Form {
             Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
@@ -252,8 +253,11 @@ struct GeneralSettingsView: View {
             }
 
             Toggle(isOn: .init(
-                get: { updateChecker.automaticallyChecksForUpdates },
-                set: { updateChecker.automaticallyChecksForUpdates = $0 }
+                get: { automaticallyCheckForUpdate ?? updateChecker.automaticallyChecksForUpdates },
+                set: {
+                    updateChecker.automaticallyChecksForUpdates = $0
+                    automaticallyCheckForUpdate = $0
+                }
             )) {
                 Text("Automatically Check for Update")
             }
