@@ -533,12 +533,12 @@ struct ChatPanel_EmptyChat_Preview: PreviewProvider {
 
 struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
     let brightMode: Bool
-    let fontSize: Double
+    let font: NSFont
     let colorChange: Color?
 
-    init(brightMode: Bool, fontSize: Double, colorChange: Color?) {
+    init(brightMode: Bool, font: NSFont, colorChange: Color?) {
         self.brightMode = brightMode
-        self.fontSize = fontSize
+        self.font = font
         self.colorChange = colorChange
     }
 
@@ -548,7 +548,7 @@ struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
             language: language ?? "",
             scenario: "chat",
             brightMode: brightMode,
-            fontSize: fontSize
+            font: font
         )
         return Text(AttributedString(content))
     }

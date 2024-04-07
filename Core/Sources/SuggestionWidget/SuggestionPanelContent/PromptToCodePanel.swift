@@ -202,7 +202,7 @@ extension PromptToCodePanel {
     struct Content: View {
         let store: StoreOf<PromptToCode>
         @Environment(\.colorScheme) var colorScheme
-        @AppStorage(\.promptToCodeCodeFontSize) var fontSize
+        @AppStorage(\.promptToCodeCodeFont) var codeFont
         @AppStorage(\.hideCommonPrecedingSpacesInPromptToCode) var hideCommonPrecedingSpaces
         @AppStorage(\.syncPromptToCodeHighlightTheme) var syncHighlightTheme
         @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
@@ -312,7 +312,7 @@ extension PromptToCodePanel {
                                 colorScheme: colorScheme,
                                 firstLinePrecedingSpaceCount: viewStore.state
                                     .firstLinePrecedingSpaceCount,
-                                fontSize: fontSize, 
+                                font: codeFont.value.nsFont,
                                 droppingLeadingSpaces: hideCommonPrecedingSpaces,
                                 proposedForegroundColor:codeForegroundColor
                             )

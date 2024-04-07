@@ -81,7 +81,7 @@ struct ThemedMarkdownText: View {
     @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
     @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
     @AppStorage(\.chatFontSize) var chatFontSize
-    @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
+    @AppStorage(\.chatCodeFont) var chatCodeFont
     @Environment(\.colorScheme) var colorScheme
 
     let text: String
@@ -122,7 +122,7 @@ struct ThemedMarkdownText: View {
             .markdownCodeSyntaxHighlighter(
                 ChatCodeSyntaxHighlighter(
                     brightMode: colorScheme != .dark,
-                    fontSize: chatCodeFontSize,
+                    font: chatCodeFont.value.nsFont,
                     colorChange: colorScheme == .dark
                         ? codeForegroundColorDark.value?.swiftUIColor
                         : codeForegroundColorLight.value?.swiftUIColor

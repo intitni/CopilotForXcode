@@ -31,14 +31,14 @@ public extension UserDefaults {
             defaultValue: shared.value(for: \.suggestionCodeFontSize)
         )
         shared.setupDefaultValue(
-            for: \.suggestionFont,
+            for: \.suggestionCodeFont,
             defaultValue: .init(.init(nsFont: .monospacedSystemFont(
                 ofSize: shared.value(for: \.suggestionCodeFontSize),
                 weight: .regular
             )))
         )
         shared.setupDefaultValue(
-            for: \.promptToCodeFont,
+            for: \.promptToCodeCodeFont,
             defaultValue: .init(.init(nsFont: .monospacedSystemFont(
                 ofSize: shared.value(for: \.promptToCodeCodeFontSize),
                 weight: .regular

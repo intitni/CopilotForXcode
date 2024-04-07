@@ -4,7 +4,7 @@ import SwiftUI
 struct CodeBlockSuggestionPanel: View {
     @ObservedObject var suggestion: CodeSuggestionProvider
     @Environment(\.colorScheme) var colorScheme
-    @AppStorage(\.suggestionCodeFontSize) var fontSize
+    @AppStorage(\.suggestionCodeFont) var codeFont
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
     @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
     @AppStorage(\.hideCommonPrecedingSpacesInSuggestion) var hideCommonPrecedingSpaces
@@ -108,7 +108,7 @@ struct CodeBlockSuggestionPanel: View {
                     startLineIndex: suggestion.startLineIndex,
                     scenario: "suggestion",
                     colorScheme: colorScheme,
-                    fontSize: fontSize,
+                    font: codeFont.value.nsFont,
                     droppingLeadingSpaces: hideCommonPrecedingSpaces,
                     proposedForegroundColor: {
                         if syncHighlightTheme {

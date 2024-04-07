@@ -3,15 +3,32 @@ import Foundation
 import Preferences
 import SwiftUI
 
-public struct FontPicker: View {
-    @Binding var font: NSFont
+public struct FontPicker<Label: View>: View {
     @State var fontManagerDelegate: FontManagerDelegate?
+    @Binding var font: NSFont
+    let label: Label
 
-    public init(font: Binding<NSFont>) {
+    public init(font: Binding<NSFont>, @ViewBuilder label: () -> Label) {
         _font = font
+        self.label = label()
     }
 
     public var body: some View {
+        if #available(macOS 13.0, *) {
+            LabeledContent {
+                button
+            } label: {
+                label
+            }
+        } else {
+            HStack {
+                label
+                button
+            }
+        }
+    }
+    
+    var button: some View {
         Button {
             if NSFontPanel.shared.isVisible {
                 NSFontPanel.shared.orderOut(nil)
@@ -25,13 +42,13 @@ public struct FontPicker: View {
             NSFontPanel.shared.orderBack(nil)
         } label: {
             HStack {
-                    Text(font.fontName)
-                        + Text(" - ")
-                        + Text(font.pointSize, format: .number.precision(.fractionLength(1)))
-                        + Text("pt")
-                
+                Text(font.fontName)
+                    + Text(" - ")
+                    + Text(font.pointSize, format: .number.precision(.fractionLength(1)))
+                    + Text("pt")
+
                 Spacer().frame(width: 30)
-                
+
                 Image(systemName: "textformat")
                     .frame(width: 13)
                     .scaledToFit()
@@ -54,16 +71,19 @@ public struct FontPicker: View {
 }
 
 public extension FontPicker {
-    init(font: Binding<StorableFont>) {
+    init(font: Binding<UserDefaultsStorageBox<StorableFont>>, @ViewBuilder label: () -> Label) {
         _font = Binding(
-            get: { font.wrappedValue.nsFont },
-            set: { font.wrappedValue = StorableFont(nsFont: $0) }
+            get: { font.wrappedValue.value.nsFont },
+            set: { font.wrappedValue = .init(StorableFont(nsFont: $0)) }
         )
+        self.label = label()
     }
 }
 
 #Preview {
-    FontPicker(font: .constant(.systemFont(ofSize: 15)))
-        .padding()
+    FontPicker(font: .constant(.systemFont(ofSize: 15))) {
+        Text("Font")
+    }
+    .padding()
 }
 

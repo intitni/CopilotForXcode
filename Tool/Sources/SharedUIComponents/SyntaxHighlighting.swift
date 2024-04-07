@@ -9,7 +9,7 @@ public func highlightedCodeBlock(
     language: String,
     scenario: String,
     brightMode: Bool,
-    fontSize: Double
+    font: NSFont
 ) -> NSAttributedString {
     var language = language
     // Workaround: Highlightr uses a different identifier for Objective-C.
@@ -21,7 +21,7 @@ public func highlightedCodeBlock(
             string: code,
             attributes: [
                 .foregroundColor: brightMode ? NSColor.black : NSColor.white,
-                .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+                .font: font,
             ]
         )
     }
@@ -35,7 +35,7 @@ public func highlightedCodeBlock(
         }
         return "\(scenario)-\(mode)"
     }())
-    highlighter.theme.setCodeFont(.monospacedSystemFont(ofSize: fontSize, weight: .regular))
+    highlighter.theme.setCodeFont(font)
     guard let formatted = highlighter.highlight(code, as: language) else {
         return unhighlightedCode()
     }
@@ -51,7 +51,7 @@ public func highlighted(
     scenario: String,
     brightMode: Bool,
     droppingLeadingSpaces: Bool,
-    fontSize: Double,
+    font: NSFont,
     replaceSpacesWithMiddleDots: Bool = true
 ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
     let formatted = highlightedCodeBlock(
@@ -59,7 +59,7 @@ public func highlighted(
         language: language, 
         scenario: scenario,
         brightMode: brightMode,
-        fontSize: fontSize
+        font: font
     )
     let middleDotColor = brightMode
         ? NSColor.black.withAlphaComponent(0.1)

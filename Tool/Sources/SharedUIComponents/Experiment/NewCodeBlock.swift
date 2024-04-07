@@ -8,7 +8,7 @@ private let insetTop = 12 as Double
 struct _CodeBlock: View {
     @Binding private var selection: NSRange?
     @State private var contentHeight: Double = 500
-    let fontSize: Double
+    let font: NSFont
     let commonPrecedingSpaceCount: Int
     let highlightedCode: AttributedString
     let colorScheme: ColorScheme
@@ -26,12 +26,12 @@ struct _CodeBlock: View {
         firstLinePrecedingSpaceCount: Int,
         scenario: String,
         colorScheme: ColorScheme,
-        fontSize: Double,
+        font: NSFont,
         droppingLeadingSpaces: Bool,
         selection: Binding<NSRange?> = .constant(nil)
     ) {
         _selection = selection
-        self.fontSize = fontSize
+        self.font = font
         self.colorScheme = colorScheme
         self.droppingLeadingSpaces = droppingLeadingSpaces
         self.scenario = scenario
@@ -44,7 +44,7 @@ struct _CodeBlock: View {
             language: language,
             scenario: scenario,
             colorScheme: colorScheme,
-            fontSize: fontSize,
+            font: font,
             droppingLeadingSpaces: droppingLeadingSpaces
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
@@ -55,7 +55,7 @@ struct _CodeBlock: View {
         _CodeBlockRepresentable(
             text: highlightedCode,
             selection: $selection,
-            fontSize: fontSize,
+            font: font,
             onHeightChange: { height in
                 print("Q", height)
                 contentHeight = height
@@ -74,7 +74,7 @@ struct _CodeBlock: View {
         language: String,
         scenario: String,
         colorScheme: ColorScheme,
-        fontSize: Double,
+        font: NSFont,
         droppingLeadingSpaces: Bool
     ) -> (code: AttributedString, commonLeadingSpaceCount: Int) {
         let (lines, commonLeadingSpaceCount) = highlighted(
@@ -83,7 +83,7 @@ struct _CodeBlock: View {
             scenario: scenario,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: droppingLeadingSpaces,
-            fontSize: fontSize,
+            font: font,
             replaceSpacesWithMiddleDots: false
         )
 
@@ -105,18 +105,18 @@ private struct _CodeBlockRepresentable: NSViewRepresentable {
 
     @Binding private var selection: NSRange?
     let text: AttributedString
-    let fontSize: Double
+    let font: NSFont
     let onHeightChange: (Double) -> Void
 
     init(
         text: AttributedString,
         selection: Binding<NSRange?>,
-        fontSize: Double,
+        font: NSFont,
         onHeightChange: @escaping (Double) -> Void
     ) {
         self.text = text
         _selection = selection
-        self.fontSize = fontSize
+        self.font = font
         self.onHeightChange = onHeightChange
     }
 
@@ -188,7 +188,6 @@ private struct _CodeBlockRepresentable: NSViewRepresentable {
             textView.heightTracksTextView = true
         }
 
-        let font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         if textView.font != font {
             textView.font = font
         }
