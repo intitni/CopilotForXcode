@@ -1,4 +1,5 @@
 import AIModel
+import AppKit
 import Configs
 import Foundation
 
@@ -28,6 +29,27 @@ public extension UserDefaults {
         shared.setupDefaultValue(
             for: \.promptToCodeCodeFontSize,
             defaultValue: shared.value(for: \.suggestionCodeFontSize)
+        )
+        shared.setupDefaultValue(
+            for: \.suggestionFont,
+            defaultValue: .init(.init(nsFont: .monospacedSystemFont(
+                ofSize: shared.value(for: \.suggestionCodeFontSize),
+                weight: .regular
+            )))
+        )
+        shared.setupDefaultValue(
+            for: \.promptToCodeFont,
+            defaultValue: .init(.init(nsFont: .monospacedSystemFont(
+                ofSize: shared.value(for: \.promptToCodeCodeFontSize),
+                weight: .regular
+            )))
+        )
+        shared.setupDefaultValue(
+            for: \.chatCodeFont,
+            defaultValue: .init(.init(nsFont: .monospacedSystemFont(
+                ofSize: shared.value(for: \.chatCodeFontSize),
+                weight: .regular
+            )))
         )
     }
 }
@@ -69,7 +91,7 @@ public struct UserDefaultsStorageBox<Element: Codable>: RawRepresentable {
     public init(_ value: Element) {
         self.value = value
     }
-    
+
     public init?(rawValue: String) {
         guard let data = rawValue.data(using: .utf8),
               let result = try? JSONDecoder().decode(Element.self, from: data)
@@ -147,7 +169,7 @@ public extension UserDefaultsType {
         }
         return K.Value(rawValue: rawValue) ?? key.defaultValue
     }
-    
+
     func value<K: UserDefaultPreferenceKey, V>(
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>
     ) -> V where K.Value == UserDefaultsStorageBox<V> {
@@ -173,7 +195,7 @@ public extension UserDefaultsType {
         let key = UserDefaultPreferenceKeys()[keyPath: keyPath]
         set(value.rawValue, forKey: key.key)
     }
-    
+
     func set<K: UserDefaultPreferenceKey, V: Codable>(
         _ value: V,
         for keyPath: KeyPath<UserDefaultPreferenceKeys, K>

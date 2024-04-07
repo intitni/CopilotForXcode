@@ -493,6 +493,18 @@ public extension UserDefaultPreferenceKeys {
     var codeBackgroundColorDark: PreferenceKey<UserDefaultsStorageBox<StorableColor?>> {
         .init(defaultValue: .init(nil), key: "CodeBackgroundColorDark")
     }
+    
+    var suggestionFont: PreferenceKey<UserDefaultsStorageBox<StorableFont?>> {
+        .init(defaultValue: .init(nil), key: "SuggestionFont")
+    }
+    
+    var promptToCodeFont: PreferenceKey<UserDefaultsStorageBox<StorableFont?>> {
+        .init(defaultValue: .init(nil), key: "promptToCodeFont")
+    }
+    
+    var chatCodeFont: PreferenceKey<UserDefaultsStorageBox<StorableFont?>> {
+        .init(defaultValue: .init(nil), key: "chatCodeFont")
+    }
 }
 
 // MARK: - Bing Search
