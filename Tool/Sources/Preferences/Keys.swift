@@ -504,14 +504,21 @@ public extension UserDefaultPreferenceKeys {
     var promptToCodeCodeFont: PreferenceKey<UserDefaultsStorageBox<StorableFont>> {
         .init(
             defaultValue: .init(.init(nsFont: .monospacedSystemFont(ofSize: 12, weight: .regular))),
-            key: "promptToCodeCodeFont"
+            key: "PromptToCodeCodeFont"
         )
     }
 
     var chatCodeFont: PreferenceKey<UserDefaultsStorageBox<StorableFont>> {
         .init(
             defaultValue: .init(.init(nsFont: .monospacedSystemFont(ofSize: 12, weight: .regular))),
-            key: "chatCodeFont"
+            key: "ChatCodeFont"
+        )
+    }
+    
+    var terminalFont: PreferenceKey<UserDefaultsStorageBox<StorableFont>> {
+        .init(
+            defaultValue: .init(.init(nsFont: .monospacedSystemFont(ofSize: 12, weight: .regular))),
+            key: "TerminalCodeFont"
         )
     }
 }
