@@ -27,6 +27,8 @@ final class DebugSettings: ObservableObject {
     var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted
     @AppStorage(\.observeToAXNotificationWithDefaultMode)
     var observeToAXNotificationWithDefaultMode
+    @AppStorage(\.useCloudflareDomainNameForLicenseCheck)
+    var useCloudflareDomainNameForLicenseCheck
     init() {}
 }
 
@@ -125,6 +127,12 @@ struct DebugSettingsView: View {
                         ) {
                             Text("Observe to AXNotification with default mode")
                         }
+                    }
+                    
+                    Toggle(
+                        isOn: $settings.useCloudflareDomainNameForLicenseCheck
+                    ) {
+                        Text("Use Cloudflare domain name for license check")
                     }
                 }
             }
