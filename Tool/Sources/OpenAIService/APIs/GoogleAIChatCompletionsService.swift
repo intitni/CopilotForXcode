@@ -8,17 +8,20 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
     let model: ChatModel
     var requestBody: ChatCompletionsRequestBody
     let prompt: ChatGPTPrompt
+    let baseURL: String
 
     init(
         apiKey: String,
         model: ChatModel,
         requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt
+        prompt: ChatGPTPrompt,
+        baseURL: String
     ) {
         self.apiKey = apiKey
         self.model = model
         self.requestBody = requestBody
         self.prompt = prompt
+        self.baseURL = baseURL
     }
 
     func callAsFunction() async throws -> ChatCompletionResponseBody {
@@ -27,7 +30,8 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init)
-            ))
+            )), 
+            baseURL: baseURL
         )
         let history = prompt.googleAICompatible.history.map { message in
             ModelContent(message)
@@ -53,6 +57,12 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 throw error
             case .responseStoppedEarly:
                 throw error
+            case .promptImageContentError:
+                throw error
+            case let .invalidAPIKey(message: message):
+                throw error
+            case .unsupportedUserLocation:
+                throw error
             }
         } catch {
             throw error
@@ -67,7 +77,8 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init)
-            ))
+            )), 
+            baseURL: baseURL
         )
         let history = prompt.googleAICompatible.history.map { message in
             ModelContent(message)
@@ -99,6 +110,12 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                     case .promptBlocked:
                         continuation.finish(throwing: error)
                     case .responseStoppedEarly:
+                        continuation.finish(throwing: error)
+                    case let .promptImageContentError(underlying: underlying):
+                        continuation.finish(throwing: error)
+                    case let .invalidAPIKey(message: message):
+                        continuation.finish(throwing: error)
+                    case .unsupportedUserLocation:
                         continuation.finish(throwing: error)
                     }
                 } catch {

@@ -328,6 +328,10 @@ struct ChatModelEditView: View {
 
     @ViewBuilder
     var googleAI: some View {
+        baseURLTextField(prompt: Text("https://generativelanguage.googleapis.com")) {
+            Text("/v1")
+        }
+        
         apiKeyNamePicker
 
         WithViewStore(
