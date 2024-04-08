@@ -102,8 +102,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
         case .googleAI:
             let baseURL = info.baseURL
-            if baseURL.isEmpty { return "https://generativelanguage.googleapis.com/v1" }
-            return "\(baseURL)/v1/chat/completions"
+            if baseURL.isEmpty { return "https://generativelanguage.googleapis.com" }
+            return "\(baseURL)"
         case .ollama:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "http://localhost:11434/api/chat" }

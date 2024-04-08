@@ -65,7 +65,11 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
-        .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
+        // A fork of https://github.com/google/generative-ai-swift to support setting base url.
+        .package(
+            url: "https://github.com/intitni/generative-ai-swift",
+            branch: "support-setting-base-url"
+        ),
         .package(url: "https://github.com/intitni/CopilotForXcodeKit", from: "0.4.0"),
 
         // TreeSitter
@@ -90,7 +94,7 @@ let package = Package(
         .target(
             name: "CustomAsyncAlgorithms",
             dependencies: [
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
 
