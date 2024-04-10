@@ -95,8 +95,6 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
     }
 
     public func notifyOpenFile(filespace: Filespace) {
-        workspace?.refreshUpdateTime()
-        workspace?.openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
         Task {
             guard !(await filespace.isGitIgnored) else { return }
             // check if file size is larger than 15MB, if so, return immediately
@@ -114,8 +112,6 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
     }
 
     public func notifyUpdateFile(filespace: Filespace, content: String) {
-        filespace.refreshUpdateTime()
-        workspace?.refreshUpdateTime()
         Task {
             guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifyChangeTextDocument(
@@ -126,8 +122,6 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
     }
 
     public func notifySaveFile(filespace: Filespace) {
-        filespace.refreshUpdateTime()
-        workspace?.refreshUpdateTime()
         Task {
             guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
