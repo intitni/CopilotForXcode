@@ -47,7 +47,9 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
 
                 group.addTask { [weak self] in
                     for await notification in await axNotifications.notifications() {
-                        guard notification.kind == .focusedUIElementChanged else { continue }
+                        guard notification.kind == .focusedUIElementChanged
+                            || notification.kind == .titleChanged
+                        else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()
                         await Task.yield()

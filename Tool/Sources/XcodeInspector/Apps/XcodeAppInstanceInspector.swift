@@ -12,6 +12,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
     }
 
     public enum AXNotificationKind {
+        case titleChanged
         case applicationActivated
         case applicationDeactivated
         case moved
@@ -29,6 +30,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         public init?(rawValue: String) {
             switch rawValue {
+            case kAXTitleChangedNotification:
+                self = .titleChanged
             case kAXApplicationActivatedNotification:
                 self = .applicationActivated
             case kAXApplicationDeactivatedNotification:
@@ -211,6 +214,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         let axNotificationStream = AXNotificationStream(
             app: runningApplication,
             notificationNames:
+            kAXTitleChangedNotification,
             kAXApplicationActivatedNotification,
             kAXApplicationDeactivatedNotification,
             kAXMovedNotification,
@@ -233,7 +237,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 guard let self else { return }
                 try Task.checkCancellation()
                 await Task.yield()
-            
+
                 guard let event = AXNotificationKind(rawValue: notification.name) else {
                     continue
                 }
