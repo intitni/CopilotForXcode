@@ -35,6 +35,16 @@ struct FeatureSettingsView: View {
                 image: "paintbrush"
             )
             
+            ScrollView {
+                XcodeSettingsView().padding()
+            }
+            .sidebarItem(
+                tag: 3,
+                title: "Xcode",
+                subtitle: "Xcode related features",
+                image: "app"
+            )
+            
 //            #if canImport(ProHostApp)
 //            ScrollView {
 //                TerminalSettingsView().padding()
