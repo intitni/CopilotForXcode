@@ -43,14 +43,6 @@ public actor RealtimeSuggestionController {
     }
 
     private func handleFocusElementChange(_ sourceEditor: SourceEditor) {
-        Task { // Notify suggestion service for open file.
-            try await Task.sleep(nanoseconds: 500_000_000)
-            guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-            else { return }
-            _ = try await Service.shared.workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-        }
-
         self.sourceEditor = sourceEditor
 
         let notificationsFromEditor = sourceEditor.axNotifications

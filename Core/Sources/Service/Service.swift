@@ -1,3 +1,4 @@
+import Combine
 import Dependencies
 import Foundation
 import SuggestionService
@@ -33,6 +34,7 @@ public final class Service {
     #endif
 
     @Dependency(\.toast) var toast
+    var cancellable = Set<AnyCancellable>()
 
     private init() {
         @Dependency(\.workspacePool) var workspacePool
@@ -70,6 +72,19 @@ public final class Service {
         #endif
         DependencyUpdater().update()
         globalShortcutManager.start()
+
+        Task {
+            await XcodeInspector.shared.safe.$activeDocumentURL
+                .removeDuplicates()
+                .filter { $0 != .init(fileURLWithPath: "/") }
+                .compactMap { $0 }
+                .sink { [weak self] fileURL in
+                    Task {
+                        try await self?.workspacePool
+                            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+                    }
+                }.store(in: &cancellable)
+        }
     }
 }
 
