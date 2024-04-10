@@ -76,6 +76,9 @@ public final class Filespace {
     public let fileURL: URL
     public private(set) lazy var language: CodeLanguage = languageIdentifierFromFileURL(fileURL)
     public var codeMetadata: FilespaceCodeMetadata = .init()
+    public var isTextReadable: Bool {
+        fileURL.pathExtension != "mlmodel"
+    }
 
     // MARK: Suggestions
 

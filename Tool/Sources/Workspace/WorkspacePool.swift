@@ -88,11 +88,6 @@ public class WorkspacePool {
     public func fetchOrCreateWorkspaceAndFilespace(fileURL: URL) async throws
         -> (workspace: Workspace, filespace: Filespace)
     {
-        let ignoreFileExtensions = ["mlmodel"]
-        if ignoreFileExtensions.contains(fileURL.pathExtension) {
-            throw Workspace.UnsupportedFileError(extensionName: fileURL.pathExtension)
-        }
-
         // If we can get the workspace URL directly.
         if let currentWorkspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL {
             if let existed = workspaces[currentWorkspaceURL] {

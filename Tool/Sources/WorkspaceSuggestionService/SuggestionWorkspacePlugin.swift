@@ -96,6 +96,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
 
     public func notifyOpenFile(filespace: Filespace) {
         Task {
+            guard filespace.isTextReadable else { return }
             guard !(await filespace.isGitIgnored) else { return }
             // check if file size is larger than 15MB, if so, return immediately
             if let attrs = try? FileManager.default
@@ -113,6 +114,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
 
     public func notifyUpdateFile(filespace: Filespace, content: String) {
         Task {
+            guard filespace.isTextReadable else { return }
             guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifyChangeTextDocument(
                 fileURL: filespace.fileURL,
@@ -123,6 +125,7 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
 
     public func notifySaveFile(filespace: Filespace) {
         Task {
+            guard filespace.isTextReadable else { return }
             guard !(await filespace.isGitIgnored) else { return }
             try await suggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
