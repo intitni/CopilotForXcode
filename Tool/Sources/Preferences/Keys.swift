@@ -203,6 +203,10 @@ public extension UserDefaultPreferenceKeys {
     var codeiumEnterpriseMode: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "CodeiumEnterpriseMode")
     }
+    
+    var codeiumChatEnabled: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "CodeiumChatEnabled")
+    }
 
     var codeiumPortalUrl: PreferenceKey<String> {
         .init(defaultValue: "", key: "CodeiumPortalUrl")

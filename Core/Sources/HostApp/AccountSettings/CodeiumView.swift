@@ -12,6 +12,7 @@ struct CodeiumView: View {
         @Published var installationStep: CodeiumInstallationManager.InstallationStep?
         @AppStorage(\.codeiumVerboseLog) var codeiumVerboseLog
         @AppStorage(\.codeiumEnterpriseMode) var codeiumEnterpriseMode
+        @AppStorage(\.codeiumChatEnabled) var codeiumChatEnabled
         @AppStorage(\.codeiumPortalUrl) var codeiumPortalUrl
         @AppStorage(\.codeiumApiUrl) var codeiumApiUrl
 
@@ -205,6 +206,8 @@ struct CodeiumView: View {
 
             SubSection(title: Text("Enterprise")) {
                 Form {
+                    Toggle("Codeium Chat", isOn:
+                            $viewModel.codeiumChatEnabled)
                     Toggle("Codeium Enterprise Mode", isOn: $viewModel.codeiumEnterpriseMode)
                     TextField("Codeium Portal URL", text: $viewModel.codeiumPortalUrl)
                     TextField("Codeium API URL", text: $viewModel.codeiumApiUrl)
