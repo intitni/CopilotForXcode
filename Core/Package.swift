@@ -113,7 +113,9 @@ let package = Package(
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-            ]
+            ].pro([
+                "ProClient",
+            ])
         ),
         .target(
             name: "Service",
