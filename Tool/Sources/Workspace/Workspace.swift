@@ -72,9 +72,9 @@ public final class Workspace {
     public let workspaceURL: URL
     public let projectRootURL: URL
     public let openedFileRecoverableStorage: OpenedFileRecoverableStorage
-    public private(set) var lastSuggestionUpdateTime = Environment.now()
+    public private(set) var lastLastUpdateTime = Environment.now()
     public var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 1
+        Environment.now().timeIntervalSince(lastLastUpdateTime) > 60 * 60 * 1
     }
 
     public private(set) var filespaces = [URL: Filespace]()
@@ -113,7 +113,7 @@ public final class Workspace {
     }
 
     public func refreshUpdateTime() {
-        lastSuggestionUpdateTime = Environment.now()
+        lastLastUpdateTime = Environment.now()
     }
 
     @WorkspaceActor
