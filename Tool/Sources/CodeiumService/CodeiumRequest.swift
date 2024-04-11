@@ -27,6 +27,25 @@ struct CodeiumResponseError: Codable, Error, LocalizedError {
 }
 
 enum CodeiumRequest {
+    struct GetProcessPorts: CodeiumRequestType {
+        struct Response: Codable {
+            var lsp_port: UInt32
+            var chat_web_server_port: UInt32
+            var chat_client_port: UInt32
+        }
+        
+        struct RequestBody: Codable {
+            var metadata: Metadata
+        }
+        
+        var requestBody: RequestBody
+        
+        func makeURLRequest(server: String) -> URLRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            return assembleURLRequest(server: server, method: "GetProcessPorts", body: data)
+        }
+    }
+    
     struct GetCompletion: CodeiumRequestType {
         struct Response: Codable {
             var state: State
