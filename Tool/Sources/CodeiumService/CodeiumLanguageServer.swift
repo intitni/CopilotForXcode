@@ -43,7 +43,6 @@ final class CodeiumLanguageServer {
         process.executableURL = languageServerExecutableURL
 
         let isEnterpriseMode = UserDefaults.shared.value(for: \.codeiumEnterpriseMode)
-        let isChatEnabled = UserDefaults.shared.value(for: \.codeiumChatEnabled)
         var apiServerUrl = "https://server.codeium.com"
         if isEnterpriseMode, UserDefaults.shared.value(for: \.codeiumApiUrl) != "" {
             apiServerUrl = UserDefaults.shared.value(for: \.codeiumApiUrl)
@@ -54,12 +53,9 @@ final class CodeiumLanguageServer {
             apiServerUrl,
             "--manager_dir",
             managerDirectoryURL.path,
+            "--enable_chat_web_server",
+            "--enable_chat_client",
         ]
-        
-        if isChatEnabled {
-            process.arguments?.append("--enable_chat_web_server")
-            process.arguments?.append("--enable_chat_client")
-        }
 
         if isEnterpriseMode {
             process.arguments?.append("--enterprise_mode")
