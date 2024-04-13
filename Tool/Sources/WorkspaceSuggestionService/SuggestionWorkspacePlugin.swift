@@ -133,6 +133,10 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
             try await suggestionService?.notifySaveTextDocument(fileURL: filespace.fileURL)
         }
     }
+    
+    public func openChat() async throws {
+        try await _suggestionService?.openChat()
+    }
 
     public func terminateSuggestionService() async {
         await _suggestionService?.terminate()

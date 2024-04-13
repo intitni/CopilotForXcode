@@ -47,6 +47,7 @@ public protocol SuggestionServiceProvider {
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
+    func openChat() async throws
     func cancelRequest() async
     func terminate() async
 }

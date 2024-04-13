@@ -53,6 +53,8 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 throw error
             case .responseStoppedEarly:
                 throw error
+            default:
+                throw error
             }
         } catch {
             throw error
@@ -100,6 +102,8 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                         continuation.finish(throwing: error)
                     case .responseStoppedEarly:
                         continuation.finish(throwing: error)
+                    default:
+                        print("No match")
                     }
                 } catch {
                     continuation.finish(throwing: error)

@@ -137,5 +137,10 @@ public extension Workspace {
 
         return suggestion
     }
+    
+    @WorkspaceActor
+    func openChat() async throws {
+        try await suggestionService?.openChat()
+    }
 }
 

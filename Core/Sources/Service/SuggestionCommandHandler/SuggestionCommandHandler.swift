@@ -24,4 +24,6 @@ protocol SuggestionCommandHandler {
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
     func customCommand(id: String, editor: EditorContent) async throws -> UpdatedContent?
+    @ServiceActor
+    func openChat(editor: EditorContent) async throws -> UpdatedContent?
 }

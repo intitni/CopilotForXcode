@@ -116,5 +116,9 @@ public extension SuggestionService {
     func terminate() async {
         await suggestionProvider.terminate()
     }
+    
+    func openChat() async throws {
+        try await suggestionProvider.openChat()
+    }
 }
 

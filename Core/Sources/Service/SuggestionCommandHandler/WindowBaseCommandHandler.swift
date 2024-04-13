@@ -270,6 +270,27 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         }
         return nil
     }
+    
+    @WorkspaceActor
+    private func _openChat(editor: EditorContent) async throws {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return }
+
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+        try? await workspace.openChat()
+    }
+    
+    func openChat(editor: EditorContent) async throws -> UpdatedContent? {
+        Task {
+            do {
+                try await _openChat(editor: editor)
+            } catch {
+                presenter.presentError(error)
+            }
+        }
+        return nil
+    }
 
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
         Task {

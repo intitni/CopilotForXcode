@@ -78,5 +78,7 @@ public extension GitHubCopilotSuggestionProvider {
     func terminate() async {
         await (try? createGitHubCopilotServiceIfNeeded())?.terminate()
     }
+    
+    func openChat() async {}
 }
 

@@ -35,6 +35,10 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
+    func openChat(
+        editorContent: Data,
+        withReply reply: @escaping (Data?, Error?) -> Void
+    )
     func promptToCode(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void

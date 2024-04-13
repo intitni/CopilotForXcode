@@ -67,6 +67,10 @@ public extension CodeiumSuggestionProvider {
     }
 
     func notifySaveTextDocument(fileURL: URL) async throws {}
+    
+    func openChat() async throws {
+        try await (try? createCodeiumServiceIfNeeded())?.openChat()
+    }
 
     func cancelRequest() async {
         await (try? createCodeiumServiceIfNeeded())?

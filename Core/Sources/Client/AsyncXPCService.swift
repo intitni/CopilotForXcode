@@ -125,6 +125,14 @@ public struct AsyncXPCService {
             { $0.chatWithSelection }
         )
     }
+    
+    public func openChat(editorContent: EditorContent) async throws -> UpdatedContent? {
+        try await suggestionRequest(
+            connection,
+            editorContent,
+            { $0.openChat }
+        )
+    }
 
     public func promptToCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(

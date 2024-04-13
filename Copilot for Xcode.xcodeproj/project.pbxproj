@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C043C32B2BCA01DD0050406F /* OpenCodeiumChatCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C043C32A2BCA01DD0050406F /* OpenCodeiumChatCommand.swift */; };
 		C8009BFF2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */; };
 		C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */; };
 		C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */; };
@@ -149,6 +150,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C043C32A2BCA01DD0050406F /* OpenCodeiumChatCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCodeiumChatCommand.swift; sourceTree = "<group>"; };
 		C8009BFE2941C551007AA7E8 /* ToggleRealtimeSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRealtimeSuggestionsCommand.swift; sourceTree = "<group>"; };
 		C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeSuggestionCommand.swift; sourceTree = "<group>"; };
 		C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchSuggestionsCommand.swift; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 				C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
 				C81458982939EFDC00135263 /* EditorExtension.entitlements */,
+				C043C32A2BCA01DD0050406F /* OpenCodeiumChatCommand.swift */,
 			);
 			path = EditorExtension;
 			sourceTree = "<group>";
@@ -449,7 +452,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1420;
-				LastUpgradeCheck = 1410;
+				LastUpgradeCheck = 1520;
 				TargetAttributes = {
 					C814588B2939EFDC00135263 = {
 						CreatedOnToolsVersion = 14.1;
@@ -537,6 +540,7 @@
 				C87B03A7293B261900C77EAE /* RejectSuggestionCommand.swift in Sources */,
 				C8009C032941C576007AA7E8 /* RealtimeSuggestionCommand.swift in Sources */,
 				C800DBB1294C624D00B04CAC /* PrefetchSuggestionsCommand.swift in Sources */,
+				C043C32B2BCA01DD0050406F /* OpenCodeiumChatCommand.swift in Sources */,
 				C81458962939EFDC00135263 /* GetSuggestionsCommand.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -596,7 +600,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 7FZQCG2W63;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
@@ -623,6 +628,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
@@ -677,9 +683,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -738,9 +746,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -768,8 +778,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Copilot for Xcode/Preview Content\"";
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
+				DEVELOPMENT_TEAM = 7FZQCG2W63;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -800,6 +811,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Copilot for Xcode/Preview Content\"";
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -825,7 +837,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 7FZQCG2W63;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -838,7 +851,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 7FZQCG2W63;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -856,7 +870,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
-				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 7FZQCG2W63;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -888,6 +903,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
