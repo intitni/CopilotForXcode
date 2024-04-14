@@ -30,8 +30,11 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init)
-            )), 
-            baseURL: baseURL
+            )),
+            baseURL: baseURL,
+            requestOptions: model.info.googleGenerativeAIInfo.apiVersion.isEmpty
+                ? .init()
+                : .init(apiVersion: model.info.googleGenerativeAIInfo.apiVersion)
         )
         let history = prompt.googleAICompatible.history.map { message in
             ModelContent(message)
@@ -59,7 +62,7 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 throw error
             case .promptImageContentError:
                 throw error
-            case let .invalidAPIKey(message: message):
+            case .invalidAPIKey:
                 throw error
             case .unsupportedUserLocation:
                 throw error
@@ -77,8 +80,11 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
             apiKey: apiKey,
             generationConfig: .init(GenerationConfig(
                 temperature: requestBody.temperature.map(Float.init)
-            )), 
-            baseURL: baseURL
+            )),
+            baseURL: baseURL,
+            requestOptions: model.info.googleGenerativeAIInfo.apiVersion.isEmpty
+                ? .init()
+                : .init(apiVersion: model.info.googleGenerativeAIInfo.apiVersion)
         )
         let history = prompt.googleAICompatible.history.map { message in
             ModelContent(message)
@@ -111,9 +117,9 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                         continuation.finish(throwing: error)
                     case .responseStoppedEarly:
                         continuation.finish(throwing: error)
-                    case let .promptImageContentError(underlying: underlying):
+                    case .promptImageContentError:
                         continuation.finish(throwing: error)
-                    case let .invalidAPIKey(message: message):
+                    case .invalidAPIKey:
                         continuation.finish(throwing: error)
                     case .unsupportedUserLocation:
                         continuation.finish(throwing: error)
