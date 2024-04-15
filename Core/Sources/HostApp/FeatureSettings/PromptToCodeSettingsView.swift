@@ -10,8 +10,8 @@ struct PromptToCodeSettingsView: View {
     final class Settings: ObservableObject {
         @AppStorage(\.hideCommonPrecedingSpacesInPromptToCode)
         var hideCommonPrecedingSpaces
-        @AppStorage(\.promptToCodeCodeFontSize)
-        var fontSize
+        @AppStorage(\.promptToCodeCodeFont)
+        var font
         @AppStorage(\.promptToCodeGenerateDescription)
         var promptToCodeGenerateDescription
         @AppStorage(\.promptToCodeGenerateDescriptionInUserPreferredLanguage)
@@ -91,17 +91,14 @@ struct PromptToCodeSettingsView: View {
                     Text("Hide Common Preceding Spaces")
                 }
 
-                HStack {
-                    TextField(text: .init(get: {
-                        "\(Int(settings.fontSize))"
-                    }, set: {
-                        settings.fontSize = Double(Int($0) ?? 0)
-                    })) {
-                        Text("Font size of suggestion code")
-                    }
-                    .textFieldStyle(.roundedBorder)
+                #if canImport(ProHostApp)
 
-                    Text("pt")
+                CodeHighlightThemePicker(scenario: .promptToCode)
+
+                #endif
+                
+                FontPicker(font: $settings.font) {
+                    Text("Font")
                 }
             }
 

@@ -202,15 +202,46 @@ extension PromptToCodePanel {
     struct Content: View {
         let store: StoreOf<PromptToCode>
         @Environment(\.colorScheme) var colorScheme
-        @AppStorage(\.promptToCodeCodeFontSize) var fontSize
+        @AppStorage(\.promptToCodeCodeFont) var codeFont
         @AppStorage(\.hideCommonPrecedingSpacesInPromptToCode) var hideCommonPrecedingSpaces
-
+        @AppStorage(\.syncPromptToCodeHighlightTheme) var syncHighlightTheme
+        @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
+        @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
+        @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
+        @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
+        
         struct CodeContent: Equatable {
             var code: String
             var language: String
             var startLineIndex: Int
             var firstLinePrecedingSpaceCount: Int
             var isResponding: Bool
+        }
+        
+        var codeForegroundColor: Color? {
+            if syncHighlightTheme {
+                if colorScheme == .light,
+                   let color = codeForegroundColorLight.value?.swiftUIColor
+                {
+                    return color
+                } else if let color = codeForegroundColorDark.value?.swiftUIColor {
+                    return color
+                }
+            }
+            return nil
+        }
+        
+        var codeBackgroundColor: Color {
+            if syncHighlightTheme {
+                if colorScheme == .light,
+                   let color = codeBackgroundColorLight.value?.swiftUIColor
+                {
+                    return color
+                } else if let color = codeBackgroundColorDark.value?.swiftUIColor {
+                    return color
+                }
+            }
+            return Color.clear
         }
 
         var body: some View {
@@ -243,6 +274,7 @@ extension PromptToCodePanel {
                                 .textSelection(.enabled)
                                 .markdownTheme(.gitHub.text {
                                     BackgroundColor(Color.clear)
+                                    ForegroundColor(codeForegroundColor)
                                 })
                                 .padding()
                                 .frame(maxWidth: .infinity)
@@ -266,7 +298,7 @@ extension PromptToCodePanel {
                                     ? "Thinking..."
                                     : "Enter your requirement to generate code."
                             )
-                            .foregroundColor(.secondary)
+                            .foregroundColor(codeForegroundColor?.opacity(0.7) ?? .secondary)
                             .padding()
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
@@ -275,18 +307,21 @@ extension PromptToCodePanel {
                             CodeBlock(
                                 code: viewStore.state.code,
                                 language: viewStore.state.language,
-                                startLineIndex: viewStore.state.startLineIndex,
+                                startLineIndex: viewStore.state.startLineIndex, 
+                                scenario: "promptToCode",
                                 colorScheme: colorScheme,
                                 firstLinePrecedingSpaceCount: viewStore.state
                                     .firstLinePrecedingSpaceCount,
-                                fontSize: fontSize, 
-                                droppingLeadingSpaces: hideCommonPrecedingSpaces
+                                font: codeFont.value.nsFont,
+                                droppingLeadingSpaces: hideCommonPrecedingSpaces,
+                                proposedForegroundColor:codeForegroundColor
                             )
                             .frame(maxWidth: .infinity)
                             .scaleEffect(x: 1, y: -1, anchor: .center)
                         }
                     }
                 }
+                .background(codeBackgroundColor)
             }
             .scaleEffect(x: 1, y: -1, anchor: .center)
         }

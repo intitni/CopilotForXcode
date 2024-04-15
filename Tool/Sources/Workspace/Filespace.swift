@@ -76,6 +76,9 @@ public final class Filespace {
     public let fileURL: URL
     public private(set) lazy var language: CodeLanguage = languageIdentifierFromFileURL(fileURL)
     public var codeMetadata: FilespaceCodeMetadata = .init()
+    public var isTextReadable: Bool {
+        fileURL.pathExtension != "mlmodel"
+    }
 
     // MARK: Suggestions
 
@@ -92,10 +95,10 @@ public final class Filespace {
     // MARK: Life Cycle
 
     public var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 3
+        Environment.now().timeIntervalSince(lastUpdateTime) > 60 * 3
     }
 
-    private(set) var lastSuggestionUpdateTime: Date = Environment.now()
+    public private(set) var lastUpdateTime: Date = Environment.now()
     private var additionalProperties = FilespacePropertyValues()
     let fileSaveWatcher: FileSaveWatcher
     let onClose: (URL) -> Void
@@ -154,7 +157,7 @@ public final class Filespace {
     }
 
     public func refreshUpdateTime() {
-        lastSuggestionUpdateTime = Environment.now()
+        lastUpdateTime = Environment.now()
     }
 
     @WorkspaceActor

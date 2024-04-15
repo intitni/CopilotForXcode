@@ -11,6 +11,10 @@ import ProExtension
 public protocol SuggestionServiceType: SuggestionServiceProvider {}
 
 public actor SuggestionService: SuggestionServiceType {
+    public var configuration: SuggestionServiceConfiguration {
+        get async { await suggestionProvider.configuration }
+    }
+
     var middlewares: [SuggestionServiceMiddleware] {
         SuggestionServiceMiddlewareContainer.middlewares
     }
@@ -50,7 +54,7 @@ public actor SuggestionService: SuggestionServiceType {
             return provider
         }
         #endif
-        
+
         switch serviceType {
         case .builtIn(.codeium):
             return CodeiumSuggestionProvider(
@@ -75,10 +79,15 @@ public extension SuggestionService {
         _ request: SuggestionRequest
     ) async throws -> [SuggestionModel.CodeSuggestion] {
         var getSuggestion = suggestionProvider.getSuggestions
+        let configuration = await configuration
 
         for middleware in middlewares.reversed() {
             getSuggestion = { [getSuggestion] request in
-                try await middleware.getSuggestion(request, next: getSuggestion)
+                try await middleware.getSuggestion(
+                    request,
+                    configuration: configuration,
+                    next: getSuggestion
+                )
             }
         }
 

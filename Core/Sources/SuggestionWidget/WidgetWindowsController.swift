@@ -338,6 +338,8 @@ private extension WidgetWindowsController {
                 case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
                      .applicationDeactivated:
                     continue
+                case .titleChanged:
+                    continue
                 }
             }
         }

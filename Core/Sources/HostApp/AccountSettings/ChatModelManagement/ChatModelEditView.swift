@@ -328,6 +328,10 @@ struct ChatModelEditView: View {
 
     @ViewBuilder
     var googleAI: some View {
+        baseURLTextField(prompt: Text("https://generativelanguage.googleapis.com")) {
+            Text("/v1")
+        }
+
         apiKeyNamePicker
 
         WithViewStore(
@@ -353,6 +357,10 @@ struct ChatModelEditView: View {
         }
 
         maxTokensTextField
+
+        WithViewStore(store, removeDuplicates: { $0.apiVersion == $1.apiVersion }) { viewStore in
+            TextField("API Version", text: viewStore.$apiVersion, prompt: Text("v1"))
+        }
     }
 
     @ViewBuilder
@@ -392,7 +400,7 @@ struct ChatModelEditView: View {
         baseURLTextField(prompt: Text("https://api.anthropic.com")) {
             Text("/v1/messages")
         }
-        
+
         apiKeyNamePicker
 
         WithViewStore(
@@ -421,7 +429,7 @@ struct ChatModelEditView: View {
                     .frame(width: 20)
                 }
         }
-        
+
         maxTokensTextField
 
         VStack(alignment: .leading, spacing: 8) {

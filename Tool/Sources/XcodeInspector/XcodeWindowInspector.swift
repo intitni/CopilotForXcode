@@ -16,9 +16,9 @@ public class XcodeWindowInspector: ObservableObject {
 
 public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     let app: NSRunningApplication
-    @Published var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
-    @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
+    @Published public internal(set) var documentURL: URL = .init(fileURLWithPath: "/")
+    @Published public internal(set) var workspaceURL: URL = .init(fileURLWithPath: "/")
+    @Published public internal(set) var projectRootURL: URL = .init(fileURLWithPath: "/")
     private var focusedElementChangedTask: Task<Void, Error>?
 
     public func refresh() {
@@ -47,7 +47,9 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
 
                 group.addTask { [weak self] in
                     for await notification in await axNotifications.notifications() {
-                        guard notification.kind == .focusedUIElementChanged else { continue }
+                        guard notification.kind == .focusedUIElementChanged
+                            || notification.kind == .titleChanged
+                        else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()
                         await Task.yield()

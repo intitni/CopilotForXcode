@@ -1,11 +1,11 @@
 import AIModel
-import Toast
 import ComposableArchitecture
 import Dependencies
 import Keychain
 import OpenAIService
 import Preferences
 import SwiftUI
+import Toast
 
 struct ChatModelEdit: ReducerProtocol {
     struct State: Equatable, Identifiable {
@@ -16,6 +16,7 @@ struct ChatModelEdit: ReducerProtocol {
         @BindingState var supportsFunctionCalling: Bool = true
         @BindingState var modelName: String = ""
         @BindingState var ollamaKeepAlive: String = ""
+        @BindingState var apiVersion: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
         var isFullURL: Bool { baseURLSelection.isFullURL }
@@ -47,6 +48,7 @@ struct ChatModelEdit: ReducerProtocol {
             toast($0, $1, "ChatModelEdit")
         }
     }
+
     @Dependency(\.apiKeyKeychain) var keychain
 
     var body: some ReducerProtocol<State, Action> {
@@ -77,19 +79,7 @@ struct ChatModelEdit: ReducerProtocol {
             case .testButtonClicked:
                 guard !state.isTesting else { return .none }
                 state.isTesting = true
-                let model = ChatModel(
-                    id: state.id,
-                    name: state.name,
-                    format: state.format,
-                    info: .init(
-                        apiKeyName: state.apiKeyName,
-                        baseURL: state.baseURL,
-                        isFullURL: state.isFullURL,
-                        maxTokens: state.maxTokens,
-                        supportsFunctionCalling: state.supportsFunctionCalling,
-                        modelName: state.modelName
-                    )
-                )
+                let model = ChatModel(state: state)
                 return .run { send in
                     do {
                         let service = ChatGPTService(
@@ -194,6 +184,7 @@ extension ChatModelEdit.State {
             supportsFunctionCalling: model.info.supportsFunctionCalling,
             modelName: model.info.modelName,
             ollamaKeepAlive: model.info.ollamaInfo.keepAlive,
+            apiVersion: model.info.googleGenerativeAIInfo.apiVersion,
             apiKeySelection: .init(
                 apiKeyName: model.info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
@@ -223,7 +214,8 @@ extension ChatModel {
                     }
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
-                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
+                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
+                googleGenerativeAIInfo: .init(apiVersion: state.apiVersion)
             )
         )
     }

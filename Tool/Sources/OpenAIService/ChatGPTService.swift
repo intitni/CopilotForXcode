@@ -95,7 +95,8 @@ public class ChatGPTService: ChatGPTServiceType {
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
-                prompt: prompt
+                prompt: prompt, 
+                baseURL: endpoint.absoluteString
             )
         case .openAI, .openAICompatible, .azureOpenAI:
             return OpenAIChatCompletionsService(
@@ -129,7 +130,8 @@ public class ChatGPTService: ChatGPTServiceType {
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
-                prompt: prompt
+                prompt: prompt,
+                baseURL: endpoint.absoluteString
             )
         case .openAI, .openAICompatible, .azureOpenAI:
             return OpenAIChatCompletionsService(

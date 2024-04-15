@@ -72,9 +72,9 @@ public final class Workspace {
     public let workspaceURL: URL
     public let projectRootURL: URL
     public let openedFileRecoverableStorage: OpenedFileRecoverableStorage
-    public private(set) var lastSuggestionUpdateTime = Environment.now()
+    public private(set) var lastLastUpdateTime = Environment.now()
     public var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastSuggestionUpdateTime) > 60 * 60 * 1
+        Environment.now().timeIntervalSince(lastLastUpdateTime) > 60 * 60 * 1
     }
 
     public private(set) var filespaces = [URL: Filespace]()
@@ -113,7 +113,7 @@ public final class Workspace {
     }
 
     public func refreshUpdateTime() {
-        lastSuggestionUpdateTime = Environment.now()
+        lastLastUpdateTime = Environment.now()
     }
 
     @WorkspaceActor
@@ -123,24 +123,18 @@ public final class Workspace {
             fileURL: fileURL,
             onSave: { [weak self] filespace in
                 guard let self else { return }
-                for plugin in self.plugins.values {
-                    plugin.didSaveFilespace(filespace)
-                }
+                self.didSaveFilespace(filespace)
             },
             onClose: { [weak self] url in
                 guard let self else { return }
-                for plugin in self.plugins.values {
-                    plugin.didCloseFilespace(url)
-                }
+                self.didCloseFilespace(url)
             }
         )
         if filespaces[fileURL] == nil {
             filespaces[fileURL] = filespace
         }
         if existedFilespace == nil {
-            for plugin in plugins.values {
-                plugin.didOpenFilespace(filespace)
-            }
+            didOpenFilespace(filespace)
         } else {
             filespace.refreshUpdateTime()
         }
@@ -154,9 +148,36 @@ public final class Workspace {
 
     @WorkspaceActor
     public func didUpdateFilespace(fileURL: URL, content: String) {
+        refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return }
+        filespace.refreshUpdateTime()
         for plugin in plugins.values {
             plugin.didUpdateFilespace(filespace, content: content)
+        }
+    }
+
+    @WorkspaceActor
+    func didOpenFilespace(_ filespace: Filespace) {
+        refreshUpdateTime()
+        openedFileRecoverableStorage.openFile(fileURL: filespace.fileURL)
+        for plugin in plugins.values {
+            plugin.didOpenFilespace(filespace)
+        }
+    }
+
+    @WorkspaceActor
+    func didCloseFilespace(_ fileURL: URL) {
+        for plugin in self.plugins.values {
+            plugin.didCloseFilespace(fileURL)
+        }
+    }
+
+    @WorkspaceActor
+    func didSaveFilespace(_ filespace: Filespace) {
+        refreshUpdateTime()
+        filespace.refreshUpdateTime()
+        for plugin in plugins.values {
+            plugin.didSaveFilespace(filespace)
         }
     }
 }

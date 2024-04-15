@@ -34,6 +34,28 @@ struct FeatureSettingsView: View {
                 subtitle: "Write code with natural language",
                 image: "paintbrush"
             )
+            
+            ScrollView {
+                XcodeSettingsView().padding()
+            }
+            .sidebarItem(
+                tag: 3,
+                title: "Xcode",
+                subtitle: "Xcode related features",
+                image: "app"
+            )
+            
+//            #if canImport(ProHostApp)
+//            ScrollView {
+//                TerminalSettingsView().padding()
+//            }
+//            .sidebarItem(
+//                tag: 3,
+//                title: "Terminal",
+//                subtitle: "Terminal chat tab",
+//                image: "terminal"
+//            )
+//            #endif
         }
     }
 }

@@ -21,6 +21,10 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
+    
+    var intValue: Int? {
+        (try? copyValue(key: kAXValueAttribute))
+    }
 
     var title: String {
         (try? copyValue(key: kAXTitleAttribute)) ?? ""

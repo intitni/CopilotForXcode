@@ -43,6 +43,15 @@ public struct ChatModel: Codable, Equatable, Identifiable {
                 self.organizationID = organizationID
             }
         }
+        
+        public struct GoogleGenerativeAIInfo: Codable, Equatable {
+            @FallbackDecoding<EmptyString>
+            public var apiVersion: String
+
+            public init(apiVersion: String = "") {
+                self.apiVersion = apiVersion
+            }
+        }
 
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
@@ -61,6 +70,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var openAIInfo: OpenAIInfo
         @FallbackDecoding<EmptyChatModelOllamaInfo>
         public var ollamaInfo: OllamaInfo
+        @FallbackDecoding<EmptyChatModelGoogleGenerativeAIInfo>
+        public var googleGenerativeAIInfo: GoogleGenerativeAIInfo
 
         public init(
             apiKeyName: String = "",
@@ -70,7 +81,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             supportsFunctionCalling: Bool = true,
             modelName: String = "",
             openAIInfo: OpenAIInfo = OpenAIInfo(),
-            ollamaInfo: OllamaInfo = OllamaInfo()
+            ollamaInfo: OllamaInfo = OllamaInfo(),
+            googleGenerativeAIInfo: GoogleGenerativeAIInfo = GoogleGenerativeAIInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -80,6 +92,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             self.modelName = modelName
             self.openAIInfo = openAIInfo
             self.ollamaInfo = ollamaInfo
+            self.googleGenerativeAIInfo = googleGenerativeAIInfo
         }
     }
 
@@ -102,8 +115,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             return "\(baseURL)/openai/deployments/\(deployment)/chat/completions?api-version=\(version)"
         case .googleAI:
             let baseURL = info.baseURL
-            if baseURL.isEmpty { return "https://generativelanguage.googleapis.com/v1" }
-            return "\(baseURL)/v1/chat/completions"
+            if baseURL.isEmpty { return "https://generativelanguage.googleapis.com" }
+            return "\(baseURL)"
         case .ollama:
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "http://localhost:11434/api/chat" }
@@ -132,3 +145,6 @@ public struct EmptyChatModelOpenAIInfo: FallbackValueProvider {
     public static var defaultValue: ChatModel.Info.OpenAIInfo { .init() }
 }
 
+public struct EmptyChatModelGoogleGenerativeAIInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.GoogleGenerativeAIInfo { .init() }
+}

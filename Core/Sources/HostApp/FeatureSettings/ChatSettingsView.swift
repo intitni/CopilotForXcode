@@ -13,7 +13,7 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatGPTTemperature) var chatGPTTemperature
         @AppStorage(\.chatGPTMaxMessageCount) var chatGPTMaxMessageCount
         @AppStorage(\.chatFontSize) var chatFontSize
-        @AppStorage(\.chatCodeFontSize) var chatCodeFontSize
+        @AppStorage(\.chatCodeFont) var chatCodeFont
 
         @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
@@ -150,22 +150,19 @@ struct ChatSettingsView: View {
                 Text("pt")
             }
 
-            HStack {
-                TextField(text: .init(get: {
-                    "\(Int(settings.chatCodeFontSize))"
-                }, set: {
-                    settings.chatCodeFontSize = Double(Int($0) ?? 0)
-                })) {
-                    Text("Font size of code block")
-                }
-                .textFieldStyle(.roundedBorder)
-
-                Text("pt")
+            FontPicker(font: $settings.chatCodeFont) {
+                Text("Font of code")
             }
 
             Toggle(isOn: $settings.wrapCodeInCodeBlock) {
                 Text("Wrap code in code block")
             }
+
+            #if canImport(ProHostApp)
+
+            CodeHighlightThemePicker(scenario: .chat)
+
+            #endif
         }
     }
 

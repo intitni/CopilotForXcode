@@ -43,14 +43,6 @@ public actor RealtimeSuggestionController {
     }
 
     private func handleFocusElementChange(_ sourceEditor: SourceEditor) {
-        Task { // Notify suggestion service for open file.
-            try await Task.sleep(nanoseconds: 500_000_000)
-            guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-            else { return }
-            _ = try await Service.shared.workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-        }
-
         self.sourceEditor = sourceEditor
 
         let notificationsFromEditor = sourceEditor.axNotifications
@@ -81,7 +73,7 @@ public actor RealtimeSuggestionController {
                     }
 
                     if #available(macOS 13.0, *) {
-                        for await _ in valueChange.throttle(for: .milliseconds(200)) {
+                        for await _ in valueChange._throttle(for: .milliseconds(200)) {
                             if Task.isCancelled { return }
                             await handler()
                         }
@@ -103,7 +95,7 @@ public actor RealtimeSuggestionController {
                     }
 
                     if #available(macOS 13.0, *) {
-                        for await _ in selectedTextChanged.throttle(for: .milliseconds(200)) {
+                        for await _ in selectedTextChanged._throttle(for: .milliseconds(200)) {
                             if Task.isCancelled { return }
                             await handler()
                         }
@@ -145,7 +137,7 @@ public actor RealtimeSuggestionController {
     func triggerPrefetchDebounced(force: Bool = false) {
         inflightPrefetchTask = Task(priority: .utility) { @WorkspaceActor in
             try? await Task.sleep(nanoseconds: UInt64(
-                max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.25)
+                max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.15)
                     * 1_000_000_000
             ))
 

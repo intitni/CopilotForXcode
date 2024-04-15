@@ -1,44 +1,56 @@
+import Preferences
 import SwiftUI
 
 public struct CodeBlock: View {
     public let code: String
     public let language: String
     public let startLineIndex: Int
+    public let scenario: String
     public let colorScheme: ColorScheme
     public let commonPrecedingSpaceCount: Int
     public let highlightedCode: [NSAttributedString]
     public let firstLinePrecedingSpaceCount: Int
-    public let fontSize: Double
+    public let font: NSFont
     public let droppingLeadingSpaces: Bool
+    public let proposedForegroundColor: Color?
 
     public init(
         code: String,
         language: String,
         startLineIndex: Int,
+        scenario: String,
         colorScheme: ColorScheme,
         firstLinePrecedingSpaceCount: Int = 0,
-        fontSize: Double,
-        droppingLeadingSpaces: Bool
+        font: NSFont,
+        droppingLeadingSpaces: Bool,
+        proposedForegroundColor: Color?
     ) {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
+        self.scenario = scenario
         self.colorScheme = colorScheme
         self.droppingLeadingSpaces = droppingLeadingSpaces
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
-        self.fontSize = fontSize
+        self.font = font
+        self.proposedForegroundColor = proposedForegroundColor
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
             : ""
         let result = Self.highlight(
             code: padding + code,
             language: language,
+            scenario: scenario,
             colorScheme: colorScheme,
-            fontSize: fontSize,
+            font: font,
             droppingLeadingSpaces: droppingLeadingSpaces
         )
         commonPrecedingSpaceCount = result.commonLeadingSpaceCount
         highlightedCode = result.code
+    }
+    
+    var foregroundColor: Color {
+        proposedForegroundColor ?? (colorScheme == .dark ? .white : .black)
     }
 
     public var body: some View {
@@ -47,10 +59,10 @@ public struct CodeBlock: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(index + startLineIndex + 1)")
                         .multilineTextAlignment(.trailing)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(foregroundColor.opacity(0.5))
                         .frame(minWidth: 40)
                     Text(AttributedString(highlightedCode[index]))
-                        .foregroundColor(.white.opacity(0.1))
+                        .foregroundColor(foregroundColor.opacity(0.3))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(4)
@@ -59,7 +71,7 @@ public struct CodeBlock: View {
                                 Text("\(commonPrecedingSpaceCount + 1)")
                                     .padding(.top, -12)
                                     .font(.footnote)
-                                    .foregroundStyle(colorScheme == .dark ? .white : .black)
+                                    .foregroundStyle(foregroundColor)
                                     .opacity(0.3)
                             }
                         }
@@ -67,7 +79,7 @@ public struct CodeBlock: View {
             }
         }
         .foregroundColor(.white)
-        .font(.system(size: fontSize, design: .monospaced))
+        .font(.init(font))
         .padding(.leading, 4)
         .padding([.trailing, .top, .bottom])
     }
@@ -75,16 +87,18 @@ public struct CodeBlock: View {
     static func highlight(
         code: String,
         language: String,
+        scenario: String,
         colorScheme: ColorScheme,
-        fontSize: Double,
+        font: NSFont,
         droppingLeadingSpaces: Bool
     ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
         return highlighted(
             code: code,
             language: language,
+            scenario: scenario,
             brightMode: colorScheme != .dark,
             droppingLeadingSpaces: droppingLeadingSpaces,
-            fontSize: fontSize
+            font: font
         )
     }
 }
@@ -100,10 +114,12 @@ struct CodeBlock_Previews: PreviewProvider {
             """,
             language: "swift",
             startLineIndex: 0,
+            scenario: "",
             colorScheme: .dark,
             firstLinePrecedingSpaceCount: 0,
-            fontSize: 12,
-            droppingLeadingSpaces: true
+            font: .monospacedSystemFont(ofSize: 12, weight: .regular),
+            droppingLeadingSpaces: true,
+            proposedForegroundColor: nil
         )
     }
 }
