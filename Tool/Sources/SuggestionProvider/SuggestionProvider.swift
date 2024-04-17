@@ -11,6 +11,7 @@ public struct SuggestionRequest {
     public var content: String
     public var lines: [String]
     public var cursorPosition: CursorPosition
+    public var cursorOffset: Int
     public var tabSize: Int
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
@@ -23,6 +24,7 @@ public struct SuggestionRequest {
         content: String,
         lines: [String],
         cursorPosition: CursorPosition,
+        cursorOffset: Int,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
@@ -34,6 +36,7 @@ public struct SuggestionRequest {
         self.content = content
         self.lines = lines
         self.cursorPosition = cursorPosition
+        self.cursorOffset = cursorOffset
         self.tabSize = tabSize
         self.indentSize = indentSize
         self.usesTabsForIndentation = usesTabsForIndentation

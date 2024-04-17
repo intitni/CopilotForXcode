@@ -37,7 +37,8 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                     content: source.content,
                     lines: source.lines,
                     selections: [source.range],
-                    cursorPosition: .outOfScope,
+                    cursorPosition: .outOfScope, 
+                    cursorOffset: -1,
                     lineAnnotations: []
                 ),
                 selectedContent: code,
