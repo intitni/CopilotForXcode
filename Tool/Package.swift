@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
         .library(name: "ChatTab", targets: ["ChatTab"]),
+        .library(name: "FileSystem", targets: ["FileSystem"]),
         .library(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
@@ -88,6 +89,8 @@ let package = Package(
         .target(name: "Terminal"),
 
         .target(name: "Logger"),
+
+        .target(name: "FileSystem"),
 
         .target(name: "ObjectiveCExceptionHandling"),
 
