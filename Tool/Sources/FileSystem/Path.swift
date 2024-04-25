@@ -608,14 +608,6 @@ private struct UNIXPath: Path, Sendable {
     }
 
     var basename: String {
-        // FIXME: This method seems too complicated; it should be simplified,
-        //        if possible, and certainly optimized (using UTF8View).
-        // Check for a special case of the root directory.
-        if string.spm_only == "/" {
-            // Root directory, so the basename is a single path separator (the
-            // root directory is special in this regard).
-            return "/"
-        }
         // Find the last path separator.
         guard let idx = string.lastIndex(of: "/") else {
             // No path separators, so the basename is the whole string.
