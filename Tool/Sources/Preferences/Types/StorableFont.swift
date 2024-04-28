@@ -13,7 +13,7 @@ public struct StorableFont: Codable {
     }
 
     public init(from decoder: Decoder) throws {
-        var container = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
         let fontData = try container.decode(Data.self, forKey: .nsFont)
         guard let nsFont = try NSKeyedUnarchiver.unarchivedObject(
             ofClass: NSFont.self,
