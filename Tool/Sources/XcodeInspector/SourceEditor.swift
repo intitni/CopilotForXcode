@@ -49,6 +49,7 @@ public class SourceEditor {
             lines: lines,
             selections: selections,
             cursorPosition: selections.first?.start ?? .outOfScope,
+            cursorOffset: selectionRange?.lowerBound ?? 0,
             lineAnnotations: lineAnnotations
         )
     }
