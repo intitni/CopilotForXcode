@@ -221,15 +221,19 @@ extension OpenAIPromptToCodeService {
     func extractCodeAndDescription(from content: String)
         -> (code: String, description: String)
     {
-        func extractCodeFromMarkdown(_ markdown: String) -> (code: String, endIndex: Int)? {
+        func extractCodeFromMarkdown(
+            _ markdown: String
+        ) -> (code: String, endIndex: String.Index)? {
             let codeBlockRegex = try! NSRegularExpression(
                 pattern: #"```(?:\w+)?\R([\s\S]+?)\R```"#,
                 options: .dotMatchesLineSeparators
             )
             let range = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
             if let match = codeBlockRegex.firstMatch(in: markdown, options: [], range: range) {
-                let codeBlockRange = Range(match.range(at: 1), in: markdown)!
-                return (String(markdown[codeBlockRange]), match.range(at: 0).upperBound)
+                guard let codeBlockRange = Range(match.range(at: 1), in: markdown),
+                      let endIndex = Range(match.range(at: 0), in: markdown)?.upperBound
+                else { return nil }
+                return (String(markdown[codeBlockRange]), endIndex)
             }
 
             let incompleteCodeBlockRegex = try! NSRegularExpression(
@@ -242,8 +246,10 @@ extension OpenAIPromptToCodeService {
                 options: [],
                 range: range2
             ) {
-                let codeBlockRange = Range(match.range(at: 1), in: markdown)!
-                return (String(markdown[codeBlockRange]), match.range(at: 0).upperBound)
+                guard let codeBlockRange = Range(match.range(at: 1), in: markdown),
+                      let endIndex = Range(match.range(at: 0), in: markdown)?.upperBound
+                else { return nil }
+                return (String(markdown[codeBlockRange]), endIndex)
             }
             return nil
         }
@@ -252,8 +258,10 @@ extension OpenAIPromptToCodeService {
             return ("", "")
         }
 
-        func extractDescriptionFromMarkdown(_ markdown: String, startIndex: Int) -> String {
-            let startIndex = markdown.index(markdown.startIndex, offsetBy: startIndex)
+        func extractDescriptionFromMarkdown(
+            _ markdown: String,
+            startIndex: String.Index
+        ) -> String {
             guard startIndex < markdown.endIndex else { return "" }
             let range = startIndex..<markdown.endIndex
             let description = String(markdown[range])
