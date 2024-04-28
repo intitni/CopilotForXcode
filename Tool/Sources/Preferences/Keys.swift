@@ -362,6 +362,10 @@ public extension UserDefaultPreferenceKeys {
     var isSuggestionSenseEnabled: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "IsSuggestionSenseEnabled")
     }
+    
+    var isSuggestionTypeInTheMiddleEnabled: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "IsSuggestionTypeInTheMiddleEnabled")
+    }
 }
 
 // MARK: - Chat
