@@ -12,7 +12,7 @@ public class SourceEditor {
     public struct AXNotification: Hashable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
-        
+
         public func hash(into hasher: inout Hasher) {
             kind.hash(into: &hasher)
         }
@@ -198,8 +198,8 @@ public extension SourceEditor {
                 range.length = max(countE - range.location, 0)
                 break
             }
-            countS += line.count
-            countE += line.count
+            countS += line.utf16.count
+            countE += line.utf16.count
         }
         return range
     }
@@ -221,24 +221,25 @@ public extension SourceEditor {
         var countE = 0
         var cursorRange = CursorRange(start: .zero, end: .outOfScope)
         for (i, line) in lines.enumerated() {
-            // The range is counted in UTF8, which causes line endings like \r\n to be of length 2.
-            let lineEndingAddition = line.lineEnding.utf8.count - 1
             if countS <= range.lowerBound,
-               range.lowerBound < countS + line.count + lineEndingAddition
+               range.lowerBound < countS + line.utf16.count
             {
                 cursorRange.start = .init(line: i, character: range.lowerBound - countS)
             }
             if countE <= range.upperBound,
-               range.upperBound < countE + line.count + lineEndingAddition
+               range.upperBound < countE + line.utf16.count
             {
                 cursorRange.end = .init(line: i, character: range.upperBound - countE)
                 break
             }
-            countS += line.count + lineEndingAddition
-            countE += line.count + lineEndingAddition
+            countS += line.utf16.count
+            countE += line.utf16.count
         }
         if cursorRange.end == .outOfScope {
-            cursorRange.end = .init(line: lines.endIndex - 1, character: lines.last?.count ?? 0)
+            cursorRange.end = .init(
+                line: lines.endIndex - 1,
+                character: lines.last?.utf16.count ?? 0
+            )
         }
         return cursorRange
     }

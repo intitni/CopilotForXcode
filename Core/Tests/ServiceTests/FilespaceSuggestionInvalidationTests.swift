@@ -55,6 +55,53 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
     }
+    
+    func test_text_typing_suggestion_with_emoji_in_the_middle_should_be_valid() async throws {
+        let filespace = try await prepare(
+            suggestionText: "hello🎆🎆 man",
+            cursorPosition: .init(line: 1, character: 0),
+            range: .init(startPair: (1, 0), endPair: (1, 0))
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "hell🎆🎆 man\n", "\n"],
+            cursorPosition: .init(line: 1, character: 4)
+        )
+        XCTAssertTrue(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNotNil(suggestion)
+    }
+    
+    func test_text_typing_suggestion_typed_emoji_in_the_middle_should_be_valid() async throws {
+        let filespace = try await prepare(
+            suggestionText: "h🎆🎆o man",
+            cursorPosition: .init(line: 1, character: 0),
+            range: .init(startPair: (1, 0), endPair: (1, 0))
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "h🎆🎆o man\n", "\n"],
+            cursorPosition: .init(line: 1, character: 2)
+        )
+        XCTAssertTrue(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNotNil(suggestion)
+    }
+    
+    func test_text_typing_suggestion_cutting_emoji_in_the_middle_should_be_valid() async throws {
+        // undefined behavior, must not crash
+        
+        let filespace = try await prepare(
+            suggestionText: "h🎆🎆o man",
+            cursorPosition: .init(line: 1, character: 0),
+            range: .init(startPair: (1, 0), endPair: (1, 0))
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "h🎆🎆o man\n", "\n"],
+            cursorPosition: .init(line: 1, character: 3)
+        )
+        XCTAssertTrue(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNotNil(suggestion)
+    }
 
     func test_text_cursor_moved_to_another_line_should_invalidate() async throws {
         let filespace = try await prepare(
@@ -122,10 +169,35 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 0),
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
+        let wasValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello man\n", "\n"],
+            cursorPosition: .init(line: 1, character: 8)
+        )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello man\n", "\n"],
             cursorPosition: .init(line: 1, character: 9)
         )
+        XCTAssertTrue(wasValid)
+        XCTAssertFalse(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNil(suggestion)
+    }
+    
+    func test_finish_typing_the_whole_single_line_suggestion_with_emoji_should_invalidate() async throws {
+        let filespace = try await prepare(
+            suggestionText: "hello m🎆🎆an",
+            cursorPosition: .init(line: 1, character: 0),
+            range: .init(startPair: (1, 0), endPair: (1, 0))
+        )
+        let wasValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello m🎆🎆an\n", "\n"],
+            cursorPosition: .init(line: 1, character: 12)
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello m🎆🎆an\n", "\n"],
+            cursorPosition: .init(line: 1, character: 13)
+        )
+        XCTAssertTrue(wasValid)
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
@@ -138,10 +210,15 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             cursorPosition: .init(line: 1, character: 0),
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
+        let wasValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello man!!!!!\n", "\n"],
+            cursorPosition: .init(line: 1, character: 8)
+        )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello man!!!!!\n", "\n"],
             cursorPosition: .init(line: 1, character: 9)
         )
+        XCTAssertTrue(wasValid)
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
         XCTAssertNil(suggestion)
@@ -156,6 +233,21 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello man\n", "\n"],
             cursorPosition: .init(line: 1, character: 9)
+        )
+        XCTAssertTrue(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNotNil(suggestion)
+    }
+    
+    func test_finish_typing_the_whole_multiple_line_suggestion_with_emoji_should_be_valid() async throws {
+        let filespace = try await prepare(
+            suggestionText: "hello m🎆🎆an\nhow are you?",
+            cursorPosition: .init(line: 1, character: 0),
+            range: .init(startPair: (1, 0), endPair: (1, 0))
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello m🎆🎆an\n", "\n"],
+            cursorPosition: .init(line: 1, character: 13)
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion

@@ -82,17 +82,19 @@ public extension Filespace {
                 "Generating suggestion with invalid range"
             )
 
-            let startIndex = editingLine.index(
-                editingLine.startIndex,
+            let utf16View = editingLine.utf16
+            
+            let startIndex = utf16View.index(
+                utf16View.startIndex,
                 offsetBy: max(0, presentingSuggestion.range.start.character),
-                limitedBy: editingLine.endIndex
-            ) ?? editingLine.startIndex
+                limitedBy: utf16View.endIndex
+            ) ?? utf16View.startIndex
 
-            let endIndex = editingLine.index(
-                editingLine.startIndex,
+            let endIndex = utf16View.index(
+                utf16View.startIndex,
                 offsetBy: cursorPosition.character,
-                limitedBy: editingLine.endIndex
-            ) ?? editingLine.endIndex
+                limitedBy: utf16View.endIndex
+            ) ?? utf16View.endIndex
 
             if endIndex > startIndex {
                 return String(editingLine[startIndex..<endIndex])
@@ -118,7 +120,7 @@ public extension Filespace {
         }
 
         // undo to a state before the suggestion was generated
-        if editingLine.count < presentingSuggestion.position.character {
+        if editingLine.utf16.count < presentingSuggestion.position.character {
             reset()
             resetSnapshot()
             return false
