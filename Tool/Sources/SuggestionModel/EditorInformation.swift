@@ -86,8 +86,10 @@ public struct EditorInformation {
 
     public static func lines(in code: [String], containing range: CursorRange) -> [String] {
         guard !code.isEmpty else { return [] }
+        guard range.start.line <= range.end.line else { return [] }
         let startIndex = min(max(0, range.start.line), code.endIndex - 1)
         let endIndex = min(max(startIndex, range.end.line), code.endIndex - 1)
+        guard startIndex <= endIndex else { return [] }
         let selectedLines = code[startIndex...endIndex]
         return Array(selectedLines)
     }
@@ -97,18 +99,26 @@ public struct EditorInformation {
         inside range: CursorRange,
         ignoreColumns: Bool = false
     ) -> (code: String, lines: [String]) {
+        guard range.start <= range.end else { return ("", []) }
+        
         let rangeLines = lines(in: code, containing: range)
         if ignoreColumns {
             return (rangeLines.joined(), rangeLines)
         }
         var content = rangeLines
         if !content.isEmpty {
-            let dropLastCount = max(0, content[content.endIndex - 1].count - range.end.character)
+            let dropLastCount = max(
+                0,
+                content[content.endIndex - 1].utf16.count - range.end.character
+            )
             content[content.endIndex - 1] = String(
+                content[content.endIndex - 1].utf16.dropLast(dropLastCount)
+            ) ?? String(
                 content[content.endIndex - 1].dropLast(dropLastCount)
             )
             let dropFirstCount = max(0, range.start.character)
-            content[0] = String(content[0].dropFirst(dropFirstCount))
+            content[0] = String(content[0].utf16.dropFirst(dropFirstCount))
+                ?? String(content[0].dropFirst(dropFirstCount))
         }
         return (content.joined(), rangeLines)
     }
