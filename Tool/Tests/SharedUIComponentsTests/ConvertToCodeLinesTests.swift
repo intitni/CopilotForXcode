@@ -11,9 +11,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "swift",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: false,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -32,9 +33,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -52,9 +54,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 4)
@@ -72,9 +75,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 8)
@@ -93,9 +97,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 4)
@@ -115,9 +120,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 0)
@@ -137,9 +143,10 @@ final class ConvertToCodeLinesTests: XCTestCase {
         let (result, spaceCount) = highlighted(
             code: code,
             language: "md",
+            scenario: "a",
             brightMode: true,
             droppingLeadingSpaces: true,
-            fontSize: 14
+            font: .systemFont(ofSize: 14)
         )
 
         XCTAssertEqual(spaceCount, 4)

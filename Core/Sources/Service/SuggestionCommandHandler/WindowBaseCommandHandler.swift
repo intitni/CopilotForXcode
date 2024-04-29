@@ -372,12 +372,14 @@ extension WindowBaseCommandHandler {
                     return false
                 }
                 let line = editor.lines[selection.start.line]
-                guard selection.start.character > 0, selection.start.character < line.count else {
-                    return false
-                }
-                let substring =
-                    line[line.startIndex..<line
-                        .index(line.startIndex, offsetBy: selection.start.character)]
+                guard selection.start.character > 0,
+                      selection.start.character < line.utf16.count
+                else { return false }
+                let substring = line[line.utf16.startIndex..<(line.index(
+                    line.utf16.startIndex,
+                    offsetBy: selection.start.character,
+                    limitedBy: line.utf16.endIndex
+                ) ?? line.utf16.endIndex)]
                 return substring.allSatisfy { $0.isWhitespace }
             }()
 
@@ -398,13 +400,13 @@ extension WindowBaseCommandHandler {
         let viewStore = Service.shared.guiController.viewStore
 
         let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
-        
+
         let newExtraSystemPrompt: String? = if let extraSystemPrompt {
             await customCommandTemplateProcessor.process(extraSystemPrompt)
         } else {
             nil
         }
-        
+
         let newPrompt: String? = if let prompt {
             await customCommandTemplateProcessor.process(prompt)
         } else {

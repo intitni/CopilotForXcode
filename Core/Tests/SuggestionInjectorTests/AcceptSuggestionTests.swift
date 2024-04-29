@@ -562,6 +562,253 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
+    
+    func test_accept_suggestion_start_from_previous_line_has_emoji_inside() async throws {
+        let content = """
+        struct 😹😹 {
+        }
+        """
+        let text = """
+        struct 😹😹 {
+            var name: String
+            var age: String
+        """
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: text,
+            position: .init(line: 0, character: 13),
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 13)
+            )
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 0, character: 13)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 2, character: 19))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct 😹😹 {
+            var name: String
+            var age: String
+        }
+
+        """)
+    }
+    
+    func test_accept_suggestion_overlap_with_emoji_in_the_previous_code() async throws {
+        let content = """
+        struct 😹😹 {
+            var name
+        }
+        """
+        let text = """
+            var name: String
+            var age: String
+        """
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: text,
+            position: .init(line: 1, character: 13),
+            range: .init(
+                start: .init(line: 1, character: 0),
+                end: .init(line: 1, character: 13)
+            )
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 1, character: 13)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 2, character: 19))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct 😹😹 {
+            var name: String
+            var age: String
+        }
+
+        """)
+    }
+    
+    func test_accept_suggestion_overlap_continue_typing_has_emoji_inside() async throws {
+        let content = """
+        struct 😹😹 {
+            var name: Str
+        }
+        """
+        let text = """
+            var name: String
+            var age: String
+        """
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: text,
+            position: .init(line: 1, character: 13),
+            range: .init(
+                start: .init(line: 1, character: 0),
+                end: .init(line: 1, character: 13)
+            )
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 1, character: 13)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 2, character: 19))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct 😹😹 {
+            var name: String
+            var age: String
+        }
+
+        """)
+    }
+    
+    func test_replacing_multiple_lines_with_emoji() async throws {
+        let content = """
+        struct 😹😹 {
+            func speak() { print("meow") }
+        }
+        """
+        let text = """
+        struct 🐶🐶 {
+            func speak() {
+                print("woof")
+            }
+        }
+        """
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: text,
+            position: .init(line: 0, character: 7),
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 2, character: 1)
+            )
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 0, character: 7)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 4, character: 1))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        struct 🐶🐶 {
+            func speak() {
+                print("woof")
+            }
+        }
+
+        """)
+    }
+    
+    func test_accept_suggestion_overlap_continue_typing_suggestion_with_emoji_in_the_middle() async throws {
+        let content = """
+        print("🐶")
+        """
+        let text = """
+        print("🐶llo 🐶rld!
+        """
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: text,
+            position: .init(line: 0, character: 6),
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 6)
+            )
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 0, character: 7)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 0, character: 19))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        print("🐶llo 🐶rld!")
+
+        """)
+    }
+    
+    func test_replacing_single_line_in_the_middle_should_not_remove_the_next_character_with_emoji(
+    ) async throws {
+        let content = """
+        🐶KeyName: ,,
+        """
+
+        let suggestion = CodeSuggestion(
+            id: "",
+            text: "🐶KeyName: azure👩‍❤️‍👨AIAPIKeyName",
+            position: .init(line: 0, character: 11),
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 11)
+            )
+        )
+
+        var lines = content.breakIntoEditorStyleLines()
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var cursor = CursorPosition(line: 5, character: 34)
+        SuggestionInjector().acceptSuggestion(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completion: suggestion,
+            extraInfo: &extraInfo
+        )
+
+        XCTAssertEqual(cursor, .init(line: 0, character: 36))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        🐶KeyName: azure👩‍❤️‍👨AIAPIKeyName,,
+
+        """)
+    }
 }
 
 extension String {
