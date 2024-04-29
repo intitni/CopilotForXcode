@@ -46,10 +46,17 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
         var functions = [any ChatGPTFunction]()
 
         if !isSensitive {
+            let contextLineRange: String = {
+                if let  range = context.focusedContext?.codeRange {
+                    return " from \(range.start.line + 1) to \(range.end.line + 1)"
+                }
+                return ""
+            }()
+            
             var functionPrompt = """
             ONLY call it when one of the following conditions are satisfied:
-            - the user ask you about specific line from the latest message, \
-            which is not included in the focused range.
+            - the user explicitly ask you about specific line of code, \
+            but the line was NOT in the focused range \(contextLineRange).
             """
 
             if let annotations = context.focusedContext?.otherLineAnnotations,
