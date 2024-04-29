@@ -107,18 +107,30 @@ public struct EditorInformation {
         }
         var content = rangeLines
         if !content.isEmpty {
-            let dropLastCount = max(
-                0,
-                content[content.endIndex - 1].utf16.count - range.end.character
-            )
-            content[content.endIndex - 1] = String(
-                content[content.endIndex - 1].utf16.dropLast(dropLastCount)
-            ) ?? String(
-                content[content.endIndex - 1].dropLast(dropLastCount)
-            )
-            let dropFirstCount = max(0, range.start.character)
-            content[0] = String(content[0].utf16.dropFirst(dropFirstCount))
-                ?? String(content[0].dropFirst(dropFirstCount))
+            let lastLine = content[content.endIndex - 1]
+            let droppedEndIndex = lastLine.utf16.index(
+                lastLine.utf16.startIndex,
+                offsetBy: range.end.character,
+                limitedBy: lastLine.utf16.endIndex
+            ) ?? lastLine.utf16.endIndex
+            content[content.endIndex - 1] = if droppedEndIndex > lastLine.utf16.startIndex {
+                String(lastLine[..<droppedEndIndex])
+            } else {
+                ""
+            }
+            
+            let firstLine = content[0]
+            let droppedStartIndex = firstLine.utf16.index(
+                firstLine.utf16.startIndex,
+                offsetBy: range.start.character,
+                limitedBy: firstLine.utf16.endIndex
+            ) ?? firstLine.utf16.endIndex
+            
+            content[0] = if droppedStartIndex < firstLine.utf16.endIndex {
+                String(firstLine[droppedStartIndex...])
+            } else {
+                ""
+            }
         }
         return (content.joined(), rangeLines)
     }

@@ -82,22 +82,22 @@ public extension Filespace {
                 "Generating suggestion with invalid range"
             )
 
-            let uff16View = editingLine.utf16
+            let utf16View = editingLine.utf16
             
-            let startIndex = uff16View.index(
-                uff16View.startIndex,
+            let startIndex = utf16View.index(
+                utf16View.startIndex,
                 offsetBy: max(0, presentingSuggestion.range.start.character),
-                limitedBy: uff16View.endIndex
-            ) ?? uff16View.startIndex
+                limitedBy: utf16View.endIndex
+            ) ?? utf16View.startIndex
 
-            let endIndex = uff16View.index(
-                uff16View.startIndex,
+            let endIndex = utf16View.index(
+                utf16View.startIndex,
                 offsetBy: cursorPosition.character,
-                limitedBy: uff16View.endIndex
-            ) ?? uff16View.endIndex
+                limitedBy: utf16View.endIndex
+            ) ?? utf16View.endIndex
 
             if endIndex > startIndex {
-                return String(uff16View[startIndex..<endIndex]) ?? ""
+                return String(editingLine[startIndex..<endIndex])
             }
 
             return ""

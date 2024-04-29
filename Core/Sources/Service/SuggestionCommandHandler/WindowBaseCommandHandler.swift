@@ -375,19 +375,11 @@ extension WindowBaseCommandHandler {
                 guard selection.start.character > 0,
                       selection.start.character < line.utf16.count
                 else { return false }
-                let substring = String(
-                    line.utf16[line.utf16.startIndex..<(line.index(
-                        line.utf16.startIndex,
-                        offsetBy: selection.start.character,
-                        limitedBy: line.utf16.endIndex
-                    ) ?? line.utf16.endIndex)]
-                ) ?? String(
-                    line[line.startIndex..<(line.index(
-                        line.startIndex,
-                        offsetBy: selection.start.character,
-                        limitedBy: line.endIndex
-                    ) ?? line.endIndex)]
-                )
+                let substring = line[line.utf16.startIndex..<(line.index(
+                    line.utf16.startIndex,
+                    offsetBy: selection.start.character,
+                    limitedBy: line.utf16.endIndex
+                ) ?? line.utf16.endIndex)]
                 return substring.allSatisfy { $0.isWhitespace }
             }()
 
