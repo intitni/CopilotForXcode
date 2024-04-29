@@ -118,7 +118,7 @@ public extension Filespace {
         }
 
         // undo to a state before the suggestion was generated
-        if editingLine.count < presentingSuggestion.position.character {
+        if editingLine.utf16.count < presentingSuggestion.position.character {
             reset()
             resetSnapshot()
             return false
