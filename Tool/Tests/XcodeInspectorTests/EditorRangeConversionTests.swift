@@ -66,6 +66,28 @@ class SourceEditorRangeConversionTests: XCTestCase {
         XCTAssertEqual(cursorRange.start, .init(line: 1, character: 3))
         XCTAssertEqual(cursorRange.end, .init(line: 3, character: 3))
     }
+    
+    func test_convert_multiline_range_cutting_emoji() {
+        // undefined behavior
+        
+        let code = """
+        import Foundation
+        import 🎆🎆🎆🎆🎆🎆
+
+        class SourceEditorRangeConversionTests {
+            func testSomething() {
+                // test
+            }
+        }
+
+        """
+
+        let range = 26...42 // in the middle of the emoji
+        let cursorRange = SourceEditor.convertRangeToCursorRange(range, in: code)
+
+        XCTAssertEqual(cursorRange.start, .init(line: 1, character: 8))
+        XCTAssertEqual(cursorRange.end, .init(line: 3, character: 3))
+    }
 
     func test_convert_range_with_no_code() {
         let code = ""
