@@ -219,8 +219,11 @@ struct ChatPanelMessages: View {
                 EmptyView()
                     .onChange(of: viewStore.state.isReceivingMessage) { isReceiving in
                         if isReceiving {
-                            pinnedToBottom = true
-                            scrollToBottom()
+                            Task {
+                                pinnedToBottom = true
+                                await Task.yield()
+                                scrollToBottom()
+                            }
                         }
                     }
                     .onChange(of: viewStore.state.lastMessage) { _ in
