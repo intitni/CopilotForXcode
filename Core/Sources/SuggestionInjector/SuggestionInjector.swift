@@ -54,12 +54,12 @@ public struct SuggestionInjector {
            start.character < firstRemovedLine.count,
            !toBeInserted.isEmpty
         {
-            let leftoverRange = firstRemovedLine.startIndex..<(firstRemovedLine.index(
-                firstRemovedLine.startIndex,
+            let leftoverRange = firstRemovedLine.utf16.startIndex..<(firstRemovedLine.utf16.index(
+                firstRemovedLine.utf16.startIndex,
                 offsetBy: start.character,
-                limitedBy: firstRemovedLine.endIndex
-            ) ?? firstRemovedLine.endIndex)
-            var leftover = firstRemovedLine[leftoverRange]
+                limitedBy: firstRemovedLine.utf16.endIndex
+            ) ?? firstRemovedLine.utf16.endIndex)
+            var leftover = String(firstRemovedLine[leftoverRange])
             if leftover.last?.isNewline ?? false {
                 leftover.removeLast(1)
             }
@@ -76,7 +76,8 @@ public struct SuggestionInjector {
             lineEnding: lineEnding
         )
 
-        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].count - 1 - recoveredSuffixLength
+        let cursorCol = toBeInserted[toBeInserted.endIndex - 1].utf16.count
+            - 1 - recoveredSuffixLength
         let insertingIndex = min(start.line, content.endIndex)
         content.insert(contentsOf: toBeInserted, at: insertingIndex)
         extraInfo.modifications.append(.inserted(insertingIndex, toBeInserted))
@@ -98,7 +99,8 @@ public struct SuggestionInjector {
         let lastRemovedLineCleaned = lastRemovedLine.droppedLineBreak()
 
         // If the replaced range covers the whole line, return immediately.
-        guard end.character >= 0, end.character - 1 < lastRemovedLineCleaned.count else { return 0 }
+        guard end.character >= 0, end.character - 1 < lastRemovedLineCleaned.utf16.count
+        else { return 0 }
 
         // if we are not inserting anything, return immediately.
         guard !toBeInserted.isEmpty,
@@ -117,12 +119,13 @@ public struct SuggestionInjector {
         // locate the split index, the prefix of which matches the suggestion prefix.
         var splitIndex: String.Index?
 
-        for offset in end.character..<lastRemovedLineCleaned.count {
-            let proposedIndex = lastRemovedLineCleaned.index(
-                lastRemovedLineCleaned.startIndex,
-                offsetBy: offset
-            )
-            let prefix = lastRemovedLineCleaned[..<proposedIndex]
+        for offset in end.character..<lastRemovedLineCleaned.utf16.count {
+            let proposedIndex = lastRemovedLineCleaned.utf16.index(
+                lastRemovedLineCleaned.utf16.startIndex,
+                offsetBy: offset,
+                limitedBy: lastRemovedLineCleaned.utf16.endIndex
+            ) ?? lastRemovedLineCleaned.utf16.endIndex
+            let prefix = String(lastRemovedLineCleaned[..<proposedIndex])
             if first.hasPrefix(prefix) {
                 splitIndex = proposedIndex
             }
@@ -156,7 +159,7 @@ public struct SuggestionInjector {
 
         toBeInserted[toBeInserted.endIndex - 1] = lastInsertingLine
 
-        return suffix.count
+        return suffix.utf16.count
     }
 }
 
