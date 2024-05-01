@@ -86,6 +86,14 @@ public final class Service {
                 }.store(in: &cancellable)
         }
     }
+    
+    @MainActor
+    public func prepareForExit() async {
+        #if canImport(ProService)
+        proService.prepareForExit()
+        #endif
+        await scheduledCleaner.closeAllChildProcesses()
+    }
 }
 
 public extension Service {

@@ -48,10 +48,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
     }
-
+    
     @objc func quit() {
         Task { @MainActor in
-            await service.scheduledCleaner.closeAllChildProcesses()
+            await service.prepareForExit()
             exit(0)
         }
     }
