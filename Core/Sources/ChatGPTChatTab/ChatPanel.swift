@@ -49,7 +49,7 @@ struct ChatPanelMessages: View {
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
-    @State var didAppearOnce = false
+    @State var didScrollToBottomOnAppearOnce = false
     @State var isBottomHidden = true
     @Environment(\.isEnabled) var isEnabled
 
@@ -76,18 +76,13 @@ struct ChatPanelMessages: View {
                             .id(bottomID)
                             .onAppear {
                                 isBottomHidden = false
-                                if !didAppearOnce {
+                                if !didScrollToBottomOnAppearOnce {
                                     proxy.scrollTo(bottomID, anchor: .bottom)
+                                    didScrollToBottomOnAppearOnce = true
                                 }
                             }
                             .onDisappear {
                                 isBottomHidden = true
-                            }
-                            .task {
-                                if !didAppearOnce {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                    didAppearOnce = true
-                                }
                             }
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
@@ -149,6 +144,12 @@ struct ChatPanelMessages: View {
                     ) {
                         proxy.scrollTo(bottomID, anchor: .bottom)
                     }
+                }
+                .onAppear {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
+                .task {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
                 }
             }
         }
