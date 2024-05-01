@@ -45,9 +45,12 @@ struct ChatPanelMessages: View {
     @State var isScrollToBottomButtonDisplayed = true
     @State var isPinnedToBottom = true
     @Namespace var bottomID
+    @Namespace var topID
     @Namespace var scrollSpace
     @State var scrollOffset: Double = 0
     @State var listHeight: Double = 0
+    @State var didScrollToBottomOnAppearOnce = false
+    @State var isBottomHidden = true
     @Environment(\.isEnabled) var isEnabled
 
     var body: some View {
@@ -56,6 +59,7 @@ struct ChatPanelMessages: View {
                 List {
                     Group {
                         Spacer(minLength: 12)
+                            .id(topID)
 
                         Instruction(chat: chat)
 
@@ -71,10 +75,14 @@ struct ChatPanelMessages: View {
                         Spacer(minLength: 12)
                             .id(bottomID)
                             .onAppear {
-                                proxy.scrollTo(bottomID, anchor: .bottom)
+                                isBottomHidden = false
+                                if !didScrollToBottomOnAppearOnce {
+                                    proxy.scrollTo(bottomID, anchor: .bottom)
+                                    didScrollToBottomOnAppearOnce = true
+                                }
                             }
-                            .task {
-                                proxy.scrollTo(bottomID, anchor: .bottom)
+                            .onDisappear {
+                                isBottomHidden = true
                             }
                             .background(GeometryReader { geo in
                                 let offset = geo.frame(in: .named(scrollSpace)).minY
@@ -129,9 +137,19 @@ struct ChatPanelMessages: View {
                     scrollToBottomButton(proxy: proxy)
                 }
                 .background {
-                    PinToBottomHandler(chat: chat, pinnedToBottom: $isPinnedToBottom) {
+                    PinToBottomHandler(
+                        chat: chat,
+                        isBottomHidden: isBottomHidden,
+                        pinnedToBottom: $isPinnedToBottom
+                    ) {
                         proxy.scrollTo(bottomID, anchor: .bottom)
                     }
+                }
+                .onAppear {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
+                .task {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
                 }
             }
         }
@@ -199,6 +217,7 @@ struct ChatPanelMessages: View {
 
     struct PinToBottomHandler: View {
         let chat: StoreOf<Chat>
+        let isBottomHidden: Bool
         @Binding var pinnedToBottom: Bool
         let scrollToBottom: () -> Void
 
@@ -222,7 +241,9 @@ struct ChatPanelMessages: View {
                             Task {
                                 pinnedToBottom = true
                                 await Task.yield()
-                                scrollToBottom()
+                                withAnimation(.easeInOut(duration: 0.1)) {
+                                    scrollToBottom()
+                                }
                             }
                         }
                     }
@@ -233,8 +254,16 @@ struct ChatPanelMessages: View {
                             }
                             Task {
                                 await Task.yield()
-                                scrollToBottom()
+                                withAnimation(.easeInOut(duration: 0.1)) {
+                                    scrollToBottom()
+                                }
                             }
+                        }
+                    }
+                    .onChange(of: isBottomHidden) { value in
+                        // This is important to prevent it from jumping to the top!
+                        if value, pinnedToBottom {
+                            scrollToBottom()
                         }
                     }
             }

@@ -55,8 +55,7 @@ public final class ActiveDocumentChatContextCollector: ChatContextCollector {
             
             var functionPrompt = """
             ONLY call it when one of the following conditions are satisfied:
-            - the user explicitly ask you about specific line of code, \
-            but the line was NOT in the focused range \(contextLineRange).
+            - the user explicitly ask you about specific line of code, that is NOT in the focused range \(contextLineRange).
             """
 
             if let annotations = context.focusedContext?.otherLineAnnotations,
