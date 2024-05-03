@@ -80,7 +80,7 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
-        .target(name: "XPCShared", dependencies: ["SuggestionModel"]),
+        .target(name: "XPCShared", dependencies: ["SuggestionModel", "Logger"]),
 
         .target(name: "Configs"),
 
