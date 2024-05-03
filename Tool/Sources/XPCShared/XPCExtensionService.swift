@@ -196,11 +196,11 @@ public class XPCExtensionService {
 }
 
 extension XPCExtensionService: XPCServiceDelegate {
-    func connectionDidInterrupt() async {
+    public func connectionDidInterrupt() async {
         // do nothing
     }
 
-    func connectionDidInvalidate() async {
+    public func connectionDidInvalidate() async {
         service = nil
     }
 }

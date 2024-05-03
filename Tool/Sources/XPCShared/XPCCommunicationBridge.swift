@@ -21,8 +21,8 @@ public class XPCCommunicationBridge {
     let logger: Logger
     var serviceEndpoint: NSXPCListenerEndpoint?
 
-    nonisolated
-    public init(logger: Logger) {
+    public nonisolated
+    init(logger: Logger) {
         service = .init(
             kind: .machService(
                 identifier: Bundle(for: XPCService.self)
@@ -33,6 +33,10 @@ public class XPCCommunicationBridge {
             logger: logger
         )
         self.logger = logger
+    }
+
+    public func setDelegate(_ delegate: XPCServiceDelegate) {
+        service.delegate = delegate
     }
 
     public func launchExtensionServiceIfNeeded() async throws -> NSXPCListenerEndpoint? {

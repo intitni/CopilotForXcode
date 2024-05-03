@@ -19,7 +19,7 @@ class XPCService {
     let logger: Logger
     weak var delegate: XPCServiceDelegate?
     private var isInvalidated = false
-    
+
     private lazy var _connection: InvalidatingConnection? = buildConnection()
 
     var connection: NSXPCConnection? {
@@ -29,10 +29,16 @@ class XPCService {
     }
 
     nonisolated
-    init(kind: Kind, interface: NSXPCInterface, logger: Logger) {
+    init(
+        kind: Kind,
+        interface: NSXPCInterface,
+        logger: Logger,
+        delegate: XPCServiceDelegate? = nil
+    ) {
         self.kind = kind
         self.interface = interface
         self.logger = logger
+        self.delegate = delegate
     }
 
     private func buildConnection() -> InvalidatingConnection {
@@ -59,7 +65,7 @@ class XPCService {
         connection.resume()
         return .init(connection)
     }
-    
+
     private func markAsInvalidated() {
         isInvalidated = true
     }
@@ -69,7 +75,7 @@ class XPCService {
     }
 }
 
-protocol XPCServiceDelegate: AnyObject {
+public protocol XPCServiceDelegate: AnyObject {
     func connectionDidInvalidate() async
     func connectionDidInterrupt() async
 }
@@ -79,6 +85,7 @@ private class InvalidatingConnection {
     init(_ connection: NSXPCConnection) {
         self.connection = connection
     }
+
     deinit {
         connection.invalidationHandler = {}
         connection.interruptionHandler = {}
@@ -118,3 +125,4 @@ func withXPCServiceConnected<T, P>(
     }
     return try await stream.first(where: { _ in true })!
 }
+
