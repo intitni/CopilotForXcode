@@ -599,7 +599,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var useCustomScrollViewWorkaround: FeatureFlag {
-        .init(defaultValue: true, key: "FeatureFlag-UseCustomScrollViewWorkaround")
+        .init(defaultValue: false, key: "FeatureFlag-UseCustomScrollViewWorkaround")
     }
 
     var triggerActionWithAccessibilityAPI: FeatureFlag {
