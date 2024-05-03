@@ -39,8 +39,8 @@ public struct LaunchAgentManager {
 
     public func setupLaunchAgent() async throws {
         if #available(macOS 13, *) {
-            let launchAgent = SMAppService.agent(plistName: "launchAgent.plist")
-            try launchAgent.register()
+            let bridgeLaunchAgent = SMAppService.agent(plistName: "bridgeLaunchAgent.plist")
+            try bridgeLaunchAgent.register()
         } else {
             let content = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -84,8 +84,8 @@ public struct LaunchAgentManager {
 
     public func removeLaunchAgent() async throws {
         if #available(macOS 13, *) {
-            let launchAgent = SMAppService.agent(plistName: "launchAgent.plist")
-            try await launchAgent.unregister()
+            let bridgeLaunchAgent = SMAppService.agent(plistName: "bridgeLaunchAgent.plist")
+            try await bridgeLaunchAgent.unregister()
         } else {
             try await launchctl("unload", launchAgentPath)
             try FileManager.default.removeItem(atPath: launchAgentPath)
