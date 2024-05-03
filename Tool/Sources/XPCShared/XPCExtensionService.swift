@@ -1,19 +1,38 @@
 import Foundation
-import GitHubCopilotService
 import Logger
-import SuggestionModel
-import XPCShared
 
-public struct AsyncXPCService {
-    public var connection: NSXPCConnection { service.connection }
-    let service: XPCService
+public enum XPCExtensionServiceError: Swift.Error, LocalizedError {
+    case failedToGetServiceEndpoint
+    case failedToCreateXPCConnection
+    case xpcServiceError(Error)
 
-    init(service: XPCService) {
-        self.service = service
+    public var errorDescription: String? {
+        switch self {
+        case .failedToGetServiceEndpoint:
+            return "Failed to get service endpoint"
+        case .failedToCreateXPCConnection:
+            return "Failed to create XPC connection"
+        case let .xpcServiceError(error):
+            return "XPC Service error: \(error.localizedDescription)"
+        }
+    }
+}
+
+@XPCServiceActor
+public class XPCExtensionService {
+    var service: XPCService?
+    var connection: NSXPCConnection? { service?.connection }
+    let logger: Logger
+    let bridge: XPCCommunicationBridge
+
+    nonisolated
+    public init(logger: Logger) {
+        self.logger = logger
+        bridge = XPCCommunicationBridge(logger: logger)
     }
 
     public func getXPCServiceVersion() async throws -> (version: String, build: String) {
-        try await withXPCServiceConnected(connection: connection) {
+        try await withXPCServiceConnected {
             service, continuation in
             service.getXPCServiceVersion { version, build in
                 continuation.resume((version, build))
@@ -22,7 +41,7 @@ public struct AsyncXPCService {
     }
 
     public func getXPCServiceAccessibilityPermission() async throws -> Bool {
-        try await withXPCServiceConnected(connection: connection) {
+        try await withXPCServiceConnected {
             service, continuation in
             service.getXPCServiceAccessibilityPermission { isGranted in
                 continuation.resume(isGranted)
@@ -32,7 +51,6 @@ public struct AsyncXPCService {
 
     public func getSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getSuggestedCode }
         )
@@ -40,7 +58,6 @@ public struct AsyncXPCService {
 
     public func getNextSuggestedCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getNextSuggestedCode }
         )
@@ -50,7 +67,6 @@ public struct AsyncXPCService {
         -> UpdatedContent?
     {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getPreviousSuggestedCode }
         )
@@ -60,7 +76,6 @@ public struct AsyncXPCService {
         -> UpdatedContent?
     {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getSuggestionAcceptedCode }
         )
@@ -70,7 +85,6 @@ public struct AsyncXPCService {
         -> UpdatedContent?
     {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getSuggestionRejectedCode }
         )
@@ -80,7 +94,6 @@ public struct AsyncXPCService {
         -> UpdatedContent?
     {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getRealtimeSuggestedCode }
         )
@@ -90,14 +103,13 @@ public struct AsyncXPCService {
         -> UpdatedContent?
     {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.getPromptToCodeAcceptedCode }
         )
     }
 
     public func toggleRealtimeSuggestion() async throws {
-        try await withXPCServiceConnected(connection: connection) {
+        try await withXPCServiceConnected {
             service, continuation in
             service.toggleRealtimeSuggestion { error in
                 if let error {
@@ -111,7 +123,7 @@ public struct AsyncXPCService {
 
     public func prefetchRealtimeSuggestions(editorContent: EditorContent) async {
         guard let data = try? JSONEncoder().encode(editorContent) else { return }
-        try? await withXPCServiceConnected(connection: connection) { service, continuation in
+        try? await withXPCServiceConnected { service, continuation in
             service.prefetchRealtimeSuggestions(editorContent: data) {
                 continuation.resume(())
             }
@@ -120,7 +132,6 @@ public struct AsyncXPCService {
 
     public func chatWithSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.chatWithSelection }
         )
@@ -128,7 +139,6 @@ public struct AsyncXPCService {
 
     public func promptToCode(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
-            connection,
             editorContent,
             { $0.promptToCode }
         )
@@ -139,14 +149,13 @@ public struct AsyncXPCService {
         editorContent: EditorContent
     ) async throws -> UpdatedContent? {
         try await suggestionRequest(
-            connection,
             editorContent,
             { service in { service.customCommand(id: id, editorContent: $0, withReply: $1) } }
         )
     }
 
     public func postNotification(name: String) async throws {
-        try await withXPCServiceConnected(connection: connection) {
+        try await withXPCServiceConnected {
             service, continuation in
             service.postNotification(name: name) {
                 continuation.resume(())
@@ -157,7 +166,7 @@ public struct AsyncXPCService {
     public func send<M: ExtensionServiceRequestType>(
         requestBody: M
     ) async throws -> M.ResponseBody {
-        try await withXPCServiceConnected(connection: connection) { service, continuation in
+        try await withXPCServiceConnected { service, continuation in
             do {
                 let requestBodyData = try JSONEncoder().encode(requestBody)
                 service.send(endpoint: M.endpoint, requestBody: requestBodyData) { data, error in
@@ -186,61 +195,76 @@ public struct AsyncXPCService {
     }
 }
 
-struct NoDataError: Error {}
-
-struct AutoFinishContinuation<T> {
-    var continuation: AsyncThrowingStream<T, Error>.Continuation
-
-    func resume(_ value: T) {
-        continuation.yield(value)
-        continuation.finish()
+extension XPCExtensionService: XPCServiceDelegate {
+    func connectionDidInterrupt() async {
+        // do nothing
     }
 
-    func reject(_ error: Error) {
-        if (error as NSError).code == -100 {
-            continuation.finish(throwing: CancellationError())
+    func connectionDidInvalidate() async {
+        service = nil
+    }
+}
+
+extension XPCExtensionService {
+    private func updateEndpoint(_ endpoint: NSXPCListenerEndpoint) {
+        service = XPCService(
+            kind: .anonymous(endpoint: endpoint),
+            interface: NSXPCInterface(with: XPCServiceProtocol.self),
+            logger: logger
+        )
+        service?.delegate = self
+    }
+
+    private func withXPCServiceConnected<T>(
+        _ fn: @escaping (XPCServiceProtocol, AutoFinishContinuation<T>) -> Void
+    ) async throws -> T {
+        if let service, let connection = service.connection {
+            do {
+                return try await XPCShared.withXPCServiceConnected(connection: connection, fn)
+            } catch {
+                throw XPCExtensionServiceError.xpcServiceError(error)
+            }
         } else {
-            continuation.finish(throwing: error)
+            guard let endpoint = try await bridge.launchExtensionServiceIfNeeded()
+            else { throw XPCExtensionServiceError.failedToGetServiceEndpoint }
+            updateEndpoint(endpoint)
+
+            if let service, let connection = service.connection {
+                do {
+                    return try await XPCShared.withXPCServiceConnected(connection: connection, fn)
+                } catch {
+                    throw XPCExtensionServiceError.xpcServiceError(error)
+                }
+            } else {
+                throw XPCExtensionServiceError.failedToCreateXPCConnection
+            }
         }
     }
-}
 
-func withXPCServiceConnected<T>(
-    connection: NSXPCConnection,
-    _ fn: @escaping (XPCServiceProtocol, AutoFinishContinuation<T>) -> Void
-) async throws -> T {
-    let stream: AsyncThrowingStream<T, Error> = AsyncThrowingStream { continuation in
-        let service = connection.remoteObjectProxyWithErrorHandler {
-            continuation.finish(throwing: $0)
-        } as! XPCServiceProtocol
-        fn(service, .init(continuation: continuation))
-    }
-    return try await stream.first(where: { _ in true })!
-}
-
-func suggestionRequest(
-    _ connection: NSXPCConnection,
-    _ editorContent: EditorContent,
-    _ fn: @escaping (any XPCServiceProtocol) -> (Data, @escaping (Data?, Error?) -> Void) -> Void
-) async throws -> UpdatedContent? {
-    let data = try JSONEncoder().encode(editorContent)
-    return try await withXPCServiceConnected(connection: connection) {
-        service, continuation in
-        fn(service)(data) { updatedData, error in
-            if let error {
-                continuation.reject(error)
-                return
-            }
-            do {
-                if let updatedData {
-                    let updatedContent = try JSONDecoder()
-                        .decode(UpdatedContent.self, from: updatedData)
-                    continuation.resume(updatedContent)
-                } else {
-                    continuation.resume(nil)
+    private func suggestionRequest(
+        _ editorContent: EditorContent,
+        _ fn: @escaping (any XPCServiceProtocol) -> (Data, @escaping (Data?, Error?) -> Void)
+            -> Void
+    ) async throws -> UpdatedContent? {
+        let data = try JSONEncoder().encode(editorContent)
+        return try await withXPCServiceConnected {
+            service, continuation in
+            fn(service)(data) { updatedData, error in
+                if let error {
+                    continuation.reject(error)
+                    return
                 }
-            } catch {
-                continuation.reject(error)
+                do {
+                    if let updatedData {
+                        let updatedContent = try JSONDecoder()
+                            .decode(UpdatedContent.self, from: updatedData)
+                        continuation.resume(updatedContent)
+                    } else {
+                        continuation.resume(nil)
+                    }
+                } catch {
+                    continuation.reject(error)
+                }
             }
         }
     }
