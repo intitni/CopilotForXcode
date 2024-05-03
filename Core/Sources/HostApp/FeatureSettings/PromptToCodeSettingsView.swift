@@ -20,7 +20,7 @@ struct PromptToCodeSettingsView: View {
         var promptToCodeChatModelId
         @AppStorage(\.promptToCodeEmbeddingModelId)
         var promptToCodeEmbeddingModelId
-
+        @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
         init() {}
@@ -89,6 +89,10 @@ struct PromptToCodeSettingsView: View {
             Form {
                 Toggle(isOn: $settings.hideCommonPrecedingSpaces) {
                     Text("Hide Common Preceding Spaces")
+                }
+                
+                Toggle(isOn: $settings.wrapCode) {
+                    Text("Wrap code")
                 }
 
                 #if canImport(ProHostApp)

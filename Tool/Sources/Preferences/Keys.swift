@@ -302,6 +302,10 @@ public extension UserDefaultPreferenceKeys {
     var hideCommonPrecedingSpacesInPromptToCode: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "HideCommonPrecedingSpacesInPromptToCode")
     }
+    
+    var wrapCodeInPromptToCode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "WrapCodeInPromptToCode")
+    }
 }
 
 // MARK: - Suggestion
