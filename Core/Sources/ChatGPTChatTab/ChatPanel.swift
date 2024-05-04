@@ -277,25 +277,25 @@ struct ChatHistory: View {
     var body: some View {
         WithViewStore(chat, observe: \.history) { viewStore in
             ForEach(viewStore.state, id: \.id) { message in
-                let text = message.text
+                ChatHistoryItem(chat: chat, message: message).id(message.id)
+            }
+        }
+    }
+}
 
-                switch message.role {
-                case .user:
-                    UserMessage(id: message.id, text: text, chat: chat)
-                        .listRowInsets(EdgeInsets(
-                            top: 0,
-                            leading: -8,
-                            bottom: 0,
-                            trailing: -8
-                        ))
-                        .padding(.vertical, 4)
-                case .assistant:
-                    BotMessage(
-                        id: message.id,
-                        text: text,
-                        references: message.references,
-                        chat: chat
-                    )
+struct ChatHistoryItem: View {
+    let chat: StoreOf<Chat>
+    let message: DisplayedChatMessage
+    @State var height: CGFloat = 0
+    @State var codeHighlightCacheController = CodeBlockHighlighterCacheController()
+
+    var body: some View {
+        let text = message.text
+
+        Group {
+            switch message.role {
+            case .user:
+                UserMessage(id: message.id, text: text, chat: chat)
                     .listRowInsets(EdgeInsets(
                         top: 0,
                         leading: -8,
@@ -303,13 +303,26 @@ struct ChatHistory: View {
                         trailing: -8
                     ))
                     .padding(.vertical, 4)
-                case .tool:
-                    FunctionMessage(id: message.id, text: text)
-                case .ignored:
-                    EmptyView()
-                }
+            case .assistant:
+                BotMessage(
+                    id: message.id,
+                    text: text,
+                    references: message.references,
+                    chat: chat
+                )
+                .listRowInsets(EdgeInsets(
+                    top: 0,
+                    leading: -8,
+                    bottom: 0,
+                    trailing: -8
+                ))
+                .padding(.vertical, 4)
+            case .tool:
+                FunctionMessage(id: message.id, text: text)
+            case .ignored:
+                EmptyView()
             }
-        }
+        }.environment(\.codeHighlightCacheController, codeHighlightCacheController)
     }
 }
 
@@ -560,29 +573,6 @@ struct ChatPanel_EmptyChat_Preview: PreviewProvider {
         .padding()
         .frame(width: 450, height: 600)
         .colorScheme(.dark)
-    }
-}
-
-struct ChatCodeSyntaxHighlighter: CodeSyntaxHighlighter {
-    let brightMode: Bool
-    let font: NSFont
-    let colorChange: Color?
-
-    init(brightMode: Bool, font: NSFont, colorChange: Color?) {
-        self.brightMode = brightMode
-        self.font = font
-        self.colorChange = colorChange
-    }
-
-    func highlightCode(_ content: String, language: String?) -> Text {
-        let content = highlightedCodeBlock(
-            code: content,
-            language: language ?? "",
-            scenario: "chat",
-            brightMode: brightMode,
-            font: font
-        )
-        return Text(AttributedString(content))
     }
 }
 

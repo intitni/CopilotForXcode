@@ -83,6 +83,7 @@ struct ThemedMarkdownText: View {
     @AppStorage(\.chatFontSize) var chatFontSize
     @AppStorage(\.chatCodeFont) var chatCodeFont
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.codeHighlightCacheController) var codeHighlightCacheController
 
     let text: String
 
@@ -125,7 +126,8 @@ struct ThemedMarkdownText: View {
                     font: chatCodeFont.value.nsFont,
                     colorChange: colorScheme == .dark
                         ? codeForegroundColorDark.value?.swiftUIColor
-                        : codeForegroundColorLight.value?.swiftUIColor
+                        : codeForegroundColorLight.value?.swiftUIColor,
+                    cacheController: codeHighlightCacheController
                 )
             )
     }
