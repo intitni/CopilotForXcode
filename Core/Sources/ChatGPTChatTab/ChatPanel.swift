@@ -286,30 +286,13 @@ struct ChatHistory: View {
 struct ChatHistoryItem: View {
     let chat: StoreOf<Chat>
     let message: DisplayedChatMessage
-    @State var height: CGFloat = 0
-    @State var codeHighlightCacheController = CodeBlockHighlighterCacheController()
 
     var body: some View {
         let text = message.text
 
-        Group {
-            switch message.role {
-            case .user:
-                UserMessage(id: message.id, text: text, chat: chat)
-                    .listRowInsets(EdgeInsets(
-                        top: 0,
-                        leading: -8,
-                        bottom: 0,
-                        trailing: -8
-                    ))
-                    .padding(.vertical, 4)
-            case .assistant:
-                BotMessage(
-                    id: message.id,
-                    text: text,
-                    references: message.references,
-                    chat: chat
-                )
+        switch message.role {
+        case .user:
+            UserMessage(id: message.id, text: text, chat: chat)
                 .listRowInsets(EdgeInsets(
                     top: 0,
                     leading: -8,
@@ -317,12 +300,25 @@ struct ChatHistoryItem: View {
                     trailing: -8
                 ))
                 .padding(.vertical, 4)
-            case .tool:
-                FunctionMessage(id: message.id, text: text)
-            case .ignored:
-                EmptyView()
-            }
-        }.environment(\.codeHighlightCacheController, codeHighlightCacheController)
+        case .assistant:
+            BotMessage(
+                id: message.id,
+                text: text,
+                references: message.references,
+                chat: chat
+            )
+            .listRowInsets(EdgeInsets(
+                top: 0,
+                leading: -8,
+                bottom: 0,
+                trailing: -8
+            ))
+            .padding(.vertical, 4)
+        case .tool:
+            FunctionMessage(id: message.id, text: text)
+        case .ignored:
+            EmptyView()
+        }
     }
 }
 

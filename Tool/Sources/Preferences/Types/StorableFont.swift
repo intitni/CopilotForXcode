@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-public struct StorableFont: Codable {
+public struct StorableFont: Codable, Equatable {
     public var nsFont: NSFont
 
     public init(nsFont: NSFont) {
