@@ -4,34 +4,36 @@
 
 ### Copilot for Xcode
 
-Copilot for Xcode is the host app containing both the XPCService and the editor extension.
+Copilot for Xcode is the host app containing both the XPCService and the editor extension. It provides the settings UI.
 
 ### EditorExtension
 
-As its name suggests, the editor extension. Its sole purpose is to forward editor content to the XPCService for processing, and update the editor with the returned content. Due to the sandboxing requirements for editor extensions, it has to communicate with a trusted, non-sandboxed XPCService to bypass the limitations. The XPCService identifier must be included in the `com.apple.security.temporary-exception.mach-lookup.global-name` entitlements.
+As its name suggests, the Xcode source editor extension. Its sole purpose is to forward editor content to the XPCService for processing, and update the editor with the returned content. Due to the sandboxing requirements for editor extensions, it has to communicate with a trusted, non-sandboxed XPCService (CommunicationBridge and ExtensionService) to bypass the limitations. The XPCService service name must be included in the `com.apple.security.temporary-exception.mach-lookup.global-name` entitlements.
 
 ### ExtensionService
 
-The `ExtensionService` is a program that operates in the background and performs a wide range of tasks. It redirects requests from the `EditorExtension` to the `CopilotService` and returns the updated code back to the extension, or presents it in a GUI outside of Xcode.
+The `ExtensionService` is a program that operates in the background. All features are implemented in this target. 
+
+### CommunicationBridge
+
+It's responsible for maintaining the communication between the Copilot for Xcode/EditorExtension and ExtensionService.
 
 ### Core and Tool
 
 Most of the logics are implemented inside the package `Core` and `Tool`.
 
-- The `Service` is responsible for handling the requests from the `EditorExtension`, communicating with the `CopilotService`, update the code blocks and present the GUI.
-- The `Client` is basically just a wrapper around the XPCService
-- The `SuggestionInjector` is responsible for injecting the suggestions into the code. Used in comment mode to present the suggestions, and all modes to accept suggestions.
-- The `SuggestionWidget` is responsible for the UI of the widgets.
+- The `Service` contains the implementations of the ExtensionService target.
+- The `HostApp` contains the implementations of the Copilot for Xcode target.
 
 ## Building and Archiving the App
 
-1. Update the xcconfig files, launchAgent.plist, and Tool/Configs/Configurations.swift.
+1. Update the xcconfig files, bridgeLaunchAgent.plist, and Tool/Configs/Configurations.swift.
 2. Build or archive the Copilot for Xcode target.
-3. If Xcode complains that the pro package doesn't exist, please remove the package from the project, and update the last function in Core/Package.swift to return false.
+3. If Xcode complains that the pro package doesn't exist, please remove the package from the project.
 
 ## Testing Source Editor Extension
 
-Just run both the `ExtensionService` and the `EditorExtension` Target. Read [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension) for more details.
+Just run both the `ExtensionService`, `CommunicationBridge` and the `EditorExtension` Target. Read [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension) for more details.
 
 ## SwiftUI Previews
 
