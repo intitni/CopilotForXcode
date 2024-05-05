@@ -25,10 +25,16 @@ public class XPCExtensionService {
     let logger: Logger
     let bridge: XPCCommunicationBridge
 
-    nonisolated
-    public init(logger: Logger) {
+    public nonisolated
+    init(logger: Logger) {
         self.logger = logger
         bridge = XPCCommunicationBridge(logger: logger)
+    }
+
+    /// Launches the extension service if it's not running, returns true if the service has finished
+    /// launching and the communication becomes available.
+    public func launchIfNeeded() async throws -> Bool {
+        try await bridge.launchExtensionServiceIfNeeded() != nil
     }
 
     public func getXPCServiceVersion() async throws -> (version: String, build: String) {

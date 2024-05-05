@@ -69,8 +69,8 @@ actor EventHandler {
             reply(endpoint)
         } else {
             endpoint = nil
-            reply(nil)
             await launcher.launch()
+            reply(nil)
         }
         #endif
     }

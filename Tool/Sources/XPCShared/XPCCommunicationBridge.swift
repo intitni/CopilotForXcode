@@ -39,6 +39,7 @@ public class XPCCommunicationBridge {
         service.delegate = delegate
     }
 
+    @discardableResult
     public func launchExtensionServiceIfNeeded() async throws -> NSXPCListenerEndpoint? {
         try await withXPCServiceConnected { service, continuation in
             service.launchExtensionServiceIfNeeded { endpoint in
