@@ -46,7 +46,7 @@ struct ChatSettingsView: View {
     var chatSettingsForm: some View {
         Form {
             Picker(
-                "Chat Model",
+                "Chat model",
                 selection: $settings.defaultChatFeatureChatModelId
             ) {
                 if !settings.chatModels
@@ -54,7 +54,7 @@ struct ChatSettingsView: View {
                 {
                     Text(
                         (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                            ?? "No Model Found"
+                            ?? "No model found"
                     )
                     .tag(settings.defaultChatFeatureChatModelId)
                 }
@@ -65,7 +65,7 @@ struct ChatSettingsView: View {
             }
 
             Picker(
-                "Embedding Model",
+                "Embedding model",
                 selection: $settings.defaultChatFeatureEmbeddingModelId
             ) {
                 if !settings.embeddingModels
@@ -73,7 +73,7 @@ struct ChatSettingsView: View {
                 {
                     Text(
                         (settings.embeddingModels.first?.name).map { "\($0) (Default)" }
-                            ?? "No Model Found"
+                            ?? "No model found"
                     )
                     .tag(settings.defaultChatFeatureEmbeddingModelId)
                 }
@@ -84,12 +84,12 @@ struct ChatSettingsView: View {
             }
 
             if #available(macOS 13.0, *) {
-                LabeledContent("Reply in Language") {
+                LabeledContent("Reply in language") {
                     languagePicker
                 }
             } else {
                 HStack {
-                    Text("Reply in Language")
+                    Text("Reply in language")
                     languagePicker
                 }
             }
@@ -126,7 +126,7 @@ struct ChatSettingsView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Default System Prompt")
+                Text("Default system prompt")
                 EditableText(text: $settings.defaultChatSystemPrompt)
                     .lineLimit(6)
             }
@@ -174,7 +174,7 @@ struct ChatSettingsView: View {
             }, set: {
                 settings.chatSearchPluginMaxIterations = Int($0) ?? 0
             })) {
-                Text("Search Plugin Max Iterations")
+                Text("Search plugin max iterations")
             }
             .textFieldStyle(.roundedBorder)
         }
@@ -192,7 +192,7 @@ struct ChatSettingsView: View {
                 )
             }
             Button(
-                "Auto-detected by ChatGPT",
+                "Auto-detected by LLM",
                 action: { self.settings.chatGPTLanguage = "" }
             )
             ForEach(
@@ -207,7 +207,7 @@ struct ChatSettingsView: View {
         } label: {
             Text(
                 settings.chatGPTLanguage.isEmpty
-                    ? "Auto-detected by ChatGPT"
+                    ? "Auto-detected by LLM"
                     : settings.chatGPTLanguage
             )
         }
@@ -307,7 +307,7 @@ struct ChatSettingsView: View {
                         }
 
                         Picker(
-                            "Preferred Chat Model",
+                            "Preferred chat model",
                             selection: $settings.preferredChatModelIdForSenseScope
                         ) {
                             Text("Use the default model").tag("")
@@ -320,7 +320,7 @@ struct ChatSettingsView: View {
                             {
                                 Text(
                                     (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                                        ?? "No Model Found"
+                                        ?? "No model found"
                                 )
                                 .tag(settings.preferredChatModelIdForSenseScope)
                             }
@@ -338,6 +338,8 @@ struct ChatSettingsView: View {
                         Text("""
                         Enable the bot to search code and texts \
                         in the project, third party packages and the SDK.
+                        
+                        The current implementation only performs keyword search.
                         """)
                     } else: {
                         VStack(alignment: .leading) {
@@ -349,6 +351,8 @@ struct ChatSettingsView: View {
                             WithFeatureEnabled(\.senseScopeInChat, alignment: .inlineLeading) {
                                 Text("the project, third party packages and the SDK.")
                             }
+                            
+                            Text("The current implementation only performs keyword search.")
                         }
                     }
                 ) {
@@ -358,7 +362,7 @@ struct ChatSettingsView: View {
                         }
 
                         Picker(
-                            "Preferred Chat Model",
+                            "Preferred chat model",
                             selection: $settings.preferredChatModelIdForProjectScope
                         ) {
                             Text("Use the default model").tag("")
@@ -395,7 +399,7 @@ struct ChatSettingsView: View {
                         }
 
                         Picker(
-                            "Preferred Chat Model",
+                            "Preferred chat model",
                             selection: $settings.preferredChatModelIdForWebScope
                         ) {
                             Text("Use the default model").tag("")
@@ -408,7 +412,7 @@ struct ChatSettingsView: View {
                             {
                                 Text(
                                     (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                                        ?? "No Model Found"
+                                        ?? "No model found"
                                 )
                                 .tag(settings.preferredChatModelIdForWebScope)
                             }

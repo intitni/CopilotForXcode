@@ -40,8 +40,12 @@ final class XPCController: XPCServiceDelegate {
                     try await Task.sleep(nanoseconds: 60_000_000_000)
                 } catch {
                     try await Task.sleep(nanoseconds: 1_000_000_000)
+                    #if DEBUG
+                    // No log, but you should run CommunicationBridge, too.
+                    #else
                     Logger.service
                         .error("Failed to connect to bridge: \(error.localizedDescription)")
+                    #endif
                 }
             }
         }

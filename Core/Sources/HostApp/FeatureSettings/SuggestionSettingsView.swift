@@ -106,9 +106,9 @@ struct SuggestionSettingsView: View {
                 ForEach(PresentationMode.allCases, id: \.rawValue) {
                     switch $0 {
                     case .nearbyTextCursor:
-                        Text("Nearby Text Cursor").tag($0)
+                        Text("Nearby text cursor").tag($0)
                     case .floatingWidget:
-                        Text("Floating Widget").tag($0)
+                        Text("Floating widget").tag($0)
                     }
                 }
             } label: {
@@ -157,7 +157,7 @@ struct SuggestionSettingsView: View {
                     if !settings.extensionSuggestionFeatureProviderOptions.contains(where: {
                         $0.bundleIdentifier == identifier
                     }) {
-                        Text("\(name) (Not Found)").tag(
+                        Text("\(name) (Not found)").tag(
                             SuggestionFeatureProviderOption(
                                 name: name,
                                 bundleIdentifier: identifier
@@ -166,17 +166,17 @@ struct SuggestionSettingsView: View {
                     }
                 }
             } label: {
-                Text("Feature Provider")
+                Text("Feature provider")
             }
 
             Toggle(isOn: $settings.realtimeSuggestionToggle) {
-                Text("Real-time Suggestion")
+                Text("Real-time suggestion")
             }
 
             #if canImport(ProHostApp)
             WithFeatureEnabled(\.suggestionSense) {
                 Toggle(isOn: $settings.isSuggestionSenseEnabled) {
-                    Text("Suggestion Cheatsheet (Experimental)")
+                    Text("Suggestion cheatsheet (experimental)")
                 }
             }
             #endif
@@ -184,21 +184,21 @@ struct SuggestionSettingsView: View {
             #if canImport(ProHostApp)
             WithFeatureEnabled(\.tabToAcceptSuggestion) {
                 Toggle(isOn: $settings.acceptSuggestionWithTab) {
-                    Text("Accept Suggestion with Tab")
+                    Text("Accept suggestion with Tab")
                 }
             }
 
             Toggle(isOn: $settings.dismissSuggestionWithEsc) {
-                Text("Dismiss Suggestion with ESC")
+                Text("Dismiss suggestion with ESC")
             }
             #endif
 
             HStack {
                 Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
-                    Text("Disable Suggestion Feature Globally")
+                    Text("Disable suggestion feature globally")
                 }
 
-                Button("Exception List") {
+                Button("Exception list") {
                     isSuggestionFeatureEnabledListPickerOpen = true
                 }
             }.sheet(isPresented: $isSuggestionFeatureEnabledListPickerOpen) {
@@ -208,7 +208,7 @@ struct SuggestionSettingsView: View {
             }
 
             HStack {
-                Button("Disabled Language List") {
+                Button("Disabled language list") {
                     isSuggestionFeatureDisabledLanguageListViewOpen = true
                 }
             }.sheet(isPresented: $isSuggestionFeatureDisabledLanguageListViewOpen) {
@@ -219,7 +219,7 @@ struct SuggestionSettingsView: View {
 
             HStack {
                 Slider(value: $settings.realtimeSuggestionDebounce, in: 0.1...2, step: 0.1) {
-                    Text("Real-time Suggestion Debounce")
+                    Text("Real-time suggestion debounce")
                 }
 
                 Text(
@@ -240,11 +240,11 @@ struct SuggestionSettingsView: View {
 
         Form {
             Toggle(isOn: $settings.suggestionDisplayCompactMode) {
-                Text("Hide Buttons")
+                Text("Hide buttons")
             }
 
             Toggle(isOn: $settings.hideCommonPrecedingSpacesInSuggestion) {
-                Text("Hide Common Preceding Spaces")
+                Text("Hide common preceding spaces")
             }
 
             #if canImport(ProHostApp)

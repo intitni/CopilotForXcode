@@ -20,7 +20,7 @@ struct PromptToCodeSettingsView: View {
         var promptToCodeChatModelId
         @AppStorage(\.promptToCodeEmbeddingModelId)
         var promptToCodeEmbeddingModelId
-
+        @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
         init() {}
@@ -32,10 +32,10 @@ struct PromptToCodeSettingsView: View {
         VStack(alignment: .center) {
             Form {
                 Picker(
-                    "Chat Model",
+                    "Chat model",
                     selection: $settings.promptToCodeChatModelId
                 ) {
-                    Text("Same as Chat Feature").tag("")
+                    Text("Same as chat feature").tag("")
 
                     if !settings.chatModels
                         .contains(where: { $0.id == settings.promptToCodeChatModelId }),
@@ -43,7 +43,7 @@ struct PromptToCodeSettingsView: View {
                     {
                         Text(
                             (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                                ?? "No Model Found"
+                                ?? "No model found"
                         )
                         .tag(settings.promptToCodeChatModelId)
                     }
@@ -54,10 +54,10 @@ struct PromptToCodeSettingsView: View {
                 }
 
                 Picker(
-                    "Embedding Model",
+                    "Embedding model",
                     selection: $settings.promptToCodeEmbeddingModelId
                 ) {
-                    Text("Same as Chat Feature").tag("")
+                    Text("Same as chat feature").tag("")
 
                     if !settings.embeddingModels
                         .contains(where: { $0.id == settings.promptToCodeEmbeddingModelId }),
@@ -65,7 +65,7 @@ struct PromptToCodeSettingsView: View {
                     {
                         Text(
                             (settings.embeddingModels.first?.name).map { "\($0) (Default)" }
-                                ?? "No Model Found"
+                                ?? "No model found"
                         )
                         .tag(settings.promptToCodeEmbeddingModelId)
                     }
@@ -76,11 +76,11 @@ struct PromptToCodeSettingsView: View {
                 }
 
                 Toggle(isOn: $settings.promptToCodeGenerateDescription) {
-                    Text("Generate Description")
+                    Text("Generate description")
                 }
 
                 Toggle(isOn: $settings.promptToCodeGenerateDescriptionInUserPreferredLanguage) {
-                    Text("Generate Description in user preferred language")
+                    Text("Generate description in user preferred language")
                 }
             }
 
@@ -88,7 +88,11 @@ struct PromptToCodeSettingsView: View {
 
             Form {
                 Toggle(isOn: $settings.hideCommonPrecedingSpaces) {
-                    Text("Hide Common Preceding Spaces")
+                    Text("Hide common preceding spaces")
+                }
+                
+                Toggle(isOn: $settings.wrapCode) {
+                    Text("Wrap code")
                 }
 
                 #if canImport(ProHostApp)

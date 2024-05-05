@@ -302,6 +302,10 @@ public extension UserDefaultPreferenceKeys {
     var hideCommonPrecedingSpacesInPromptToCode: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "HideCommonPrecedingSpacesInPromptToCode")
     }
+    
+    var wrapCodeInPromptToCode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "WrapCodeInPromptToCode")
+    }
 }
 
 // MARK: - Suggestion
@@ -599,7 +603,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var useCustomScrollViewWorkaround: FeatureFlag {
-        .init(defaultValue: true, key: "FeatureFlag-UseCustomScrollViewWorkaround")
+        .init(defaultValue: false, key: "FeatureFlag-UseCustomScrollViewWorkaround")
     }
 
     var triggerActionWithAccessibilityAPI: FeatureFlag {

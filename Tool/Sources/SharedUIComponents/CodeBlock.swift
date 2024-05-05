@@ -13,6 +13,7 @@ public struct CodeBlock: View {
     public let font: NSFont
     public let droppingLeadingSpaces: Bool
     public let proposedForegroundColor: Color?
+    public let wrapCode: Bool
 
     public init(
         code: String,
@@ -23,7 +24,8 @@ public struct CodeBlock: View {
         firstLinePrecedingSpaceCount: Int = 0,
         font: NSFont,
         droppingLeadingSpaces: Bool,
-        proposedForegroundColor: Color?
+        proposedForegroundColor: Color?,
+        wrapCode: Bool = true
     ) {
         self.code = code
         self.language = language
@@ -34,6 +36,7 @@ public struct CodeBlock: View {
         self.firstLinePrecedingSpaceCount = firstLinePrecedingSpaceCount
         self.font = font
         self.proposedForegroundColor = proposedForegroundColor
+        self.wrapCode = wrapCode
         let padding = firstLinePrecedingSpaceCount > 0
             ? String(repeating: " ", count: firstLinePrecedingSpaceCount)
             : ""
