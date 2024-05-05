@@ -126,3 +126,21 @@ func withXPCServiceConnected<T, P>(
     return try await stream.first(where: { _ in true })!
 }
 
+@XPCServiceActor
+public func testXPCListenerEndpoint(_ endpoint: NSXPCListenerEndpoint) async -> Bool {
+    let connection = NSXPCConnection(listenerEndpoint: endpoint)
+    defer { connection.invalidate() }
+    let stream: AsyncThrowingStream<Void, Error> = AsyncThrowingStream { continuation in
+        _ = connection.remoteObjectProxyWithErrorHandler {
+            continuation.finish(throwing: $0)
+        }
+        continuation.yield(())
+        continuation.finish()
+    }
+    do {
+        try await stream.first(where: { _ in true })!
+        return true
+    } catch {
+        return false
+    }
+}

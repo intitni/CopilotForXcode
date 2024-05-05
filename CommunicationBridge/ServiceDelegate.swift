@@ -63,6 +63,9 @@ actor EventHandler {
     ) async {
         rescheduleExitTask()
         #if DEBUG
+        if let endpoint, !(await testXPCListenerEndpoint(endpoint)) {
+            self.endpoint = nil
+        }
         reply(endpoint)
         #else
         if await launcher.isApplicationValid {

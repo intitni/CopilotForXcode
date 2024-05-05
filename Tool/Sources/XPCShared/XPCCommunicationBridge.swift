@@ -8,7 +8,7 @@ public enum XPCCommunicationBridgeError: Swift.Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .failedToCreateXPCConnection:
-            return "Failed to create XPC connection"
+            return "Failed to create XPC connection."
         case let .xpcServiceError(error):
             return "XPC Service error: \(error.localizedDescription)"
         }
