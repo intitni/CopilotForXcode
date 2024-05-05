@@ -30,7 +30,7 @@ struct General: ReducerProtocol {
                 return .run { send in
                     await send(.setupLaunchAgentIfNeeded)
                 }
-                
+
             case .setupLaunchAgentIfNeeded:
                 return .run { send in
                     #if DEBUG
@@ -47,7 +47,7 @@ struct General: ReducerProtocol {
                     #endif
                     await send(.reloadStatus)
                 }
-                
+
             case .openExtensionManager:
                 return .run { send in
                     let service = try getService()
@@ -65,13 +65,26 @@ struct General: ReducerProtocol {
                 return .run { send in
                     let service = try getService()
                     do {
-                        let xpcServiceVersion = try await service.getXPCServiceVersion().version
-                        let isAccessibilityPermissionGranted = try await service
-                            .getXPCServiceAccessibilityPermission()
-                        await send(.finishReloading(
-                            xpcServiceVersion: xpcServiceVersion,
-                            permissionGranted: isAccessibilityPermissionGranted
-                        ))
+                        let isCommunicationReady = try await service.launchIfNeeded()
+                        if isCommunicationReady {
+                            let xpcServiceVersion = try await service.getXPCServiceVersion().version
+                            let isAccessibilityPermissionGranted = try await service
+                                .getXPCServiceAccessibilityPermission()
+                            await send(.finishReloading(
+                                xpcServiceVersion: xpcServiceVersion,
+                                permissionGranted: isAccessibilityPermissionGranted
+                            ))
+                        } else {
+                            toast("Launching service app.", .info)
+                            try await Task.sleep(nanoseconds: 5_000_000_000)
+                            await send(.reloadStatus)
+                        }
+                    } catch let error as XPCCommunicationBridgeError {
+                        toast(
+                            "Failed to reach communication bridge. \(error.localizedDescription)",
+                            .error
+                        )
+                        await send(.failedReloading)
                     } catch {
                         toast(error.localizedDescription, .error)
                         await send(.failedReloading)
