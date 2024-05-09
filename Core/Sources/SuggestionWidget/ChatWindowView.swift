@@ -79,7 +79,7 @@ struct ChatTitleBar: View {
 
             Spacer()
 
-            WithViewStore(store, observe: { $0.chatPanelInASeparateWindow }) { viewStore in
+            WithViewStore(store, observe: { $0.isDetached }) { viewStore in
                 TrafficLightButton(
                     isHovering: isHovering,
                     isActive: viewStore.state,
