@@ -519,20 +519,17 @@ extension WidgetWindowsController {
         } else {
             guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }
             let windowElements = xcode.appElement.windows
-            let windowRects = windowElements.compactMap {
+            let overlap = windowElements.contains {
                 if let position = $0.position, let size = $0.size {
-                    return CGRect(
+                    let rect = CGRect(
                         x: position.x,
                         y: position.y,
                         width: size.width,
                         height: size.height
                     )
+                    return rect.intersects(window.frame)
                 }
-                return nil
-            }
-
-            let overlap = windowRects.contains {
-                $0.intersects(window.frame)
+                return false
             }
 
             window.setFloatOnTop(overlap)
