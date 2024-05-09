@@ -636,7 +636,7 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var chatPanelWindow = {
-        let it = ChatWindow(
+        let it = ChatPanelWindow(
             contentRect: .zero,
             styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
@@ -738,34 +738,5 @@ class CanBecomeKeyWindow: NSWindow {
     var canBecomeKeyChecker: () -> Bool = { true }
     override var canBecomeKey: Bool { canBecomeKeyChecker() }
     override var canBecomeMain: Bool { canBecomeKeyChecker() }
-}
-
-class ChatWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-
-    var minimizeWindow: () -> Void = {}
-
-    var isWindowHidden: Bool = false {
-        didSet {
-            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
-        }
-    }
-
-    var isPanelDisplayed: Bool = false {
-        didSet {
-            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
-        }
-    }
-
-    override var alphaValue: CGFloat {
-        didSet {
-            ignoresMouseEvents = alphaValue <= 0
-        }
-    }
-
-    override func miniaturize(_: Any?) {
-        minimizeWindow()
-    }
 }
 
