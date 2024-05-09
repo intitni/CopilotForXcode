@@ -462,6 +462,8 @@ extension WidgetWindowsController {
                     animate: animated
                 )
             }
+            
+            await adjustChatPanelWindowLevel()
         }
 
         let now = Date()
@@ -489,6 +491,53 @@ extension WidgetWindowsController {
         }
         lastUpdateWindowLocationTime = Date()
     }
+
+    @MainActor
+    func adjustChatPanelWindowLevel() async {
+        let disableFloatOnTopWhenTheChatPanelIsDetached = UserDefaults.shared
+            .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
+
+        let window = windows.chatPanelWindow
+        guard disableFloatOnTopWhenTheChatPanelIsDetached else {
+            window.setFloatOnTop(true)
+            return
+        }
+
+        let state = store.withState { $0 }
+        let isChatPanelDetached = state.chatPanelState.isDetached
+
+        guard isChatPanelDetached else {
+            window.setFloatOnTop(true)
+            return
+        }
+
+        let floatOnTopWhenOverlapsXcode = UserDefaults.shared
+            .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
+
+        if !floatOnTopWhenOverlapsXcode {
+            window.setFloatOnTop(false)
+        } else {
+            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }
+            let windowElements = xcode.appElement.windows
+            let windowRects = windowElements.compactMap {
+                if let position = $0.position, let size = $0.size {
+                    return CGRect(
+                        x: position.x,
+                        y: position.y,
+                        width: size.width,
+                        height: size.height
+                    )
+                }
+                return nil
+            }
+
+            let overlap = windowRects.contains {
+                $0.intersects(window.frame)
+            }
+
+            window.setFloatOnTop(overlap)
+        }
+    }
 }
 
 // MARK: - NSWindowDelegate
@@ -501,6 +550,16 @@ extension WidgetWindowsController: NSWindowDelegate {
             guard window === windows.chatPanelWindow else { return }
             await Task.yield()
             store.send(.chatPanel(.detachChatPanel))
+        }
+    }
+
+    nonisolated
+    func windowDidMove(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
+            await Task.yield()
+            await adjustChatPanelWindowLevel()
         }
     }
 
