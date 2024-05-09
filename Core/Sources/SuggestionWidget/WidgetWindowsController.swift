@@ -638,53 +638,15 @@ public final class WidgetWindows {
     @MainActor
     lazy var chatPanelWindow = {
         let it = ChatPanelWindow(
-            contentRect: .zero,
-            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        it.minimizeWindow = { [weak self] in
-            self?.store.send(.chatPanel(.hideButtonClicked))
-        }
-        it.titleVisibility = .hidden
-        it.addTitlebarAccessoryViewController({
-            let controller = NSTitlebarAccessoryViewController()
-            let view = NSHostingView(rootView: ChatTitleBar(store: store.scope(
+            store: store.scope(
                 state: \.chatPanelState,
                 action: WidgetFeature.Action.chatPanel
-            )))
-            controller.view = view
-            view.frame = .init(x: 0, y: 0, width: 100, height: 40)
-            controller.layoutAttribute = .right
-            return controller
-        }())
-        it.titlebarAppearsTransparent = true
-        it.isReleasedWhenClosed = false
-        it.isOpaque = false
-        it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-        ]
-        it.hasShadow = true
-        it.contentView = NSHostingView(
-            rootView: ChatWindowView(
-                store: store.scope(
-                    state: \.chatPanelState,
-                    action: WidgetFeature.Action.chatPanel
-                ),
-                toggleVisibility: { [weak it] isDisplayed in
-                    guard let window = it else { return }
-                    window.isPanelDisplayed = isDisplayed
-                }
-            )
-            .environment(\.chatTabPool, chatTabPool)
+            ),
+            chatTabPool: chatTabPool,
+            minimizeWindow: { [weak self] in
+                self?.store.send(.chatPanel(.hideButtonClicked))
+            }
         )
-        it.setIsVisible(true)
-        it.isPanelDisplayed = false
         it.delegate = controller
         return it
     }()

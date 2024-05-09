@@ -469,6 +469,14 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForWebScope: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForWebScope")
     }
+    
+    var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")
+    }
+    
+    var keepFloatOnTopIfChatPanelAndXcodeOverlaps: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
+    }
 }
 
 // MARK: - Theme
