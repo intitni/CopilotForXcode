@@ -22,6 +22,8 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
         @AppStorage(\.wrapCodeInChatCodeBlock) var wrapCodeInCodeBlock
+        @AppStorage(\.keepFloatOnTopIfChatPanelAndXcodeOverlaps) var keepFloatOnTopIfChatPanelAndXcodeOverlaps
+        @AppStorage(\.disableFloatOnTopWhenTheChatPanelIsDetached) var disableFloatOnTopWhenTheChatPanelIsDetached
 
         init() {}
     }
@@ -156,6 +158,14 @@ struct ChatSettingsView: View {
 
             Toggle(isOn: $settings.wrapCodeInCodeBlock) {
                 Text("Wrap code in code block")
+            }
+            
+            Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
+                Text("Disable float on top when the chat panel is detached")
+            }
+            
+            Toggle(isOn: $settings.keepFloatOnTopIfChatPanelAndXcodeOverlaps) {
+                Text("But, keep float on top if chat panel and Xcode overlaps")
             }
 
             #if canImport(ProHostApp)
