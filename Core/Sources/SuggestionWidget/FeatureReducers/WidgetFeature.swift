@@ -65,7 +65,7 @@ public struct WidgetFeature: ReducerProtocol {
                     }(),
                     isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
                         && panelState.sharedPanelState.isEmpty,
-                    isChatPanelDetached: chatPanelState.chatPanelInASeparateWindow,
+                    isChatPanelDetached: chatPanelState.isDetached,
                     isChatOpen: chatPanelState.isPanelDisplayed
                 )
             }
@@ -191,7 +191,7 @@ public struct WidgetFeature: ReducerProtocol {
         Reduce { state, action in
             switch action {
             case .chatPanel(.presentChatPanel):
-                let isDetached = state.chatPanelState.chatPanelInASeparateWindow
+                let isDetached = state.chatPanelState.isDetached
                 return .run { _ in
                     await windowsController?.updateWindowLocation(
                         animated: false,
@@ -206,7 +206,7 @@ public struct WidgetFeature: ReducerProtocol {
                 }
 
             case .chatPanel(.toggleChatPanelDetachedButtonClicked):
-                let isDetached = state.chatPanelState.chatPanelInASeparateWindow
+                let isDetached = state.chatPanelState.isDetached
                 return .run { _ in
                     await windowsController?.updateWindowLocation(
                         animated: !isDetached,

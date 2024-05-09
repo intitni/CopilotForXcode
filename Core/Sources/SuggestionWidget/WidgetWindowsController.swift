@@ -96,7 +96,7 @@ actor WidgetWindowsController: NSObject {
             let previousActiveApplication = xcodeInspector.previousActiveApplication
             await MainActor.run {
                 let state = store.withState { $0 }
-                let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
+                let isChatPanelDetached = state.chatPanelState.isDetached
                 let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
 
                 if let activeApp, activeApp.isXcode {
@@ -166,7 +166,7 @@ actor WidgetWindowsController: NSObject {
         @Sendable @MainActor
         func update() async {
             let state = store.withState { $0 }
-            let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
+            let isChatPanelDetached = state.chatPanelState.isDetached
             guard let widgetLocation = await generateWidgetLocation() else { return }
             await updatePanelState(widgetLocation)
 
@@ -295,14 +295,15 @@ private extension WidgetWindowsController {
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
                     let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
-                    let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
+                    let documentURL = await MainActor
+                        .run { store.withState { $0.focusingDocumentURL } }
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
                     }
                     await send(.updateFocusingDocumentURL)
                 }
-                
+
                 func removeContent() async {
                     await send(.panel(.removeDisplayedContent))
                 }
