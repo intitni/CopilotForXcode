@@ -67,11 +67,9 @@ final class ChatPanelWindow: NSWindow {
             .sink { [weak self] isDetached in
                 guard let self else { return }
                 if UserDefaults.shared.value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached) {
-                    self.level = isDetached
-                        ? .init(NSWindow.Level.floating.rawValue)
-                        : .init(NSWindow.Level.mainMenu.rawValue + 1)
+                    self.setFloatOnTop(!isDetached)
                 } else {
-                    self.level = .init(NSWindow.Level.mainMenu.rawValue + 1)
+                    self.setFloatOnTop(true)
                 }
             }.store(in: &cancellable)
     }
