@@ -74,6 +74,265 @@ actor WidgetWindowsController: NSObject {
             }
         }
     }
+}
+
+// MARK: - Observation
+
+private extension WidgetWindowsController {
+    func activate(_ app: AppInstanceInspector) {
+        Task {
+            if app.isXcode {
+                updateWindowLocation(animated: false, immediately: true)
+                updateWindowOpacity(immediately: false)
+            } else {
+                updateWindowOpacity(immediately: true)
+                updateWindowLocation(animated: false, immediately: false)
+                await hideSuggestionPanelWindow()
+            }
+        }
+        guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
+        currentApplicationProcessIdentifier = app.processIdentifier
+        observe(toApp: app)
+    }
+
+    func observe(toApp app: AppInstanceInspector) {
+        guard let app = app as? XcodeAppInstanceInspector else { return }
+        let notifications = app.axNotifications
+        observeToAppTask?.cancel()
+        observeToAppTask = Task {
+            await windows.orderFront()
+
+            for await notification in await notifications.notifications() {
+                try Task.checkCancellation()
+
+                /// Hide the widgets before switching to another window/editor
+                /// so the transition looks better.
+                func hideWidgetForTransitions() async {
+                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                    let documentURL = await MainActor
+                        .run { store.withState { $0.focusingDocumentURL } }
+                    if documentURL != newDocumentURL {
+                        await send(.panel(.removeDisplayedContent))
+                        await hidePanelWindows()
+                    }
+                    await send(.updateFocusingDocumentURL)
+                }
+
+                func removeContent() async {
+                    await send(.panel(.removeDisplayedContent))
+                }
+
+                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
+                    await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
+                }
+
+                func updateWidgets(immediately: Bool) async {
+                    updateWindowLocation(animated: false, immediately: immediately)
+                    updateWindowOpacity(immediately: immediately)
+                }
+
+                switch notification.kind {
+                case .focusedWindowChanged, .focusedUIElementChanged:
+                    await hideWidgetForTransitions()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+                case .applicationActivated:
+                    await removeContent()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .mainWindowChanged:
+                    await removeContent()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
+                case .moved,
+                     .resized,
+                     .windowMoved,
+                     .windowResized,
+                     .windowMiniaturized,
+                     .windowDeminiaturized:
+                    await updateWidgets(immediately: false)
+                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
+                     .applicationDeactivated:
+                    continue
+                case .titleChanged:
+                    continue
+                }
+            }
+        }
+    }
+
+    func observe(toEditor editor: SourceEditor) {
+        observeToFocusedEditorTask?.cancel()
+        observeToFocusedEditorTask = Task {
+            let selectionRangeChange = await editor.axNotifications.notifications()
+                .filter { $0.kind == .selectedTextChanged }
+            let scroll = await editor.axNotifications.notifications()
+                .filter { $0.kind == .scrollPositionChanged }
+
+            if #available(macOS 13.0, *) {
+                for await notification in merge(
+                    selectionRangeChange.debounce(for: Duration.milliseconds(500)),
+                    scroll
+                ) {
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
+                    try Task.checkCancellation()
+
+                    // for better looking
+                    if notification.kind == .scrollPositionChanged {
+                        await hideSuggestionPanelWindow()
+                    }
+
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
+                }
+            } else {
+                for await notification in merge(selectionRangeChange, scroll) {
+                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
+                    try Task.checkCancellation()
+
+                    // for better looking
+                    if notification.kind == .scrollPositionChanged {
+                        await hideSuggestionPanelWindow()
+                    }
+
+                    updateWindowLocation(animated: false, immediately: false)
+                    updateWindowOpacity(immediately: false)
+                }
+            }
+        }
+    }
+
+    func handleCompletionPanelChange(isDisplaying: Bool) {
+        beatingCompletionPanelTask?.cancel()
+        beatingCompletionPanelTask = Task {
+            if !isDisplaying {
+                // so that the buttons on the suggestion panel could be
+                // clicked
+                // before the completion panel updates the location of the
+                // suggestion panel
+                try await Task.sleep(nanoseconds: 400_000_000)
+            }
+
+            updateWindowLocation(animated: false, immediately: false)
+            updateWindowOpacity(immediately: false)
+        }
+    }
+}
+
+// MARK: - Window Updating
+
+extension WidgetWindowsController {
+    @MainActor
+    func hidePanelWindows() {
+        windows.sharedPanelWindow.alphaValue = 0
+        windows.suggestionPanelWindow.alphaValue = 0
+    }
+
+    @MainActor
+    func hideSuggestionPanelWindow() {
+        windows.suggestionPanelWindow.alphaValue = 0
+    }
+
+    func generateWidgetLocation() -> WidgetLocation? {
+        if let application = xcodeInspector.latestActiveXcode?.appElement {
+            if let focusElement = xcodeInspector.focusedEditor?.element,
+               let parent = focusElement.parent,
+               let frame = parent.rect,
+               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+               let firstScreen = NSScreen.main
+            {
+                let positionMode = UserDefaults.shared
+                    .value(for: \.suggestionWidgetPositionMode)
+                let suggestionMode = UserDefaults.shared
+                    .value(for: \.suggestionPresentationMode)
+
+                switch positionMode {
+                case .fixedToBottom:
+                    var result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen
+                    )
+                    switch suggestionMode {
+                    case .nearbyTextCursor:
+                        result.suggestionPanelLocation = UpdateLocationStrategy
+                            .NearbyTextCursor()
+                            .framesForSuggestionWindow(
+                                editorFrame: frame, mainScreen: screen,
+                                activeScreen: firstScreen,
+                                editor: focusElement,
+                                completionPanel: xcodeInspector.completionPanel
+                            )
+                    default:
+                        break
+                    }
+                    return result
+                case .alignToTextCursor:
+                    var result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                        editorFrame: frame,
+                        mainScreen: screen,
+                        activeScreen: firstScreen,
+                        editor: focusElement
+                    )
+                    switch suggestionMode {
+                    case .nearbyTextCursor:
+                        result.suggestionPanelLocation = UpdateLocationStrategy
+                            .NearbyTextCursor()
+                            .framesForSuggestionWindow(
+                                editorFrame: frame, mainScreen: screen,
+                                activeScreen: firstScreen,
+                                editor: focusElement,
+                                completionPanel: xcodeInspector.completionPanel
+                            )
+                    default:
+                        break
+                    }
+                    return result
+                }
+            } else if var window = application.focusedWindow,
+                      var frame = application.focusedWindow?.rect,
+                      !["menu bar", "menu bar item"].contains(window.description),
+                      frame.size.height > 300,
+                      let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
+                      let firstScreen = NSScreen.main
+            {
+                if ["open_quickly"].contains(window.identifier)
+                    || ["alert"].contains(window.label)
+                {
+                    // fallback to use workspace window
+                    guard let workspaceWindow = application.windows
+                        .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
+                        let rect = workspaceWindow.rect
+                    else {
+                        return WidgetLocation(
+                            widgetFrame: .zero,
+                            tabFrame: .zero,
+                            defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
+                        )
+                    }
+
+                    window = workspaceWindow
+                    frame = rect
+                }
+
+                if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
+                    // extra padding to bottom so buttons won't be covered
+                    frame.size.height -= 40
+                } else {
+                    // move a bit away from the window so buttons won't be covered
+                    frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
+                    frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                }
+
+                return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                    editorFrame: frame,
+                    mainScreen: screen,
+                    activeScreen: firstScreen,
+                    preferredInsideEditorMinWidth: 9_999_999_999 // never
+                )
+            }
+        }
+        return nil
+    }
 
     func updatePanelState(_ location: WidgetLocation) async {
         await send(.updatePanelStateToMatch(location))
@@ -232,6 +491,8 @@ actor WidgetWindowsController: NSObject {
     }
 }
 
+// MARK: - NSWindowDelegate
+
 extension WidgetWindowsController: NSWindowDelegate {
     nonisolated
     func windowWillMove(_ notification: Notification) {
@@ -264,260 +525,7 @@ extension WidgetWindowsController: NSWindowDelegate {
     }
 }
 
-private extension WidgetWindowsController {
-    func activate(_ app: AppInstanceInspector) {
-        Task {
-            if app.isXcode {
-                updateWindowLocation(animated: false, immediately: true)
-                updateWindowOpacity(immediately: false)
-            } else {
-                updateWindowOpacity(immediately: true)
-                updateWindowLocation(animated: false, immediately: false)
-                await hideSuggestionPanelWindow()
-            }
-        }
-        guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
-        currentApplicationProcessIdentifier = app.processIdentifier
-        observe(toApp: app)
-    }
-
-    func observe(toApp app: AppInstanceInspector) {
-        guard let app = app as? XcodeAppInstanceInspector else { return }
-        let notifications = app.axNotifications
-        observeToAppTask?.cancel()
-        observeToAppTask = Task {
-            await windows.orderFront()
-
-            for await notification in await notifications.notifications() {
-                try Task.checkCancellation()
-
-                /// Hide the widgets before switching to another window/editor
-                /// so the transition looks better.
-                func hideWidgetForTransitions() async {
-                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
-                    let documentURL = await MainActor
-                        .run { store.withState { $0.focusingDocumentURL } }
-                    if documentURL != newDocumentURL {
-                        await send(.panel(.removeDisplayedContent))
-                        await hidePanelWindows()
-                    }
-                    await send(.updateFocusingDocumentURL)
-                }
-
-                func removeContent() async {
-                    await send(.panel(.removeDisplayedContent))
-                }
-
-                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
-                    await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
-
-                func updateWidgets(immediately: Bool) async {
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
-
-                switch notification.kind {
-                case .focusedWindowChanged, .focusedUIElementChanged:
-                    await hideWidgetForTransitions()
-                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
-                case .applicationActivated:
-                    await removeContent()
-                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
-                case .mainWindowChanged:
-                    await removeContent()
-                    await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
-                case .moved,
-                     .resized,
-                     .windowMoved,
-                     .windowResized,
-                     .windowMiniaturized,
-                     .windowDeminiaturized:
-                    await updateWidgets(immediately: false)
-                case .created, .uiElementDestroyed, .xcodeCompletionPanelChanged,
-                     .applicationDeactivated:
-                    continue
-                case .titleChanged:
-                    continue
-                }
-            }
-        }
-    }
-
-    func observe(toEditor editor: SourceEditor) {
-        observeToFocusedEditorTask?.cancel()
-        observeToFocusedEditorTask = Task {
-            let selectionRangeChange = await editor.axNotifications.notifications()
-                .filter { $0.kind == .selectedTextChanged }
-            let scroll = await editor.axNotifications.notifications()
-                .filter { $0.kind == .scrollPositionChanged }
-
-            if #available(macOS 13.0, *) {
-                for await notification in merge(
-                    selectionRangeChange.debounce(for: Duration.milliseconds(500)),
-                    scroll
-                ) {
-                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
-                    try Task.checkCancellation()
-
-                    // for better looking
-                    if notification.kind == .scrollPositionChanged {
-                        await hideSuggestionPanelWindow()
-                    }
-
-                    updateWindowLocation(animated: false, immediately: false)
-                    updateWindowOpacity(immediately: false)
-                }
-            } else {
-                for await notification in merge(selectionRangeChange, scroll) {
-                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
-                    try Task.checkCancellation()
-
-                    // for better looking
-                    if notification.kind == .scrollPositionChanged {
-                        await hideSuggestionPanelWindow()
-                    }
-
-                    updateWindowLocation(animated: false, immediately: false)
-                    updateWindowOpacity(immediately: false)
-                }
-            }
-        }
-    }
-
-    func handleCompletionPanelChange(isDisplaying: Bool) {
-        beatingCompletionPanelTask?.cancel()
-        beatingCompletionPanelTask = Task {
-            if !isDisplaying {
-                // so that the buttons on the suggestion panel could be
-                // clicked
-                // before the completion panel updates the location of the
-                // suggestion panel
-                try await Task.sleep(nanoseconds: 400_000_000)
-            }
-
-            updateWindowLocation(animated: false, immediately: false)
-            updateWindowOpacity(immediately: false)
-        }
-    }
-}
-
-extension WidgetWindowsController {
-    @MainActor
-    func hidePanelWindows() {
-        windows.sharedPanelWindow.alphaValue = 0
-        windows.suggestionPanelWindow.alphaValue = 0
-    }
-
-    @MainActor
-    func hideSuggestionPanelWindow() {
-        windows.suggestionPanelWindow.alphaValue = 0
-    }
-
-    func generateWidgetLocation() -> WidgetLocation? {
-        if let application = xcodeInspector.latestActiveXcode?.appElement {
-            if let focusElement = xcodeInspector.focusedEditor?.element,
-               let parent = focusElement.parent,
-               let frame = parent.rect,
-               let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-               let firstScreen = NSScreen.main
-            {
-                let positionMode = UserDefaults.shared
-                    .value(for: \.suggestionWidgetPositionMode)
-                let suggestionMode = UserDefaults.shared
-                    .value(for: \.suggestionPresentationMode)
-
-                switch positionMode {
-                case .fixedToBottom:
-                    var result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen
-                    )
-                    switch suggestionMode {
-                    case .nearbyTextCursor:
-                        result.suggestionPanelLocation = UpdateLocationStrategy
-                            .NearbyTextCursor()
-                            .framesForSuggestionWindow(
-                                editorFrame: frame, mainScreen: screen,
-                                activeScreen: firstScreen,
-                                editor: focusElement,
-                                completionPanel: xcodeInspector.completionPanel
-                            )
-                    default:
-                        break
-                    }
-                    return result
-                case .alignToTextCursor:
-                    var result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
-                        editorFrame: frame,
-                        mainScreen: screen,
-                        activeScreen: firstScreen,
-                        editor: focusElement
-                    )
-                    switch suggestionMode {
-                    case .nearbyTextCursor:
-                        result.suggestionPanelLocation = UpdateLocationStrategy
-                            .NearbyTextCursor()
-                            .framesForSuggestionWindow(
-                                editorFrame: frame, mainScreen: screen,
-                                activeScreen: firstScreen,
-                                editor: focusElement,
-                                completionPanel: xcodeInspector.completionPanel
-                            )
-                    default:
-                        break
-                    }
-                    return result
-                }
-            } else if var window = application.focusedWindow,
-                      var frame = application.focusedWindow?.rect,
-                      !["menu bar", "menu bar item"].contains(window.description),
-                      frame.size.height > 300,
-                      let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-                      let firstScreen = NSScreen.main
-            {
-                if ["open_quickly"].contains(window.identifier)
-                    || ["alert"].contains(window.label)
-                {
-                    // fallback to use workspace window
-                    guard let workspaceWindow = application.windows
-                        .first(where: { $0.identifier == "Xcode.WorkspaceWindow" }),
-                        let rect = workspaceWindow.rect
-                    else {
-                        return WidgetLocation(
-                            widgetFrame: .zero,
-                            tabFrame: .zero,
-                            defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
-                        )
-                    }
-
-                    window = workspaceWindow
-                    frame = rect
-                }
-
-                if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
-                    // extra padding to bottom so buttons won't be covered
-                    frame.size.height -= 40
-                } else {
-                    // move a bit away from the window so buttons won't be covered
-                    frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
-                    frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
-                }
-
-                return UpdateLocationStrategy.FixedToBottom().framesForWindows(
-                    editorFrame: frame,
-                    mainScreen: screen,
-                    activeScreen: firstScreen,
-                    preferredInsideEditorMinWidth: 9_999_999_999 // never
-                )
-            }
-        }
-        return nil
-    }
-}
+// MARK: - Windows
 
 public final class WidgetWindows {
     let store: StoreOf<WidgetFeature>
