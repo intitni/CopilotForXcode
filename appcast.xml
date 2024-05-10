@@ -5,6 +5,19 @@
 
     <item>
       <title>0.33.0</title>
+      <pubDate>Fri, 10 May 2024 14:54:26 +0800</pubDate>
+      <sparkle:version>372</sparkle:version>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:shortVersionString>0.33.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>
+        https://github.com/intitni/CopilotForXcode/releases/tag/0.33.0.beta
+      </sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.0.beta/Copilot.for.Xcode.app.0.33.0.beta.2.zip" length="46036300" type="application/octet-stream" sparkle:edSignature="//IshibYVpqAqX8udM5fvL183nuB9qIokYp9XivXUsZElvZ7W2b2va7y8A8j38adfux9qAWo0lmFAsUtTW1BDA=="/>
+    </item>
+
+    <item>
+      <title>0.33.0</title>
       <pubDate>Sat, 04 May 2024 22:27:13 +0800</pubDate>
       <sparkle:version>370</sparkle:version>
       <sparkle:channel>beta</sparkle:channel>
