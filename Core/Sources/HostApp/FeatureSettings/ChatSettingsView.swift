@@ -22,8 +22,12 @@ struct ChatSettingsView: View {
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
         @AppStorage(\.wrapCodeInChatCodeBlock) var wrapCodeInCodeBlock
-        @AppStorage(\.keepFloatOnTopIfChatPanelAndXcodeOverlaps) var keepFloatOnTopIfChatPanelAndXcodeOverlaps
-        @AppStorage(\.disableFloatOnTopWhenTheChatPanelIsDetached) var disableFloatOnTopWhenTheChatPanelIsDetached
+        @AppStorage(
+            \.keepFloatOnTopIfChatPanelAndXcodeOverlaps
+        ) var keepFloatOnTopIfChatPanelAndXcodeOverlaps
+        @AppStorage(
+            \.disableFloatOnTopWhenTheChatPanelIsDetached
+        ) var disableFloatOnTopWhenTheChatPanelIsDetached
 
         init() {}
     }
@@ -157,15 +161,7 @@ struct ChatSettingsView: View {
             }
 
             Toggle(isOn: $settings.wrapCodeInCodeBlock) {
-                Text("Wrap code in code block")
-            }
-            
-            Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
-                Text("Disable float on top when the chat panel is detached")
-            }
-            
-            Toggle(isOn: $settings.keepFloatOnTopIfChatPanelAndXcodeOverlaps) {
-                Text("But, keep float on top if chat panel and Xcode overlaps")
+                Text("Wrap text in code block")
             }
 
             #if canImport(ProHostApp)
@@ -173,6 +169,14 @@ struct ChatSettingsView: View {
             CodeHighlightThemePicker(scenario: .chat)
 
             #endif
+
+            Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
+                Text("Disable float on top when the chat panel is detached")
+            }
+
+            Toggle(isOn: $settings.keepFloatOnTopIfChatPanelAndXcodeOverlaps) {
+                Text("But, keep float on top if chat panel and Xcode overlaps")
+            }
         }
     }
 
@@ -348,7 +352,7 @@ struct ChatSettingsView: View {
                         Text("""
                         Enable the bot to search code and texts \
                         in the project, third party packages and the SDK.
-                        
+
                         The current implementation only performs keyword search.
                         """)
                     } else: {
@@ -361,7 +365,7 @@ struct ChatSettingsView: View {
                             WithFeatureEnabled(\.senseScopeInChat, alignment: .inlineLeading) {
                                 Text("the project, third party packages and the SDK.")
                             }
-                            
+
                             Text("The current implementation only performs keyword search.")
                         }
                     }
