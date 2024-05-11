@@ -89,6 +89,7 @@ private extension WidgetWindowsController {
                 updateWindowLocation(animated: false, immediately: false)
                 await hideSuggestionPanelWindow()
             }
+            await adjustChatPanelWindowLevel()
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
@@ -462,7 +463,7 @@ extension WidgetWindowsController {
                     animate: animated
                 )
             }
-            
+
             await adjustChatPanelWindowLevel()
         }
 
@@ -514,7 +515,14 @@ extension WidgetWindowsController {
         let floatOnTopWhenOverlapsXcode = UserDefaults.shared
             .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
 
-        if !floatOnTopWhenOverlapsXcode {
+        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestAppIsXcodeOrExtension = if let latestApp {
+            latestApp.isXcode || latestApp.isExtensionService
+        } else {
+            false
+        }
+
+        if !floatOnTopWhenOverlapsXcode || !latestAppIsXcodeOrExtension {
             window.setFloatOnTop(false)
         } else {
             guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }

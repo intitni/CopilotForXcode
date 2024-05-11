@@ -171,12 +171,12 @@ struct ChatSettingsView: View {
             #endif
 
             Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
-                Text("Disable float on top when the chat panel is detached")
+                Text("Disable always-on-top when the chat panel is detached")
             }
 
             Toggle(isOn: $settings.keepFloatOnTopIfChatPanelAndXcodeOverlaps) {
-                Text("But, keep float on top if chat panel and Xcode overlaps")
-            }
+                Text("Keep always-on-top if the chat panel and Xcode overlaps and Xcode is active")
+            }.disabled(!settings.disableFloatOnTopWhenTheChatPanelIsDetached)
         }
     }
 
