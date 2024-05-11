@@ -755,7 +755,9 @@ public final class WidgetWindows {
         toastWindow.orderFrontRegardless()
         sharedPanelWindow.orderFrontRegardless()
         suggestionPanelWindow.orderFrontRegardless()
-        chatPanelWindow.orderFrontRegardless()
+        if chatPanelWindow.level.rawValue > NSWindow.Level.normal.rawValue {
+            chatPanelWindow.orderFrontRegardless()
+        }
     }
 }
 
