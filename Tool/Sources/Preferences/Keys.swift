@@ -304,7 +304,7 @@ public extension UserDefaultPreferenceKeys {
     }
     
     var wrapCodeInPromptToCode: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "WrapCodeInPromptToCode")
+        .init(defaultValue: true, key: "WrapCodeInPromptToCode")
     }
 }
 
