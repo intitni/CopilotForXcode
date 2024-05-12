@@ -8,7 +8,7 @@ import XPCShared
 import ProHostApp
 #endif
 
-struct SuggestionSettingsView: View {
+struct SuggestionSettingsGeneralSectionView: View {
     struct SuggestionFeatureProviderOption: Identifiable, Hashable {
         var id: String {
             (builtInProvider?.rawValue).map(String.init) ?? bundleIdentifier ?? "n/A"
@@ -56,8 +56,6 @@ struct SuggestionSettingsView: View {
         var acceptSuggestionWithTab
         @AppStorage(\.dismissSuggestionWithEsc)
         var dismissSuggestionWithEsc
-        @AppStorage(\.isSuggestionSenseEnabled)
-        var isSuggestionSenseEnabled
 
         var refreshExtensionSuggestionFeatureProvidersTask: Task<Void, Never>?
 
@@ -174,14 +172,6 @@ struct SuggestionSettingsView: View {
             }
 
             #if canImport(ProHostApp)
-            WithFeatureEnabled(\.suggestionSense) {
-                Toggle(isOn: $settings.isSuggestionSenseEnabled) {
-                    Text("Suggestion cheatsheet (experimental)")
-                }
-            }
-            #endif
-
-            #if canImport(ProHostApp)
             WithFeatureEnabled(\.tabToAcceptSuggestion) {
                 Toggle(isOn: $settings.acceptSuggestionWithTab) {
                     Text("Accept suggestion with Tab")
@@ -260,9 +250,8 @@ struct SuggestionSettingsView: View {
     }
 }
 
-struct SuggestionSettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        SuggestionSettingsView()
-    }
+#Preview {
+    SuggestionSettingsGeneralSectionView()
+        .padding()
 }
 
