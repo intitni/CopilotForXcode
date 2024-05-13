@@ -156,6 +156,7 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 .product(name: "Parsing", package: "swift-parsing"),
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
 

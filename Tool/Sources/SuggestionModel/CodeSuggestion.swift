@@ -1,4 +1,5 @@
 import Foundation
+import CodableWrappers
 
 public struct CodeSuggestion: Codable, Equatable {
     public init(
@@ -30,6 +31,6 @@ public struct CodeSuggestion: Codable, Equatable {
     /// The range of the original code that should be replaced.
     public var range: CursorRange
     /// A place to store comments inserted by middleware for debugging use.
-    public var middlewareComments: [String]
+    @FallbackDecoding<EmptyArray> public var middlewareComments: [String]
 }
 
