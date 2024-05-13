@@ -315,6 +315,7 @@ extension WidgetWindowsController {
                     frame = rect
                 }
 
+                var expendedSize = CGSize.zero
                 if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
                     // extra padding to bottom so buttons won't be covered
                     frame.size.height -= 40
@@ -322,13 +323,16 @@ extension WidgetWindowsController {
                     // move a bit away from the window so buttons won't be covered
                     frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
                     frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                    expendedSize.width = (Style.widgetPadding * 2 + Style.widgetWidth) / 2
+                    expendedSize.height += Style.widgetPadding
                 }
 
                 return UpdateLocationStrategy.FixedToBottom().framesForWindows(
                     editorFrame: frame,
                     mainScreen: screen,
                     activeScreen: firstScreen,
-                    preferredInsideEditorMinWidth: 9_999_999_999 // never
+                    preferredInsideEditorMinWidth: 9_999_999_999, // never
+                    editorFrameExpendedSize: expendedSize
                 )
             }
         }
@@ -472,7 +476,7 @@ extension WidgetWindowsController {
             !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 3)
 
         updateWindowLocationTask?.cancel()
-        let interval: TimeInterval = 0.1
+        let interval: TimeInterval = 0.05
 
         if shouldThrottle {
             let delay = max(
