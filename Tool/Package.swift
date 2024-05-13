@@ -290,6 +290,8 @@ let package = Package(
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
 
+        .testTarget(name: "SuggestionProviderTests", dependencies: ["SuggestionProvider"]),
+
         // MARK: - GitHub Copilot
 
         .target(

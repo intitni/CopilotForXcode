@@ -140,6 +140,13 @@
         "identifier" : "XcodeInspectorTests",
         "name" : "XcodeInspectorTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionProviderTests",
+        "name" : "SuggestionProviderTests"
+      }
     }
   ],
   "version" : 1
