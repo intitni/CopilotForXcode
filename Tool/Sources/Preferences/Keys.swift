@@ -187,10 +187,6 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWith: PreferenceKey<NodeRunner> {
         .init(defaultValue: .env, key: "RunNodeWith")
     }
-
-    var gitHubCopilotIgnoreTrailingNewLines: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "GitHubCopilotIgnoreTrailingNewLines")
-    }
 }
 
 // MARK: - Codeium Settings

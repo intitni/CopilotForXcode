@@ -10,7 +10,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
         next: Next
     ) async throws -> [CodeSuggestion] {
         let suggestions = try await next(request)
-        
+
         return suggestions.compactMap {
             var suggestion = $0
             Self.removeTrailingWhitespacesAndNewlines(&suggestion)
@@ -18,7 +18,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             return suggestion
         }
     }
-    
+
     static func removeTrailingWhitespacesAndNewlines(_ suggestion: inout CodeSuggestion) {
         var text = suggestion.text[...]
         while let last = text.last, last.isNewline || last.isWhitespace {
@@ -26,4 +26,12 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
         }
         suggestion.text = String(text)
     }
+
+    static func checkIfSuggestionHasNoEffect(
+        _ suggestion: CodeSuggestion,
+        request: SuggestionRequest
+    ) -> Bool {
+        suggestion.text.isEmpty
+    }
 }
+
