@@ -65,7 +65,6 @@ public extension Workspace {
                 tabSize: editor.tabSize,
                 indentSize: editor.indentSize,
                 usesTabsForIndentation: editor.usesTabsForIndentation,
-                ignoreSpaceOnlySuggestions: true, 
                 relevantCodeSnippets: []
             )
         )

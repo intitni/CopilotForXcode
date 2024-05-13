@@ -15,7 +15,6 @@ public struct SuggestionRequest {
     public var tabSize: Int
     public var indentSize: Int
     public var usesTabsForIndentation: Bool
-    public var ignoreSpaceOnlySuggestions: Bool
     public var relevantCodeSnippets: [RelevantCodeSnippet]
 
     public init(
@@ -28,7 +27,6 @@ public struct SuggestionRequest {
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool,
         relevantCodeSnippets: [RelevantCodeSnippet]
     ) {
         self.fileURL = fileURL
@@ -40,7 +38,6 @@ public struct SuggestionRequest {
         self.tabSize = tabSize
         self.indentSize = indentSize
         self.usesTabsForIndentation = usesTabsForIndentation
-        self.ignoreSpaceOnlySuggestions = ignoreSpaceOnlySuggestions
         self.relevantCodeSnippets = relevantCodeSnippets
     }
 }
