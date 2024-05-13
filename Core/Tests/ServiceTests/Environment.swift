@@ -52,9 +52,7 @@ class MockSuggestionService: GitHubCopilotSuggestionServiceType {
         cursorPosition: SuggestionModel.CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool,
-        ignoreTrailingNewLinesAndSpaces: Bool
+        usesTabsForIndentation: Bool
     ) async throws -> [SuggestionModel.CodeSuggestion] {
         completions
     }
