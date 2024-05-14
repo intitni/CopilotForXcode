@@ -77,7 +77,7 @@ final class FetchSuggestionTests: XCTestCase {
             usesTabsForIndentation: false
         )
         XCTAssertEqual(completions.count, 1)
-        XCTAssertEqual(completions.first?.text, "Hello World")
+        XCTAssertEqual(completions.first?.text, "Hello World\n")
     }
 }
 

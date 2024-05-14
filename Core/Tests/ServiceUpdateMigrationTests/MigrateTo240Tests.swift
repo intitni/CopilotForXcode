@@ -28,7 +28,7 @@ final class MigrateTo240Tests: XCTestCase {
                 XCTAssertEqual(chatModel.info, .init(
                     apiKeyName: "OpenAI",
                     baseURL: "",
-                    maxTokens: 4096,
+                    maxTokens: 16385,
                     supportsFunctionCalling: true,
                     modelName: "gpt-3.5-turbo"
                 ))
