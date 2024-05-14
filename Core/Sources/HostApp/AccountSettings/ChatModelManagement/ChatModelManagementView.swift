@@ -7,7 +7,7 @@ struct ChatModelManagementView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            AIModelManagementView<ChatModelManagement, _>(store: store)
+            AIModelManagementView<ChatModelManagement, ChatModelManagement.Model>(store: store)
                 .sheet(item: $store.scope(
                     state: \.editingModel,
                     action: \.chatModelItem

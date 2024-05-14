@@ -3,7 +3,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct EmbeddingModelManagementView: View {
-    let store: StoreOf<EmbeddingModelManagement>
+    @Perception.Bindable var store: StoreOf<EmbeddingModelManagement>
 
     var body: some View {
         WithPerceptionTracking {
@@ -78,3 +78,4 @@ class EmbeddingModelManagementView_Previews: PreviewProvider {
         )
     }
 }
+
