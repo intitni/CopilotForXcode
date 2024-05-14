@@ -48,7 +48,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         public var chatTabGroup = ChatTabGroup()
         var colorScheme: ColorScheme = .light
         public internal(set) var isPanelDisplayed = false
-        var chatPanelInASeparateWindow = false
+        var isDetached = false
         var isFullScreen = false
     }
 
@@ -118,17 +118,17 @@ public struct ChatPanelFeature: ReducerProtocol {
                 return .none
 
             case .toggleChatPanelDetachedButtonClicked:
-                if state.isFullScreen, state.chatPanelInASeparateWindow {
+                if state.isFullScreen, state.isDetached {
                     return .run { send in
                         await send(.attachChatPanel)
                     }
                 }
                 
-                state.chatPanelInASeparateWindow.toggle()
+                state.isDetached.toggle()
                 return .none
 
             case .detachChatPanel:
-                state.chatPanelInASeparateWindow = true
+                state.isDetached = true
                 return .none
 
             case .attachChatPanel:
@@ -140,7 +140,7 @@ public struct ChatPanelFeature: ReducerProtocol {
                     }
                 }
 
-                state.chatPanelInASeparateWindow = false
+                state.isDetached = false
                 return .none
 
             case .enterFullScreen:
@@ -155,7 +155,7 @@ public struct ChatPanelFeature: ReducerProtocol {
 
             case let .presentChatPanel(forceDetach):
                 if forceDetach {
-                    state.chatPanelInASeparateWindow = true
+                    state.isDetached = true
                 }
                 state.isPanelDisplayed = true
                 return .run { send in

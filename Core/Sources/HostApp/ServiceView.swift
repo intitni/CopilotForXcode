@@ -53,6 +53,15 @@ struct ServiceView: View {
                 subtitle: "Search Chat Plugin",
                 image: "globe"
             )
+            
+            ScrollView {
+                OtherSuggestionServicesView().padding()
+            }.sidebarItem(
+                tag: 5,
+                title: "Other Suggestion Services",
+                subtitle: "Suggestion",
+                image: "globe"
+            )
         }
     }
 }

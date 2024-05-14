@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
         .library(name: "ChatTab", targets: ["ChatTab"]),
+        .library(name: "FileSystem", targets: ["FileSystem"]),
         .library(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
@@ -79,7 +80,7 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
-        .target(name: "XPCShared", dependencies: ["SuggestionModel"]),
+        .target(name: "XPCShared", dependencies: ["SuggestionModel", "Logger"]),
 
         .target(name: "Configs"),
 
@@ -88,6 +89,8 @@ let package = Package(
         .target(name: "Terminal"),
 
         .target(name: "Logger"),
+
+        .target(name: "FileSystem"),
 
         .target(name: "ObjectiveCExceptionHandling"),
 
@@ -153,6 +156,7 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 .product(name: "Parsing", package: "swift-parsing"),
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
 
@@ -286,6 +290,8 @@ let package = Package(
             "UserDefaultsObserver",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
+
+        .testTarget(name: "SuggestionProviderTests", dependencies: ["SuggestionProvider"]),
 
         // MARK: - GitHub Copilot
 

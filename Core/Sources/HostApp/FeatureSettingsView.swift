@@ -4,26 +4,22 @@ struct FeatureSettingsView: View {
     @State var tag = 0
 
     var body: some View {
-        SidebarTabView(tag: $tag) { 
-            ScrollView {
-                SuggestionSettingsView().padding()
-            }
-            .sidebarItem(
-                tag: 0,
-                title: "Suggestion",
-                subtitle: "Generate suggestions for your code",
-                image: "lightbulb"
-            )
+        SidebarTabView(tag: $tag) {
+            SuggestionSettingsView()
+                .sidebarItem(
+                    tag: 0,
+                    title: "Suggestion",
+                    subtitle: "Generate suggestions for your code",
+                    image: "lightbulb"
+                )
 
-            ScrollView {
-                ChatSettingsView().padding()
-            }
-            .sidebarItem(
-                tag: 1,
-                title: "Chat",
-                subtitle: "Chat about your code",
-                image: "character.bubble"
-            )
+            ChatSettingsView()
+                .sidebarItem(
+                    tag: 1,
+                    title: "Chat",
+                    subtitle: "Chat about your code",
+                    image: "character.bubble"
+                )
 
             ScrollView {
                 PromptToCodeSettingsView().padding()
@@ -34,7 +30,7 @@ struct FeatureSettingsView: View {
                 subtitle: "Write code with natural language",
                 image: "paintbrush"
             )
-            
+
             ScrollView {
                 XcodeSettingsView().padding()
             }
@@ -44,7 +40,7 @@ struct FeatureSettingsView: View {
                 subtitle: "Xcode related features",
                 image: "app"
             )
-            
+
 //            #if canImport(ProHostApp)
 //            ScrollView {
 //                TerminalSettingsView().padding()

@@ -12,8 +12,7 @@ public protocol CodeiumSuggestionServiceType {
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
+        usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion]
     func notifyAccepted(_ suggestion: CodeSuggestion) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
@@ -227,8 +226,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool
+        usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion] {
         ongoingTasks.forEach { $0.cancel() }
         ongoingTasks.removeAll()
@@ -272,12 +270,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
 
             try Task.checkCancellation()
 
-            return result.completionItems?.filter { item in
-                if ignoreSpaceOnlySuggestions {
-                    return !item.completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
-                }
-                return true
-            }.map { item in
+            return result.completionItems?.map { item in
                 CodeSuggestion(
                     id: item.completion.completionId,
                     text: item.completion.text,

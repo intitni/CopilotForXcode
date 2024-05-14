@@ -67,7 +67,8 @@ enum UpdateLocationStrategy {
             activeScreen: NSScreen,
             hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget),
             preferredInsideEditorMinWidth: Double = UserDefaults.shared
-                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan)
+                .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan),
+            editorFrameExpendedSize: CGSize = .zero
         ) -> WidgetLocation {
             return HorizontalMovable().framesForWindows(
                 y: mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
@@ -76,7 +77,8 @@ enum UpdateLocationStrategy {
                 mainScreen: mainScreen,
                 activeScreen: activeScreen,
                 preferredInsideEditorMinWidth: preferredInsideEditorMinWidth,
-                hideCircularWidget: hideCircularWidget
+                hideCircularWidget: hideCircularWidget,
+                editorFrameExpendedSize: editorFrameExpendedSize
             )
         }
     }
@@ -89,7 +91,8 @@ enum UpdateLocationStrategy {
             mainScreen: NSScreen,
             activeScreen: NSScreen,
             preferredInsideEditorMinWidth: Double,
-            hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget)
+            hideCircularWidget: Bool = UserDefaults.shared.value(for: \.hideCircularWidget),
+            editorFrameExpendedSize: CGSize = .zero
         ) -> WidgetLocation {
             let maxY = max(
                 y,
@@ -121,8 +124,9 @@ enum UpdateLocationStrategy {
                 proposedAnchorFrameOnTheRightSide = widgetFrameOnTheRightSide
             }
 
-            let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX + Style
-                .widgetPadding * 2
+            let proposedPanelX = proposedAnchorFrameOnTheRightSide.maxX
+                + Style.widgetPadding * 2
+                - editorFrameExpendedSize.width
             let putPanelToTheRight = {
                 if editorFrame.size.width >= preferredInsideEditorMinWidth { return false }
                 return activeScreen.frame.maxX > proposedPanelX + Style.panelWidth
@@ -133,8 +137,9 @@ enum UpdateLocationStrategy {
                 let anchorFrame = proposedAnchorFrameOnTheRightSide
                 let panelFrame = CGRect(
                     x: proposedPanelX,
-                    y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight : anchorFrame
-                        .minY,
+                    y: alignPanelTopToAnchor
+                        ? anchorFrame.maxY - Style.panelHeight
+                        : anchorFrame.minY - editorFrameExpendedSize.height,
                     width: Style.panelWidth,
                     height: Style.panelHeight
                 )
@@ -175,8 +180,10 @@ enum UpdateLocationStrategy {
                     proposedAnchorFrameOnTheLeftSide = widgetFrameOnTheLeftSide
                 }
 
-                let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX - Style
-                    .widgetPadding * 2 - Style.panelWidth
+                let proposedPanelX = proposedAnchorFrameOnTheLeftSide.minX
+                    - Style.widgetPadding * 2
+                    - Style.panelWidth
+                    + editorFrameExpendedSize.width
                 let putAnchorToTheLeft = {
                     if editorFrame.size.width >= preferredInsideEditorMinWidth {
                         if editorFrame.maxX <= activeScreen.frame.maxX {
@@ -190,9 +197,9 @@ enum UpdateLocationStrategy {
                     let anchorFrame = proposedAnchorFrameOnTheLeftSide
                     let panelFrame = CGRect(
                         x: proposedPanelX,
-                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style
-                            .panelHeight : anchorFrame
-                            .minY,
+                        y: alignPanelTopToAnchor
+                            ? anchorFrame.maxY - Style.panelHeight
+                            : anchorFrame.minY - editorFrameExpendedSize.height,
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
@@ -217,9 +224,11 @@ enum UpdateLocationStrategy {
                     let anchorFrame = proposedAnchorFrameOnTheRightSide
                     let panelFrame = CGRect(
                         x: anchorFrame.maxX - Style.panelWidth,
-                        y: alignPanelTopToAnchor ? anchorFrame.maxY - Style.panelHeight - Style
-                            .widgetHeight - Style.widgetPadding : anchorFrame.maxY + Style
-                            .widgetPadding,
+                        y: alignPanelTopToAnchor
+                            ? anchorFrame.maxY - Style.panelHeight - Style.widgetHeight
+                            - Style.widgetPadding
+                            : anchorFrame.maxY + Style.widgetPadding
+                            - editorFrameExpendedSize.height,
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
@@ -393,9 +402,11 @@ enum UpdateLocationStrategy {
         var firstLineRange: CFRange = .init()
         let foundFirstLine = AXValueGetValue(selectedRange, .cfRange, &firstLineRange)
         firstLineRange.length = 0
-        
-        #warning("FIXME: When selection is too low and out of the screen, the selection range becomes something else.")
-        
+
+        #warning(
+            "FIXME: When selection is too low and out of the screen, the selection range becomes something else."
+        )
+
         if foundFirstLine,
            let firstLineSelectionRange = AXValueCreate(.cfRange, &firstLineRange),
            let firstLineRect: AXValue = try? editor.copyParameterizedValue(
@@ -413,3 +424,4 @@ enum UpdateLocationStrategy {
         return selectionFrame
     }
 }
+

@@ -74,195 +74,9 @@ actor WidgetWindowsController: NSObject {
             }
         }
     }
-
-    func updatePanelState(_ location: WidgetLocation) async {
-        await send(.updatePanelStateToMatch(location))
-    }
-
-    func updateWindowOpacity(immediately: Bool) {
-        let shouldDebounce = !immediately &&
-            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 3)
-        lastUpdateWindowOpacityTime = Date()
-        updateWindowOpacityTask?.cancel()
-
-        let task = Task {
-            if shouldDebounce {
-                try await Task.sleep(nanoseconds: 200_000_000)
-            }
-            try Task.checkCancellation()
-            let xcodeInspector = self.xcodeInspector
-            let activeApp = await xcodeInspector.safe.activeApplication
-            let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
-            let previousActiveApplication = xcodeInspector.previousActiveApplication
-            await MainActor.run {
-                let state = store.withState { $0 }
-                let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
-
-                if let activeApp, activeApp.isXcode {
-                    let application = activeApp.appElement
-                    /// We need this to hide the windows when Xcode is minimized.
-                    let noFocus = application.focusedWindow == nil
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.widgetWindow.alphaValue = noFocus ? 0 : 1
-                    windows.toastWindow.alphaValue = noFocus ? 0 : 1
-
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = !hasChat
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus
-                    }
-                } else if let activeApp, activeApp.isExtensionService {
-                    let noFocus = {
-                        guard let xcode = latestActiveXcode else { return true }
-                        if let window = xcode.appElement.focusedWindow,
-                           window.role == "AXWindow"
-                        {
-                            return false
-                        }
-                        return true
-                    }()
-
-                    let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
-
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.widgetWindow.alphaValue = if noFocus {
-                        0
-                    } else if previousAppIsXcode {
-                        1
-                    } else {
-                        0
-                    }
-                    windows.toastWindow.alphaValue = noFocus ? 0 : 1
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = !hasChat
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus && !windows
-                            .chatPanelWindow.isKeyWindow
-                    }
-                } else {
-                    windows.sharedPanelWindow.alphaValue = 0
-                    windows.suggestionPanelWindow.alphaValue = 0
-                    windows.widgetWindow.alphaValue = 0
-                    windows.toastWindow.alphaValue = 0
-                    if !isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = true
-                    }
-                }
-            }
-        }
-
-        updateWindowOpacityTask = task
-    }
-
-    func updateWindowLocation(
-        animated: Bool,
-        immediately: Bool,
-        function: StaticString = #function,
-        line: UInt = #line
-    ) {
-        @Sendable @MainActor
-        func update() async {
-            let state = store.withState { $0 }
-            let isChatPanelDetached = state.chatPanelState.chatPanelInASeparateWindow
-            guard let widgetLocation = await generateWidgetLocation() else { return }
-            await updatePanelState(widgetLocation)
-
-            windows.widgetWindow.setFrame(
-                widgetLocation.widgetFrame,
-                display: false,
-                animate: animated
-            )
-            windows.toastWindow.setFrame(
-                widgetLocation.defaultPanelLocation.frame,
-                display: false,
-                animate: animated
-            )
-            windows.sharedPanelWindow.setFrame(
-                widgetLocation.defaultPanelLocation.frame,
-                display: false,
-                animate: animated
-            )
-
-            if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
-                windows.suggestionPanelWindow.setFrame(
-                    suggestionPanelLocation.frame,
-                    display: false,
-                    animate: animated
-                )
-            }
-
-            if isChatPanelDetached {
-                // don't update it!
-            } else {
-                windows.chatPanelWindow.setFrame(
-                    widgetLocation.defaultPanelLocation.frame,
-                    display: false,
-                    animate: animated
-                )
-            }
-        }
-
-        let now = Date()
-        let shouldThrottle = !immediately &&
-            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 3)
-
-        updateWindowLocationTask?.cancel()
-        let interval: TimeInterval = 0.1
-
-        if shouldThrottle {
-            let delay = max(
-                0,
-                interval - now.timeIntervalSince(lastUpdateWindowLocationTime)
-            )
-
-            updateWindowLocationTask = Task {
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                try Task.checkCancellation()
-                await update()
-            }
-        } else {
-            Task {
-                await update()
-            }
-        }
-        lastUpdateWindowLocationTime = Date()
-    }
 }
 
-extension WidgetWindowsController: NSWindowDelegate {
-    nonisolated
-    func windowWillMove(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        Task { @MainActor in
-            guard window === windows.chatPanelWindow else { return }
-            await Task.yield()
-            store.send(.chatPanel(.detachChatPanel))
-        }
-    }
-
-    nonisolated
-    func windowWillEnterFullScreen(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        Task { @MainActor in
-            guard window === windows.chatPanelWindow else { return }
-            await Task.yield()
-            store.send(.chatPanel(.enterFullScreen))
-        }
-    }
-
-    nonisolated
-    func windowWillExitFullScreen(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        Task { @MainActor in
-            guard window === windows.chatPanelWindow else { return }
-            await Task.yield()
-            store.send(.chatPanel(.exitFullScreen))
-        }
-    }
-}
+// MARK: - Observation
 
 private extension WidgetWindowsController {
     func activate(_ app: AppInstanceInspector) {
@@ -275,6 +89,7 @@ private extension WidgetWindowsController {
                 updateWindowLocation(animated: false, immediately: false)
                 await hideSuggestionPanelWindow()
             }
+            await adjustChatPanelWindowLevel()
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
@@ -295,14 +110,15 @@ private extension WidgetWindowsController {
                 /// so the transition looks better.
                 func hideWidgetForTransitions() async {
                     let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
-                    let documentURL = await MainActor.run { store.withState { $0.focusingDocumentURL } }
+                    let documentURL = await MainActor
+                        .run { store.withState { $0.focusingDocumentURL } }
                     if documentURL != newDocumentURL {
                         await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
                     }
                     await send(.updateFocusingDocumentURL)
                 }
-                
+
                 func removeContent() async {
                     await send(.panel(.removeDisplayedContent))
                 }
@@ -403,6 +219,8 @@ private extension WidgetWindowsController {
     }
 }
 
+// MARK: - Window Updating
+
 extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
@@ -497,6 +315,7 @@ extension WidgetWindowsController {
                     frame = rect
                 }
 
+                var expendedSize = CGSize.zero
                 if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
                     // extra padding to bottom so buttons won't be covered
                     frame.size.height -= 40
@@ -504,19 +323,277 @@ extension WidgetWindowsController {
                     // move a bit away from the window so buttons won't be covered
                     frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
                     frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
+                    expendedSize.width = (Style.widgetPadding * 2 + Style.widgetWidth) / 2
+                    expendedSize.height += Style.widgetPadding
                 }
 
                 return UpdateLocationStrategy.FixedToBottom().framesForWindows(
                     editorFrame: frame,
                     mainScreen: screen,
                     activeScreen: firstScreen,
-                    preferredInsideEditorMinWidth: 9_999_999_999 // never
+                    preferredInsideEditorMinWidth: 9_999_999_999, // never
+                    editorFrameExpendedSize: expendedSize
                 )
             }
         }
         return nil
     }
+
+    func updatePanelState(_ location: WidgetLocation) async {
+        await send(.updatePanelStateToMatch(location))
+    }
+
+    func updateWindowOpacity(immediately: Bool) {
+        let shouldDebounce = !immediately &&
+            !(Date().timeIntervalSince(lastUpdateWindowOpacityTime) > 3)
+        lastUpdateWindowOpacityTime = Date()
+        updateWindowOpacityTask?.cancel()
+
+        let task = Task {
+            if shouldDebounce {
+                try await Task.sleep(nanoseconds: 200_000_000)
+            }
+            try Task.checkCancellation()
+            let xcodeInspector = self.xcodeInspector
+            let activeApp = await xcodeInspector.safe.activeApplication
+            let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
+            let previousActiveApplication = xcodeInspector.previousActiveApplication
+            await MainActor.run {
+                let state = store.withState { $0 }
+                let isChatPanelDetached = state.chatPanelState.isDetached
+                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
+
+                if let activeApp, activeApp.isXcode {
+                    let application = activeApp.appElement
+                    /// We need this to hide the windows when Xcode is minimized.
+                    let noFocus = application.focusedWindow == nil
+                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.widgetWindow.alphaValue = noFocus ? 0 : 1
+                    windows.toastWindow.alphaValue = noFocus ? 0 : 1
+
+                    if isChatPanelDetached {
+                        windows.chatPanelWindow.isWindowHidden = !hasChat
+                    } else {
+                        windows.chatPanelWindow.isWindowHidden = noFocus
+                    }
+                } else if let activeApp, activeApp.isExtensionService {
+                    let noFocus = {
+                        guard let xcode = latestActiveXcode else { return true }
+                        if let window = xcode.appElement.focusedWindow,
+                           window.role == "AXWindow"
+                        {
+                            return false
+                        }
+                        return true
+                    }()
+
+                    let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
+
+                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.widgetWindow.alphaValue = if noFocus {
+                        0
+                    } else if previousAppIsXcode {
+                        1
+                    } else {
+                        0
+                    }
+                    windows.toastWindow.alphaValue = noFocus ? 0 : 1
+                    if isChatPanelDetached {
+                        windows.chatPanelWindow.isWindowHidden = !hasChat
+                    } else {
+                        windows.chatPanelWindow.isWindowHidden = noFocus && !windows
+                            .chatPanelWindow.isKeyWindow
+                    }
+                } else {
+                    windows.sharedPanelWindow.alphaValue = 0
+                    windows.suggestionPanelWindow.alphaValue = 0
+                    windows.widgetWindow.alphaValue = 0
+                    windows.toastWindow.alphaValue = 0
+                    if !isChatPanelDetached {
+                        windows.chatPanelWindow.isWindowHidden = true
+                    }
+                }
+            }
+        }
+
+        updateWindowOpacityTask = task
+    }
+
+    func updateWindowLocation(
+        animated: Bool,
+        immediately: Bool,
+        function: StaticString = #function,
+        line: UInt = #line
+    ) {
+        @Sendable @MainActor
+        func update() async {
+            let state = store.withState { $0 }
+            let isChatPanelDetached = state.chatPanelState.isDetached
+            guard let widgetLocation = await generateWidgetLocation() else { return }
+            await updatePanelState(widgetLocation)
+
+            windows.widgetWindow.setFrame(
+                widgetLocation.widgetFrame,
+                display: false,
+                animate: animated
+            )
+            windows.toastWindow.setFrame(
+                widgetLocation.defaultPanelLocation.frame,
+                display: false,
+                animate: animated
+            )
+            windows.sharedPanelWindow.setFrame(
+                widgetLocation.defaultPanelLocation.frame,
+                display: false,
+                animate: animated
+            )
+
+            if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
+                windows.suggestionPanelWindow.setFrame(
+                    suggestionPanelLocation.frame,
+                    display: false,
+                    animate: animated
+                )
+            }
+
+            if isChatPanelDetached {
+                // don't update it!
+            } else {
+                windows.chatPanelWindow.setFrame(
+                    widgetLocation.defaultPanelLocation.frame,
+                    display: false,
+                    animate: animated
+                )
+            }
+
+            await adjustChatPanelWindowLevel()
+        }
+
+        let now = Date()
+        let shouldThrottle = !immediately &&
+            !(now.timeIntervalSince(lastUpdateWindowLocationTime) > 3)
+
+        updateWindowLocationTask?.cancel()
+        let interval: TimeInterval = 0.05
+
+        if shouldThrottle {
+            let delay = max(
+                0,
+                interval - now.timeIntervalSince(lastUpdateWindowLocationTime)
+            )
+
+            updateWindowLocationTask = Task {
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                try Task.checkCancellation()
+                await update()
+            }
+        } else {
+            Task {
+                await update()
+            }
+        }
+        lastUpdateWindowLocationTime = Date()
+    }
+
+    @MainActor
+    func adjustChatPanelWindowLevel() async {
+        let disableFloatOnTopWhenTheChatPanelIsDetached = UserDefaults.shared
+            .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
+
+        let window = windows.chatPanelWindow
+        guard disableFloatOnTopWhenTheChatPanelIsDetached else {
+            window.setFloatOnTop(true)
+            return
+        }
+
+        let state = store.withState { $0 }
+        let isChatPanelDetached = state.chatPanelState.isDetached
+
+        guard isChatPanelDetached else {
+            window.setFloatOnTop(true)
+            return
+        }
+
+        let floatOnTopWhenOverlapsXcode = UserDefaults.shared
+            .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
+
+        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestAppIsXcodeOrExtension = if let latestApp {
+            latestApp.isXcode || latestApp.isExtensionService
+        } else {
+            false
+        }
+
+        if !floatOnTopWhenOverlapsXcode || !latestAppIsXcodeOrExtension {
+            window.setFloatOnTop(false)
+        } else {
+            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }
+            let windowElements = xcode.appElement.windows
+            let overlap = windowElements.contains {
+                if let position = $0.position, let size = $0.size {
+                    let rect = CGRect(
+                        x: position.x,
+                        y: position.y,
+                        width: size.width,
+                        height: size.height
+                    )
+                    return rect.intersects(window.frame)
+                }
+                return false
+            }
+
+            window.setFloatOnTop(overlap)
+        }
+    }
 }
+
+// MARK: - NSWindowDelegate
+
+extension WidgetWindowsController: NSWindowDelegate {
+    nonisolated
+    func windowWillMove(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
+            await Task.yield()
+            store.send(.chatPanel(.detachChatPanel))
+        }
+    }
+
+    nonisolated
+    func windowDidMove(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
+            await Task.yield()
+            await adjustChatPanelWindowLevel()
+        }
+    }
+
+    nonisolated
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
+            await Task.yield()
+            store.send(.chatPanel(.enterFullScreen))
+        }
+    }
+
+    nonisolated
+    func windowWillExitFullScreen(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        Task { @MainActor in
+            guard window === windows.chatPanelWindow else { return }
+            await Task.yield()
+            store.send(.chatPanel(.exitFullScreen))
+        }
+    }
+}
+
+// MARK: - Windows
 
 public final class WidgetWindows {
     let store: StoreOf<WidgetFeature>
@@ -636,54 +713,16 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var chatPanelWindow = {
-        let it = ChatWindow(
-            contentRect: .zero,
-            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        it.minimizeWindow = { [weak self] in
-            self?.store.send(.chatPanel(.hideButtonClicked))
-        }
-        it.titleVisibility = .hidden
-        it.addTitlebarAccessoryViewController({
-            let controller = NSTitlebarAccessoryViewController()
-            let view = NSHostingView(rootView: ChatTitleBar(store: store.scope(
+        let it = ChatPanelWindow(
+            store: store.scope(
                 state: \.chatPanelState,
                 action: WidgetFeature.Action.chatPanel
-            )))
-            controller.view = view
-            view.frame = .init(x: 0, y: 0, width: 100, height: 40)
-            controller.layoutAttribute = .right
-            return controller
-        }())
-        it.titlebarAppearsTransparent = true
-        it.isReleasedWhenClosed = false
-        it.isOpaque = false
-        it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 1)
-        it.collectionBehavior = [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-        ]
-        it.hasShadow = true
-        it.contentView = NSHostingView(
-            rootView: ChatWindowView(
-                store: store.scope(
-                    state: \.chatPanelState,
-                    action: WidgetFeature.Action.chatPanel
-                ),
-                toggleVisibility: { [weak it] isDisplayed in
-                    guard let window = it else { return }
-                    window.isPanelDisplayed = isDisplayed
-                }
-            )
-            .environment(\.chatTabPool, chatTabPool)
+            ),
+            chatTabPool: chatTabPool,
+            minimizeWindow: { [weak self] in
+                self?.store.send(.chatPanel(.hideButtonClicked))
+            }
         )
-        it.setIsVisible(true)
-        it.isPanelDisplayed = false
         it.delegate = controller
         return it
     }()
@@ -728,7 +767,9 @@ public final class WidgetWindows {
         toastWindow.orderFrontRegardless()
         sharedPanelWindow.orderFrontRegardless()
         suggestionPanelWindow.orderFrontRegardless()
-        chatPanelWindow.orderFrontRegardless()
+        if chatPanelWindow.level.rawValue > NSWindow.Level.normal.rawValue {
+            chatPanelWindow.orderFrontRegardless()
+        }
     }
 }
 
@@ -738,34 +779,5 @@ class CanBecomeKeyWindow: NSWindow {
     var canBecomeKeyChecker: () -> Bool = { true }
     override var canBecomeKey: Bool { canBecomeKeyChecker() }
     override var canBecomeMain: Bool { canBecomeKeyChecker() }
-}
-
-class ChatWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-
-    var minimizeWindow: () -> Void = {}
-
-    var isWindowHidden: Bool = false {
-        didSet {
-            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
-        }
-    }
-
-    var isPanelDisplayed: Bool = false {
-        didSet {
-            alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0
-        }
-    }
-
-    override var alphaValue: CGFloat {
-        didSet {
-            ignoresMouseEvents = alphaValue <= 0
-        }
-    }
-
-    override func miniaturize(_: Any?) {
-        minimizeWindow()
-    }
 }
 

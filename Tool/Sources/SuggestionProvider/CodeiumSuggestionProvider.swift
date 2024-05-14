@@ -48,8 +48,7 @@ public extension CodeiumSuggestionProvider {
             cursorPosition: request.cursorPosition,
             tabSize: request.tabSize,
             indentSize: request.indentSize,
-            usesTabsForIndentation: request.usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: request.ignoreSpaceOnlySuggestions
+            usesTabsForIndentation: request.usesTabsForIndentation
         )
     }
 

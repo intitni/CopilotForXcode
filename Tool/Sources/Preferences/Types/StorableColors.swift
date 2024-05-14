@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StorableColor: Codable {
+public struct StorableColor: Codable, Equatable {
     public var red: Double
     public var green: Double
     public var blue: Double

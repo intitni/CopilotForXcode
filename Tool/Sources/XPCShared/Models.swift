@@ -17,6 +17,7 @@ public struct EditorContent: Codable {
         lines: [String],
         uti: String,
         cursorPosition: CursorPosition,
+        cursorOffset: Int,
         selections: [Selection],
         tabSize: Int,
         indentSize: Int,
@@ -26,6 +27,7 @@ public struct EditorContent: Codable {
         self.lines = lines
         self.uti = uti
         self.cursorPosition = cursorPosition
+        self.cursorOffset = cursorOffset
         self.selections = selections
         self.tabSize = tabSize
         self.indentSize = indentSize
@@ -37,6 +39,7 @@ public struct EditorContent: Codable {
     public var lines: [String]
     public var uti: String
     public var cursorPosition: CursorPosition
+    public var cursorOffset: Int
     public var selections: [Selection]
     public var tabSize: Int
     public var indentSize: Int

@@ -46,10 +46,7 @@ public extension GitHubCopilotSuggestionProvider {
             cursorPosition: request.cursorPosition,
             tabSize: request.tabSize,
             indentSize: request.indentSize,
-            usesTabsForIndentation: request.usesTabsForIndentation,
-            ignoreSpaceOnlySuggestions: request.ignoreSpaceOnlySuggestions,
-            ignoreTrailingNewLinesAndSpaces: UserDefaults.shared
-                .value(for: \.gitHubCopilotIgnoreTrailingNewLines)
+            usesTabsForIndentation: request.usesTabsForIndentation
         )
     }
 

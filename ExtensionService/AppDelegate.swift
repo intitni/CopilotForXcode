@@ -10,6 +10,7 @@ import UpdateChecker
 import UserDefaultsObserver
 import UserNotifications
 import XcodeInspector
+import XPCShared
 
 let bundleIdentifierBase = Bundle.main
     .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
@@ -19,7 +20,7 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let service = Service.shared
     var statusBarItem: NSStatusItem!
-    var xpcListener: (NSXPCListener, ServiceDelegate)?
+    var xpcController: XPCController?
     let updateChecker =
         UpdateChecker(
             hostBundle: locateHostBundleURL(url: Bundle.main.bundleURL)
@@ -35,7 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ] as CFDictionary)
         setupQuitOnUpdate()
         setupQuitOnUserTerminated()
-        xpcListener = setupXPCListener()
+        xpcController = .init()
         Logger.service.info("XPC Service started.")
         NSApp.setActivationPolicy(.accessory)
         buildStatusBarMenu()
@@ -48,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
     }
-    
+
     @objc func quit() {
         Task { @MainActor in
             await service.prepareForExit()
@@ -123,14 +124,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 quit()
             }
         }
-    }
-
-    func setupXPCListener() -> (NSXPCListener, ServiceDelegate) {
-        let listener = NSXPCListener(machServiceName: serviceIdentifier)
-        let delegate = ServiceDelegate()
-        listener.delegate = delegate
-        listener.resume()
-        return (listener, delegate)
     }
 
     func requestAccessoryAPIPermission() {

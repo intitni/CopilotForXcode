@@ -22,9 +22,7 @@ public protocol GitHubCopilotSuggestionServiceType {
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool,
-        ignoreTrailingNewLinesAndSpaces: Bool
+        usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion]
     func notifyAccepted(_ completion: CodeSuggestion) async
     func notifyRejected(_ completions: [CodeSuggestion]) async
@@ -340,9 +338,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
-        usesTabsForIndentation: Bool,
-        ignoreSpaceOnlySuggestions: Bool,
-        ignoreTrailingNewLinesAndSpaces: Bool
+        usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion] {
         let languageId = languageIdentifierFromFileURL(fileURL)
 
@@ -379,12 +375,6 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                     position: cursorPosition
                 )))
                 .completions
-                .filter { completion in
-                    if ignoreSpaceOnlySuggestions {
-                        return !completion.text.allSatisfy { $0.isWhitespace || $0.isNewline }
-                    }
-                    return true
-                }
                 .map {
                     let suggestion = CodeSuggestion(
                         id: $0.uuid,
@@ -392,15 +382,6 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
                         position: $0.position,
                         range: $0.range
                     )
-                    if ignoreTrailingNewLinesAndSpaces {
-                        var updated = suggestion
-                        var text = updated.text[...]
-                        while let last = text.last, last.isNewline || last.isWhitespace {
-                            text = text.dropLast(1)
-                        }
-                        updated.text = String(text)
-                        return updated
-                    }
                     return suggestion
                 }
             try Task.checkCancellation()

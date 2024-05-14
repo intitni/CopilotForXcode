@@ -17,6 +17,8 @@ public struct EditorInformation {
         public var selections: [CursorRange]
         /// The cursor position of the source editor.
         public var cursorPosition: CursorPosition
+        /// The cursor position as offset.
+        public var cursorOffset: Int
         /// Line annotations of the source editor.
         public var lineAnnotations: [LineAnnotation]
 
@@ -41,12 +43,14 @@ public struct EditorInformation {
             lines: [String],
             selections: [CursorRange],
             cursorPosition: CursorPosition,
+            cursorOffset: Int,
             lineAnnotations: [String]
         ) {
             self.content = content
             self.lines = lines
             self.selections = selections
             self.cursorPosition = cursorPosition
+            self.cursorOffset = cursorOffset
             self.lineAnnotations = lineAnnotations.map(EditorInformation.parseLineAnnotation)
         }
     }

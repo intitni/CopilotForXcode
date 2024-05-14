@@ -15,6 +15,7 @@ public protocol SuggestionServiceMiddleware {
 public enum SuggestionServiceMiddlewareContainer {
     static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
         DisabledLanguageSuggestionServiceMiddleware(),
+        PostProcessingSuggestionServiceMiddleware()
     ]
 
     static var customMiddlewares: [SuggestionServiceMiddleware] = []

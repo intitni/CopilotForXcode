@@ -60,11 +60,11 @@ public extension Workspace {
                 relativePath: fileURL.path.replacingOccurrences(of: projectRootURL.path, with: ""),
                 content: editor.lines.joined(separator: ""),
                 lines: editor.lines,
-                cursorPosition: editor.cursorPosition,
+                cursorPosition: editor.cursorPosition, 
+                cursorOffset: editor.cursorOffset,
                 tabSize: editor.tabSize,
                 indentSize: editor.indentSize,
                 usesTabsForIndentation: editor.usesTabsForIndentation,
-                ignoreSpaceOnlySuggestions: true, 
                 relevantCodeSnippets: []
             )
         )

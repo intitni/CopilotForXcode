@@ -43,58 +43,9 @@ final class FetchSuggestionTests: XCTestCase {
             cursorPosition: .outOfScope,
             tabSize: 4,
             indentSize: 4,
-            usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: false,
-            ignoreTrailingNewLinesAndSpaces: false
+            usesTabsForIndentation: false
         )
         XCTAssertEqual(completions.count, 3)
-    }
-
-    func test_ignore_empty_suggestions() async throws {
-        struct TestServer: GitHubCopilotLSP {
-            func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
-                fatalError()
-            }
-
-            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
-                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
-                    .init(
-                        text: "Hello World\n",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: ""
-                    ),
-                    .init(
-                        text: " ",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: ""
-                    ),
-                    .init(
-                        text: " \n",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
-                        range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: ""
-                    ),
-                ]) as! E.Response
-            }
-        }
-        let service = GitHubCopilotSuggestionService(designatedServer: TestServer())
-        let completions = try await service.getCompletions(
-            fileURL: .init(fileURLWithPath: "/file.swift"),
-            content: "",
-            cursorPosition: .outOfScope,
-            tabSize: 4,
-            indentSize: 4,
-            usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: true,
-            ignoreTrailingNewLinesAndSpaces: false
-        )
-        XCTAssertEqual(completions.count, 1)
-        XCTAssertEqual(completions.first?.text, "Hello World\n")
     }
 
     func test_if_language_identifier_is_unknown_returns_correctly() async throws {
@@ -123,12 +74,10 @@ final class FetchSuggestionTests: XCTestCase {
             cursorPosition: .outOfScope,
             tabSize: 4,
             indentSize: 4,
-            usesTabsForIndentation: false,
-            ignoreSpaceOnlySuggestions: false,
-            ignoreTrailingNewLinesAndSpaces: true
+            usesTabsForIndentation: false
         )
         XCTAssertEqual(completions.count, 1)
-        XCTAssertEqual(completions.first?.text, "Hello World")
+        XCTAssertEqual(completions.first?.text, "Hello World\n")
     }
 }
 

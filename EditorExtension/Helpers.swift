@@ -47,7 +47,8 @@ extension EditorContent {
             uti: buffer.contentUTI,
             cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.end).map {
                 CursorPosition(line: $0.line, character: $0.column)
-            } ?? CursorPosition(line: 0, character: 0),
+            } ?? CursorPosition(line: 0, character: 0), 
+            cursorOffset: -1,
             selections: buffer.selections.map {
                 let sl = ($0 as? XCSourceTextRange)?.start.line ?? 0
                 let sc = ($0 as? XCSourceTextRange)?.start.column ?? 0

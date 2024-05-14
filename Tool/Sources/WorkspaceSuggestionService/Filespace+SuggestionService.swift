@@ -57,7 +57,7 @@ public extension Filespace {
             return false
         }
 
-        let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
+        let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
         let suggestionLines = presentingSuggestion.text.split(whereSeparator: \.isNewline)
         let suggestionFirstLine = suggestionLines.first ?? ""
 
@@ -83,7 +83,7 @@ public extension Filespace {
             )
 
             let utf16View = editingLine.utf16
-            
+
             let startIndex = utf16View.index(
                 utf16View.startIndex,
                 offsetBy: max(0, presentingSuggestion.range.start.character),
@@ -102,6 +102,18 @@ public extension Filespace {
 
             return ""
         }()
+
+        /// if the line will not change after accepting the suggestion
+        if suggestionLines.count == 1 {
+            if editingLine.hasPrefix(suggestionFirstLine),
+               cursorPosition.character
+               >= suggestionFirstLine.utf16.count + presentingSuggestion.range.start.character
+            {
+                reset()
+                resetSnapshot()
+                return false
+            }
+        }
 
         // the line content doesn't match the suggestion
         if cursorPosition.character > 0,

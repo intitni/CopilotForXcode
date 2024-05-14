@@ -111,6 +111,8 @@ public struct UserDefaultsStorageBox<Element: Codable>: RawRepresentable {
     }
 }
 
+extension UserDefaultsStorageBox: Equatable where Element: Equatable {}
+
 public extension UserDefaultsType {
     // MARK: Normal Types
 

@@ -23,6 +23,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            cursorOffset: -1,
             selections: [],
             tabSize: 0,
             indentSize: 0,
@@ -37,6 +38,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            cursorOffset: -1,
             selections: [],
             tabSize: 0,
             indentSize: 0,
@@ -128,6 +130,7 @@ struct PseudoCommandHandler {
             lines: [],
             uti: "",
             cursorPosition: .outOfScope,
+            cursorOffset: -1,
             selections: [],
             tabSize: 0,
             indentSize: 0,
@@ -148,6 +151,7 @@ struct PseudoCommandHandler {
                     lines: [],
                     uti: "",
                     cursorPosition: .outOfScope,
+                    cursorOffset: -1,
                     selections: [],
                     tabSize: 0,
                     indentSize: 0,
@@ -206,7 +210,7 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
+            guard let (content, lines, _, cursorPosition, cursorOffset) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -219,6 +223,7 @@ struct PseudoCommandHandler {
                     lines: lines,
                     uti: "",
                     cursorPosition: cursorPosition,
+                    cursorOffset: cursorOffset,
                     selections: [],
                     tabSize: 0,
                     indentSize: 0,
@@ -261,7 +266,7 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, _, cursorPosition) = await getFileContent(sourceEditor: nil)
+            guard let (content, lines, _, cursorPosition, cursorOffset) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -274,6 +279,7 @@ struct PseudoCommandHandler {
                     lines: lines,
                     uti: "",
                     cursorPosition: cursorPosition,
+                    cursorOffset: cursorOffset,
                     selections: [],
                     tabSize: 0,
                     indentSize: 0,
@@ -361,7 +367,8 @@ extension PseudoCommandHandler {
             content: String,
             lines: [String],
             selections: [CursorRange],
-            cursorPosition: CursorPosition
+            cursorPosition: CursorPosition,
+            cursorOffset: Int
         )?
     {
         guard let xcode = ActiveApplicationMonitor.shared.activeXcode
@@ -374,7 +381,7 @@ extension PseudoCommandHandler {
         let content = focusElement.value
         let split = content.breakLines(appendLineBreakToLastLine: false)
         let range = SourceEditor.convertRangeToCursorRange(selectionRange, in: content)
-        return (content, split, [range], range.start)
+        return (content, split, [range], range.start, selectionRange.lowerBound)
     }
 
     func getFileURL() async -> URL? {
@@ -410,6 +417,7 @@ extension PseudoCommandHandler {
             lines: content.lines,
             uti: uti,
             cursorPosition: content.cursorPosition,
+            cursorOffset: content.cursorOffset,
             selections: content.selections.map {
                 .init(start: $0.start, end: $0.end)
             },

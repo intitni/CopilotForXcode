@@ -209,6 +209,7 @@ extension PromptToCodePanel {
         @AppStorage(\.codeForegroundColorDark) var codeForegroundColorDark
         @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
         @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
+        @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
         
         struct CodeContent: Equatable {
             var code: String
@@ -241,11 +242,11 @@ extension PromptToCodePanel {
                     return color
                 }
             }
-            return Color.clear
+            return Color.contentBackground
         }
 
         var body: some View {
-            CustomScrollView {
+            ScrollView {
                 VStack(spacing: 0) {
                     Spacer(minLength: 60)
 
@@ -304,25 +305,41 @@ extension PromptToCodePanel {
                             .frame(maxWidth: .infinity)
                             .scaleEffect(x: 1, y: -1, anchor: .center)
                         } else {
-                            CodeBlock(
-                                code: viewStore.state.code,
-                                language: viewStore.state.language,
-                                startLineIndex: viewStore.state.startLineIndex, 
-                                scenario: "promptToCode",
-                                colorScheme: colorScheme,
-                                firstLinePrecedingSpaceCount: viewStore.state
-                                    .firstLinePrecedingSpaceCount,
-                                font: codeFont.value.nsFont,
-                                droppingLeadingSpaces: hideCommonPrecedingSpaces,
-                                proposedForegroundColor:codeForegroundColor
-                            )
-                            .frame(maxWidth: .infinity)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                            if wrapCode {
+                                codeBlock(viewStore.state)
+                            } else {
+                                ScrollView(.horizontal) {
+                                    codeBlock(viewStore.state)
+                                }
+                                .modify {
+                                    if #available(macOS 13.0, *) {
+                                        $0.scrollIndicators(.hidden)
+                                    } else {
+                                        $0
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                .background(codeBackgroundColor)
             }
+            .background(codeBackgroundColor)
+            .scaleEffect(x: 1, y: -1, anchor: .center)
+        }
+        
+        func codeBlock(_ state: CodeContent) -> some View {
+            CodeBlock(
+                code: state.code,
+                language: state.language,
+                startLineIndex: state.startLineIndex,
+                scenario: "promptToCode",
+                colorScheme: colorScheme,
+                firstLinePrecedingSpaceCount: state.firstLinePrecedingSpaceCount,
+                font: codeFont.value.nsFont,
+                droppingLeadingSpaces: hideCommonPrecedingSpaces,
+                proposedForegroundColor:codeForegroundColor
+            )
+            .frame(maxWidth: .infinity)
             .scaleEffect(x: 1, y: -1, anchor: .center)
         }
     }
