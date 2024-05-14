@@ -11,11 +11,13 @@ struct AsyncCodeBlockView: View {
     class Storage: ObservableObject {
         static let queue = DispatchQueue(
             label: "chat-code-block-highlight",
-            qos: .userInteractive
+            qos: .userInteractive, 
+            attributes: .concurrent
         )
 
         @Published var highlighted: AttributedString?
         var debounceFunction: DebounceFunction<AsyncCodeBlockView>?
+        private var highlightTask: Task<Void, Error>?
         
         init() {
             self.debounceFunction = .init(duration: 0.5, block: { [weak self] view in
@@ -32,20 +34,26 @@ struct AsyncCodeBlockView: View {
         }
         
         func highlight(for view: AsyncCodeBlockView) {
+            highlightTask?.cancel()
             let content = view.content
             let language = view.fenceInfo ?? ""
             let brightMode = view.colorScheme != .dark
             let font = view.font
-            Self.queue.async {
-                let content = highlightedCodeBlock(
-                    code: content,
-                    language: language,
-                    scenario: "chat",
-                    brightMode: brightMode,
-                    font: font
-                )
-                let string = AttributedString(content)
-                DispatchQueue.main.async {
+            highlightTask = Task {
+                let string = await withUnsafeContinuation { continuation in
+                    Self.queue.async {
+                        let content = highlightedCodeBlock(
+                            code: content,
+                            language: language,
+                            scenario: "chat",
+                            brightMode: brightMode,
+                            font: font
+                        )
+                        continuation.resume(returning: AttributedString(content))
+                    }
+                }
+                try Task.checkCancellation()
+                await MainActor.run {
                     self.highlighted = string
                 }
             }
