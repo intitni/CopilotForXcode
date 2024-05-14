@@ -5,7 +5,9 @@ import LaunchAgentManager
 import SwiftUI
 import XPCShared
 
-struct General: ReducerProtocol {
+@Reducer
+struct General {
+    @ObservableState
     struct State: Equatable {
         var xpcServiceVersion: String?
         var isAccessibilityPermissionGranted: Bool?
@@ -23,7 +25,7 @@ struct General: ReducerProtocol {
 
     @Dependency(\.toast) var toast
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:

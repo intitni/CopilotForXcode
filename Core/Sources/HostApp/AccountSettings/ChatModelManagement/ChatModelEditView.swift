@@ -6,7 +6,7 @@ import SwiftUI
 
 @MainActor
 struct ChatModelEditView: View {
-    let store: StoreOf<ChatModelEdit>
+    @Perception.Bindable var store: StoreOf<ChatModelEdit>
 
     var body: some View {
         ScrollView {
@@ -15,8 +15,8 @@ struct ChatModelEditView: View {
                     nameTextField
                     formatPicker
 
-                    WithViewStore(store, observe: { $0.format }) { viewStore in
-                        switch viewStore.state {
+                    WithPerceptionTracking {
+                        switch store.format {
                         case .openAI:
                             openAI
                         case .azureOpenAI:
@@ -37,14 +37,14 @@ struct ChatModelEditView: View {
                 Divider()
 
                 HStack {
-                    WithViewStore(store, observe: { $0.isTesting }) { viewStore in
+                    WithPerceptionTracking {
                         HStack(spacing: 8) {
                             Button("Test") {
                                 store.send(.testButtonClicked)
                             }
-                            .disabled(viewStore.state)
+                            .disabled(store.isTesting)
 
-                            if viewStore.state {
+                            if store.isTesting {
                                 ProgressView()
                                     .controlSize(.small)
                             }
@@ -75,15 +75,15 @@ struct ChatModelEditView: View {
     }
 
     var nameTextField: some View {
-        WithViewStore(store, removeDuplicates: { $0.name == $1.name }) { viewStore in
-            TextField("Name", text: viewStore.$name)
+        WithPerceptionTracking {
+            TextField("Name", text: $store.name)
         }
     }
 
     var formatPicker: some View {
-        WithViewStore(store, removeDuplicates: { $0.format == $1.format }) { viewStore in
+        WithPerceptionTracking {
             Picker(
-                selection: viewStore.$format,
+                selection: $store.format,
                 content: {
                     ForEach(
                         ChatModel.Format.allCases,
@@ -121,7 +121,7 @@ struct ChatModelEditView: View {
             prompt: prompt,
             store: store.scope(
                 state: \.baseURLSelection,
-                action: ChatModelEdit.Action.baseURLSelection
+                action: \.baseURLSelection
             ),
             trailingContent: trailingContent
         )
@@ -135,13 +135,10 @@ struct ChatModelEditView: View {
     }
 
     var supportsFunctionCallingToggle: some View {
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.supportsFunctionCalling == $1.supportsFunctionCalling }
-        ) { viewStore in
+        WithPerceptionTracking {
             Toggle(
                 "Supports Function Calling",
-                isOn: viewStore.$supportsFunctionCalling
+                isOn: $store.supportsFunctionCalling
             )
 
             Text(
@@ -153,29 +150,16 @@ struct ChatModelEditView: View {
         }
     }
 
-    struct MaxTokensTextField: Equatable {
-        @BindingViewState var maxTokens: Int
-        var suggestedMaxTokens: Int?
-    }
-
     var maxTokensTextField: some View {
-        WithViewStore(
-            store,
-            observe: {
-                MaxTokensTextField(
-                    maxTokens: $0.$maxTokens,
-                    suggestedMaxTokens: $0.suggestedMaxTokens
-                )
-            }
-        ) { viewStore in
+        WithPerceptionTracking {
             HStack {
                 let textFieldBinding = Binding(
-                    get: { String(viewStore.state.maxTokens) },
+                    get: { String(store.maxTokens) },
                     set: {
                         if let selectionMaxToken = Int($0) {
-                            viewStore.$maxTokens.wrappedValue = selectionMaxToken
+                            $store.maxTokens.wrappedValue = selectionMaxToken
                         } else {
-                            viewStore.$maxTokens.wrappedValue = 0
+                            $store.maxTokens.wrappedValue = 0
                         }
                     }
                 )
@@ -186,7 +170,7 @@ struct ChatModelEditView: View {
                 }
                 .overlay(alignment: .trailing) {
                     Stepper(
-                        value: viewStore.$maxTokens,
+                        value: $store.maxTokens,
                         in: 0...Int.max,
                         step: 100
                     ) {
@@ -194,32 +178,27 @@ struct ChatModelEditView: View {
                     }
                 }
                 .foregroundColor({
-                    guard let max = viewStore.state.suggestedMaxTokens else {
+                    guard let max = store.suggestedMaxTokens else {
                         return .primary
                     }
-                    if viewStore.state.maxTokens > max {
+                    if store.maxTokens > max {
                         return .red
                     }
                     return .primary
                 }() as Color)
 
-                if let max = viewStore.state.suggestedMaxTokens {
+                if let max = store.suggestedMaxTokens {
                     Text("Max: \(max)")
                 }
             }
         }
     }
 
-    struct APIKeyState: Equatable {
-        @BindingViewState var apiKeyName: String
-        var availableAPIKeys: [String]
-    }
-
     @ViewBuilder
     var apiKeyNamePicker: some View {
         APIKeyPicker(store: store.scope(
             state: \.apiKeySelection,
-            action: ChatModelEdit.Action.apiKeySelection
+            action: \.apiKeySelection
         ))
     }
 
@@ -230,18 +209,15 @@ struct ChatModelEditView: View {
         }
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
                 .overlay(alignment: .trailing) {
                     Picker(
                         "",
-                        selection: viewStore.$modelName,
+                        selection: $store.modelName,
                         content: {
-                            if ChatGPTModel(rawValue: viewStore.state.modelName) == nil {
-                                Text("Custom Model").tag(viewStore.state.modelName)
+                            if ChatGPTModel(rawValue: store.modelName) == nil {
+                                Text("Custom Model").tag(store.modelName)
                             }
                             ForEach(ChatGPTModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
@@ -272,11 +248,8 @@ struct ChatModelEditView: View {
         baseURLTextField(prompt: Text("https://xxxx.openai.azure.com"))
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Deployment Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Deployment Name", text: $store.modelName)
         }
 
         maxTokensTextField
@@ -285,12 +258,9 @@ struct ChatModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        WithViewStore(store.scope(
-            state: \.baseURLSelection,
-            action: ChatModelEdit.Action.baseURLSelection
-        ), removeDuplicates: { $0.isFullURL != $1.isFullURL }) { viewStore in
+        WithPerceptionTracking {
             Picker(
-                selection: viewStore.$isFullURL,
+                selection: $store.baseURLSelection.isFullURL,
                 content: {
                     Text("Base URL").tag(false)
                     Text("Full URL").tag(true)
@@ -298,16 +268,14 @@ struct ChatModelEditView: View {
                 label: { Text("URL") }
             )
             .pickerStyle(.segmented)
-        }
 
-        WithViewStore(store, observe: \.isFullURL) { viewStore in
             baseURLTextField(
                 title: "",
-                prompt: viewStore.state
+                prompt: store.isFullURL
                     ? Text("https://api.openai.com/v1/chat/completions")
                     : Text("https://api.openai.com")
             ) {
-                if !viewStore.state {
+                if !store.isFullURL {
                     Text("/v1/chat/completions")
                 }
             }
@@ -315,11 +283,8 @@ struct ChatModelEditView: View {
 
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
         }
 
         maxTokensTextField
@@ -334,18 +299,15 @@ struct ChatModelEditView: View {
 
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
                 .overlay(alignment: .trailing) {
                     Picker(
                         "",
-                        selection: viewStore.$modelName,
+                        selection: $store.modelName,
                         content: {
-                            if GoogleGenerativeAIModel(rawValue: viewStore.state.modelName) == nil {
-                                Text("Custom Model").tag(viewStore.state.modelName)
+                            if GoogleGenerativeAIModel(rawValue: store.modelName) == nil {
+                                Text("Custom Model").tag(store.modelName)
                             }
                             ForEach(GoogleGenerativeAIModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
@@ -358,8 +320,8 @@ struct ChatModelEditView: View {
 
         maxTokensTextField
 
-        WithViewStore(store, removeDuplicates: { $0.apiVersion == $1.apiVersion }) { viewStore in
-            TextField("API Version", text: viewStore.$apiVersion, prompt: Text("v1"))
+        WithPerceptionTracking {
+            TextField("API Version", text: $store.apiVersion, prompt: Text("v1"))
         }
     }
 
@@ -369,20 +331,14 @@ struct ChatModelEditView: View {
             Text("/api/chat")
         }
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
         }
 
         maxTokensTextField
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.ollamaKeepAlive == $1.ollamaKeepAlive }
-        ) { viewStore in
-            TextField(text: viewStore.$ollamaKeepAlive, prompt: Text("Default Value")) {
+        WithPerceptionTracking {
+            TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {
                 Text("Keep Alive")
             }
         }
@@ -403,20 +359,17 @@ struct ChatModelEditView: View {
 
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
                 .overlay(alignment: .trailing) {
                     Picker(
                         "",
-                        selection: viewStore.$modelName,
+                        selection: $store.modelName,
                         content: {
                             if ClaudeChatCompletionsService
-                                .KnownModel(rawValue: viewStore.state.modelName) == nil
+                                .KnownModel(rawValue: store.modelName) == nil
                             {
-                                Text("Custom Model").tag(viewStore.state.modelName)
+                                Text("Custom Model").tag(store.modelName)
                             }
                             ForEach(
                                 ClaudeChatCompletionsService.KnownModel.allCases,
@@ -444,7 +397,7 @@ struct ChatModelEditView: View {
 #Preview("OpenAI") {
     ChatModelEditView(
         store: .init(
-            initialState: .init(model: ChatModel(
+            initialState: ChatModel(
                 id: "3",
                 name: "Test Model 3",
                 format: .openAI,
@@ -455,8 +408,8 @@ struct ChatModelEditView: View {
                     supportsFunctionCalling: false,
                     modelName: "gpt-3.5-turbo"
                 )
-            )),
-            reducer: ChatModelEdit()
+            ).toState(),
+            reducer: { ChatModelEdit() }
         )
     )
 }
@@ -464,7 +417,7 @@ struct ChatModelEditView: View {
 #Preview("OpenAI Compatible") {
     ChatModelEditView(
         store: .init(
-            initialState: .init(model: ChatModel(
+            initialState: ChatModel(
                 id: "3",
                 name: "Test Model 3",
                 format: .openAICompatible,
@@ -476,8 +429,8 @@ struct ChatModelEditView: View {
                     supportsFunctionCalling: false,
                     modelName: "gpt-3.5-turbo"
                 )
-            )),
-            reducer: ChatModelEdit()
+            ).toState(),
+            reducer: { ChatModelEdit() }
         )
     )
 }

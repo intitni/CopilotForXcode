@@ -11,7 +11,9 @@ extension KeyboardShortcuts.Name {
     static let showHideWidget = Self("ShowHideWidget")
 }
 
-struct HostApp: ReducerProtocol {
+@Reducer
+struct HostApp {
+    @ObservableState
     struct State: Equatable {
         var general = General.State()
         var chatModelManagement = ChatModelManagement.State()
@@ -32,7 +34,7 @@ struct HostApp: ReducerProtocol {
         KeyboardShortcuts.userDefaults = .shared
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Scope(state: \.general, action: /Action.general) {
             General()
         }

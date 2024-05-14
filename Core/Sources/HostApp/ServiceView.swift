@@ -1,10 +1,10 @@
-import SwiftUI
 import ComposableArchitecture
+import SwiftUI
 
 struct ServiceView: View {
     let store: StoreOf<HostApp>
     @State var tag = 0
-    
+
     var body: some View {
         SidebarTabView(tag: $tag) {
             ScrollView {
@@ -15,7 +15,7 @@ struct ServiceView: View {
                 subtitle: "Suggestion",
                 image: "globe"
             )
-            
+
             ScrollView {
                 CodeiumView().padding()
             }.sidebarItem(
@@ -24,27 +24,27 @@ struct ServiceView: View {
                 subtitle: "Suggestion",
                 image: "globe"
             )
-            
+
             ChatModelManagementView(store: store.scope(
                 state: \.chatModelManagement,
-                action: HostApp.Action.chatModelManagement
+                action: \.chatModelManagement
             )).sidebarItem(
                 tag: 2,
                 title: "Chat Models",
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
-            
+
             EmbeddingModelManagementView(store: store.scope(
                 state: \.embeddingModelManagement,
-                action: HostApp.Action.embeddingModelManagement
+                action: \.embeddingModelManagement
             )).sidebarItem(
                 tag: 3,
                 title: "Embedding Models",
                 subtitle: "Chat, Prompt to Code",
                 image: "globe"
             )
-            
+
             ScrollView {
                 BingSearchView().padding()
             }.sidebarItem(
@@ -53,7 +53,7 @@ struct ServiceView: View {
                 subtitle: "Search Chat Plugin",
                 image: "globe"
             )
-            
+
             ScrollView {
                 OtherSuggestionServicesView().padding()
             }.sidebarItem(
@@ -68,6 +68,7 @@ struct ServiceView: View {
 
 struct AccountView_Previews: PreviewProvider {
     static var previews: some View {
-        ServiceView(store: .init(initialState: .init(), reducer: HostApp()))
+        ServiceView(store: .init(initialState: .init(), reducer: { HostApp() }))
     }
 }
+

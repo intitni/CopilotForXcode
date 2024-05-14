@@ -11,7 +11,7 @@ import ProHostApp
 #endif
 
 @MainActor
-let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: HostApp())
+let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: { HostApp() })
 
 public struct TabContainer: View {
     let store: StoreOf<HostApp>
@@ -37,7 +37,7 @@ public struct TabContainer: View {
             Divider()
 
             ZStack(alignment: .center) {
-                GeneralView(store: store.scope(state: \.general, action: HostApp.Action.general))
+                GeneralView(store: store.scope(state: \.general, action: \.general))
                     .tabBarItem(
                         tag: 0,
                         title: "General",
@@ -235,7 +235,7 @@ struct TabContainer_Previews: PreviewProvider {
 struct TabContainer_Toasts_Previews: PreviewProvider {
     static var previews: some View {
         TabContainer(
-            store: .init(initialState: .init(), reducer: HostApp()),
+            store: .init(initialState: .init(), reducer: { HostApp() }),
             toastController: .init(messages: [
                 .init(id: UUID(), type: .info, content: Text("info")),
                 .init(id: UUID(), type: .error, content: Text("error")),

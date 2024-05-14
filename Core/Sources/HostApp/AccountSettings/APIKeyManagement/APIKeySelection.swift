@@ -2,14 +2,16 @@ import Foundation
 import SwiftUI
 import ComposableArchitecture
 
-struct APIKeySelection: ReducerProtocol {
+@Reducer
+struct APIKeySelection {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var apiKeyName: String = ""
+        var apiKeyName: String = ""
         var availableAPIKeyNames: [String] {
             apiKeyManagement.availableAPIKeyNames
         }
         var apiKeyManagement: APIKeyManagement.State = .init()
-        @BindingState var isAPIKeyManagementPresented: Bool = false
+        var isAPIKeyManagementPresented: Bool = false
     }
     
     enum Action: Equatable, BindableAction {
@@ -23,10 +25,10 @@ struct APIKeySelection: ReducerProtocol {
     @Dependency(\.toast) var toast
     @Dependency(\.apiKeyKeychain) var keychain
     
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
         
-        Scope(state: \.apiKeyManagement, action: /Action.apiKeyManagement) {
+        Scope(state: \.apiKeyManagement, action: \.apiKeyManagement) {
             APIKeyManagement()
         }
         

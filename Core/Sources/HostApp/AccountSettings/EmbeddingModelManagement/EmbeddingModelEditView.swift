@@ -5,7 +5,7 @@ import SwiftUI
 
 @MainActor
 struct EmbeddingModelEditView: View {
-    let store: StoreOf<EmbeddingModelEdit>
+    @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
 
     var body: some View {
         ScrollView {
@@ -14,8 +14,8 @@ struct EmbeddingModelEditView: View {
                     nameTextField
                     formatPicker
 
-                    WithViewStore(store, observe: { $0.format }) { viewStore in
-                        switch viewStore.state {
+                    WithPerceptionTracking {
+                        switch store.format {
                         case .openAI:
                             openAI
                         case .azureOpenAI:
@@ -32,14 +32,14 @@ struct EmbeddingModelEditView: View {
                 Divider()
 
                 HStack {
-                    WithViewStore(store, observe: { $0.isTesting }) { viewStore in
+                    WithPerceptionTracking {
                         HStack(spacing: 8) {
                             Button("Test") {
                                 store.send(.testButtonClicked)
                             }
-                            .disabled(viewStore.state)
+                            .disabled(store.isTesting)
 
-                            if viewStore.state {
+                            if store.isTesting {
                                 ProgressView()
                                     .controlSize(.small)
                             }
@@ -70,15 +70,15 @@ struct EmbeddingModelEditView: View {
     }
 
     var nameTextField: some View {
-        WithViewStore(store, removeDuplicates: { $0.name == $1.name }) { viewStore in
-            TextField("Name", text: viewStore.$name)
+        WithPerceptionTracking {
+            TextField("Name", text: $store.name)
         }
     }
 
     var formatPicker: some View {
-        WithViewStore(store, removeDuplicates: { $0.format == $1.format }) { viewStore in
+        WithPerceptionTracking {
             Picker(
-                selection: viewStore.$format,
+                selection: $store.format,
                 content: {
                     ForEach(
                         EmbeddingModel.Format.allCases,
@@ -125,29 +125,16 @@ struct EmbeddingModelEditView: View {
         baseURLTextField(title: title, prompt: prompt, trailingContent: { EmptyView() })
     }
 
-    struct MaxTokensTextField: Equatable {
-        @BindingViewState var maxTokens: Int
-        var suggestedMaxTokens: Int?
-    }
-
     var maxTokensTextField: some View {
-        WithViewStore(
-            store,
-            observe: {
-                MaxTokensTextField(
-                    maxTokens: $0.$maxTokens,
-                    suggestedMaxTokens: $0.suggestedMaxTokens
-                )
-            }
-        ) { viewStore in
+        WithPerceptionTracking {
             HStack {
                 let textFieldBinding = Binding(
-                    get: { String(viewStore.state.maxTokens) },
+                    get: { String(store.maxTokens) },
                     set: {
                         if let selectionMaxToken = Int($0) {
-                            viewStore.$maxTokens.wrappedValue = selectionMaxToken
+                            $store.maxTokens.wrappedValue = selectionMaxToken
                         } else {
-                            viewStore.$maxTokens.wrappedValue = 0
+                            $store.maxTokens.wrappedValue = 0
                         }
                     }
                 )
@@ -158,7 +145,7 @@ struct EmbeddingModelEditView: View {
                 }
                 .overlay(alignment: .trailing) {
                     Stepper(
-                        value: viewStore.$maxTokens,
+                        value: $store.maxTokens,
                         in: 0...Int.max,
                         step: 100
                     ) {
@@ -166,32 +153,27 @@ struct EmbeddingModelEditView: View {
                     }
                 }
                 .foregroundColor({
-                    guard let max = viewStore.state.suggestedMaxTokens else {
+                    guard let max = store.suggestedMaxTokens else {
                         return .primary
                     }
-                    if viewStore.state.maxTokens > max {
+                    if store.maxTokens > max {
                         return .red
                     }
                     return .primary
                 }() as Color)
 
-                if let max = viewStore.state.suggestedMaxTokens {
+                if let max = store.suggestedMaxTokens {
                     Text("Max: \(max)")
                 }
             }
         }
     }
 
-    struct APIKeyState: Equatable {
-        @BindingViewState var apiKeyName: String
-        var availableAPIKeys: [String]
-    }
-
     @ViewBuilder
     var apiKeyNamePicker: some View {
         APIKeyPicker(store: store.scope(
             state: \.apiKeySelection,
-            action: EmbeddingModelEdit.Action.apiKeySelection
+            action: \.apiKeySelection
         ))
     }
 
@@ -202,18 +184,15 @@ struct EmbeddingModelEditView: View {
         }
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
                 .overlay(alignment: .trailing) {
                     Picker(
                         "",
-                        selection: viewStore.$modelName,
+                        selection: $store.modelName,
                         content: {
-                            if OpenAIEmbeddingModel(rawValue: viewStore.state.modelName) == nil {
-                                Text("Custom Model").tag(viewStore.state.modelName)
+                            if OpenAIEmbeddingModel(rawValue: store.modelName) == nil {
+                                Text("Custom Model").tag(store.modelName)
                             }
                             ForEach(OpenAIEmbeddingModel.allCases, id: \.self) { model in
                                 Text(model.rawValue).tag(model.rawValue)
@@ -225,7 +204,7 @@ struct EmbeddingModelEditView: View {
         }
 
         maxTokensTextField
-        
+
         VStack(alignment: .leading, spacing: 8) {
             Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                 " To get an API key, please visit [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)"
@@ -243,11 +222,8 @@ struct EmbeddingModelEditView: View {
         baseURLTextField(prompt: Text("https://xxxx.openai.azure.com"))
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Deployment Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Deployment Name", text: $store.modelName)
         }
 
         maxTokensTextField
@@ -255,12 +231,9 @@ struct EmbeddingModelEditView: View {
 
     @ViewBuilder
     var openAICompatible: some View {
-        WithViewStore(store.scope(
-            state: \.baseURLSelection,
-            action: EmbeddingModelEdit.Action.baseURLSelection
-        ), removeDuplicates: { $0.isFullURL != $1.isFullURL }) { viewStore in
+        WithPerceptionTracking {
             Picker(
-                selection: viewStore.$isFullURL,
+                selection: $store.baseURLSelection.isFullURL,
                 content: {
                     Text("Base URL").tag(false)
                     Text("Full URL").tag(true)
@@ -268,16 +241,14 @@ struct EmbeddingModelEditView: View {
                 label: { Text("URL") }
             )
             .pickerStyle(.segmented)
-        }
-
-        WithViewStore(store, observe: \.isFullURL) { viewStore in
+       
             baseURLTextField(
                 title: "",
-                prompt: viewStore.state
+                prompt: store.isFullURL
                     ? Text("https://api.openai.com/v1/embeddings")
                     : Text("https://api.openai.com")
             ) {
-                if !viewStore.state {
+                if !store.isFullURL {
                     Text("/v1/embeddings")
                 }
             }
@@ -285,40 +256,31 @@ struct EmbeddingModelEditView: View {
 
         apiKeyNamePicker
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
         }
 
         maxTokensTextField
     }
-    
+
     @ViewBuilder
     var ollama: some View {
         baseURLTextField(prompt: Text("http://127.0.0.1:11434")) {
             Text("/api/embeddings")
         }
 
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.modelName == $1.modelName }
-        ) { viewStore in
-            TextField("Model Name", text: viewStore.$modelName)
+        WithPerceptionTracking {
+            TextField("Model Name", text: $store.modelName)
         }
 
         maxTokensTextField
-        
-        WithViewStore(
-            store,
-            removeDuplicates: { $0.ollamaKeepAlive == $1.ollamaKeepAlive }
-        ) { viewStore in
-            TextField(text: viewStore.$ollamaKeepAlive, prompt: Text("Default Value")) {
+
+        WithPerceptionTracking {
+            TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {
                 Text("Keep Alive")
             }
         }
-        
+
         VStack(alignment: .leading, spacing: 8) {
             Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                 " For more details, please visit [https://ollama.com](https://ollama.com)."
@@ -332,7 +294,7 @@ class EmbeddingModelManagementView_Editing_Previews: PreviewProvider {
     static var previews: some View {
         EmbeddingModelEditView(
             store: .init(
-                initialState: .init(model: EmbeddingModel(
+                initialState: EmbeddingModel(
                     id: "3",
                     name: "Test Model 3",
                     format: .openAICompatible,
@@ -342,8 +304,8 @@ class EmbeddingModelManagementView_Editing_Previews: PreviewProvider {
                         maxTokens: 3000,
                         modelName: "gpt-3.5-turbo"
                     )
-                )),
-                reducer: EmbeddingModelEdit()
+                ).toState(),
+                reducer: { EmbeddingModelEdit() }
             )
         )
     }

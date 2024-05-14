@@ -37,13 +37,15 @@ extension ChatModel: ManageableAIModel {
     }
 }
 
+@Reducer
 struct ChatModelManagement: AIModelManagement {
     typealias Model = ChatModel
 
+    @ObservableState
     struct State: Equatable, AIModelManagementState {
         typealias Model = ChatModel
         var models: IdentifiedArrayOf<ChatModel> = []
-        @PresentationState var editingModel: ChatModelEdit.State?
+        @Presents var editingModel: ChatModelEdit.State?
         var selectedModelId: String? { editingModel?.id }
     }
 
@@ -61,7 +63,7 @@ struct ChatModelManagement: AIModelManagement {
     @Dependency(\.toast) var toast
     @Dependency(\.userDefaults) var userDefaults
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
@@ -89,7 +91,7 @@ struct ChatModelManagement: AIModelManagement {
 
             case let .selectModel(id):
                 guard let model = state.models[id: id] else { return .none }
-                state.editingModel = .init(model: model)
+                state.editingModel = model.toState()
                 return .none
 
             case let .duplicateModel(id):
@@ -134,7 +136,7 @@ struct ChatModelManagement: AIModelManagement {
             case .chatModelItem:
                 return .none
             }
-        }.ifLet(\.$editingModel, action: /Action.chatModelItem) {
+        }.ifLet(\.$editingModel, action: \.chatModelItem) {
             ChatModelEdit()
         }
     }

@@ -93,10 +93,10 @@ let package = Package(
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
         .package(url: "https://github.com/pointfreeco/swift-parsing", from: "0.12.1"),
-        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "0.5.1"),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "0.55.0"
+            from: "1.10.4"
         ),
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts

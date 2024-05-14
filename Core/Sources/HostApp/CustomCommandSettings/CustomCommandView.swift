@@ -21,9 +21,7 @@ extension List {
 
 let customCommandStore = StoreOf<CustomCommandFeature>(
     initialState: .init(),
-    reducer: CustomCommandFeature(
-        settings: .init()
-    )
+    reducer: { CustomCommandFeature(settings: .init()) }
 )
 
 struct CustomCommandView: View {
@@ -108,15 +106,16 @@ struct CustomCommandView: View {
         func performDrop(info: DropInfo) -> Bool {
             let jsonFiles = info.itemProviders(for: [.json])
             for file in jsonFiles {
-                file.loadInPlaceFileRepresentation(forTypeIdentifier: "public.json") { url, _, error in
-                    Task { @MainActor in
-                        if let url {
-                            store.send(.importCommand(at: url))
-                        } else if let error {
-                            toast(error.localizedDescription, .error)
+                file
+                    .loadInPlaceFileRepresentation(forTypeIdentifier: "public.json") { url, _, error in
+                        Task { @MainActor in
+                            if let url {
+                                store.send(.importCommand(at: url))
+                            } else if let error {
+                                toast(error.localizedDescription, .error)
+                            }
                         }
                     }
-                }
             }
 
             return !jsonFiles.isEmpty
@@ -124,7 +123,7 @@ struct CustomCommandView: View {
     }
 
     struct CommandButton: View {
-        let store: StoreOf<CustomCommandFeature>
+        @Perception.Bindable var store: StoreOf<CustomCommandFeature>
         let command: CustomCommand
 
         var body: some View {
@@ -158,10 +157,10 @@ struct CustomCommandView: View {
             }
             .padding(4)
             .background {
-                WithViewStore(store, observe: { $0.editCustomCommand?.commandId }) { viewStore in
+                WithPerceptionTracking {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
-                            viewStore.state == command.id
+                            store.editCustomCommand?.commandId == command.id
                                 ? Color.primary.opacity(0.05)
                                 : Color.clear
                         )
@@ -183,7 +182,7 @@ struct CustomCommandView: View {
     var rightPane: some View {
         IfLetStore(store.scope(
             state: \.editCustomCommand,
-            action: CustomCommandFeature.Action.editCustomCommand
+            action: \.editCustomCommand
         )) { store in
             EditCustomCommandView(store: store)
         } else: {
@@ -292,7 +291,7 @@ struct CustomCommandView_Preview: PreviewProvider {
                         )
                     )))
                 ),
-                reducer: CustomCommandFeature(settings: settings)
+                reducer: { CustomCommandFeature(settings: settings) }
             ),
             settings: settings
         )
@@ -328,7 +327,7 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                 initialState: .init(
                     editCustomCommand: nil
                 ),
-                reducer: CustomCommandFeature(settings: settings)
+                reducer: { CustomCommandFeature(settings: settings) }
             ),
             settings: settings
         )
