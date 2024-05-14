@@ -78,7 +78,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
         let isValid = await filespace.validateSuggestions(
-            lines: ["\n", "h🎆🎆o man\n", "\n"],
+            lines: ["\n", "h🎆🎆o ma\n", "\n"],
             cursorPosition: .init(line: 1, character: 2)
         )
         XCTAssertTrue(isValid)
@@ -95,7 +95,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
         let isValid = await filespace.validateSuggestions(
-            lines: ["\n", "h🎆🎆o man\n", "\n"],
+            lines: ["\n", "h🎆🎆o ma\n", "\n"],
             cursorPosition: .init(line: 1, character: 3)
         )
         XCTAssertTrue(isValid)
@@ -170,7 +170,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
         let wasValid = await filespace.validateSuggestions(
-            lines: ["\n", "hello man\n", "\n"],
+            lines: ["\n", "hello ma\n", "\n"],
             cursorPosition: .init(line: 1, character: 8)
         )
         let isValid = await filespace.validateSuggestions(
@@ -190,7 +190,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
         let wasValid = await filespace.validateSuggestions(
-            lines: ["\n", "hello m🎆🎆an\n", "\n"],
+            lines: ["\n", "hello m🎆🎆a\n", "\n"],
             cursorPosition: .init(line: 1, character: 12)
         )
         let isValid = await filespace.validateSuggestions(
@@ -211,7 +211,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
             range: .init(startPair: (1, 0), endPair: (1, 0))
         )
         let wasValid = await filespace.validateSuggestions(
-            lines: ["\n", "hello man!!!!!\n", "\n"],
+            lines: ["\n", "hello ma!!!!\n", "\n"],
             cursorPosition: .init(line: 1, character: 8)
         )
         let isValid = await filespace.validateSuggestions(

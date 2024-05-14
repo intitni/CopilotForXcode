@@ -83,7 +83,7 @@ public extension Filespace {
             )
 
             let utf16View = editingLine.utf16
-            
+
             let startIndex = utf16View.index(
                 utf16View.startIndex,
                 offsetBy: max(0, presentingSuggestion.range.start.character),
@@ -102,11 +102,13 @@ public extension Filespace {
 
             return ""
         }()
-        
+
         /// if the line will not change after accepting the suggestion
-        if presentingSuggestion.range.isOneLine {
-            #warning("TODO: Also handle the case where the suggestion doesn't start at character 0")
-            if editingLine == suggestionFirstLine {
+        if suggestionLines.count == 1 {
+            if editingLine.hasPrefix(suggestionFirstLine),
+               cursorPosition.character
+               >= suggestionFirstLine.utf16.count + presentingSuggestion.range.start.character
+            {
                 reset()
                 resetSnapshot()
                 return false
