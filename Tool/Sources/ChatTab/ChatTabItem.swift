@@ -13,7 +13,8 @@ public struct AnyChatTabBuilder: Equatable {
     }
 }
 
-public struct ChatTabItem: ReducerProtocol {
+@Reducer
+public struct ChatTabItem {
     public typealias State = ChatTabInfo
 
     public enum Action: Equatable {
@@ -26,7 +27,7 @@ public struct ChatTabItem: ReducerProtocol {
 
     public init() {}
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case let .updateTitle(title):
