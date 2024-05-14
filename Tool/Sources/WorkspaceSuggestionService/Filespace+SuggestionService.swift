@@ -57,7 +57,7 @@ public extension Filespace {
             return false
         }
 
-        let editingLine = lines[cursorPosition.line].dropLast(1) // dropping \n
+        let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
         let suggestionLines = presentingSuggestion.text.split(whereSeparator: \.isNewline)
         let suggestionFirstLine = suggestionLines.first ?? ""
 
@@ -102,6 +102,16 @@ public extension Filespace {
 
             return ""
         }()
+        
+        /// if the line will not change after accepting the suggestion
+        if presentingSuggestion.range.isOneLine {
+            #warning("TODO: Also handle the case where the suggestion doesn't start at character 0")
+            if editingLine == suggestionFirstLine {
+                reset()
+                resetSnapshot()
+                return false
+            }
+        }
 
         // the line content doesn't match the suggestion
         if cursorPosition.character > 0,
