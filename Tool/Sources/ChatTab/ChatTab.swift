@@ -53,7 +53,7 @@ public protocol ChatTabType {
 }
 
 /// The base class for all chat tabs.
-open class BaseChatTab: NSObject {
+open class BaseChatTab {
     /// A wrapper to support dynamic update of title in view.
     struct ContentView: View {
         var buildView: () -> any View
@@ -68,13 +68,12 @@ open class BaseChatTab: NSObject {
     public let chatTabStore: StoreOf<ChatTabItem>
     
     private var didStart = false
-    private var storeObservation: ObservationToken?
+    private let storeObserver = NSObject()
 
     public init(store: StoreOf<ChatTabItem>) {
         chatTabStore = store
-        super.init()
         
-        storeObservation = observe { [weak self] in
+        storeObserver.observe { [weak self] in
             guard let self else { return }
             self.title = store.title
             self.id = store.id
