@@ -233,28 +233,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            switch model.format {
-            case .openAI:
-                if !model.info.openAIInfo.organizationID.isEmpty {
-                    request.setValue(
-                        model.info.openAIInfo.organizationID,
-                        forHTTPHeaderField: "OpenAI-Organization"
-                    )
-                }
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .openAICompatible:
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .azureOpenAI:
-                request.setValue(apiKey, forHTTPHeaderField: "api-key")
-            case .googleAI:
-                assertionFailure("Unsupported")
-            case .ollama:
-                assertionFailure("Unsupported")
-            case .claude:
-                assertionFailure("Unsupported")
-            }
-        }
+        
+        Self.setupRequestTitle(&request)
+        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -303,28 +284,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            switch model.format {
-            case .openAI:
-                if !model.info.openAIInfo.organizationID.isEmpty {
-                    request.setValue(
-                        "OpenAI-Organization",
-                        forHTTPHeaderField: model.info.openAIInfo.organizationID
-                    )
-                }
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .openAICompatible:
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .azureOpenAI:
-                request.setValue(apiKey, forHTTPHeaderField: "api-key")
-            case .googleAI:
-                assertionFailure("Unsupported")
-            case .ollama:
-                assertionFailure("Unsupported")
-            case .claude:
-                assertionFailure("Unsupported")
-            }
-        }
+        
+        Self.setupRequestTitle(&request)
+        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -343,6 +305,43 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         } catch {
             dump(error)
             throw error
+        }
+    }
+    
+    static func setupRequestTitle(_ request: inout URLRequest) {
+        if #available(macOS 13.0, *) {
+            if request.url?.host == "openrouter.ai" {
+                request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+            }
+        } else {
+            if request.url?.host == "openrouter.ai" {
+                request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+            }
+        }
+    }
+    
+    static func setupAPIKey(_ request: inout URLRequest, model: ChatModel, apiKey: String) {
+        if !apiKey.isEmpty {
+            switch model.format {
+            case .openAI:
+                if !model.info.openAIInfo.organizationID.isEmpty {
+                    request.setValue(
+                        model.info.openAIInfo.organizationID,
+                        forHTTPHeaderField: "OpenAI-Organization"
+                    )
+                }
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .openAICompatible:
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .azureOpenAI:
+                request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .googleAI:
+                assertionFailure("Unsupported")
+            case .ollama:
+                assertionFailure("Unsupported")
+            case .claude:
+                assertionFailure("Unsupported")
+            }
         }
     }
 }
