@@ -12,11 +12,11 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         var input: [[Int]]
         var model: String
     }
-    
+
     let apiKey: String
     let model: EmbeddingModel
     let endpoint: String
-    
+
     public func embed(text: String) async throws -> EmbeddingResponse {
         return try await embed(texts: [text])
     }
@@ -31,8 +31,8 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        Self.setupRequestTitle(&request)
+
+        Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
@@ -72,8 +72,8 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        Self.setupRequestTitle(&request)
+
+        Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
@@ -102,19 +102,27 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         #endif
         return embeddingResponse
     }
-    
-    static func setupRequestTitle(_ request: inout URLRequest) {
+
+    static func setupAppInformation(_ request: inout URLRequest) {
         if #available(macOS 13.0, *) {
             if request.url?.host == "openrouter.ai" {
                 request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
             }
         } else {
             if request.url?.host == "openrouter.ai" {
                 request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
             }
         }
     }
-    
+
     static func setupAPIKey(_ request: inout URLRequest, model: EmbeddingModel, apiKey: String) {
         if !apiKey.isEmpty {
             switch model.format {

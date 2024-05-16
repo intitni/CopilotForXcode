@@ -233,8 +233,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        Self.setupRequestTitle(&request)
+
+        Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
@@ -284,8 +284,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        Self.setupRequestTitle(&request)
+
+        Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
@@ -307,19 +307,27 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             throw error
         }
     }
-    
-    static func setupRequestTitle(_ request: inout URLRequest) {
+
+    static func setupAppInformation(_ request: inout URLRequest) {
         if #available(macOS 13.0, *) {
             if request.url?.host == "openrouter.ai" {
                 request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
             }
         } else {
             if request.url?.host == "openrouter.ai" {
                 request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
             }
         }
     }
-    
+
     static func setupAPIKey(_ request: inout URLRequest, model: ChatModel, apiKey: String) {
         if !apiKey.isEmpty {
             switch model.format {
