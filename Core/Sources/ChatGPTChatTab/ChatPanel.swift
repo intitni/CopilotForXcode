@@ -226,12 +226,7 @@ struct ChatPanelMessages: View {
         let scrollToBottom: () -> Void
 
         @State var isInitialLoad = true
-
-        struct PinToBottomRelatedState: Equatable {
-            var isReceivingMessage: Bool
-            var lastMessage: DisplayedChatMessage?
-        }
-
+        
         var body: some View {
             WithPerceptionTracking {
                 EmptyView()
