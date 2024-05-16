@@ -2,7 +2,9 @@ import AppKit
 import ComposableArchitecture
 import Foundation
 
-public struct PanelFeature: ReducerProtocol {
+@Reducer
+public struct PanelFeature {
+    @ObservableState
     public struct State: Equatable {
         public var content: SharedPanelFeature.Content {
             get { sharedPanelState.content }
@@ -40,12 +42,12 @@ public struct PanelFeature: ReducerProtocol {
     @Dependency(\.activateThisApp) var activateThisApp
     var windows: WidgetWindows? { suggestionWidgetControllerDependency.windowsController?.windows }
 
-    public var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.suggestionPanelState, action: /Action.suggestionPanel) {
+    public var body: some ReducerOf<Self> {
+        Scope(state: \.suggestionPanelState, action: \.suggestionPanel) {
             SuggestionPanelFeature()
         }
 
-        Scope(state: \.sharedPanelState, action: /Action.sharedPanel) {
+        Scope(state: \.sharedPanelState, action: \.sharedPanel) {
             SharedPanelFeature()
         }
 

@@ -11,7 +11,7 @@ import ProHostApp
 #endif
 
 @MainActor
-let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: HostApp())
+let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: { HostApp() })
 
 public struct TabContainer: View {
     let store: StoreOf<HostApp>
@@ -30,62 +30,64 @@ public struct TabContainer: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            TabBar(tag: $tag, tabBarItems: tabBarItems)
-                .padding(.bottom, 8)
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                TabBar(tag: $tag, tabBarItems: tabBarItems)
+                    .padding(.bottom, 8)
 
-            Divider()
+                Divider()
 
-            ZStack(alignment: .center) {
-                GeneralView(store: store.scope(state: \.general, action: HostApp.Action.general))
-                    .tabBarItem(
-                        tag: 0,
-                        title: "General",
-                        image: "app.gift"
+                ZStack(alignment: .center) {
+                    GeneralView(store: store.scope(state: \.general, action: \.general))
+                        .tabBarItem(
+                            tag: 0,
+                            title: "General",
+                            image: "app.gift"
+                        )
+                    ServiceView(store: store).tabBarItem(
+                        tag: 1,
+                        title: "Service",
+                        image: "globe"
                     )
-                ServiceView(store: store).tabBarItem(
-                    tag: 1,
-                    title: "Service",
-                    image: "globe"
-                )
-                FeatureSettingsView().tabBarItem(
-                    tag: 2,
-                    title: "Feature",
-                    image: "star.square"
-                )
-                CustomCommandView(store: customCommandStore).tabBarItem(
-                    tag: 3,
-                    title: "Custom Command",
-                    image: "command.square"
-                )
-                #if canImport(ProHostApp)
-                PlusView(onLicenseKeyChanged: {
-                    store.send(.informExtensionServiceAboutLicenseKeyChange)
-                }).tabBarItem(
-                    tag: 5,
-                    title: "Plus",
-                    image: "plus.diamond"
-                )
-                #endif
-                DebugSettingsView().tabBarItem(
-                    tag: 4,
-                    title: "Advanced",
-                    image: "gearshape.2"
-                )
+                    FeatureSettingsView().tabBarItem(
+                        tag: 2,
+                        title: "Feature",
+                        image: "star.square"
+                    )
+                    CustomCommandView(store: customCommandStore).tabBarItem(
+                        tag: 3,
+                        title: "Custom Command",
+                        image: "command.square"
+                    )
+                    #if canImport(ProHostApp)
+                    PlusView(onLicenseKeyChanged: {
+                        store.send(.informExtensionServiceAboutLicenseKeyChange)
+                    }).tabBarItem(
+                        tag: 5,
+                        title: "Plus",
+                        image: "plus.diamond"
+                    )
+                    #endif
+                    DebugSettingsView().tabBarItem(
+                        tag: 4,
+                        title: "Advanced",
+                        image: "gearshape.2"
+                    )
+                }
+                .environment(\.tabBarTabTag, tag)
+                .frame(minHeight: 400)
             }
-            .environment(\.tabBarTabTag, tag)
-            .frame(minHeight: 400)
-        }
-        .focusable(false)
-        .padding(.top, 8)
-        .background(.ultraThinMaterial.opacity(0.01))
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
-        .handleToast()
-        .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
-            tabBarItems = items
-        }
-        .onAppear {
-            store.send(.appear)
+            .focusable(false)
+            .padding(.top, 8)
+            .background(.ultraThinMaterial.opacity(0.01))
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
+            .handleToast()
+            .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
+                tabBarItems = items
+            }
+            .onAppear {
+                store.send(.appear)
+            }
         }
     }
 }
@@ -235,7 +237,7 @@ struct TabContainer_Previews: PreviewProvider {
 struct TabContainer_Toasts_Previews: PreviewProvider {
     static var previews: some View {
         TabContainer(
-            store: .init(initialState: .init(), reducer: HostApp()),
+            store: .init(initialState: .init(), reducer: { HostApp() }),
             toastController: .init(messages: [
                 .init(id: UUID(), type: .info, content: Text("info")),
                 .init(id: UUID(), type: .error, content: Text("error")),

@@ -23,7 +23,9 @@ public extension DependencyValues {
     }
 }
 
-public struct PromptToCode: ReducerProtocol {
+@Reducer
+public struct PromptToCode {
+    @ObservableState
     public struct State: Equatable, Identifiable {
         public indirect enum HistoryNode: Equatable {
             case empty
@@ -66,10 +68,10 @@ public struct PromptToCode: ReducerProtocol {
         public var extraSystemPrompt: String?
         public var generateDescriptionRequirement: Bool?
         public var commandName: String?
-        @BindingState public var prompt: String
-        @BindingState public var isContinuous: Bool
-        @BindingState public var isAttachedToSelectionRange: Bool
-        @BindingState public var focusedField: FocusField? = .textField
+        public var prompt: String
+        public var isContinuous: Bool
+        public var isAttachedToSelectionRange: Bool
+        public var focusedField: FocusField? = .textField
 
         public var filename: String { documentURL.lastPathComponent }
         public var canRevert: Bool { history != .empty }
@@ -145,7 +147,7 @@ public struct PromptToCode: ReducerProtocol {
         case modifyCode(State.ID)
     }
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce { state, action in

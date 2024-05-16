@@ -1,10 +1,12 @@
 import ComposableArchitecture
 import Foundation
 
-struct APIKeyManagement: ReducerProtocol {
+@Reducer
+struct APIKeyManagement {
+    @ObservableState
     struct State: Equatable {
         var availableAPIKeyNames: [String] = []
-        @PresentationState var apiKeySubmission: APIKeySubmission.State?
+        @Presents var apiKeySubmission: APIKeySubmission.State?
     }
 
     enum Action: Equatable {
@@ -20,7 +22,7 @@ struct APIKeyManagement: ReducerProtocol {
     @Dependency(\.toast) var toast
     @Dependency(\.apiKeyKeychain) var keychain
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
@@ -72,7 +74,7 @@ struct APIKeyManagement: ReducerProtocol {
                 return .none
             }
         }
-        .ifLet(\.$apiKeySubmission, action: /Action.apiKeySubmission) {
+        .ifLet(\.$apiKeySubmission, action: \.apiKeySubmission) {
             APIKeySubmission()
         }
     }

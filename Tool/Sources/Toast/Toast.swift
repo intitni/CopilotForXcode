@@ -81,8 +81,11 @@ public class ToastController: ObservableObject {
     }
 }
 
-public struct Toast: ReducerProtocol {
+@Reducer
+public struct Toast {
     public typealias Message = ToastController.Message
+    
+    @ObservableState
     public struct State: Equatable {
         var isObservingToastController = false
         public var messages: [Message] = []
@@ -104,7 +107,7 @@ public struct Toast: ReducerProtocol {
 
     public init() {}
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .start:

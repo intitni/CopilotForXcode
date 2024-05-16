@@ -54,16 +54,18 @@ private var isPreview: Bool {
     ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 }
 
-struct Chat: ReducerProtocol {
+@Reducer
+struct Chat {
     public typealias MessageID = String
 
+    @ObservableState
     struct State: Equatable {
         var title: String = "Chat"
-        @BindingState var typedMessage = ""
+        var typedMessage = ""
         var history: [DisplayedChatMessage] = []
-        @BindingState var isReceivingMessage = false
+        var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
-        @BindingState var focusedField: Field?
+        var focusedField: Field?
 
         enum Field: String, Hashable {
             case textField
@@ -115,7 +117,7 @@ struct Chat: ReducerProtocol {
 
     @Dependency(\.openURL) var openURL
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Scope(state: \.chatMenu, action: /Action.chatMenu) {
@@ -387,7 +389,9 @@ struct Chat: ReducerProtocol {
     }
 }
 
-struct ChatMenu: ReducerProtocol {
+@Reducer
+struct ChatMenu {
+    @ObservableState
     struct State: Equatable {
         var systemPrompt: String = ""
         var extraSystemPrompt: String = ""
@@ -409,7 +413,7 @@ struct ChatMenu: ReducerProtocol {
 
     let service: ChatService
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:

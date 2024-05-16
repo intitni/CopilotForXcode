@@ -17,7 +17,9 @@ import ProChatTabs
 import ChatTabPersistent
 #endif
 
-struct GUI: ReducerProtocol {
+@Reducer
+struct GUI {
+    @ObservableState
     struct State: Equatable {
         var suggestionWidgetState = WidgetFeature.State()
 
@@ -75,15 +77,15 @@ struct GUI: ReducerProtocol {
         case updateChatTabOrder
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         CombineReducers {
-            Scope(state: \.suggestionWidgetState, action: /Action.suggestionWidget) {
+            Scope(state: \.suggestionWidgetState, action: \.suggestionWidget) {
                 WidgetFeature()
             }
 
             Scope(
                 state: \.chatTabGroup,
-                action: /Action.suggestionWidget .. /WidgetFeature.Action.chatPanel
+                action: \.suggestionWidget.chatPanel
             ) {
                 Reduce { _, action in
                     switch action {
@@ -115,7 +117,7 @@ struct GUI: ReducerProtocol {
             }
 
             #if canImport(ChatTabPersistent)
-            Scope(state: \.persistentState, action: /Action.persistent) {
+            Scope(state: \.persistentState, action: \.persistent) {
                 ChatTabPersistent()
             }
             #endif
@@ -251,10 +253,9 @@ struct GUI: ReducerProtocol {
 
 @MainActor
 public final class GraphicalUserInterfaceController {
-    private let store: StoreOf<GUI>
+    let store: StoreOf<GUI>
     let widgetController: SuggestionWidgetController
     let widgetDataSource: WidgetDataSource
-    let viewStore: ViewStoreOf<GUI>
     let chatTabPool: ChatTabPool
 
     class WeakStoreHolder {
@@ -289,18 +290,17 @@ public final class GraphicalUserInterfaceController {
         }
         let store = StoreOf<GUI>(
             initialState: .init(),
-            reducer: GUI(),
-            prepareDependencies: setupDependency
+            reducer: { GUI() },
+            withDependencies: setupDependency
         )
         self.store = store
         self.chatTabPool = chatTabPool
-        viewStore = ViewStore(store)
         widgetDataSource = .init()
 
         widgetController = SuggestionWidgetController(
             store: store.scope(
                 state: \.suggestionWidgetState,
-                action: GUI.Action.suggestionWidget
+                action: \.suggestionWidget
             ),
             chatTabPool: chatTabPool,
             dependency: suggestionDependency
@@ -309,8 +309,7 @@ public final class GraphicalUserInterfaceController {
         chatTabPool.createStore = { id in
             store.scope(
                 state: { state in
-                    state.chatTabGroup.tabInfo[id: id]
-                        ?? .init(id: id, title: "")
+                    state.chatTabGroup.tabInfo[id: id] ?? .init(id: id, title: "")
                 },
                 action: { childAction in
                     .suggestionWidget(.chatPanel(.chatTab(id: id, action: childAction)))
@@ -321,8 +320,8 @@ public final class GraphicalUserInterfaceController {
         suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
-                await self?.viewStore.send(.createChatGPTChatTabIfNeeded).finish()
-                self?.viewStore.send(.openChatPanel(forceDetach: false))
+                await self?.store.send(.createChatGPTChatTabIfNeeded).finish()
+                self?.store.send(.openChatPanel(forceDetach: false))
             }
         }
         suggestionDependency.onCustomCommandClicked = { command in
@@ -339,8 +338,8 @@ public final class GraphicalUserInterfaceController {
 
     public func openGlobalChat() {
         Task {
-            await self.viewStore.send(.createChatGPTChatTabIfNeeded).finish()
-            viewStore.send(.openChatPanel(forceDetach: true))
+            await self.store.send(.createChatGPTChatTabIfNeeded).finish()
+            store.send(.openChatPanel(forceDetach: true))
         }
     }
 }

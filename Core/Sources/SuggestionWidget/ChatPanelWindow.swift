@@ -1,6 +1,5 @@
 import AppKit
 import ChatTab
-import Combine
 import ComposableArchitecture
 import Foundation
 import SwiftUI
@@ -9,7 +8,7 @@ final class ChatPanelWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
-    private var cancellable: Set<AnyCancellable> = []
+    private let storeObserver = NSObject()
 
     var minimizeWindow: () -> Void = {}
 
@@ -60,18 +59,17 @@ final class ChatPanelWindow: NSWindow {
         setIsVisible(true)
         isPanelDisplayed = false
 
-        let viewStore = ViewStore(store)
-        viewStore.publisher
-            .map(\.isDetached)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isDetached in
-                guard let self else { return }
+        storeObserver.observe { [weak self] in
+            guard let self else { return }
+            let isDetached = store.isDetached
+            Task { @MainActor in
                 if UserDefaults.shared.value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached) {
                     self.setFloatOnTop(!isDetached)
                 } else {
                     self.setFloatOnTop(true)
                 }
-            }.store(in: &cancellable)
+            }
+        }
     }
 
     func setFloatOnTop(_ isFloatOnTop: Bool) {

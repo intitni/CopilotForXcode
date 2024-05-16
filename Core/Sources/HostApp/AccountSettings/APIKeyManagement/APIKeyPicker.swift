@@ -2,26 +2,27 @@ import ComposableArchitecture
 import SwiftUI
 
 struct APIKeyPicker: View {
-    let store: StoreOf<APIKeySelection>
+    @Perception.Bindable var store: StoreOf<APIKeySelection>
 
     var body: some View {
-        WithViewStore(store) { viewStore in
+        WithPerceptionTracking {
             HStack {
                 Picker(
-                    selection: viewStore.$apiKeyName,
+                    selection: $store.apiKeyName,
                     content: {
                         Text("No API Key").tag("")
-                        if viewStore.state.availableAPIKeyNames.isEmpty {
+                        if store.availableAPIKeyNames.isEmpty {
                             Text("No API key found, please add a new one →")
                         }
-                        
-                        if !viewStore.state.availableAPIKeyNames.contains(viewStore.state.apiKeyName),
-                           !viewStore.state.apiKeyName.isEmpty {
-                            Text("Key not found: \(viewStore.state.apiKeyName)")
-                                .tag(viewStore.state.apiKeyName)
+
+                        if !store.availableAPIKeyNames.contains(store.apiKeyName),
+                           !store.apiKeyName.isEmpty
+                        {
+                            Text("Key not found: \(store.apiKeyName)")
+                                .tag(store.apiKeyName)
                         }
-                        
-                        ForEach(viewStore.state.availableAPIKeyNames, id: \.self) { name in
+
+                        ForEach(store.availableAPIKeyNames, id: \.self) { name in
                             Text(name).tag(name)
                         }
 
@@ -32,15 +33,17 @@ struct APIKeyPicker: View {
                 Button(action: { store.send(.manageAPIKeysButtonClicked) }) {
                     Text(Image(systemName: "key"))
                 }
-            }.sheet(isPresented: viewStore.$isAPIKeyManagementPresented) {
-                APIKeyManagementView(store: store.scope(
-                    state: \.apiKeyManagement,
-                    action: APIKeySelection.Action.apiKeyManagement
-                ))
+            }.sheet(isPresented: $store.isAPIKeyManagementPresented) {
+                WithPerceptionTracking {
+                    APIKeyManagementView(store: store.scope(
+                        state: \.apiKeyManagement,
+                        action: \.apiKeyManagement
+                    ))
+                }
             }
-        }
-        .onAppear {
-            store.send(.appear)
+            .onAppear {
+                store.send(.appear)
+            }
         }
     }
 }

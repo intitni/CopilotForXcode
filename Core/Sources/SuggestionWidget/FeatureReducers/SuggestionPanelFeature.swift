@@ -2,7 +2,9 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-public struct SuggestionPanelFeature: ReducerProtocol {
+@Reducer
+public struct SuggestionPanelFeature {
+    @ObservableState
     public struct State: Equatable {
         var content: CodeSuggestionProvider?
         var colorScheme: ColorScheme = .light
@@ -21,7 +23,7 @@ public struct SuggestionPanelFeature: ReducerProtocol {
         case noAction
     }
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         Reduce { _, _ in .none }
     }
 }

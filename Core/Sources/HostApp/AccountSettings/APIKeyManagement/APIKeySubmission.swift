@@ -1,10 +1,12 @@
 import ComposableArchitecture
 import Foundation
 
-struct APIKeySubmission: ReducerProtocol {
+@Reducer
+struct APIKeySubmission {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var name: String = ""
-        @BindingState var key: String = ""
+        var name: String = ""
+        var key: String = ""
     }
 
     enum Action: Equatable, BindableAction {
@@ -22,7 +24,7 @@ struct APIKeySubmission: ReducerProtocol {
         case keyIsEmpty
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce { state, action in

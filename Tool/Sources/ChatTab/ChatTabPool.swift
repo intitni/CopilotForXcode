@@ -8,7 +8,7 @@ public final class ChatTabPool {
     public var createStore: (String) -> StoreOf<ChatTabItem> = { id in
         .init(
             initialState: .init(id: id, title: ""),
-            reducer: ChatTabItem()
+            reducer: { ChatTabItem() }
         )
     }
 
@@ -52,3 +52,4 @@ public extension EnvironmentValues {
         set { self[ChatTabPoolEnvironmentKey.self] = newValue }
     }
 }
+

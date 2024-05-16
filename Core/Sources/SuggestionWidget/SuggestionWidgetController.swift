@@ -12,7 +12,6 @@ import XcodeInspector
 @MainActor
 public final class SuggestionWidgetController: NSObject {
     let store: StoreOf<WidgetFeature>
-    let viewStore: ViewStoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
     let windowsController: WidgetWindowsController
     private var cancellable = Set<AnyCancellable>()
@@ -27,7 +26,6 @@ public final class SuggestionWidgetController: NSObject {
         self.dependency = dependency
         self.store = store
         self.chatTabPool = chatTabPool
-        viewStore = .init(store, observe: { $0 })
         windowsController = .init(store: store, chatTabPool: chatTabPool)
 
         super.init()

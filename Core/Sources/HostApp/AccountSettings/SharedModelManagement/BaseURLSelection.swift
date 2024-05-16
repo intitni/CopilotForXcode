@@ -3,10 +3,12 @@ import Foundation
 import Preferences
 import SwiftUI
 
-struct BaseURLSelection: ReducerProtocol {
+@Reducer
+struct BaseURLSelection {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var baseURL: String = ""
-        @BindingState var isFullURL: Bool = false
+        var baseURL: String = ""
+        var isFullURL: Bool = false
         var availableBaseURLs: [String] = []
     }
 
@@ -19,7 +21,7 @@ struct BaseURLSelection: ReducerProtocol {
     @Dependency(\.toast) var toast
     @Dependency(\.userDefaults) var userDefaults
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce { state, action in

@@ -2,7 +2,8 @@ import ComposableArchitecture
 import Preferences
 import SwiftUI
 
-public struct SharedPanelFeature: ReducerProtocol {
+@Reducer
+public struct SharedPanelFeature {
     public struct Content: Equatable {
         public var promptToCodeGroup = PromptToCodeGroup.State()
         var suggestion: CodeSuggestionProvider?
@@ -10,6 +11,7 @@ public struct SharedPanelFeature: ReducerProtocol {
         var error: String?
     }
 
+    @ObservableState
     public struct State: Equatable {
         var content: Content = .init()
         var colorScheme: ColorScheme = .light
@@ -36,8 +38,8 @@ public struct SharedPanelFeature: ReducerProtocol {
         case promptToCodeGroup(PromptToCodeGroup.Action)
     }
 
-    public var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.content.promptToCodeGroup, action: /Action.promptToCodeGroup) {
+    public var body: some ReducerOf<Self> {
+        Scope(state: \.content.promptToCodeGroup, action: \.promptToCodeGroup) {
             PromptToCodeGroup()
         }
 

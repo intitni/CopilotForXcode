@@ -9,7 +9,8 @@ import SwiftUI
 import Toast
 import XcodeInspector
 
-public struct WidgetFeature: ReducerProtocol {
+@Reducer
+public struct WidgetFeature {
     public struct WindowState: Equatable {
         var alphaValue: Double = 0
         var frame: CGRect = .zero
@@ -20,6 +21,7 @@ public struct WidgetFeature: ReducerProtocol {
         case chatPanel
     }
 
+    @ObservableState
     public struct State: Equatable {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
@@ -42,7 +44,7 @@ public struct WidgetFeature: ReducerProtocol {
         }
 
         public var circularWidgetState = CircularWidgetState()
-        var _circularWidgetState: CircularWidgetFeature.State {
+        var _internalCircularWidgetState: CircularWidgetFeature.State {
             get {
                 .init(
                     isProcessingCounters: circularWidgetState.isProcessingCounters,
@@ -126,12 +128,12 @@ public struct WidgetFeature: ReducerProtocol {
 
     public init() {}
 
-    public var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.toastPanel, action: /Action.toastPanel) {
+    public var body: some ReducerOf<Self> {
+        Scope(state: \.toastPanel, action: \.toastPanel) {
             ToastPanel()
         }
 
-        Scope(state: \._circularWidgetState, action: /Action.circularWidget) {
+        Scope(state: \._internalCircularWidgetState, action: \.circularWidget) {
             CircularWidgetFeature()
         }
 
@@ -143,7 +145,7 @@ public struct WidgetFeature: ReducerProtocol {
                 }
 
             case .circularWidget(.widgetClicked):
-                let wasDisplayingContent = state._circularWidgetState.isDisplayingContent
+                let wasDisplayingContent = state._internalCircularWidgetState.isDisplayingContent
                 if wasDisplayingContent {
                     state.panelState.sharedPanelState.isPanelDisplayed = false
                     state.panelState.suggestionPanelState.isPanelDisplayed = false
@@ -154,7 +156,7 @@ public struct WidgetFeature: ReducerProtocol {
                     state.chatPanelState.isPanelDisplayed = true
                 }
 
-                let isDisplayingContent = state._circularWidgetState.isDisplayingContent
+                let isDisplayingContent = state._internalCircularWidgetState.isDisplayingContent
                 let hasChat = state.chatPanelState.chatTabGroup.selectedTabInfo != nil
                 let hasPromptToCode = state.panelState.sharedPanelState.content
                     .promptToCodeGroup.activePromptToCode != nil
@@ -180,11 +182,11 @@ public struct WidgetFeature: ReducerProtocol {
             }
         }
 
-        Scope(state: \.panelState, action: /Action.panel) {
+        Scope(state: \.panelState, action: \.panel) {
             PanelFeature()
         }
 
-        Scope(state: \.chatPanelState, action: /Action.chatPanel) {
+        Scope(state: \.chatPanelState, action: \.chatPanel) {
             ChatPanelFeature()
         }
 

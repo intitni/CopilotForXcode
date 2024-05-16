@@ -52,7 +52,7 @@ public final class ScheduledCleaner {
             if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
                 _ = await Task { @MainActor in
-                    service.guiController.viewStore.send(
+                    service.guiController.store.send(
                         .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: Array(
                             workspace.filespaces.keys
                         )))
@@ -72,7 +72,7 @@ public final class ScheduledCleaner {
                     ) {
                         Logger.service.info("Remove idle filespace")
                         _ = await Task { @MainActor in
-                            service.guiController.viewStore.send(
+                            service.guiController.store.send(
                                 .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: [url]))
                             )
                         }.result

@@ -25,12 +25,12 @@ final class GlobalShortcutManager {
             let isXCodeActive = XcodeInspector.shared.activeXcode != nil
 
             if !isXCodeActive,
-               !guiController.viewStore.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
+               !guiController.store.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
                UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally)
             {
-                guiController.viewStore.send(.openChatPanel(forceDetach: true))
+                guiController.store.send(.openChatPanel(forceDetach: true))
             } else {
-                guiController.viewStore.send(.toggleWidgetsHotkeyPressed)
+                guiController.store.send(.toggleWidgetsHotkeyPressed)
             }
         }
 

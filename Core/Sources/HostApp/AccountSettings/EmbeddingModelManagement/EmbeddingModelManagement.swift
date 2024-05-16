@@ -29,13 +29,15 @@ extension EmbeddingModel: ManageableAIModel {
     }
 }
 
+@Reducer
 struct EmbeddingModelManagement: AIModelManagement {
     typealias Model = EmbeddingModel
 
+    @ObservableState
     struct State: Equatable, AIModelManagementState {
         typealias Model = EmbeddingModel
         var models: IdentifiedArrayOf<EmbeddingModel> = []
-        @PresentationState var editingModel: EmbeddingModelEdit.State?
+        @Presents var editingModel: EmbeddingModelEdit.State?
         var selectedModelId: Model.ID? { editingModel?.id }
     }
 
@@ -53,7 +55,7 @@ struct EmbeddingModelManagement: AIModelManagement {
     @Dependency(\.toast) var toast
     @Dependency(\.userDefaults) var userDefaults
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
@@ -81,7 +83,7 @@ struct EmbeddingModelManagement: AIModelManagement {
 
             case let .selectModel(id):
                 guard let model = state.models[id: id] else { return .none }
-                state.editingModel = .init(model: model)
+                state.editingModel = model.toState()
                 return .none
 
             case let .duplicateModel(id):
@@ -126,7 +128,7 @@ struct EmbeddingModelManagement: AIModelManagement {
             case .embeddingModelItem:
                 return .none
             }
-        }.ifLet(\.$editingModel, action: /Action.embeddingModelItem) {
+        }.ifLet(\.$editingModel, action: \.embeddingModelItem) {
             EmbeddingModelEdit()
         }
     }
