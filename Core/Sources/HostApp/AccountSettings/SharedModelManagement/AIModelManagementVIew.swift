@@ -42,15 +42,15 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
     @Perception.Bindable var store: StoreOf<Management>
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                if isFeatureAvailable(\.unlimitedChatAndEmbeddingModels) {
-                    Button("Add Model") {
-                        store.send(.createModel)
-                    }
-                } else {
-                    WithPerceptionTracking {
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    if isFeatureAvailable(\.unlimitedChatAndEmbeddingModels) {
+                        Button("Add Model") {
+                            store.send(.createModel)
+                        }
+                    } else {
                         Text("\(store.models.count) / 2")
                             .foregroundColor(.secondary)
 
@@ -60,15 +60,15 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                             store.send(.createModel)
                         }.disabled(disabled)
                     }
-                }
-            }.padding(4)
+                }.padding(4)
 
-            Divider()
+                Divider()
 
-            ModelList(store: store)
-        }
-        .onAppear {
-            store.send(.appear)
+                ModelList(store: store)
+            }
+            .onAppear {
+                store.send(.appear)
+            }
         }
     }
 
@@ -79,23 +79,25 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
             WithPerceptionTracking {
                 List {
                     ForEach(store.models) { model in
-                        let isSelected = store.selectedModelId == model.id
-                        HStack(spacing: 4) {
-                            Image(systemName: "line.3.horizontal")
+                        WithPerceptionTracking {
+                            let isSelected = store.selectedModelId == model.id
+                            HStack(spacing: 4) {
+                                Image(systemName: "line.3.horizontal")
 
-                            Button(action: {
-                                store.send(.selectModel(id: model.id))
-                            }) {
-                                Cell(model: model, isSelected: isSelected)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button("Duplicate") {
-                                    store.send(.duplicateModel(id: model.id))
+                                Button(action: {
+                                    store.send(.selectModel(id: model.id))
+                                }) {
+                                    Cell(model: model, isSelected: isSelected)
+                                        .contentShape(Rectangle())
                                 }
-                                Button("Remove") {
-                                    store.send(.removeModel(id: model.id))
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button("Duplicate") {
+                                        store.send(.duplicateModel(id: model.id))
+                                    }
+                                    Button("Remove") {
+                                        store.send(.removeModel(id: model.id))
+                                    }
                                 }
                             }
                         }

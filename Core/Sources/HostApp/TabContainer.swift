@@ -30,62 +30,64 @@ public struct TabContainer: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            TabBar(tag: $tag, tabBarItems: tabBarItems)
-                .padding(.bottom, 8)
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                TabBar(tag: $tag, tabBarItems: tabBarItems)
+                    .padding(.bottom, 8)
 
-            Divider()
+                Divider()
 
-            ZStack(alignment: .center) {
-                GeneralView(store: store.scope(state: \.general, action: \.general))
-                    .tabBarItem(
-                        tag: 0,
-                        title: "General",
-                        image: "app.gift"
+                ZStack(alignment: .center) {
+                    GeneralView(store: store.scope(state: \.general, action: \.general))
+                        .tabBarItem(
+                            tag: 0,
+                            title: "General",
+                            image: "app.gift"
+                        )
+                    ServiceView(store: store).tabBarItem(
+                        tag: 1,
+                        title: "Service",
+                        image: "globe"
                     )
-                ServiceView(store: store).tabBarItem(
-                    tag: 1,
-                    title: "Service",
-                    image: "globe"
-                )
-                FeatureSettingsView().tabBarItem(
-                    tag: 2,
-                    title: "Feature",
-                    image: "star.square"
-                )
-                CustomCommandView(store: customCommandStore).tabBarItem(
-                    tag: 3,
-                    title: "Custom Command",
-                    image: "command.square"
-                )
-                #if canImport(ProHostApp)
-                PlusView(onLicenseKeyChanged: {
-                    store.send(.informExtensionServiceAboutLicenseKeyChange)
-                }).tabBarItem(
-                    tag: 5,
-                    title: "Plus",
-                    image: "plus.diamond"
-                )
-                #endif
-                DebugSettingsView().tabBarItem(
-                    tag: 4,
-                    title: "Advanced",
-                    image: "gearshape.2"
-                )
+                    FeatureSettingsView().tabBarItem(
+                        tag: 2,
+                        title: "Feature",
+                        image: "star.square"
+                    )
+                    CustomCommandView(store: customCommandStore).tabBarItem(
+                        tag: 3,
+                        title: "Custom Command",
+                        image: "command.square"
+                    )
+                    #if canImport(ProHostApp)
+                    PlusView(onLicenseKeyChanged: {
+                        store.send(.informExtensionServiceAboutLicenseKeyChange)
+                    }).tabBarItem(
+                        tag: 5,
+                        title: "Plus",
+                        image: "plus.diamond"
+                    )
+                    #endif
+                    DebugSettingsView().tabBarItem(
+                        tag: 4,
+                        title: "Advanced",
+                        image: "gearshape.2"
+                    )
+                }
+                .environment(\.tabBarTabTag, tag)
+                .frame(minHeight: 400)
             }
-            .environment(\.tabBarTabTag, tag)
-            .frame(minHeight: 400)
-        }
-        .focusable(false)
-        .padding(.top, 8)
-        .background(.ultraThinMaterial.opacity(0.01))
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
-        .handleToast()
-        .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
-            tabBarItems = items
-        }
-        .onAppear {
-            store.send(.appear)
+            .focusable(false)
+            .padding(.top, 8)
+            .background(.ultraThinMaterial.opacity(0.01))
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
+            .handleToast()
+            .onPreferenceChange(TabBarItemPreferenceKey.self) { items in
+                tabBarItems = items
+            }
+            .onAppear {
+                store.send(.appear)
+            }
         }
     }
 }

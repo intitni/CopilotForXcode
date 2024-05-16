@@ -29,16 +29,8 @@ struct SuggestionFeatureDisabledLanguageListView: View {
                         .padding()
                 }
                 .buttonStyle(.plain)
-                Text("Enabled Projects")
+                Text("Disabled Languages")
                 Spacer()
-                Button(action: {
-                    isAddingNewProject = true
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .padding()
-                }
-                .buttonStyle(.plain)
             }
             .background(Color(nsColor: .separatorColor))
 
@@ -85,6 +77,7 @@ struct SuggestionFeatureDisabledLanguageListView: View {
                     Disable the language of a file by right clicking the circular widget.
                     """)
                     .multilineTextAlignment(.center)
+                    .padding()
                 }
             }
         }

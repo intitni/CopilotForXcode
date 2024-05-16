@@ -85,36 +85,38 @@ struct EditCustomCommandView: View {
     }
 
     @ViewBuilder var bottomBar: some View {
-        VStack {
-            Divider()
-
-            VStack(alignment: .trailing) {
-                Text(
-                    "After renaming or adding a custom command, please restart Xcode to refresh the menu."
-                )
-                .foregroundStyle(.secondary)
-
-                HStack {
-                    Spacer()
-                    Button("Close") {
-                        store.send(.close)
-                    }
-
-                    if store.isNewCommand {
-                        Button("Add") {
-                            store.send(.saveCommand)
+        WithPerceptionTracking {
+            VStack {
+                Divider()
+                
+                VStack(alignment: .trailing) {
+                    Text(
+                        "After renaming or adding a custom command, please restart Xcode to refresh the menu."
+                    )
+                    .foregroundStyle(.secondary)
+                    
+                    HStack {
+                        Spacer()
+                        Button("Close") {
+                            store.send(.close)
                         }
-                    } else {
-                        Button("Save") {
-                            store.send(.saveCommand)
+                        
+                        if store.isNewCommand {
+                            Button("Add") {
+                                store.send(.saveCommand)
+                            }
+                        } else {
+                            Button("Save") {
+                                store.send(.saveCommand)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            .padding(.bottom)
+            .background(.regularMaterial)
         }
-        .padding(.bottom)
-        .background(.regularMaterial)
     }
 }
 

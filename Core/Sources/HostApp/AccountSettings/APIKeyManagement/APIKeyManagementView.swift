@@ -29,10 +29,10 @@ struct APIKeyManagementView: View {
                     .buttonStyle(.plain)
                 }
                 .background(Color(nsColor: .separatorColor))
-                
+
                 List {
-                    WithPerceptionTracking {
-                        ForEach(store.availableAPIKeyNames, id: \.self) { name in
+                    ForEach(store.availableAPIKeyNames, id: \.self) { name in
+                        WithPerceptionTracking {
                             HStack {
                                 Text(name)
                                     .contextMenu {
@@ -41,7 +41,7 @@ struct APIKeyManagementView: View {
                                         }
                                     }
                                 Spacer()
-                                
+
                                 Button(action: {
                                     store.send(.deleteButtonClicked(name: name))
                                 }) {
@@ -51,26 +51,24 @@ struct APIKeyManagementView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        .modify { view in
-                            if #available(macOS 13.0, *) {
-                                view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
-                            } else {
-                                view
-                            }
+                    }
+                    .modify { view in
+                        if #available(macOS 13.0, *) {
+                            view.listRowSeparator(.hidden).listSectionSeparator(.hidden)
+                        } else {
+                            view
                         }
                     }
                 }
                 .removeBackground()
                 .overlay {
-                    WithPerceptionTracking {
-                        if store.availableAPIKeyNames.isEmpty {
-                            Text("""
+                    if store.availableAPIKeyNames.isEmpty {
+                        Text("""
                         Empty
                         Add a new key by clicking the add button
                         """)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                        }
+                        .multilineTextAlignment(.center)
+                        .padding()
                     }
                 }
             }
@@ -95,29 +93,30 @@ struct APIKeySubmissionView: View {
     @Perception.Bindable var store: StoreOf<APIKeySubmission>
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                Form {
-                    WithPerceptionTracking {
+        WithPerceptionTracking {
+            ScrollView {
+                VStack(spacing: 0) {
+                    Form {
                         TextField("Name", text: $store.name)
                         SecureField("Key", text: $store.key)
                     }
-                }.padding()
+                    .padding()
 
-                Divider()
+                    Divider()
 
-                HStack {
-                    Spacer()
+                    HStack {
+                        Spacer()
 
-                    Button("Cancel") { store.send(.cancelButtonClicked) }
-                        .keyboardShortcut(.cancelAction)
+                        Button("Cancel") { store.send(.cancelButtonClicked) }
+                            .keyboardShortcut(.cancelAction)
 
-                    Button("Save", action: { store.send(.saveButtonClicked) })
-                        .keyboardShortcut(.defaultAction)
-                }.padding()
+                        Button("Save", action: { store.send(.saveButtonClicked) })
+                            .keyboardShortcut(.defaultAction)
+                    }.padding()
+                }
             }
+            .textFieldStyle(.roundedBorder)
         }
-        .textFieldStyle(.roundedBorder)
     }
 }
 

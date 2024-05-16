@@ -20,3 +20,20 @@ public actor DebounceFunction<T> {
     }
 }
 
+public actor DebounceRunner {
+    let duration: TimeInterval
+
+    var task: Task<Void, Error>?
+
+    public init(duration: TimeInterval) {
+        self.duration = duration
+    }
+
+    public func debounce(_ block: @escaping () async -> Void) {
+        task?.cancel()
+        task = Task { [duration] in
+            try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            await block()
+        }
+    }
+}

@@ -6,62 +6,66 @@ struct ServiceView: View {
     @State var tag = 0
 
     var body: some View {
-        SidebarTabView(tag: $tag) {
-            ScrollView {
-                GitHubCopilotView().padding()
-            }.sidebarItem(
-                tag: 0,
-                title: "GitHub Copilot",
-                subtitle: "Suggestion",
-                image: "globe"
-            )
-
-            ScrollView {
-                CodeiumView().padding()
-            }.sidebarItem(
-                tag: 1,
-                title: "Codeium",
-                subtitle: "Suggestion",
-                image: "globe"
-            )
-
-            ChatModelManagementView(store: store.scope(
-                state: \.chatModelManagement,
-                action: \.chatModelManagement
-            )).sidebarItem(
-                tag: 2,
-                title: "Chat Models",
-                subtitle: "Chat, Prompt to Code",
-                image: "globe"
-            )
-
-            EmbeddingModelManagementView(store: store.scope(
-                state: \.embeddingModelManagement,
-                action: \.embeddingModelManagement
-            )).sidebarItem(
-                tag: 3,
-                title: "Embedding Models",
-                subtitle: "Chat, Prompt to Code",
-                image: "globe"
-            )
-
-            ScrollView {
-                BingSearchView().padding()
-            }.sidebarItem(
-                tag: 4,
-                title: "Bing Search",
-                subtitle: "Search Chat Plugin",
-                image: "globe"
-            )
-
-            ScrollView {
-                OtherSuggestionServicesView().padding()
-            }.sidebarItem(
-                tag: 5,
-                title: "Other Suggestion Services",
-                subtitle: "Suggestion",
-                image: "globe"
-            )
+        WithPerceptionTracking {
+            SidebarTabView(tag: $tag) {
+                WithPerceptionTracking {
+                    ScrollView {
+                        GitHubCopilotView().padding()
+                    }.sidebarItem(
+                        tag: 0,
+                        title: "GitHub Copilot",
+                        subtitle: "Suggestion",
+                        image: "globe"
+                    )
+                    
+                    ScrollView {
+                        CodeiumView().padding()
+                    }.sidebarItem(
+                        tag: 1,
+                        title: "Codeium",
+                        subtitle: "Suggestion",
+                        image: "globe"
+                    )
+                    
+                    ChatModelManagementView(store: store.scope(
+                        state: \.chatModelManagement,
+                        action: \.chatModelManagement
+                    )).sidebarItem(
+                        tag: 2,
+                        title: "Chat Models",
+                        subtitle: "Chat, Prompt to Code",
+                        image: "globe"
+                    )
+                    
+                    EmbeddingModelManagementView(store: store.scope(
+                        state: \.embeddingModelManagement,
+                        action: \.embeddingModelManagement
+                    )).sidebarItem(
+                        tag: 3,
+                        title: "Embedding Models",
+                        subtitle: "Chat, Prompt to Code",
+                        image: "globe"
+                    )
+                    
+                    ScrollView {
+                        BingSearchView().padding()
+                    }.sidebarItem(
+                        tag: 4,
+                        title: "Bing Search",
+                        subtitle: "Search Chat Plugin",
+                        image: "globe"
+                    )
+                    
+                    ScrollView {
+                        OtherSuggestionServicesView().padding()
+                    }.sidebarItem(
+                        tag: 5,
+                        title: "Other Suggestion Services",
+                        subtitle: "Suggestion",
+                        image: "globe"
+                    )
+                }
+            }
         }
     }
 }
