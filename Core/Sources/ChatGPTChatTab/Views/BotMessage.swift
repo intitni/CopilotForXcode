@@ -220,7 +220,7 @@ struct ReferenceIcon: View {
             startLine: nil,
             kind: .class
         ), count: 20),
-        chat: .init(initialState: .init(), reducer: Chat(service: .init()))
+        chat: .init(initialState: .init(), reducer: { Chat(service: .init()) })
     )
     .padding()
     .fixedSize(horizontal: true, vertical: true)
@@ -270,6 +270,6 @@ struct ReferenceIcon: View {
             startLine: nil,
             kind: .webpage
         ),
-    ], chat: .init(initialState: .init(), reducer: Chat(service: .init())))
+    ], chat: .init(initialState: .init(), reducer: { Chat(service: .init()) }))
 }
 
