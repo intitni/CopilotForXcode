@@ -4,7 +4,9 @@ import PromptToCodeService
 import SuggestionModel
 import XcodeInspector
 
-public struct PromptToCodeGroup: ReducerProtocol {
+@Reducer
+public struct PromptToCodeGroup {
+    @ObservableState
     public struct State: Equatable {
         public var promptToCodes: IdentifiedArrayOf<PromptToCode.State> = []
         public var activeDocumentURL: PromptToCode.State.ID? = XcodeInspector.shared
@@ -89,7 +91,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
     @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
     @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case let .activateOrCreatePromptToCode(s):
@@ -156,7 +158,7 @@ public struct PromptToCodeGroup: ReducerProtocol {
                 return .none
             }
         }
-        .ifLet(\.activePromptToCode, action: /Action.activePromptToCode) {
+        .ifLet(\.activePromptToCode, action: \.activePromptToCode) {
             PromptToCode()
                 .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         }

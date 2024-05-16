@@ -3,7 +3,9 @@ import Preferences
 import SwiftUI
 import Toast
 
-public struct ToastPanel: ReducerProtocol {
+@Reducer
+public struct ToastPanel {
+    @ObservableState
     public struct State: Equatable {
         var toast: Toast.State = .init()
         var colorScheme: ColorScheme = .light
@@ -15,8 +17,8 @@ public struct ToastPanel: ReducerProtocol {
         case toast(Toast.Action)
     }
     
-    public var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.toast, action: /Action.toast) {
+    public var body: some ReducerOf<Self> {
+        Scope(state: \.toast, action: \.toast) {
             Toast()
         }
         

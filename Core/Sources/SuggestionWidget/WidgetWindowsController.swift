@@ -637,8 +637,8 @@ public final class WidgetWindows {
         it.contentView = NSHostingView(
             rootView: WidgetView(
                 store: store.scope(
-                    state: \._circularWidgetState,
-                    action: WidgetFeature.Action.circularWidget
+                    state: \._internalCircularWidgetState,
+                    action: \.circularWidget
                 )
             )
         )
@@ -665,10 +665,10 @@ public final class WidgetWindows {
             rootView: SharedPanelView(
                 store: store.scope(
                     state: \.panelState,
-                    action: WidgetFeature.Action.panel
+                    action: \.panel
                 ).scope(
                     state: \.sharedPanelState,
-                    action: PanelFeature.Action.sharedPanel
+                    action: \.sharedPanel
                 )
             )
         )
@@ -699,10 +699,10 @@ public final class WidgetWindows {
             rootView: SuggestionPanelView(
                 store: store.scope(
                     state: \.panelState,
-                    action: WidgetFeature.Action.panel
+                    action: \.panel
                 ).scope(
                     state: \.suggestionPanelState,
-                    action: PanelFeature.Action.suggestionPanel
+                    action: \.suggestionPanel
                 )
             )
         )
@@ -716,7 +716,7 @@ public final class WidgetWindows {
         let it = ChatPanelWindow(
             store: store.scope(
                 state: \.chatPanelState,
-                action: WidgetFeature.Action.chatPanel
+                action: \.chatPanel
             ),
             chatTabPool: chatTabPool,
             minimizeWindow: { [weak self] in
@@ -744,7 +744,7 @@ public final class WidgetWindows {
         it.contentView = NSHostingView(
             rootView: ToastPanelView(store: store.scope(
                 state: \.toastPanel,
-                action: WidgetFeature.Action.toastPanel
+                action: \.toastPanel
             ))
         )
         it.setIsVisible(true)

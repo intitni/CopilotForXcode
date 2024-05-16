@@ -22,7 +22,8 @@ public struct ChatTabKind: Equatable {
     }
 }
 
-public struct ChatPanelFeature: ReducerProtocol {
+@Reducer
+public struct ChatPanelFeature {
     public struct ChatTabGroup: Equatable {
         public var tabInfo: IdentifiedArray<String, ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
@@ -44,6 +45,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         }
     }
 
+    @ObservableState
     public struct State: Equatable {
         public var chatTabGroup = ChatTabGroup()
         var colorScheme: ColorScheme = .light
@@ -90,7 +92,7 @@ public struct ChatPanelFeature: ReducerProtocol {
         window?.toggleFullScreen(nil)
     }
 
-    public var body: some ReducerProtocol<State, Action> {
+    public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .hideButtonClicked:
