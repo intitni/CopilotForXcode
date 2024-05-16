@@ -11,6 +11,10 @@ public actor DebounceFunction<T> {
         self.block = block
     }
 
+    public func cancel() {
+        task?.cancel()
+    }
+
     public func callAsFunction(_ t: T) async {
         task?.cancel()
         task = Task { [block, duration] in
@@ -29,6 +33,10 @@ public actor DebounceRunner {
         self.duration = duration
     }
 
+    public func cancel() {
+        task?.cancel()
+    }
+
     public func debounce(_ block: @escaping () async -> Void) {
         task?.cancel()
         task = Task { [duration] in
@@ -37,3 +45,4 @@ public actor DebounceRunner {
         }
     }
 }
+
