@@ -12,11 +12,11 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         var input: [[Int]]
         var model: String
     }
-    
+
     let apiKey: String
     let model: EmbeddingModel
     let endpoint: String
-    
+
     public func embed(text: String) async throws -> EmbeddingResponse {
         return try await embed(texts: [text])
     }
@@ -31,24 +31,9 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            switch model.format {
-            case .openAI:
-                if model.info.openAIInfo.organizationID.isEmpty {
-                    request.setValue(
-                        "OpenAI-Organization",
-                        forHTTPHeaderField: model.info.openAIInfo.organizationID
-                    )
-                }
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .openAICompatible:
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .azureOpenAI:
-                request.setValue(apiKey, forHTTPHeaderField: "api-key")
-            case .ollama:
-                assertionFailure("Unsupported")
-            }
-        }
+
+        Self.setupAppInformation(&request)
+        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -87,24 +72,9 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            switch model.format {
-            case .openAI:
-                if model.info.openAIInfo.organizationID.isEmpty {
-                    request.setValue(
-                        "OpenAI-Organization",
-                        forHTTPHeaderField: model.info.openAIInfo.organizationID
-                    )
-                }
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .openAICompatible:
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            case .azureOpenAI:
-                request.setValue(apiKey, forHTTPHeaderField: "api-key")
-            case .ollama:
-                assertionFailure("Unsupported")
-            }
-        }
+
+        Self.setupAppInformation(&request)
+        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -131,6 +101,47 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         """)
         #endif
         return embeddingResponse
+    }
+
+    static func setupAppInformation(_ request: inout URLRequest) {
+        if #available(macOS 13.0, *) {
+            if request.url?.host == "openrouter.ai" {
+                request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
+            }
+        } else {
+            if request.url?.host == "openrouter.ai" {
+                request.setValue("Copilot for Xcode", forHTTPHeaderField: "X-Title")
+                request.setValue(
+                    "https://github.com/intitni/CopilotForXcode",
+                    forHTTPHeaderField: "HTTP-Referer"
+                )
+            }
+        }
+    }
+
+    static func setupAPIKey(_ request: inout URLRequest, model: EmbeddingModel, apiKey: String) {
+        if !apiKey.isEmpty {
+            switch model.format {
+            case .openAI:
+                if model.info.openAIInfo.organizationID.isEmpty {
+                    request.setValue(
+                        model.info.openAIInfo.organizationID,
+                        forHTTPHeaderField: "OpenAI-Organization"
+                    )
+                }
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .openAICompatible:
+                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            case .azureOpenAI:
+                request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .ollama:
+                assertionFailure("Unsupported")
+            }
+        }
     }
 }
 
