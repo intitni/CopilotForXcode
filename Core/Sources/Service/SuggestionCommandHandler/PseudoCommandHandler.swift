@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import Dependencies
 import Preferences
 import SuggestionInjector
 import SuggestionModel
@@ -210,7 +211,13 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, _, cursorPosition, cursorOffset) = await getFileContent(sourceEditor: nil)
+            guard let (
+                content,
+                lines,
+                _,
+                cursorPosition,
+                cursorOffset
+            ) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -266,7 +273,13 @@ struct PseudoCommandHandler {
             guard let focusElement = application.focusedElement,
                   focusElement.description == "Source Editor"
             else { return }
-            guard let (content, lines, _, cursorPosition, cursorOffset) = await getFileContent(sourceEditor: nil)
+            guard let (
+                content,
+                lines,
+                _,
+                cursorPosition,
+                cursorOffset
+            ) = await getFileContent(sourceEditor: nil)
             else {
                 PresentInWindowSuggestionPresenter()
                     .presentErrorMessage("Unable to get file content.")
@@ -301,12 +314,35 @@ struct PseudoCommandHandler {
         await filespace.reset()
         PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
-    
-    func openChat() {
-        Task { @MainActor in
-            let store = Service.shared.guiController.store
-            await store.send(.createChatGPTChatTabIfNeeded)
-            await store.send(.openChatPanel(forceDetach: false))
+
+    func openChat(forceDetach: Bool) {
+        switch UserDefaults.shared.value(for: \.openChatMode) {
+        case .chatPanel:
+            Task { @MainActor in
+                let store = Service.shared.guiController.store
+                await store.send(.createChatGPTChatTabIfNeeded).finish()
+                store.send(.openChatPanel(forceDetach: false))
+            }
+        case .browser:
+            let urlString = UserDefaults.shared.value(for: \.openChatInBrowserURL)
+            let openInApp = UserDefaults.shared.value(for: \.openChatInBrowserInInAppBrowser)
+            guard let url = URL(string: urlString) else {
+                let alert = NSAlert()
+                alert.messageText = "Invalid URL"
+                alert.informativeText = "The URL provided is not valid."
+                alert.alertStyle = .warning
+                alert.runModal()
+                return
+            }
+
+            if openInApp {
+                return
+            } else {
+                Task {
+                    @Dependency(\.openURL) var openURL
+                    await openURL(url)
+                }
+            }
         }
     }
 }

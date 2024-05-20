@@ -337,10 +337,7 @@ public final class GraphicalUserInterfaceController {
     }
 
     public func openGlobalChat() {
-        Task {
-            await self.store.send(.createChatGPTChatTabIfNeeded).finish()
-            store.send(.openChatPanel(forceDetach: true))
-        }
+        PseudoCommandHandler().openChat(forceDetach: true)
     }
 }
 
