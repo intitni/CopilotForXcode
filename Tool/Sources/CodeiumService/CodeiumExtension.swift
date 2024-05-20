@@ -1,10 +1,13 @@
+import BuiltinExtension
 import CopilotForXcodeKit
 import Foundation
-import Workspace
 import Logger
-import BuiltinExtension
+import Preferences
+import Workspace
 
 public final class CodeiumExtension: BuiltinExtension {
+    public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
+
     public var suggestionService: SuggestionServiceType? { _suggestionService }
     public var chatService: ChatServiceType? { nil }
     public var promptToCodeService: PromptToCodeServiceType? { nil }
@@ -68,7 +71,7 @@ public final class CodeiumExtension: BuiltinExtension {
             let fileSize = attrs[FileAttributeKey.size] as? UInt64,
             fileSize > 15 * 1024 * 1024
         { return }
-        
+
         Task {
             do {
                 let content = try String(contentsOf: documentURL, encoding: .utf8)
@@ -89,7 +92,7 @@ public final class CodeiumExtension: BuiltinExtension {
             }
         }
     }
-    
+
     public func terminate() {
         for workspace in workspacePool.workspaces.values {
             guard let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)
