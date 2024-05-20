@@ -246,6 +246,7 @@ extension PromptToCodePanel {
                         Spacer(minLength: 60)
                         ErrorMessage(store: store)
                         DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+                        CodeContent(store: store, codeForegroundColor: codeForegroundColor)
                     }
                 }
                 .background(codeBackgroundColor)
