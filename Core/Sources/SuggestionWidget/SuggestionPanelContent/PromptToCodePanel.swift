@@ -8,21 +8,23 @@ struct PromptToCodePanel: View {
     let store: StoreOf<PromptToCode>
 
     var body: some View {
-        VStack(spacing: 0) {
-            TopBar(store: store)
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                TopBar(store: store)
 
-            Content(store: store)
-                .overlay(alignment: .bottom) {
-                    ActionBar(store: store)
-                        .padding(.bottom, 8)
-                }
+                Content(store: store)
+                    .overlay(alignment: .bottom) {
+                        ActionBar(store: store)
+                            .padding(.bottom, 8)
+                    }
 
-            Divider()
+                Divider()
 
-            Toolbar(store: store)
+                Toolbar(store: store)
+            }
+            .background(.ultraThickMaterial)
+            .xcodeStyleFrame()
         }
-        .background(.ultraThickMaterial)
-        .xcodeStyleFrame()
     }
 }
 
@@ -238,15 +240,17 @@ extension PromptToCodePanel {
         }
 
         var body: some View {
-            ScrollView {
-                VStack(spacing: 0) {
-                    Spacer(minLength: 60)
-                    ErrorMessage(store: store)
-                    DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+            WithPerceptionTracking {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 60)
+                        ErrorMessage(store: store)
+                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+                    }
                 }
+                .background(codeBackgroundColor)
+                .scaleEffect(x: 1, y: -1, anchor: .center)
             }
-            .background(codeBackgroundColor)
-            .scaleEffect(x: 1, y: -1, anchor: .center)
         }
 
         struct ErrorMessage: View {
@@ -298,7 +302,7 @@ extension PromptToCodePanel {
         struct CodeContent: View {
             let store: StoreOf<PromptToCode>
             let codeForegroundColor: Color?
-            
+
             @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
 
             var body: some View {
@@ -442,7 +446,7 @@ extension PromptToCodePanel {
         struct InputField: View {
             @Perception.Bindable var store: StoreOf<PromptToCode>
             var focusField: FocusState<PromptToCode.State.FocusField?>.Binding
-            
+
             var body: some View {
                 WithPerceptionTracking {
                     AutoresizingCustomTextEditor(
@@ -483,38 +487,36 @@ extension PromptToCodePanel {
 
 // MARK: - Previews
 
-struct PromptToCodePanel_Preview: PreviewProvider {
-    static var previews: some View {
-        PromptToCodePanel(store: .init(initialState: .init(
-            code: """
-            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
-                Text(viewModel.suggestion[index])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-            }
-            """,
-            prompt: "",
-            language: .builtIn(.swift),
-            indentSize: 4,
-            usesTabsForIndentation: false,
-            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
-            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
-            allCode: "",
-            allLines: [String](),
-            commandName: "Generate Code",
-            description: "Hello world",
-            isResponding: false,
-            isAttachedToSelectionRange: true,
-            selectionRange: .init(
-                start: .init(line: 8, character: 0),
-                end: .init(line: 12, character: 2)
-            )
-        ), reducer: { PromptToCode() }))
-            .frame(width: 450, height: 400)
-    }
+#Preview("Default") {
+    PromptToCodePanel(store: .init(initialState: .init(
+        code: """
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        prompt: "",
+        language: .builtIn(.swift),
+        indentSize: 4,
+        usesTabsForIndentation: false,
+        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+        documentURL: URL(fileURLWithPath: "path/to/file.txt"),
+        allCode: "",
+        allLines: [String](),
+        commandName: "Generate Code",
+        description: "Hello world",
+        isResponding: false,
+        isAttachedToSelectionRange: true,
+        selectionRange: .init(
+            start: .init(line: 8, character: 0),
+            end: .init(line: 12, character: 2)
+        )
+    ), reducer: { PromptToCode() }))
+        .frame(width: 450, height: 400)
 }
 
-#Preview("Prompt to Code Panel Super Long File Name") {
+#Preview("Super Long File Name") {
     PromptToCodePanel(store: .init(initialState: .init(
         code: """
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
@@ -545,35 +547,33 @@ struct PromptToCodePanel_Preview: PreviewProvider {
         .frame(width: 450, height: 400)
 }
 
-struct PromptToCodePanel_Error_Detached_Preview: PreviewProvider {
-    static var previews: some View {
-        PromptToCodePanel(store: .init(initialState: .init(
-            code: """
-            ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
-                Text(viewModel.suggestion[index])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-            }
-            """,
-            prompt: "",
-            language: .builtIn(.swift),
-            indentSize: 4,
-            usesTabsForIndentation: false,
-            projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
-            documentURL: URL(fileURLWithPath: "path/to/file.txt"),
-            allCode: "",
-            allLines: [String](),
-            commandName: "Generate Code",
-            description: "Hello world",
-            isResponding: false,
-            isAttachedToSelectionRange: false,
-            error: "Error",
-            selectionRange: .init(
-                start: .init(line: 8, character: 0),
-                end: .init(line: 12, character: 2)
-            )
-        ), reducer: { PromptToCode() }))
-            .frame(width: 450, height: 400)
-    }
+#Preview("Error Detached") {
+    PromptToCodePanel(store: .init(initialState: .init(
+        code: """
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        prompt: "",
+        language: .builtIn(.swift),
+        indentSize: 4,
+        usesTabsForIndentation: false,
+        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+        documentURL: URL(fileURLWithPath: "path/to/file.txt"),
+        allCode: "",
+        allLines: [String](),
+        commandName: "Generate Code",
+        description: "Hello world",
+        isResponding: false,
+        isAttachedToSelectionRange: false,
+        error: "Error",
+        selectionRange: .init(
+            start: .init(line: 8, character: 0),
+            end: .init(line: 12, character: 2)
+        )
+    ), reducer: { PromptToCode() }))
+        .frame(width: 450, height: 400)
 }
 
