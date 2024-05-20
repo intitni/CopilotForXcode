@@ -262,15 +262,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return try await presentSuggestions(editor: editor)
     }
 
-    func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        Task { @MainActor in
-            let store = Service.shared.guiController.store
-            store.send(.createChatGPTChatTabIfNeeded)
-            store.send(.openChatPanel(forceDetach: false))
-        }
-        return nil
-    }
-
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
             do {

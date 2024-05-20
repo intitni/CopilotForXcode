@@ -144,9 +144,9 @@ public class XPCService: NSObject, XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
-        replyWithUpdatedContent(editorContent: editorContent, withReply: reply) { handler, editor in
-            try await handler.chatWithSelection(editor: editor)
-        }
+        let handler = PseudoCommandHandler()
+        handler.openChat()
+        reply(nil, nil)
     }
 
     public func promptToCode(

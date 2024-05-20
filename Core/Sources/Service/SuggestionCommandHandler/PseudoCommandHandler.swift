@@ -301,6 +301,14 @@ struct PseudoCommandHandler {
         await filespace.reset()
         PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
+    
+    func openChat() {
+        Task { @MainActor in
+            let store = Service.shared.guiController.store
+            await store.send(.createChatGPTChatTabIfNeeded)
+            await store.send(.openChatPanel(forceDetach: false))
+        }
+    }
 }
 
 extension PseudoCommandHandler {
