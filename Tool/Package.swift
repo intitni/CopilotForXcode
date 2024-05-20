@@ -203,6 +203,15 @@ let package = Package(
         .target(name: "AsyncPassthroughSubject"),
 
         .target(
+            name: "BuiltinExtension",
+            dependencies: [
+                "SuggestionModel",
+                "Workspace",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit")
+            ]
+        ),
+
+        .target(
             name: "SharedUIComponents",
             dependencies: [
                 "Highlightr",
@@ -239,6 +248,7 @@ let package = Package(
                 "Workspace",
                 "SuggestionProvider",
                 "XPCShared",
+                "BuiltinExtension"
             ]
         ),
 
@@ -285,9 +295,8 @@ let package = Package(
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionProvider", dependencies: [
-            "GitHubCopilotService",
-            "CodeiumService",
             "UserDefaultsObserver",
+            "Preferences",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
 
@@ -303,7 +312,9 @@ let package = Package(
                 "Logger",
                 "Preferences",
                 "Terminal",
+                "BuiltinExtension",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
         .testTarget(
@@ -322,6 +333,8 @@ let package = Package(
                 "Preferences",
                 "Terminal",
                 "XcodeInspector",
+                "BuiltinExtension",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
 
