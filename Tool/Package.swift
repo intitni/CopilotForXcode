@@ -295,6 +295,7 @@ let package = Package(
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionProvider", dependencies: [
+            "SuggestionModel",
             "UserDefaultsObserver",
             "Preferences",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
