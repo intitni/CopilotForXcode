@@ -11,14 +11,14 @@ public final class CodeiumExtension: BuiltinExtension {
     public var suggestionService: SuggestionServiceType? { _suggestionService }
     public var chatService: ChatServiceType? { nil }
     public var promptToCodeService: PromptToCodeServiceType? { nil }
-    private var appConfiguration = AppConfiguration(
-        suggestionServiceInUse: false,
-        chatServiceInUse: false
+    private var extensionUsage = ExtensionUsage(
+        isSuggestionServiceInUse: false,
+        isChatServiceInUse: false
     )
     private var isLanguageServerInUse: Bool {
-        appConfiguration.suggestionServiceInUse || appConfiguration.chatServiceInUse
+        extensionUsage.isSuggestionServiceInUse || extensionUsage.isChatServiceInUse
     }
-    
+
     let workspacePool: WorkspacePool
 
     let serviceLocator: ServiceLocator
@@ -73,7 +73,7 @@ public final class CodeiumExtension: BuiltinExtension {
     public func workspace(
         _ workspace: WorkspaceInfo,
         didUpdateDocumentAt documentURL: URL,
-        content: String
+        content: String?
     ) {
         guard isLanguageServerInUse else { return }
         // check if file size is larger than 15MB, if so, return immediately
@@ -85,7 +85,7 @@ public final class CodeiumExtension: BuiltinExtension {
 
         Task {
             do {
-                let content = try String(contentsOf: documentURL, encoding: .utf8)
+                guard let content else { return }
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyOpenTextDocument(fileURL: documentURL, content: content)
             } catch {
@@ -94,9 +94,9 @@ public final class CodeiumExtension: BuiltinExtension {
         }
     }
 
-    public func appConfigurationDidChange(_ configuration: AppConfiguration) {
-        appConfiguration = configuration
-        if !configuration.chatServiceInUse && !configuration.suggestionServiceInUse {
+    public func extensionUsageDidChange(_ usage: ExtensionUsage) {
+        extensionUsage = usage
+        if !usage.isChatServiceInUse && !usage.isSuggestionServiceInUse {
             for workspace in workspacePool.workspaces.values {
                 guard let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)
                 else { continue }

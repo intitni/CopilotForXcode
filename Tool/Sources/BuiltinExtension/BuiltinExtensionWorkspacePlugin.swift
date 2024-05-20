@@ -52,7 +52,7 @@ public final class BuiltinExtensionWorkspacePlugin: WorkspacePlugin {
             for ext in extensionManager.extensions {
                 ext.workspace(
                     .init(workspaceURL: workspaceURL, projectURL: projectRootURL),
-                    didUpdateDocumentAt: filespace.fileURL,
+                    didUpdateDocumentAt: filespace.fileURL, 
                     content: content
                 )
             }

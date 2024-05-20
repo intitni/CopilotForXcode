@@ -5,7 +5,7 @@ import XcodeInspector
 
 public final class BuiltinExtensionManager {
     public static let shared: BuiltinExtensionManager = .init()
-    private(set) var extensions: [BuiltinExtension] = []
+    private(set) var extensions: [any BuiltinExtension] = []
 
     private var cancellable: Set<AnyCancellable> = []
 
@@ -17,7 +17,7 @@ public final class BuiltinExtensionManager {
         }.store(in: &cancellable)
     }
 
-    public func setupExtensions(_ extensions: [BuiltinExtension]) {
+    public func setupExtensions(_ extensions: [any BuiltinExtension]) {
         self.extensions = extensions
         checkAppConfiguration()
     }
@@ -36,9 +36,9 @@ extension BuiltinExtensionManager {
             let isSuggestionFeatureInUse = suggestionFeatureProvider ==
                 .builtIn(ext.suggestionServiceId)
             let isChatFeatureInUse = false
-            ext.appConfigurationDidChange(.init(
-                suggestionServiceInUse: isSuggestionFeatureInUse,
-                chatServiceInUse: isChatFeatureInUse
+            ext.extensionUsageDidChange(.init(
+                isSuggestionServiceInUse: isSuggestionFeatureInUse,
+                isChatServiceInUse: isChatFeatureInUse
             ))
         }
     }
