@@ -41,9 +41,7 @@ public final class Service {
 
         scheduledCleaner = .init()
         workspacePool.registerPlugin {
-            SuggestionServiceWorkspacePlugin(workspace: $0) { projectRootURL, onLaunched in
-                SuggestionService(projectRootURL: projectRootURL, onServiceLaunched: onLaunched)
-            }
+            SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
         }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
