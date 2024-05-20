@@ -1,5 +1,6 @@
 import CopilotForXcodeKit
 import Foundation
+import Logger
 import Preferences
 import SuggestionModel
 import SuggestionProvider
@@ -31,12 +32,21 @@ public final class BuiltinExtensionSuggestionServiceProvider<
     var service: CopilotForXcodeKit.SuggestionServiceType? {
         extensionManager.extensions.first { $0 is T }?.suggestionService
     }
+    
+    struct BuiltinExtensionSuggestionServiceNotFoundError: Error, LocalizedError {
+        var errorDescription: String? {
+            "Builtin suggestion service not found."
+        }
+    }
 
     public func getSuggestions(
         _ request: SuggestionProvider.SuggestionRequest,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async throws -> [SuggestionModel.CodeSuggestion] {
-        guard let service else { return [] }
+        guard let service else {
+            Logger.service.error("Builtin suggestion service not found.")
+            throw BuiltinExtensionSuggestionServiceNotFoundError()
+        }
         return try await service.getSuggestions(
             .init(
                 fileURL: request.fileURL,
@@ -61,7 +71,10 @@ public final class BuiltinExtensionSuggestionServiceProvider<
     public func cancelRequest(
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
-        guard let service else { return }
+        guard let service else {
+            Logger.service.error("Builtin suggestion service not found.")
+            return
+        }
         await service.cancelRequest(workspace: workspaceInfo)
     }
 
@@ -69,7 +82,10 @@ public final class BuiltinExtensionSuggestionServiceProvider<
         _ suggestion: SuggestionModel.CodeSuggestion,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
-        guard let service else { return }
+        guard let service else {
+            Logger.service.error("Builtin suggestion service not found.")
+            return
+        }
         await service.notifyAccepted(suggestion.converted, workspace: workspaceInfo)
     }
 
@@ -77,7 +93,10 @@ public final class BuiltinExtensionSuggestionServiceProvider<
         _ suggestions: [SuggestionModel.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
-        guard let service else { return }
+        guard let service else {
+            Logger.service.error("Builtin suggestion service not found.")
+            return
+        }
         await service.notifyRejected(suggestions.map(\.converted), workspace: workspaceInfo)
     }
 }

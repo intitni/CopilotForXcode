@@ -3,8 +3,8 @@ import Foundation
 import SuggestionModel
 import Workspace
 
-class CodeiumSuggestionService: SuggestionServiceType {
-    var configuration: SuggestionServiceConfiguration {
+public final class CodeiumSuggestionService: SuggestionServiceType {
+    public var configuration: SuggestionServiceConfiguration {
         .init(
             acceptsRelevantCodeSnippets: true,
             mixRelevantCodeSnippetsInSource: true,
@@ -18,7 +18,7 @@ class CodeiumSuggestionService: SuggestionServiceType {
         self.serviceLocator = serviceLocator
     }
 
-    func getSuggestions(
+    public func getSuggestions(
         _ request: SuggestionRequest,
         workspace: WorkspaceInfo
     ) async throws -> [CopilotForXcodeKit.CodeSuggestion] {
@@ -36,7 +36,7 @@ class CodeiumSuggestionService: SuggestionServiceType {
         ).map(Self.convert)
     }
 
-    func notifyAccepted(
+    public func notifyAccepted(
         _ suggestion: CopilotForXcodeKit.CodeSuggestion,
         workspace: WorkspaceInfo
     ) async {
@@ -44,14 +44,14 @@ class CodeiumSuggestionService: SuggestionServiceType {
         await service.notifyAccepted(Self.convert(suggestion))
     }
 
-    func notifyRejected(
+    public func notifyRejected(
         _ suggestions: [CopilotForXcodeKit.CodeSuggestion],
         workspace: WorkspaceInfo
     ) async {
         // unimplemented
     }
 
-    func cancelRequest(workspace: WorkspaceInfo) async {
+    public func cancelRequest(workspace: WorkspaceInfo) async {
         guard let service = await serviceLocator.getService(from: workspace) else { return }
         await service.cancelRequest()
     }

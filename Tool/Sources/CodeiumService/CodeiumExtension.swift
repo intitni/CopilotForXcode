@@ -8,9 +8,8 @@ import Workspace
 public final class CodeiumExtension: BuiltinExtension {
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
-    public var suggestionService: SuggestionServiceType? { _suggestionService }
-    public var chatService: ChatServiceType? { nil }
-    public var promptToCodeService: PromptToCodeServiceType? { nil }
+    public let suggestionService: CodeiumSuggestionService?
+
     private var extensionUsage = ExtensionUsage(
         isSuggestionServiceInUse: false,
         isChatServiceInUse: false
@@ -22,12 +21,11 @@ public final class CodeiumExtension: BuiltinExtension {
     let workspacePool: WorkspacePool
 
     let serviceLocator: ServiceLocator
-    let _suggestionService: CodeiumSuggestionService
 
     public init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
         serviceLocator = .init(workspacePool: workspacePool)
-        _suggestionService = .init(serviceLocator: serviceLocator)
+        suggestionService = .init(serviceLocator: serviceLocator)
     }
 
     public func workspaceDidOpen(_: WorkspaceInfo) {}

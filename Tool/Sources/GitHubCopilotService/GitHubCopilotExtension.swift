@@ -8,9 +8,8 @@ import Workspace
 public final class GitHubCopilotExtension: BuiltinExtension {
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .gitHubCopilot }
 
-    public var suggestionService: SuggestionServiceType? { _suggestionService }
-    public var chatService: ChatServiceType? { nil }
-    public var promptToCodeService: PromptToCodeServiceType? { nil }
+    public let suggestionService: GitHubCopilotSuggestionService?
+    
     private var extensionUsage = ExtensionUsage(
         isSuggestionServiceInUse: false,
         isChatServiceInUse: false
@@ -22,12 +21,11 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     let workspacePool: WorkspacePool
 
     let serviceLocator: ServiceLocator
-    let _suggestionService: GitHubCopilotSuggestionService
 
     public init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
         serviceLocator = .init(workspacePool: workspacePool)
-        _suggestionService = .init(serviceLocator: serviceLocator)
+        suggestionService = .init(serviceLocator: serviceLocator)
     }
 
     public func workspaceDidOpen(_: WorkspaceInfo) {}
