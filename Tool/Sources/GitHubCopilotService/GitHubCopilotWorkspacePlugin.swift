@@ -1,4 +1,5 @@
 import Foundation
+import Logger
 import Workspace
 
 public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
@@ -8,6 +9,7 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
         do {
             return try createGitHubCopilotService()
         } catch {
+            Logger.gitHubCopilot.error("Failed to create GitHub Copilot service: \(error)")
             return nil
         }
     }

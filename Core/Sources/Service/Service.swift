@@ -1,4 +1,5 @@
 import BuiltinExtension
+import CodeiumService
 import Combine
 import Dependencies
 import Foundation
@@ -43,6 +44,7 @@ public final class Service {
 
         BuiltinExtensionManager.shared.setupExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),
+            CodeiumExtension(workspacePool: workspacePool),
         ])
         scheduledCleaner = .init()
         workspacePool.registerPlugin {

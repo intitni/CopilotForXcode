@@ -1,4 +1,5 @@
 import BuiltinExtension
+import CodeiumService
 import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
 import GitHubCopilotService
@@ -44,12 +45,10 @@ public actor SuggestionService: SuggestionServiceType {
 
         switch serviceType {
         case .builtIn(.codeium):
-            fatalError()
-//            let provider = CodeiumSuggestionProvider(
-//                projectRootURL: projectRootURL,
-//                onServiceLaunched: onServiceLaunched
-//            )
-//            return SuggestionService(provider: provider)
+            let provider = BuiltinExtensionSuggestionServiceProvider(
+                extension: CodeiumExtension.self
+            )
+            return SuggestionService(provider: provider)
         case .builtIn(.gitHubCopilot), .extension:
             let provider = BuiltinExtensionSuggestionServiceProvider(
                 extension: GitHubCopilotExtension.self
