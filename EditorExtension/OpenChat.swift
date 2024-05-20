@@ -3,7 +3,7 @@ import SuggestionModel
 import Foundation
 import XcodeKit
 
-class ChatWithSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
+class OpenChatCommand: NSObject, XCSourceEditorCommand, CommandType {
     var name: String { "Open Chat" }
 
     func perform(
