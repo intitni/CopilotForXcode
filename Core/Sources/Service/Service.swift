@@ -1,6 +1,8 @@
+import BuiltinExtension
 import Combine
 import Dependencies
 import Foundation
+import GitHubCopilotService
 import SuggestionService
 import Toast
 import Workspace
@@ -39,6 +41,9 @@ public final class Service {
     private init() {
         @Dependency(\.workspacePool) var workspacePool
 
+        BuiltinExtensionManager.shared.setupExtensions([
+            GitHubCopilotExtension(workspacePool: workspacePool),
+        ])
         scheduledCleaner = .init()
         workspacePool.registerPlugin {
             SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
@@ -84,7 +89,7 @@ public final class Service {
                 }.store(in: &cancellable)
         }
     }
-    
+
     @MainActor
     public func prepareForExit() async {
         #if canImport(ProService)

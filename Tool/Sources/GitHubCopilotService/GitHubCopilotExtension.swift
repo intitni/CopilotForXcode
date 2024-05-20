@@ -13,7 +13,7 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     let serviceLocator: ServiceLocator
     let _suggestionService: GitHubCopilotSuggestionService
 
-    init(workspacePool: WorkspacePool) {
+    public init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
         serviceLocator = .init(workspacePool: workspacePool)
         _suggestionService = .init(serviceLocator: serviceLocator)
