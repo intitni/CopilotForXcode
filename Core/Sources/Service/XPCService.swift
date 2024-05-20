@@ -140,7 +140,7 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
     }
 
-    public func chatWithSelection(
+    public func openChat(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     ) {
