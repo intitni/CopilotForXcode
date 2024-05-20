@@ -50,6 +50,15 @@ public final class Service {
         workspacePool.registerPlugin {
             SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
         }
+        workspacePool.registerPlugin {
+            GitHubCopilotWorkspacePlugin(workspace: $0)
+        }
+        workspacePool.registerPlugin {
+            CodeiumWorkspacePlugin(workspace: $0)
+        }
+        workspacePool.registerPlugin {
+            BuiltinExtensionWorkspacePlugin(workspace: $0)
+        }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
 
