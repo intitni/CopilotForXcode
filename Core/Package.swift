@@ -184,6 +184,8 @@ let package = Package(
         .target(
             name: "SuggestionService",
             dependencies: [
+                .product(name: "UserDefaultsObserver", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
                 .product(name: "SuggestionModel", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool")
             ].pro([

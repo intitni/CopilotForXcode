@@ -39,7 +39,7 @@ enum CodeiumError: Error, LocalizedError {
     }
 }
 
-public class CodeiumSuggestionService {
+public class CodeiumService {
     static let sessionId = UUID().uuidString
     let projectRootURL: URL
     var server: CodeiumLSP?
@@ -70,7 +70,7 @@ public class CodeiumSuggestionService {
     public init(projectRootURL: URL, onServiceLaunched: @escaping () -> Void) throws {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
-        let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
+        let urls = try CodeiumService.createFoldersIfNeeded()
         languageServerURL = urls.executableURL.appendingPathComponent("language_server")
         supportURL = urls.supportURL
         Task {
@@ -177,7 +177,7 @@ public class CodeiumSuggestionService {
     }
 }
 
-extension CodeiumSuggestionService {
+extension CodeiumService {
     func getMetadata() async throws -> Metadata {
         guard let key = authService.key else {
             struct E: Error, LocalizedError {
@@ -198,7 +198,7 @@ extension CodeiumSuggestionService {
             ide_version: ideVersion,
             extension_version: languageServerVersion,
             api_key: key,
-            session_id: CodeiumSuggestionService.sessionId,
+            session_id: CodeiumService.sessionId,
             request_id: requestCounter
         )
     }
@@ -219,7 +219,7 @@ extension CodeiumSuggestionService {
     }
 }
 
-extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
+extension CodeiumService: CodeiumSuggestionServiceType {
     public func getCompletions(
         fileURL: URL,
         content: String,
@@ -298,7 +298,7 @@ extension CodeiumSuggestionService: CodeiumSuggestionServiceType {
         _ = try? await server?.sendRequest(
             CodeiumRequest.CancelRequest(requestBody: .init(
                 request_id: requestCounter,
-                session_id: CodeiumSuggestionService.sessionId
+                session_id: CodeiumService.sessionId
             ))
         )
     }

@@ -71,7 +71,7 @@ let package = Package(
             url: "https://github.com/intitni/generative-ai-swift",
             branch: "support-setting-base-url"
         ),
-        .package(url: "https://github.com/intitni/CopilotForXcodeKit", from: "0.4.0"),
+        .package(url: "https://github.com/intitni/CopilotForXcodeKit", branch: "develop"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -203,6 +203,15 @@ let package = Package(
         .target(name: "AsyncPassthroughSubject"),
 
         .target(
+            name: "BuiltinExtension",
+            dependencies: [
+                "SuggestionModel",
+                "Workspace",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit")
+            ]
+        ),
+
+        .target(
             name: "SharedUIComponents",
             dependencies: [
                 "Highlightr",
@@ -239,6 +248,7 @@ let package = Package(
                 "Workspace",
                 "SuggestionProvider",
                 "XPCShared",
+                "BuiltinExtension"
             ]
         ),
 
@@ -285,9 +295,9 @@ let package = Package(
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionProvider", dependencies: [
-            "GitHubCopilotService",
-            "CodeiumService",
+            "SuggestionModel",
             "UserDefaultsObserver",
+            "Preferences",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
 
@@ -303,7 +313,9 @@ let package = Package(
                 "Logger",
                 "Preferences",
                 "Terminal",
+                "BuiltinExtension",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
         .testTarget(
@@ -322,6 +334,8 @@ let package = Package(
                 "Preferences",
                 "Terminal",
                 "XcodeInspector",
+                "BuiltinExtension",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
 

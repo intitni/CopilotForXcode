@@ -196,13 +196,12 @@ public class GitHubCopilotBaseService {
         self.server = server
         localProcessServer = localServer
 
+        let notifications = NotificationCenter.default
+            .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
         Task { [weak self] in
             _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
 
-            for await _ in NotificationCenter.default
-                .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
-            {
-                print("Yes!")
+            for await _ in notifications {
                 guard self != nil else { return }
                 _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
             }
@@ -318,8 +317,7 @@ public final class GitHubCopilotAuthService: GitHubCopilotBaseService,
     public static let shared = TheActor()
 }
 
-@GitHubCopilotSuggestionActor
-public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
+public final class GitHubCopilotService: GitHubCopilotBaseService,
     GitHubCopilotSuggestionServiceType
 {
     private var ongoingTasks = Set<Task<[CodeSuggestion], Error>>()
@@ -332,6 +330,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         super.init(designatedServer: designatedServer)
     }
 
+    @GitHubCopilotSuggestionActor
     public func getCompletions(
         fileURL: URL,
         content: String,
@@ -393,22 +392,26 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         return try await task.value
     }
 
+    @GitHubCopilotSuggestionActor
     public func cancelRequest() async {
         await localProcessServer?.cancelOngoingTasks()
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyAccepted(_ completion: CodeSuggestion) async {
         _ = try? await server.sendRequest(
             GitHubCopilotRequest.NotifyAccepted(completionUUID: completion.id)
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyRejected(_ completions: [CodeSuggestion]) async {
         _ = try? await server.sendRequest(
             GitHubCopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.id))
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyOpenTextDocument(
         fileURL: URL,
         content: String
@@ -430,6 +433,7 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Change \(uri), \(content.count)")
@@ -448,18 +452,21 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifySaveTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Save \(uri)")
         try await server.sendNotification(.didSaveTextDocument(.init(uri: uri)))
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Close \(uri)")
         try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
     }
 
+    @GitHubCopilotSuggestionActor
     public func terminate() async {
         // automatically handled
     }
