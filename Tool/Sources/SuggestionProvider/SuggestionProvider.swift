@@ -1,5 +1,6 @@
 import AppKit
 import struct CopilotForXcodeKit.SuggestionServiceConfiguration
+import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
 import Preferences
 import SuggestionModel
@@ -55,15 +56,19 @@ public struct RelevantCodeSnippet: Codable {
 }
 
 public protocol SuggestionServiceProvider {
-    func getSuggestions(_ request: SuggestionRequest) async throws -> [CodeSuggestion]
-    func notifyAccepted(_ suggestion: CodeSuggestion) async
-    func notifyRejected(_ suggestions: [CodeSuggestion]) async
-    func notifyOpenTextDocument(fileURL: URL, content: String) async throws
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
-    func notifyCloseTextDocument(fileURL: URL) async throws
-    func notifySaveTextDocument(fileURL: URL) async throws
-    func cancelRequest() async
-    func terminate() async
+    func getSuggestions(
+        _ request: SuggestionRequest,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async throws -> [CodeSuggestion]
+    func notifyAccepted(
+        _ suggestion: CodeSuggestion,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func notifyRejected(
+        _ suggestions: [CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func cancelRequest(workspaceInfo: CopilotForXcodeKit.WorkspaceInfo) async
 
     var configuration: SuggestionServiceConfiguration { get async }
 }
