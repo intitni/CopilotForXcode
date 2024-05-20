@@ -11,6 +11,14 @@ public final class CodeiumExtension: BuiltinExtension {
     public var suggestionService: SuggestionServiceType? { _suggestionService }
     public var chatService: ChatServiceType? { nil }
     public var promptToCodeService: PromptToCodeServiceType? { nil }
+    private var appConfiguration = AppConfiguration(
+        suggestionServiceInUse: false,
+        chatServiceInUse: false
+    )
+    private var isLanguageServerInUse: Bool {
+        appConfiguration.suggestionServiceInUse || appConfiguration.chatServiceInUse
+    }
+    
     let workspacePool: WorkspacePool
 
     let serviceLocator: ServiceLocator
@@ -27,6 +35,7 @@ public final class CodeiumExtension: BuiltinExtension {
     public func workspaceDidClose(_: WorkspaceInfo) {}
 
     public func workspace(_ workspace: WorkspaceInfo, didOpenDocumentAt documentURL: URL) {
+        guard isLanguageServerInUse else { return }
         // check if file size is larger than 15MB, if so, return immediately
         if let attrs = try? FileManager.default
             .attributesOfItem(atPath: documentURL.path),
@@ -50,6 +59,7 @@ public final class CodeiumExtension: BuiltinExtension {
     }
 
     public func workspace(_ workspace: WorkspaceInfo, didCloseDocumentAt documentURL: URL) {
+        guard isLanguageServerInUse else { return }
         Task {
             do {
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
@@ -65,6 +75,7 @@ public final class CodeiumExtension: BuiltinExtension {
         didUpdateDocumentAt documentURL: URL,
         content: String
     ) {
+        guard isLanguageServerInUse else { return }
         // check if file size is larger than 15MB, if so, return immediately
         if let attrs = try? FileManager.default
             .attributesOfItem(atPath: documentURL.path),
@@ -84,6 +95,7 @@ public final class CodeiumExtension: BuiltinExtension {
     }
 
     public func appConfigurationDidChange(_ configuration: AppConfiguration) {
+        appConfiguration = configuration
         if !configuration.chatServiceInUse && !configuration.suggestionServiceInUse {
             for workspace in workspacePool.workspaces.values {
                 guard let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)

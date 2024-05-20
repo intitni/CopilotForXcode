@@ -19,6 +19,7 @@ public final class BuiltinExtensionManager {
 
     public func setupExtensions(_ extensions: [BuiltinExtension]) {
         self.extensions = extensions
+        checkAppConfiguration()
     }
 
     public func terminate() {
