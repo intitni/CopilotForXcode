@@ -1,10 +1,10 @@
 import Foundation
 import Workspace
 
-final class BuiltinExtensionWorkspacePlugin: WorkspacePlugin {
+public final class BuiltinExtensionWorkspacePlugin: WorkspacePlugin {
     let extensionManager: BuiltinExtensionManager
 
-    public init(workspace: Workspace, extensionManager: BuiltinExtensionManager) {
+    public init(workspace: Workspace, extensionManager: BuiltinExtensionManager = .shared) {
         self.extensionManager = extensionManager
         super.init(workspace: workspace)
     }
