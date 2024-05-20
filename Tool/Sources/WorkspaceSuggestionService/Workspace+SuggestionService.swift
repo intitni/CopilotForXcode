@@ -67,7 +67,7 @@ public extension Workspace {
                 usesTabsForIndentation: editor.usesTabsForIndentation,
                 relevantCodeSnippets: []
             ),
-            workspaceInfo: .init(workspaceURL: projectRootURL, projectURL: projectRootURL)
+            workspaceInfo: .init(workspaceURL: workspaceURL, projectURL: projectRootURL)
         )
 
         filespace.setSuggestions(completions)
@@ -108,7 +108,7 @@ public extension Workspace {
             await suggestionService?.notifyRejected(
                 filespaces[fileURL]?.suggestions ?? [],
                 workspaceInfo: .init(
-                    workspaceURL: projectRootURL,
+                    workspaceURL: workspaceURL,
                     projectURL: projectRootURL
                 )
             )
@@ -139,7 +139,7 @@ public extension Workspace {
             await suggestionService?.notifyAccepted(
                 suggestion,
                 workspaceInfo: .init(
-                    workspaceURL: projectRootURL,
+                    workspaceURL: workspaceURL,
                     projectURL: projectRootURL
                 )
             )
