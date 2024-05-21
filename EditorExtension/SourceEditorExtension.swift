@@ -17,7 +17,7 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
             PreviousSuggestionCommand(),
             PromptToCodeCommand(),
             AcceptPromptToCodeCommand(),
-            ChatWithSelectionCommand(),
+            OpenChatCommand(),
         ].map(makeCommandDefinition)
     }
     

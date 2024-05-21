@@ -3,7 +3,7 @@ import SuggestionModel
 import Foundation
 import XcodeKit
 
-class ChatWithSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
+class OpenChatCommand: NSObject, XCSourceEditorCommand, CommandType {
     var name: String { "Open Chat" }
 
     func perform(
@@ -13,7 +13,7 @@ class ChatWithSelectionCommand: NSObject, XCSourceEditorCommand, CommandType {
         completionHandler(nil)
         Task {
             let service = try getService()
-            _ = try await service.chatWithSelection(editorContent: .init(invocation))
+            _ = try await service.openChat(editorContent: .init(invocation))
         }
     }
 }

@@ -53,7 +53,7 @@
 		C882175C294187EF00A22FD3 /* Client in Frameworks */ = {isa = PBXBuildFile; productRef = C882175B294187EF00A22FD3 /* Client */; };
 		C89E75C32A46FB32000DD64F /* AppDelegate+Menu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */; };
 		C8C8B60929AFA35F00034BEE /* CopilotForXcodeExtensionService.app in Embed XPCService */ = {isa = PBXBuildFile; fileRef = C861E60E2994F6070056CB02 /* CopilotForXcodeExtensionService.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */; };
+		C8DCF00029CE11D500FDDDD7 /* OpenChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DCEFFF29CE11D500FDDDD7 /* OpenChat.swift */; };
 		C8DD9CB12BC673F80036641C /* CloseIdleTabsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DD9CB02BC673F80036641C /* CloseIdleTabsCommand.swift */; };
 /* End PBXBuildFile section */
 
@@ -236,7 +236,7 @@
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 		C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Menu.swift"; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
-		C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWithSelection.swift; sourceTree = "<group>"; };
+		C8DCEFFF29CE11D500FDDDD7 /* OpenChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenChat.swift; sourceTree = "<group>"; };
 		C8DD9CB02BC673F80036641C /* CloseIdleTabsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseIdleTabsCommand.swift; sourceTree = "<group>"; };
 		C8F103292A7A365000D28F4F /* launchAgent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = launchAgent.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -320,7 +320,7 @@
 				C8009C022941C576007AA7E8 /* RealtimeSuggestionCommand.swift */,
 				C800DBB0294C624D00B04CAC /* PrefetchSuggestionsCommand.swift */,
 				C8758E6F29F04BFF00D29C1C /* CustomCommand.swift */,
-				C8DCEFFF29CE11D500FDDDD7 /* ChatWithSelection.swift */,
+				C8DCEFFF29CE11D500FDDDD7 /* OpenChat.swift */,
 				C8DD9CB02BC673F80036641C /* CloseIdleTabsCommand.swift */,
 				C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */,
 				C81458972939EFDC00135263 /* Info.plist */,
@@ -675,7 +675,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C8DCF00029CE11D500FDDDD7 /* ChatWithSelection.swift in Sources */,
+				C8DCF00029CE11D500FDDDD7 /* OpenChat.swift in Sources */,
 				C81458942939EFDC00135263 /* SourceEditorExtension.swift in Sources */,
 				C8DD9CB12BC673F80036641C /* CloseIdleTabsCommand.swift in Sources */,
 				C8758E7029F04BFF00D29C1C /* CustomCommand.swift in Sources */,

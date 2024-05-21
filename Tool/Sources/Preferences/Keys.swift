@@ -473,6 +473,18 @@ public extension UserDefaultPreferenceKeys {
     var keepFloatOnTopIfChatPanelAndXcodeOverlaps: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
     }
+    
+    var openChatMode: PreferenceKey<OpenChatMode> {
+        .init(defaultValue: .chatPanel, key: "OpenChatMode")
+    }
+    
+    var openChatInBrowserURL: PreferenceKey<String> {
+        .init(defaultValue: "", key: "OpenChatInBrowserURL")
+    }
+    
+    var openChatInBrowserInInAppBrowser: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "OpenChatInBrowserInInAppBrowser")
+    }
 }
 
 // MARK: - Theme

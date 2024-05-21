@@ -136,10 +136,10 @@ public class XPCExtensionService {
         }
     }
 
-    public func chatWithSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
+    public func openChat(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             editorContent,
-            { $0.chatWithSelection }
+            { $0.openChat }
         )
     }
 

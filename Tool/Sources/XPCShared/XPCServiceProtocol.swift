@@ -31,7 +31,7 @@ public protocol XPCServiceProtocol {
         editorContent: Data,
         withReply reply: @escaping (_ updatedContent: Data?, Error?) -> Void
     )
-    func chatWithSelection(
+    func openChat(
         editorContent: Data,
         withReply reply: @escaping (Data?, Error?) -> Void
     )
