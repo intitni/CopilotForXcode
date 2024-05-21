@@ -95,11 +95,7 @@ public final class CodeiumExtension: BuiltinExtension {
     public func extensionUsageDidChange(_ usage: ExtensionUsage) {
         extensionUsage = usage
         if !usage.isChatServiceInUse && !usage.isSuggestionServiceInUse {
-            for workspace in workspacePool.workspaces.values {
-                guard let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)
-                else { continue }
-                plugin.terminate()
-            }
+            terminate()
         }
     }
 
