@@ -55,7 +55,8 @@ struct GUI {
     enum Action {
         case start
         case openChatPanel(forceDetach: Bool)
-        case createChatGPTChatTabIfNeeded
+        case createAndSwitchToChatGPTChatTabIfNeeded
+        case createAndSwitchToBrowserTabIfNeeded(url: URL)
         case sendCustomCommandToActiveChat(CustomCommand)
         case toggleWidgetsHotkeyPressed
 
@@ -145,11 +146,22 @@ struct GUI {
                         activateThisApp()
                     }
 
-                case .createChatGPTChatTabIfNeeded:
-                    if state.chatTabGroup.tabInfo.contains(where: {
+                case .createAndSwitchToChatGPTChatTabIfNeeded:
+                    if let selectedTabInfo = state.chatTabGroup.selectedTabInfo,
+                       chatTabPool.getTab(of: selectedTabInfo.id) is ChatGPTChatTab
+                    {
+                        // Already in ChatGPT tab
+                        return .none
+                    }
+
+                    if let firstChatGPTTabInfo = state.chatTabGroup.tabInfo.first(where: {
                         chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
                     }) {
-                        return .none
+                        return .run { send in
+                            await send(.suggestionWidget(.chatPanel(.tabClicked(
+                                id: firstChatGPTTabInfo.id
+                            ))))
+                        }
                     }
                     return .run { send in
                         if let (_, chatTabInfo) = await chatTabPool.createTab(for: nil) {
@@ -158,6 +170,53 @@ struct GUI {
                             )
                         }
                     }
+
+                case let .createAndSwitchToBrowserTabIfNeeded(url):
+                    #if canImport(BrowserChatTab)
+                    func match(_ tabURL: URL?) -> Bool {
+                        guard let tabURL else { return false }
+                        return tabURL == url
+                            || tabURL.absoluteString.hasPrefix(url.absoluteString)
+                    }
+
+                    if let selectedTabInfo = state.chatTabGroup.selectedTabInfo,
+                       let tab = chatTabPool.getTab(of: selectedTabInfo.id) as? BrowserChatTab,
+                       match(tab.url)
+                    {
+                        // Already in the target Browser tab
+                        return .none
+                    }
+
+                    if let firstChatGPTTabInfo = state.chatTabGroup.tabInfo.first(where: {
+                        guard let tab = chatTabPool.getTab(of: $0.id) as? BrowserChatTab,
+                              match(tab.url)
+                        else { return false }
+                        return true
+                    }) {
+                        return .run { send in
+                            await send(.suggestionWidget(.chatPanel(.tabClicked(
+                                id: firstChatGPTTabInfo.id
+                            ))))
+                        }
+                    }
+
+                    return .run { send in
+                        if let (_, chatTabInfo) = await chatTabPool.createTab(
+                            for: .init(BrowserChatTab.urlChatBuilder(
+                                url: url,
+                                externalDependency: ChatTabFactory
+                                    .externalDependenciesForBrowserChatTab()
+                            ))
+                        ) {
+                            await send(
+                                .suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo)))
+                            )
+                        }
+                    }
+
+                    #else
+                    return .none
+                    #endif
 
                 case let .sendCustomCommandToActiveChat(command):
                     @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
@@ -320,7 +379,7 @@ public final class GraphicalUserInterfaceController {
         suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
-                await self?.store.send(.createChatGPTChatTabIfNeeded).finish()
+                await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
                 self?.store.send(.openChatPanel(forceDetach: false))
             }
         }

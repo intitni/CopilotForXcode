@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import Dependencies
+import PlusFeatureFlag
 import Preferences
 import SuggestionInjector
 import SuggestionModel
@@ -318,14 +319,19 @@ struct PseudoCommandHandler {
     func openChat(forceDetach: Bool) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
+            let store = Service.shared.guiController.store
             Task { @MainActor in
-                let store = Service.shared.guiController.store
-                await store.send(.createChatGPTChatTabIfNeeded).finish()
+                await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
                 store.send(.openChatPanel(forceDetach: false))
             }
         case .browser:
             let urlString = UserDefaults.shared.value(for: \.openChatInBrowserURL)
-            let openInApp = UserDefaults.shared.value(for: \.openChatInBrowserInInAppBrowser)
+            let openInApp = {
+                if !UserDefaults.shared.value(for: \.openChatInBrowserInInAppBrowser) {
+                    return false
+                }
+                return isFeatureAvailable(\.browserTab)
+            }()
             guard let url = URL(string: urlString) else {
                 let alert = NSAlert()
                 alert.messageText = "Invalid URL"
@@ -336,7 +342,11 @@ struct PseudoCommandHandler {
             }
 
             if openInApp {
-                return
+                let store = Service.shared.guiController.store
+                Task { @MainActor in
+                    await store.send(.createAndSwitchToBrowserTabIfNeeded(url: url)).finish()
+                    store.send(.openChatPanel(forceDetach: false))
+                }
             } else {
                 Task {
                     @Dependency(\.openURL) var openURL

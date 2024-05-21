@@ -126,6 +126,7 @@ let package = Package(
                 "PromptToCodeService",
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
+                "PlusFeatureFlag",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
