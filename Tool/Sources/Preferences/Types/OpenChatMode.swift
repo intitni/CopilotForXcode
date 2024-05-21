@@ -1,6 +1,6 @@
 import Foundation
 
-public enum OpenChatMode: String {
+public enum OpenChatMode: String, CaseIterable {
     case chatPanel
     case browser
 }
