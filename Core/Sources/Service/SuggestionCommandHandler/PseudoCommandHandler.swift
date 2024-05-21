@@ -322,7 +322,7 @@ struct PseudoCommandHandler {
             let store = Service.shared.guiController.store
             Task { @MainActor in
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
-                store.send(.openChatPanel(forceDetach: false))
+                store.send(.openChatPanel(forceDetach: forceDetach))
             }
         case .browser:
             let urlString = UserDefaults.shared.value(for: \.openChatInBrowserURL)
@@ -345,7 +345,7 @@ struct PseudoCommandHandler {
                 let store = Service.shared.guiController.store
                 Task { @MainActor in
                     await store.send(.createAndSwitchToBrowserTabIfNeeded(url: url)).finish()
-                    store.send(.openChatPanel(forceDetach: false))
+                    store.send(.openChatPanel(forceDetach: forceDetach))
                 }
             } else {
                 Task {
