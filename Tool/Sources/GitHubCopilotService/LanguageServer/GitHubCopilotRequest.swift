@@ -241,6 +241,60 @@ enum GitHubCopilotRequest {
         }
     }
 
+    struct InlineCompletion: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var items: [InlineCompletionItem]
+        }
+
+        struct InlineCompletionItem: Codable {
+            var insertText: String
+            var filterText: String?
+            var range: Range?
+            var command: Command?
+
+            struct Range: Codable {
+                var start: Position
+                var end: Position
+            }
+
+            struct Command: Codable {
+                var title: String
+                var command: String
+                var arguments: [String]?
+            }
+        }
+
+        var doc: GitHubCopilotDoc
+
+        struct Input: Codable {
+            var textDocument: _TextDocument; struct _TextDocument: Codable {
+                var uri: String
+            }
+
+            var position: Position
+            var formattingOptions: FormattingOptions
+            var context: _Context; struct _Context: Codable {
+                enum TriggerKind: Int, Codable {
+                    case invoked = 1
+                    case automatic = 2
+                }
+
+                var triggerKind: TriggerKind
+            }
+        }
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(Input(
+                textDocument: .init(uri: doc.uri),
+                position: doc.position,
+                formattingOptions: .init(tabSize: doc.tabSize, insertSpaces: doc.insertSpaces),
+                context: .init(triggerKind: .invoked)
+            ))) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("textDocument/inlineCompletion", dict)
+        }
+    }
+
     struct GetPanelCompletions: GitHubCopilotRequestType {
         struct Response: Codable {
             var completions: [GitHubCopilotCodeSuggestion]
