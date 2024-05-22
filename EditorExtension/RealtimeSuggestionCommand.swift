@@ -4,7 +4,7 @@ import Foundation
 import XcodeKit
 
 class RealtimeSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Real-time Suggestions" }
+    var name: String { "Prepare for Real-time Suggestions" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,
