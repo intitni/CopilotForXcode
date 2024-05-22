@@ -93,7 +93,7 @@ public final class GitHubCopilotExtension: BuiltinExtension {
             do {
                 guard let content else { return }
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
-                try await service.notifyOpenTextDocument(fileURL: documentURL, content: content)
+                try await service.notifyChangeTextDocument(fileURL: documentURL, content: content, version: 0)
             } catch {
                 Logger.gitHubCopilot.error(error.localizedDescription)
             }
