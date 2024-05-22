@@ -396,11 +396,14 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
             } catch let error as ServerError {
                 switch error {
                 case .serverError:
+                    // sometimes the content inside language server is not new enough, which can
+                    // lead to an version mismatch error. We can try a few times until the content
+                    // is up to date.
                     if maxTry <= 0 { break }
                     Logger.gitHubCopilot.error(
                         "Try getting suggestions again: \(GitHubCopilotError.languageServerError(error).localizedDescription)"
                     )
-                    try await Task.sleep(nanoseconds: 400_000_000)
+                    try await Task.sleep(nanoseconds: 200_000_000)
                     return try await sendRequest(maxTry: maxTry - 1)
                 default:
                     break
