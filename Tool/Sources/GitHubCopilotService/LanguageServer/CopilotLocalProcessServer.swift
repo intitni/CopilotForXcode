@@ -241,6 +241,13 @@ extension CustomJSONRPCLanguageServer {
             }
             block(nil)
             return true
+        case "conversation/preconditionsNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+            block(nil)
+            return true
         default:
             return false
         }
