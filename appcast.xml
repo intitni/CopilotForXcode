@@ -5,7 +5,7 @@
         <item>
             <title>0.33.1</title>
             <pubDate>Thu, 23 May 2024 05:01:08 +0800</pubDate>
-            <sparkle:fullReleaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1.beta</sparkle:fullReleaseNotesLink>
+            <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1.beta</sparkle:releaseNotesLink>
             <sparkle:channel>beta</sparkle:channel>
             <sparkle:version>379</sparkle:version>
             <sparkle:shortVersionString>0.33.1</sparkle:shortVersionString>
