@@ -42,11 +42,14 @@ protocol GitHubCopilotLSP {
 enum GitHubCopilotError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerError(ServerError)
+    case failedToInstallStartScript
 
     var errorDescription: String? {
         switch self {
         case .languageServerNotInstalled:
             return "Language server is not installed."
+        case .failedToInstallStartScript:
+            return "Failed to install start script."
         case let .languageServerError(error):
             switch error {
             case let .handlerUnavailable(handler):
@@ -109,12 +112,32 @@ public class GitHubCopilotBaseService {
                 throw GitHubCopilotError.languageServerNotInstalled
             }
 
+            let indexJSURL: URL = try {
+                if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
+                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert.js")
+                    if !FileManager.default.fileExists(atPath: url.path) {
+                        let file = Bundle.module.url(
+                            forResource: "load-self-signed-cert",
+                            withExtension: "js"
+                        )!
+                        do {
+                            try FileManager.default.copyItem(at: file, to: url)
+                        } catch {
+                            throw GitHubCopilotError.failedToInstallStartScript
+                        }
+                    }
+                    return url
+                } else {
+                    return agentJSURL
+                }
+            }()
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(agentJSURL.path)\"",
+                    "\"\(indexJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = Process.ExecutionParameters(
@@ -128,7 +151,7 @@ public class GitHubCopilotBaseService {
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(agentJSURL.path)\"",
+                    "\"\(indexJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = Process.ExecutionParameters(
@@ -146,7 +169,7 @@ public class GitHubCopilotBaseService {
                         path: "/usr/bin/env",
                         arguments: [
                             nodePath.isEmpty ? "node" : nodePath,
-                            agentJSURL.path,
+                            indexJSURL.path,
                             "--stdio",
                         ],
                         environment: [

@@ -316,7 +316,8 @@ let package = Package(
                 "BuiltinExtension",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
-            ]
+            ],
+            resources: [.copy("Resources/load-self-signed-cert.js")]
         ),
         .testTarget(
             name: "GitHubCopilotServiceTests",
