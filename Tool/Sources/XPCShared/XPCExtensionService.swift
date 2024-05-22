@@ -203,7 +203,7 @@ public class XPCExtensionService {
 
 extension XPCExtensionService: XPCServiceDelegate {
     public func connectionDidInterrupt() async {
-        // do nothing
+        service = nil
     }
 
     public func connectionDidInvalidate() async {

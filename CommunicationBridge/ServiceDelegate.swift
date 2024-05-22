@@ -69,6 +69,7 @@ actor EventHandler {
         reply(endpoint)
         #else
         if await launcher.isApplicationValid {
+            Logger.communicationBridge.info("Service app is still valid")
             reply(endpoint)
         } else {
             endpoint = nil
