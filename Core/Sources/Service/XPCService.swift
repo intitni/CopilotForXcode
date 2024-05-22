@@ -177,10 +177,16 @@ public class XPCService: NSObject, XPCServiceProtocol {
         }
         Task { @ServiceActor in
             await Service.shared.realtimeSuggestionController.cancelInFlightTasks()
-            UserDefaults.shared.set(
-                !UserDefaults.shared.value(for: \.realtimeSuggestionToggle),
-                for: \.realtimeSuggestionToggle
-            )
+            let on = !UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
+            UserDefaults.shared.set(on, for: \.realtimeSuggestionToggle)
+            Task { @MainActor in
+                Service.shared.guiController.store
+                    .send(.suggestionWidget(.toastPanel(.toast(.toast(
+                        "Real-time suggestion is turned \(on ? "on" : "off")",
+                        .info,
+                        nil
+                    )))))
+            }
             reply(nil)
         }
     }
