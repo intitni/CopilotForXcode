@@ -150,6 +150,7 @@ public final class Workspace {
     public func didUpdateFilespace(fileURL: URL, content: String) {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return }
+        filespace.bumpVersion()
         filespace.refreshUpdateTime()
         for plugin in plugins.values {
             plugin.didUpdateFilespace(filespace, content: content)

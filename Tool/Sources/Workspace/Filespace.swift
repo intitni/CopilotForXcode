@@ -121,6 +121,9 @@ public final class Filespace {
             return isIgnored
         }
     }
+    
+    @WorkspaceActor
+    public private(set) var version: Int = 0
 
     // MARK: Methods
 
@@ -180,6 +183,11 @@ public final class Filespace {
         if suggestionIndex < 0 {
             suggestionIndex = suggestions.endIndex - 1
         }
+    }
+    
+    @WorkspaceActor
+    public func bumpVersion() {
+        version += 1
     }
 }
 
