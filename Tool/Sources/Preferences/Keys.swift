@@ -187,6 +187,10 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWith: PreferenceKey<NodeRunner> {
         .init(defaultValue: .env, key: "RunNodeWith")
     }
+    
+    var gitHubCopilotLoadKeyChainCertificates: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "GitHubCopilotLoadKeyChainCertificates")
+    }
 }
 
 // MARK: - Codeium Settings

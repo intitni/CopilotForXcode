@@ -22,6 +22,8 @@ struct GitHubCopilotView: View {
         @AppStorage(\.gitHubCopilotEnterpriseURI) var gitHubCopilotEnterpriseURI
         @AppStorage(\.disableGitHubCopilotSettingsAutoRefreshOnAppear)
         var disableGitHubCopilotSettingsAutoRefreshOnAppear
+        @AppStorage(\.gitHubCopilotLoadKeyChainCertificates)
+        var gitHubCopilotLoadKeyChainCertificates
         init() {}
     }
 
@@ -196,6 +198,10 @@ struct GitHubCopilotView: View {
                         .foregroundColor(.secondary)
                         .font(.callout)
                         .dynamicHeightTextInFormWorkaround()
+                        
+                        Toggle(isOn: $settings.gitHubCopilotLoadKeyChainCertificates) {
+                            Text("Load certificates in keychain")
+                        }
                     }
                 }
 
