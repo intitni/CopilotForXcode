@@ -95,7 +95,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                 fileURLWithPath: path
                     .replacingOccurrences(of: "file://", with: "")
             )
-            return url
+            return adjustFileURL(url)
         }
         return nil
     }
@@ -141,6 +141,15 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         }
 
         return lastGitDirectoryURL ?? firstDirectoryURL ?? workspaceURL
+    }
+    
+    static func adjustFileURL(_ url: URL) -> URL {
+        if url.pathExtension == "playground",
+           FileManager.default.fileIsDirectory(atPath: url.path)
+        {
+            return url.appendingPathComponent("Contents.swift")
+        }
+        return url
     }
 }
 
