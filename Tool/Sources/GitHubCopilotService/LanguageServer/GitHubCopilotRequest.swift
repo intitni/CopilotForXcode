@@ -264,11 +264,12 @@ enum GitHubCopilotRequest {
             }
         }
 
-        var doc: GitHubCopilotDoc
+        var doc: Input
 
         struct Input: Codable {
             var textDocument: _TextDocument; struct _TextDocument: Codable {
                 var uri: String
+                var version: Int
             }
 
             var position: Position
@@ -284,12 +285,7 @@ enum GitHubCopilotRequest {
         }
 
         var request: ClientRequest {
-            let data = (try? JSONEncoder().encode(Input(
-                textDocument: .init(uri: doc.uri),
-                position: doc.position,
-                formattingOptions: .init(tabSize: doc.tabSize, insertSpaces: doc.insertSpaces),
-                context: .init(triggerKind: .invoked)
-            ))) ?? Data()
+            let data = (try? JSONEncoder().encode(doc)) ?? Data()
             let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
             return .custom("textDocument/inlineCompletion", dict)
         }

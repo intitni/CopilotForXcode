@@ -28,7 +28,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func notifyAccepted(_ completion: CodeSuggestion) async
     func notifyRejected(_ completions: [CodeSuggestion]) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
+    func notifyChangeTextDocument(fileURL: URL, content: String, version: Int) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
@@ -364,54 +364,21 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
         indentSize: Int,
         usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion] {
-        let languageId = languageIdentifierFromFileURL(fileURL)
-
-        let relativePath = {
-            let filePath = fileURL.path
-            let rootPath = projectRootURL.path
-            if let range = filePath.range(of: rootPath),
-               range.lowerBound == filePath.startIndex
-            {
-                let relativePath = filePath.replacingCharacters(
-                    in: filePath.startIndex..<range.upperBound,
-                    with: ""
-                )
-                return relativePath
-            }
-            return filePath
-        }()
-
         ongoingTasks.forEach { $0.cancel() }
         ongoingTasks.removeAll()
         await localProcessServer?.cancelOngoingTasks()
 
-        let task = Task {
-            // since when the language server is no longer using the passed in content to generate
-            // suggestions, therefore, we will need to update the content to the file before we
-            // do any request.
-            //
-            // And sometimes the language server's content was not up to date and may generate
-            // weird result when the cursor position exceeds the line.
-            try? await notifyChangeTextDocument(fileURL: fileURL, content: content)
-            defer {
-                // recover the content.
-                Task {
-                    try? await notifyChangeTextDocument(fileURL: fileURL, content: originalContent)
-                }
-            }
-            try Task.checkCancellation()
+        func sendRequest(maxTry: Int = 5) async throws -> [CodeSuggestion] {
             do {
                 let completions = try await server
                     .sendRequest(GitHubCopilotRequest.InlineCompletion(doc: .init(
-                        source: content,
-                        tabSize: tabSize,
-                        indentSize: indentSize,
-                        insertSpaces: !usesTabsForIndentation,
-                        path: fileURL.path,
-                        uri: fileURL.path,
-                        relativePath: relativePath,
-                        languageId: languageId,
-                        position: cursorPosition
+                        textDocument: .init(uri: fileURL.path, version: 1),
+                        position: cursorPosition,
+                        formattingOptions: .init(
+                            tabSize: tabSize,
+                            insertSpaces: !usesTabsForIndentation
+                        ),
+                        context: .init(triggerKind: .invoked)
                     )))
                     .items
                     .compactMap { (item: _) -> CodeSuggestion? in
@@ -427,8 +394,53 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 try Task.checkCancellation()
                 return completions
             } catch let error as ServerError {
+                switch error {
+                case .serverError:
+                    if maxTry <= 0 { break }
+                    Logger.gitHubCopilot.error(
+                        "Try getting suggestions again: \(GitHubCopilotError.languageServerError(error).localizedDescription)"
+                    )
+                    try await Task.sleep(nanoseconds: 400_000_000)
+                    return try await sendRequest(maxTry: maxTry - 1)
+                default:
+                    break
+                }
                 throw GitHubCopilotError.languageServerError(error)
             } catch {
+                throw error
+            }
+        }
+        
+        func recoverContent() async {
+            try? await notifyChangeTextDocument(
+                fileURL: fileURL,
+                content: originalContent,
+                version: 0
+            )
+        }
+
+        // since when the language server is no longer using the passed in content to generate
+        // suggestions, we will need to update the content to the file before we do any request.
+        //
+        // And sometimes the language server's content was not up to date and may generate
+        // weird result when the cursor position exceeds the line.
+        let task = Task { @GitHubCopilotSuggestionActor in
+            try? await notifyChangeTextDocument(
+                fileURL: fileURL,
+                content: content,
+                version: 1
+            )
+
+            do {
+                try Task.checkCancellation()
+                return try await sendRequest()
+            } catch let error as CancellationError {
+                if ongoingTasks.isEmpty {
+                    await recoverContent()
+                }
+                throw error
+            } catch {
+                await recoverContent()
                 throw error
             }
         }
@@ -440,6 +452,8 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
 
     @GitHubCopilotSuggestionActor
     public func cancelRequest() async {
+        ongoingTasks.forEach { $0.cancel() }
+        ongoingTasks.removeAll()
         await localProcessServer?.cancelOngoingTasks()
     }
 
@@ -480,14 +494,18 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
     }
 
     @GitHubCopilotSuggestionActor
-    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+    public func notifyChangeTextDocument(
+        fileURL: URL,
+        content: String,
+        version: Int
+    ) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Change \(uri), \(content.count)")
         try await server.sendNotification(
             .didChangeTextDocument(
                 DidChangeTextDocumentParams(
                     uri: uri,
-                    version: 0,
+                    version: version,
                     contentChange: .init(
                         range: nil,
                         rangeLength: nil,
