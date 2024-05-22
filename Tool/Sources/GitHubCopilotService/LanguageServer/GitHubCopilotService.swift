@@ -19,6 +19,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func getCompletions(
         fileURL: URL,
         content: String,
+        originalContent: String,
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
@@ -357,6 +358,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
     public func getCompletions(
         fileURL: URL,
         content: String,
+        originalContent: String,
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
@@ -384,30 +386,51 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
         await localProcessServer?.cancelOngoingTasks()
 
         let task = Task {
-            let completions = try await server
-                .sendRequest(GitHubCopilotRequest.GetCompletionsCycling(doc: .init(
-                    source: content,
-                    tabSize: tabSize,
-                    indentSize: indentSize,
-                    insertSpaces: !usesTabsForIndentation,
-                    path: fileURL.path,
-                    uri: fileURL.path,
-                    relativePath: relativePath,
-                    languageId: languageId,
-                    position: cursorPosition
-                )))
-                .completions
-                .map {
-                    let suggestion = CodeSuggestion(
-                        id: $0.uuid,
-                        text: $0.text,
-                        position: $0.position,
-                        range: $0.range
-                    )
-                    return suggestion
+            // since when the language server is no longer using the passed in content to generate
+            // suggestions, therefore, we will need to update the content to the file before we
+            // do any request.
+            //
+            // And sometimes the language server's content was not up to date and may generate
+            // weird result when the cursor position exceeds the line.
+            try? await notifyChangeTextDocument(fileURL: fileURL, content: content)
+            defer {
+                // recover the content.
+                Task {
+                    try? await notifyChangeTextDocument(fileURL: fileURL, content: originalContent)
                 }
+            }
             try Task.checkCancellation()
-            return completions
+            do {
+                let completions = try await server
+                    .sendRequest(GitHubCopilotRequest.InlineCompletion(doc: .init(
+                        source: content,
+                        tabSize: tabSize,
+                        indentSize: indentSize,
+                        insertSpaces: !usesTabsForIndentation,
+                        path: fileURL.path,
+                        uri: fileURL.path,
+                        relativePath: relativePath,
+                        languageId: languageId,
+                        position: cursorPosition
+                    )))
+                    .items
+                    .compactMap { (item: _) -> CodeSuggestion? in
+                        guard let range = item.range else { return nil }
+                        let suggestion = CodeSuggestion(
+                            id: item.command?.arguments?.first ?? UUID().uuidString,
+                            text: item.insertText,
+                            position: cursorPosition,
+                            range: .init(start: range.start, end: range.end)
+                        )
+                        return suggestion
+                    }
+                try Task.checkCancellation()
+                return completions
+            } catch let error as ServerError {
+                throw GitHubCopilotError.languageServerError(error)
+            } catch {
+                throw error
+            }
         }
 
         ongoingTasks.insert(task)
