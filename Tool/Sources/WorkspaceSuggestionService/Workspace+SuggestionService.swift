@@ -54,11 +54,13 @@ public extension Workspace {
         filespace.suggestionSourceSnapshot = snapshot
 
         guard let suggestionService else { throw SuggestionFeatureDisabledError() }
+        let content = editor.lines.joined(separator: "")
         let completions = try await suggestionService.getSuggestions(
             .init(
                 fileURL: fileURL,
                 relativePath: fileURL.path.replacingOccurrences(of: projectRootURL.path, with: ""),
-                content: editor.lines.joined(separator: ""),
+                content: content,
+                originalContent: content,
                 lines: editor.lines,
                 cursorPosition: editor.cursorPosition,
                 cursorOffset: editor.cursorOffset,

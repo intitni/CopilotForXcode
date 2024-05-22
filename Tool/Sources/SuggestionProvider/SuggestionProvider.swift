@@ -10,6 +10,7 @@ public struct SuggestionRequest {
     public var fileURL: URL
     public var relativePath: String
     public var content: String
+    public var originalContent: String
     public var lines: [String]
     public var cursorPosition: CursorPosition
     public var cursorOffset: Int
@@ -22,6 +23,7 @@ public struct SuggestionRequest {
         fileURL: URL,
         relativePath: String,
         content: String,
+        originalContent: String,
         lines: [String],
         cursorPosition: CursorPosition,
         cursorOffset: Int,
@@ -33,6 +35,7 @@ public struct SuggestionRequest {
         self.fileURL = fileURL
         self.relativePath = relativePath
         self.content = content
+        self.originalContent = content
         self.lines = lines
         self.cursorPosition = cursorPosition
         self.cursorOffset = cursorOffset

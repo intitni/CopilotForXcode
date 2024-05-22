@@ -26,6 +26,7 @@ public final class GitHubCopilotSuggestionService: SuggestionServiceType {
         return try await service.getCompletions(
             fileURL: request.fileURL,
             content: request.content,
+            originalContent: request.originalContent,
             cursorPosition: .init(
                 line: request.cursorPosition.line,
                 character: request.cursorPosition.character

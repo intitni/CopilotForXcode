@@ -54,7 +54,8 @@ public final class BuiltinExtensionSuggestionServiceProvider<
                 language: .init(
                     rawValue: languageIdentifierFromFileURL(request.fileURL).rawValue
                 ) ?? .plaintext,
-                content: request.content,
+                content: request.content, 
+                originalContent: request.originalContent,
                 cursorPosition: .init(
                     line: request.cursorPosition.line,
                     character: request.cursorPosition.character
@@ -109,6 +110,7 @@ extension SuggestionProvider.SuggestionRequest {
             language: .init(rawValue: languageIdentifierFromFileURL(fileURL).rawValue)
                 ?? .plaintext,
             content: content,
+            originalContent: originalContent,
             cursorPosition: .init(
                 line: cursorPosition.line,
                 character: cursorPosition.character
