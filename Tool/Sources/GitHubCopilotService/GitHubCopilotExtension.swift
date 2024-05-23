@@ -1,6 +1,7 @@
 import BuiltinExtension
 import CopilotForXcodeKit
 import Foundation
+import LanguageServerProtocol
 import Logger
 import Preferences
 import Workspace
@@ -9,7 +10,7 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .gitHubCopilot }
 
     public let suggestionService: GitHubCopilotSuggestionService?
-    
+
     private var extensionUsage = ExtensionUsage(
         isSuggestionServiceInUse: false,
         isChatServiceInUse: false
@@ -90,10 +91,23 @@ public final class GitHubCopilotExtension: BuiltinExtension {
         { return }
 
         Task {
+            guard let content else { return }
+            guard let service = await serviceLocator.getService(from: workspace) else { return }
             do {
-                guard let content else { return }
-                guard let service = await serviceLocator.getService(from: workspace) else { return }
-                try await service.notifyChangeTextDocument(fileURL: documentURL, content: content, version: 0)
+                try await service.notifyChangeTextDocument(
+                    fileURL: documentURL,
+                    content: content,
+                    version: 0
+                )
+            } catch let error as ServerError {
+                switch error {
+                case .serverError(-32602, _, _): // parameter incorrect
+                    Logger.gitHubCopilot.error(error.localizedDescription)
+                    // Reopen document if it's not found in the language server
+                    self.workspace(workspace, didOpenDocumentAt: documentURL)
+                default:
+                    Logger.gitHubCopilot.error(error.localizedDescription)
+                }
             } catch {
                 Logger.gitHubCopilot.error(error.localizedDescription)
             }
