@@ -207,7 +207,7 @@ let package = Package(
             dependencies: [
                 "SuggestionModel",
                 "Workspace",
-                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit")
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
 
@@ -217,7 +217,9 @@ let package = Package(
                 "Highlightr",
                 "Preferences",
                 "SuggestionModel",
+                "DebounceFunction",
                 .product(name: "STTextView", package: "STTextView"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
@@ -248,7 +250,7 @@ let package = Package(
                 "Workspace",
                 "SuggestionProvider",
                 "XPCShared",
-                "BuiltinExtension"
+                "BuiltinExtension",
             ]
         ),
 
