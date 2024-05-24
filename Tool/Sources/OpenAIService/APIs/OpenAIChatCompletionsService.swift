@@ -278,34 +278,38 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     }
 
     func callAsFunction() async throws -> ChatCompletionResponseBody {
-        requestBody.stream = false
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let stream: AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> =
+            try await callAsFunction()
 
-        Self.setupAppInformation(&request)
-        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
-
-        let (result, response) = try await URLSession.shared.data(for: request)
-        guard let response = response as? HTTPURLResponse else {
-            throw ChatGPTServiceError.responseInvalid
+        var body = ChatCompletionResponseBody(
+            id: nil,
+            object: "",
+            model: "",
+            message: .init(role: .assistant, content: ""),
+            otherChoices: [],
+            finishReason: ""
+        )
+        for try await chunk in stream {
+            if let id = chunk.id {
+                body.id = id
+            }
+            if let finishReason = chunk.finishReason {
+                body.finishReason = finishReason
+            }
+            if let model = chunk.model {
+                body.model = model
+            }
+            if let object = chunk.object {
+                body.object = object
+            }
+            if let role = chunk.message?.role {
+                body.message.role = role
+            }
+            if let text = chunk.message?.content {
+                body.message.content += text
+            }
         }
-
-        guard response.statusCode == 200 else {
-            let error = try? JSONDecoder().decode(CompletionAPIError.self, from: result)
-            throw error ?? ChatGPTServiceError
-                .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
-        }
-
-        do {
-            let body = try JSONDecoder().decode(ResponseBody.self, from: result)
-            return body.formalized()
-        } catch {
-            dump(error)
-            throw error
-        }
+        return body
     }
 
     static func setupAppInformation(_ request: inout URLRequest) {
