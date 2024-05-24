@@ -28,6 +28,7 @@ struct ChatModelEdit {
         var suggestedMaxTokens: Int?
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
+        var enforceMessageOrder: Bool = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -197,11 +198,12 @@ extension ChatModel {
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
-                googleGenerativeAIInfo: .init(apiVersion: state.apiVersion)
+                googleGenerativeAIInfo: .init(apiVersion: state.apiVersion),
+                openAICompatibleInfo: .init(enforceMessageOrder: state.enforceMessageOrder)
             )
         )
     }
-    
+
     func toState() -> ChatModelEdit.State {
         .init(
             id: id,
@@ -216,7 +218,8 @@ extension ChatModel {
                 apiKeyName: info.apiKeyName,
                 apiKeyManagement: .init(availableAPIKeyNames: [info.apiKeyName])
             ),
-            baseURLSelection: .init(baseURL: info.baseURL, isFullURL: info.isFullURL)
+            baseURLSelection: .init(baseURL: info.baseURL, isFullURL: info.isFullURL),
+            enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder
         )
     }
 }

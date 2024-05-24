@@ -220,7 +220,11 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
-        self.requestBody = .init(requestBody)
+        self.requestBody = .init(
+            requestBody,
+            enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
+            canUseTool: model.info.supportsFunctionCalling
+        )
         self.model = model
     }
 
@@ -278,34 +282,38 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     }
 
     func callAsFunction() async throws -> ChatCompletionResponseBody {
-        requestBody.stream = false
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let stream: AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> =
+            try await callAsFunction()
 
-        Self.setupAppInformation(&request)
-        Self.setupAPIKey(&request, model: model, apiKey: apiKey)
-
-        let (result, response) = try await URLSession.shared.data(for: request)
-        guard let response = response as? HTTPURLResponse else {
-            throw ChatGPTServiceError.responseInvalid
+        var body = ChatCompletionResponseBody(
+            id: nil,
+            object: "",
+            model: "",
+            message: .init(role: .assistant, content: ""),
+            otherChoices: [],
+            finishReason: ""
+        )
+        for try await chunk in stream {
+            if let id = chunk.id {
+                body.id = id
+            }
+            if let finishReason = chunk.finishReason {
+                body.finishReason = finishReason
+            }
+            if let model = chunk.model {
+                body.model = model
+            }
+            if let object = chunk.object {
+                body.object = object
+            }
+            if let role = chunk.message?.role {
+                body.message.role = role
+            }
+            if let text = chunk.message?.content {
+                body.message.content += text
+            }
         }
-
-        guard response.statusCode == 200 else {
-            let error = try? JSONDecoder().decode(CompletionAPIError.self, from: result)
-            throw error ?? ChatGPTServiceError
-                .otherError(String(data: result, encoding: .utf8) ?? "Unknown Error")
-        }
-
-        do {
-            let body = try JSONDecoder().decode(ResponseBody.self, from: result)
-            return body.formalized()
-        } catch {
-            dump(error)
-            throw error
-        }
+        return body
     }
 
     static func setupAppInformation(_ request: inout URLRequest) {
@@ -464,36 +472,94 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
 }
 
 extension OpenAIChatCompletionsService.RequestBody {
-    init(_ body: ChatCompletionsRequestBody) {
+    init(_ body: ChatCompletionsRequestBody, enforceMessageOrder: Bool, canUseTool: Bool) {
         model = body.model
-        messages = body.messages.map { message in
-            .init(
-                role: {
-                    switch message.role {
-                    case .user:
-                        return .user
-                    case .assistant:
-                        return .assistant
-                    case .system:
-                        return .system
-                    case .tool:
-                        return .tool
+        if enforceMessageOrder {
+            var systemPrompts = [String]()
+            var nonSystemMessages = [Message]()
+
+            for message in body.messages {
+                switch (message.role, canUseTool) {
+                case (.system, _):
+                    systemPrompts.append(message.content)
+                case (.tool, true):
+                    if let last = nonSystemMessages.last, last.role == .tool {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .tool,
+                            content: message.content,
+                            tool_calls: message.toolCalls?.map { tool in
+                                MessageToolCall(
+                                    id: tool.id,
+                                    type: tool.type,
+                                    function: MessageFunctionCall(
+                                        name: tool.function.name,
+                                        arguments: tool.function.arguments
+                                    )
+                                )
+                            }
+                        ))
                     }
-                }(),
-                content: message.content,
-                name: message.name,
-                tool_calls: message.toolCalls?.map { tool in
-                    MessageToolCall(
-                        id: tool.id,
-                        type: tool.type,
-                        function: MessageFunctionCall(
-                            name: tool.function.name,
-                            arguments: tool.function.arguments
+                case (.assistant, _), (.tool, false):
+                    if let last = nonSystemMessages.last, last.role == .assistant {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(role: .assistant, content: message.content))
+                    }
+                case (.user, _):
+                    if let last = nonSystemMessages.last, last.role == .user {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .user,
+                            content: message.content,
+                            name: message.name,
+                            tool_call_id: message.toolCallId
+                        ))
+                    }
+                }
+            }
+            messages = [
+                .init(
+                    role: .system,
+                    content: systemPrompts.joined(separator: "\n\n")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                ),
+            ] + nonSystemMessages
+        } else {
+            messages = body.messages.map { message in
+                .init(
+                    role: {
+                        switch message.role {
+                        case .user:
+                            return .user
+                        case .assistant:
+                            return .assistant
+                        case .system:
+                            return .system
+                        case .tool:
+                            return .tool
+                        }
+                    }(),
+                    content: message.content,
+                    name: message.name,
+                    tool_calls: message.toolCalls?.map { tool in
+                        MessageToolCall(
+                            id: tool.id,
+                            type: tool.type,
+                            function: MessageFunctionCall(
+                                name: tool.function.name,
+                                arguments: tool.function.arguments
+                            )
                         )
-                    )
-                },
-                tool_call_id: message.toolCallId
-            )
+                    },
+                    tool_call_id: message.toolCallId
+                )
+            }
         }
         temperature = body.temperature
         stream = body.stream
