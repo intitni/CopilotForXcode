@@ -45,7 +45,7 @@ struct AsyncCodeBlockView: View {
             highlightTask = Task {
                 let string = await withUnsafeContinuation { continuation in
                     Self.queue.async {
-                        let content = highlightedCodeBlock(
+                        let content = CodeHighlighting.highlightedCodeBlock(
                             code: content,
                             language: language,
                             scenario: "chat",
