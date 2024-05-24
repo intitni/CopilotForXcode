@@ -4,13 +4,23 @@
         <title>Copilot for Xcode</title>
         <item>
             <title>0.33.1</title>
+            <pubDate>Sat, 25 May 2024 03:24:57 +0800</pubDate>
+            <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1.beta</sparkle:releaseNotesLink>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>380</sparkle:version>
+            <sparkle:shortVersionString>0.33.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.1.beta/Copilot.for.Xcode.app.beta.2.zip" length="50235347" type="application/octet-stream" sparkle:edSignature="rYSFf8oumdSQSDLZCse0oKrD8fb7VbqwCtn2hMcMWh1zFZk4PFfwngyvZCMDUJJyYPGbYAOWvvAzmOw9mrHiDg=="/>
+        </item>
+        <item>
+            <title>0.33.1</title>
             <pubDate>Thu, 23 May 2024 05:01:08 +0800</pubDate>
-            <sparkle:fullReleaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1.beta</sparkle:fullReleaseNotesLink>
+            <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1.beta</sparkle:releaseNotesLink>
             <sparkle:channel>beta</sparkle:channel>
             <sparkle:version>379</sparkle:version>
             <sparkle:shortVersionString>0.33.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.1.beta/Copilot.for.Xcode.app.beta.1.zip" length="54023198" type="application/octet-stream" sparkle:edSignature="1E/BB4JgBe29QghPoZ1xocsprxBAZIYtsQJkQRIHxporQ4bBYZuar5L0Ou1cPlUs+38TL8hHbH6ACSNUOqjwBQ=="/>
+            <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.1.beta/Copilot.for.Xcode.app.beta.1.zip" length="50165652" type="application/octet-stream" sparkle:edSignature="t80TkofGpFoV6sP0iNxzQpOwT8MYNLThujWZU5qQUYGyFMRQLIpB00znFPdcri1hrPN6TinWO0PFiIYy3vtvBQ=="/>
         </item>
         <item>
             <title>0.33.0</title>
