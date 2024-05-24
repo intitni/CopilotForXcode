@@ -599,6 +599,7 @@ public final class WidgetWindows {
     let store: StoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
     weak var controller: WidgetWindowsController?
+    let cursorPositionTracker = CursorPositionTracker()
 
     // you should make these window `.transient` so they never show up in the mission control.
 
@@ -670,7 +671,7 @@ public final class WidgetWindows {
                     state: \.sharedPanelState,
                     action: \.sharedPanel
                 )
-            )
+            ).environment(cursorPositionTracker)
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in
@@ -704,7 +705,7 @@ public final class WidgetWindows {
                     state: \.suggestionPanelState,
                     action: \.suggestionPanel
                 )
-            )
+            ).environment(cursorPositionTracker)
         )
         it.canBecomeKeyChecker = { false }
         it.setIsVisible(true)

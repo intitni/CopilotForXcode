@@ -22,6 +22,7 @@ public class SourceEditor {
         case selectedTextChanged
         case valueChanged
         case scrollPositionChanged
+        case evaluatedContentChanged
     }
 
     let runningApplication: NSRunningApplication
@@ -31,6 +32,22 @@ public class SourceEditor {
 
     /// To prevent expensive calculations in ``getContent()``.
     private let cache = Cache()
+    
+    public func getLatestEvaluatedContent() -> Content {
+        let selectionRange = element.selectedTextRange
+        let (content, lines, selections) = cache.latest()
+        let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
+        let lineAnnotations = lineAnnotationElements.map(\.description)
+
+        return .init(
+            content: content,
+            lines: lines,
+            selections: selections,
+            cursorPosition: selections.first?.start ?? .outOfScope,
+            cursorOffset: selectionRange?.lowerBound ?? 0,
+            lineAnnotations: lineAnnotations
+        )
+    }
 
     /// Get the content of the source editor.
     ///
@@ -43,6 +60,8 @@ public class SourceEditor {
 
         let lineAnnotationElements = element.children.filter { $0.identifier == "Line Annotation" }
         let lineAnnotations = lineAnnotationElements.map(\.description)
+
+        axNotifications.send(.init(kind: .evaluatedContentChanged, element: element))
 
         return .init(
             content: content,
@@ -174,6 +193,12 @@ extension SourceEditor {
                 cachedSelections = selections
 
                 return (lines, selections)
+            }
+        }
+        
+        func latest() -> (content: String, lines: [String], selections: [CursorRange]) {
+            Self.queue.sync {
+                (sourceContent ?? "", cachedLines, cachedSelections)
             }
         }
     }
