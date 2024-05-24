@@ -44,6 +44,15 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             }
         }
         
+        public struct OpenAICompatibleInfo: Codable, Equatable {
+            @FallbackDecoding<EmptyBool>
+            public var enforceMessageOrder: Bool
+
+            public init(enforceMessageOrder: Bool = false) {
+                self.enforceMessageOrder = enforceMessageOrder
+            }
+        }
+        
         public struct GoogleGenerativeAIInfo: Codable, Equatable {
             @FallbackDecoding<EmptyString>
             public var apiVersion: String
@@ -72,6 +81,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var ollamaInfo: OllamaInfo
         @FallbackDecoding<EmptyChatModelGoogleGenerativeAIInfo>
         public var googleGenerativeAIInfo: GoogleGenerativeAIInfo
+        @FallbackDecoding<EmptyChatModelOpenAICompatibleInfo>
+        public var openAICompatibleInfo: OpenAICompatibleInfo
 
         public init(
             apiKeyName: String = "",
@@ -82,7 +93,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             modelName: String = "",
             openAIInfo: OpenAIInfo = OpenAIInfo(),
             ollamaInfo: OllamaInfo = OllamaInfo(),
-            googleGenerativeAIInfo: GoogleGenerativeAIInfo = GoogleGenerativeAIInfo()
+            googleGenerativeAIInfo: GoogleGenerativeAIInfo = GoogleGenerativeAIInfo(),
+            openAICompatibleInfo: OpenAICompatibleInfo = OpenAICompatibleInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -93,6 +105,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             self.openAIInfo = openAIInfo
             self.ollamaInfo = ollamaInfo
             self.googleGenerativeAIInfo = googleGenerativeAIInfo
+            self.openAICompatibleInfo = openAICompatibleInfo
         }
     }
 
@@ -147,4 +160,8 @@ public struct EmptyChatModelOpenAIInfo: FallbackValueProvider {
 
 public struct EmptyChatModelGoogleGenerativeAIInfo: FallbackValueProvider {
     public static var defaultValue: ChatModel.Info.GoogleGenerativeAIInfo { .init() }
+}
+
+public struct EmptyChatModelOpenAICompatibleInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.OpenAICompatibleInfo { .init() }
 }

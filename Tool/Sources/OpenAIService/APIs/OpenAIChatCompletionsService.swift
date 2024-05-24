@@ -220,7 +220,11 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
-        self.requestBody = .init(requestBody)
+        self.requestBody = .init(
+            requestBody,
+            enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
+            canUseTool: model.info.supportsFunctionCalling
+        )
         self.model = model
     }
 
@@ -468,36 +472,94 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
 }
 
 extension OpenAIChatCompletionsService.RequestBody {
-    init(_ body: ChatCompletionsRequestBody) {
+    init(_ body: ChatCompletionsRequestBody, enforceMessageOrder: Bool, canUseTool: Bool) {
         model = body.model
-        messages = body.messages.map { message in
-            .init(
-                role: {
-                    switch message.role {
-                    case .user:
-                        return .user
-                    case .assistant:
-                        return .assistant
-                    case .system:
-                        return .system
-                    case .tool:
-                        return .tool
+        if enforceMessageOrder {
+            var systemPrompts = [String]()
+            var nonSystemMessages = [Message]()
+
+            for message in body.messages {
+                switch (message.role, canUseTool) {
+                case (.system, _):
+                    systemPrompts.append(message.content)
+                case (.tool, true):
+                    if let last = nonSystemMessages.last, last.role == .tool {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .tool,
+                            content: message.content,
+                            tool_calls: message.toolCalls?.map { tool in
+                                MessageToolCall(
+                                    id: tool.id,
+                                    type: tool.type,
+                                    function: MessageFunctionCall(
+                                        name: tool.function.name,
+                                        arguments: tool.function.arguments
+                                    )
+                                )
+                            }
+                        ))
                     }
-                }(),
-                content: message.content,
-                name: message.name,
-                tool_calls: message.toolCalls?.map { tool in
-                    MessageToolCall(
-                        id: tool.id,
-                        type: tool.type,
-                        function: MessageFunctionCall(
-                            name: tool.function.name,
-                            arguments: tool.function.arguments
+                case (.assistant, _), (.tool, false):
+                    if let last = nonSystemMessages.last, last.role == .assistant {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(role: .assistant, content: message.content))
+                    }
+                case (.user, _):
+                    if let last = nonSystemMessages.last, last.role == .user {
+                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                            += "\n\n\(message.content)"
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .user,
+                            content: message.content,
+                            name: message.name,
+                            tool_call_id: message.toolCallId
+                        ))
+                    }
+                }
+            }
+            messages = [
+                .init(
+                    role: .system,
+                    content: systemPrompts.joined(separator: "\n\n")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                ),
+            ] + nonSystemMessages
+        } else {
+            messages = body.messages.map { message in
+                .init(
+                    role: {
+                        switch message.role {
+                        case .user:
+                            return .user
+                        case .assistant:
+                            return .assistant
+                        case .system:
+                            return .system
+                        case .tool:
+                            return .tool
+                        }
+                    }(),
+                    content: message.content,
+                    name: message.name,
+                    tool_calls: message.toolCalls?.map { tool in
+                        MessageToolCall(
+                            id: tool.id,
+                            type: tool.type,
+                            function: MessageFunctionCall(
+                                name: tool.function.name,
+                                arguments: tool.function.arguments
+                            )
                         )
-                    )
-                },
-                tool_call_id: message.toolCallId
-            )
+                    },
+                    tool_call_id: message.toolCallId
+                )
+            }
         }
         temperature = body.temperature
         stream = body.stream

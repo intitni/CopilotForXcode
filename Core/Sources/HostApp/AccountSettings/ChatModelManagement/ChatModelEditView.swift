@@ -308,6 +308,10 @@ struct ChatModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)
+                
+                Toggle(isOn: $store.enforceMessageOrder) {
+                    Text("Enforce message order to be user/assistant alternated")
+                }
             }
         }
     }
