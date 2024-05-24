@@ -1,29 +1,34 @@
+import Combine
 import Foundation
+import Perception
+import SharedUIComponents
 import SwiftUI
+import XcodeInspector
 
-public final class CodeSuggestionProvider: ObservableObject, Equatable {
+@Perceptible
+public final class CodeSuggestionProvider: Equatable {
     public static func == (lhs: CodeSuggestionProvider, rhs: CodeSuggestionProvider) -> Bool {
         lhs.code == rhs.code && lhs.language == rhs.language
     }
 
-    @Published public var code: String = ""
-    @Published public var language: String = ""
-    @Published public var startLineIndex: Int = 0
-    @Published public var suggestionCount: Int = 0
-    @Published public var currentSuggestionIndex: Int = 0
-    @Published public var commonPrecedingSpaceCount = 0
-    @Published public var extraInformation: String = ""
+    public var code: String = ""
+    public var language: String = ""
+    public var startLineIndex: Int = 0
+    public var suggestionCount: Int = 0
+    public var currentSuggestionIndex: Int = 0
+    public var extraInformation: String = ""
 
-    public var onSelectPreviousSuggestionTapped: () -> Void
-    public var onSelectNextSuggestionTapped: () -> Void
-    public var onRejectSuggestionTapped: () -> Void
-    public var onAcceptSuggestionTapped: () -> Void
-    public var onDismissSuggestionTapped: () -> Void
+    @PerceptionIgnored public var onSelectPreviousSuggestionTapped: () -> Void
+    @PerceptionIgnored public var onSelectNextSuggestionTapped: () -> Void
+    @PerceptionIgnored public var onRejectSuggestionTapped: () -> Void
+    @PerceptionIgnored public var onAcceptSuggestionTapped: () -> Void
+    @PerceptionIgnored public var onDismissSuggestionTapped: () -> Void
 
     public init(
         code: String = "",
         language: String = "",
         startLineIndex: Int = 0,
+        startCharacerIndex: Int = 0,
         suggestionCount: Int = 0,
         currentSuggestionIndex: Int = 0,
         onSelectPreviousSuggestionTapped: @escaping () -> Void = {},
@@ -49,5 +54,7 @@ public final class CodeSuggestionProvider: ObservableObject, Equatable {
     func rejectSuggestion() { onRejectSuggestionTapped() }
     func acceptSuggestion() { onAcceptSuggestionTapped() }
     func dismissSuggestion() { onDismissSuggestionTapped() }
+
+    
 }
 
