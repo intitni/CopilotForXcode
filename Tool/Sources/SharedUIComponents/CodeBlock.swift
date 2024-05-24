@@ -95,7 +95,7 @@ public struct CodeBlock: View {
         font: NSFont,
         droppingLeadingSpaces: Bool
     ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
-        return highlighted(
+        return CodeHighlighting.highlighted(
             code: code,
             language: language,
             scenario: scenario,
