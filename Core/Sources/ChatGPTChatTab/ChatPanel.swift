@@ -18,7 +18,7 @@ public struct ChatPanel: View {
             Divider()
             ChatPanelInputArea(chat: chat)
         }
-        .background(.clear)
+        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { chat.send(.appear) }
     }
 }
