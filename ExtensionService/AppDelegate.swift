@@ -53,6 +53,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func quit() {
         Task { @MainActor in
             await service.prepareForExit()
+            await xpcController?.quit()
             NSApp.terminate(self)
         }
     }

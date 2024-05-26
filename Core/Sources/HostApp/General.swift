@@ -24,6 +24,8 @@ struct General {
     }
 
     @Dependency(\.toast) var toast
+    
+    struct ReloadStatusCancellableId: Hashable {}
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -91,7 +93,7 @@ struct General {
                         toast(error.localizedDescription, .error)
                         await send(.failedReloading)
                     }
-                }
+                }.cancellable(id: ReloadStatusCancellableId(), cancelInFlight: true)
 
             case let .finishReloading(version, granted):
                 state.xpcServiceVersion = version

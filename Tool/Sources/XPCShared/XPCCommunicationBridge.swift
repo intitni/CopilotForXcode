@@ -34,7 +34,7 @@ public class XPCCommunicationBridge {
         self.logger = logger
     }
 
-    public func setDelegate(_ delegate: XPCServiceDelegate) {
+    public func setDelegate(_ delegate: XPCServiceDelegate?) {
         service.delegate = delegate
     }
 

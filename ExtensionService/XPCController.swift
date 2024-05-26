@@ -20,9 +20,15 @@ final class XPCController: XPCServiceDelegate {
         self.bridge = bridge
 
         Task {
-            await bridge.setDelegate(self)
+            bridge.setDelegate(self)
             createPingTask()
         }
+    }
+    
+    func quit() async {
+        bridge.setDelegate(nil)
+        pingTask?.cancel()
+        try? await bridge.quit()
     }
 
     deinit {
