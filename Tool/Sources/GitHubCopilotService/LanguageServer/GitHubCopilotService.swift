@@ -19,6 +19,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func getCompletions(
         fileURL: URL,
         content: String,
+        originalContent: String,
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
@@ -27,7 +28,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func notifyAccepted(_ completion: CodeSuggestion) async
     func notifyRejected(_ completions: [CodeSuggestion]) async
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
+    func notifyChangeTextDocument(fileURL: URL, content: String, version: Int) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
@@ -42,11 +43,14 @@ protocol GitHubCopilotLSP {
 enum GitHubCopilotError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerError(ServerError)
+    case failedToInstallStartScript
 
     var errorDescription: String? {
         switch self {
         case .languageServerNotInstalled:
             return "Language server is not installed."
+        case .failedToInstallStartScript:
+            return "Failed to install start script."
         case let .languageServerError(error):
             switch error {
             case let .handlerUnavailable(handler):
@@ -109,12 +113,32 @@ public class GitHubCopilotBaseService {
                 throw GitHubCopilotError.languageServerNotInstalled
             }
 
+            let indexJSURL: URL = try {
+                if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
+                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert.js")
+                    if !FileManager.default.fileExists(atPath: url.path) {
+                        let file = Bundle.module.url(
+                            forResource: "load-self-signed-cert",
+                            withExtension: "js"
+                        )!
+                        do {
+                            try FileManager.default.copyItem(at: file, to: url)
+                        } catch {
+                            throw GitHubCopilotError.failedToInstallStartScript
+                        }
+                    }
+                    return url
+                } else {
+                    return agentJSURL
+                }
+            }()
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(agentJSURL.path)\"",
+                    "\"\(indexJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = Process.ExecutionParameters(
@@ -128,7 +152,7 @@ public class GitHubCopilotBaseService {
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
                 let command = [
                     nodePath.isEmpty ? "node" : nodePath,
-                    "\"\(agentJSURL.path)\"",
+                    "\"\(indexJSURL.path)\"",
                     "--stdio",
                 ].joined(separator: " ")
                 executionParams = Process.ExecutionParameters(
@@ -146,7 +170,7 @@ public class GitHubCopilotBaseService {
                         path: "/usr/bin/env",
                         arguments: [
                             nodePath.isEmpty ? "node" : nodePath,
-                            agentJSURL.path,
+                            indexJSURL.path,
                             "--stdio",
                         ],
                         environment: [
@@ -196,13 +220,12 @@ public class GitHubCopilotBaseService {
         self.server = server
         localProcessServer = localServer
 
+        let notifications = NotificationCenter.default
+            .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
         Task { [weak self] in
             _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
 
-            for await _ in NotificationCenter.default
-                .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
-            {
-                print("Yes!")
+            for await _ in notifications {
                 guard self != nil else { return }
                 _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
             }
@@ -318,8 +341,7 @@ public final class GitHubCopilotAuthService: GitHubCopilotBaseService,
     public static let shared = TheActor()
 }
 
-@GitHubCopilotSuggestionActor
-public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
+public final class GitHubCopilotService: GitHubCopilotBaseService,
     GitHubCopilotSuggestionServiceType
 {
     private var ongoingTasks = Set<Task<[CodeSuggestion], Error>>()
@@ -332,60 +354,98 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         super.init(designatedServer: designatedServer)
     }
 
+    @GitHubCopilotSuggestionActor
     public func getCompletions(
         fileURL: URL,
         content: String,
+        originalContent: String,
         cursorPosition: CursorPosition,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion] {
-        let languageId = languageIdentifierFromFileURL(fileURL)
-
-        let relativePath = {
-            let filePath = fileURL.path
-            let rootPath = projectRootURL.path
-            if let range = filePath.range(of: rootPath),
-               range.lowerBound == filePath.startIndex
-            {
-                let relativePath = filePath.replacingCharacters(
-                    in: filePath.startIndex..<range.upperBound,
-                    with: ""
-                )
-                return relativePath
-            }
-            return filePath
-        }()
-
         ongoingTasks.forEach { $0.cancel() }
         ongoingTasks.removeAll()
         await localProcessServer?.cancelOngoingTasks()
 
-        let task = Task {
-            let completions = try await server
-                .sendRequest(GitHubCopilotRequest.GetCompletionsCycling(doc: .init(
-                    source: content,
-                    tabSize: tabSize,
-                    indentSize: indentSize,
-                    insertSpaces: !usesTabsForIndentation,
-                    path: fileURL.path,
-                    uri: fileURL.path,
-                    relativePath: relativePath,
-                    languageId: languageId,
-                    position: cursorPosition
-                )))
-                .completions
-                .map {
-                    let suggestion = CodeSuggestion(
-                        id: $0.uuid,
-                        text: $0.text,
-                        position: $0.position,
-                        range: $0.range
+        func sendRequest(maxTry: Int = 5) async throws -> [CodeSuggestion] {
+            do {
+                let completions = try await server
+                    .sendRequest(GitHubCopilotRequest.InlineCompletion(doc: .init(
+                        textDocument: .init(uri: fileURL.path, version: 1),
+                        position: cursorPosition,
+                        formattingOptions: .init(
+                            tabSize: tabSize,
+                            insertSpaces: !usesTabsForIndentation
+                        ),
+                        context: .init(triggerKind: .invoked)
+                    )))
+                    .items
+                    .compactMap { (item: _) -> CodeSuggestion? in
+                        guard let range = item.range else { return nil }
+                        let suggestion = CodeSuggestion(
+                            id: item.command?.arguments?.first ?? UUID().uuidString,
+                            text: item.insertText,
+                            position: cursorPosition,
+                            range: .init(start: range.start, end: range.end)
+                        )
+                        return suggestion
+                    }
+                try Task.checkCancellation()
+                return completions
+            } catch let error as ServerError {
+                switch error {
+                case .serverError:
+                    // sometimes the content inside language server is not new enough, which can
+                    // lead to an version mismatch error. We can try a few times until the content
+                    // is up to date.
+                    if maxTry <= 0 { break }
+                    Logger.gitHubCopilot.error(
+                        "Try getting suggestions again: \(GitHubCopilotError.languageServerError(error).localizedDescription)"
                     )
-                    return suggestion
+                    try await Task.sleep(nanoseconds: 200_000_000)
+                    return try await sendRequest(maxTry: maxTry - 1)
+                default:
+                    break
                 }
-            try Task.checkCancellation()
-            return completions
+                throw GitHubCopilotError.languageServerError(error)
+            } catch {
+                throw error
+            }
+        }
+        
+        func recoverContent() async {
+            try? await notifyChangeTextDocument(
+                fileURL: fileURL,
+                content: originalContent,
+                version: 0
+            )
+        }
+
+        // since when the language server is no longer using the passed in content to generate
+        // suggestions, we will need to update the content to the file before we do any request.
+        //
+        // And sometimes the language server's content was not up to date and may generate
+        // weird result when the cursor position exceeds the line.
+        let task = Task { @GitHubCopilotSuggestionActor in
+            try? await notifyChangeTextDocument(
+                fileURL: fileURL,
+                content: content,
+                version: 1
+            )
+
+            do {
+                try Task.checkCancellation()
+                return try await sendRequest()
+            } catch let error as CancellationError {
+                if ongoingTasks.isEmpty {
+                    await recoverContent()
+                }
+                throw error
+            } catch {
+                await recoverContent()
+                throw error
+            }
         }
 
         ongoingTasks.insert(task)
@@ -393,22 +453,28 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         return try await task.value
     }
 
+    @GitHubCopilotSuggestionActor
     public func cancelRequest() async {
+        ongoingTasks.forEach { $0.cancel() }
+        ongoingTasks.removeAll()
         await localProcessServer?.cancelOngoingTasks()
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyAccepted(_ completion: CodeSuggestion) async {
         _ = try? await server.sendRequest(
             GitHubCopilotRequest.NotifyAccepted(completionUUID: completion.id)
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyRejected(_ completions: [CodeSuggestion]) async {
         _ = try? await server.sendRequest(
             GitHubCopilotRequest.NotifyRejected(completionUUIDs: completions.map(\.id))
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyOpenTextDocument(
         fileURL: URL,
         content: String
@@ -430,14 +496,19 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         )
     }
 
-    public func notifyChangeTextDocument(fileURL: URL, content: String) async throws {
+    @GitHubCopilotSuggestionActor
+    public func notifyChangeTextDocument(
+        fileURL: URL,
+        content: String,
+        version: Int
+    ) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Change \(uri), \(content.count)")
         try await server.sendNotification(
             .didChangeTextDocument(
                 DidChangeTextDocumentParams(
                     uri: uri,
-                    version: 0,
+                    version: version,
                     contentChange: .init(
                         range: nil,
                         rangeLength: nil,
@@ -448,18 +519,21 @@ public final class GitHubCopilotSuggestionService: GitHubCopilotBaseService,
         )
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifySaveTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Save \(uri)")
         try await server.sendNotification(.didSaveTextDocument(.init(uri: uri)))
     }
 
+    @GitHubCopilotSuggestionActor
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         let uri = "file://\(fileURL.path)"
 //        Logger.service.debug("Close \(uri)")
         try await server.sendNotification(.didCloseTextDocument(.init(uri: uri)))
     }
 
+    @GitHubCopilotSuggestionActor
     public func terminate() async {
         // automatically handled
     }

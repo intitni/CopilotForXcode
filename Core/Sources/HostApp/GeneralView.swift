@@ -46,7 +46,7 @@ struct AppInfoView: View {
                     .foregroundColor(.secondary)
 
                 Spacer()
-                
+
                 Button(action: {
                     store.send(.openExtensionManager)
                 }) {
@@ -92,58 +92,55 @@ struct AppInfoView: View {
 }
 
 struct ExtensionServiceView: View {
-    let store: StoreOf<General>
+    @Perception.Bindable var store: StoreOf<General>
 
     var body: some View {
-        VStack(alignment: .leading) {
-            WithViewStore(store, observe: { $0.xpcServiceVersion }) { viewStore in
-                Text("Extension Service Version: \(viewStore.state ?? "Loading..")")
-            }
+        WithPerceptionTracking {
+            VStack(alignment: .leading) {
+                Text("Extension Service Version: \(store.xpcServiceVersion ?? "Loading..")")
 
-            WithViewStore(store, observe: { $0.isAccessibilityPermissionGranted }) { viewStore in
                 let grantedStatus: String = {
-                    guard let granted = viewStore.state else { return "Loading.." }
+                    guard let granted = store.isAccessibilityPermissionGranted
+                    else { return "Loading.." }
                     return granted ? "Granted" : "Not Granted"
                 }()
                 Text("Accessibility Permission: \(grantedStatus)")
-            }
 
-            HStack {
-                WithViewStore(store, observe: { $0.isReloading }) { viewStore in
-                    Button(action: { viewStore.send(.reloadStatus) }) {
+                HStack {
+                    Button(action: { store.send(.reloadStatus) }) {
                         Text("Refresh")
-                    }.disabled(viewStore.state)
-                }
+                    }.disabled(store.isReloading)
 
-                Button(action: {
-                    Task {
-                        let workspace = NSWorkspace.shared
-                        let url = Bundle.main.bundleURL
-                            .appendingPathComponent("Contents")
-                            .appendingPathComponent("Applications")
-                            .appendingPathComponent("CopilotForXcodeExtensionService.app")
-                        workspace.activateFileViewerSelecting([url])
+                    Button(action: {
+                        Task {
+                            let workspace = NSWorkspace.shared
+                            let url = Bundle.main.bundleURL
+                                .appendingPathComponent("Contents")
+                                .appendingPathComponent("Applications")
+                                .appendingPathComponent("CopilotForXcodeExtensionService.app")
+                            workspace.activateFileViewerSelecting([url])
+                        }
+                    }) {
+                        Text("Reveal Extension Service in Finder")
                     }
-                }) {
-                    Text("Reveal Extension Service in Finder")
-                }
 
-                Button(action: {
-                    let url = URL(
-                        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-                    )!
-                    NSWorkspace.shared.open(url)
-                }) {
-                    Text("Accessibility Settings")
-                }
+                    Button(action: {
+                        let url = URL(
+                            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+                        )!
+                        NSWorkspace.shared.open(url)
+                    }) {
+                        Text("Accessibility Settings")
+                    }
 
-                Button(action: {
-                    let url = URL(
-                        string: "x-apple.systempreferences:com.apple.ExtensionsPreferences"
-                    )!
-                    NSWorkspace.shared.open(url)
-                }) {
-                    Text("Extensions Settings")
+                    Button(action: {
+                        let url = URL(
+                            string: "x-apple.systempreferences:com.apple.ExtensionsPreferences"
+                        )!
+                        NSWorkspace.shared.open(url)
+                    }) {
+                        Text("Extensions Settings")
+                    }
                 }
             }
         }
@@ -245,7 +242,7 @@ struct GeneralSettingsView: View {
     @StateObject var settings = Settings()
     @Environment(\.updateChecker) var updateChecker
     @State var automaticallyCheckForUpdate: Bool?
-    
+
     var body: some View {
         Form {
             Toggle(isOn: $settings.quitXPCServiceOnXcodeAndAppQuit) {
@@ -261,7 +258,7 @@ struct GeneralSettingsView: View {
             )) {
                 Text("Automatically Check for Update")
             }
-            
+
             Toggle(isOn: $settings.installBetaBuilds) {
                 Text("Install beta builds")
             }
@@ -394,7 +391,7 @@ struct LargeIconPicker<
 
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {
-        GeneralView(store: .init(initialState: .init(), reducer: General()))
+        GeneralView(store: .init(initialState: .init(), reducer: { General() }))
             .frame(height: 800)
     }
 }

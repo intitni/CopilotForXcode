@@ -7,7 +7,6 @@ public enum XPCServiceActor {
     public static let shared = TheActor()
 }
 
-@XPCServiceActor
 class XPCService {
     enum Kind {
         case machService(identifier: String)
@@ -18,17 +17,20 @@ class XPCService {
     let interface: NSXPCInterface
     let logger: Logger
     weak var delegate: XPCServiceDelegate?
+    
+    @XPCServiceActor
     private var isInvalidated = false
 
+    @XPCServiceActor
     private lazy var _connection: InvalidatingConnection? = buildConnection()
 
+    @XPCServiceActor
     var connection: NSXPCConnection? {
         if isInvalidated { _connection = nil }
         if _connection == nil { rebuildConnection() }
         return _connection?.connection
     }
 
-    nonisolated
     init(
         kind: Kind,
         interface: NSXPCInterface,
@@ -41,7 +43,9 @@ class XPCService {
         self.delegate = delegate
     }
 
+    @XPCServiceActor
     private func buildConnection() -> InvalidatingConnection {
+        logger.info("Rebuilding connection")
         let connection = switch kind {
         case let .machService(name):
             NSXPCConnection(machServiceName: name)
@@ -66,10 +70,12 @@ class XPCService {
         return .init(connection)
     }
 
+    @XPCServiceActor
     private func markAsInvalidated() {
         isInvalidated = true
     }
 
+    @XPCServiceActor
     private func rebuildConnection() {
         _connection = buildConnection()
     }

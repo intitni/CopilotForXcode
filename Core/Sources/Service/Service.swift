@@ -1,6 +1,9 @@
+import BuiltinExtension
+import CodeiumService
 import Combine
 import Dependencies
 import Foundation
+import GitHubCopilotService
 import SuggestionService
 import Toast
 import Workspace
@@ -39,11 +42,22 @@ public final class Service {
     private init() {
         @Dependency(\.workspacePool) var workspacePool
 
+        BuiltinExtensionManager.shared.setupExtensions([
+            GitHubCopilotExtension(workspacePool: workspacePool),
+            CodeiumExtension(workspacePool: workspacePool),
+        ])
         scheduledCleaner = .init()
         workspacePool.registerPlugin {
-            SuggestionServiceWorkspacePlugin(workspace: $0) { projectRootURL, onLaunched in
-                SuggestionService(projectRootURL: projectRootURL, onServiceLaunched: onLaunched)
-            }
+            SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
+        }
+        workspacePool.registerPlugin {
+            GitHubCopilotWorkspacePlugin(workspace: $0)
+        }
+        workspacePool.registerPlugin {
+            CodeiumWorkspacePlugin(workspace: $0)
+        }
+        workspacePool.registerPlugin {
+            BuiltinExtensionWorkspacePlugin(workspace: $0)
         }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
@@ -86,7 +100,7 @@ public final class Service {
                 }.store(in: &cancellable)
         }
     }
-    
+
     @MainActor
     public func prepareForExit() async {
         #if canImport(ProService)

@@ -1,6 +1,6 @@
 import Foundation
-import Workspace
 import SuggestionProvider
+import Workspace
 import WorkspaceSuggestionService
 
 extension Workspace {
@@ -8,9 +8,6 @@ extension Workspace {
     func cleanUp(availableTabs: Set<String>) {
         for (fileURL, _) in filespaces {
             if isFilespaceExpired(fileURL: fileURL, availableTabs: availableTabs) {
-                Task {
-                    try await suggestionService?.notifyCloseTextDocument(fileURL: fileURL)
-                }
                 openedFileRecoverableStorage.closeFile(fileURL: fileURL)
                 closeFilespace(fileURL: fileURL)
             }
@@ -26,10 +23,10 @@ extension Workspace {
 
     func cancelInFlightRealtimeSuggestionRequests() async {
         guard let suggestionService else { return }
-        await suggestionService.cancelRequest()
-    }
-
-    func terminateSuggestionService() async {
-        await suggestionPlugin?.terminateSuggestionService()
+        await suggestionService.cancelRequest(workspaceInfo: .init(
+            workspaceURL: workspaceURL,
+            projectURL: projectRootURL
+        ))
     }
 }
+

@@ -5,7 +5,9 @@ import Preferences
 import SwiftUI
 import Toast
 
-struct CustomCommandFeature: ReducerProtocol {
+@Reducer
+struct CustomCommandFeature {
+    @ObservableState
     struct State: Equatable {
         var editCustomCommand: EditCustomCommand.State?
     }
@@ -24,7 +26,7 @@ struct CustomCommandFeature: ReducerProtocol {
 
     @Dependency(\.toast) var toast
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .createNewCommand:
@@ -122,7 +124,7 @@ struct CustomCommandFeature: ReducerProtocol {
                     }
                 }
             }
-        }.ifLet(\.editCustomCommand, action: /Action.editCustomCommand) {
+        }.ifLet(\.editCustomCommand, action: \.editCustomCommand) {
             EditCustomCommand(settings: settings)
         }
     }

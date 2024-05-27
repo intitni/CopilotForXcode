@@ -4,40 +4,40 @@ import SwiftUI
 struct BaseURLPicker<TrailingContent: View>: View {
     let title: String
     let prompt: Text?
-    let store: StoreOf<BaseURLSelection>
+    @Perception.Bindable var store: StoreOf<BaseURLSelection>
     @ViewBuilder let trailingContent: () -> TrailingContent
-    
+
     var body: some View {
-        WithViewStore(store) { viewStore in
+        WithPerceptionTracking {
             HStack {
-                TextField(title, text: viewStore.$baseURL, prompt: prompt)
+                TextField(title, text: $store.baseURL, prompt: prompt)
                     .overlay(alignment: .trailing) {
                         Picker(
                             "",
-                            selection: viewStore.$baseURL,
+                            selection: $store.baseURL,
                             content: {
-                                if !viewStore.state.availableBaseURLs
-                                    .contains(viewStore.state.baseURL),
-                                   !viewStore.state.baseURL.isEmpty
+                                if !store.availableBaseURLs
+                                    .contains(store.baseURL),
+                                    !store.baseURL.isEmpty
                                 {
-                                    Text("Custom Value").tag(viewStore.state.baseURL)
+                                    Text("Custom Value").tag(store.baseURL)
                                 }
-                                
+
                                 Text("Empty (Default Value)").tag("")
-                                
-                                ForEach(viewStore.state.availableBaseURLs, id: \.self) { baseURL in
+
+                                ForEach(store.availableBaseURLs, id: \.self) { baseURL in
                                     Text(baseURL).tag(baseURL)
                                 }
                             }
                         )
                         .frame(width: 20)
                     }
-                
+
                 trailingContent()
                     .foregroundStyle(.secondary)
             }
             .onAppear {
-                viewStore.send(.appear)
+                store.send(.appear)
             }
         }
     }
@@ -57,3 +57,4 @@ extension BaseURLPicker where TrailingContent == EmptyView {
         )
     }
 }
+

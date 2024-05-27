@@ -17,7 +17,9 @@ import ProChatTabs
 import ChatTabPersistent
 #endif
 
-struct GUI: ReducerProtocol {
+@Reducer
+struct GUI {
+    @ObservableState
     struct State: Equatable {
         var suggestionWidgetState = WidgetFeature.State()
 
@@ -53,7 +55,8 @@ struct GUI: ReducerProtocol {
     enum Action {
         case start
         case openChatPanel(forceDetach: Bool)
-        case createChatGPTChatTabIfNeeded
+        case createAndSwitchToChatGPTChatTabIfNeeded
+        case createAndSwitchToBrowserTabIfNeeded(url: URL)
         case sendCustomCommandToActiveChat(CustomCommand)
         case toggleWidgetsHotkeyPressed
 
@@ -75,15 +78,15 @@ struct GUI: ReducerProtocol {
         case updateChatTabOrder
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         CombineReducers {
-            Scope(state: \.suggestionWidgetState, action: /Action.suggestionWidget) {
+            Scope(state: \.suggestionWidgetState, action: \.suggestionWidget) {
                 WidgetFeature()
             }
 
             Scope(
                 state: \.chatTabGroup,
-                action: /Action.suggestionWidget .. /WidgetFeature.Action.chatPanel
+                action: \.suggestionWidget.chatPanel
             ) {
                 Reduce { _, action in
                     switch action {
@@ -115,7 +118,7 @@ struct GUI: ReducerProtocol {
             }
 
             #if canImport(ChatTabPersistent)
-            Scope(state: \.persistentState, action: /Action.persistent) {
+            Scope(state: \.persistentState, action: \.persistent) {
                 ChatTabPersistent()
             }
             #endif
@@ -143,11 +146,22 @@ struct GUI: ReducerProtocol {
                         activateThisApp()
                     }
 
-                case .createChatGPTChatTabIfNeeded:
-                    if state.chatTabGroup.tabInfo.contains(where: {
+                case .createAndSwitchToChatGPTChatTabIfNeeded:
+                    if let selectedTabInfo = state.chatTabGroup.selectedTabInfo,
+                       chatTabPool.getTab(of: selectedTabInfo.id) is ChatGPTChatTab
+                    {
+                        // Already in ChatGPT tab
+                        return .none
+                    }
+
+                    if let firstChatGPTTabInfo = state.chatTabGroup.tabInfo.first(where: {
                         chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
                     }) {
-                        return .none
+                        return .run { send in
+                            await send(.suggestionWidget(.chatPanel(.tabClicked(
+                                id: firstChatGPTTabInfo.id
+                            ))))
+                        }
                     }
                     return .run { send in
                         if let (_, chatTabInfo) = await chatTabPool.createTab(for: nil) {
@@ -156,6 +170,53 @@ struct GUI: ReducerProtocol {
                             )
                         }
                     }
+
+                case let .createAndSwitchToBrowserTabIfNeeded(url):
+                    #if canImport(BrowserChatTab)
+                    func match(_ tabURL: URL?) -> Bool {
+                        guard let tabURL else { return false }
+                        return tabURL == url
+                            || tabURL.absoluteString.hasPrefix(url.absoluteString)
+                    }
+
+                    if let selectedTabInfo = state.chatTabGroup.selectedTabInfo,
+                       let tab = chatTabPool.getTab(of: selectedTabInfo.id) as? BrowserChatTab,
+                       match(tab.url)
+                    {
+                        // Already in the target Browser tab
+                        return .none
+                    }
+
+                    if let firstChatGPTTabInfo = state.chatTabGroup.tabInfo.first(where: {
+                        guard let tab = chatTabPool.getTab(of: $0.id) as? BrowserChatTab,
+                              match(tab.url)
+                        else { return false }
+                        return true
+                    }) {
+                        return .run { send in
+                            await send(.suggestionWidget(.chatPanel(.tabClicked(
+                                id: firstChatGPTTabInfo.id
+                            ))))
+                        }
+                    }
+
+                    return .run { send in
+                        if let (_, chatTabInfo) = await chatTabPool.createTab(
+                            for: .init(BrowserChatTab.urlChatBuilder(
+                                url: url,
+                                externalDependency: ChatTabFactory
+                                    .externalDependenciesForBrowserChatTab()
+                            ))
+                        ) {
+                            await send(
+                                .suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo)))
+                            )
+                        }
+                    }
+
+                    #else
+                    return .none
+                    #endif
 
                 case let .sendCustomCommandToActiveChat(command):
                     @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
@@ -251,10 +312,9 @@ struct GUI: ReducerProtocol {
 
 @MainActor
 public final class GraphicalUserInterfaceController {
-    private let store: StoreOf<GUI>
+    let store: StoreOf<GUI>
     let widgetController: SuggestionWidgetController
     let widgetDataSource: WidgetDataSource
-    let viewStore: ViewStoreOf<GUI>
     let chatTabPool: ChatTabPool
 
     class WeakStoreHolder {
@@ -289,18 +349,17 @@ public final class GraphicalUserInterfaceController {
         }
         let store = StoreOf<GUI>(
             initialState: .init(),
-            reducer: GUI(),
-            prepareDependencies: setupDependency
+            reducer: { GUI() },
+            withDependencies: setupDependency
         )
         self.store = store
         self.chatTabPool = chatTabPool
-        viewStore = ViewStore(store)
         widgetDataSource = .init()
 
         widgetController = SuggestionWidgetController(
             store: store.scope(
                 state: \.suggestionWidgetState,
-                action: GUI.Action.suggestionWidget
+                action: \.suggestionWidget
             ),
             chatTabPool: chatTabPool,
             dependency: suggestionDependency
@@ -309,8 +368,7 @@ public final class GraphicalUserInterfaceController {
         chatTabPool.createStore = { id in
             store.scope(
                 state: { state in
-                    state.chatTabGroup.tabInfo[id: id]
-                        ?? .init(id: id, title: "")
+                    state.chatTabGroup.tabInfo[id: id] ?? .init(id: id, title: "")
                 },
                 action: { childAction in
                     .suggestionWidget(.chatPanel(.chatTab(id: id, action: childAction)))
@@ -321,8 +379,8 @@ public final class GraphicalUserInterfaceController {
         suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
-                await self?.viewStore.send(.createChatGPTChatTabIfNeeded).finish()
-                self?.viewStore.send(.openChatPanel(forceDetach: false))
+                await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
+                self?.store.send(.openChatPanel(forceDetach: false))
             }
         }
         suggestionDependency.onCustomCommandClicked = { command in
@@ -338,10 +396,7 @@ public final class GraphicalUserInterfaceController {
     }
 
     public func openGlobalChat() {
-        Task {
-            await self.viewStore.send(.createChatGPTChatTabIfNeeded).finish()
-            viewStore.send(.openChatPanel(forceDetach: true))
-        }
+        PseudoCommandHandler().openChat(forceDetach: true)
     }
 }
 

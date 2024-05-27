@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion = "1.8.5"
+    static let latestSupportedVersion = "1.8.8"
 
     public init() {}
 
@@ -15,7 +15,7 @@ public struct CodeiumInstallationManager {
     }
 
     public func checkInstallation() -> InstallationStatus {
-        guard let urls = try? CodeiumSuggestionService.createFoldersIfNeeded()
+        guard let urls = try? CodeiumService.createFoldersIfNeeded()
         else { return .notInstalled }
         let executableFolderURL = urls.executableURL
         let binaryURL = executableFolderURL.appendingPathComponent("language_server")
@@ -60,7 +60,7 @@ public struct CodeiumInstallationManager {
                 defer { CodeiumInstallationManager.isInstalling = false }
                 do {
                     continuation.yield(.downloading)
-                    let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
+                    let urls = try CodeiumService.createFoldersIfNeeded()
                     let urlString =
                         "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
                     guard let url = URL(string: urlString) else { return }
@@ -108,7 +108,7 @@ public struct CodeiumInstallationManager {
     }
 
     public func uninstall() async throws {
-        guard let urls = try? CodeiumSuggestionService.createFoldersIfNeeded()
+        guard let urls = try? CodeiumService.createFoldersIfNeeded()
         else { return }
         let executableFolderURL = urls.executableURL
         let binaryURL = executableFolderURL.appendingPathComponent("language_server")

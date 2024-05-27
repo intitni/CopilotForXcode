@@ -20,9 +20,9 @@ protocol AIModelManagementState: Equatable {
     var selectedModelId: Model.ID? { get }
 }
 
-protocol AIModelManagement: ReducerProtocol where
+protocol AIModelManagement: Reducer where
     Action: AIModelManagementAction,
-    State: AIModelManagementState,
+    State: AIModelManagementState & ObservableState,
     Action.Model == Self.Model,
     State.Model == Self.Model
 {
@@ -39,69 +39,71 @@ protocol ManageableAIModel: Identifiable {
 struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIModel>: View
     where Management.Model == Model
 {
-    let store: StoreOf<Management>
+    @Perception.Bindable var store: StoreOf<Management>
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                if isFeatureAvailable(\.unlimitedChatAndEmbeddingModels) {
-                    Button("Add Model") {
-                        store.send(.createModel)
-                    }
-                } else {
-                    WithViewStore(store, observe: { $0.models.count }) { viewStore in
-                        Text("\(viewStore.state) / 2")
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    if isFeatureAvailable(\.unlimitedChatAndEmbeddingModels) {
+                        Button("Add Model") {
+                            store.send(.createModel)
+                        }
+                    } else {
+                        Text("\(store.models.count) / 2")
                             .foregroundColor(.secondary)
 
-                        let disabled = viewStore.state >= 2
+                        let disabled = store.models.count >= 2
 
                         Button(disabled ? "Add More Model (Plus)" : "Add Model") {
                             store.send(.createModel)
                         }.disabled(disabled)
                     }
-                }
-            }.padding(4)
+                }.padding(4)
 
-            Divider()
+                Divider()
 
-            ModelList(store: store)
-        }
-        .onAppear {
-            store.send(.appear)
+                ModelList(store: store)
+            }
+            .onAppear {
+                store.send(.appear)
+            }
         }
     }
 
     struct ModelList: View {
-        let store: StoreOf<Management>
+        @Perception.Bindable var store: StoreOf<Management>
 
         var body: some View {
-            WithViewStore(store) { viewStore in
+            WithPerceptionTracking {
                 List {
-                    ForEach(viewStore.state.models) { model in
-                        let isSelected = viewStore.state.selectedModelId == model.id
-                        HStack(spacing: 4) {
-                            Image(systemName: "line.3.horizontal")
+                    ForEach(store.models) { model in
+                        WithPerceptionTracking {
+                            let isSelected = store.selectedModelId == model.id
+                            HStack(spacing: 4) {
+                                Image(systemName: "line.3.horizontal")
 
-                            Button(action: {
-                                viewStore.send(.selectModel(id: model.id))
-                            }) {
-                                Cell(model: model, isSelected: isSelected)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button("Duplicate") {
-                                    store.send(.duplicateModel(id: model.id))
+                                Button(action: {
+                                    store.send(.selectModel(id: model.id))
+                                }) {
+                                    Cell(model: model, isSelected: isSelected)
+                                        .contentShape(Rectangle())
                                 }
-                                Button("Remove") {
-                                    store.send(.removeModel(id: model.id))
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button("Duplicate") {
+                                        store.send(.duplicateModel(id: model.id))
+                                    }
+                                    Button("Remove") {
+                                        store.send(.removeModel(id: model.id))
+                                    }
                                 }
                             }
                         }
                     }
                     .onMove(perform: { indices, newOffset in
-                        viewStore.send(.moveModel(from: indices, to: newOffset))
+                        store.send(.moveModel(from: indices, to: newOffset))
                     })
                     .modify { view in
                         if #available(macOS 13.0, *) {
@@ -115,7 +117,7 @@ struct AIModelManagementView<Management: AIModelManagement, Model: ManageableAIM
                 .listStyle(.plain)
                 .listRowInsets(EdgeInsets())
                 .overlay {
-                    if viewStore.state.models.isEmpty {
+                    if store.models.isEmpty {
                         Text("No model found, please add a new one.")
                             .foregroundColor(.secondary)
                     }
@@ -230,22 +232,20 @@ class AIModelManagement_Previews: PreviewProvider {
                             )
                         ),
                     ]),
-                    editingModel: .init(
-                        model: ChatModel(
-                            id: "3",
-                            name: "Test Model 3",
-                            format: .openAICompatible,
-                            info: .init(
-                                apiKeyName: "key",
-                                baseURL: "apple.com",
-                                maxTokens: 3000,
-                                supportsFunctionCalling: false,
-                                modelName: "gpt-3.5-turbo"
-                            )
+                    editingModel: ChatModel(
+                        id: "3",
+                        name: "Test Model 3",
+                        format: .openAICompatible,
+                        info: .init(
+                            apiKeyName: "key",
+                            baseURL: "apple.com",
+                            maxTokens: 3000,
+                            supportsFunctionCalling: false,
+                            modelName: "gpt-3.5-turbo"
                         )
-                    )
+                    ).toState()
                 ),
-                reducer: ChatModelManagement()
+                reducer: { ChatModelManagement() }
             )
         )
     }
@@ -255,8 +255,8 @@ class AIModelManagement_Empty_Previews: PreviewProvider {
     static var previews: some View {
         AIModelManagementView<ChatModelManagement, _>(
             store: .init(
-                initialState: .init(models: []),
-                reducer: ChatModelManagement()
+                initialState: .init(models: [] as IdentifiedArrayOf<ChatModel>),
+                reducer: { ChatModelManagement() }
             )
         )
     }

@@ -54,19 +54,22 @@ public extension Workspace {
         filespace.suggestionSourceSnapshot = snapshot
 
         guard let suggestionService else { throw SuggestionFeatureDisabledError() }
+        let content = editor.lines.joined(separator: "")
         let completions = try await suggestionService.getSuggestions(
             .init(
                 fileURL: fileURL,
                 relativePath: fileURL.path.replacingOccurrences(of: projectRootURL.path, with: ""),
-                content: editor.lines.joined(separator: ""),
+                content: content,
+                originalContent: content,
                 lines: editor.lines,
-                cursorPosition: editor.cursorPosition, 
+                cursorPosition: editor.cursorPosition,
                 cursorOffset: editor.cursorOffset,
                 tabSize: editor.tabSize,
                 indentSize: editor.indentSize,
                 usesTabsForIndentation: editor.usesTabsForIndentation,
                 relevantCodeSnippets: []
-            )
+            ),
+            workspaceInfo: .init(workspaceURL: workspaceURL, projectURL: projectRootURL)
         )
 
         filespace.setSuggestions(completions)
@@ -102,9 +105,15 @@ public extension Workspace {
             filespaces[fileURL]?.codeMetadata.indentSize = editor.indentSize
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
-        
+
         Task {
-            await suggestionService?.notifyRejected(filespaces[fileURL]?.suggestions ?? [])
+            await suggestionService?.notifyRejected(
+                filespaces[fileURL]?.suggestions ?? [],
+                workspaceInfo: .init(
+                    workspaceURL: workspaceURL,
+                    projectURL: projectRootURL
+                )
+            )
         }
         filespaces[fileURL]?.reset()
     }
@@ -128,9 +137,14 @@ public extension Workspace {
         var allSuggestions = filespace.suggestions
         let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
 
-        Task { [allSuggestions] in
-            await suggestionService?.notifyAccepted(suggestion)
-            await suggestionService?.notifyRejected(allSuggestions)
+        Task {
+            await suggestionService?.notifyAccepted(
+                suggestion,
+                workspaceInfo: .init(
+                    workspaceURL: workspaceURL,
+                    projectURL: projectRootURL
+                )
+            )
         }
 
         filespaces[fileURL]?.reset()

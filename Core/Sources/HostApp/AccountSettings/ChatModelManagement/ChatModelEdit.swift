@@ -7,16 +7,18 @@ import Preferences
 import SwiftUI
 import Toast
 
-struct ChatModelEdit: ReducerProtocol {
+@Reducer
+struct ChatModelEdit {
+    @ObservableState
     struct State: Equatable, Identifiable {
         var id: String
-        @BindingState var name: String
-        @BindingState var format: ChatModel.Format
-        @BindingState var maxTokens: Int = 4000
-        @BindingState var supportsFunctionCalling: Bool = true
-        @BindingState var modelName: String = ""
-        @BindingState var ollamaKeepAlive: String = ""
-        @BindingState var apiVersion: String = ""
+        var name: String
+        var format: ChatModel.Format
+        var maxTokens: Int = 4000
+        var supportsFunctionCalling: Bool = true
+        var modelName: String = ""
+        var ollamaKeepAlive: String = ""
+        var apiVersion: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
         var baseURL: String { baseURLSelection.baseURL }
         var isFullURL: Bool { baseURLSelection.isFullURL }
@@ -26,6 +28,7 @@ struct ChatModelEdit: ReducerProtocol {
         var suggestedMaxTokens: Int?
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
+        var enforceMessageOrder: Bool = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -51,14 +54,14 @@ struct ChatModelEdit: ReducerProtocol {
 
     @Dependency(\.apiKeyKeychain) var keychain
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
-        Scope(state: \.apiKeySelection, action: /Action.apiKeySelection) {
+        Scope(state: \.apiKeySelection, action: \.apiKeySelection) {
             APIKeySelection()
         }
 
-        Scope(state: \.baseURLSelection, action: /Action.baseURLSelection) {
+        Scope(state: \.baseURLSelection, action: \.baseURLSelection) {
             BaseURLSelection()
         }
 
@@ -156,13 +159,13 @@ struct ChatModelEdit: ReducerProtocol {
             case .baseURLSelection:
                 return .none
 
-            case .binding(\.$format):
+            case .binding(\.format):
                 return .run { send in
                     await send(.refreshAvailableModelNames)
                     await send(.checkSuggestedMaxTokens)
                 }
 
-            case .binding(\.$modelName):
+            case .binding(\.modelName):
                 return .run { send in
                     await send(.checkSuggestedMaxTokens)
                 }
@@ -171,26 +174,6 @@ struct ChatModelEdit: ReducerProtocol {
                 return .none
             }
         }
-    }
-}
-
-extension ChatModelEdit.State {
-    init(model: ChatModel) {
-        self.init(
-            id: model.id,
-            name: model.name,
-            format: model.format,
-            maxTokens: model.info.maxTokens,
-            supportsFunctionCalling: model.info.supportsFunctionCalling,
-            modelName: model.info.modelName,
-            ollamaKeepAlive: model.info.ollamaInfo.keepAlive,
-            apiVersion: model.info.googleGenerativeAIInfo.apiVersion,
-            apiKeySelection: .init(
-                apiKeyName: model.info.apiKeyName,
-                apiKeyManagement: .init(availableAPIKeyNames: [model.info.apiKeyName])
-            ),
-            baseURLSelection: .init(baseURL: model.info.baseURL, isFullURL: model.info.isFullURL)
-        )
     }
 }
 
@@ -215,8 +198,28 @@ extension ChatModel {
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
-                googleGenerativeAIInfo: .init(apiVersion: state.apiVersion)
+                googleGenerativeAIInfo: .init(apiVersion: state.apiVersion),
+                openAICompatibleInfo: .init(enforceMessageOrder: state.enforceMessageOrder)
             )
+        )
+    }
+
+    func toState() -> ChatModelEdit.State {
+        .init(
+            id: id,
+            name: name,
+            format: format,
+            maxTokens: info.maxTokens,
+            supportsFunctionCalling: info.supportsFunctionCalling,
+            modelName: info.modelName,
+            ollamaKeepAlive: info.ollamaInfo.keepAlive,
+            apiVersion: info.googleGenerativeAIInfo.apiVersion,
+            apiKeySelection: .init(
+                apiKeyName: info.apiKeyName,
+                apiKeyManagement: .init(availableAPIKeyNames: [info.apiKeyName])
+            ),
+            baseURLSelection: .init(baseURL: info.baseURL, isFullURL: info.isFullURL),
+            enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder
         )
     }
 }

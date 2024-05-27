@@ -228,7 +228,7 @@ Whenever your code is updated, the app will automatically fetch suggestions for 
 
 Commands called by the app:
 
-- Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
+- Prepare for Real-time Suggestions: Call only by Copilot for Xcode. When suggestions are successfully fetched, Copilot for Xcode will run this command to present the suggestions.
 - Prefetch Suggestions: Call only by Copilot for Xcode. In the background, Copilot for Xcode will occasionally run this command to prefetch real-time suggestions.
 
 ### Chat

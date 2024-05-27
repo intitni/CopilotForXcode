@@ -18,7 +18,7 @@ public struct ChatPanel: View {
             Divider()
             ChatPanelInputArea(chat: chat)
         }
-        .background(.clear)
+        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { chat.send(.appear) }
     }
 }
@@ -54,111 +54,103 @@ struct ChatPanelMessages: View {
     @Environment(\.isEnabled) var isEnabled
 
     var body: some View {
-        ScrollViewReader { proxy in
-            GeometryReader { listGeo in
-                List {
-                    Group {
-                        Spacer(minLength: 12)
-                            .id(topID)
+        WithPerceptionTracking {
+            ScrollViewReader { proxy in
+                GeometryReader { listGeo in
+                    List {
+                        Group {
+                            Spacer(minLength: 12)
+                                .id(topID)
 
-                        Instruction(chat: chat)
+                            Instruction(chat: chat)
 
-                        ChatHistory(chat: chat)
-                            .listItemTint(.clear)
+                            ChatHistory(chat: chat)
+                                .listItemTint(.clear)
 
-                        WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
-                            if viewStore.state {
-                                Spacer(minLength: 12)
+                            ExtraSpacingInResponding(chat: chat)
+
+                            Spacer(minLength: 12)
+                                .id(bottomID)
+                                .onAppear {
+                                    isBottomHidden = false
+                                    if !didScrollToBottomOnAppearOnce {
+                                        proxy.scrollTo(bottomID, anchor: .bottom)
+                                        didScrollToBottomOnAppearOnce = true
+                                    }
+                                }
+                                .onDisappear {
+                                    isBottomHidden = true
+                                }
+                                .background(GeometryReader { geo in
+                                    let offset = geo.frame(in: .named(scrollSpace)).minY
+                                    Color.clear.preference(
+                                        key: ScrollViewOffsetPreferenceKey.self,
+                                        value: offset
+                                    )
+                                })
+                        }
+                        .modify { view in
+                            if #available(macOS 13.0, *) {
+                                view
+                                    .listRowSeparator(.hidden)
+                                    .listSectionSeparator(.hidden)
+                            } else {
+                                view
                             }
                         }
-
-                        Spacer(minLength: 12)
-                            .id(bottomID)
-                            .onAppear {
-                                isBottomHidden = false
-                                if !didScrollToBottomOnAppearOnce {
-                                    proxy.scrollTo(bottomID, anchor: .bottom)
-                                    didScrollToBottomOnAppearOnce = true
-                                }
-                            }
-                            .onDisappear {
-                                isBottomHidden = true
-                            }
-                            .background(GeometryReader { geo in
-                                let offset = geo.frame(in: .named(scrollSpace)).minY
-                                Color.clear.preference(
-                                    key: ScrollViewOffsetPreferenceKey.self,
-                                    value: offset
-                                )
-                            })
                     }
+                    .listStyle(.plain)
+                    .listRowBackground(EmptyView())
                     .modify { view in
                         if #available(macOS 13.0, *) {
-                            view
-                                .listRowSeparator(.hidden)
-                                .listSectionSeparator(.hidden)
+                            view.scrollContentBackground(.hidden)
                         } else {
                             view
                         }
                     }
-                }
-                .listStyle(.plain)
-                .listRowBackground(EmptyView())
-                .modify { view in
-                    if #available(macOS 13.0, *) {
-                        view.scrollContentBackground(.hidden)
-                    } else {
-                        view
+                    .coordinateSpace(name: scrollSpace)
+                    .preference(
+                        key: ListHeightPreferenceKey.self,
+                        value: listGeo.size.height
+                    )
+                    .onPreferenceChange(ListHeightPreferenceKey.self) { value in
+                        listHeight = value
+                        updatePinningState()
                     }
-                }
-                .coordinateSpace(name: scrollSpace)
-                .preference(
-                    key: ListHeightPreferenceKey.self,
-                    value: listGeo.size.height
-                )
-                .onPreferenceChange(ListHeightPreferenceKey.self) { value in
-                    listHeight = value
-                    updatePinningState()
-                }
-                .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
-                    scrollOffset = value
-                    updatePinningState()
-                }
-                .overlay(alignment: .bottom) {
-                    WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
+                    .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
+                        scrollOffset = value
+                        updatePinningState()
+                    }
+                    .overlay(alignment: .bottom) {
                         StopRespondingButton(chat: chat)
-                            .padding(.bottom, 8)
-                            .opacity(viewStore.state ? 1 : 0)
-                            .disabled(!viewStore.state)
-                            .transformEffect(.init(translationX: 0, y: viewStore.state ? 0 : 20))
                     }
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    scrollToBottomButton(proxy: proxy)
-                }
-                .background {
-                    PinToBottomHandler(
-                        chat: chat,
-                        isBottomHidden: isBottomHidden,
-                        pinnedToBottom: $isPinnedToBottom
-                    ) {
+                    .overlay(alignment: .bottomTrailing) {
+                        scrollToBottomButton(proxy: proxy)
+                    }
+                    .background {
+                        PinToBottomHandler(
+                            chat: chat,
+                            isBottomHidden: isBottomHidden,
+                            pinnedToBottom: $isPinnedToBottom
+                        ) {
+                            proxy.scrollTo(bottomID, anchor: .bottom)
+                        }
+                    }
+                    .onAppear {
+                        proxy.scrollTo(bottomID, anchor: .bottom)
+                    }
+                    .task {
                         proxy.scrollTo(bottomID, anchor: .bottom)
                     }
                 }
-                .onAppear {
-                    proxy.scrollTo(bottomID, anchor: .bottom)
-                }
-                .task {
-                    proxy.scrollTo(bottomID, anchor: .bottom)
-                }
             }
-        }
-        .onAppear {
-            trackScrollWheel()
-        }
-        .onDisappear {
-            cancellable.forEach { $0.cancel() }
-            cancellable = []
+            .onAppear {
+                trackScrollWheel()
+            }
+            .onDisappear {
+                cancellable.forEach { $0.cancel() }
+                cancellable = []
+            }
         }
     }
 
@@ -215,6 +207,18 @@ struct ChatPanelMessages: View {
         .buttonStyle(.plain)
     }
 
+    struct ExtraSpacingInResponding: View {
+        let chat: StoreOf<Chat>
+
+        var body: some View {
+            WithPerceptionTracking {
+                if chat.isReceivingMessage {
+                    Spacer(minLength: 12)
+                }
+            }
+        }
+    }
+
     struct PinToBottomHandler: View {
         let chat: StoreOf<Chat>
         let isBottomHidden: Bool
@@ -222,21 +226,11 @@ struct ChatPanelMessages: View {
         let scrollToBottom: () -> Void
 
         @State var isInitialLoad = true
-
-        struct PinToBottomRelatedState: Equatable {
-            var isReceivingMessage: Bool
-            var lastMessage: DisplayedChatMessage?
-        }
-
+        
         var body: some View {
-            WithViewStore(chat, observe: {
-                PinToBottomRelatedState(
-                    isReceivingMessage: $0.isReceivingMessage,
-                    lastMessage: $0.history.last
-                )
-            }) { viewStore in
+            WithPerceptionTracking {
                 EmptyView()
-                    .onChange(of: viewStore.state.isReceivingMessage) { isReceiving in
+                    .onChange(of: chat.isReceivingMessage) { isReceiving in
                         if isReceiving {
                             Task {
                                 pinnedToBottom = true
@@ -247,7 +241,7 @@ struct ChatPanelMessages: View {
                             }
                         }
                     }
-                    .onChange(of: viewStore.state.lastMessage) { _ in
+                    .onChange(of: chat.history.last) { _ in
                         if pinnedToBottom || isInitialLoad {
                             if isInitialLoad {
                                 isInitialLoad = false
@@ -275,9 +269,11 @@ struct ChatHistory: View {
     let chat: StoreOf<Chat>
 
     var body: some View {
-        WithViewStore(chat, observe: \.history) { viewStore in
-            ForEach(viewStore.state, id: \.id) { message in
-                ChatHistoryItem(chat: chat, message: message).id(message.id)
+        WithPerceptionTracking {
+            ForEach(chat.history, id: \.id) { message in
+                WithPerceptionTracking {
+                    ChatHistoryItem(chat: chat, message: message).id(message.id)
+                }
             }
         }
     }
@@ -288,11 +284,25 @@ struct ChatHistoryItem: View {
     let message: DisplayedChatMessage
 
     var body: some View {
-        let text = message.text
-
-        switch message.role {
-        case .user:
-            UserMessage(id: message.id, text: text, chat: chat)
+        WithPerceptionTracking {
+            let text = message.text
+            switch message.role {
+            case .user:
+                UserMessage(id: message.id, text: text, chat: chat)
+                    .listRowInsets(EdgeInsets(
+                        top: 0,
+                        leading: -8,
+                        bottom: 0,
+                        trailing: -8
+                    ))
+                    .padding(.vertical, 4)
+            case .assistant:
+                BotMessage(
+                    id: message.id,
+                    text: text,
+                    references: message.references,
+                    chat: chat
+                )
                 .listRowInsets(EdgeInsets(
                     top: 0,
                     leading: -8,
@@ -300,24 +310,11 @@ struct ChatHistoryItem: View {
                     trailing: -8
                 ))
                 .padding(.vertical, 4)
-        case .assistant:
-            BotMessage(
-                id: message.id,
-                text: text,
-                references: message.references,
-                chat: chat
-            )
-            .listRowInsets(EdgeInsets(
-                top: 0,
-                leading: -8,
-                bottom: 0,
-                trailing: -8
-            ))
-            .padding(.vertical, 4)
-        case .tool:
-            FunctionMessage(id: message.id, text: text)
-        case .ignored:
-            EmptyView()
+            case .tool:
+                FunctionMessage(id: message.id, text: text)
+            case .ignored:
+                EmptyView()
+            }
         }
     }
 }
@@ -326,25 +323,36 @@ private struct StopRespondingButton: View {
     let chat: StoreOf<Chat>
 
     var body: some View {
-        Button(action: {
-            chat.send(.stopRespondingButtonTapped)
-        }) {
-            HStack(spacing: 4) {
-                Image(systemName: "stop.fill")
-                Text("Stop Responding")
-            }
-            .padding(8)
-            .background(
-                .regularMaterial,
-                in: RoundedRectangle(cornerRadius: r, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: r, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        WithPerceptionTracking {
+            if chat.isReceivingMessage {
+                Button(action: {
+                    chat.send(.stopRespondingButtonTapped)
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "stop.fill")
+                        Text("Stop Responding")
+                    }
+                    .padding(8)
+                    .background(
+                        .regularMaterial,
+                        in: RoundedRectangle(cornerRadius: r, style: .continuous)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: r, style: .continuous)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 8)
+                .opacity(chat.isReceivingMessage ? 1 : 0)
+                .disabled(!chat.isReceivingMessage)
+                .transformEffect(.init(
+                    translationX: 0,
+                    y: chat.isReceivingMessage ? 0 : 20
+                ))
             }
         }
-        .buttonStyle(.borderless)
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
@@ -355,7 +363,7 @@ struct ChatPanelInputArea: View {
     var body: some View {
         HStack {
             clearButton
-            textEditor
+            InputAreaTextEditor(chat: chat, focusedField: $focusedField)
         }
         .padding(8)
         .background(.ultraThickMaterial)
@@ -384,89 +392,86 @@ struct ChatPanelInputArea: View {
         .buttonStyle(.plain)
     }
 
-    @MainActor
-    var textEditor: some View {
-        HStack(spacing: 0) {
-            WithViewStore(
-                chat,
-                removeDuplicates: {
-                    $0.typedMessage == $1.typedMessage && $0.focusedField == $1.focusedField
+    struct InputAreaTextEditor: View {
+        @Perception.Bindable var chat: StoreOf<Chat>
+        var focusedField: FocusState<Chat.State.Field?>.Binding
+
+        var body: some View {
+            WithPerceptionTracking {
+                HStack(spacing: 0) {
+                    AutoresizingCustomTextEditor(
+                        text: $chat.typedMessage,
+                        font: .systemFont(ofSize: 14),
+                        isEditable: true,
+                        maxHeight: 400,
+                        onSubmit: { chat.send(.sendButtonTapped) },
+                        completions: chatAutoCompletion
+                    )
+                    .focused(focusedField, equals: .textField)
+                    .bind($chat.focusedField, to: focusedField)
+                    .padding(8)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    Button(action: {
+                        chat.send(.sendButtonTapped)
+                    }) {
+                        Image(systemName: "paperplane.fill")
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(chat.isReceivingMessage)
+                    .keyboardShortcut(KeyEquivalent.return, modifiers: [])
                 }
-            ) { viewStore in
-                AutoresizingCustomTextEditor(
-                    text: viewStore.$typedMessage,
-                    font: .systemFont(ofSize: 14),
-                    isEditable: true,
-                    maxHeight: 400,
-                    onSubmit: { viewStore.send(.sendButtonTapped) },
-                    completions: chatAutoCompletion
-                )
-                .focused($focusedField, equals: .textField)
-                .bind(viewStore.$focusedField, to: $focusedField)
-                .padding(8)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-
-            WithViewStore(chat, observe: \.isReceivingMessage) { viewStore in
-                Button(action: {
-                    viewStore.send(.sendButtonTapped)
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .padding(8)
+                .frame(maxWidth: .infinity)
+                .background {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(nsColor: .controlBackgroundColor))
                 }
-                .buttonStyle(.plain)
-                .disabled(viewStore.state)
-                .keyboardShortcut(KeyEquivalent.return, modifiers: [])
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .background {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-        }
-        .background {
-            Button(action: {
-                chat.send(.returnButtonTapped)
-            }) {
-                EmptyView()
-            }
-            .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color(nsColor: .controlColor), lineWidth: 1)
+                }
+                .background {
+                    Button(action: {
+                        chat.send(.returnButtonTapped)
+                    }) {
+                        EmptyView()
+                    }
+                    .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
 
-            Button(action: {
-                focusedField = .textField
-            }) {
-                EmptyView()
+                    Button(action: {
+                        focusedField.wrappedValue = .textField
+                    }) {
+                        EmptyView()
+                    }
+                    .keyboardShortcut("l", modifiers: [.command])
+                }
             }
-            .keyboardShortcut("l", modifiers: [.command])
         }
-    }
 
-    func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
-        guard text.count == 1 else { return [] }
-        let plugins = [String]() // chat.pluginIdentifiers.map { "/\($0)" }
-        let availableFeatures = plugins + [
-            "/exit",
-            "@code",
-            "@sense",
-            "@project",
-            "@web",
-        ]
+        func chatAutoCompletion(text: String, proposed: [String], range: NSRange) -> [String] {
+            guard text.count == 1 else { return [] }
+            let plugins = [String]() // chat.pluginIdentifiers.map { "/\($0)" }
+            let availableFeatures = plugins + [
+                "/exit",
+                "@code",
+                "@sense",
+                "@project",
+                "@web",
+            ]
 
-        let result: [String] = availableFeatures
-            .filter { $0.hasPrefix(text) && $0 != text }
-            .compactMap {
-                guard let index = $0.index(
-                    $0.startIndex,
-                    offsetBy: range.location,
-                    limitedBy: $0.endIndex
-                ) else { return nil }
-                return String($0[index...])
-            }
-        return result
+            let result: [String] = availableFeatures
+                .filter { $0.hasPrefix(text) && $0 != text }
+                .compactMap {
+                    guard let index = $0.index(
+                        $0.startIndex,
+                        offsetBy: range.location,
+                        limitedBy: $0.endIndex
+                    ) else { return nil }
+                    return String($0[index...])
+                }
+            return result
+        }
     }
 }
 
@@ -553,7 +558,7 @@ struct ChatPanel_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
             initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: true),
-            reducer: Chat(service: .init())
+            reducer: { Chat(service: .init()) }
         ))
         .frame(width: 450, height: 1200)
         .colorScheme(.dark)
@@ -563,8 +568,8 @@ struct ChatPanel_Preview: PreviewProvider {
 struct ChatPanel_EmptyChat_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
-            initialState: .init(history: [], isReceivingMessage: false),
-            reducer: Chat(service: .init())
+            initialState: .init(history: [DisplayedChatMessage](), isReceivingMessage: false),
+            reducer: { Chat(service: .init()) }
         ))
         .padding()
         .frame(width: 450, height: 600)
@@ -576,7 +581,7 @@ struct ChatPanel_InputText_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
             initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: false),
-            reducer: Chat(service: .init())
+            reducer: { Chat(service: .init()) }
         ))
         .padding()
         .frame(width: 450, height: 600)
@@ -594,7 +599,7 @@ struct ChatPanel_InputMultilineText_Preview: PreviewProvider {
                     history: ChatPanel_Preview.history,
                     isReceivingMessage: false
                 ),
-                reducer: Chat(service: .init())
+                reducer: { Chat(service: .init()) }
             )
         )
         .padding()
@@ -607,7 +612,7 @@ struct ChatPanel_Light_Preview: PreviewProvider {
     static var previews: some View {
         ChatPanel(chat: .init(
             initialState: .init(history: ChatPanel_Preview.history, isReceivingMessage: true),
-            reducer: Chat(service: .init())
+            reducer: { Chat(service: .init()) }
         ))
         .padding()
         .frame(width: 450, height: 600)

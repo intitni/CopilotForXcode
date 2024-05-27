@@ -69,6 +69,7 @@ actor EventHandler {
         reply(endpoint)
         #else
         if await launcher.isApplicationValid {
+            Logger.communicationBridge.info("Service app is still valid")
             reply(endpoint)
         } else {
             endpoint = nil
@@ -116,7 +117,17 @@ actor ExtensionServiceLauncher {
     var isLaunching: Bool = false
     var application: NSRunningApplication?
     var isApplicationValid: Bool {
-        if let application, !application.isTerminated { return true }
+        guard let application else { return false }
+        if application.isTerminated { return false }
+        let identifier = application.processIdentifier
+        if let application = NSWorkspace.shared.runningApplications.first(where: {
+            $0.processIdentifier == identifier
+        }) {
+            Logger.communicationBridge.info(
+                "Service app found: \(application.processIdentifier) \(String(describing: application.bundleIdentifier))"
+            )
+            return true
+        }
         return false
     }
 
@@ -125,9 +136,16 @@ actor ExtensionServiceLauncher {
         isLaunching = true
 
         Logger.communicationBridge.info("Launching extension service app.")
+
         NSWorkspace.shared.openApplication(
             at: appURL,
-            configuration: .init()
+            configuration: {
+                let configuration = NSWorkspace.OpenConfiguration()
+                configuration.createsNewApplicationInstance = false
+                configuration.addsToRecentItems = false
+                configuration.activates = false
+                return configuration
+            }()
         ) { app, error in
             if let error = error {
                 Logger.communicationBridge.error(

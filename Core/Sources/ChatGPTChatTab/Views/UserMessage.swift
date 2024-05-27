@@ -66,11 +66,11 @@ struct UserMessage: View {
         ```
         """#,
         chat: .init(
-            initialState: .init(history: [], isReceivingMessage: false),
-            reducer: Chat(service: .init())
+            initialState: .init(history: [] as [DisplayedChatMessage], isReceivingMessage: false),
+            reducer: { Chat(service: .init()) }
         )
     )
     .padding()
-    .fixedSize(horizontal: /*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/, vertical: /*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
+    .fixedSize(horizontal: true, vertical: true)
 }
 

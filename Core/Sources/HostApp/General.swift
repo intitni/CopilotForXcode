@@ -5,7 +5,9 @@ import LaunchAgentManager
 import SwiftUI
 import XPCShared
 
-struct General: ReducerProtocol {
+@Reducer
+struct General {
+    @ObservableState
     struct State: Equatable {
         var xpcServiceVersion: String?
         var isAccessibilityPermissionGranted: Bool?
@@ -22,8 +24,10 @@ struct General: ReducerProtocol {
     }
 
     @Dependency(\.toast) var toast
+    
+    struct ReloadStatusCancellableId: Hashable {}
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
@@ -89,7 +93,7 @@ struct General: ReducerProtocol {
                         toast(error.localizedDescription, .error)
                         await send(.failedReloading)
                     }
-                }
+                }.cancellable(id: ReloadStatusCancellableId(), cancelInFlight: true)
 
             case let .finishReloading(version, granted):
                 state.xpcServiceVersion = version

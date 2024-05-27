@@ -1,26 +1,29 @@
 import Combine
+import ComposableArchitecture
 import DebounceFunction
 import Foundation
 import MarkdownUI
+import Perception
 import SharedUIComponents
 import SwiftUI
 
 /// Use this instead of the built in ``CodeBlockView`` to highlight code blocks asynchronously,
 /// so that the UI doesn't freeze when rendering large code blocks.
 struct AsyncCodeBlockView: View {
-    class Storage: ObservableObject {
+    @Perceptible
+    class Storage {
         static let queue = DispatchQueue(
             label: "chat-code-block-highlight",
-            qos: .userInteractive, 
+            qos: .userInteractive,
             attributes: .concurrent
         )
 
-        @Published var highlighted: AttributedString?
-        var debounceFunction: DebounceFunction<AsyncCodeBlockView>?
-        private var highlightTask: Task<Void, Error>?
-        
+        var highlighted: AttributedString?
+        @PerceptionIgnored var debounceFunction: DebounceFunction<AsyncCodeBlockView>?
+        @PerceptionIgnored private var highlightTask: Task<Void, Error>?
+
         init() {
-            self.debounceFunction = .init(duration: 0.5, block: { [weak self] view in
+            debounceFunction = .init(duration: 0.5, block: { [weak self] view in
                 self?.highlight(for: view)
             })
         }
@@ -32,7 +35,7 @@ struct AsyncCodeBlockView: View {
                 highlight(for: view)
             }
         }
-        
+
         func highlight(for view: AsyncCodeBlockView) {
             highlightTask?.cancel()
             let content = view.content
@@ -42,7 +45,7 @@ struct AsyncCodeBlockView: View {
             highlightTask = Task {
                 let string = await withUnsafeContinuation { continuation in
                     Self.queue.async {
-                        let content = highlightedCodeBlock(
+                        let content = CodeHighlighting.highlightedCodeBlock(
                             code: content,
                             language: language,
                             scenario: "chat",
@@ -65,7 +68,7 @@ struct AsyncCodeBlockView: View {
     let font: NSFont
 
     @Environment(\.colorScheme) var colorScheme
-    @StateObject var storage = Storage()
+    @State var storage = Storage()
     @AppStorage(\.syncChatCodeHighlightTheme) var syncCodeHighlightTheme
     @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
     @AppStorage(\.codeBackgroundColorLight) var codeBackgroundColorLight
@@ -79,33 +82,35 @@ struct AsyncCodeBlockView: View {
     }
 
     var body: some View {
-        Group {
-            if let highlighted = storage.highlighted {
-                Text(highlighted)
-            } else {
-                Text(content).font(.init(font))
+        WithPerceptionTracking {
+            Group {
+                if let highlighted = storage.highlighted {
+                    Text(highlighted)
+                } else {
+                    Text(content).font(.init(font))
+                }
             }
-        }
-        .onAppear {
-            storage.highlight(debounce: false, for: self)
-        }
-        .onChange(of: colorScheme) { _ in
-            storage.highlight(debounce: false, for: self)
-        }
-        .onChange(of: syncCodeHighlightTheme) { _ in
-            storage.highlight(debounce: true, for: self)
-        }
-        .onChange(of: codeForegroundColorLight) { _ in
-            storage.highlight(debounce: true, for: self)
-        }
-        .onChange(of: codeBackgroundColorLight) { _ in
-            storage.highlight(debounce: true, for: self)
-        }
-        .onChange(of: codeForegroundColorDark) { _ in
-            storage.highlight(debounce: true, for: self)
-        }
-        .onChange(of: codeBackgroundColorDark) { _ in
-            storage.highlight(debounce: true, for: self)
+            .onAppear {
+                storage.highlight(debounce: false, for: self)
+            }
+            .onChange(of: colorScheme) { _ in
+                storage.highlight(debounce: false, for: self)
+            }
+            .onChange(of: syncCodeHighlightTheme) { _ in
+                storage.highlight(debounce: true, for: self)
+            }
+            .onChange(of: codeForegroundColorLight) { _ in
+                storage.highlight(debounce: true, for: self)
+            }
+            .onChange(of: codeBackgroundColorLight) { _ in
+                storage.highlight(debounce: true, for: self)
+            }
+            .onChange(of: codeForegroundColorDark) { _ in
+                storage.highlight(debounce: true, for: self)
+            }
+            .onChange(of: codeBackgroundColorDark) { _ in
+                storage.highlight(debounce: true, for: self)
+            }
         }
     }
 }

@@ -187,6 +187,10 @@ public extension UserDefaultPreferenceKeys {
     var runNodeWith: PreferenceKey<NodeRunner> {
         .init(defaultValue: .env, key: "RunNodeWith")
     }
+    
+    var gitHubCopilotLoadKeyChainCertificates: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "GitHubCopilotLoadKeyChainCertificates")
+    }
 }
 
 // MARK: - Codeium Settings
@@ -472,6 +476,18 @@ public extension UserDefaultPreferenceKeys {
     
     var keepFloatOnTopIfChatPanelAndXcodeOverlaps: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
+    }
+    
+    var openChatMode: PreferenceKey<OpenChatMode> {
+        .init(defaultValue: .chatPanel, key: "OpenChatMode")
+    }
+    
+    var openChatInBrowserURL: PreferenceKey<String> {
+        .init(defaultValue: "", key: "OpenChatInBrowserURL")
+    }
+    
+    var openChatInBrowserInInAppBrowser: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "OpenChatInBrowserInInAppBrowser")
     }
 }
 

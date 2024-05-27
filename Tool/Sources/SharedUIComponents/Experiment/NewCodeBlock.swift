@@ -77,7 +77,7 @@ struct _CodeBlock: View {
         font: NSFont,
         droppingLeadingSpaces: Bool
     ) -> (code: AttributedString, commonLeadingSpaceCount: Int) {
-        let (lines, commonLeadingSpaceCount) = highlighted(
+        let (lines, commonLeadingSpaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: language, 
             scenario: scenario,

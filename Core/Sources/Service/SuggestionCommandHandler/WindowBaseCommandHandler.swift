@@ -178,9 +178,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        let viewStore = Service.shared.guiController.viewStore
+        let store = Service.shared.guiController.store
 
-        if let promptToCode = viewStore.state.promptToCodeGroup.activePromptToCode {
+        if let promptToCode = store.state.promptToCodeGroup.activePromptToCode {
             if promptToCode.isAttachedToSelectionRange, promptToCode.documentURL != fileURL {
                 return nil
             }
@@ -214,13 +214,13 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             )
 
             _ = await Task { @MainActor [cursorPosition] in
-                viewStore.send(
+                store.send(
                     .promptToCodeGroup(.updatePromptToCodeRange(
                         id: promptToCode.id,
                         range: .init(start: range.start, end: cursorPosition)
                     ))
                 )
-                viewStore.send(
+                store.send(
                     .promptToCodeGroup(.discardAcceptedPromptToCodeIfNotContinuous(
                         id: promptToCode.id
                     ))
@@ -260,15 +260,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     func generateRealtimeSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         return try await presentSuggestions(editor: editor)
-    }
-
-    func chatWithSelection(editor: EditorContent) async throws -> UpdatedContent? {
-        Task { @MainActor in
-            let viewStore = Service.shared.guiController.viewStore
-            viewStore.send(.createChatGPTChatTabIfNeeded)
-            viewStore.send(.openChatPanel(forceDetach: false))
-        }
-        return nil
     }
 
     func promptToCode(editor: EditorContent) async throws -> UpdatedContent? {
@@ -314,7 +305,7 @@ extension WindowBaseCommandHandler {
         switch command.feature {
         case .chatWithSelection, .customChat:
             Task { @MainActor in
-                Service.shared.guiController.viewStore
+                Service.shared.guiController.store
                     .send(.sendCustomCommandToActiveChat(command))
             }
         case let .promptToCode(extraSystemPrompt, prompt, continuousMode, generateDescription):
@@ -397,7 +388,7 @@ extension WindowBaseCommandHandler {
             )
         }() as (String, CursorRange)
 
-        let viewStore = Service.shared.guiController.viewStore
+        let store = Service.shared.guiController.store
 
         let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
 
@@ -415,7 +406,7 @@ extension WindowBaseCommandHandler {
 
         _ = await Task { @MainActor in
             // if there is already a prompt to code presenting, we should not present another one
-            viewStore.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
+            store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
                 code: code,
                 selectionRange: selection,
                 language: codeLanguage,

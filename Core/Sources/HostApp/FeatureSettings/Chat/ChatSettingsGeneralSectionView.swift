@@ -28,6 +28,9 @@ struct ChatSettingsGeneralSectionView: View {
         @AppStorage(
             \.disableFloatOnTopWhenTheChatPanelIsDetached
         ) var disableFloatOnTopWhenTheChatPanelIsDetached
+        @AppStorage(\.openChatMode) var openChatMode
+        @AppStorage(\.openChatInBrowserURL) var openChatInBrowserURL
+        @AppStorage(\.openChatInBrowserInInAppBrowser) var openChatInBrowserInInAppBrowser
 
         init() {}
     }
@@ -39,11 +42,52 @@ struct ChatSettingsGeneralSectionView: View {
 
     var body: some View {
         VStack {
+            openChatSettingsForm
+            SettingsDivider("Conversation")
             chatSettingsForm
             SettingsDivider("UI")
             uiForm
             SettingsDivider("Plugin")
             pluginForm
+        }
+    }
+
+    @ViewBuilder
+    var openChatSettingsForm: some View {
+        Form {
+            Picker(
+                "Open Chat Mode",
+                selection: $settings.openChatMode
+            ) {
+                ForEach(OpenChatMode.allCases, id: \.rawValue) { mode in
+                    switch mode {
+                    case .chatPanel:
+                        Text("Open chat panel").tag(mode)
+                    case .browser:
+                        Text("Open web page in browser").tag(mode)
+                    }
+                }
+            }
+
+            if settings.openChatMode == .browser {
+                TextField(
+                    "Chat web page URL",
+                    text: $settings.openChatInBrowserURL, 
+                    prompt: Text("https://")
+                )
+                .textFieldStyle(.roundedBorder)
+                .disableAutocorrection(true)
+                .autocorrectionDisabled(true)
+
+                #if canImport(ProHostApp)
+                WithFeatureEnabled(\.browserTab) {
+                    Toggle(
+                        "Open web page in chat panel",
+                        isOn: $settings.openChatInBrowserInInAppBrowser
+                    )
+                }
+                #endif
+            }
         }
     }
 

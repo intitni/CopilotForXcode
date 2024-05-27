@@ -18,9 +18,10 @@ public enum XPCExtensionServiceError: Swift.Error, LocalizedError {
     }
 }
 
-@XPCServiceActor
 public class XPCExtensionService {
+    @XPCServiceActor
     var service: XPCService?
+    @XPCServiceActor
     var connection: NSXPCConnection? { service?.connection }
     let logger: Logger
     let bridge: XPCCommunicationBridge
@@ -33,6 +34,7 @@ public class XPCExtensionService {
 
     /// Launches the extension service if it's not running, returns true if the service has finished
     /// launching and the communication becomes available.
+    @XPCServiceActor
     public func launchIfNeeded() async throws -> Bool {
         try await bridge.launchExtensionServiceIfNeeded() != nil
     }
@@ -136,10 +138,10 @@ public class XPCExtensionService {
         }
     }
 
-    public func chatWithSelection(editorContent: EditorContent) async throws -> UpdatedContent? {
+    public func openChat(editorContent: EditorContent) async throws -> UpdatedContent? {
         try await suggestionRequest(
             editorContent,
-            { $0.chatWithSelection }
+            { $0.openChat }
         )
     }
 
@@ -203,24 +205,30 @@ public class XPCExtensionService {
 
 extension XPCExtensionService: XPCServiceDelegate {
     public func connectionDidInterrupt() async {
-        // do nothing
+        Task { @XPCServiceActor in
+            service = nil
+        }
     }
 
     public func connectionDidInvalidate() async {
-        service = nil
+        Task { @XPCServiceActor in
+            service = nil
+        }
     }
 }
 
 extension XPCExtensionService {
+    @XPCServiceActor
     private func updateEndpoint(_ endpoint: NSXPCListenerEndpoint) {
         service = XPCService(
             kind: .anonymous(endpoint: endpoint),
             interface: NSXPCInterface(with: XPCServiceProtocol.self),
-            logger: logger
+            logger: logger,
+            delegate: self
         )
-        service?.delegate = self
     }
 
+    @XPCServiceActor
     private func withXPCServiceConnected<T>(
         _ fn: @escaping (XPCServiceProtocol, AutoFinishContinuation<T>) -> Void
     ) async throws -> T {
@@ -247,6 +255,7 @@ extension XPCExtensionService {
         }
     }
 
+    @XPCServiceActor
     private func suggestionRequest(
         _ editorContent: EditorContent,
         _ fn: @escaping (any XPCServiceProtocol) -> (Data, @escaping (Data?, Error?) -> Void)

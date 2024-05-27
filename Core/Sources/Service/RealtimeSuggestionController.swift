@@ -124,7 +124,7 @@ public actor RealtimeSuggestionController {
                 filespace.codeMetadata.uti = ""
                 do {
                     try await XcodeInspector.shared.safe.latestActiveXcode?
-                        .triggerCopilotCommand(name: "Real-time Suggestions")
+                        .triggerCopilotCommand(name: "Prepare for Real-time Suggestions")
                 } catch {
                     if filespace.codeMetadata.uti?.isEmpty ?? true {
                         filespace.codeMetadata.uti = nil

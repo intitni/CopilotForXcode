@@ -20,7 +20,6 @@ extension View {
 
 struct SharedPanelView: View {
     var store: StoreOf<SharedPanelFeature>
-    @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -30,71 +29,85 @@ struct SharedPanelView: View {
     }
 
     var body: some View {
-        WithViewStore(
-            store,
-            observe: { OverallState(
-                isPanelDisplayed: $0.isPanelDisplayed,
-                opacity: $0.opacity,
-                colorScheme: $0.colorScheme,
-                alignTopToAnchor: $0.alignTopToAnchor
-            ) }
-        ) { viewStore in
+        WithPerceptionTracking {
             VStack(spacing: 0) {
-                if !viewStore.state.alignTopToAnchor {
+                if !store.alignTopToAnchor {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
 
-                WithViewStore(store, observe: { $0.content }) { viewStore in
-                    ZStack(alignment: .topLeading) {
-                        if let error = viewStore.state.error {
-                            ErrorPanel(description: error) {
-                                viewStore.send(
-                                    .errorMessageCloseButtonTapped,
-                                    animation: .easeInOut(duration: 0.2)
-                                )
-                            }
-                        } else if let _ = viewStore.state.promptToCode {
-                            IfLetStore(store.scope(
-                                state: { $0.content.promptToCodeGroup.activePromptToCode },
-                                action: {
-                                    SharedPanelFeature.Action
-                                        .promptToCodeGroup(.activePromptToCode($0))
-                                }
-                            )) {
-                                PromptToCodePanel(store: $0)
-                            }
+                DynamicContent(store: store)
 
-                        } else if let suggestion = viewStore.state.suggestion {
-                            switch suggestionPresentationMode {
-                            case .nearbyTextCursor:
-                                EmptyView()
-                            case .floatingWidget:
-                                CodeBlockSuggestionPanel(suggestion: suggestion)
-                            }
-                        }
-                    }
                     .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
                     .fixedSize(horizontal: false, vertical: true)
-                }
-                .allowsHitTesting(viewStore.isPanelDisplayed)
-                .frame(maxWidth: .infinity)
+                    .allowsHitTesting(store.isPanelDisplayed)
+                    .frame(maxWidth: .infinity)
 
-                if viewStore.alignTopToAnchor {
+                if store.alignTopToAnchor {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
             }
-            .preferredColorScheme(viewStore.colorScheme)
-            .opacity(viewStore.opacity)
+            .preferredColorScheme(store.colorScheme)
+            .opacity(store.opacity)
             .animation(
                 featureFlag: \.animationBCrashSuggestion,
                 .easeInOut(duration: 0.2),
-                value: viewStore.isPanelDisplayed
+                value: store.isPanelDisplayed
             )
             .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
+        }
+    }
+
+    struct DynamicContent: View {
+        let store: StoreOf<SharedPanelFeature>
+
+        @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
+
+        var body: some View {
+            WithPerceptionTracking {
+                ZStack(alignment: .topLeading) {
+                    if let errorMessage = store.content.error {
+                        error(errorMessage)
+                    } else if let _ = store.content.promptToCode {
+                        promptToCode()
+                    } else if let suggestionProvider = store.content.suggestion {
+                        suggestion(suggestionProvider)
+                    }
+                }
+            }
+        }
+
+        @ViewBuilder
+        func error(_ error: String) -> some View {
+            ErrorPanel(description: error) {
+                store.send(
+                    .errorMessageCloseButtonTapped,
+                    animation: .easeInOut(duration: 0.2)
+                )
+            }
+        }
+
+        @ViewBuilder
+        func promptToCode() -> some View {
+            if let store = store.scope(
+                state: \.content.promptToCodeGroup.activePromptToCode,
+                action: \.promptToCodeGroup.activePromptToCode
+            ) {
+                PromptToCodePanel(store: store)
+            }
+        }
+
+        @ViewBuilder
+        func suggestion(_ suggestion: CodeSuggestionProvider) -> some View {
+            switch suggestionPresentationMode {
+            case .nearbyTextCursor:
+                EmptyView()
+            case .floatingWidget:
+                CodeBlockSuggestionPanel(suggestion: suggestion)
+            }
         }
     }
 }
@@ -130,7 +143,7 @@ struct SharedPanelView_Error_Preview: PreviewProvider {
                 colorScheme: .light,
                 isPanelDisplayed: true
             ),
-            reducer: SharedPanelFeature()
+            reducer: { SharedPanelFeature() }
         ))
         .frame(width: 450, height: 200)
     }
@@ -156,7 +169,7 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                 colorScheme: .dark,
                 isPanelDisplayed: true
             ),
-            reducer: SharedPanelFeature()
+            reducer: { SharedPanelFeature() }
         ))
         .frame(width: 450, height: 200)
         .background {

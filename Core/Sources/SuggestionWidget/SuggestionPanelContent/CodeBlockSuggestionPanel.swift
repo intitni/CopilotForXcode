@@ -1,8 +1,13 @@
+import Combine
+import Perception
 import SharedUIComponents
+import SuggestionModel
 import SwiftUI
+import XcodeInspector
 
 struct CodeBlockSuggestionPanel: View {
-    @ObservedObject var suggestion: CodeSuggestionProvider
+    let suggestion: CodeSuggestionProvider
+    @Environment(CursorPositionTracker.self) var cursorPositionTracker
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFont) var codeFont
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
@@ -15,141 +20,154 @@ struct CodeBlockSuggestionPanel: View {
     @AppStorage(\.codeBackgroundColorDark) var codeBackgroundColorDark
 
     struct ToolBar: View {
-        @ObservedObject var suggestion: CodeSuggestionProvider
+        let suggestion: CodeSuggestionProvider
 
         var body: some View {
-            HStack {
-                Button(action: {
-                    suggestion.selectPreviousSuggestion()
-                }) {
-                    Image(systemName: "chevron.left")
-                }.buttonStyle(.plain)
+            WithPerceptionTracking {
+                HStack {
+                    Button(action: {
+                        suggestion.selectPreviousSuggestion()
+                    }) {
+                        Image(systemName: "chevron.left")
+                    }.buttonStyle(.plain)
 
-                Text(
-                    "\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)"
-                )
-                .monospacedDigit()
+                    Text(
+                        "\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)"
+                    )
+                    .monospacedDigit()
 
-                Button(action: {
-                    suggestion.selectNextSuggestion()
-                }) {
-                    Image(systemName: "chevron.right")
-                }.buttonStyle(.plain)
+                    Button(action: {
+                        suggestion.selectNextSuggestion()
+                    }) {
+                        Image(systemName: "chevron.right")
+                    }.buttonStyle(.plain)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    suggestion.dismissSuggestion()
-                }) {
-                    Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
-                }.buttonStyle(.plain)
+                    Button(action: {
+                        suggestion.dismissSuggestion()
+                    }) {
+                        Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
+                    }.buttonStyle(.plain)
 
-                Button(action: {
-                    suggestion.rejectSuggestion()
-                }) {
-                    Text("Reject")
-                }.buttonStyle(CommandButtonStyle(color: .gray))
+                    Button(action: {
+                        suggestion.rejectSuggestion()
+                    }) {
+                        Text("Reject")
+                    }.buttonStyle(CommandButtonStyle(color: .gray))
 
-                Button(action: {
-                    suggestion.acceptSuggestion()
-                }) {
-                    Text("Accept")
-                }.buttonStyle(CommandButtonStyle(color: .accentColor))
+                    Button(action: {
+                        suggestion.acceptSuggestion()
+                    }) {
+                        Text("Accept")
+                    }.buttonStyle(CommandButtonStyle(color: .accentColor))
+                }
+                .padding()
+                .foregroundColor(.secondary)
+                .background(.regularMaterial)
             }
-            .padding()
-            .foregroundColor(.secondary)
-            .background(.regularMaterial)
         }
     }
 
     struct CompactToolBar: View {
-        @ObservedObject var suggestion: CodeSuggestionProvider
+        let suggestion: CodeSuggestionProvider
 
         var body: some View {
-            HStack {
-                Button(action: {
-                    suggestion.selectPreviousSuggestion()
-                }) {
-                    Image(systemName: "chevron.left")
-                }.buttonStyle(.plain)
+            WithPerceptionTracking {
+                HStack {
+                    Button(action: {
+                        suggestion.selectPreviousSuggestion()
+                    }) {
+                        Image(systemName: "chevron.left")
+                    }.buttonStyle(.plain)
 
-                Text(
-                    "\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)"
-                )
-                .monospacedDigit()
+                    Text(
+                        "\(suggestion.currentSuggestionIndex + 1) / \(suggestion.suggestionCount)"
+                    )
+                    .monospacedDigit()
 
-                Button(action: {
-                    suggestion.selectNextSuggestion()
-                }) {
-                    Image(systemName: "chevron.right")
-                }.buttonStyle(.plain)
+                    Button(action: {
+                        suggestion.selectNextSuggestion()
+                    }) {
+                        Image(systemName: "chevron.right")
+                    }.buttonStyle(.plain)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    suggestion.dismissSuggestion()
-                }) {
-                    Image(systemName: "xmark")
-                }.buttonStyle(.plain)
+                    Button(action: {
+                        suggestion.dismissSuggestion()
+                    }) {
+                        Image(systemName: "xmark")
+                    }.buttonStyle(.plain)
+                }
+                .padding(4)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .background(.regularMaterial)
             }
-            .padding(4)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .background(.regularMaterial)
         }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            CustomScrollView {
-                CodeBlock(
-                    code: suggestion.code,
-                    language: suggestion.language,
-                    startLineIndex: suggestion.startLineIndex,
-                    scenario: "suggestion",
-                    colorScheme: colorScheme,
-                    font: codeFont.value.nsFont,
-                    droppingLeadingSpaces: hideCommonPrecedingSpaces,
-                    proposedForegroundColor: {
-                        if syncHighlightTheme {
-                            if colorScheme == .light,
-                               let color = codeForegroundColorLight.value?.swiftUIColor
-                            {
-                                return color
-                            } else if let color = codeForegroundColorDark.value?.swiftUIColor {
-                                return color
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                CustomScrollView {
+                    WithPerceptionTracking {
+                        AsyncCodeBlock(
+                            code: suggestion.code,
+                            language: suggestion.language,
+                            startLineIndex: suggestion.startLineIndex,
+                            scenario: "suggestion",
+                            font: codeFont.value.nsFont,
+                            droppingLeadingSpaces: hideCommonPrecedingSpaces,
+                            proposedForegroundColor: {
+                                if syncHighlightTheme {
+                                    if colorScheme == .light,
+                                       let color = codeForegroundColorLight.value?.swiftUIColor
+                                    {
+                                        return color
+                                    } else if let color = codeForegroundColorDark.value?
+                                        .swiftUIColor
+                                    {
+                                        return color
+                                    }
+                                }
+                                return nil
+                            }(),
+                            dimmedCharacterCount: suggestion.startLineIndex
+                                == cursorPositionTracker.cursorPosition.line
+                                ? cursorPositionTracker.cursorPosition.character
+                                : 0
+                        )
+                        .frame(maxWidth: .infinity)
+                        .background({ () -> Color in
+                            if syncHighlightTheme {
+                                if colorScheme == .light,
+                                   let color = codeBackgroundColorLight.value?.swiftUIColor
+                                {
+                                    return color
+                                } else if let color = codeBackgroundColorDark.value?.swiftUIColor {
+                                    return color
+                                }
                             }
-                        }
-                        return nil
-                    }()
-                )
-                .frame(maxWidth: .infinity)
-                .background({ () -> Color in
-                    if syncHighlightTheme {
-                        if colorScheme == .light,
-                           let color = codeBackgroundColorLight.value?.swiftUIColor
-                        {
-                            return color
-                        } else if let color = codeBackgroundColorDark.value?.swiftUIColor {
-                            return color
-                        }
+                            return Color.contentBackground
+                        }())
                     }
-                    return Color.contentBackground
-                }())
-            }
+                }
 
-            if suggestionDisplayCompactMode {
-                CompactToolBar(suggestion: suggestion)
-            } else {
-                ToolBar(suggestion: suggestion)
+                if suggestionDisplayCompactMode {
+                    CompactToolBar(suggestion: suggestion)
+                } else {
+                    ToolBar(suggestion: suggestion)
+                }
             }
+            .xcodeStyleFrame(cornerRadius: {
+                switch suggestionPresentationMode {
+                case .nearbyTextCursor: 6
+                case .floatingWidget: nil
+                }
+            }())
         }
-        .xcodeStyleFrame(cornerRadius: {
-            switch suggestionPresentationMode {
-            case .nearbyTextCursor: 6
-            case .floatingWidget: nil
-            }
-        }())
     }
 }
 

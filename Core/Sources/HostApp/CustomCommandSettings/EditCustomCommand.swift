@@ -3,7 +3,8 @@ import Foundation
 import Preferences
 import SwiftUI
 
-struct EditCustomCommand: ReducerProtocol {
+@Reducer
+struct EditCustomCommand {
     enum CommandType: Int, CaseIterable, Equatable {
         case sendMessage
         case promptToCode
@@ -11,9 +12,10 @@ struct EditCustomCommand: ReducerProtocol {
         case singleRoundDialog
     }
 
+    @ObservableState
     struct State: Equatable {
-        @BindingState var name: String = ""
-        @BindingState var commandType: CommandType = .sendMessage
+        var name: String = ""
+        var commandType: CommandType = .sendMessage
         var isNewCommand: Bool = false
         let commandId: String
 
@@ -87,20 +89,20 @@ struct EditCustomCommand: ReducerProtocol {
 
     @Dependency(\.toast) var toast
 
-    var body: some ReducerProtocol<State, Action> {
-        Scope(state: \.sendMessage, action: /Action.sendMessage) {
+    var body: some ReducerOf<Self> {
+        Scope(state: \.sendMessage, action: \.sendMessage) {
             EditSendMessageCommand()
         }
 
-        Scope(state: \.promptToCode, action: /Action.promptToCode) {
+        Scope(state: \.promptToCode, action: \.promptToCode) {
             EditPromptToCodeCommand()
         }
 
-        Scope(state: \.customChat, action: /Action.customChat) {
+        Scope(state: \.customChat, action: \.customChat) {
             EditCustomChatCommand()
         }
 
-        Scope(state: \.singleRoundDialog, action: /Action.singleRoundDialog) {
+        Scope(state: \.singleRoundDialog, action: \.singleRoundDialog) {
             EditSingleRoundDialogCommand()
         }
 
@@ -187,18 +189,20 @@ struct EditCustomCommand: ReducerProtocol {
     }
 }
 
-struct EditSendMessageCommand: ReducerProtocol {
+@Reducer
+struct EditSendMessageCommand {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var extraSystemPrompt: String = ""
-        @BindingState var useExtraSystemPrompt: Bool = false
-        @BindingState var prompt: String = ""
+        var extraSystemPrompt: String = ""
+        var useExtraSystemPrompt: Bool = false
+        var prompt: String = ""
     }
 
     enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce { _, action in
@@ -210,51 +214,57 @@ struct EditSendMessageCommand: ReducerProtocol {
     }
 }
 
-struct EditPromptToCodeCommand: ReducerProtocol {
+@Reducer
+struct EditPromptToCodeCommand {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var extraSystemPrompt: String = ""
-        @BindingState var prompt: String = ""
-        @BindingState var continuousMode: Bool = false
-        @BindingState var generateDescription: Bool = false
+        var extraSystemPrompt: String = ""
+        var prompt: String = ""
+        var continuousMode: Bool = false
+        var generateDescription: Bool = false
     }
 
     enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
     }
 }
 
-struct EditCustomChatCommand: ReducerProtocol {
+@Reducer
+struct EditCustomChatCommand {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var systemPrompt: String = ""
-        @BindingState var prompt: String = ""
+        var systemPrompt: String = ""
+        var prompt: String = ""
     }
 
     enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
     }
 }
 
-struct EditSingleRoundDialogCommand: ReducerProtocol {
+@Reducer
+struct EditSingleRoundDialogCommand {
+    @ObservableState
     struct State: Equatable {
-        @BindingState var systemPrompt: String = ""
-        @BindingState var overwriteSystemPrompt: Bool = false
-        @BindingState var prompt: String = ""
-        @BindingState var receiveReplyInNotification: Bool = false
+        var systemPrompt: String = ""
+        var overwriteSystemPrompt: Bool = false
+        var prompt: String = ""
+        var receiveReplyInNotification: Bool = false
     }
 
     enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
     }
 
-    var body: some ReducerProtocol<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
     }
 }

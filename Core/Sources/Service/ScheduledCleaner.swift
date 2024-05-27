@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppKit
 import AXExtension
+import BuiltinExtension
 import Foundation
 import Logger
 import Workspace
@@ -32,7 +33,7 @@ public final class ScheduledCleaner {
     @ServiceActor
     func cleanUp() async {
         guard let service else { return }
-        
+
         let workspaceInfos = XcodeInspector.shared.xcodes.reduce(
             into: [
                 XcodeAppInstanceInspector.WorkspaceIdentifier:
@@ -52,7 +53,7 @@ public final class ScheduledCleaner {
             if workspace.isExpired, workspaceInfos[.url(url)] == nil {
                 Logger.service.info("Remove idle workspace")
                 _ = await Task { @MainActor in
-                    service.guiController.viewStore.send(
+                    service.guiController.store.send(
                         .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: Array(
                             workspace.filespaces.keys
                         )))
@@ -72,7 +73,7 @@ public final class ScheduledCleaner {
                     ) {
                         Logger.service.info("Remove idle filespace")
                         _ = await Task { @MainActor in
-                            service.guiController.viewStore.send(
+                            service.guiController.store.send(
                                 .promptToCodeGroup(.discardExpiredPromptToCode(documentURLs: [url]))
                             )
                         }.result
@@ -82,7 +83,7 @@ public final class ScheduledCleaner {
                 await workspace.cleanUp(availableTabs: tabs)
             }
         }
-        
+
         #if canImport(ProService)
         await service.proService.cleanUp(workspaceInfos: workspaceInfos)
         #endif
@@ -90,10 +91,7 @@ public final class ScheduledCleaner {
 
     @ServiceActor
     public func closeAllChildProcesses() async {
-        guard let service else { return }
-        for (_, workspace) in service.workspacePool.workspaces {
-            await workspace.terminateSuggestionService()
-        }
+        BuiltinExtensionManager.shared.terminate()
     }
 }
 

@@ -1,5 +1,6 @@
 import AppKit
 import struct CopilotForXcodeKit.SuggestionServiceConfiguration
+import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
 import Preferences
 import SuggestionModel
@@ -9,6 +10,7 @@ public struct SuggestionRequest {
     public var fileURL: URL
     public var relativePath: String
     public var content: String
+    public var originalContent: String
     public var lines: [String]
     public var cursorPosition: CursorPosition
     public var cursorOffset: Int
@@ -21,6 +23,7 @@ public struct SuggestionRequest {
         fileURL: URL,
         relativePath: String,
         content: String,
+        originalContent: String,
         lines: [String],
         cursorPosition: CursorPosition,
         cursorOffset: Int,
@@ -32,6 +35,7 @@ public struct SuggestionRequest {
         self.fileURL = fileURL
         self.relativePath = relativePath
         self.content = content
+        self.originalContent = content
         self.lines = lines
         self.cursorPosition = cursorPosition
         self.cursorOffset = cursorOffset
@@ -55,15 +59,19 @@ public struct RelevantCodeSnippet: Codable {
 }
 
 public protocol SuggestionServiceProvider {
-    func getSuggestions(_ request: SuggestionRequest) async throws -> [CodeSuggestion]
-    func notifyAccepted(_ suggestion: CodeSuggestion) async
-    func notifyRejected(_ suggestions: [CodeSuggestion]) async
-    func notifyOpenTextDocument(fileURL: URL, content: String) async throws
-    func notifyChangeTextDocument(fileURL: URL, content: String) async throws
-    func notifyCloseTextDocument(fileURL: URL) async throws
-    func notifySaveTextDocument(fileURL: URL) async throws
-    func cancelRequest() async
-    func terminate() async
+    func getSuggestions(
+        _ request: SuggestionRequest,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async throws -> [CodeSuggestion]
+    func notifyAccepted(
+        _ suggestion: CodeSuggestion,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func notifyRejected(
+        _ suggestions: [CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func cancelRequest(workspaceInfo: CopilotForXcodeKit.WorkspaceInfo) async
 
     var configuration: SuggestionServiceConfiguration { get async }
 }

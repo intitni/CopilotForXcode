@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 struct EditCustomCommandView: View {
     @Environment(\.toast) var toast
-    let store: StoreOf<EditCustomCommand>
+    @Perception.Bindable var store: StoreOf<EditCustomCommand>
 
     init(store: StoreOf<EditCustomCommand>) {
         self.store = store
@@ -24,10 +24,10 @@ struct EditCustomCommandView: View {
     }
 
     @ViewBuilder var sharedForm: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
-            TextField("Name", text: viewStore.$name)
+        WithPerceptionTracking {
+            TextField("Name", text: $store.name)
 
-            Picker("Command Type", selection: viewStore.$commandType) {
+            Picker("Command Type", selection: $store.commandType) {
                 ForEach(
                     EditCustomCommand.CommandType.allCases,
                     id: \.rawValue
@@ -50,37 +50,34 @@ struct EditCustomCommandView: View {
     }
 
     @ViewBuilder var featureSpecificForm: some View {
-        WithViewStore(
-            store,
-            observe: { $0.commandType }
-        ) { viewStore in
-            switch viewStore.state {
+        WithPerceptionTracking {
+            switch store.commandType {
             case .sendMessage:
                 EditSendMessageCommandView(
                     store: store.scope(
                         state: \.sendMessage,
-                        action: EditCustomCommand.Action.sendMessage
+                        action: \.sendMessage
                     )
                 )
             case .promptToCode:
                 EditPromptToCodeCommandView(
                     store: store.scope(
                         state: \.promptToCode,
-                        action: EditCustomCommand.Action.promptToCode
+                        action: \.promptToCode
                     )
                 )
             case .customChat:
                 EditCustomChatCommandView(
                     store: store.scope(
                         state: \.customChat,
-                        action: EditCustomCommand.Action.customChat
+                        action: \.customChat
                     )
                 )
             case .singleRoundDialog:
                 EditSingleRoundDialogCommandView(
                     store: store.scope(
                         state: \.singleRoundDialog,
-                        action: EditCustomCommand.Action.singleRoundDialog
+                        action: \.singleRoundDialog
                     )
                 )
             }
@@ -88,23 +85,23 @@ struct EditCustomCommandView: View {
     }
 
     @ViewBuilder var bottomBar: some View {
-        VStack {
-            Divider()
-
-            VStack(alignment: .trailing) {
-                Text(
-                    "After renaming or adding a custom command, please restart Xcode to refresh the menu."
-                )
-                .foregroundStyle(.secondary)
-
-                HStack {
-                    Spacer()
-                    Button("Close") {
-                        store.send(.close)
-                    }
-
-                    WithViewStore(store, observe: { $0.isNewCommand }) { viewStore in
-                        if viewStore.state {
+        WithPerceptionTracking {
+            VStack {
+                Divider()
+                
+                VStack(alignment: .trailing) {
+                    Text(
+                        "After renaming or adding a custom command, please restart Xcode to refresh the menu."
+                    )
+                    .foregroundStyle(.secondary)
+                    
+                    HStack {
+                        Spacer()
+                        Button("Close") {
+                            store.send(.close)
+                        }
+                        
+                        if store.isNewCommand {
                             Button("Add") {
                                 store.send(.saveCommand)
                             }
@@ -115,28 +112,28 @@ struct EditCustomCommandView: View {
                         }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            .padding(.bottom)
+            .background(.regularMaterial)
         }
-        .padding(.bottom)
-        .background(.regularMaterial)
     }
 }
 
 struct EditSendMessageCommandView: View {
-    let store: StoreOf<EditSendMessageCommand>
+    @Perception.Bindable var store: StoreOf<EditSendMessageCommand>
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Extra System Prompt", isOn: viewStore.$useExtraSystemPrompt)
-                EditableText(text: viewStore.$extraSystemPrompt)
+                Toggle("Extra System Prompt", isOn: $store.useExtraSystemPrompt)
+                EditableText(text: $store.extraSystemPrompt)
             }
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Prompt")
-                EditableText(text: viewStore.$prompt)
+                EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
         }
@@ -144,22 +141,22 @@ struct EditSendMessageCommandView: View {
 }
 
 struct EditPromptToCodeCommandView: View {
-    let store: StoreOf<EditPromptToCodeCommand>
+    @Perception.Bindable var store: StoreOf<EditPromptToCodeCommand>
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
-            Toggle("Continuous Mode", isOn: viewStore.$continuousMode)
-            Toggle("Generate Description", isOn: viewStore.$generateDescription)
+        WithPerceptionTracking {
+            Toggle("Continuous Mode", isOn: $store.continuousMode)
+            Toggle("Generate Description", isOn: $store.generateDescription)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Extra Context")
-                EditableText(text: viewStore.$extraSystemPrompt)
+                EditableText(text: $store.extraSystemPrompt)
             }
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Prompt")
-                EditableText(text: viewStore.$prompt)
+                EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
         }
@@ -167,19 +164,19 @@ struct EditPromptToCodeCommandView: View {
 }
 
 struct EditCustomChatCommandView: View {
-    let store: StoreOf<EditCustomChatCommand>
+    @Perception.Bindable var store: StoreOf<EditCustomChatCommand>
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
                 Text("System Prompt")
-                EditableText(text: viewStore.$systemPrompt)
+                EditableText(text: $store.systemPrompt)
             }
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Prompt")
-                EditableText(text: viewStore.$prompt)
+                EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
         }
@@ -187,17 +184,17 @@ struct EditCustomChatCommandView: View {
 }
 
 struct EditSingleRoundDialogCommandView: View {
-    let store: StoreOf<EditSingleRoundDialogCommand>
+    @Perception.Bindable var store: StoreOf<EditSingleRoundDialogCommand>
 
     var body: some View {
-        WithViewStore(store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
                 Text("System Prompt")
-                EditableText(text: viewStore.$systemPrompt)
+                EditableText(text: $store.systemPrompt)
             }
             .padding(.vertical, 4)
 
-            Picker(selection: viewStore.$overwriteSystemPrompt) {
+            Picker(selection: $store.overwriteSystemPrompt) {
                 Text("Append to Default System Prompt").tag(false)
                 Text("Overwrite Default System Prompt").tag(true)
             } label: {
@@ -207,11 +204,11 @@ struct EditSingleRoundDialogCommandView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Prompt")
-                EditableText(text: viewStore.$prompt)
+                EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
 
-            Toggle("Receive Reply in Notification", isOn: viewStore.$receiveReplyInNotification)
+            Toggle("Receive Reply in Notification", isOn: $store.receiveReplyInNotification)
             Text(
                 "You will be prompted to grant the app permission to send notifications for the first time."
             )
@@ -220,8 +217,6 @@ struct EditSingleRoundDialogCommandView: View {
         }
     }
 }
-
-
 
 // MARK: - Preview
 
@@ -239,12 +234,14 @@ struct EditCustomCommandView_Preview: PreviewProvider {
                         generateDescription: true
                     )
                 )),
-                reducer: EditCustomCommand(
-                    settings: .init(customCommands: .init(
-                        wrappedValue: [],
-                        "CustomCommandView_Preview"
-                    ))
-                )
+                reducer: {
+                    EditCustomCommand(
+                        settings: .init(customCommands: .init(
+                            wrappedValue: [],
+                            "CustomCommandView_Preview"
+                        ))
+                    )
+                }
             )
         )
         .frame(width: 800)
@@ -255,7 +252,7 @@ struct EditSingleRoundDialogCommandView_Preview: PreviewProvider {
     static var previews: some View {
         EditSingleRoundDialogCommandView(store: .init(
             initialState: .init(),
-            reducer: EditSingleRoundDialogCommand()
+            reducer: { EditSingleRoundDialogCommand() }
         ))
         .frame(width: 800, height: 600)
     }

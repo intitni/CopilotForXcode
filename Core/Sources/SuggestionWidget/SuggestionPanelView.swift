@@ -4,7 +4,6 @@ import SwiftUI
 
 struct SuggestionPanelView: View {
     let store: StoreOf<SuggestionPanelFeature>
-    @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -15,64 +14,64 @@ struct SuggestionPanelView: View {
     }
 
     var body: some View {
-        WithViewStore(
-            store,
-            observe: { OverallState(
-                isPanelDisplayed: $0.isPanelDisplayed,
-                opacity: $0.opacity,
-                colorScheme: $0.colorScheme,
-                isPanelOutOfFrame: $0.isPanelOutOfFrame,
-                alignTopToAnchor: $0.alignTopToAnchor
-            ) }
-        ) { viewStore in
+        WithPerceptionTracking {
             VStack(spacing: 0) {
-                if !viewStore.alignTopToAnchor {
+                if !store.alignTopToAnchor {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
 
-                IfLetStore(store.scope(state: \.content, action: { $0 })) { store in
-                    WithViewStore(store) { viewStore in
-                        ZStack(alignment: .topLeading) {
-                            switch suggestionPresentationMode {
-                            case .nearbyTextCursor:
-                                CodeBlockSuggestionPanel(suggestion: viewStore.state)
-                            case .floatingWidget:
-                                EmptyView()
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .allowsHitTesting(
-                    viewStore.isPanelDisplayed && !viewStore.isPanelOutOfFrame
-                )
-                .frame(maxWidth: .infinity)
+                Content(store: store)
+                    .allowsHitTesting(
+                        store.isPanelDisplayed && !store.isPanelOutOfFrame
+                    )
+                    .frame(maxWidth: .infinity)
 
-                if viewStore.alignTopToAnchor {
+                if store.alignTopToAnchor {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
             }
-            .preferredColorScheme(viewStore.colorScheme)
-            .opacity(viewStore.opacity)
+            .preferredColorScheme(store.colorScheme)
+            .opacity(store.opacity)
             .animation(
                 featureFlag: \.animationBCrashSuggestion,
                 .easeInOut(duration: 0.2),
-                value: viewStore.isPanelDisplayed
+                value: store.isPanelDisplayed
             )
             .animation(
                 featureFlag: \.animationBCrashSuggestion,
                 .easeInOut(duration: 0.2),
-                value: viewStore.isPanelOutOfFrame
+                value: store.isPanelOutOfFrame
             )
             .frame(
                 maxWidth: Style.inlineSuggestionMinWidth,
                 maxHeight: Style.inlineSuggestionMaxHeight
             )
+        }
+    }
+
+    struct Content: View {
+        let store: StoreOf<SuggestionPanelFeature>
+        @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
+
+        var body: some View {
+            WithPerceptionTracking {
+                if let content = store.content {
+                    ZStack(alignment: .topLeading) {
+                        switch suggestionPresentationMode {
+                        case .nearbyTextCursor:
+                            CodeBlockSuggestionPanel(suggestion: content)
+                        case .floatingWidget:
+                            EmptyView()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
     }
 }

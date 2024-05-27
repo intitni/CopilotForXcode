@@ -61,7 +61,7 @@ let package = Package(
         .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "0.55.0"
+            from: "1.10.4"
         ),
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
@@ -71,7 +71,7 @@ let package = Package(
             url: "https://github.com/intitni/generative-ai-swift",
             branch: "support-setting-base-url"
         ),
-        .package(url: "https://github.com/intitni/CopilotForXcodeKit", from: "0.4.0"),
+        .package(url: "https://github.com/intitni/CopilotForXcodeKit", branch: "develop"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -203,12 +203,23 @@ let package = Package(
         .target(name: "AsyncPassthroughSubject"),
 
         .target(
+            name: "BuiltinExtension",
+            dependencies: [
+                "SuggestionModel",
+                "Workspace",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
+            ]
+        ),
+
+        .target(
             name: "SharedUIComponents",
             dependencies: [
                 "Highlightr",
                 "Preferences",
                 "SuggestionModel",
+                "DebounceFunction",
                 .product(name: "STTextView", package: "STTextView"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
@@ -239,6 +250,7 @@ let package = Package(
                 "Workspace",
                 "SuggestionProvider",
                 "XPCShared",
+                "BuiltinExtension",
             ]
         ),
 
@@ -285,9 +297,9 @@ let package = Package(
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionProvider", dependencies: [
-            "GitHubCopilotService",
-            "CodeiumService",
+            "SuggestionModel",
             "UserDefaultsObserver",
+            "Preferences",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
 
@@ -303,8 +315,11 @@ let package = Package(
                 "Logger",
                 "Preferences",
                 "Terminal",
+                "BuiltinExtension",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
-            ]
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
+            ],
+            resources: [.copy("Resources/load-self-signed-cert.js")]
         ),
         .testTarget(
             name: "GitHubCopilotServiceTests",
@@ -322,6 +337,8 @@ let package = Package(
                 "Preferences",
                 "Terminal",
                 "XcodeInspector",
+                "BuiltinExtension",
+                .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
 

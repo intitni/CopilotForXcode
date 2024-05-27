@@ -15,14 +15,13 @@ public enum XPCCommunicationBridgeError: Swift.Error, LocalizedError {
     }
 }
 
-@XPCServiceActor
 public class XPCCommunicationBridge {
     let service: XPCService
     let logger: Logger
+    @XPCServiceActor
     var serviceEndpoint: NSXPCListenerEndpoint?
 
-    public nonisolated
-    init(logger: Logger) {
+    public init(logger: Logger) {
         service = .init(
             kind: .machService(
                 identifier: Bundle(for: XPCService.self)
@@ -35,7 +34,7 @@ public class XPCCommunicationBridge {
         self.logger = logger
     }
 
-    public func setDelegate(_ delegate: XPCServiceDelegate) {
+    public func setDelegate(_ delegate: XPCServiceDelegate?) {
         service.delegate = delegate
     }
 
@@ -66,6 +65,7 @@ public class XPCCommunicationBridge {
 }
 
 extension XPCCommunicationBridge {
+    @XPCServiceActor
     func withXPCServiceConnected<T>(
         _ fn: @escaping (CommunicationBridgeXPCServiceProtocol, AutoFinishContinuation<T>) -> Void
     ) async throws -> T {

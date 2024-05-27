@@ -13,13 +13,11 @@ struct WidgetView: View {
     @AppStorage(\.hideCircularWidget) var hideCircularWidget
 
     var body: some View {
-        WithViewStore(store, observe: { $0.isProcessing }) { viewStore in
+        WithPerceptionTracking {
             Circle()
                 .fill(isHovering ? .white.opacity(0.5) : .white.opacity(0.15))
                 .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        store.send(.widgetClicked)
-                    }
+                    store.send(.widgetClicked, animation: .easeInOut(duration: 0.2))
                 }
                 .overlay { WidgetAnimatedCircle(store: store) }
                 .onHover { yes in
@@ -31,12 +29,12 @@ struct WidgetView: View {
                 }
                 .opacity({
                     if !hideCircularWidget { return 1 }
-                    return viewStore.state ? 1 : 0
+                    return store.isProcessing ? 1 : 0
                 }())
                 .animation(
                     featureFlag: \.animationCCrashSuggestion,
                     .easeInOut(duration: 0.2),
-                    value: viewStore.state
+                    value: store.isProcessing
                 )
         }
     }
@@ -52,31 +50,23 @@ struct WidgetAnimatedCircle: View {
     }
 
     var body: some View {
-        let minimumLineWidth: Double = 3
-        let lineWidth = (1 - processingProgress) *
-            (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
-        let scale = max(processingProgress * 1, 0.0001)
-        ZStack {
-            Circle()
-                .stroke(
-                    Color(nsColor: .darkGray),
-                    style: .init(lineWidth: minimumLineWidth)
-                )
-                .padding(minimumLineWidth / 2)
-
-            // how do I stop the repeatForever animation without removing the view?
-            // I tried many solutions found on stackoverflow but non of them works.
-            WithViewStore(
-                store,
-                observe: {
-                    OverlayCircleState(
-                        isProcessing: $0.isProcessing,
-                        isContentEmpty: $0.isContentEmpty
+        WithPerceptionTracking {
+            let minimumLineWidth: Double = 3
+            let lineWidth = (1 - processingProgress) *
+                (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
+            let scale = max(processingProgress * 1, 0.0001)
+            ZStack {
+                Circle()
+                    .stroke(
+                        Color(nsColor: .darkGray),
+                        style: .init(lineWidth: minimumLineWidth)
                     )
-                }
-            ) { viewStore in
+                    .padding(minimumLineWidth / 2)
+
+                // how do I stop the repeatForever animation without removing the view?
+                // I tried many solutions found on stackoverflow but non of them works.
                 Group {
-                    if viewStore.isProcessing {
+                    if store.isProcessing {
                         Circle()
                             .stroke(
                                 Color.accentColor,
@@ -85,7 +75,7 @@ struct WidgetAnimatedCircle: View {
                             .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !viewStore.isContentEmpty || viewStore.isProcessing ? 1 : 0
+                                !store.isContentEmpty || store.isProcessing ? 1 : 0
                             )
                             .animation(
                                 featureFlag: \.animationCCrashSuggestion,
@@ -102,8 +92,7 @@ struct WidgetAnimatedCircle: View {
                             .padding(minimumLineWidth / 2)
                             .scaleEffect(x: scale, y: scale)
                             .opacity(
-                                !viewStore.isContentEmpty || viewStore
-                                    .isProcessing ? 1 : 0
+                                !store.isContentEmpty || store.isProcessing ? 1 : 0
                             )
                             .animation(
                                 featureFlag: \.animationCCrashSuggestion,
@@ -112,16 +101,16 @@ struct WidgetAnimatedCircle: View {
                             )
                     }
                 }
-                .onChange(of: viewStore.isProcessing) { _ in
+                .onChange(of: store.isProcessing) { _ in
                     refreshRing(
-                        isProcessing: viewStore.state.isProcessing,
-                        isContentEmpty: viewStore.state.isContentEmpty
+                        isProcessing: store.isProcessing,
+                        isContentEmpty: store.isContentEmpty
                     )
                 }
-                .onChange(of: viewStore.isContentEmpty) { _ in
+                .onChange(of: store.isContentEmpty) { _ in
                     refreshRing(
-                        isProcessing: viewStore.state.isProcessing,
-                        isContentEmpty: viewStore.state.isContentEmpty
+                        isProcessing: store.isProcessing,
+                        isContentEmpty: store.isContentEmpty
                     )
                 }
             }
@@ -149,15 +138,13 @@ struct WidgetContextMenu: View {
     @Dependency(\.xcodeInspector) var xcodeInspector
 
     var body: some View {
-        Group {
+        WithPerceptionTracking {
             Group { // Commands
-                WithViewStore(store, observe: { $0.isChatOpen }) { viewStore in
-                    if !viewStore.state {
-                        Button(action: {
-                            viewStore.send(.openChatButtonClicked)
-                        }) {
-                            Text("Open Chat")
-                        }
+                if !store.isChatOpen {
+                    Button(action: {
+                        store.send(.openChatButtonClicked)
+                    }) {
+                        Text("Open Chat")
                     }
                 }
 
@@ -175,17 +162,12 @@ struct WidgetContextMenu: View {
             Divider()
 
             Group { // Settings
-                WithViewStore(
-                    store,
-                    observe: { $0.isChatPanelDetached }
-                ) { viewStore in
-                    Button(action: {
-                        viewStore.send(.detachChatPanelToggleClicked)
-                    }) {
-                        Text("Detach Chat Panel")
-                        if viewStore.state {
-                            Image(systemName: "checkmark")
-                        }
+                Button(action: {
+                    store.send(.detachChatPanelToggleClicked)
+                }) {
+                    Text("Detach Chat Panel")
+                    if store.isChatPanelDetached {
+                        Image(systemName: "checkmark")
                     }
                 }
 
@@ -219,26 +201,24 @@ struct WidgetContextMenu: View {
 extension WidgetContextMenu {
     @ViewBuilder
     var enableSuggestionForProject: some View {
-        WithViewStore(store) { _ in
-            if let projectPath = xcodeInspector.activeProjectRootURL?.path,
-               disableSuggestionFeatureGlobally
-            {
-                let matchedPath = suggestionFeatureEnabledProjectList.first { path in
-                    projectPath.hasPrefix(path)
+        if let projectPath = xcodeInspector.activeProjectRootURL?.path,
+           disableSuggestionFeatureGlobally
+        {
+            let matchedPath = suggestionFeatureEnabledProjectList.first { path in
+                projectPath.hasPrefix(path)
+            }
+            Button(action: {
+                if matchedPath != nil {
+                    suggestionFeatureEnabledProjectList
+                        .removeAll { path in path == matchedPath }
+                } else {
+                    suggestionFeatureEnabledProjectList.append(projectPath)
                 }
-                Button(action: {
-                    if matchedPath != nil {
-                        suggestionFeatureEnabledProjectList
-                            .removeAll { path in path == matchedPath }
-                    } else {
-                        suggestionFeatureEnabledProjectList.append(projectPath)
-                    }
-                }) {
-                    if matchedPath == nil {
-                        Text("Add to Suggestion-Enabled Project List")
-                    } else {
-                        Text("Remove from Suggestion-Enabled Project List")
-                    }
+            }) {
+                if matchedPath == nil {
+                    Text("Add to Suggestion-Enabled Project List")
+                } else {
+                    Text("Remove from Suggestion-Enabled Project List")
                 }
             }
         }
@@ -246,24 +226,22 @@ extension WidgetContextMenu {
 
     @ViewBuilder
     var disableSuggestionForLanguage: some View {
-        WithViewStore(store) { _ in
-            let fileURL = xcodeInspector.activeDocumentURL
-            let fileLanguage = fileURL.map(languageIdentifierFromFileURL) ?? .plaintext
-            let matched = suggestionFeatureDisabledLanguageList.first { rawValue in
-                fileLanguage.rawValue == rawValue
+        let fileURL = xcodeInspector.activeDocumentURL
+        let fileLanguage = fileURL.map(languageIdentifierFromFileURL) ?? .plaintext
+        let matched = suggestionFeatureDisabledLanguageList.first { rawValue in
+            fileLanguage.rawValue == rawValue
+        }
+        Button(action: {
+            if let matched {
+                suggestionFeatureDisabledLanguageList.removeAll { $0 == matched }
+            } else {
+                suggestionFeatureDisabledLanguageList.append(fileLanguage.rawValue)
             }
-            Button(action: {
-                if let matched {
-                    suggestionFeatureDisabledLanguageList.removeAll { $0 == matched }
-                } else {
-                    suggestionFeatureDisabledLanguageList.append(fileLanguage.rawValue)
-                }
-            }) {
-                if matched == nil {
-                    Text("Disable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
-                } else {
-                    Text("Enable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
-                }
+        }) {
+            if matched == nil {
+                Text("Disable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
+            } else {
+                Text("Enable Suggestion for \"\(fileLanguage.rawValue.capitalized)\"")
             }
         }
     }
@@ -281,7 +259,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: CircularWidgetFeature()
+                    reducer: { CircularWidgetFeature() }
                 ),
                 isHovering: false
             )
@@ -295,7 +273,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: CircularWidgetFeature()
+                    reducer: { CircularWidgetFeature() }
                 ),
                 isHovering: true
             )
@@ -309,7 +287,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: CircularWidgetFeature()
+                    reducer: { CircularWidgetFeature() }
                 ),
                 isHovering: false
             )
@@ -323,7 +301,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: CircularWidgetFeature()
+                    reducer: { CircularWidgetFeature() }
                 ),
                 isHovering: false
             )
