@@ -40,6 +40,10 @@ public final class UpdateChecker {
     public func checkForUpdates() {
         updater.checkForUpdates()
     }
+    
+    public func resetUpdateCycle() {
+        updater.resetUpdateCycleAfterShortDelay()
+    }
 
     public var automaticallyChecksForUpdates: Bool {
         get { updater.automaticallyChecksForUpdates }
@@ -60,17 +64,30 @@ class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
-        if !shouldAutomaticallyCheckForUpdate, updateCheck == .updatesInBackground {
-            throw CancellationError()
-        }
+        // Not sure how it works
+//        if !shouldAutomaticallyCheckForUpdate, updateCheck == .updatesInBackground {
+//            throw CancellationError()
+//        }
     }
-    
-    func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem, untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
+
+    func updater(
+        _ updater: SPUUpdater,
+        shouldPostponeRelaunchForUpdate item: SUAppcastItem,
+        untilInvokingBlock installHandler: @escaping () -> Void
+    ) -> Bool {
         if let updateCheckerDelegate {
             updateCheckerDelegate.prepareForRelaunch(finish: installHandler)
             return true
         }
         return false
+    }
+    
+    func updater(_ updater: SPUUpdater, willScheduleUpdateCheckAfterDelay delay: TimeInterval) {
+        Logger.updateChecker.info("Will schedule update check after delay: \(delay)")
+    }
+    
+    func updaterWillNotScheduleUpdateCheck(_ updater: SPUUpdater) {
+        Logger.updateChecker.info("Will not schedule update check")
     }
 
     func allowedChannels(for updater: SPUUpdater) -> Set<String> {
