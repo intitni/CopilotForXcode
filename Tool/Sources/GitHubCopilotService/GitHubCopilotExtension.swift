@@ -7,6 +7,8 @@ import Preferences
 import Workspace
 
 public final class GitHubCopilotExtension: BuiltinExtension {
+    public var extensionIdentifier: String { "com.github.copilot" }
+    
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .gitHubCopilot }
 
     public let suggestionService: GitHubCopilotSuggestionService?

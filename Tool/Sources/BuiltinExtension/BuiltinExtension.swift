@@ -6,6 +6,8 @@ import Preferences
 public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
     /// An id that let the extension manager determine whether the extension is in use.
     var suggestionServiceId: BuiltInSuggestionFeatureProvider { get }
+    /// An identifier for the extension.
+    var extensionIdentifier: String { get }
 
     /// All chat builders provided by this extension.
     var chatTabTypes: [any ChatTab.Type] { get }
