@@ -56,6 +56,7 @@ public protocol XPCServiceProtocol {
     func getXPCServiceAccessibilityPermission(withReply reply: @escaping (Bool) -> Void)
     func postNotification(name: String, withReply reply: @escaping () -> Void)
     func send(endpoint: String, requestBody: Data, reply: @escaping (Data?, Error?) -> Void)
+    func quit(reply: @escaping () -> Void)
 }
 
 public struct NoResponse: Codable {

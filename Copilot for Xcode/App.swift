@@ -6,9 +6,21 @@ import UpdateChecker
 import XPCShared
 
 struct VisualEffect: NSViewRepresentable {
-  func makeNSView(context: Self.Context) -> NSView { return NSVisualEffectView() }
-  func updateNSView(_ nsView: NSView, context: Context) { }
+    func makeNSView(context: Self.Context) -> NSView { return NSVisualEffectView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
+
+class TheUpdateCheckerDelegate: UpdateCheckerDelegate {
+    func prepareForRelaunch(finish: @escaping () -> Void) {
+        Task {
+            let service = try? getService()
+            try? await service?.quitService()
+            finish()
+        }
+    }
+}
+
+let updateCheckerDelegate = TheUpdateCheckerDelegate()
 
 @main
 struct CopilotForXcodeApp: App {
@@ -20,7 +32,17 @@ struct CopilotForXcodeApp: App {
                 .onAppear {
                     UserDefaults.setupDefaultSettings()
                 }
-                .environment(\.updateChecker, UpdateChecker(hostBundle: Bundle.main))
+                .environment(
+                    \.updateChecker,
+                    {
+                        let checker = UpdateChecker(
+                            hostBundle: Bundle.main,
+                            shouldAutomaticallyCheckForUpdate: false
+                        )
+                        checker.updateCheckerDelegate = updateCheckerDelegate
+                        return checker
+                    }()
+                )
         }
     }
 }
