@@ -141,7 +141,7 @@ final class ServiceLocator {
         guard let workspace = workspacePool.workspaces[workspace.workspaceURL],
               let plugin = workspace.plugin(for: GitHubCopilotWorkspacePlugin.self)
         else { return nil }
-        return plugin.gitHubCopilotService
+        return await plugin.gitHubCopilotService
     }
 }
 

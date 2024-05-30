@@ -95,6 +95,10 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
+    
+    deinit {
+        localProcessServer?.terminate()
+    }
 
     init(designatedServer: GitHubCopilotLSP) {
         projectRootURL = URL(fileURLWithPath: "/")

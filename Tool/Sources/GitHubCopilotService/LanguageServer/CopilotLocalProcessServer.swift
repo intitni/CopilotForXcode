@@ -84,6 +84,10 @@ class CopilotLocalProcessServer {
         get { return wrappedServer?.logMessages ?? false }
         set { wrappedServer?.logMessages = newValue }
     }
+    
+    func terminate() {
+        process.terminate()
+    }
 }
 
 extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
