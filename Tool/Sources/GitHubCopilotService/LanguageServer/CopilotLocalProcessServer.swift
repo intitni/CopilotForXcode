@@ -45,7 +45,8 @@ class CopilotLocalProcessServer {
         // we need to get the request IDs from a custom transport before the data
         // is written to the language server.
         customTransport.onWriteRequest = { [weak self] request in
-            if request.method == "getCompletionsCycling" {
+            if request.method == "getCompletionsCycling" 
+                || request.method ==  "textDocument/inlineCompletion" {
                 Task { @MainActor [weak self] in
                     self?.ongoingCompletionRequestIDs.append(request.id)
                 }
