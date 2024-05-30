@@ -3,7 +3,8 @@ import Logger
 import Workspace
 
 public final class CodeiumWorkspacePlugin: WorkspacePlugin {
-    var _codeiumService: CodeiumService?
+    private var _codeiumService: CodeiumService?
+    @CodeiumActor
     var codeiumService: CodeiumService? {
         if let service = _codeiumService { return service }
         do {
@@ -15,23 +16,28 @@ public final class CodeiumWorkspacePlugin: WorkspacePlugin {
     }
 
     deinit {
-        if let codeiumService {
-            codeiumService.terminate()
+        if let _codeiumService {
+            _codeiumService.terminate()
         }
     }
 
+    @CodeiumActor
     func createCodeiumService() throws -> CodeiumService {
         let newService = try CodeiumService(
             projectRootURL: projectRootURL,
             onServiceLaunched: {
                 [weak self] in
                 self?.finishLaunchingService()
+            },
+            onServiceTerminated: {
+                // start handled in the service.
             }
         )
         _codeiumService = newService
         return newService
     }
 
+    @CodeiumActor
     func finishLaunchingService() {
         guard let workspace, let _codeiumService else { return }
         Task {

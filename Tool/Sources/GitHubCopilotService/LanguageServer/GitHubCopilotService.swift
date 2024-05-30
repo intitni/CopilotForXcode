@@ -95,6 +95,10 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
+    
+    deinit {
+        localProcessServer?.terminate()
+    }
 
     init(designatedServer: GitHubCopilotLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
@@ -183,8 +187,8 @@ public class GitHubCopilotBaseService {
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
 
             localServer.logMessages = UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
-            localServer.notificationHandler = { _, respond in
-                respond(.timeout)
+            localServer.notificationHandler = { notification, respond in
+                respond(.handlerUnavailable(notification.method.rawValue))
             }
             let server = InitializingServer(server: localServer)
 

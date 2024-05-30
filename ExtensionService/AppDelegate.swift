@@ -21,15 +21,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let service = Service.shared
     var statusBarItem: NSStatusItem!
     var xpcController: XPCController?
-    let updateChecker =
-        UpdateChecker(
-            hostBundle: locateHostBundleURL(url: Bundle.main.bundleURL)
-                .flatMap(Bundle.init(url:))
-        )
+    let updateChecker = UpdateChecker(
+        hostBundle: locateHostBundleURL(url: Bundle.main.bundleURL)
+            .flatMap(Bundle.init(url:)),
+        shouldAutomaticallyCheckForUpdate: true
+    )
 
     func applicationDidFinishLaunching(_: Notification) {
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
         _ = XcodeInspector.shared
+        updateChecker.updateCheckerDelegate = self
         service.start()
         AXIsProcessTrustedWithOptions([
             kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
@@ -135,6 +136,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc func checkForUpdate() {
         updateChecker.checkForUpdates()
+    }
+}
+
+extension AppDelegate: UpdateCheckerDelegate {
+    func prepareForRelaunch(finish: @escaping () -> Void) {
+        Task {
+            await service.prepareForExit()
+            finish()
+        }
     }
 }
 
