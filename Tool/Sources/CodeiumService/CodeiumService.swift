@@ -48,6 +48,7 @@ public class CodeiumService {
     var cancellationCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
     let onServiceLaunched: () -> Void
+    let onServiceTerminated: () -> Void
 
     let languageServerURL: URL
     let supportURL: URL
@@ -63,13 +64,19 @@ public class CodeiumService {
         projectRootURL = URL(fileURLWithPath: "/")
         server = designatedServer
         onServiceLaunched = {}
+        onServiceTerminated = {}
         languageServerURL = URL(fileURLWithPath: "/")
         supportURL = URL(fileURLWithPath: "/")
     }
 
-    public init(projectRootURL: URL, onServiceLaunched: @escaping () -> Void) throws {
+    public init(
+        projectRootURL: URL,
+        onServiceLaunched: @escaping () -> Void,
+        onServiceTerminated: @escaping () -> Void
+    ) throws {
         self.projectRootURL = projectRootURL
         self.onServiceLaunched = onServiceLaunched
+        self.onServiceTerminated = onServiceTerminated
         let urls = try CodeiumService.createFoldersIfNeeded()
         languageServerURL = urls.executableURL.appendingPathComponent("language_server")
         supportURL = urls.supportURL
@@ -117,6 +124,7 @@ public class CodeiumService {
             self?.heartbeatTask?.cancel()
             self?.requestCounter = 0
             self?.cancellationCounter = 0
+            self?.onServiceTerminated()
             Logger.codeium.info("Language server is terminated, will be restarted when needed.")
         }
 
@@ -186,7 +194,7 @@ extension CodeiumService {
             throw E()
         }
         var ideVersion = await XcodeInspector.shared.safe.latestActiveXcode?.version
-        ?? fallbackXcodeVersion
+            ?? fallbackXcodeVersion
         let versionNumberSegmentCount = ideVersion.split(separator: ".").count
         if versionNumberSegmentCount == 2 {
             ideVersion += ".0"
@@ -237,8 +245,8 @@ extension CodeiumService: CodeiumSuggestionServiceType {
         let relativePath = getRelativePath(of: fileURL)
 
         let task = Task {
-            let request = await CodeiumRequest.GetCompletion(requestBody: .init(
-                metadata: try getMetadata(),
+            let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
+                metadata: getMetadata(),
                 document: .init(
                     absolute_path: fileURL.path,
                     relative_path: relativePath,
@@ -266,7 +274,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
             try Task.checkCancellation()
 
-            let result = try await (try await setupServerIfNeeded()).sendRequest(request)
+            let result = try await (await setupServerIfNeeded()).sendRequest(request)
 
             try Task.checkCancellation()
 

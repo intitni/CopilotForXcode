@@ -28,6 +28,9 @@ public final class CodeiumWorkspacePlugin: WorkspacePlugin {
             onServiceLaunched: {
                 [weak self] in
                 self?.finishLaunchingService()
+            },
+            onServiceTerminated: {
+                // start handled in the service.
             }
         )
         _codeiumService = newService
