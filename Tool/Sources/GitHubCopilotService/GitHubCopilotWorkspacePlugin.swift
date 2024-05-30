@@ -3,7 +3,8 @@ import Logger
 import Workspace
 
 public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
-    var _gitHubCopilotService: GitHubCopilotService?
+    private var _gitHubCopilotService: GitHubCopilotService?
+    @GitHubCopilotSuggestionActor
     var gitHubCopilotService: GitHubCopilotService? {
         if let service = _gitHubCopilotService { return service }
         do {
@@ -15,14 +16,19 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
     }
 
     deinit {
-        if let gitHubCopilotService {
-            Task { await gitHubCopilotService.terminate() }
+        if let _gitHubCopilotService {
+            Task { await _gitHubCopilotService.terminate() }
         }
     }
 
+    @GitHubCopilotSuggestionActor
     func createGitHubCopilotService() throws -> GitHubCopilotService {
         let newService = try GitHubCopilotService(projectRootURL: projectRootURL)
         _gitHubCopilotService = newService
+        newService.localProcessServer?.terminationHandler = { [weak self] in
+            Logger.gitHubCopilot.error("GitHub Copilot language server terminated")
+            self?.terminate()
+        }
         Task {
             try await Task.sleep(nanoseconds: 1_000_000_000)
             finishLaunchingService()
@@ -30,6 +36,7 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
         return newService
     }
 
+    @GitHubCopilotSuggestionActor
     func finishLaunchingService() {
         guard let workspace, let _gitHubCopilotService else { return }
         Task {

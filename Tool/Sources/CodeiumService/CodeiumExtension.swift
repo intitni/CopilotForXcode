@@ -5,6 +5,11 @@ import Logger
 import Preferences
 import Workspace
 
+@globalActor public enum CodeiumActor {
+    public actor TheActor {}
+    public static let shared = TheActor()
+}
+
 public final class CodeiumExtension: BuiltinExtension {
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
@@ -119,7 +124,7 @@ final class ServiceLocator {
         guard let workspace = workspacePool.workspaces[workspace.workspaceURL],
               let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)
         else { return nil }
-        return plugin.codeiumService
+        return await plugin.codeiumService
     }
 }
 

@@ -34,6 +34,7 @@ final class DebugSettings: ObservableObject {
 
 struct DebugSettingsView: View {
     @StateObject var settings = DebugSettings()
+    @Environment(\.updateChecker) var updateChecker
 
     var body: some View {
         ScrollView {
@@ -133,6 +134,10 @@ struct DebugSettingsView: View {
                         isOn: $settings.useCloudflareDomainNameForLicenseCheck
                     ) {
                         Text("Use Cloudflare domain name for license check")
+                    }
+                    
+                    Button("Reset update cycle") {
+                        updateChecker.resetUpdateCycle()
                     }
                 }
             }

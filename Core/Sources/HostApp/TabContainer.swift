@@ -215,7 +215,10 @@ private extension EnvironmentValues {
 }
 
 struct UpdateCheckerKey: EnvironmentKey {
-    static var defaultValue: UpdateChecker = .init(hostBundle: nil)
+    static var defaultValue: UpdateChecker = .init(
+        hostBundle: nil,
+        shouldAutomaticallyCheckForUpdate: false
+    )
 }
 
 public extension EnvironmentValues {

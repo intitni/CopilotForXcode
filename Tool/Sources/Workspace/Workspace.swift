@@ -74,7 +74,7 @@ public final class Workspace {
     public let openedFileRecoverableStorage: OpenedFileRecoverableStorage
     public private(set) var lastLastUpdateTime = Environment.now()
     public var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastLastUpdateTime) > 60 * 60 * 1
+        Environment.now().timeIntervalSince(lastLastUpdateTime) > 30 * 60 * 1
     }
 
     public private(set) var filespaces = [URL: Filespace]()

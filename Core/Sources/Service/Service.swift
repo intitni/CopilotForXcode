@@ -4,6 +4,7 @@ import Combine
 import Dependencies
 import Foundation
 import GitHubCopilotService
+import Logger
 import SuggestionService
 import Toast
 import Workspace
@@ -103,6 +104,7 @@ public final class Service {
 
     @MainActor
     public func prepareForExit() async {
+        Logger.service.info("Prepare for exit.")
         #if canImport(ProService)
         proService.prepareForExit()
         #endif
