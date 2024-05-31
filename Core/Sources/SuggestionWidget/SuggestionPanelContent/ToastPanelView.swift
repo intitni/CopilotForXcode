@@ -28,7 +28,7 @@ struct ToastPanelView: View {
                         }() as Color, in: RoundedRectangle(cornerRadius: 8))
                         .overlay {
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black.opacity(0.3), lineWidth: 1)
+                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
                         }
                 }
 
