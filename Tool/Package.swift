@@ -316,6 +316,7 @@ let package = Package(
                 "Preferences",
                 "Terminal",
                 "BuiltinExtension",
+                "Toast",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
