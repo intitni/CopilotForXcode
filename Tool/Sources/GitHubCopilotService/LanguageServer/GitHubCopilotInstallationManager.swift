@@ -2,7 +2,8 @@ import Foundation
 import Terminal
 
 public struct GitHubCopilotInstallationManager {
-    private static var isInstalling = false
+    @GitHubCopilotSuggestionActor
+    public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
         let commitHash = "c79d711cbf7c6672c6c57d6df7c5ab7b6cac2b7a"
@@ -11,13 +12,14 @@ public struct GitHubCopilotInstallationManager {
     }
 
     static let latestSupportedVersion = "1.33.0"
+    static let minimumSupportedVersion = "1.32.0"
 
     public init() {}
 
     public enum InstallationStatus {
         case notInstalled
         case installed(String)
-        case outdated(current: String, latest: String)
+        case outdated(current: String, latest: String, mandatory: Bool)
         case unsupported(current: String, latest: String)
     }
 
@@ -38,7 +40,14 @@ public struct GitHubCopilotInstallationManager {
         {
             switch version.compare(Self.latestSupportedVersion) {
             case .orderedAscending:
-                return .outdated(current: version, latest: Self.latestSupportedVersion)
+                switch version.compare(Self.minimumSupportedVersion) {
+                case .orderedAscending:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: true)
+                case .orderedSame:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                case .orderedDescending:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                }
             case .orderedSame:
                 return .installed(version)
             case .orderedDescending:
@@ -46,7 +55,7 @@ public struct GitHubCopilotInstallationManager {
             }
         }
 
-        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
+        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion, mandatory: false)
     }
 
     public enum InstallationStep {
@@ -75,7 +84,7 @@ public struct GitHubCopilotInstallationManager {
 
     public func installLatestVersion() -> AsyncThrowingStream<InstallationStep, Swift.Error> {
         AsyncThrowingStream<InstallationStep, Swift.Error> { continuation in
-            Task {
+            Task { @GitHubCopilotSuggestionActor in
                 guard !GitHubCopilotInstallationManager.isInstalling else {
                     continuation.finish(throwing: Error.isInstalling)
                     return

@@ -218,7 +218,7 @@ struct GitHubCopilotView: View {
                         case let .installed(version):
                             Text("Copilot.Vim Version: \(version)")
                             uninstallButton
-                        case let .outdated(version, latest):
+                        case let .outdated(version, latest, _):
                             Text("Copilot.Vim Version: \(version) (Update Available: \(latest))")
                             updateButton
                             uninstallButton
