@@ -66,6 +66,8 @@ struct Chat {
         var isReceivingMessage = false
         var chatMenu = ChatMenu.State()
         var focusedField: Field?
+        var isEnabled = true
+        var isPinnedToBottom = true
 
         enum Field: String, Hashable {
             case textField
@@ -77,6 +79,7 @@ struct Chat {
 
         case appear
         case refresh
+        case setIsEnabled(Bool)
         case sendButtonTapped
         case returnButtonTapped
         case stopRespondingButtonTapped
@@ -84,6 +87,8 @@ struct Chat {
         case deleteMessageButtonTapped(MessageID)
         case resendMessageButtonTapped(MessageID)
         case setAsExtraPromptButtonTapped(MessageID)
+        case manuallyScrolledUp
+        case scrollToBottomButtonTapped
         case focusOnTextField
         case referenceClicked(DisplayedChatMessage.Reference)
 
@@ -143,6 +148,10 @@ struct Chat {
                     await send(.chatMenu(.refresh))
                 }
 
+            case let .setIsEnabled(isEnabled):
+                state.isEnabled = isEnabled
+                return .none
+            
             case .sendButtonTapped:
                 guard !state.typedMessage.isEmpty else { return .none }
                 let message = state.typedMessage
@@ -204,6 +213,14 @@ struct Chat {
                         await openURL(url)
                     }
                 }
+                
+            case .manuallyScrolledUp:
+                state.isPinnedToBottom = false
+                return .none
+                
+            case .scrollToBottomButtonTapped:
+                state.isPinnedToBottom = true
+                return .none
 
             case .focusOnTextField:
                 state.focusedField = .textField
@@ -365,6 +382,9 @@ struct Chat {
 
             case .isReceivingMessageChanged:
                 state.isReceivingMessage = service.isReceivingMessage
+                if service.isReceivingMessage {
+                    state.isPinnedToBottom = true
+                }
                 return .none
 
             case .systemPromptChanged:
