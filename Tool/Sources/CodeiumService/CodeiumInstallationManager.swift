@@ -4,8 +4,18 @@ import Terminal
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
     static let latestSupportedVersion = "1.8.5"
-
+    let isEnterpriseMode = UserDefaults.shared.value(for: \.codeiumEnterpriseMode)
+    let enterprisePortalUrl = UserDefaults.shared.value(for: \.codeiumPortalUrl)
+    let enterpriseVersion = UserDefaults.shared.value(for: \.codeiumEnterpriseVersion)
+    
     public init() {}
+    
+    
+    public func isEnterprise() -> Bool {
+        // Before doing any Enterprise Logic, enterprise mode must be set, we must have a url, and an enterpriseVersion grabbed from the URL, otherwise we default to regular user logic for checking and updating
+        return isEnterpriseMode && (self.enterprisePortalUrl != "") && (self.enterpriseVersion != "")
+    }
+    
 
     public enum InstallationStatus {
         case notInstalled
@@ -24,24 +34,42 @@ public struct CodeiumInstallationManager {
         if !FileManager.default.fileExists(atPath: binaryURL.path) {
             return .notInstalled
         }
-
-        if FileManager.default.fileExists(atPath: versionFileURL.path),
-           let versionData = try? Data(contentsOf: versionFileURL),
-           let version = String(data: versionData, encoding: .utf8)
-        {
-            switch version.compare(Self.latestSupportedVersion) {
-            case .orderedAscending:
-                return .outdated(current: version, latest: Self.latestSupportedVersion)
-            case .orderedSame:
-                return .installed(version)
-            case .orderedDescending:
-                return .unsupported(current: version, latest: Self.latestSupportedVersion)
+        // For Non Enterprise Users, compare current version to the previous latestSupportedVersion
+        if !isEnterprise() {
+            if FileManager.default.fileExists(atPath: versionFileURL.path),
+               let versionData = try? Data(contentsOf: versionFileURL),
+               let version = String(data: versionData, encoding: .utf8)
+            {
+                switch version.compare(Self.latestSupportedVersion, options: .numeric) {
+                case .orderedAscending:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion)
+                case .orderedSame:
+                    return .installed(version)
+                case .orderedDescending:
+                    return .unsupported(current: version, latest: Self.latestSupportedVersion)
+                }
             }
+            return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
+        } else {
+        // For Enterprise Users, fetch the enterprise version from the enterprise portal and compare it to the current version
+            
+            if FileManager.default.fileExists(atPath: versionFileURL.path),
+               let versionData = try? Data(contentsOf: versionFileURL),
+               let version = String(data: versionData, encoding: .utf8)
+            {
+                switch version.compare(self.enterpriseVersion, options: .numeric) {
+                case .orderedAscending:
+                    return .outdated(current: version, latest: self.enterpriseVersion)
+                case .orderedSame:
+                    return .installed(version)
+                case .orderedDescending:
+                    return .unsupported(current: version, latest: self.enterpriseVersion)
+                }
+            }
+            return .outdated(current: "Unknown", latest: self.enterpriseVersion)
         }
-
-        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
     }
-
+    
     public enum InstallationStep {
         case downloading
         case uninstalling
@@ -61,8 +89,15 @@ public struct CodeiumInstallationManager {
                 do {
                     continuation.yield(.downloading)
                     let urls = try CodeiumSuggestionService.createFoldersIfNeeded()
-                    let urlString =
-                        "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    var urlString: String
+                    if !isEnterprise() {
+                        urlString =
+                            "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    } else {
+                        urlString =
+                        "\(self.enterprisePortalUrl)/language-server-v\(self.enterpriseVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    }
+  
                     guard let url = URL(string: urlString) else { return }
 
                     // download
@@ -90,9 +125,14 @@ public struct CodeiumInstallationManager {
                         [.posixPermissions: 0o755],
                         ofItemAtPath: targetURL.deletingPathExtension().path
                     )
-
+                    var data: Data?
                     // create version file
-                    let data = Self.latestSupportedVersion.data(using: .utf8)
+                    if !isEnterprise() {
+                        data = Self.latestSupportedVersion.data(using: .utf8)
+                    } else {
+                        data = self.enterpriseVersion.data(using: .utf8)
+                    }
+                    
                     FileManager.default.createFile(
                         atPath: urls.executableURL.appendingPathComponent("version").path,
                         contents: data
