@@ -408,7 +408,7 @@ private func isCompletionPanel(_ element: AXUIElement) -> Bool {
         guard let group = element.firstChild(where: { $0.role == "AXGroup" }),
               let scrollArea = group.firstChild(where: { $0.role == "AXScrollArea" }),
               let list = scrollArea.firstChild(where: { $0.role == "AXOpaqueProviderGroup" }),
-              let completion = list.children.first(where: { $0.value == "code completion" })
+              let _ = list.children.first(where: { $0.value == "code completion" })
         else { return false }
         return true
     }()
