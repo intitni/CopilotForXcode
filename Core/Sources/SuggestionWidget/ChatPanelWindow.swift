@@ -38,12 +38,13 @@ final class ChatPanelWindow: NSWindow {
         isReleasedWhenClosed = false
         isOpaque = false
         backgroundColor = .clear
-        level = .init(NSWindow.Level.floating.rawValue + 1)
+        level = widgetLevel(1)
         collectionBehavior = [
             .fullScreenAuxiliary,
             .transient,
             .fullScreenPrimary,
             .fullScreenAllowsTiling,
+            .canJoinAllSpaces
         ]
         hasShadow = true
         contentView = NSHostingView(
