@@ -16,7 +16,7 @@ public protocol CodeiumSuggestionServiceType {
         usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion]
     func notifyAccepted(_ suggestion: CodeSuggestion) async
-    func openChat() async throws
+    func getChatURL() async throws -> URL
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
@@ -28,6 +28,7 @@ enum CodeiumError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerOutdated
     case languageServiceIsInstalling
+    case failedToConstructChatURL
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +38,8 @@ enum CodeiumError: Error, LocalizedError {
             return "Language server is outdated. Please update it in the host app or update the extension."
         case .languageServiceIsInstalling:
             return "Language service is installing, please try again later."
+        case .failedToConstructChatURL:
+            return "Failed to construct chat URL."
         }
     }
 }
@@ -312,37 +315,38 @@ extension CodeiumService: CodeiumSuggestionServiceType {
             ))
         )
     }
-    
-    public func openChat() async throws {
-        if let metadata = try? await getMetadata() {
-            let ports = try? await server?.sendRequest(
-                CodeiumRequest.GetProcesses(requestBody: .init())
-            )
-        
-            if let chatClientPort = ports?.chatClientPort, let chatWebServerPort = ports?.chatWebServerPort {
-                let webServerUrl = "ws://127.0.0.1:\(chatWebServerPort)"
-                var components = URLComponents()
-                components.scheme = "http"
-                components.host = "127.0.0.1"
-                components.port = Int(chatClientPort)
-                components.path = "/"
-                components.queryItems = [
-                    URLQueryItem(name: "api_key", value: metadata.api_key),
-                    URLQueryItem(name: "locale", value: "en"),
-                    URLQueryItem(name: "extension_name", value: "Copilot for XCode"),
-                    URLQueryItem(name: "extension_version", value: metadata.extension_version),
-                    URLQueryItem(name: "ide_name", value: metadata.ide_name),
-                    URLQueryItem(name: "ide_version", value: metadata.ide_version),
-                    URLQueryItem(name: "web_server_url", value: webServerUrl),
-                ]
-                
-                if let url = components.url {
-                    // Use NSWorkspace to open the URL
-                    NSWorkspace.shared.open(url)
-                } else {
-                    print("Failed to construct the URL")
-                }
-            }
+
+    public func getChatURL() async throws -> URL {
+        let metadata = try await getMetadata()
+        let ports = try await server?.sendRequest(
+            CodeiumRequest.GetProcesses(requestBody: .init())
+        )
+
+        guard let chatClientPort = ports?.chatClientPort,
+              let chatWebServerPort = ports?.chatWebServerPort
+        else { throw CodeiumError.failedToConstructChatURL }
+
+        let webServerUrl = "ws://127.0.0.1:\(chatWebServerPort)"
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = "127.0.0.1"
+        components.port = Int(chatClientPort)
+        components.path = "/"
+        components.queryItems = [
+            URLQueryItem(name: "api_key", value: metadata.api_key),
+            URLQueryItem(name: "locale", value: "en"),
+            URLQueryItem(name: "extension_name", value: "Copilot for XCode"),
+            URLQueryItem(name: "extension_version", value: metadata.extension_version),
+            URLQueryItem(name: "ide_name", value: metadata.ide_name),
+            URLQueryItem(name: "ide_version", value: metadata.ide_version),
+            URLQueryItem(name: "web_server_url", value: webServerUrl),
+        ]
+
+        if let url = components.url {
+            print(url)
+            return url
+        } else {
+            throw CodeiumError.failedToConstructChatURL
         }
     }
 

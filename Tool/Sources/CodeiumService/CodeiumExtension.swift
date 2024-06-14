@@ -1,4 +1,5 @@
 import BuiltinExtension
+import ChatTab
 import CopilotForXcodeKit
 import Foundation
 import Logger
@@ -15,12 +16,21 @@ public final class CodeiumExtension: BuiltinExtension {
 
     public let suggestionService: CodeiumSuggestionService?
 
+    public var chatBuilders: [String: [any ChatTabBuilder]] {
+        ["Codeium Chat (Beta)": CodeiumChatTab.chatBuilders(externalDependency: ())]
+    }
+
     private var extensionUsage = ExtensionUsage(
         isSuggestionServiceInUse: false,
         isChatServiceInUse: false
     )
     private var isLanguageServerInUse: Bool {
-        extensionUsage.isSuggestionServiceInUse || extensionUsage.isChatServiceInUse
+        get async {
+            let lifeKeeperIsAlive = await CodeiumServiceLifeKeeper.shared.isAlive
+            return extensionUsage.isSuggestionServiceInUse
+                || extensionUsage.isChatServiceInUse
+                || lifeKeeperIsAlive
+        }
     }
 
     let workspacePool: WorkspacePool
@@ -38,15 +48,15 @@ public final class CodeiumExtension: BuiltinExtension {
     public func workspaceDidClose(_: WorkspaceInfo) {}
 
     public func workspace(_ workspace: WorkspaceInfo, didOpenDocumentAt documentURL: URL) {
-        guard isLanguageServerInUse else { return }
-        // check if file size is larger than 15MB, if so, return immediately
-        if let attrs = try? FileManager.default
-            .attributesOfItem(atPath: documentURL.path),
-            let fileSize = attrs[FileAttributeKey.size] as? UInt64,
-            fileSize > 15 * 1024 * 1024
-        { return }
-
         Task {
+            guard await isLanguageServerInUse else { return }
+            // check if file size is larger than 15MB, if so, return immediately
+            if let attrs = try? FileManager.default
+                .attributesOfItem(atPath: documentURL.path),
+                let fileSize = attrs[FileAttributeKey.size] as? UInt64,
+                fileSize > 15 * 1024 * 1024
+            { return }
+
             do {
                 let content = try String(contentsOf: documentURL, encoding: .utf8)
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
@@ -62,8 +72,8 @@ public final class CodeiumExtension: BuiltinExtension {
     }
 
     public func workspace(_ workspace: WorkspaceInfo, didCloseDocumentAt documentURL: URL) {
-        guard isLanguageServerInUse else { return }
         Task {
+            guard await isLanguageServerInUse else { return }
             do {
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyCloseTextDocument(fileURL: documentURL)
@@ -78,15 +88,14 @@ public final class CodeiumExtension: BuiltinExtension {
         didUpdateDocumentAt documentURL: URL,
         content: String?
     ) {
-        guard isLanguageServerInUse else { return }
-        // check if file size is larger than 15MB, if so, return immediately
-        if let attrs = try? FileManager.default
-            .attributesOfItem(atPath: documentURL.path),
-            let fileSize = attrs[FileAttributeKey.size] as? UInt64,
-            fileSize > 15 * 1024 * 1024
-        { return }
-
         Task {
+            guard await isLanguageServerInUse else { return }
+            // check if file size is larger than 15MB, if so, return immediately
+            if let attrs = try? FileManager.default
+                .attributesOfItem(atPath: documentURL.path),
+                let fileSize = attrs[FileAttributeKey.size] as? UInt64,
+                fileSize > 15 * 1024 * 1024
+            { return }
             do {
                 guard let content else { return }
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
@@ -99,8 +108,10 @@ public final class CodeiumExtension: BuiltinExtension {
 
     public func extensionUsageDidChange(_ usage: ExtensionUsage) {
         extensionUsage = usage
-        if !usage.isChatServiceInUse && !usage.isSuggestionServiceInUse {
-            terminate()
+        Task {
+            if !(await isLanguageServerInUse) {
+                terminate()
+            }
         }
     }
 
@@ -125,6 +136,31 @@ final class ServiceLocator {
               let plugin = workspace.plugin(for: CodeiumWorkspacePlugin.self)
         else { return nil }
         return await plugin.codeiumService
+    }
+}
+
+/// A helper class to keep track of a list of items that may keep the service alive.
+/// For example, a ``CodeiumChatTab``.
+actor CodeiumServiceLifeKeeper {
+    static let shared = CodeiumServiceLifeKeeper()
+
+    private final class WeakObject {
+        weak var object: AnyObject?
+        var isAlive: Bool { object != nil }
+        init(_ object: AnyObject) {
+            self.object = object
+        }
+    }
+
+    private var weakObjects = [WeakObject]()
+
+    func add(_ object: AnyObject) {
+        weakObjects.removeAll { !$0.isAlive }
+        weakObjects.append(WeakObject(object))
+    }
+
+    var isAlive: Bool {
+        weakObjects.allSatisfy { $0.isAlive }
     }
 }
 
