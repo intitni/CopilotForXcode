@@ -85,7 +85,6 @@ public struct WidgetFeature {
     private enum CancelID {
         case observeActiveApplicationChange
         case observeCompletionPanelChange
-        case observeFullscreenChange
         case observeWindowChange
         case observeEditorChange
         case observeUserDefaults
@@ -94,7 +93,6 @@ public struct WidgetFeature {
     public enum Action: Equatable {
         case startup
         case observeActiveApplicationChange
-        case observeFullscreenChange
         case observeColorSchemeChange
 
         case updateActiveApplication
@@ -227,7 +225,6 @@ public struct WidgetFeature {
                     .run { send in
                         await send(.toastPanel(.start))
                         await send(.observeActiveApplicationChange)
-                        await send(.observeFullscreenChange)
                         await send(.observeColorSchemeChange)
                     }
                 )
@@ -253,24 +250,6 @@ public struct WidgetFeature {
                         previousAppIdentifier = app.processIdentifier
                     }
                 }.cancellable(id: CancelID.observeActiveApplicationChange, cancelInFlight: true)
-
-            case .observeFullscreenChange:
-                return .run { _ in
-                    let sequence = NSWorkspace.shared.notificationCenter
-                        .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
-                    for await _ in sequence {
-                        try Task.checkCancellation()
-                        guard let activeXcode = await xcodeInspector.safe.activeXcode
-                        else { continue }
-                        guard let windowsController,
-                              await windowsController.windows.fullscreenDetector.isOnActiveSpace
-                        else { continue }
-                        let app = activeXcode.appElement
-                        if let _ = app.focusedWindow {
-                            await windowsController.windows.orderFront()
-                        }
-                    }
-                }.cancellable(id: CancelID.observeFullscreenChange, cancelInFlight: true)
 
             case .observeColorSchemeChange:
                 return .run { send in

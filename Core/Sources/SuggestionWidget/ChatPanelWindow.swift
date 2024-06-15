@@ -4,13 +4,41 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-final class ChatPanelWindow: NSWindow {
+final class ChatPanelWindow: WidgetWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
     private let storeObserver = NSObject()
 
     var minimizeWindow: () -> Void = {}
+
+    override var defaultCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+        ]
+    }
+
+    override var switchingSpaceCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+        ]
+    }
+    
+    override var fullscreenCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+            .canJoinAllSpaces,
+        ]
+    }
 
     init(
         store: StoreOf<ChatPanelFeature>,
@@ -39,13 +67,7 @@ final class ChatPanelWindow: NSWindow {
         isOpaque = false
         backgroundColor = .clear
         level = widgetLevel(1)
-        collectionBehavior = [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-            .canJoinAllSpaces
-        ]
+
         hasShadow = true
         contentView = NSHostingView(
             rootView: ChatWindowView(

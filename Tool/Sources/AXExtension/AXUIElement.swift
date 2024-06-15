@@ -134,6 +134,10 @@ public extension AXUIElement {
     var isFullScreen: Bool {
         (try? copyValue(key: "AXFullScreen")) ?? false
     }
+    
+    var isFrontmost: Bool {
+        (try? copyValue(key: kAXFrontmostAttribute)) ?? false
+    }
 
     var focusedWindow: AXUIElement? {
         try? copyValue(key: kAXFocusedWindowAttribute)
