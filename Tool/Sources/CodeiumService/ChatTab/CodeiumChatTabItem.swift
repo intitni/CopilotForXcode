@@ -9,6 +9,9 @@ struct CodeiumChatTabItem: View {
     var body: some View {
         WithPerceptionTracking {
             Text(store.title)
+                .contextMenu {
+                    CodeiumChatMenuItem(store: store)
+                }
         }
     }
 }
