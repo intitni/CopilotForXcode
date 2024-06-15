@@ -5,7 +5,7 @@ import XcodeInspector
 
 public final class BuiltinExtensionManager {
     public static let shared: BuiltinExtensionManager = .init()
-    private(set) var extensions: [any BuiltinExtension] = []
+    public private(set) var extensions: [any BuiltinExtension] = []
 
     private var cancellable: Set<AnyCancellable> = []
 

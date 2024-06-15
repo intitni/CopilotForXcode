@@ -1,3 +1,4 @@
+import BuiltinExtension
 import ChatGPTChatTab
 import ChatService
 import ChatTab
@@ -9,20 +10,11 @@ import XcodeInspector
 
 #if canImport(ProChatTabs)
 import ProChatTabs
+#endif
 
 enum ChatTabFactory {
     static func chatTabBuilderCollection() -> [ChatTabBuilderCollection] {
-        func folderIfNeeded(
-            _ builders: [any ChatTabBuilder],
-            title: String
-        ) -> ChatTabBuilderCollection? {
-            if builders.count > 1 {
-                return .folder(title: title, kinds: builders.map(ChatTabKind.init))
-            }
-            if let first = builders.first { return .kind(ChatTabKind(first)) }
-            return nil
-        }
-
+        #if canImport(ProChatTabs)
         let collection = [
             folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
             folderIfNeeded(
@@ -32,11 +24,34 @@ enum ChatTabFactory {
                 title: BrowserChatTab.name
             ),
             folderIfNeeded(TerminalChatTab.chatBuilders(), title: TerminalChatTab.name),
-        ].compactMap { $0 }
+        ]
+        #else
+        let collection = [
+            folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
+        ]
+        #endif
 
-        return collection
+        return collection.compactMap { $0 } + chatTabsFromExtensions()
     }
 
+    private static func folderIfNeeded(
+        _ builders: [any ChatTabBuilder],
+        title: String
+    ) -> ChatTabBuilderCollection? {
+        if builders.count > 1 {
+            return .folder(title: title, kinds: builders.map(ChatTabKind.init))
+        }
+        if let first = builders.first { return .kind(ChatTabKind(first)) }
+        return nil
+    }
+
+    static func chatTabsFromExtensions() -> [ChatTabBuilderCollection] {
+        let extensions = BuiltinExtensionManager.shared.extensions
+        let chatBuilders = extensions.flatMap { $0.chatBuilders }
+        return chatBuilders.compactMap { folderIfNeeded($0.value, title: $0.key) }
+    }
+
+    #if canImport(ProChatTabs)
     static func externalDependenciesForBrowserChatTab() -> BrowserChatTab.ExternalDependency {
         .init(
             getEditorContent: {
@@ -109,28 +124,6 @@ enum ChatTabFactory {
             }
         )
     }
+    #endif
 }
-
-#else
-
-enum ChatTabFactory {
-    static func chatTabBuilderCollection() -> [ChatTabBuilderCollection] {
-        func folderIfNeeded(
-            _ builders: [any ChatTabBuilder],
-            title: String
-        ) -> ChatTabBuilderCollection? {
-            if builders.count > 1 {
-                return .folder(title: title, kinds: builders.map(ChatTabKind.init))
-            }
-            if let first = builders.first { return .kind(ChatTabKind(first)) }
-            return nil
-        }
-
-        return [
-            folderIfNeeded(ChatGPTChatTab.chatBuilders(), title: ChatGPTChatTab.name),
-        ].compactMap { $0 }
-    }
-}
-
-#endif
 
