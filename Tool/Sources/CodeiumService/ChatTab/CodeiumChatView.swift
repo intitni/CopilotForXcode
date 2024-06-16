@@ -20,6 +20,16 @@ struct BrowserView: View {
                     ProgressView()
                 }
             }
+            .overlay {
+                if let error = store.error {
+                    VStack {
+                        Text(error)
+                        Button("Load Current Workspace") {
+                            store.send(.loadCurrentWorkspace)
+                        }
+                    }
+                }
+            }
         }
     }
 }
