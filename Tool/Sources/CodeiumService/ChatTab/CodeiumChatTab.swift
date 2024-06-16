@@ -133,19 +133,18 @@ public class CodeiumChatTab: ChatTab {
         return (try? JSONEncoder().encode(state)) ?? Data()
     }
 
-    public static func restore(
-        from data: Data,
-        externalDependency: ExternalDependency
-    ) throws -> any ChatTabBuilder {
-        let builder = Builder(title: "") { @MainActor _ in }
+    public static func restore(from data: Data) throws -> any ChatTabBuilder {
+        let builder = Builder(title: "") { @MainActor chatTab in
+            chatTab.store.send(.loadCurrentWorkspace)
+        }
         return builder
     }
 
-    public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
-        [defaultChatBuilder()]
+    public static func chatBuilders() -> [ChatTabBuilder] {
+        [Builder(title: "Codeium Chat (Beta)")]
     }
-    
-    public static func defaultChatBuilder() -> ChatTabBuilder {
+
+	public static func defaultChatBuilder() -> ChatTabBuilder {
         Builder(title: "Codeium Chat (Beta)")
     }
 }

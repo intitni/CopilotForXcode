@@ -15,9 +15,9 @@ public final class CodeiumExtension: BuiltinExtension {
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
     public let suggestionService: CodeiumSuggestionService?
-
-    public var chatBuilders: [String: [any ChatTabBuilder]] {
-        ["Codeium Chat (Beta)": CodeiumChatTab.chatBuilders(externalDependency: ())]
+    
+    public var chatTabTypes: [any ChatTab.Type] {
+        [CodeiumChatTab.self]
     }
 
     private var extensionUsage = ExtensionUsage(

@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import AppActivator
 import AppKit
+import BuiltinExtension
 import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
@@ -405,38 +406,25 @@ extension ChatTabPool {
     ) async -> (any ChatTab, ChatTabInfo)? {
         switch data.name {
         case ChatGPTChatTab.name:
-            guard let builder = try? await ChatGPTChatTab.restore(
-                from: data.data,
-                externalDependency: ()
-            ) else { break }
-            return await createTab(id: data.id, from: builder)
-        case EmptyChatTab.name:
-            guard let builder = try? await EmptyChatTab.restore(
-                from: data.data,
-                externalDependency: ()
-            ) else { break }
+            guard let builder = try? await ChatGPTChatTab.restore(from: data.data) else { break }
             return await createTab(id: data.id, from: builder)
         case BrowserChatTab.name:
-            guard let builder = try? BrowserChatTab.restore(
-                from: data.data,
-                externalDependency: ChatTabFactory.externalDependenciesForBrowserChatTab()
-            ) else { break }
+            guard let builder = try? BrowserChatTab.restore(from: data.data) else { break }
             return await createTab(id: data.id, from: builder)
         case TerminalChatTab.name:
-            guard let builder = try? await TerminalChatTab.restore(
-                from: data.data,
-                externalDependency: ()
-            ) else { break }
+            guard let builder = try? await TerminalChatTab.restore(from: data.data) else { break }
             return await createTab(id: data.id, from: builder)
         default:
-            break
+            let chatTabTypes = BuiltinExtensionManager.shared.extensions.flatMap(\.chatTabTypes)
+            for type in chatTabTypes {
+                if type.name == data.name {
+                    guard let builder = try? await type.restore(from: data.data) else { break }
+                    return await createTab(id: data.id, from: builder)
+                }
+            }
         }
 
-        guard let builder = try? await EmptyChatTab.restore(
-            from: data.data, externalDependency: ()
-        ) else {
-            return nil
-        }
+        guard let builder = try? await EmptyChatTab.restore(from: data.data) else { return nil }
         return await createTab(id: data.id, from: builder)
     }
     #endif

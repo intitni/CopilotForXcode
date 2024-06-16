@@ -8,7 +8,7 @@ public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
     var suggestionServiceId: BuiltInSuggestionFeatureProvider { get }
 
     /// All chat builders provided by this extension.
-    var chatBuilders: [String: [ChatTabBuilder]] { get }
+    var chatTabTypes: [any ChatTab.Type] { get }
 
     /// It's usually called when the app is about to quit,
     /// you should clean up all the resources here.
@@ -18,6 +18,6 @@ public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
 // MARK: - Default Implementation
 
 public extension BuiltinExtension {
-    var chatBuilders: [String: [ChatTabBuilder]] { [:] }
+    var chatTabTypes: [any ChatTab.Type] { [] }
 }
 

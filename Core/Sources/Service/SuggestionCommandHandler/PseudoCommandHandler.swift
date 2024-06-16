@@ -362,11 +362,7 @@ struct PseudoCommandHandler {
                                   match(tab.url) else { return false }
                             return true
                         },
-                        kind: .init(BrowserChatTab.urlChatBuilder(
-                            url: url,
-                            externalDependency: ChatTabFactory
-                                .externalDependenciesForBrowserChatTab()
-                        ))
+                        kind: .init(BrowserChatTab.urlChatBuilder(url: url))
                     )).finish()
                     store.send(.openChatPanel(forceDetach: forceDetach))
                 }
