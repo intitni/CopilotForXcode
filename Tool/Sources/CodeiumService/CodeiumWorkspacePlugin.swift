@@ -41,6 +41,8 @@ public final class CodeiumWorkspacePlugin: WorkspacePlugin {
     func finishLaunchingService() {
         guard let workspace, let _codeiumService else { return }
         Task {
+            try? await _codeiumService.notifyOpenWorkspace(workspaceURL: workspaceURL)
+            
             for (_, filespace) in workspace.filespaces {
                 let documentURL = filespace.fileURL
                 guard let content = try? String(contentsOf: documentURL) else { continue }

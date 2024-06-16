@@ -247,7 +247,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-        let relativePath = getRelativePath(of: fileURL)
+        let relativePath = getRelativePath(of: fileURL) 
 
         let task = Task {
             let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
@@ -340,6 +340,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
             URLQueryItem(name: "ide_name", value: metadata.ide_name),
             URLQueryItem(name: "ide_version", value: metadata.ide_version),
             URLQueryItem(name: "web_server_url", value: webServerUrl),
+            URLQueryItem(name: "ide_telemetry_enabled", value: "true")
         ]
 
         if let url = components.url {
@@ -356,7 +357,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
                 metadata: getMetadata(),
                 completion_id: suggestion.id
             )))
-    }
+    } 
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
@@ -378,6 +379,50 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         await openedDocumentPool.closeDocument(url: fileURL)
+    }
+
+    public func notifyOpenWorkspace(workspaceURL: URL) async throws {
+        _ = try await (try setupServerIfNeeded()).sendRequest(
+            CodeiumRequest
+                .AddTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
+        )
+    }
+
+    public func notifyCloseWorkspace(workspaceURL: URL) async throws {
+        _ = try await (try setupServerIfNeeded()).sendRequest(
+            CodeiumRequest
+                .RemoveTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
+        )
+    }
+
+    public func refreshIDEContext(
+        fileURL: URL,
+        content: String,
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        workspaceURL: URL
+    ) async throws {
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        let relativePath = getRelativePath(of: fileURL)
+        let request = await CodeiumRequest.RefreshContextForIdeAction(requestBody: .init(
+            active_document: .init(
+                absolute_path: fileURL.path,
+                relative_path: relativePath,
+                text: content,
+                editor_language: languageId.rawValue,
+                language: .init(codeLanguage: languageId),
+                cursor_position: .init(
+                    row: cursorPosition.line,
+                    col: cursorPosition.character
+                )
+            ),
+            open_document_filepaths: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
+                .map(\.url.path),
+            workspace_paths: [workspaceURL.path]
+        ))
+        _ = try await (try setupServerIfNeeded()).sendRequest(request)
     }
 
     public func terminate() {

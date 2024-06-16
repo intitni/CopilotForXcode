@@ -43,9 +43,29 @@ public final class CodeiumExtension: BuiltinExtension {
         suggestionService = .init(serviceLocator: serviceLocator)
     }
 
-    public func workspaceDidOpen(_: WorkspaceInfo) {}
+    public func workspaceDidOpen(_ workspace: WorkspaceInfo) {
+        Task {
+            do {
+                guard await isLanguageServerInUse else { return }
+                guard let service = await serviceLocator.getService(from: workspace) else { return }
+                try await service.notifyOpenWorkspace(workspaceURL: workspace.workspaceURL)
+            } catch {
+                Logger.codeium.error(error.localizedDescription)
+            }
+        }
+    }
 
-    public func workspaceDidClose(_: WorkspaceInfo) {}
+    public func workspaceDidClose(_ workspace: WorkspaceInfo) {
+        Task {
+            do {
+                guard await isLanguageServerInUse else { return }
+                guard let service = await serviceLocator.getService(from: workspace) else { return }
+                try await service.notifyCloseWorkspace(workspaceURL: workspace.workspaceURL)
+            } catch {
+                Logger.codeium.error(error.localizedDescription)
+            }
+        }
+    }
 
     public func workspace(_ workspace: WorkspaceInfo, didOpenDocumentAt documentURL: URL) {
         Task {
@@ -62,7 +82,7 @@ public final class CodeiumExtension: BuiltinExtension {
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyOpenTextDocument(fileURL: documentURL, content: content)
             } catch {
-                Logger.gitHubCopilot.error(error.localizedDescription)
+                Logger.codeium.error(error.localizedDescription)
             }
         }
     }
@@ -78,7 +98,7 @@ public final class CodeiumExtension: BuiltinExtension {
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyCloseTextDocument(fileURL: documentURL)
             } catch {
-                Logger.gitHubCopilot.error(error.localizedDescription)
+                Logger.codeium.error(error.localizedDescription)
             }
         }
     }
@@ -100,8 +120,15 @@ public final class CodeiumExtension: BuiltinExtension {
                 guard let content else { return }
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyChangeTextDocument(fileURL: documentURL, content: content)
+                try await service.refreshIDEContext(
+                    fileURL: documentURL,
+                    content: content,
+                    cursorPosition: .zero,
+                    tabSize: 4, indentSize: 4, usesTabsForIndentation: false,
+                    workspaceURL: workspace.workspaceURL
+                )
             } catch {
-                Logger.gitHubCopilot.error(error.localizedDescription)
+                Logger.codeium.error(error.localizedDescription)
             }
         }
     }
