@@ -53,6 +53,8 @@ final class CodeiumLanguageServer {
             apiServerUrl,
             "--manager_dir",
             managerDirectoryURL.path,
+            "--enable_chat_web_server",
+            "--enable_chat_client",
         ]
 
         if isEnterpriseMode {

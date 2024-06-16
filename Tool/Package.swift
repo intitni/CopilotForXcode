@@ -207,6 +207,7 @@ let package = Package(
             dependencies: [
                 "SuggestionModel",
                 "Workspace",
+                "ChatTab",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
@@ -339,6 +340,7 @@ let package = Package(
                 "Terminal",
                 "XcodeInspector",
                 "BuiltinExtension",
+                "ChatTab",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
