@@ -104,6 +104,10 @@ public class ChatGPTChatTab: ChatTab {
 
         return [Builder(title: "New Chat", customCommand: nil)] + customCommands
     }
+    
+    public static func defaultBuilder() -> ChatTabBuilder {
+        Builder(title: "New Chat", customCommand: nil)
+    }
 
     @MainActor
     public init(service: ChatService = .init(), store: StoreOf<ChatTabItem>) {
