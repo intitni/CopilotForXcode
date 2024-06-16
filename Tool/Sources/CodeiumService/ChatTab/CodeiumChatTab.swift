@@ -142,7 +142,11 @@ public class CodeiumChatTab: ChatTab {
     }
 
     public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
-        [Builder(title: "Codeium Chat (Beta)")]
+        [defaultChatBuilder()]
+    }
+    
+    public static func defaultChatBuilder() -> ChatTabBuilder {
+        Builder(title: "Codeium Chat (Beta)")
     }
 }
 

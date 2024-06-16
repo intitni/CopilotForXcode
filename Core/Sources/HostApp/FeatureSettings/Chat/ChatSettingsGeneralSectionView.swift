@@ -65,6 +65,8 @@ struct ChatSettingsGeneralSectionView: View {
                         Text("Open chat panel").tag(mode)
                     case .browser:
                         Text("Open web page in browser").tag(mode)
+                    case .codeiumChat:
+                        Text("Open Codeium chat tab (beta)").tag(mode)
                     }
                 }
             }
@@ -72,7 +74,7 @@ struct ChatSettingsGeneralSectionView: View {
             if settings.openChatMode == .browser {
                 TextField(
                     "Chat web page URL",
-                    text: $settings.openChatInBrowserURL, 
+                    text: $settings.openChatInBrowserURL,
                     prompt: Text("https://")
                 )
                 .textFieldStyle(.roundedBorder)
