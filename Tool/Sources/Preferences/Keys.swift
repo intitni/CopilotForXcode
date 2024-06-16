@@ -211,6 +211,11 @@ public extension UserDefaultPreferenceKeys {
     var codeiumApiUrl: PreferenceKey<String> {
         .init(defaultValue: "", key: "CodeiumApiUrl")
     }
+    
+    var codeiumEnterpriseVersion: PreferenceKey<String> {
+        .init(defaultValue: "", key: "CodeiumEnterpriseVersion")
+    }
+    
 }
 
 // MARK: - Chat Models

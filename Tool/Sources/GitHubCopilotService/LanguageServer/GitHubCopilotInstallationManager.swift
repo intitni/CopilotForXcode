@@ -38,7 +38,7 @@ public struct GitHubCopilotInstallationManager {
            let versionData = try? Data(contentsOf: versionFileURL),
            let version = String(data: versionData, encoding: .utf8)
         {
-            switch version.compare(Self.latestSupportedVersion) {
+            switch version.compare(Self.latestSupportedVersion, options: .numeric) {
             case .orderedAscending:
                 switch version.compare(Self.minimumSupportedVersion) {
                 case .orderedAscending:

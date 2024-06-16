@@ -17,7 +17,10 @@ struct CodeiumView: View {
 
         init() {
             isSignedIn = codeiumAuthService.isSignedIn
-            installationStatus = installationManager.checkInstallation()
+            installationStatus = .notInstalled
+            Task { @MainActor in
+                installationStatus = await installationManager.checkInstallation()
+            }
         }
 
         init(
@@ -56,7 +59,7 @@ struct CodeiumView: View {
 
         func refreshInstallationStatus() {
             Task { @MainActor in
-                installationStatus = installationManager.checkInstallation()
+                installationStatus = await installationManager.checkInstallation()
             }
         }
 

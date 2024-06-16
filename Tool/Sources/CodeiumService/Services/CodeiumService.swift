@@ -95,7 +95,7 @@ public class CodeiumService {
         if let server { return server }
 
         let binaryManager = CodeiumInstallationManager()
-        let installationStatus = binaryManager.checkInstallation()
+        let installationStatus = await binaryManager.checkInstallation()
         switch installationStatus {
         case let .installed(version), let .unsupported(version, _):
             languageServerVersion = version
