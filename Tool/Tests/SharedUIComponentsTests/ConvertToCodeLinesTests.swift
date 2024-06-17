@@ -8,7 +8,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
             struct Cat {
             }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "swift",
             scenario: "a",
@@ -30,7 +30,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
           struct Cat {
             }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",
@@ -51,7 +51,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
             struct Cat {
             }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",
@@ -72,7 +72,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
                 struct Cat {
                 }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",
@@ -94,7 +94,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
 
             }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",
@@ -117,7 +117,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
         //
             }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",
@@ -140,7 +140,7 @@ final class ConvertToCodeLinesTests: XCTestCase {
             //
                 }
         """
-        let (result, spaceCount) = highlighted(
+        let (result, spaceCount) = CodeHighlighting.highlighted(
             code: code,
             language: "md",
             scenario: "a",

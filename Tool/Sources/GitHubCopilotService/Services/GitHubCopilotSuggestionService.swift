@@ -12,9 +12,9 @@ public final class GitHubCopilotSuggestionService: SuggestionServiceType {
         )
     }
 
-    let serviceLocator: ServiceLocator
+    let serviceLocator: ServiceLocatorType
 
-    init(serviceLocator: ServiceLocator) {
+    init(serviceLocator: ServiceLocatorType) {
         self.serviceLocator = serviceLocator
     }
 

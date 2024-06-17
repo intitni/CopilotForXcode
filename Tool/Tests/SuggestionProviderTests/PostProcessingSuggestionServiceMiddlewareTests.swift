@@ -13,7 +13,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         return SuggestionRequest(
             fileURL: URL(fileURLWithPath: "/path/to/file.swift"),
             relativePath: "file.swift",
-            content: code,
+            content: code, 
+            originalContent: code,
             lines: lines,
             cursorPosition: cursorPosition,
             cursorOffset: {

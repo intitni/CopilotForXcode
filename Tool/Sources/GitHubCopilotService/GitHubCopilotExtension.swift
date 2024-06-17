@@ -21,11 +21,11 @@ public final class GitHubCopilotExtension: BuiltinExtension {
 
     let workspacePool: WorkspacePool
 
-    let serviceLocator: ServiceLocator
+    let serviceLocator: ServiceLocatorType
 
     public init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
-        serviceLocator = .init(workspacePool: workspacePool)
+        serviceLocator = ServiceLocator(workspacePool: workspacePool)
         suggestionService = .init(serviceLocator: serviceLocator)
     }
 
@@ -130,7 +130,11 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     }
 }
 
-final class ServiceLocator {
+protocol ServiceLocatorType {
+    func getService(from workspace: WorkspaceInfo) async -> GitHubCopilotService?
+}
+
+class ServiceLocator: ServiceLocatorType {
     let workspacePool: WorkspacePool
 
     init(workspacePool: WorkspacePool) {
