@@ -125,7 +125,7 @@ public struct ChatPanelFeature {
                         await send(.attachChatPanel)
                     }
                 }
-                
+
                 state.isDetached.toggle()
                 return .none
 
@@ -161,6 +161,11 @@ public struct ChatPanelFeature {
                 }
                 state.isPanelDisplayed = true
                 return .run { send in
+                    if forceDetach {
+                        await suggestionWidgetControllerDependency.windowsController?.windows
+                            .chatPanelWindow
+                            .centerInActiveSpaceIfNeeded()
+                    }
                     activateExtensionService()
                     await send(.focusActiveChatTab)
                 }

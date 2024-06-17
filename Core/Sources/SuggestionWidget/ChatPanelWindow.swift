@@ -94,6 +94,11 @@ final class ChatPanelWindow: WidgetWindow {
             }
         }
     }
+    
+    func centerInActiveSpaceIfNeeded() {
+        guard !isOnActiveSpace else { return }
+        center()
+    }
 
     func setFloatOnTop(_ isFloatOnTop: Bool) {
         let targetLevel: NSWindow.Level = isFloatOnTop
