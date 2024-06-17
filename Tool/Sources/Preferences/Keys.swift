@@ -363,6 +363,26 @@ public extension UserDefaultPreferenceKeys {
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "AcceptSuggestionWithTab")
     }
+    
+    var acceptSuggestionWithModifierCommand: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionWithModifierCommand")
+    }
+    
+    var acceptSuggestionWithModifierOption: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionWithModifierOption")
+    }
+    
+    var acceptSuggestionWithModifierControl: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionWithModifierControl")
+    }
+    
+    var acceptSuggestionWithModifierShift: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionWithModifierShift")
+    }
+    
+    var acceptSuggestionWithModifierOnlyForSwift: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "SuggestionWithModifierOnlyForSwift")
+    }
 
     var dismissSuggestionWithEsc: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "DismissSuggestionWithEsc")
