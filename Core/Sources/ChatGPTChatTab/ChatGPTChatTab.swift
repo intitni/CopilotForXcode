@@ -76,10 +76,7 @@ public class ChatGPTChatTab: ChatTab {
         return (try? JSONEncoder().encode(state)) ?? Data()
     }
 
-    public static func restore(
-        from data: Data,
-        externalDependency: Void
-    ) async throws -> any ChatTabBuilder {
+    public static func restore(from data: Data) async throws -> any ChatTabBuilder {
         let state = try JSONDecoder().decode(RestorableState.self, from: data)
         let builder = Builder(title: "Chat") { @MainActor tab in
             tab.service.configuration.overriding = state.configuration
@@ -96,7 +93,7 @@ public class ChatGPTChatTab: ChatTab {
         return builder
     }
 
-    public static func chatBuilders(externalDependency: Void) -> [ChatTabBuilder] {
+    public static func chatBuilders() -> [ChatTabBuilder] {
         let customCommands = UserDefaults.shared.value(for: \.customCommands).compactMap {
             command in
             if case .customChat = command.feature {
@@ -106,6 +103,10 @@ public class ChatGPTChatTab: ChatTab {
         }
 
         return [Builder(title: "New Chat", customCommand: nil)] + customCommands
+    }
+    
+    public static func defaultBuilder() -> ChatTabBuilder {
+        Builder(title: "New Chat", customCommand: nil)
     }
 
     @MainActor

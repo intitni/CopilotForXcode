@@ -43,7 +43,6 @@ struct ChatPanelMessages: View {
     let chat: StoreOf<Chat>
     @State var cancellable = Set<AnyCancellable>()
     @State var isScrollToBottomButtonDisplayed = true
-    @State var isPinnedToBottom = true
     @Namespace var bottomID
     @Namespace var topID
     @Namespace var scrollSpace
@@ -128,11 +127,7 @@ struct ChatPanelMessages: View {
                         scrollToBottomButton(proxy: proxy)
                     }
                     .background {
-                        PinToBottomHandler(
-                            chat: chat,
-                            isBottomHidden: isBottomHidden,
-                            pinnedToBottom: $isPinnedToBottom
-                        ) {
+                        PinToBottomHandler(chat: chat, isBottomHidden: isBottomHidden) {
                             proxy.scrollTo(bottomID, anchor: .bottom)
                         }
                     }
@@ -151,22 +146,26 @@ struct ChatPanelMessages: View {
                 cancellable.forEach { $0.cancel() }
                 cancellable = []
             }
+            .onChange(of: isEnabled) { isEnabled in
+                chat.send(.setIsEnabled(isEnabled))
+            }
         }
     }
 
     func trackScrollWheel() {
         NSApplication.shared.publisher(for: \.currentEvent)
-            .filter {
-                if !isEnabled { return false }
+            .receive(on: DispatchQueue.main)
+            .filter { [chat] in
+                guard chat.withState(\.isEnabled) else { return false }
                 return $0?.type == .scrollWheel
             }
             .compactMap { $0 }
             .sink { event in
-                guard isPinnedToBottom else { return }
+                guard chat.withState(\.isPinnedToBottom) else { return }
                 let delta = event.deltaY
                 let scrollUp = delta > 0
                 if scrollUp {
-                    isPinnedToBottom = false
+                    chat.send(.manuallyScrolledUp)
                 }
             }
             .store(in: &cancellable)
@@ -184,7 +183,7 @@ struct ChatPanelMessages: View {
     @ViewBuilder
     func scrollToBottomButton(proxy: ScrollViewProxy) -> some View {
         Button(action: {
-            isPinnedToBottom = true
+            chat.send(.scrollToBottomButtonTapped)
             withAnimation(.easeInOut(duration: 0.1)) {
                 proxy.scrollTo(bottomID, anchor: .bottom)
             }
@@ -222,18 +221,16 @@ struct ChatPanelMessages: View {
     struct PinToBottomHandler: View {
         let chat: StoreOf<Chat>
         let isBottomHidden: Bool
-        @Binding var pinnedToBottom: Bool
         let scrollToBottom: () -> Void
 
         @State var isInitialLoad = true
-        
+
         var body: some View {
             WithPerceptionTracking {
                 EmptyView()
                     .onChange(of: chat.isReceivingMessage) { isReceiving in
                         if isReceiving {
                             Task {
-                                pinnedToBottom = true
                                 await Task.yield()
                                 withAnimation(.easeInOut(duration: 0.1)) {
                                     scrollToBottom()
@@ -242,7 +239,7 @@ struct ChatPanelMessages: View {
                         }
                     }
                     .onChange(of: chat.history.last) { _ in
-                        if pinnedToBottom || isInitialLoad {
+                        if chat.withState(\.isPinnedToBottom) || isInitialLoad {
                             if isInitialLoad {
                                 isInitialLoad = false
                             }
@@ -256,7 +253,7 @@ struct ChatPanelMessages: View {
                     }
                     .onChange(of: isBottomHidden) { value in
                         // This is important to prevent it from jumping to the top!
-                        if value, pinnedToBottom {
+                        if value, chat.withState(\.isPinnedToBottom) {
                             scrollToBottom()
                         }
                     }

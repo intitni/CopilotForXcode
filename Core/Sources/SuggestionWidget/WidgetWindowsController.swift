@@ -29,11 +29,13 @@ actor WidgetWindowsController: NSObject {
     var lastUpdateWindowLocationTime = Date(timeIntervalSince1970: 0)
 
     var beatingCompletionPanelTask: Task<Void, Error>?
+    var updateWindowStateTask: Task<Void, Error>?
 
     deinit {
         userDefaultsObservers.presentationModeChangeObserver.onChange = {}
         observeToAppTask?.cancel()
         observeToFocusedEditorTask?.cancel()
+        updateWindowStateTask?.cancel()
     }
 
     init(store: StoreOf<WidgetFeature>, chatTabPool: ChatTabPool) {
@@ -71,6 +73,23 @@ actor WidgetWindowsController: NSObject {
             Task { [weak self] in
                 await self?.updateWindowLocation(animated: false, immediately: false)
                 await self?.send(.updateColorScheme)
+            }
+        }
+
+        updateWindowStateTask = Task { [weak self] in
+            if let self { await handleXcodeFullscreenChange() }
+
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                // active space did change
+                _ = group.addTaskUnlessCancelled { [weak self] in
+                    let sequence = NSWorkspace.shared.notificationCenter
+                        .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
+                    for await _ in sequence {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        await handleXcodeFullscreenChange()
+                    }
+                }
             }
         }
     }
@@ -135,7 +154,11 @@ private extension WidgetWindowsController {
                 }
 
                 switch notification.kind {
-                case .focusedWindowChanged, .focusedUIElementChanged:
+                case .focusedWindowChanged:
+                    await handleXcodeFullscreenChange()
+                    await hideWidgetForTransitions()
+                    await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+                case .focusedUIElementChanged:
                     await hideWidgetForTransitions()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
                 case .applicationActivated:
@@ -547,6 +570,35 @@ extension WidgetWindowsController {
             window.setFloatOnTop(overlap)
         }
     }
+
+    @MainActor
+    func handleXcodeFullscreenChange() async {
+        guard let activeXcode = await XcodeInspector.shared.safe.activeXcode
+        else { return }
+
+        let xcode = activeXcode.appElement
+        let isFullscreen = if let xcodeWindow = xcode.focusedWindow {
+            xcodeWindow.isFullScreen && xcode.isFrontmost
+        } else {
+            false
+        }
+
+        [
+            windows.chatPanelWindow,
+            windows.sharedPanelWindow,
+            windows.suggestionPanelWindow,
+            windows.widgetWindow,
+            windows.toastWindow,
+        ].forEach {
+            $0.send(.didChangeActiveSpace(fullscreen: isFullscreen))
+        }
+
+        if windows.fullscreenDetector.isOnActiveSpace {
+            if xcode.focusedWindow != nil {
+                windows.orderFront()
+            }
+        }
+    }
 }
 
 // MARK: - NSWindowDelegate
@@ -623,7 +675,7 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var widgetWindow = {
-        let it = CanBecomeKeyWindow(
+        let it = WidgetWindow(
             contentRect: .zero,
             styleMask: .borderless,
             backing: .buffered,
@@ -632,8 +684,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .floating
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.level = widgetLevel(0)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: WidgetView(
@@ -650,7 +701,7 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var sharedPanelWindow = {
-        let it = CanBecomeKeyWindow(
+        let it = WidgetWindow(
             contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: .borderless,
             backing: .buffered,
@@ -659,8 +710,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 2)
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.level = widgetLevel(2)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SharedPanelView(
@@ -684,7 +734,7 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var suggestionPanelWindow = {
-        let it = CanBecomeKeyWindow(
+        let it = WidgetWindow(
             contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: .borderless,
             backing: .buffered,
@@ -693,8 +743,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = .init(NSWindow.Level.floating.rawValue + 2)
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.level = widgetLevel(2)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SuggestionPanelView(
@@ -730,7 +779,7 @@ public final class WidgetWindows {
 
     @MainActor
     lazy var toastWindow = {
-        let it = CanBecomeKeyWindow(
+        let it = WidgetWindow(
             contentRect: .zero,
             styleMask: [.borderless],
             backing: .buffered,
@@ -739,8 +788,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = true
         it.backgroundColor = .clear
-        it.level = .floating
-        it.collectionBehavior = [.fullScreenAuxiliary, .transient]
+        it.level = widgetLevel(0)
         it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: ToastPanelView(store: store.scope(
@@ -782,3 +830,58 @@ class CanBecomeKeyWindow: NSWindow {
     override var canBecomeMain: Bool { canBecomeKeyChecker() }
 }
 
+class WidgetWindow: CanBecomeKeyWindow {
+    enum State: Equatable {
+        case normal(fullscreen: Bool)
+        case switchingSpace
+    }
+
+    enum Action {
+        case didChangeActiveSpace(fullscreen: Bool)
+    }
+
+    var defaultCollectionBehavior: NSWindow.CollectionBehavior {
+        [.fullScreenAuxiliary, .transient]
+    }
+
+    var fullscreenCollectionBehavior: NSWindow.CollectionBehavior {
+        // .canJoinAllSpaces is required for macOS 15 (beta?) to display widgets in fullscreen mode.
+        // But adding this behavior will create another issue that the widgets will display
+        // whenever user switch spaces, so we are setting it only when the window is in fullscreen
+        // mode.
+        [.fullScreenAuxiliary, .transient, .canJoinAllSpaces]
+    }
+
+    var switchingSpaceCollectionBehavior: NSWindow.CollectionBehavior {
+        [.fullScreenAuxiliary, .transient]
+    }
+
+    private var state: State? {
+        didSet {
+            guard state != oldValue else { return }
+            switch state {
+            case .none:
+                collectionBehavior = defaultCollectionBehavior
+            case .switchingSpace:
+                collectionBehavior = switchingSpaceCollectionBehavior
+            case let .normal(fullscreen):
+                collectionBehavior = fullscreen
+                    ? fullscreenCollectionBehavior
+                    : defaultCollectionBehavior
+            }
+        }
+    }
+
+    func send(_ action: Action) {
+        switch action {
+        case let .didChangeActiveSpace(fullscreen):
+            state = .normal(fullscreen: fullscreen)
+        }
+    }
+}
+
+func widgetLevel(_ addition: Int) -> NSWindow.Level {
+    let minimumWidgetLevel: Int
+    minimumWidgetLevel = NSWindow.Level.floating.rawValue
+    return .init(minimumWidgetLevel + addition)
+}

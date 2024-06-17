@@ -97,6 +97,7 @@ struct SuggestionSettingsGeneralSectionView: View {
     @StateObject var settings = Settings()
     @State var isSuggestionFeatureEnabledListPickerOpen = false
     @State var isSuggestionFeatureDisabledLanguageListViewOpen = false
+    @State var isTabToAcceptSuggestionModifierViewOpen = false
 
     var body: some View {
         Form {
@@ -174,7 +175,18 @@ struct SuggestionSettingsGeneralSectionView: View {
             #if canImport(ProHostApp)
             WithFeatureEnabled(\.tabToAcceptSuggestion) {
                 Toggle(isOn: $settings.acceptSuggestionWithTab) {
-                    Text("Accept suggestion with Tab")
+                    HStack {
+                        Text("Accept suggestion with Tab")
+
+                        Button(action: {
+                            isTabToAcceptSuggestionModifierViewOpen = true
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }.sheet(isPresented: $isTabToAcceptSuggestionModifierViewOpen) {
+                    TabToAcceptSuggestionModifierView()
                 }
             }
 
@@ -248,10 +260,70 @@ struct SuggestionSettingsGeneralSectionView: View {
             }
         }
     }
+
+    struct TabToAcceptSuggestionModifierView: View {
+        final class Settings: ObservableObject {
+            @AppStorage(\.acceptSuggestionWithModifierCommand)
+            var needCommand
+            @AppStorage(\.acceptSuggestionWithModifierOption)
+            var needOption
+            @AppStorage(\.acceptSuggestionWithModifierShift)
+            var needShift
+            @AppStorage(\.acceptSuggestionWithModifierControl)
+            var needControl
+            @AppStorage(\.acceptSuggestionWithModifierOnlyForSwift)
+            var onlyForSwift
+        }
+
+        @StateObject var settings = Settings()
+        @Environment(\.dismiss) var dismiss
+
+        var body: some View {
+            VStack(spacing: 0) {
+                Form {
+                    Text("Accept suggestion with modifier")
+                        .font(.headline)
+                    HStack {
+                        Toggle(isOn: $settings.needCommand) {
+                            Text("Command")
+                        }
+                        Toggle(isOn: $settings.needOption) {
+                            Text("Option")
+                        }
+                        Toggle(isOn: $settings.needShift) {
+                            Text("Shift")
+                        }
+                        Toggle(isOn: $settings.needControl) {
+                            Text("Control")
+                        }
+                    }
+                    Toggle(isOn: $settings.onlyForSwift) {
+                        Text("Only require modifiers for Swift")
+                    }
+                }
+                .padding()
+
+                Divider()
+
+                HStack {
+                    Spacer()
+                    Button(action: { dismiss() }) {
+                        Text("Done")
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+                .padding()
+            }
+        }
+    }
 }
 
 #Preview {
     SuggestionSettingsGeneralSectionView()
         .padding()
+}
+
+#Preview {
+    SuggestionSettingsGeneralSectionView.TabToAcceptSuggestionModifierView()
 }
 

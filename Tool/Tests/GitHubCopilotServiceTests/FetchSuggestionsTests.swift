@@ -1,49 +1,65 @@
+import CopilotForXcodeKit
 import LanguageServerProtocol
 import XCTest
 
 @testable import GitHubCopilotService
 
+struct TestServiceLocator: ServiceLocatorType {
+    let server: GitHubCopilotLSP
+    func getService(from workspace: WorkspaceInfo) async -> GitHubCopilotService? {
+        .init(designatedServer: server)
+    }
+}
+
 final class FetchSuggestionTests: XCTestCase {
     func test_process_suggestions_from_server() async throws {
         struct TestServer: GitHubCopilotLSP {
             func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
-                fatalError()
+                throw CancellationError()
             }
 
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
-                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
+                return GitHubCopilotRequest.InlineCompletion.Response(items: [
                     .init(
-                        text: "Hello World\n",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
+                        insertText: "Hello World\n",
+                        filterText: nil,
                         range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: ""
+                        command: nil
                     ),
                     .init(
-                        text: " ",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
+                        insertText: " ",
+                        filterText: nil,
                         range: .init(start: .init((0, 0)), end: .init((0, 1))),
-                        displayText: ""
+                        command: nil
                     ),
                     .init(
-                        text: " \n",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
+                        insertText: " \n",
+                        filterText: nil,
                         range: .init(start: .init((0, 0)), end: .init((0, 2))),
-                        displayText: ""
+                        command: nil
                     ),
                 ]) as! E.Response
             }
         }
-        let service = GitHubCopilotSuggestionService(designatedServer: TestServer())
-        let completions = try await service.getCompletions(
-            fileURL: .init(fileURLWithPath: "/file.swift"),
-            content: "",
-            cursorPosition: .outOfScope,
-            tabSize: 4,
-            indentSize: 4,
-            usesTabsForIndentation: false
+        let service =
+            GitHubCopilotSuggestionService(serviceLocator: TestServiceLocator(server: TestServer()))
+        let completions = try await service.getSuggestions(
+            .init(
+                fileURL: .init(fileURLWithPath: "/file.swift"),
+                relativePath: "",
+                language: .builtIn(.swift),
+                content: "",
+                originalContent: "",
+                cursorPosition: .outOfScope,
+                tabSize: 4,
+                indentSize: 4,
+                usesTabsForIndentation: false,
+                relevantCodeSnippets: []
+            ),
+            workspace: .init(
+                workspaceURL: .init(fileURLWithPath: "/"),
+                projectURL: .init(fileURLWithPath: "/file.swift")
+            )
         )
         XCTAssertEqual(completions.count, 3)
     }
@@ -55,26 +71,36 @@ final class FetchSuggestionTests: XCTestCase {
             }
 
             func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
-                return GitHubCopilotRequest.GetCompletionsCycling.Response(completions: [
+                return GitHubCopilotRequest.InlineCompletion.Response(items: [
                     .init(
-                        text: "Hello World\n",
-                        position: .init((0, 0)),
-                        uuid: "uuid",
+                        insertText: "Hello World\n",
+                        filterText: nil,
                         range: .init(start: .init((0, 0)), end: .init((0, 4))),
-                        displayText: ""
+                        command: nil
                     ),
                 ]) as! E.Response
             }
         }
         let testServer = TestServer()
-        let service = GitHubCopilotSuggestionService(designatedServer: testServer)
-        let completions = try await service.getCompletions(
-            fileURL: .init(fileURLWithPath: "/"),
-            content: "",
-            cursorPosition: .outOfScope,
-            tabSize: 4,
-            indentSize: 4,
-            usesTabsForIndentation: false
+        let service =
+            GitHubCopilotSuggestionService(serviceLocator: TestServiceLocator(server: testServer))
+        let completions = try await service.getSuggestions(
+            .init(
+                fileURL: .init(fileURLWithPath: "/"),
+                relativePath: "",
+                language: .builtIn(.swift),
+                content: "",
+                originalContent: "",
+                cursorPosition: .outOfScope,
+                tabSize: 4,
+                indentSize: 4,
+                usesTabsForIndentation: false,
+                relevantCodeSnippets: []
+            ),
+            workspace: .init(
+                workspaceURL: .init(fileURLWithPath: "/"),
+                projectURL: .init(fileURLWithPath: "/file.swift")
+            )
         )
         XCTAssertEqual(completions.count, 1)
         XCTAssertEqual(completions.first?.text, "Hello World\n")

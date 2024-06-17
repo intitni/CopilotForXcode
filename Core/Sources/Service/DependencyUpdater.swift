@@ -1,4 +1,5 @@
 import CodeiumService
+import Foundation
 import GitHubCopilotService
 import Logger
 
@@ -39,8 +40,10 @@ struct DependencyUpdater {
                         }
                     }
                 }
+
                 let codeium = CodeiumInstallationManager()
-                switch codeium.checkInstallation() {
+
+                switch await codeium.checkInstallation() {
                 case .notInstalled: break
                 case .installed: break
                 case .unsupported: break

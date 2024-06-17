@@ -207,6 +207,7 @@ let package = Package(
             dependencies: [
                 "SuggestionModel",
                 "Workspace",
+                "ChatTab",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
@@ -300,6 +301,7 @@ let package = Package(
             "SuggestionModel",
             "UserDefaultsObserver",
             "Preferences",
+            "Logger",
             .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
         ]),
 
@@ -317,6 +319,7 @@ let package = Package(
                 "Terminal",
                 "BuiltinExtension",
                 "Toast",
+                "SuggestionProvider",
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
@@ -339,6 +342,7 @@ let package = Package(
                 "Terminal",
                 "XcodeInspector",
                 "BuiltinExtension",
+                "ChatTab",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),

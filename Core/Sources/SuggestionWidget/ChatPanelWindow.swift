@@ -4,13 +4,41 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-final class ChatPanelWindow: NSWindow {
+final class ChatPanelWindow: WidgetWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
     private let storeObserver = NSObject()
 
     var minimizeWindow: () -> Void = {}
+
+    override var defaultCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+        ]
+    }
+
+    override var switchingSpaceCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+        ]
+    }
+    
+    override var fullscreenCollectionBehavior: NSWindow.CollectionBehavior {
+        [
+            .fullScreenAuxiliary,
+            .transient,
+            .fullScreenPrimary,
+            .fullScreenAllowsTiling,
+            .canJoinAllSpaces,
+        ]
+    }
 
     init(
         store: StoreOf<ChatPanelFeature>,
@@ -38,13 +66,8 @@ final class ChatPanelWindow: NSWindow {
         isReleasedWhenClosed = false
         isOpaque = false
         backgroundColor = .clear
-        level = .init(NSWindow.Level.floating.rawValue + 1)
-        collectionBehavior = [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-        ]
+        level = widgetLevel(1)
+
         hasShadow = true
         contentView = NSHostingView(
             rootView: ChatWindowView(
@@ -70,6 +93,11 @@ final class ChatPanelWindow: NSWindow {
                 }
             }
         }
+    }
+    
+    func centerInActiveSpaceIfNeeded() {
+        guard !isOnActiveSpace else { return }
+        center()
     }
 
     func setFloatOnTop(_ isFloatOnTop: Bool) {

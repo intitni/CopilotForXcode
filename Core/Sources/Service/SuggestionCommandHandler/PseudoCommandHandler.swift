@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import CodeiumService
 import Dependencies
 import PlusFeatureFlag
 import Preferences
@@ -10,6 +11,10 @@ import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
 import XPCShared
+
+#if canImport(BrowserChatTab)
+import BrowserChatTab
+#endif
 
 /// It's used to run some commands without really triggering the menu bar item.
 ///
@@ -342,16 +347,42 @@ struct PseudoCommandHandler {
             }
 
             if openInApp {
+                #if canImport(BrowserChatTab)
                 let store = Service.shared.guiController.store
                 Task { @MainActor in
-                    await store.send(.createAndSwitchToBrowserTabIfNeeded(url: url)).finish()
+                    await store.send(.createAndSwitchToChatTabIfNeededMatching(
+                        check: {
+                            func match(_ tabURL: URL?) -> Bool {
+                                guard let tabURL else { return false }
+                                return tabURL == url
+                                    || tabURL.absoluteString.hasPrefix(url.absoluteString)
+                            }
+
+                            guard let tab = $0 as? BrowserChatTab,
+                                  match(tab.url) else { return false }
+                            return true
+                        },
+                        kind: .init(BrowserChatTab.urlChatBuilder(url: url))
+                    )).finish()
                     store.send(.openChatPanel(forceDetach: forceDetach))
                 }
+                #endif
             } else {
                 Task {
                     @Dependency(\.openURL) var openURL
                     await openURL(url)
                 }
+            }
+        case .codeiumChat:
+            let store = Service.shared.guiController.store
+            Task { @MainActor in
+                await store.send(
+                    .createAndSwitchToChatTabIfNeededMatching(
+                        check: { $0 is CodeiumChatTab },
+                        kind: .init(CodeiumChatTab.defaultChatBuilder())
+                    )
+                ).finish()
+                store.send(.openChatPanel(forceDetach: forceDetach))
             }
         }
     }

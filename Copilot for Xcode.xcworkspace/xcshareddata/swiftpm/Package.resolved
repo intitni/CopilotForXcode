@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "generative-ai-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/google/generative-ai-swift",
+      "state" : {
+        "revision" : "f4a88085d5a6c1108f5a1aead83d19d02df8328d",
+        "version" : "0.4.9"
+      }
+    },
+    {
       "identity" : "glob",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Bouke/Glob",
@@ -52,6 +61,15 @@
       "state" : {
         "revision" : "5da978702aece6ba5c7879b0d253c180d61e4ef3",
         "version" : "0.6.0"
+      }
+    },
+    {
+      "identity" : "keyboardshortcuts",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/intitni/KeyboardShortcuts",
+      "state" : {
+        "branch" : "main",
+        "revision" : "65fb410b0c6d3ed96623b460bab31ffce5f48b4d"
       }
     },
     {
@@ -97,6 +115,24 @@
       "state" : {
         "revision" : "87e4fcbac39912f9cdb9a9acf205cad60e1ca3bc",
         "version" : "2.4.2"
+      }
+    },
+    {
+      "identity" : "sttextkitplus",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/STTextKitPlus",
+      "state" : {
+        "revision" : "a57a2081e364c71b11e521ed8800481e8da300ac",
+        "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "sttextview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/STTextView",
+      "state" : {
+        "revision" : "e9e54718b882115db69ec1e17ac1bec844906cd9",
+        "version" : "0.9.0"
       }
     },
     {
@@ -203,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "aa3b1e187c9cc568f9d1abc47feb11f6b044d284"
+        "revision" : "6ad4ea24b01559dde0773e3d091f1b9e36175036",
+        "version" : "509.0.2"
       }
     },
     {
@@ -219,10 +255,10 @@
     {
       "identity" : "swifttreesitter",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ChimeHQ/SwiftTreeSitter",
+      "location" : "https://github.com/intitni/SwiftTreeSitter.git",
       "state" : {
-        "revision" : "df25a52f72ebc5b50ae20d26d1363793408bb28b",
-        "version" : "0.7.1"
+        "branch" : "main",
+        "revision" : "fd499bfafcccfae12a1a579dc922d8418025a35d"
       }
     },
     {
@@ -250,15 +286,6 @@
       "state" : {
         "branch" : "feature/spm",
         "revision" : "1b54ef0b5efddddf393b45e173788499cc572048"
-      }
-    },
-    {
-      "identity" : "tree-sitter-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/alex-pinkus/tree-sitter-swift",
-      "state" : {
-        "branch" : "with-generated-files",
-        "revision" : "eda05af7ac41adb4eb19c346883c0fa32fe3bdd8"
       }
     },
     {

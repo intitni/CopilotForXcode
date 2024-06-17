@@ -7,6 +7,48 @@ public struct CodeiumInstallationManager {
 
     public init() {}
 
+    enum CodeiumInstallationError: Error, LocalizedError {
+        case badURL(String)
+        case invalidResponse
+        case invalidData
+        
+        var errorDescription: String? {
+            switch self {
+            case .badURL: return "URL is invalid"
+            case .invalidResponse: return "Invalid response"
+            case .invalidData: return "Invalid data"
+            }
+        }
+    }
+
+    func getEnterprisePortalVersion() async throws -> String {
+        let enterprisePortalUrl = UserDefaults.shared.value(for: \.codeiumPortalUrl)
+        let enterprisePortalVersionUrl = "\(enterprisePortalUrl)/api/version"
+
+        guard let url = URL(string: enterprisePortalVersionUrl)
+        else { throw CodeiumInstallationError.badURL(enterprisePortalVersionUrl) }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
+            throw CodeiumInstallationError.invalidResponse
+        }
+
+        if let version = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        {
+            UserDefaults.shared.set(version, for: \.codeiumEnterpriseVersion)
+            return version
+        } else {
+            return UserDefaults.shared.value(for: \.codeiumEnterpriseVersion)
+        }
+    }
+
+    var isEnterprise: Bool {
+        return UserDefaults.shared.value(for: \.codeiumEnterpriseMode)
+            && !UserDefaults.shared.value(for: \.codeiumPortalUrl).isEmpty
+    }
+
     public enum InstallationStatus {
         case notInstalled
         case installed(String)
@@ -14,7 +56,7 @@ public struct CodeiumInstallationManager {
         case unsupported(current: String, latest: String)
     }
 
-    public func checkInstallation() -> InstallationStatus {
+    public func checkInstallation() async -> InstallationStatus {
         guard let urls = try? CodeiumService.createFoldersIfNeeded()
         else { return .notInstalled }
         let executableFolderURL = urls.executableURL
@@ -25,20 +67,25 @@ public struct CodeiumInstallationManager {
             return .notInstalled
         }
 
+        let targetVersion = await {
+            if !isEnterprise { return Self.latestSupportedVersion }
+            return (try? await getEnterprisePortalVersion())
+                ?? UserDefaults.shared.value(for: \.codeiumEnterpriseVersion)
+        }()
+
         if FileManager.default.fileExists(atPath: versionFileURL.path),
            let versionData = try? Data(contentsOf: versionFileURL),
            let version = String(data: versionData, encoding: .utf8)
         {
-            switch version.compare(Self.latestSupportedVersion) {
+            switch version.compare(targetVersion, options: .numeric) {
             case .orderedAscending:
-                return .outdated(current: version, latest: Self.latestSupportedVersion)
+                return .outdated(current: version, latest: targetVersion)
             case .orderedSame:
                 return .installed(version)
             case .orderedDescending:
-                return .unsupported(current: version, latest: Self.latestSupportedVersion)
+                return .unsupported(current: version, latest: targetVersion)
             }
         }
-
         return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
     }
 
@@ -61,9 +108,23 @@ public struct CodeiumInstallationManager {
                 do {
                     continuation.yield(.downloading)
                     let urls = try CodeiumService.createFoldersIfNeeded()
-                    let urlString =
-                        "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
-                    guard let url = URL(string: urlString) else { return }
+                    let urlString: String
+                    let version: String
+                    if !isEnterprise {
+                        version = CodeiumInstallationManager.latestSupportedVersion
+                        urlString =
+                            "https://github.com/Exafunction/codeium/releases/download/language-server-v\(Self.latestSupportedVersion)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    } else {
+                        version = try await getEnterprisePortalVersion()
+                        let enterprisePortalUrl = UserDefaults.shared.value(for: \.codeiumPortalUrl)
+                        urlString =
+                            "\(enterprisePortalUrl)/language-server-v\(version)/language_server_macos_\(isAppleSilicon() ? "arm" : "x64").gz"
+                    }
+
+                    guard let url = URL(string: urlString) else {
+                        continuation.finish(throwing: CodeiumInstallationError.badURL(urlString))
+                        return
+                    }
 
                     // download
                     let (fileURL, _) = try await URLSession.shared.download(from: url)
@@ -90,9 +151,11 @@ public struct CodeiumInstallationManager {
                         [.posixPermissions: 0o755],
                         ofItemAtPath: targetURL.deletingPathExtension().path
                     )
+                    var data: Data?
 
                     // create version file
-                    let data = Self.latestSupportedVersion.data(using: .utf8)
+                    data = version.data(using: .utf8)
+
                     FileManager.default.createFile(
                         atPath: urls.executableURL.appendingPathComponent("version").path,
                         contents: data

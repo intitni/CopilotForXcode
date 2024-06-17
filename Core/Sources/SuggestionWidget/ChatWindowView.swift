@@ -174,34 +174,42 @@ struct ChatTabBar: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: 0) {
                             ForEach(tabInfo, id: \.id) { info in
-                                if let tab = chatTabPool.getTab(of: info.id) {
-                                    ChatTabBarButton(
-                                        store: store,
-                                        info: info,
-                                        content: { tab.tabItem },
-                                        icon: { tab.icon },
-                                        isSelected: info.id == selectedTabId
-                                    )
-                                    .contextMenu {
-                                        tab.menu
-                                    }
-                                    .id(info.id)
-                                    .onDrag {
-                                        draggingTabId = info.id
-                                        return NSItemProvider(object: info.id as NSString)
-                                    }
-                                    .onDrop(
-                                        of: [.text],
-                                        delegate: ChatTabBarDropDelegate(
+                                WithPerceptionTracking {
+                                    if let tab = chatTabPool.getTab(of: info.id) {
+                                        ChatTabBarButton(
                                             store: store,
-                                            tabs: tabInfo,
-                                            itemId: info.id,
-                                            draggingTabId: $draggingTabId
+                                            info: info,
+                                            content: { tab.tabItem },
+                                            icon: { tab.icon },
+                                            isSelected: info.id == selectedTabId
                                         )
-                                    )
-
-                                } else {
-                                    EmptyView()
+                                        .contextMenu {
+                                            tab.menu
+                                        }
+                                        .id(info.id)
+                                        .onDrag {
+                                            draggingTabId = info.id
+                                            return NSItemProvider(object: info.id as NSString)
+                                        }
+                                        .onDrop(
+                                            of: [.text],
+                                            delegate: ChatTabBarDropDelegate(
+                                                store: store,
+                                                tabs: tabInfo,
+                                                itemId: info.id,
+                                                draggingTabId: $draggingTabId
+                                            )
+                                        )
+                                        
+                                    } else {
+                                        ChatTabBarButton(
+                                            store: store,
+                                            info: info,
+                                            content: { Text("Not Found") },
+                                            icon: { Image(systemName: "questionmark.diamond") },
+                                            isSelected: info.id == selectedTabId
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -225,26 +233,28 @@ struct ChatTabBar: View {
                 let collection = store.chatTabGroup.tabCollection
                 Menu {
                     ForEach(0..<collection.endIndex, id: \.self) { index in
-                        switch collection[index] {
-                        case let .kind(kind):
-                            Button(action: {
-                                store.send(.createNewTapButtonClicked(kind: kind))
-                            }) {
-                                Text(kind.title)
-                            }.disabled(kind.builder is DisabledChatTabBuilder)
-                        case let .folder(title, list):
-                            Menu {
-                                ForEach(0..<list.endIndex, id: \.self) { index in
-                                    Button(action: {
-                                        store.send(
-                                            .createNewTapButtonClicked(kind: list[index])
-                                        )
-                                    }) {
-                                        Text(list[index].title)
+                        WithPerceptionTracking {
+                            switch collection[index] {
+                            case let .kind(kind):
+                                Button(action: {
+                                    store.send(.createNewTapButtonClicked(kind: kind))
+                                }) {
+                                    Text(kind.title)
+                                }.disabled(kind.builder is DisabledChatTabBuilder)
+                            case let .folder(title, list):
+                                Menu {
+                                    ForEach(0..<list.endIndex, id: \.self) { index in
+                                        Button(action: {
+                                            store.send(
+                                                .createNewTapButtonClicked(kind: list[index])
+                                            )
+                                        }) {
+                                            Text(list[index].title)
+                                        }
                                     }
+                                } label: {
+                                    Text(title)
                                 }
-                            } label: {
-                                Text(title)
                             }
                         }
                     }
@@ -365,7 +375,7 @@ struct ChatTabContainer: View {
                                     anchor: .topLeading
                                 )
                         } else {
-                            EmptyView()
+                            Text("404 Not Found")
                         }
                     }
                 }

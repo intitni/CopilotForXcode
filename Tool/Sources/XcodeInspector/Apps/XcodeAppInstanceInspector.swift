@@ -259,16 +259,9 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 }
 
                 if event == .created || event == .uiElementDestroyed {
-                    let isCompletionPanel = {
-                        notification.element.identifier == "_XC_COMPLETION_TABLE_"
-                            || notification.element.firstChild { element in
-                                element.identifier == "_XC_COMPLETION_TABLE_"
-                            } != nil
-                    }
-
                     switch event {
                     case .created:
-                        if isCompletionPanel() {
+                        if isCompletionPanel(notification.element) {
                             await MainActor.run {
                                 self.completionPanel = notification.element
                                 self.completionPanel?.setMessagingTimeout(1)
@@ -279,7 +272,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                             }
                         }
                     case .uiElementDestroyed:
-                        if isCompletionPanel() {
+                        if isCompletionPanel(notification.element) {
                             await MainActor.run {
                                 self.completionPanel = nil
                                 self.axNotifications.send(.init(
@@ -396,5 +389,30 @@ extension XcodeAppInstanceInspector {
         }
         return updated
     }
+}
+
+private func isCompletionPanel(_ element: AXUIElement) -> Bool {
+    let matchXcode15CompletionPanel =
+        element.firstChild { element in
+            element.identifier == "_XC_COMPLETION_TABLE_"
+        } != nil
+
+    if matchXcode15CompletionPanel {
+        return true
+    }
+
+    let matchXcode16CompletionPanel = {
+        if element.parent?.parent != nil { return false }
+        if element.role != "AXWindow" { return false }
+        if element.roleDescription != "dialog" { return false }
+        guard let group = element.firstChild(where: { $0.role == "AXGroup" }),
+              let scrollArea = group.firstChild(where: { $0.role == "AXScrollArea" }),
+              let list = scrollArea.firstChild(where: { $0.role == "AXOpaqueProviderGroup" }),
+              let _ = list.children.first(where: { $0.value == "code completion" })
+        else { return false }
+        return true
+    }()
+
+    return matchXcode16CompletionPanel
 }
 

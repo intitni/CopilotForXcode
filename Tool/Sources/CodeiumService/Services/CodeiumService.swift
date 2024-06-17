@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
@@ -15,6 +16,7 @@ public protocol CodeiumSuggestionServiceType {
         usesTabsForIndentation: Bool
     ) async throws -> [CodeSuggestion]
     func notifyAccepted(_ suggestion: CodeSuggestion) async
+    func getChatURL() async throws -> URL
     func notifyOpenTextDocument(fileURL: URL, content: String) async throws
     func notifyChangeTextDocument(fileURL: URL, content: String) async throws
     func notifyCloseTextDocument(fileURL: URL) async throws
@@ -26,6 +28,7 @@ enum CodeiumError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerOutdated
     case languageServiceIsInstalling
+    case failedToConstructChatURL
 
     var errorDescription: String? {
         switch self {
@@ -35,6 +38,8 @@ enum CodeiumError: Error, LocalizedError {
             return "Language server is outdated. Please update it in the host app or update the extension."
         case .languageServiceIsInstalling:
             return "Language service is installing, please try again later."
+        case .failedToConstructChatURL:
+            return "Failed to construct chat URL."
         }
     }
 }
@@ -90,7 +95,7 @@ public class CodeiumService {
         if let server { return server }
 
         let binaryManager = CodeiumInstallationManager()
-        let installationStatus = binaryManager.checkInstallation()
+        let installationStatus = await binaryManager.checkInstallation()
         switch installationStatus {
         case let .installed(version), let .unsupported(version, _):
             languageServerVersion = version
@@ -242,7 +247,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-        let relativePath = getRelativePath(of: fileURL)
+        let relativePath = getRelativePath(of: fileURL) 
 
         let task = Task {
             let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
@@ -311,13 +316,48 @@ extension CodeiumService: CodeiumSuggestionServiceType {
         )
     }
 
+    public func getChatURL() async throws -> URL {
+        let metadata = try await getMetadata()
+        let ports = try await server?.sendRequest(
+            CodeiumRequest.GetProcesses(requestBody: .init())
+        )
+
+        guard let chatClientPort = ports?.chatClientPort,
+              let chatWebServerPort = ports?.chatWebServerPort
+        else { throw CodeiumError.failedToConstructChatURL }
+
+        let webServerUrl = "ws://127.0.0.1:\(chatWebServerPort)"
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = "127.0.0.1"
+        components.port = Int(chatClientPort)
+        components.path = "/"
+        components.queryItems = [
+            URLQueryItem(name: "api_key", value: metadata.api_key),
+            URLQueryItem(name: "locale", value: "en"),
+            URLQueryItem(name: "extension_name", value: "Copilot for XCode"),
+            URLQueryItem(name: "extension_version", value: metadata.extension_version),
+            URLQueryItem(name: "ide_name", value: metadata.ide_name),
+            URLQueryItem(name: "ide_version", value: metadata.ide_version),
+            URLQueryItem(name: "web_server_url", value: webServerUrl),
+            URLQueryItem(name: "ide_telemetry_enabled", value: "true")
+        ]
+
+        if let url = components.url {
+            print(url)
+            return url
+        } else {
+            throw CodeiumError.failedToConstructChatURL
+        }
+    }
+
     public func notifyAccepted(_ suggestion: CodeSuggestion) async {
         _ = try? await (try setupServerIfNeeded())
             .sendRequest(CodeiumRequest.AcceptCompletion(requestBody: .init(
                 metadata: getMetadata(),
                 completion_id: suggestion.id
             )))
-    }
+    } 
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
@@ -339,6 +379,50 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
     public func notifyCloseTextDocument(fileURL: URL) async throws {
         await openedDocumentPool.closeDocument(url: fileURL)
+    }
+
+    public func notifyOpenWorkspace(workspaceURL: URL) async throws {
+        _ = try await (try setupServerIfNeeded()).sendRequest(
+            CodeiumRequest
+                .AddTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
+        )
+    }
+
+    public func notifyCloseWorkspace(workspaceURL: URL) async throws {
+        _ = try await (try setupServerIfNeeded()).sendRequest(
+            CodeiumRequest
+                .RemoveTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
+        )
+    }
+
+    public func refreshIDEContext(
+        fileURL: URL,
+        content: String,
+        cursorPosition: CursorPosition,
+        tabSize: Int,
+        indentSize: Int,
+        usesTabsForIndentation: Bool,
+        workspaceURL: URL
+    ) async throws {
+        let languageId = languageIdentifierFromFileURL(fileURL)
+        let relativePath = getRelativePath(of: fileURL)
+        let request = await CodeiumRequest.RefreshContextForIdeAction(requestBody: .init(
+            active_document: .init(
+                absolute_path: fileURL.path,
+                relative_path: relativePath,
+                text: content,
+                editor_language: languageId.rawValue,
+                language: .init(codeLanguage: languageId),
+                cursor_position: .init(
+                    row: cursorPosition.line,
+                    col: cursorPosition.character
+                )
+            ),
+            open_document_filepaths: openedDocumentPool.getOtherDocuments(exceptURL: fileURL)
+                .map(\.url.path),
+            workspace_paths: [workspaceURL.path]
+        ))
+        _ = try await (try setupServerIfNeeded()).sendRequest(request)
     }
 
     public func terminate() {
