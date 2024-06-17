@@ -202,7 +202,13 @@ struct ChatTabBar: View {
                                         )
                                         
                                     } else {
-                                        EmptyView()
+                                        ChatTabBarButton(
+                                            store: store,
+                                            info: info,
+                                            content: { Text("Not Found") },
+                                            icon: { Image(systemName: "questionmark.diamond") },
+                                            isSelected: info.id == selectedTabId
+                                        )
                                     }
                                 }
                             }
@@ -369,7 +375,7 @@ struct ChatTabContainer: View {
                                     anchor: .topLeading
                                 )
                         } else {
-                            EmptyView()
+                            Text("404 Not Found")
                         }
                     }
                 }
