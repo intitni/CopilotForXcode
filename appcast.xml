@@ -3,6 +3,15 @@
     <channel>
         <title>Copilot for Xcode</title>
         <item>
+            <title>0.33.4</title>
+            <pubDate>Tue, 18 Jun 2024 14:55:47 +0800</pubDate>
+            <sparkle:version>390</sparkle:version>
+            <sparkle:shortVersionString>0.33.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.4</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.4/Copilot.for.Xcode.app.zip" length="50149383" type="application/octet-stream" sparkle:edSignature="8jdvlcOPkWyYkXZGtExfvhtQY2/Huij6ukOKuuHbK+nc6U+RT6DepV3JIS7ETcfJ+2TohS79Eq6D3/9c4V/aAA=="/>
+        </item>
+        <item>
             <title>0.33.3</title>
             <pubDate>Tue, 18 Jun 2024 00:03:29 +0800</pubDate>
             <sparkle:version>388</sparkle:version>
@@ -19,15 +28,6 @@
             <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
             <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.2</sparkle:releaseNotesLink>
             <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.2/Copilot.for.Xcode.app.zip" length="50260794" type="application/octet-stream" sparkle:edSignature="l9n9W78mnkHbkUIAl+a9q11f9zvG1EF0UAqnbTnCl5xfoKaZpquA12evzOa6dypM1ra+IyWCM7VJ97uKf+DeAg=="/>
-        </item>
-        <item>
-            <title>0.33.1</title>
-            <pubDate>Mon, 27 May 2024 16:28:20 +0800</pubDate>
-            <sparkle:version>382</sparkle:version>
-            <sparkle:shortVersionString>0.33.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-            <sparkle:releaseNotesLink>https://github.com/intitni/CopilotForXcode/releases/tag/0.33.1</sparkle:releaseNotesLink>
-            <enclosure url="https://github.com/intitni/CopilotForXcode/releases/download/0.33.1/Copilot.for.Xcode.app.zip" length="50218079" type="application/octet-stream" sparkle:edSignature="UGIbKuMMIWyIShfPVvdePkw8PU6IVPls8cjSbz8tien0nGxKGGhtJf4X3w+AmcfyZb666HEe+Kf4fJiUIOIqBw=="/>
         </item>
         <item>
             <title>0.33.1</title>
