@@ -13,6 +13,7 @@ public struct AsyncCodeBlock: View {
         )
 
         var dimmedCharacterCount: Int = 0
+        var code: String?
         private var highlightedCode = [NSAttributedString]()
         private var foregroundColor: Color = .primary
         private(set) var commonPrecedingSpaceCount = 0
@@ -69,11 +70,15 @@ public struct AsyncCodeBlock: View {
         @PerceptionIgnored private var debounceFunction: DebounceFunction<AsyncCodeBlock>?
         @PerceptionIgnored private var highlightTask: Task<Void, Error>?
 
-        init() {}
+        init() {
+            debounceFunction = .init(duration: 0.1, block: { view in
+                self.highlight(for: view)
+            })
+        }
 
         func highlight(debounce: Bool, for view: AsyncCodeBlock) {
             if debounce {
-                Task { await debounceFunction?(view) }
+                Task { @MainActor in await debounceFunction?(view) }
             } else {
                 highlight(for: view)
             }
@@ -81,7 +86,7 @@ public struct AsyncCodeBlock: View {
 
         private func highlight(for view: AsyncCodeBlock) {
             highlightTask?.cancel()
-            let code = view.code
+            let code = self.code ?? view.code
             let language = view.language
             let scenario = view.scenario
             let brightMode = view.colorScheme != .dark
@@ -197,7 +202,8 @@ public struct AsyncCodeBlock: View {
                 storage.dimmedCharacterCount = dimmedCharacterCount
                 storage.highlight(debounce: false, for: self)
             }
-            .onChange(of: code) { _ in
+            .onChange(of: code) { code in
+                storage.code = code // But why do we need this? Time to learn some SwiftUI!
                 storage.highlight(debounce: true, for: self)
             }
             .onChange(of: colorScheme) { _ in
