@@ -1,6 +1,7 @@
 import ChatService
 import ComposableArchitecture
 import Foundation
+import MarkdownUI
 import OpenAIService
 import Preferences
 import Terminal
@@ -40,12 +41,14 @@ public struct DisplayedChatMessage: Equatable {
     public var id: String
     public var role: Role
     public var text: String
+    public var markdownContent: MarkdownContent
     public var references: [Reference] = []
 
     public init(id: String, role: Role, text: String, references: [Reference]) {
         self.id = id
         self.role = role
         self.text = text
+        self.markdownContent = .init(text)
         self.references = references
     }
 }
@@ -151,7 +154,7 @@ struct Chat {
             case let .setIsEnabled(isEnabled):
                 state.isEnabled = isEnabled
                 return .none
-            
+
             case .sendButtonTapped:
                 guard !state.typedMessage.isEmpty else { return .none }
                 let message = state.typedMessage
@@ -213,11 +216,11 @@ struct Chat {
                         await openURL(url)
                     }
                 }
-                
+
             case .manuallyScrolledUp:
                 state.isPinnedToBottom = false
                 return .none
-                
+
             case .scrollToBottomButtonTapped:
                 state.isPinnedToBottom = true
                 return .none
@@ -248,7 +251,7 @@ struct Chat {
                     let debouncedHistoryChange = TimedDebounceFunction(duration: 0.2) {
                         await send(.historyChanged)
                     }
-                    
+
                     for await _ in stream {
                         await debouncedHistoryChange()
                     }
@@ -502,9 +505,10 @@ private actor TimedDebounceFunction {
             }
         }
     }
-    
+
     func fire() async {
         lastFireTime = Date()
         await block()
     }
 }
+
