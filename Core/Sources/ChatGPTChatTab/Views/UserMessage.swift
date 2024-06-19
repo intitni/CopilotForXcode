@@ -7,11 +7,12 @@ struct UserMessage: View {
     var r: Double { messageBubbleCornerRadius }
     let id: String
     let text: String
+    let markdownContent: MarkdownContent
     let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        ThemedMarkdownText(text)
+        ThemedMarkdownText(markdownContent)
             .frame(alignment: .leading)
             .padding()
             .background {
@@ -50,21 +51,24 @@ struct UserMessage: View {
 }
 
 #Preview {
-    UserMessage(
+    let text = #"""
+    Please buy me a coffee!
+    | Coffee | Milk |
+    |--------|------|
+    | Espresso | No |
+    | Latte | Yes |
+    ```swift
+    func foo() {}
+    ```
+    ```objectivec
+    - (void)bar {}
+    ```
+    """#
+
+    return UserMessage(
         id: "A",
-        text: #"""
-        Please buy me a coffee!
-        | Coffee | Milk |
-        |--------|------|
-        | Espresso | No |
-        | Latte | Yes |
-        ```swift
-        func foo() {}
-        ```
-        ```objectivec
-        - (void)bar {}
-        ```
-        """#,
+        text: text,
+        markdownContent: .init(text),
         chat: .init(
             initialState: .init(history: [] as [DisplayedChatMessage], isReceivingMessage: false),
             reducer: { Chat(service: .init()) }

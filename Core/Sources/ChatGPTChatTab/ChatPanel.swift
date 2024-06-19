@@ -283,20 +283,27 @@ struct ChatHistoryItem: View {
     var body: some View {
         WithPerceptionTracking {
             let text = message.text
+            let markdownContent = message.markdownContent
             switch message.role {
             case .user:
-                UserMessage(id: message.id, text: text, chat: chat)
-                    .listRowInsets(EdgeInsets(
-                        top: 0,
-                        leading: -8,
-                        bottom: 0,
-                        trailing: -8
-                    ))
-                    .padding(.vertical, 4)
+                UserMessage(
+                    id: message.id,
+                    text: text,
+                    markdownContent: markdownContent,
+                    chat: chat
+                )
+                .listRowInsets(EdgeInsets(
+                    top: 0,
+                    leading: -8,
+                    bottom: 0,
+                    trailing: -8
+                ))
+                .padding(.vertical, 4)
             case .assistant:
                 BotMessage(
                     id: message.id,
                     text: text,
+                    markdownContent: markdownContent,
                     references: message.references,
                     chat: chat
                 )
