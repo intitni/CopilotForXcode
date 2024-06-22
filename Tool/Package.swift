@@ -323,7 +323,7 @@ let package = Package(
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
-            resources: [.copy("Resources/load-self-signed-cert.js")]
+            resources: [.copy("Resources/load-self-signed-cert-1.34.0.js")]
         ),
         .testTarget(
             name: "GitHubCopilotServiceTests",

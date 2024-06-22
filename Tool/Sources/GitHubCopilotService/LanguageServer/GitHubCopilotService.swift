@@ -111,18 +111,28 @@ public class GitHubCopilotBaseService {
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-
-            let agentJSURL = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
-            guard FileManager.default.fileExists(atPath: agentJSURL.path) else {
+            
+            guard let agentJSURL = {
+                let languageServerDotJS = urls.executableURL
+                    .appendingPathComponent("copilot/dist/language-server.js")
+                if FileManager.default.fileExists(atPath: languageServerDotJS.path) {
+                    return languageServerDotJS
+                }
+                let agentsDotJS = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
+                if FileManager.default.fileExists(atPath: agentsDotJS.path) {
+                    return agentsDotJS
+                }
+                return nil
+            }() else {
                 throw GitHubCopilotError.languageServerNotInstalled
             }
 
             let indexJSURL: URL = try {
                 if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
-                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert.js")
+                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert-1.34.0.js")
                     if !FileManager.default.fileExists(atPath: url.path) {
                         let file = Bundle.module.url(
-                            forResource: "load-self-signed-cert",
+                            forResource: "load-self-signed-cert-1.34.0",
                             withExtension: "js"
                         )!
                         do {
@@ -399,6 +409,8 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 return completions
             } catch let error as ServerError {
                 switch error {
+                case .serverError(1000, _, _):
+                    throw GitHubCopilotError.languageServerError(error)
                 case .serverError:
                     // sometimes the content inside language server is not new enough, which can
                     // lead to an version mismatch error. We can try a few times until the content

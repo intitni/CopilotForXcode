@@ -37,4 +37,4 @@ function duplicated(cert, index, arr) {
 
 initialize();
 
-require("./copilot/dist/agent.js");
+require("./copilot/dist/language-server.js");
