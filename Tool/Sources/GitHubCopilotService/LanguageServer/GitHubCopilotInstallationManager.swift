@@ -6,12 +6,12 @@ public struct GitHubCopilotInstallationManager {
     public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "c79d711cbf7c6672c6c57d6df7c5ab7b6cac2b7a"
+        let commitHash = "0668308e68b0ac28b332b204b469fbe04601536a"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
 
-    static let latestSupportedVersion = "1.33.0"
+    static let latestSupportedVersion = "1.37.0"
     static let minimumSupportedVersion = "1.32.0"
 
     public init() {}
