@@ -1,4 +1,5 @@
 import AppKit
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
@@ -95,7 +96,7 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
-    
+
     deinit {
         localProcessServer?.terminate()
     }
@@ -111,7 +112,7 @@ public class GitHubCopilotBaseService {
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-            
+
             guard let agentJSURL = {
                 let languageServerDotJS = urls.executableURL
                     .appendingPathComponent("copilot/dist/language-server.js")
@@ -129,7 +130,8 @@ public class GitHubCopilotBaseService {
 
             let indexJSURL: URL = try {
                 if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
-                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert-1.34.0.js")
+                    let url = urls.executableURL
+                        .appendingPathComponent("load-self-signed-cert-1.34.0.js")
                     if !FileManager.default.fileExists(atPath: url.path) {
                         let file = Bundle.module.url(
                             forResource: "load-self-signed-cert-1.34.0",
@@ -409,8 +411,9 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 return completions
             } catch let error as ServerError {
                 switch error {
-                case .serverError(1000, _, _):
-                    throw GitHubCopilotError.languageServerError(error)
+                case .serverError(1000, _, _): // not logged-in error
+                    throw SuggestionServiceError
+                        .notice(GitHubCopilotError.languageServerError(error))
                 case .serverError:
                     // sometimes the content inside language server is not new enough, which can
                     // lead to an version mismatch error. We can try a few times until the content
@@ -429,7 +432,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 throw error
             }
         }
-        
+
         func recoverContent() async {
             try? await notifyChangeTextDocument(
                 fileURL: fileURL,
