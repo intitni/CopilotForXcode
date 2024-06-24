@@ -49,6 +49,7 @@ public class CodeiumService {
     let projectRootURL: URL
     var server: CodeiumLSP?
     var heartbeatTask: Task<Void, Error>?
+    var workspaceTask: Task<Void, Error>?
     var requestCounter: UInt64 = 0
     var cancellationCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
@@ -127,6 +128,7 @@ public class CodeiumService {
         server.terminationHandler = { [weak self] in
             self?.server = nil
             self?.heartbeatTask?.cancel()
+            self?.workspaceTask?.cancel()
             self?.requestCounter = 0
             self?.cancellationCounter = 0
             self?.onServiceTerminated()
@@ -142,6 +144,14 @@ public class CodeiumService {
                     _ = try? await self?.server?.sendRequest(
                         CodeiumRequest.Heartbeat(requestBody: .init(metadata: metadata))
                     )
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                }
+            }
+            
+            self.workspaceTask = Task { [weak self] in
+                while true {
+                    try Task.checkCancellation()
+                    _ = await self?.server?.updateIndexing()
                     try await Task.sleep(nanoseconds: 5_000_000_000)
                 }
             }

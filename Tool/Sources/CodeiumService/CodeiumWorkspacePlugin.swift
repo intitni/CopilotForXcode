@@ -26,8 +26,7 @@ public final class CodeiumWorkspacePlugin: WorkspacePlugin {
         let newService = try CodeiumService(
             projectRootURL: projectRootURL,
             onServiceLaunched: {
-                [weak self] in
-                self?.finishLaunchingService()
+
             },
             onServiceTerminated: {
                 // start handled in the service.
