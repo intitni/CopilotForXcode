@@ -96,6 +96,9 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
+    @GitHubCopilotSuggestionActor
+    private var serverNotificationHandlers =
+        [AnyHashable: (ServerNotification) async throws -> Bool]()
 
     deinit {
         localProcessServer?.terminate()
@@ -199,8 +202,22 @@ public class GitHubCopilotBaseService {
             let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
 
             localServer.logMessages = UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
-            localServer.notificationHandler = { notification, respond in
-                respond(.handlerUnavailable(notification.method.rawValue))
+            localServer.notificationHandler = { [weak self] notification, respond in
+                Task {
+                    for handler in self?.serverNotificationHandlers.values ?? [] {
+                        do {
+                            let handled = try await handler(notification)
+                            if handled {
+                                respond(nil)
+                                return
+                            }
+                        } catch {
+                            respond(.failure(error))
+                            return
+                        }
+                    }
+                    respond(.handlerUnavailable(notification.method.rawValue))
+                }
             }
             let server = InitializingServer(server: localServer)
 
@@ -285,6 +302,21 @@ public class GitHubCopilotBaseService {
         }
 
         return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
+    }
+
+    func registerNotificationHandler(
+        id: AnyHashable,
+        _ block: @escaping (ServerNotification) async throws -> Bool
+    ) {
+        Task { @GitHubCopilotSuggestionActor in
+            self.serverNotificationHandlers[id] = block
+        }
+    }
+
+    func unregisterNotificationHandler(id: AnyHashable) {
+        Task { @GitHubCopilotSuggestionActor in
+            self.serverNotificationHandlers[id] = nil
+        }
     }
 }
 

@@ -1,3 +1,4 @@
+import ChatContextCollector
 import ChatTab
 import CopilotForXcodeKit
 import Foundation
@@ -21,5 +22,31 @@ public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
 
 public extension BuiltinExtension {
     var chatTabTypes: [any ChatTab.Type] { [] }
+}
+
+// MAKR: - ChatService
+
+/// A temporary protocol for ChatServiceType. Migrate it to CopilotForXcodeKit when finished.
+public protocol BuiltinExtensionChatServiceType: ChatServiceType {
+    typealias Message = ChatServiceMessage
+    typealias RetrievedContent = ChatContext.RetrievedContent
+}
+
+public struct ChatServiceMessage: Codable {
+    public enum Role: Codable, Equatable {
+        case system
+        case user
+        case assistant
+        case tool
+        case other(String)
+    }
+
+    public var role: Role
+    public var text: String
+
+    public init(role: Role, text: String) {
+        self.role = role
+        self.text = text
+    }
 }
 

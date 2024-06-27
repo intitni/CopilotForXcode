@@ -49,6 +49,11 @@ public struct GitHubCopilotCodeSuggestion: Codable, Equatable {
     public var displayText: String
 }
 
+enum GitHubCopilotChatSource: String, Codable {
+    case panel
+    case inline
+}
+
 enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
         struct Response: Codable {}
@@ -328,6 +333,127 @@ enum GitHubCopilotRequest {
             .custom("notifyRejected", .hash([
                 "uuids": .array(completionUUIDs.map(JSONValue.string)),
             ]))
+        }
+    }
+
+    struct ConversationCreate: GitHubCopilotRequestType {
+        struct Response: Codable {
+            var conversationId: String
+            var turnId: String
+        }
+
+        struct RequestBody: Codable {
+            var workDoneToken: String
+            var turns: [Turn]; struct Turn: Codable {
+                var request: String
+                var response: String?
+            }
+
+            var capabilities: [Capabilities]; struct Capabilities: Codable {
+                var allSkills: Bool?
+                var skills: [String]
+            }
+
+            var options: [String: String]?
+            var doc: GitHubCopilotDoc?
+            var computeSuggestions: Bool?
+            var references: [Reference]?; struct Reference: Codable {
+                var uri: String
+                var position: Position?
+                var visibleRange: CursorRange?
+                var selectionRange: CursorRange?
+                var openedAt: Date?
+                var activatedAt: Date?
+            }
+
+            var source: GitHubCopilotChatSource? // inline or panel
+            var workspaceFolder: String?
+        }
+
+        let requestBody: RequestBody
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("conversation/create", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+
+    struct ConversationTurn: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        struct RequestBody: Codable {
+            var workDoneToken: String
+            var conversationId: String
+            var message: String
+            var followUp: FollowUp?; struct FollowUp: Codable {
+                var id: String
+                var type: String
+            }
+
+            var options: [String: String]?
+            var doc: GitHubCopilotDoc?
+            var computeSuggestions: Bool?
+            var references: [Reference]?; struct Reference: Codable {
+                var uri: String
+                var position: Position?
+                var visibleRange: CursorRange?
+                var selectionRange: CursorRange?
+                var openedAt: Date?
+                var activatedAt: Date?
+            }
+
+            var workspaceFolder: String?
+        }
+
+        let requestBody: RequestBody
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("conversation/turn", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+    
+    struct ConversationTurnDelete: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        struct RequestBody: Codable {
+            var conversationId: String
+            var turnId: String
+            var options: [String: String]?
+            var source: GitHubCopilotChatSource?
+        }
+
+        let requestBody: RequestBody
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("conversation/turnDelete", .hash([
+                "doc": dict,
+            ]))
+        }
+    }
+    
+    struct ConversationDestroy: GitHubCopilotRequestType {
+        struct Response: Codable {}
+
+        struct RequestBody: Codable {
+            var conversationId: String
+            var options: [String: String]?
+        }
+
+        let requestBody: RequestBody
+
+        var request: ClientRequest {
+            let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
+            let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
+            return .custom("conversation/destroy", dict)
         }
     }
 }
