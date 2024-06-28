@@ -65,7 +65,6 @@ let package = Package(
         ),
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
-        .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
         // A fork of https://github.com/google/generative-ai-swift to support setting base url.
         .package(
             url: "https://github.com/intitni/generative-ai-swift",
@@ -219,7 +218,6 @@ let package = Package(
                 "Preferences",
                 "SuggestionModel",
                 "DebounceFunction",
-                .product(name: "STTextView", package: "STTextView"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
