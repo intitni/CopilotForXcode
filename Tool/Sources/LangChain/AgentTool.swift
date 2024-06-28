@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import OpenAIService
 
@@ -36,7 +37,7 @@ public class FunctionCallingAgentTool<F: ChatGPTFunction>: AgentTool, ChatGPTFun
         try await function.call(arguments: arguments, reportProgress: reportProgress)
     }
 
-    public var argumentSchema: OpenAIService.JSONSchemaValue { function.argumentSchema }
+    public var argumentSchema: ChatBasic.JSONSchemaValue { function.argumentSchema }
 
     public typealias Arguments = F.Arguments
     public typealias Result = F.Result

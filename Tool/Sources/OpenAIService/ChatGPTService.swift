@@ -1,5 +1,6 @@
 import AIModel
 import AsyncAlgorithms
+import ChatBasic
 import Dependencies
 import Foundation
 import IdentifiedCollections

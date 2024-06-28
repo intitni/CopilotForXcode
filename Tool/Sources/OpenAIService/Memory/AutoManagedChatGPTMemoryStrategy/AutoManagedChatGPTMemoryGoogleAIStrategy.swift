@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import GoogleGenerativeAI
 import Logger
@@ -28,5 +29,4 @@ extension AutoManagedChatGPTMemory {
         }
     }
 }
-
 

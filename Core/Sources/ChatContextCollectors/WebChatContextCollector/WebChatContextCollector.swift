@@ -1,3 +1,4 @@
+import ChatBasic
 import ChatContextCollector
 import Foundation
 import OpenAIService

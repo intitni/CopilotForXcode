@@ -1,4 +1,5 @@
 import ASTParser
+import ChatBasic
 import Foundation
 import OpenAIService
 import SuggestionModel
