@@ -447,7 +447,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
         // And sometimes the language server's content was not up to date and may generate
         // weird result when the cursor position exceeds the line.
         let task = Task { @GitHubCopilotSuggestionActor in
-            try? await notifyChangeTextDocument(
+            try await notifyChangeTextDocument(
                 fileURL: fileURL,
                 content: content,
                 version: 1
