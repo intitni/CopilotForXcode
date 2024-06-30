@@ -45,10 +45,12 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             workspaceFolder: workspace.projectURL.path
         ))
 
-        var cont: AsyncThrowingStream<String, Error>.Continuation? = nil
         let stream = AsyncThrowingStream<String, Error> { continuation in
-            cont = continuation
             let startTimestamp = Date()
+
+            continuation.onTermination = { _ in
+                Task { service.unregisterNotificationHandler(id: id) }
+            }
 
             service.registerNotificationHandler(id: id) { notification, data in
                 // just incase the conversation is stuck, we will cancel it after timeout
@@ -71,11 +73,9 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                             if let error = progress.value.error,
                                progress.value.cancellationReason == nil
                             {
-                                continuation.finish(throwing: ServerError.serverError(
-                                    code: 0,
-                                    message: error,
-                                    data: nil
-                                ))
+                                continuation.finish(
+                                    throwing: GitHubCopilotError.chatEndsWithError(error)
+                                )
                             } else {
                                 continuation.finish()
                             }
@@ -99,22 +99,22 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                     return false
                 }
             }
-        }
 
-        do {
-            let createResponse = try await service.server.sendRequest(request)
-            cont?.onTermination = { _ in
-                Task {
-                    service.unregisterNotificationHandler(id: id)
+            Task {
+                do {
+                    // this will return when the response is generated.
+                    let createResponse = try await service.server.sendRequest(request, timeout: 120)
                     _ = try await service.server.sendRequest(
                         GitHubCopilotRequest.ConversationDestroy(requestBody: .init(
                             conversationId: createResponse.conversationId
                         ))
                     )
+                } catch let error as ServerError {
+                    continuation.finish(throwing: GitHubCopilotError.languageServerError(error))
+                } catch {
+                    continuation.finish(throwing: error)
                 }
             }
-        } catch {
-            cont?.finish(throwing: error)
         }
 
         return stream
@@ -168,7 +168,7 @@ extension GitHubCopilotChatService {
     func createNewMessage(references: [RetrievedContent], message: String) -> String {
         return message
     }
-    
+
     struct JSONRPC<Params: Decodable>: Decodable {
         var jsonrpc: String
         var method: String

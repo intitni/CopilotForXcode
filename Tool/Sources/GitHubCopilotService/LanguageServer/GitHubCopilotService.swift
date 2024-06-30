@@ -37,14 +37,24 @@ public protocol GitHubCopilotSuggestionServiceType {
 }
 
 protocol GitHubCopilotLSP {
-    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response
+    func sendRequest<E: GitHubCopilotRequestType>(
+        _ endpoint: E,
+        timeout: TimeInterval?
+    ) async throws -> E.Response
     func sendNotification(_ notif: ClientNotification) async throws
+}
+
+extension GitHubCopilotLSP {
+    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response {
+        try await sendRequest(endpoint, timeout: nil)
+    }
 }
 
 enum GitHubCopilotError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerError(ServerError)
     case failedToInstallStartScript
+    case chatEndsWithError(String)
 
     var errorDescription: String? {
         switch self {
@@ -52,6 +62,8 @@ enum GitHubCopilotError: Error, LocalizedError {
             return "Language server is not installed."
         case .failedToInstallStartScript:
             return "Failed to install start script."
+        case let .chatEndsWithError(errorMessage):
+            return "Chat ended with error message: \(errorMessage)"
         case let .languageServerError(error):
             switch error {
             case let .handlerUnavailable(handler):
@@ -578,8 +590,19 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
 }
 
 extension InitializingServer: GitHubCopilotLSP {
-    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response {
-        try await sendRequest(endpoint.request)
+    func sendRequest<E: GitHubCopilotRequestType>(
+        _ endpoint: E,
+        timeout: TimeInterval? = nil
+    ) async throws -> E.Response {
+        if let timeout {
+            return try await withCheckedThrowingContinuation { continuation in
+                self.sendRequest(endpoint.request, timeout: timeout) { result in
+                    continuation.resume(with: result)
+                }
+            }
+        } else {
+            return try await sendRequest(endpoint.request)
+        }
     }
 }
 
