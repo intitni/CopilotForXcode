@@ -14,7 +14,7 @@ struct CodeiumView: View {
         @AppStorage(\.codeiumEnterpriseMode) var codeiumEnterpriseMode
         @AppStorage(\.codeiumPortalUrl) var codeiumPortalUrl
         @AppStorage(\.codeiumApiUrl) var codeiumApiUrl
-        @AppStorage(\.indexEnabled) var indexEnabled
+        @AppStorage(\.codeiumIndexEnabled) var indexEnabled
 
         init() {
             isSignedIn = codeiumAuthService.isSignedIn

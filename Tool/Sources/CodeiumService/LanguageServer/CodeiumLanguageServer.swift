@@ -65,9 +65,9 @@ final class CodeiumLanguageServer {
             process.arguments?.append("--enterprise_mode")
         }
         
-        let indexEnabled = UserDefaults.shared.value(for: \.indexEnabled)
+        let indexEnabled = UserDefaults.shared.value(for: \.codeiumIndexEnabled)
         if indexEnabled {
-            let indexingMaxFileSize = UserDefaults.shared.value(for: \.indexingMaxFileSize)
+            let indexingMaxFileSize = UserDefaults.shared.value(for: \.codeiumIndexingMaxFileSize)
             if (indexEnabled) {
               process.arguments?.append("--enable_local_search")
               process.arguments?.append("--enable_index_service")
@@ -195,7 +195,7 @@ extension CodeiumLanguageServer: CodeiumLSP {
     }
     
     func updateIndexing() async {
-        let indexEnabled = UserDefaults.shared.value(for: \.indexEnabled)
+        let indexEnabled = UserDefaults.shared.value(for: \.codeiumIndexEnabled)
         if !indexEnabled {
             return
         }
