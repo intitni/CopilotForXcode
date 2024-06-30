@@ -15,10 +15,12 @@ final class FetchSuggestionTests: XCTestCase {
     func test_process_suggestions_from_server() async throws {
         struct TestServer: GitHubCopilotLSP {
             func sendNotification(_: LanguageServerProtocol.ClientNotification) async throws {
-                throw CancellationError()
+                return
             }
 
-            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+            func sendRequest<E>(_: E, timeout: TimeInterval?) async throws -> E.Response
+                where E: GitHubCopilotRequestType
+            {
                 return GitHubCopilotRequest.InlineCompletion.Response(items: [
                     .init(
                         insertText: "Hello World\n",
@@ -70,7 +72,9 @@ final class FetchSuggestionTests: XCTestCase {
                 // unimplemented
             }
 
-            func sendRequest<E>(_: E) async throws -> E.Response where E: GitHubCopilotRequestType {
+            func sendRequest<E>(_: E, timeout: TimeInterval?) async throws -> E.Response
+                where E: GitHubCopilotRequestType
+            {
                 return GitHubCopilotRequest.InlineCompletion.Response(items: [
                     .init(
                         insertText: "Hello World\n",

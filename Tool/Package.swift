@@ -215,6 +215,7 @@ let package = Package(
             name: "BuiltinExtension",
             dependencies: [
                 "SuggestionModel",
+                "SuggestionProvider",
                 "ChatBasic",
                 "Workspace",
                 "ChatTab",
@@ -369,6 +370,7 @@ let package = Package(
                 "TokenEncoder",
                 "Keychain",
                 "BuiltinExtension",
+                "ChatBasic",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
@@ -382,6 +384,7 @@ let package = Package(
             name: "OpenAIServiceTests",
             dependencies: [
                 "OpenAIService",
+                "ChatBasic",
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
