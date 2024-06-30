@@ -135,9 +135,14 @@ enum GitHubCopilotRequest {
         }
 
         var request: ClientRequest {
+            let pretendToBeVSCode = UserDefaults.shared
+                .value(for: \.gitHubCopilotPretendIDEToBeVSCode)
             var dict: [String: JSONValue] = [
-                "editorInfo": .hash([
-                    "name": "Xcode",
+                "editorInfo": pretendToBeVSCode ? .hash([
+                    "name": "vscode",
+                    "version": "1.89.1",
+                ]) : .hash([
+                    "name": "xcode",
                     "version": "",
                 ]),
                 "editorPluginInfo": .hash([
@@ -348,7 +353,7 @@ enum GitHubCopilotRequest {
                 var response: String?
             }
 
-            var capabilities: [Capabilities]; struct Capabilities: Codable {
+            var capabilities: Capabilities; struct Capabilities: Codable {
                 var allSkills: Bool?
                 var skills: [String]
             }
@@ -374,9 +379,7 @@ enum GitHubCopilotRequest {
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
             let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
-            return .custom("conversation/create", .hash([
-                "doc": dict,
-            ]))
+            return .custom("conversation/create", dict)
         }
     }
 
@@ -412,12 +415,10 @@ enum GitHubCopilotRequest {
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
             let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
-            return .custom("conversation/turn", .hash([
-                "doc": dict,
-            ]))
+            return .custom("conversation/turn", dict)
         }
     }
-    
+
     struct ConversationTurnDelete: GitHubCopilotRequestType {
         struct Response: Codable {}
 
@@ -433,12 +434,10 @@ enum GitHubCopilotRequest {
         var request: ClientRequest {
             let data = (try? JSONEncoder().encode(requestBody)) ?? Data()
             let dict = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? .hash([:])
-            return .custom("conversation/turnDelete", .hash([
-                "doc": dict,
-            ]))
+            return .custom("conversation/turnDelete", dict)
         }
     }
-    
+
     struct ConversationDestroy: GitHubCopilotRequestType {
         struct Response: Codable {}
 

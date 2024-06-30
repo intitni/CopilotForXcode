@@ -191,6 +191,10 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotLoadKeyChainCertificates: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotLoadKeyChainCertificates")
     }
+    
+    var gitHubCopilotPretendIDEToBeVSCode: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "GitHubCopilotPretendIDEToBeVSCode")
+    }
 }
 
 // MARK: - Codeium Settings
