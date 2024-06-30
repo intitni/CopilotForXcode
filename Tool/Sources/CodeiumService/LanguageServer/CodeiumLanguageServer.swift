@@ -22,7 +22,7 @@ final class CodeiumLanguageServer {
     var launchHandler: (() -> Void)?
     var port: String?
     var heartbeatTask: Task<Void, Error>?
-    var project_paths: [String]
+    var projectPaths: [String]
 
     init(
         languageServerExecutableURL: URL,
@@ -36,7 +36,7 @@ final class CodeiumLanguageServer {
         self.supportURL = supportURL
         self.terminationHandler = terminationHandler
         self.launchHandler = launchHandler
-        project_paths = []
+        projectPaths = []
         process = Process()
         transport = IOTransport()
 
@@ -200,31 +200,33 @@ extension CodeiumLanguageServer: CodeiumLSP {
             return
         }
 
-        let curr_proj_paths = await getProjectPaths()
+        let currentProjectPaths = await getProjectPaths()
 
-        // Add all workspaces that are in the curr_proj_paths but not in the previous project paths
-        for curr_proj_path in curr_proj_paths {
-            if !project_paths.contains(curr_proj_path) && FileManager.default
-                .fileExists(atPath: curr_proj_path)
+        // Add all workspaces that are in the currentProjectPaths but not in the previous project
+        // paths
+        for currentProjectPath in currentProjectPaths {
+            if !projectPaths.contains(currentProjectPath) && FileManager.default
+                .fileExists(atPath: currentProjectPath)
             {
                 _ = try? await sendRequest(CodeiumRequest.AddTrackedWorkspace(requestBody: .init(
-                    workspace: curr_proj_path
+                    workspace: currentProjectPath
                 )))
             }
         }
 
-        // Remove all workspaces that are in previous project paths but not in the curr_proj_paths
-        for proj_path in project_paths {
-            if !curr_proj_paths.contains(proj_path) && FileManager.default
-                .fileExists(atPath: proj_path)
+        // Remove all workspaces that are in previous project paths but not in the
+        // currentProjectPaths
+        for projectPath in projectPaths {
+            if !currentProjectPaths.contains(projectPath) && FileManager.default
+                .fileExists(atPath: projectPath)
             {
                 _ = try? await sendRequest(CodeiumRequest.RemoveTrackedWorkspace(requestBody: .init(
-                    workspace: proj_path
+                    workspace: projectPath
                 )))
             }
         }
         // These should be identical now
-        project_paths = curr_proj_paths
+        projectPaths = currentProjectPaths
     }
 }
 
