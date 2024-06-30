@@ -96,9 +96,7 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
-    @GitHubCopilotSuggestionActor
-    private var serverNotificationHandlers =
-        [AnyHashable: (ServerNotification) async throws -> Bool]()
+    let notificationHandler: ServerNotificationHandler
 
     deinit {
         localProcessServer?.terminate()
@@ -107,16 +105,19 @@ public class GitHubCopilotBaseService {
     init(designatedServer: GitHubCopilotLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
         server = designatedServer
+        notificationHandler = .init()
     }
 
     init(projectRootURL: URL) throws {
         self.projectRootURL = projectRootURL
-        let (server, localServer) = try {
+        let notificationHandler = ServerNotificationHandler()
+        self.notificationHandler = notificationHandler
+        let (server, localServer) = try { [notificationHandler] in
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
 
-            guard let agentJSURL = {
+            guard let agentJSURL = { () -> URL? in
                 let languageServerDotJS = urls.executableURL
                     .appendingPathComponent("copilot/dist/language-server.js")
                 if FileManager.default.fileExists(atPath: languageServerDotJS.path) {
@@ -199,26 +200,12 @@ public class GitHubCopilotBaseService {
                     )
                 }()
             }
-            let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
+            let localServer = CopilotLocalProcessServer(
+                executionParameters: executionParams,
+                serverNotificationHandler: notificationHandler
+            )
 
             localServer.logMessages = UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
-            localServer.notificationHandler = { [weak self] notification, respond in
-                Task {
-                    for handler in self?.serverNotificationHandlers.values ?? [] {
-                        do {
-                            let handled = try await handler(notification)
-                            if handled {
-                                respond(nil)
-                                return
-                            }
-                        } catch {
-                            respond(.failure(error))
-                            return
-                        }
-                    }
-                    respond(.handlerUnavailable(notification.method.rawValue))
-                }
-            }
             let server = InitializingServer(server: localServer)
 
             server.initializeParamsProvider = {
@@ -306,16 +293,16 @@ public class GitHubCopilotBaseService {
 
     func registerNotificationHandler(
         id: AnyHashable,
-        _ block: @escaping (ServerNotification) async throws -> Bool
+        _ block: @escaping ServerNotificationHandler.Handler
     ) {
         Task { @GitHubCopilotSuggestionActor in
-            self.serverNotificationHandlers[id] = block
+            self.notificationHandler.handlers[id] = block
         }
     }
 
     func unregisterNotificationHandler(id: AnyHashable) {
         Task { @GitHubCopilotSuggestionActor in
-            self.serverNotificationHandlers[id] = nil
+            self.notificationHandler.handlers[id] = nil
         }
     }
 }
