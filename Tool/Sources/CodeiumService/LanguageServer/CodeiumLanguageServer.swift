@@ -36,7 +36,7 @@ final class CodeiumLanguageServer {
         self.supportURL = supportURL
         self.terminationHandler = terminationHandler
         self.launchHandler = launchHandler
-        self.project_paths = []
+        project_paths = []
         process = Process()
         transport = IOTransport()
 
@@ -64,16 +64,16 @@ final class CodeiumLanguageServer {
         if isEnterpriseMode {
             process.arguments?.append("--enterprise_mode")
         }
-        
+
         let indexEnabled = UserDefaults.shared.value(for: \.codeiumIndexEnabled)
         if indexEnabled {
             let indexingMaxFileSize = UserDefaults.shared.value(for: \.codeiumIndexingMaxFileSize)
-            if (indexEnabled) {
-              process.arguments?.append("--enable_local_search")
-              process.arguments?.append("--enable_index_service")
-              process.arguments?.append("--search_max_workspace_file_count")
-              process.arguments?.append("\(indexingMaxFileSize)")
-              Logger.codeium.info("Indexing Enabled")
+            if indexEnabled {
+                process.arguments?.append("--enable_local_search")
+                process.arguments?.append("--enable_index_service")
+                process.arguments?.append("--search_max_workspace_file_count")
+                process.arguments?.append("\(indexingMaxFileSize)")
+                Logger.codeium.info("Indexing Enabled")
             }
         }
 
@@ -193,38 +193,39 @@ extension CodeiumLanguageServer: CodeiumLSP {
             }
         }
     }
-    
+
     func updateIndexing() async {
         let indexEnabled = UserDefaults.shared.value(for: \.codeiumIndexEnabled)
         if !indexEnabled {
             return
         }
-        
 
         let curr_proj_paths = await getProjectPaths()
-        
+
         // Add all workspaces that are in the curr_proj_paths but not in the previous project paths
         for curr_proj_path in curr_proj_paths {
-            if !self.project_paths.contains(curr_proj_path) && FileManager.default.fileExists(atPath: curr_proj_path) {
-                _ = try? await self.sendRequest(CodeiumRequest.AddTrackedWorkspace(requestBody: .init(
+            if !project_paths.contains(curr_proj_path) && FileManager.default
+                .fileExists(atPath: curr_proj_path)
+            {
+                _ = try? await sendRequest(CodeiumRequest.AddTrackedWorkspace(requestBody: .init(
                     workspace: curr_proj_path
                 )))
             }
         }
-        
+
         // Remove all workspaces that are in previous project paths but not in the curr_proj_paths
-        for proj_path in self.project_paths {
-            if !curr_proj_paths.contains(proj_path) && FileManager.default.fileExists(atPath: proj_path) {
-                _ = try? await self.sendRequest(CodeiumRequest.RemoveTrackedWorkspace(requestBody: .init(
+        for proj_path in project_paths {
+            if !curr_proj_paths.contains(proj_path) && FileManager.default
+                .fileExists(atPath: proj_path)
+            {
+                _ = try? await sendRequest(CodeiumRequest.RemoveTrackedWorkspace(requestBody: .init(
                     workspace: proj_path
                 )))
             }
         }
         // These should be identical now
-        self.project_paths = curr_proj_paths
-        
+        project_paths = curr_proj_paths
     }
-
 }
 
 final class IOTransport {
@@ -329,7 +330,7 @@ class WorkspaceParser: NSObject, XMLParserDelegate {
         self.workspaceFileURL = workspaceFileURL
         self.workspaceBaseURL = workspaceBaseURL
     }
-    
+
     func parse() -> [String] {
         guard let parser = XMLParser(contentsOf: workspaceFileURL) else {
             print("Failed to create XML parser for file: \(workspaceFileURL.path)")
@@ -339,9 +340,15 @@ class WorkspaceParser: NSObject, XMLParserDelegate {
         parser.parse()
         return projectPaths
     }
-    
+
     // XMLParserDelegate methods
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String]) {
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String]
+    ) {
         if elementName == "FileRef", let location = attributeDict["location"] {
             var project_path: String
             if location.starts(with: "group:") && pathEndsWithXcodeproj(location) {
@@ -350,28 +357,29 @@ class WorkspaceParser: NSObject, XMLParserDelegate {
                     return
                 }
                 let relative_base_path = relative_project_url.deletingLastPathComponent()
-                project_path = (self.workspaceBaseURL.appendingPathComponent(relative_base_path.relativePath)).standardized.path
-            } else if location.starts(with: "absolute:") && pathEndsWithXcodeproj(location){
+                project_path = (
+                    workspaceBaseURL
+                        .appendingPathComponent(relative_base_path.relativePath)
+                ).standardized.path
+            } else if location.starts(with: "absolute:") && pathEndsWithXcodeproj(location) {
                 let abs_url = URL(fileURLWithPath: String(location.dropFirst("absolute:".count)))
                 project_path = abs_url.deletingLastPathComponent().standardized.path
             } else {
                 return
             }
             if FileManager.default.fileExists(atPath: project_path) {
-                
                 projectPaths.append(project_path)
             }
         }
     }
-        
+
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
         print("Failed to parse XML: \(parseError.localizedDescription)")
     }
-    
+
     func pathEndsWithXcodeproj(_ path: String) -> Bool {
         return path.hasSuffix(".xcodeproj")
     }
-    
 }
 
 public func getProjectPaths() async -> [String] {
@@ -380,10 +388,14 @@ public func getProjectPaths() async -> [String] {
     }
 
     let workspacebaseURL = workspaceURL.deletingLastPathComponent()
-    
+
     let workspaceContentsURL = workspaceURL.appendingPathComponent("contents.xcworkspacedata")
-    
-    let parser = WorkspaceParser(workspaceFileURL: workspaceContentsURL, workspaceBaseURL: workspacebaseURL)
+
+    let parser = WorkspaceParser(
+        workspaceFileURL: workspaceContentsURL,
+        workspaceBaseURL: workspacebaseURL
+    )
     let absolutePaths = parser.parse()
     return absolutePaths
 }
+
