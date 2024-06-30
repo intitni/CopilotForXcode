@@ -11,7 +11,7 @@ public struct CodeiumInstallationManager {
         case badURL(String)
         case invalidResponse
         case invalidData
-        
+
         var errorDescription: String? {
             switch self {
             case .badURL: return "URL is invalid"
@@ -20,14 +20,13 @@ public struct CodeiumInstallationManager {
             }
         }
     }
-    
+
     public func getLatestSupportedVersion() -> String {
-        if isEnterprise{
-            return UserDefaults.shared.value(for: \.codeiumEnterpriseVersion);
+        if isEnterprise {
+            return UserDefaults.shared.value(for: \.codeiumEnterpriseVersion)
         }
-        
-        return Self.latestSupportedVersion;
-        
+
+        return Self.latestSupportedVersion
     }
 
     func getEnterprisePortalVersion() async throws -> String {
