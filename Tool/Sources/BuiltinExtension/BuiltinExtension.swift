@@ -1,4 +1,4 @@
-import ChatContextCollector
+import ChatBasic
 import ChatTab
 import CopilotForXcodeKit
 import Foundation
@@ -28,25 +28,37 @@ public extension BuiltinExtension {
 
 /// A temporary protocol for ChatServiceType. Migrate it to CopilotForXcodeKit when finished.
 public protocol BuiltinExtensionChatServiceType: ChatServiceType {
-    typealias Message = ChatServiceMessage
-    typealias RetrievedContent = ChatContext.RetrievedContent
+    typealias Message = ChatMessage
+
+    func sendMessage(
+        _ message: String,
+        history: [Message],
+        references: [RetrievedContent],
+        workspace: WorkspaceInfo
+    ) async -> AsyncThrowingStream<String, Error>
 }
 
-public struct ChatServiceMessage: Codable {
-    public enum Role: Codable, Equatable {
-        case system
-        case user
-        case assistant
-        case tool
-        case other(String)
+public struct RetrievedContent {
+    public var document: ChatMessage.Reference
+    public var priority: Int
+    
+    public init(document: ChatMessage.Reference, priority: Int) {
+        self.document = document
+        self.priority = priority
     }
+}
 
-    public var role: Role
-    public var text: String
+public enum ChatServiceMemoryMutation: Codable {
+    public typealias Message = ChatMessage
 
-    public init(role: Role, text: String) {
-        self.role = role
-        self.text = text
-    }
+    /// Add a new message to the end of memory.
+    /// If an id is not provided, a new id will be generated.
+    /// If an id is provided, and a message with the same id exists the message with the same
+    /// id will be updated.
+    case appendMessage(id: String?, role: Message.Role, text: String)
+    /// Update the message with the given id.
+    case updateMessage(id: String, role: Message.Role, text: String)
+    /// Stream the content into a message with the given id.
+    case streamIntoMessage(id: String, role: Message.Role?, text: String?)
 }
 

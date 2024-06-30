@@ -11,8 +11,8 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .gitHubCopilot }
 
-    public let suggestionService: GitHubCopilotSuggestionService?
-    public let chatService: GitHubCopilotChatService?
+    public let suggestionService: GitHubCopilotSuggestionService
+    public let chatService: GitHubCopilotChatService
 
     private var extensionUsage = ExtensionUsage(
         isSuggestionServiceInUse: false,
@@ -141,6 +141,7 @@ protocol ServiceLocatorType {
 class ServiceLocator: ServiceLocatorType {
     let workspacePool: WorkspacePool
 
+    
     init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
     }

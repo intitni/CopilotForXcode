@@ -105,6 +105,7 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
         set { wrappedServer?.requestHandler = newValue }
     }
 
+    @available(*, deprecated, message: "Use `ServerNotificationHandler` instead")
     public var notificationHandler: NotificationHandler? {
         get { wrappedServer?.notificationHandler }
         set { wrappedServer?.notificationHandler = newValue }
