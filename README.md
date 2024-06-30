@@ -121,7 +121,7 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 
 | Command             | Key Binding                                            |
 | ------------------- | ------------------------------------------------------ |
-| Accept Suggestions  | `⌥}` (Or accept with Tab if Plus license is available) |
+| Accept Suggestions  | `⌥}`                                                   |
 | Reject Suggestion   | `⌥{`                                                   |
 | Next Suggestion     | `⌥>`                                                   |
 | Previous Suggestion | `⌥<`                                                   |
@@ -366,7 +366,6 @@ The currently available Plus features include:
 - `@sense` scope in chat and prompt to code to include relevant information of the focusing code.
 - Terminal tab in chat panel.
 - Unlimited chat/embedding models.
-- Tab to accept suggestions.
 - Persisted chat panel.
 - Browser tab in chat panel.
 - Unlimited custom commands.
