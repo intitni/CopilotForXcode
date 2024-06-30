@@ -12,6 +12,8 @@ import Workspace
 }
 
 public final class CodeiumExtension: BuiltinExtension {
+    public var extensionIdentifier: String { "com.codeium" }
+    
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
     public let suggestionService: CodeiumSuggestionService?

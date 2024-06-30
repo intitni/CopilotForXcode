@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 
 public protocol ChatGPTFunctionProvider {
@@ -16,3 +17,4 @@ public struct NoChatGPTFunctionProvider: ChatGPTFunctionProvider {
     public var functions: [any ChatGPTFunction] { [] }
     public init() {}
 }
+

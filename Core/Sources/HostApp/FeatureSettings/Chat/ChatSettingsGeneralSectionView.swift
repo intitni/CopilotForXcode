@@ -100,17 +100,21 @@ struct ChatSettingsGeneralSectionView: View {
                 "Chat model",
                 selection: $settings.defaultChatFeatureChatModelId
             ) {
-                if !settings.chatModels
-                    .contains(where: { $0.id == settings.defaultChatFeatureChatModelId })
-                {
+                let allModels = settings.chatModels + [.init(
+                    id: "com.github.copilot",
+                    name: "GitHub Copilot (poc)",
+                    format: .openAI,
+                    info: .init()
+                )]
+
+                if !allModels.contains(where: { $0.id == settings.defaultChatFeatureChatModelId }) {
                     Text(
-                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                            ?? "No model found"
+                        (allModels.first?.name).map { "\($0) (Default)" } ?? "No model found"
                     )
                     .tag(settings.defaultChatFeatureChatModelId)
                 }
 
-                ForEach(settings.chatModels, id: \.id) { chatModel in
+                ForEach(allModels, id: \.id) { chatModel in
                     Text(chatModel.name).tag(chatModel.id)
                 }
             }

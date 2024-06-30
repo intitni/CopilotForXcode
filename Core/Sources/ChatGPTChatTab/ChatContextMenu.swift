@@ -70,12 +70,19 @@ struct ChatContextMenu: View {
 
     @ViewBuilder
     var chatModel: some View {
+        let allModels = chatModels + [.init(
+            id: "com.github.copilot",
+            name: "GitHub Copilot (poc)",
+            format: .openAI,
+            info: .init()
+        )]
+        
         Menu("Chat Model") {
             Button(action: {
                 store.send(.chatModelIdOverrideSelected(nil))
             }) {
                 HStack {
-                    if let defaultModel = chatModels
+                    if let defaultModel = allModels
                         .first(where: { $0.id == defaultChatModelId })
                     {
                         Text("Default (\(defaultModel.name))")
@@ -88,7 +95,7 @@ struct ChatContextMenu: View {
                 }
             }
 
-            if let id = store.chatModelIdOverride, !chatModels.map(\.id).contains(id) {
+            if let id = store.chatModelIdOverride, !allModels.map(\.id).contains(id) {
                 Button(action: {
                     store.send(.chatModelIdOverrideSelected(nil))
                 }) {
@@ -101,7 +108,7 @@ struct ChatContextMenu: View {
 
             Divider()
 
-            ForEach(chatModels, id: \.id) { model in
+            ForEach(allModels, id: \.id) { model in
                 Button(action: {
                     store.send(.chatModelIdOverrideSelected(model.id))
                 }) {
@@ -152,26 +159,26 @@ struct ChatContextMenu: View {
     @ViewBuilder
     var defaultScopes: some View {
         Menu("Default Scopes") {
+            Button(action: {
+                store.send(.resetDefaultScopesButtonTapped)
+            }) {
+                Text("Reset Default Scopes")
+            }
+
+            Divider()
+
+            ForEach(ChatService.Scope.allCases, id: \.rawValue) { value in
                 Button(action: {
-                    store.send(.resetDefaultScopesButtonTapped)
+                    store.send(.toggleScope(value))
                 }) {
-                    Text("Reset Default Scopes")
-                }
-
-                Divider()
-
-                ForEach(ChatService.Scope.allCases, id: \.rawValue) { value in
-                    Button(action: {
-                        store.send(.toggleScope(value))
-                    }) {
-                        HStack {
-                            Text("@" + value.rawValue)
-                            if store.defaultScopes.contains(value) {
-                                Image(systemName: "checkmark")
-                            }
+                    HStack {
+                        Text("@" + value.rawValue)
+                        if store.defaultScopes.contains(value) {
+                            Image(systemName: "checkmark")
                         }
                     }
                 }
+            }
         }
     }
 

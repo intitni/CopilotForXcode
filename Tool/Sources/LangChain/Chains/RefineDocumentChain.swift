@@ -1,5 +1,6 @@
 import Foundation
 import OpenAIService
+import ChatBasic
 
 public final class RefineDocumentChain: Chain {
     public struct Input {

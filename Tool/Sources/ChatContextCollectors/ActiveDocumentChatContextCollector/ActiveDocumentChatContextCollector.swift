@@ -1,4 +1,5 @@
 import ASTParser
+import ChatBasic
 import ChatContextCollector
 import Dependencies
 import FocusedCodeFinder

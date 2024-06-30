@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import Logger
 import TokenEncoder

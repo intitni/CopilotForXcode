@@ -1,5 +1,6 @@
 import AIModel
 import AsyncAlgorithms
+import ChatBasic
 import Dependencies
 import Foundation
 import IdentifiedCollections
@@ -89,13 +90,21 @@ public class ChatGPTService: ChatGPTServiceType {
     var runningTask: Task<Void, Never>?
     var buildCompletionStreamAPI: ChatCompletionsStreamAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
+
+        if model.id == "com.github.copilot" {
+            return BuiltinExtensionChatCompletionsService(
+                extensionIdentifier: model.id,
+                requestBody: requestBody
+            )
+        }
+
         switch model.format {
         case .googleAI:
             return GoogleAIChatCompletionsService(
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
-                prompt: prompt, 
+                prompt: prompt,
                 baseURL: endpoint.absoluteString
             )
         case .openAI, .openAICompatible, .azureOpenAI:
@@ -124,6 +133,14 @@ public class ChatGPTService: ChatGPTServiceType {
 
     var buildCompletionAPI: ChatCompletionsAPIBuilder = {
         apiKey, model, endpoint, requestBody, prompt in
+
+        if model.id == "com.github.copilot" {
+            return BuiltinExtensionChatCompletionsService(
+                extensionIdentifier: model.id,
+                requestBody: requestBody
+            )
+        }
+
         switch model.format {
         case .googleAI:
             return GoogleAIChatCompletionsService(

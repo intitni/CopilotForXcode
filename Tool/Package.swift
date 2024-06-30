@@ -170,6 +170,16 @@ let package = Package(
             name: "SuggestionModelTests",
             dependencies: ["SuggestionModel"]
         ),
+        
+        .target(
+            name: "ChatBasic",
+            dependencies: [
+                "AIModel",
+                "Preferences",
+                "Keychain",
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
+            ]
+        ),
 
         .target(name: "AXExtension"),
 
@@ -205,8 +215,11 @@ let package = Package(
             name: "BuiltinExtension",
             dependencies: [
                 "SuggestionModel",
+                "SuggestionProvider",
+                "ChatBasic",
                 "Workspace",
                 "ChatTab",
+                "AIModel",
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
@@ -288,6 +301,7 @@ let package = Package(
                 "OpenAIService",
                 "ObjectiveCExceptionHandling",
                 "USearchIndex",
+                "ChatBasic",
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
@@ -312,6 +326,7 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 "SuggestionModel",
+                "ChatBasic",
                 "Logger",
                 "Preferences",
                 "Terminal",
@@ -354,6 +369,8 @@ let package = Package(
                 "Preferences",
                 "TokenEncoder",
                 "Keychain",
+                "BuiltinExtension",
+                "ChatBasic",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
@@ -367,6 +384,7 @@ let package = Package(
             name: "OpenAIServiceTests",
             dependencies: [
                 "OpenAIService",
+                "ChatBasic",
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
@@ -390,6 +408,7 @@ let package = Package(
             name: "ChatContextCollector",
             dependencies: [
                 "SuggestionModel",
+                "ChatBasic",
                 "OpenAIService",
             ]
         ),

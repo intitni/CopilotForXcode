@@ -18,7 +18,8 @@ class CopilotLocalProcessServer {
     public convenience init(
         path: String,
         arguments: [String],
-        environment: [String: String]? = nil
+        environment: [String: String]? = nil,
+        serverNotificationHandler: ServerNotificationHandler
     ) {
         let params = Process.ExecutionParameters(
             path: path,
@@ -26,10 +27,13 @@ class CopilotLocalProcessServer {
             environment: environment
         )
 
-        self.init(executionParameters: params)
+        self.init(executionParameters: params, serverNotificationHandler: serverNotificationHandler)
     }
 
-    init(executionParameters parameters: Process.ExecutionParameters) {
+    init(
+        executionParameters parameters: Process.ExecutionParameters,
+        serverNotificationHandler: ServerNotificationHandler
+    ) {
         transport = StdioDataTransport()
         let framing = SeperatedHTTPHeaderMessageFraming()
         let messageTransport = MessageTransport(
@@ -37,7 +41,10 @@ class CopilotLocalProcessServer {
             messageProtocol: framing
         )
         customTransport = CustomDataTransport(nextTransport: messageTransport)
-        wrappedServer = CustomJSONRPCLanguageServer(dataTransport: customTransport)
+        wrappedServer = CustomJSONRPCLanguageServer(
+            dataTransport: customTransport,
+            serverNotificationHandler: serverNotificationHandler
+        )
 
         process = Process()
 
@@ -45,8 +52,9 @@ class CopilotLocalProcessServer {
         // we need to get the request IDs from a custom transport before the data
         // is written to the language server.
         customTransport.onWriteRequest = { [weak self] request in
-            if request.method == "getCompletionsCycling" 
-                || request.method ==  "textDocument/inlineCompletion" {
+            if request.method == "getCompletionsCycling"
+                || request.method == "textDocument/inlineCompletion"
+            {
                 Task { @MainActor [weak self] in
                     self?.ongoingCompletionRequestIDs.append(request.id)
                 }
@@ -85,7 +93,7 @@ class CopilotLocalProcessServer {
         get { return wrappedServer?.logMessages ?? false }
         set { wrappedServer?.logMessages = newValue }
     }
-    
+
     func terminate() {
         process.terminate()
     }
@@ -97,6 +105,7 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
         set { wrappedServer?.requestHandler = newValue }
     }
 
+    @available(*, deprecated, message: "Use `ServerNotificationHandler` instead")
     public var notificationHandler: NotificationHandler? {
         get { wrappedServer?.notificationHandler }
         set { wrappedServer?.notificationHandler = newValue }
@@ -155,36 +164,47 @@ final class CustomJSONRPCLanguageServer: Server {
 
     private let protocolTransport: ProtocolTransport
 
-    public var requestHandler: RequestHandler?
-    public var notificationHandler: NotificationHandler?
+    var requestHandler: RequestHandler?
+    var serverNotificationHandler: ServerNotificationHandler
+
+    @available(*, deprecated, message: "Use `serverNotificationHandler` instead.")
+    var notificationHandler: NotificationHandler? {
+        get { nil }
+        set {}
+    }
 
     private var outOfBandError: Error?
 
-    init(protocolTransport: ProtocolTransport) {
+    init(
+        protocolTransport: ProtocolTransport,
+        serverNotificationHandler: ServerNotificationHandler
+    ) {
+        self.serverNotificationHandler = serverNotificationHandler
         self.protocolTransport = protocolTransport
         internalServer = JSONRPCLanguageServer(protocolTransport: protocolTransport)
 
-        let previouseRequestHandler = protocolTransport.requestHandler
-        let previouseNotificationHandler = protocolTransport.notificationHandler
+        let previousRequestHandler = protocolTransport.requestHandler
 
-        protocolTransport
-            .requestHandler = { [weak self] in
-                guard let self else { return }
-                if !self.handleRequest($0, data: $1, callback: $2) {
-                    previouseRequestHandler?($0, $1, $2)
-                }
+        protocolTransport.requestHandler = { [weak self] in
+            guard let self else { return }
+            if !self.handleRequest($0, data: $1, callback: $2) {
+                previousRequestHandler?($0, $1, $2)
             }
-        protocolTransport
-            .notificationHandler = { [weak self] in
-                guard let self else { return }
-                if !self.handleNotification($0, data: $1, block: $2) {
-                    previouseNotificationHandler?($0, $1, $2)
-                }
-            }
+        }
+        protocolTransport.notificationHandler = { [weak self] in
+            guard let self else { return }
+            self.handleNotification($0, data: $1, block: $2)
+        }
     }
 
-    convenience init(dataTransport: DataTransport) {
-        self.init(protocolTransport: ProtocolTransport(dataTransport: dataTransport))
+    convenience init(
+        dataTransport: DataTransport,
+        serverNotificationHandler: ServerNotificationHandler
+    ) {
+        self.init(
+            protocolTransport: ProtocolTransport(dataTransport: dataTransport),
+            serverNotificationHandler: serverNotificationHandler
+        )
     }
 
     deinit {
@@ -203,62 +223,21 @@ extension CustomJSONRPCLanguageServer {
         _ anyNotification: AnyJSONRPCNotification,
         data: Data,
         block: @escaping (Error?) -> Void
-    ) -> Bool {
-        let methodName = anyNotification.method
-        let debugDescription = {
-            if let params = anyNotification.params {
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = .prettyPrinted
-                if let jsonData = try? encoder.encode(params),
-                   let text = String(data: jsonData, encoding: .utf8)
-                {
-                    return text
-                }
+    ) {
+        Task {
+            do {
+                try await serverNotificationHandler.handleNotification(
+                    anyNotification,
+                    data: data
+                )
+                block(nil)
+            } catch {
+                block(error)
             }
-            return "N/A"
-        }()
-        switch methodName {
-        case "window/logMessage":
-            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
-                Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(debugDescription)")
-            }
-            block(nil)
-            return true
-        case "LogMessage":
-            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
-                Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(debugDescription)")
-            }
-            block(nil)// 
-            return true
-        case "statusNotification":
-            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
-                Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(debugDescription)")
-            }
-            block(nil)
-            return true
-        case "featureFlagsNotification":
-            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
-                Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(debugDescription)")
-            }
-            block(nil)
-            return true
-        case "conversation/preconditionsNotification":
-            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
-                Logger.gitHubCopilot
-                    .info("\(anyNotification.method): \(debugDescription)")
-            }
-            block(nil)
-            return true
-        default:
-            return false
         }
     }
 
-    public func sendNotification(
+    func sendNotification(
         _ notif: ClientNotification,
         completionHandler: @escaping (ServerError?) -> Void
     ) {
@@ -282,6 +261,76 @@ extension CustomJSONRPCLanguageServer {
         completionHandler: @escaping (ServerResult<Response>) -> Void
     ) {
         internalServer.sendRequest(request, completionHandler: completionHandler)
+    }
+}
+
+@GitHubCopilotSuggestionActor
+final class ServerNotificationHandler {
+    typealias Handler = (
+        _ anyNotification: AnyJSONRPCNotification,
+        _ data: Data
+    ) async throws -> Bool
+
+    var handlers = [AnyHashable: Handler]()
+    nonisolated init() {}
+
+    func handleNotification(
+        _ anyNotification: AnyJSONRPCNotification,
+        data: Data
+    ) async throws {
+        for handler in handlers.values {
+            do {
+                let handled = try await handler(anyNotification, data)
+                if handled {
+                    return
+                }
+            } catch {
+                throw ServerError.notificationDispatchFailed(error)
+            }
+        }
+
+        let methodName = anyNotification.method
+        let debugDescription = {
+            if let params = anyNotification.params {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted
+                if let jsonData = try? encoder.encode(params),
+                   let text = String(data: jsonData, encoding: .utf8)
+                {
+                    return text
+                }
+            }
+            return "N/A"
+        }()
+        switch methodName {
+        case "window/logMessage":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+        case "LogMessage":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+        case "statusNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+        case "featureFlagsNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+        case "conversation/preconditionsNotification":
+            if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
+                Logger.gitHubCopilot
+                    .info("\(anyNotification.method): \(debugDescription)")
+            }
+        default:
+            throw ServerError.handlerUnavailable(methodName)
+        }
     }
 }
 
