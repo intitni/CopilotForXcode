@@ -219,6 +219,14 @@ public extension UserDefaultPreferenceKeys {
     var codeiumEnterpriseVersion: PreferenceKey<String> {
         .init(defaultValue: "", key: "CodeiumEnterpriseVersion")
     }
+
+    var indexEnabled: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "indexEnabled")
+    }
+    
+    var indexingMaxFileSize: PreferenceKey<Int> {
+        .init(defaultValue: 5000, key: "indexingMaxFileSize")
+    }
     
 }
 

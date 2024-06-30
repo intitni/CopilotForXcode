@@ -20,6 +20,15 @@ public struct CodeiumInstallationManager {
             }
         }
     }
+    
+    public func getLatestSupportedVersion() -> String {
+        if isEnterprise{
+            return UserDefaults.shared.value(for: \.codeiumEnterpriseVersion);
+        }
+        
+        return Self.latestSupportedVersion;
+        
+    }
 
     func getEnterprisePortalVersion() async throws -> String {
         let enterprisePortalUrl = UserDefaults.shared.value(for: \.codeiumPortalUrl)
