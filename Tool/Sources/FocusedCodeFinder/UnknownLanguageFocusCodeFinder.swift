@@ -1,6 +1,6 @@
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 
 /// Used when the language is not supported by the app
 /// or that the code is too long to be returned by a focused code finder.

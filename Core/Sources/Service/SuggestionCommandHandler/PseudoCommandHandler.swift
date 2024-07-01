@@ -7,7 +7,7 @@ import Logger
 import PlusFeatureFlag
 import Preferences
 import SuggestionInjector
-import SuggestionModel
+import SuggestionBasic
 import Toast
 import Workspace
 import WorkspaceSuggestionService

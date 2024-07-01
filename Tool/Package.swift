@@ -20,7 +20,7 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
+        .library(name: "SuggestionBasic", targets: ["SuggestionBasic"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -79,7 +79,7 @@ let package = Package(
     targets: [
         // MARK: - Helpers
 
-        .target(name: "XPCShared", dependencies: ["SuggestionModel", "Logger"]),
+        .target(name: "XPCShared", dependencies: ["SuggestionBasic", "Logger"]),
 
         .target(name: "Configs"),
 
@@ -151,7 +151,7 @@ let package = Package(
         ),
 
         .target(
-            name: "SuggestionModel",
+            name: "SuggestionBasic",
             dependencies: [
                 "LanguageClient",
                 .product(name: "Parsing", package: "swift-parsing"),
@@ -167,8 +167,8 @@ let package = Package(
         ),
 
         .testTarget(
-            name: "SuggestionModelTests",
-            dependencies: ["SuggestionModel"]
+            name: "SuggestionBasicTests",
+            dependencies: ["SuggestionBasic"]
         ),
         
         .target(
@@ -195,7 +195,7 @@ let package = Package(
             name: "XcodeInspector",
             dependencies: [
                 "AXExtension",
-                "SuggestionModel",
+                "SuggestionBasic",
                 "AXNotificationStream",
                 "Logger",
                 "Toast",
@@ -214,7 +214,7 @@ let package = Package(
         .target(
             name: "BuiltinExtension",
             dependencies: [
-                "SuggestionModel",
+                "SuggestionBasic",
                 "SuggestionProvider",
                 "ChatBasic",
                 "Workspace",
@@ -229,7 +229,7 @@ let package = Package(
             dependencies: [
                 "Highlightr",
                 "Preferences",
-                "SuggestionModel",
+                "SuggestionBasic",
                 "DebounceFunction",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
@@ -237,7 +237,7 @@ let package = Package(
         .testTarget(name: "SharedUIComponentsTests", dependencies: ["SharedUIComponents"]),
 
         .target(name: "ASTParser", dependencies: [
-            "SuggestionModel",
+            "SuggestionBasic",
             .product(name: "SwiftTreeSitter", package: "SwiftTreeSitter"),
             .product(name: "TreeSitterObjC", package: "tree-sitter-objc"),
         ]),
@@ -249,7 +249,7 @@ let package = Package(
             dependencies: [
                 "GitIgnoreCheck",
                 "UserDefaultsObserver",
-                "SuggestionModel",
+                "SuggestionBasic",
                 "Logger",
                 "Preferences",
                 "XcodeInspector",
@@ -271,7 +271,7 @@ let package = Package(
             dependencies: [
                 "Preferences",
                 "ASTParser",
-                "SuggestionModel",
+                "SuggestionBasic",
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
             ]
@@ -310,7 +310,7 @@ let package = Package(
         .target(name: "BingSearchService"),
 
         .target(name: "SuggestionProvider", dependencies: [
-            "SuggestionModel",
+            "SuggestionBasic",
             "UserDefaultsObserver",
             "Preferences",
             "Logger",
@@ -325,7 +325,7 @@ let package = Package(
             name: "GitHubCopilotService",
             dependencies: [
                 "LanguageClient",
-                "SuggestionModel",
+                "SuggestionBasic",
                 "ChatBasic",
                 "Logger",
                 "Preferences",
@@ -350,7 +350,7 @@ let package = Package(
             dependencies: [
                 "LanguageClient",
                 "Keychain",
-                "SuggestionModel",
+                "SuggestionBasic",
                 "Preferences",
                 "Terminal",
                 "XcodeInspector",
@@ -407,7 +407,7 @@ let package = Package(
         .target(
             name: "ChatContextCollector",
             dependencies: [
-                "SuggestionModel",
+                "SuggestionBasic",
                 "ChatBasic",
                 "OpenAIService",
             ]

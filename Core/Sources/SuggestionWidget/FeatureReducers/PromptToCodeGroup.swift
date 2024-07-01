@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Foundation
 import PromptToCodeService
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 @Reducer

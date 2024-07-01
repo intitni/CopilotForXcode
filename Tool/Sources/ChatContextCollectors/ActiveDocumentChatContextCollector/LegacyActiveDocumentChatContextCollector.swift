@@ -2,7 +2,7 @@ import ChatContextCollector
 import Foundation
 import OpenAIService
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 public struct LegacyActiveDocumentChatContextCollector: ChatContextCollector {

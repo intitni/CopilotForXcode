@@ -7,7 +7,7 @@ import Foundation
 import GitHubCopilotService
 import OpenAIService
 import PromptToCodeService
-import SuggestionModel
+import SuggestionBasic
 import SuggestionWidget
 
 @MainActor

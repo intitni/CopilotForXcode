@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import SuggestionModel
+@testable import SuggestionBasic
 
 final class BreakLinePerformanceTests: XCTestCase {
     func test_breakLines() {

@@ -1,4 +1,4 @@
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 import SharedUIComponents
 

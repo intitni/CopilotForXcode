@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import MarkdownUI
 import SharedUIComponents
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 
 struct PromptToCodePanel: View {

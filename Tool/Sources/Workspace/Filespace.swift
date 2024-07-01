@@ -1,7 +1,7 @@
 import Dependencies
 import Foundation
 import GitIgnoreCheck
-import SuggestionModel
+import SuggestionBasic
 
 public protocol FilespacePropertyKey {
     associatedtype Value

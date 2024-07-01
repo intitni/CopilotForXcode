@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 import Workspace
 
 public struct FilespaceSuggestionSnapshot: Equatable {

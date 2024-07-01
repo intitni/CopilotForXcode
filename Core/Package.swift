@@ -110,7 +110,7 @@ let package = Package(
             dependencies: [
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ].pro([
@@ -132,7 +132,7 @@ let package = Package(
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -153,7 +153,7 @@ let package = Package(
                 "SuggestionInjector",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
             ]
         ),
@@ -169,7 +169,7 @@ let package = Package(
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
@@ -187,7 +187,7 @@ let package = Package(
             dependencies: [
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool")
             ].pro([
                 "ProExtension",
@@ -195,7 +195,7 @@ let package = Package(
         ),
         .target(
             name: "SuggestionInjector",
-            dependencies: [.product(name: "SuggestionModel", package: "Tool")]
+            dependencies: [.product(name: "SuggestionBasic", package: "Tool")]
         ),
         .testTarget(
             name: "SuggestionInjectorTests",
@@ -208,7 +208,7 @@ let package = Package(
             name: "PromptToCodeService",
             dependencies: [
                 .product(name: "FocusedCodeFinder", package: "Tool"),
-                .product(name: "SuggestionModel", package: "Tool"),
+                .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),

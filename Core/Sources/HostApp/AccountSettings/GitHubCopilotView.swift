@@ -3,7 +3,7 @@ import Client
 import GitHubCopilotService
 import Preferences
 import SharedUIComponents
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 
 struct GitHubCopilotView: View {

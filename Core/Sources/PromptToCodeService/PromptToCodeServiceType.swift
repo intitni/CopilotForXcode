@@ -1,6 +1,6 @@
 import Dependencies
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 public protocol PromptToCodeServiceType {
     func modifyCode(

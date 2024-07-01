@@ -3,7 +3,7 @@ import struct CopilotForXcodeKit.SuggestionServiceConfiguration
 import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import UserDefaultsObserver
 
 public struct SuggestionRequest {

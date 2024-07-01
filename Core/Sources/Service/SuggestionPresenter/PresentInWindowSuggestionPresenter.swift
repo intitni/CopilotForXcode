@@ -1,7 +1,7 @@
 import ChatService
 import Foundation
 import OpenAIService
-import SuggestionModel
+import SuggestionBasic
 import SuggestionWidget
 
 struct PresentInWindowSuggestionPresenter {
