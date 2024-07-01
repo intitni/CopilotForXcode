@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import SuggestionModel
+@testable import SuggestionBasic
 
 final class TextExtrationFromCodeTests: XCTestCase {
     func test_empty_selection() {

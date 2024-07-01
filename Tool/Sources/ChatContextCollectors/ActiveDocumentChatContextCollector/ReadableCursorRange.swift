@@ -1,4 +1,4 @@
-import SuggestionModel
+import SuggestionBasic
 
 extension CursorPosition {
     var text: String {

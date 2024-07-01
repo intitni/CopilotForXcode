@@ -1,7 +1,7 @@
 import BuiltinExtension
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SuggestionProvider
 import UserDefaultsObserver
 import Workspace

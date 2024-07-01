@@ -1,7 +1,7 @@
 import Foundation
 import JSONRPC
 import LanguageServerProtocol
-import SuggestionModel
+import SuggestionBasic
 
 protocol CodeiumRequestType {
     associatedtype Response: Codable

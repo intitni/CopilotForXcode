@@ -1,6 +1,6 @@
 import AppKit
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 public struct CustomCommandTemplateProcessor {

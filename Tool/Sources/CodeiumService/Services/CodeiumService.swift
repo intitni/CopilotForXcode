@@ -3,7 +3,7 @@ import Foundation
 import LanguageClient
 import LanguageServerProtocol
 import Logger
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 public protocol CodeiumSuggestionServiceType {

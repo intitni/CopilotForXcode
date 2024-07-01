@@ -6,7 +6,7 @@ import LanguageServerProtocol
 import Logger
 import OpenAIService
 import SuggestionInjector
-import SuggestionModel
+import SuggestionBasic
 import SuggestionWidget
 import UserNotifications
 import Workspace

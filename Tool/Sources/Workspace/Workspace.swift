@@ -1,6 +1,6 @@
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import UserDefaultsObserver
 import XcodeInspector
 

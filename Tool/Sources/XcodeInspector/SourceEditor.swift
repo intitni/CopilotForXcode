@@ -3,7 +3,7 @@ import AsyncPassthroughSubject
 import AXNotificationStream
 import Foundation
 import Logger
-import SuggestionModel
+import SuggestionBasic
 
 /// Representing a source editor inside Xcode.
 public class SourceEditor {

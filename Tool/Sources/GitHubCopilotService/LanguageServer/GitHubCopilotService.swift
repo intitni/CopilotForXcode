@@ -5,7 +5,7 @@ import LanguageClient
 import LanguageServerProtocol
 import Logger
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 
 public protocol GitHubCopilotAuthServiceType {
     func checkStatus() async throws -> GitHubCopilotAccountStatus

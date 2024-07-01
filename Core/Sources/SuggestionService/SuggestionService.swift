@@ -5,7 +5,7 @@ import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import GitHubCopilotService
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SuggestionProvider
 import UserDefaultsObserver
 import Workspace
@@ -63,7 +63,7 @@ public extension SuggestionService {
     func getSuggestions(
         _ request: SuggestionRequest,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
+    ) async throws -> [SuggestionBasic.CodeSuggestion] {
         do {
             var getSuggestion = suggestionProvider.getSuggestions(_:workspaceInfo:)
             let configuration = await configuration
@@ -89,14 +89,14 @@ public extension SuggestionService {
     }
 
     func notifyAccepted(
-        _ suggestion: SuggestionModel.CodeSuggestion,
+        _ suggestion: SuggestionBasic.CodeSuggestion,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         await suggestionProvider.notifyAccepted(suggestion, workspaceInfo: workspaceInfo)
     }
 
     func notifyRejected(
-        _ suggestions: [SuggestionModel.CodeSuggestion],
+        _ suggestions: [SuggestionBasic.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         await suggestionProvider.notifyRejected(suggestions, workspaceInfo: workspaceInfo)

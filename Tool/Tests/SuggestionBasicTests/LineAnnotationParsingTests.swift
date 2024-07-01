@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import SuggestionModel
+@testable import SuggestionBasic
 
 class LineAnnotationParsingTests: XCTestCase {
     func test_parse_line_annotation() {

@@ -2,7 +2,7 @@ import AppKit
 import Client
 import Foundation
 import GitHubCopilotService
-import SuggestionModel
+import SuggestionBasic
 import Workspace
 import XCTest
 import XPCShared
@@ -50,11 +50,11 @@ class MockSuggestionService: GitHubCopilotSuggestionServiceType {
         fileURL: URL,
         content: String,
         originalContent: String,
-        cursorPosition: SuggestionModel.CursorPosition,
+        cursorPosition: SuggestionBasic.CursorPosition,
         tabSize: Int,
         indentSize: Int,
         usesTabsForIndentation: Bool
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
+    ) async throws -> [SuggestionBasic.CodeSuggestion] {
         completions
     }
 

@@ -4,7 +4,7 @@ import ChatService
 import ChatTab
 import Foundation
 import PromptToCodeService
-import SuggestionModel
+import SuggestionBasic
 import SuggestionWidget
 import XcodeInspector
 

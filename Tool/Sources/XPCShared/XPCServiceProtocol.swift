@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 @objc(XPCServiceProtocol)
 public protocol XPCServiceProtocol {

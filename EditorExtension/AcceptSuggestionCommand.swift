@@ -1,5 +1,5 @@
 import Client
-import SuggestionModel
+import SuggestionBasic
 import Foundation
 import XcodeKit
 import XPCShared

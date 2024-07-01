@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 // NOTE: Every lines from Xcode Extension has a line break at its end, even the last line.
 // NOTE: Copilot's completion always start at character 0, no matter where the cursor is.

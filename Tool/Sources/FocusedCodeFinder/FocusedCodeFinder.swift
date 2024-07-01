@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 public struct CodeContext: Equatable {
     public typealias ScopeContext = ActiveDocumentContext.FocusedContext.Context

@@ -1,7 +1,7 @@
 import ActiveApplicationMonitor
 import ComposableArchitecture
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 
 struct WidgetView: View {

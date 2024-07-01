@@ -1,6 +1,6 @@
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 
 public typealias KnownLanguageFocusedCodeFinder<Tree, Node, TextPosition> =
     BaseKnownLanguageFocusedCodeFinder<Tree, Node, TextPosition> &
@@ -50,7 +50,7 @@ public protocol KnownLanguageFocusedCodeFinderType: FocusedCodeFinderType {
     func collectContextNodes(
         in document: Document,
         tree: Tree,
-        containingRange: SuggestionModel.CursorRange,
+        containingRange: SuggestionBasic.CursorRange,
         textProvider: @escaping TextProvider,
         rangeConverter: @escaping RangeConverter
     ) -> ContextInfo
@@ -70,7 +70,7 @@ public protocol KnownLanguageFocusedCodeFinderType: FocusedCodeFinderType {
 public extension KnownLanguageFocusedCodeFinderType {
     func findFocusedCode(
         in document: Document,
-        containingRange range: SuggestionModel.CursorRange
+        containingRange range: SuggestionBasic.CursorRange
     ) -> CodeContext {
         guard let tree = parseSyntaxTree(from: document) else { return .empty }
 
@@ -145,7 +145,7 @@ extension KnownLanguageFocusedCodeFinderType {
     func extractFocusedCode(
         in codeRange: CursorRange,
         in document: Document,
-        containingRange range: SuggestionModel.CursorRange
+        containingRange range: SuggestionBasic.CursorRange
     ) -> (code: String, lines: [String], codeRange: CursorRange) {
         var codeRange = codeRange
         let codeInCodeRange = EditorInformation.code(

@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import SuggestionModel
+@testable import SuggestionBasic
 
 final class ModificationTests: XCTestCase {
     func test_nsmutablearray_deleting_an_element() {
