@@ -25,7 +25,7 @@ public struct UserPreferenceChatGPTConfiguration: ChatGPTConfiguration {
         }
 
         let id = UserDefaults.shared.value(for: \.defaultChatFeatureChatModelId)
-        if id == "com.github.copilot" {
+        if id == "com.github.copilot", chatModelKey != \.preferredChatModelIdForUtilities {
             return .init(id: id, name: "GitHub Copilot", format: .openAI, info: .init())
         }
         return models.first { $0.id == id }
