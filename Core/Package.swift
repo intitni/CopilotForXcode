@@ -101,6 +101,7 @@ let package = Package(
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts
         .package(url: "https://github.com/intitni/KeyboardShortcuts", branch: "main"),
+        .package(url: "https://github.com/intitni/CGEventOverride", from: "1.2.1"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -127,6 +128,7 @@ let package = Package(
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
                 "PlusFeatureFlag",
+                "KeyBindingManager",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
@@ -376,6 +378,24 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
+        ),
+        
+        // MARK: Key Binding
+
+        .target(
+            name: "KeyBindingManager",
+            dependencies: [
+                .product(name: "Workspace", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "Logger", package: "Tool"),
+                .product(name: "CGEventOverride", package: "CGEventOverride"),
+                .product(name: "AppMonitoring", package: "Tool"),
+                .product(name: "UserDefaultsObserver", package: "Tool"),
+            ]
+        ),
+        .testTarget(
+            name: "KeyBindingManagerTests",
+            dependencies: ["KeyBindingManager"]
         ),
     ]
 )

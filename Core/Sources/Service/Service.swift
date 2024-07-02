@@ -11,7 +11,7 @@ import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
 import XPCShared
-
+import KeyBindingManager
 #if canImport(ProService)
 import ProService
 #endif
@@ -32,6 +32,7 @@ public final class Service {
     public let realtimeSuggestionController = RealtimeSuggestionController()
     public let scheduledCleaner: ScheduledCleaner
     let globalShortcutManager: GlobalShortcutManager
+    let keyBindingManager: KeyBindingManager
 
     #if canImport(ProService)
     let proService: ProService
@@ -62,9 +63,8 @@ public final class Service {
         }
         self.workspacePool = workspacePool
         globalShortcutManager = .init(guiController: guiController)
-
-        #if canImport(ProService)
-        proService = ProService(
+        keyBindingManager = .init(
+            workspacePool: workspacePool,
             acceptSuggestion: {
                 Task { await PseudoCommandHandler().acceptSuggestion() }
             },
@@ -72,6 +72,9 @@ public final class Service {
                 Task { await PseudoCommandHandler().dismissSuggestion() }
             }
         )
+
+        #if canImport(ProService)
+        proService = ProService()
         #endif
 
         scheduledCleaner.service = self
@@ -87,6 +90,7 @@ public final class Service {
         #endif
         DependencyUpdater().update()
         globalShortcutManager.start()
+        keyBindingManager.start()
 
         Task {
             await XcodeInspector.shared.safe.$activeDocumentURL
@@ -105,6 +109,7 @@ public final class Service {
     @MainActor
     public func prepareForExit() async {
         Logger.service.info("Prepare for exit.")
+        keyBindingManager.stopForExit()
         #if canImport(ProService)
         proService.prepareForExit()
         #endif
