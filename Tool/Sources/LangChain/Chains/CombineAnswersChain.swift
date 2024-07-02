@@ -1,6 +1,7 @@
 import Foundation
 import Logger
 import OpenAIService
+import Preferences
 
 public class CombineAnswersChain: Chain {
     public struct Input: Decodable {
@@ -16,7 +17,8 @@ public class CombineAnswersChain: Chain {
     public let chatModelChain: ChatModelChain<Input>
 
     public init(
-        configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        configuration: ChatGPTConfiguration =
+            UserPreferenceChatGPTConfiguration(chatModelKey: \.preferredChatModelIdForUtilities),
         extraInstructions: String = ""
     ) {
         chatModelChain = .init(

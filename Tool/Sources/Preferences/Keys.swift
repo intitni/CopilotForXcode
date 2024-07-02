@@ -505,6 +505,10 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForWebScope: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForWebScope")
     }
+    
+    var preferredChatModelIdForUtilities: PreferenceKey<String> {
+        .init(defaultValue: "", key: "PreferredChatModelIdForUtilities")
+    }
 
     var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")

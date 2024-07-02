@@ -16,6 +16,7 @@ struct ChatSettingsGeneralSectionView: View {
         @AppStorage(\.chatCodeFont) var chatCodeFont
 
         @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
+        @AppStorage(\.preferredChatModelIdForUtilities) var utilityChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
         @AppStorage(\.defaultChatFeatureEmbeddingModelId) var defaultChatFeatureEmbeddingModelId
@@ -115,6 +116,27 @@ struct ChatSettingsGeneralSectionView: View {
                 }
 
                 ForEach(allModels, id: \.id) { chatModel in
+                    Text(chatModel.name).tag(chatModel.id)
+                }
+            }
+
+            Picker(
+                "Utility chat model",
+                selection: $settings.utilityChatModelId
+            ) {
+                Text("Use the default model").tag("")
+
+                if !settings.chatModels.contains(where: { $0.id == settings.utilityChatModelId }),
+                   !settings.utilityChatModelId.isEmpty
+                {
+                    Text(
+                        (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                            ?? "No Model Found"
+                    )
+                    .tag(settings.utilityChatModelId)
+                }
+
+                ForEach(settings.chatModels, id: \.id) { chatModel in
                     Text(chatModel.name).tag(chatModel.id)
                 }
             }
