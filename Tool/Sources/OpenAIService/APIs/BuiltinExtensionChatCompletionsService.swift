@@ -33,7 +33,26 @@ actor BuiltinExtensionChatCompletionsService {
 
 extension BuiltinExtensionChatCompletionsService: ChatCompletionsAPI {
     func callAsFunction() async throws -> ChatCompletionResponseBody {
-        fatalError()
+        let stream: AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> =
+            try await callAsFunction()
+
+        var id: String? = nil
+        var model = ""
+        var content = ""
+        for try await chunk in stream {
+            if let chunkId = chunk.id { id = chunkId }
+            if model.isEmpty, let chunkModel = chunk.model { model = chunkModel }
+            content.append(chunk.message?.content ?? "")
+        }
+
+        return .init(
+            id: id,
+            object: "",
+            model: model,
+            message: .init(role: .assistant, content: content),
+            otherChoices: [],
+            finishReason: ""
+        )
     }
 }
 
@@ -42,8 +61,8 @@ extension BuiltinExtensionChatCompletionsService: ChatCompletionsStreamAPI {
     ) async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> {
         let service = try getChatService()
         let (message, history) = extractMessageAndHistory(from: requestBody)
-        guard let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL,
-              let projectURL = XcodeInspector.shared.realtimeActiveProjectURL
+        guard let workspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL,
+              let projectURL = await XcodeInspector.shared.safe.realtimeActiveProjectURL
         else { throw CancellationError() }
         let stream = await service.sendMessage(
             message,
@@ -54,12 +73,12 @@ extension BuiltinExtensionChatCompletionsService: ChatCompletionsStreamAPI {
                 projectURL: projectURL
             )
         )
-
+        let responseID = UUID().uuidString
         return stream.map { text in
             ChatCompletionsStreamDataChunk(
-                id: nil,
+                id: responseID,
                 object: nil,
-                model: nil,
+                model: "github-copilot",
                 message: .init(
                     role: .assistant,
                     content: text,
