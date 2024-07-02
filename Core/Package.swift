@@ -102,6 +102,7 @@ let package = Package(
         // https://github.com/sindresorhus/KeyboardShortcuts
         .package(url: "https://github.com/intitni/KeyboardShortcuts", branch: "main"),
         .package(url: "https://github.com/intitni/CGEventOverride", from: "1.2.1"),
+        .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -129,6 +130,7 @@ let package = Package(
                 "ChatGPTChatTab",
                 "PlusFeatureFlag",
                 "KeyBindingManager",
+                "XcodeThemeController",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
@@ -397,6 +399,18 @@ let package = Package(
             name: "KeyBindingManagerTests",
             dependencies: ["KeyBindingManager"]
         ),
+        
+        // MARK: Theming
+
+        .target(
+            name: "XcodeThemeController",
+            dependencies: [
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "AppMonitoring", package: "Tool"),
+                .product(name: "Highlightr", package: "Highlightr"),
+            ]
+        ),
+
     ]
 )
 

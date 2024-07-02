@@ -245,11 +245,7 @@ struct SuggestionSettingsGeneralSectionView: View {
                 Text("Hide common preceding spaces")
             }
 
-            #if canImport(ProHostApp)
-
             CodeHighlightThemePicker(scenario: .suggestion)
-
-            #endif
 
             FontPicker(font: $settings.font) {
                 Text("Font")

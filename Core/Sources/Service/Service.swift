@@ -4,14 +4,15 @@ import Combine
 import Dependencies
 import Foundation
 import GitHubCopilotService
+import KeyBindingManager
 import Logger
 import SuggestionService
 import Toast
 import Workspace
 import WorkspaceSuggestionService
 import XcodeInspector
+import XcodeThemeController
 import XPCShared
-import KeyBindingManager
 #if canImport(ProService)
 import ProService
 #endif
@@ -33,6 +34,7 @@ public final class Service {
     public let scheduledCleaner: ScheduledCleaner
     let globalShortcutManager: GlobalShortcutManager
     let keyBindingManager: KeyBindingManager
+    let xcodeThemeController: XcodeThemeController = .init()
 
     #if canImport(ProService)
     let proService: ProService
@@ -85,6 +87,7 @@ public final class Service {
         scheduledCleaner.start()
         realtimeSuggestionController.start()
         guiController.start()
+        xcodeThemeController.start()
         #if canImport(ProService)
         proService.start()
         #endif
