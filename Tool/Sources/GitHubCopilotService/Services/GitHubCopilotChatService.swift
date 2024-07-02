@@ -129,6 +129,14 @@ extension GitHubCopilotChatService {
 
         var currentTurn = Turn(request: "", response: nil)
         var turns: [Turn] = []
+        let systemPrompt = history
+            .filter { $0.role == .system }.compactMap(\.content)
+            .joined(separator: "\n\n")
+        
+        if !systemPrompt.isEmpty {
+            turns.append(.init(request: "[System Prompt]\n\(systemPrompt)", response: "OK!"))
+        }
+        
         for i in firstIndexOfUserMessage..<history.endIndex {
             let message = history[i]
             let text = message.content ?? ""
