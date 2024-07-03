@@ -1,3 +1,4 @@
+import ChatBasic
 import ChatService
 import ComposableArchitecture
 import Foundation
@@ -48,7 +49,7 @@ public struct DisplayedChatMessage: Equatable {
         self.id = id
         self.role = role
         self.text = text
-        self.markdownContent = .init(text)
+        markdownContent = .init(text)
         self.references = references
     }
 }
