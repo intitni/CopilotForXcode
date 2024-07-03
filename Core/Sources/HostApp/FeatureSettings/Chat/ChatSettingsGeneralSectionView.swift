@@ -235,11 +235,7 @@ struct ChatSettingsGeneralSectionView: View {
                 Text("Wrap text in code block")
             }
 
-            #if canImport(ProHostApp)
-
             CodeHighlightThemePicker(scenario: .chat)
-
-            #endif
 
             Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
                 Text("Disable always-on-top when the chat panel is detached")

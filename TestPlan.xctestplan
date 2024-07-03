@@ -81,13 +81,6 @@
     {
       "target" : {
         "containerPath" : "container:Tool",
-        "identifier" : "SuggestionModelTests",
-        "name" : "SuggestionModelTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
         "identifier" : "SharedUIComponentsTests",
         "name" : "SharedUIComponentsTests"
       }
@@ -146,6 +139,20 @@
         "containerPath" : "container:Tool",
         "identifier" : "SuggestionProviderTests",
         "name" : "SuggestionProviderTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "KeyBindingManagerTests",
+        "name" : "KeyBindingManagerTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionBasicTests",
+        "name" : "SuggestionBasicTests"
       }
     }
   ],

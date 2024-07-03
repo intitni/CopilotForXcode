@@ -172,28 +172,24 @@ struct SuggestionSettingsGeneralSectionView: View {
                 Text("Real-time suggestion")
             }
 
-            #if canImport(ProHostApp)
-            WithFeatureEnabled(\.tabToAcceptSuggestion) {
-                Toggle(isOn: $settings.acceptSuggestionWithTab) {
-                    HStack {
-                        Text("Accept suggestion with Tab")
+            Toggle(isOn: $settings.acceptSuggestionWithTab) {
+                HStack {
+                    Text("Accept suggestion with Tab")
 
-                        Button(action: {
-                            isTabToAcceptSuggestionModifierViewOpen = true
-                        }) {
-                            Image(systemName: "gearshape.fill")
-                        }
-                        .buttonStyle(.plain)
+                    Button(action: {
+                        isTabToAcceptSuggestionModifierViewOpen = true
+                    }) {
+                        Image(systemName: "gearshape.fill")
                     }
-                }.sheet(isPresented: $isTabToAcceptSuggestionModifierViewOpen) {
-                    TabToAcceptSuggestionModifierView()
+                    .buttonStyle(.plain)
                 }
+            }.sheet(isPresented: $isTabToAcceptSuggestionModifierViewOpen) {
+                TabToAcceptSuggestionModifierView()
             }
 
             Toggle(isOn: $settings.dismissSuggestionWithEsc) {
                 Text("Dismiss suggestion with ESC")
             }
-            #endif
 
             HStack {
                 Toggle(isOn: $settings.disableSuggestionFeatureGlobally) {
@@ -249,11 +245,7 @@ struct SuggestionSettingsGeneralSectionView: View {
                 Text("Hide common preceding spaces")
             }
 
-            #if canImport(ProHostApp)
-
             CodeHighlightThemePicker(scenario: .suggestion)
-
-            #endif
 
             FontPicker(font: $settings.font) {
                 Text("Font")

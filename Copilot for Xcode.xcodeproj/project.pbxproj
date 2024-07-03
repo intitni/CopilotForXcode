@@ -205,7 +205,6 @@
 		C8216B772980370100AD38C7 /* ReloadLaunchAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadLaunchAgent.swift; sourceTree = "<group>"; };
 		C828B27D2B1F241500E7612A /* ExtensionPoint.appextensionpoint */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = ExtensionPoint.appextensionpoint; sourceTree = "<group>"; };
 		C82E38492A1F025F00D4EADF /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
-		C83E5DED2A38CD8C0071506D /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptToCodeCommand.swift; sourceTree = "<group>"; };
@@ -335,7 +334,6 @@
 				C887BC832965D96000931567 /* DEVELOPMENT.md */,
 				C8520308293D805800460097 /* README.md */,
 				C82E38492A1F025F00D4EADF /* LICENSE */,
-				C83E5DED2A38CD8C0071506D /* Makefile */,
 				C8F103292A7A365000D28F4F /* launchAgent.plist */,
 				C8738B6D2BE4F3E800609E7F /* bridgeLaunchAgent.plist */,
 				C81E867D296FE4420026E908 /* Version.xcconfig */,

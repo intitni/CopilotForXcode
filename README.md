@@ -6,8 +6,6 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 
 <a href="https://www.buymeacoffee.com/intitni" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-[Get a Plus License Key to unlock more features and support this project](https://intii.lemonsqueezy.com)
-
 ## Features
 
 - Code Suggestions (powered by GitHub Copilot and Codeium).
@@ -32,7 +30,6 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
   - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
 - [Update](#update)
 - [Feature](#feature)
-- [Plus Features](#plus-features)
 - [Limitations](#limitations)
 - [License](#license)
 
@@ -121,7 +118,8 @@ A [recommended setup](https://github.com/intitni/CopilotForXcode/issues/14) that
 
 | Command             | Key Binding                                            |
 | ------------------- | ------------------------------------------------------ |
-| Accept Suggestions  | `⌥}` (Or accept with Tab if Plus license is available) |
+| Accept Suggestions  | `⌥}` or Tab                                            |
+| Dismiss Suggestions | Esc                                                    |
 | Reject Suggestion   | `⌥{`                                                   |
 | Next Suggestion     | `⌥>`                                                   |
 | Previous Suggestion | `⌥<`                                                   |
@@ -256,7 +254,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | :------: | --------------------------------------------------------------------------------------------------- |
 |   `⌘W`   | Close the chat tab.                                                                                 |
 |   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
-|  `⇧↩︎`  | Add new line.                                                                                       |
+|  `⇧↩︎`    | Add new line.                                                                                       |
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
 
@@ -352,34 +350,6 @@ You can use the following template arguments in custom commands:
 | `{{active_editor_file_url}}`  | The URL of the active file in the editor.      |
 | `{{active_editor_file_name}}` | The name of the active file in the editor.     |
 | `{{clipboard}}`               | The content in clipboard.                      |
-
-## Plus Features
-
-The pre-built binary contains a set of exclusive features that can only be accessed with a Plus license key. To obtain a license key, please visit [this link](https://intii.lemonsqueezy.com).
-
-These features are included in another repo, and are not open sourced.
-
-The currently available Plus features include:
-
-- `@project` scope in chat to include project information in conversations. (experimental)
-- Suggestion Cheatsheet that provides relevant content to the suggestion service. (experimental)
-- `@sense` scope in chat and prompt to code to include relevant information of the focusing code.
-- Terminal tab in chat panel.
-- Unlimited chat/embedding models.
-- Tab to accept suggestions.
-- Persisted chat panel.
-- Browser tab in chat panel.
-- Unlimited custom commands.
-
-Since the app needs to manage license keys, it will send network request to `https://copilotforxcode-license.intii.com`,
-
-- when you activate the license key
-- when you deactivate the license key
-- when you validate the license key manually
-- when you open the host app or the service app if a license key is available
-- every 24 hours if a license key is available
-
-The request contains only the license key, the email address (only on activation), and an instance id. You are free to MITM the request to see what data is sent.
 
 ## Limitations
 

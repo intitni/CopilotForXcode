@@ -4,57 +4,6 @@
 import Foundation
 import PackageDescription
 
-// MARK: - Pro
-
-extension [Target.Dependency] {
-    func pro(_ targetNames: [String]) -> [Target.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
-        }
-        return self
-    }
-}
-
-extension [Package.Dependency] {
-    var pro: [Package.Dependency] {
-        if isProIncluded {
-            // include the pro package
-            return self + [.package(path: "../Pro/Pro")]
-        }
-        return self
-    }
-}
-
-let isProIncluded: Bool = {
-    func isProIncluded(file: StaticString = #file) -> Bool {
-        let filePath = "\(file)"
-        let fileURL = URL(fileURLWithPath: filePath)
-        let rootURL = fileURL
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let confURL = rootURL.appendingPathComponent("PLUS")
-        if !FileManager.default.fileExists(atPath: confURL.path) {
-            return false
-        }
-        do {
-            if let content = try String(
-                data: Data(contentsOf: confURL),
-                encoding: .utf8
-            ) {
-                if content.hasPrefix("YES") {
-                    return true
-                }
-            }
-            return false
-        } catch {
-            return false
-        }
-    }
-
-    return isProIncluded()
-}()
-
 // MARK: - Package
 
 let package = Package(
@@ -101,6 +50,8 @@ let package = Package(
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts
         .package(url: "https://github.com/intitni/KeyboardShortcuts", branch: "main"),
+        .package(url: "https://github.com/intitni/CGEventOverride", from: "1.2.1"),
+        .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
     ].pro,
     targets: [
         // MARK: - Main
@@ -127,6 +78,8 @@ let package = Package(
                 "ServiceUpdateMigration",
                 "ChatGPTChatTab",
                 "PlusFeatureFlag",
+                "KeyBindingManager",
+                "XcodeThemeController",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
@@ -377,6 +330,73 @@ let package = Package(
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
         ),
+        
+        // MARK: Key Binding
+
+        .target(
+            name: "KeyBindingManager",
+            dependencies: [
+                .product(name: "Workspace", package: "Tool"),
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "Logger", package: "Tool"),
+                .product(name: "CGEventOverride", package: "CGEventOverride"),
+                .product(name: "AppMonitoring", package: "Tool"),
+                .product(name: "UserDefaultsObserver", package: "Tool"),
+            ]
+        ),
+        .testTarget(
+            name: "KeyBindingManagerTests",
+            dependencies: ["KeyBindingManager"]
+        ),
+        
+        // MARK: Theming
+
+        .target(
+            name: "XcodeThemeController",
+            dependencies: [
+                .product(name: "Preferences", package: "Tool"),
+                .product(name: "AppMonitoring", package: "Tool"),
+                .product(name: "Highlightr", package: "Highlightr"),
+            ]
+        ),
+
     ]
 )
 
+extension [Target.Dependency] {
+    func pro(_ targetNames: [String]) -> [Target.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + targetNames.map { Target.Dependency.product(name: $0, package: "Pro") }
+        }
+        return self
+    }
+}
+
+extension [Package.Dependency] {
+    var pro: [Package.Dependency] {
+        if isProIncluded {
+            // include the pro package
+            return self + [.package(path: "../../CopilotForXcodePro/Pro")]
+        }
+        return self
+    }
+}
+
+let isProIncluded: Bool = {
+    func isProIncluded(file: StaticString = #file) -> Bool {
+        let filePath = "\(file)"
+        let fileURL = URL(fileURLWithPath: filePath)
+        let rootURL = fileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let confURL = rootURL.appendingPathComponent("PLUS")
+        if !FileManager.default.fileExists(atPath: confURL.path) {
+            return false
+        }
+        return true
+    }
+
+    return isProIncluded()
+}()
