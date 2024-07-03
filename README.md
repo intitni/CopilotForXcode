@@ -165,15 +165,6 @@ The installed language server is located at `~/Library/Application Support/com.i
 
 The installed language server is located at `~/Library/Application Support/com.intii.CopilotForXcode/Codeium/executable/`.
 
-#### Using Locally Run LLMs
-
-You can also use locally run LLMs or as a suggestion provider using the [Custom Suggestion Service](https://github.com/intitni/CustomSuggestionServiceForCopilotForXcode) extension. It supports:
-
-- LLM with OpenAI compatible completions API
-- LLM with OpenAI compatible chat completions API
-- [Tabby](https://tabby.tabbyml.com)
-- etc.
-
 ### Setting Up Chat Feature
 
 1. In the host app, navigate to "Service - Chat Model".
@@ -262,14 +253,6 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
-|   Scope    | Description                                                                              |
-| :--------: | ---------------------------------------------------------------------------------------- |
-|  `@file`   | Includes the metadata of the editing document and line annotations in the system prompt. |
-|  `@code`   | Includes the focused/selected code and everything from `@file` in the system prompt.     |
-|  `@sense`  | Experimental. Read the relevant information of the focused code                          |
-| `@project` | Experimental. Access content of the project                                              |
-|   `@web`   | Allow the bot to search on Bing or query from a web page                                 |
-
 `@code` is on by default, if `Use @code scope by default in chat context.` is on. Otherwise, `@file` will be on by default.
 
 To use scopes, you can prefix a message with `@code`.
@@ -294,7 +277,6 @@ If you need to end a plugin, you can just type
 | :--------------------: | ----------------------------------------------------------------------------------------------------------------------------------------- |
 |         `/run`         | Runs the command under the project root.                                                                                                  |
 |                        | Environment variable: <br>- `PROJECT_ROOT` to get the project root. <br>- `FILE_PATH` to get the editing file path.                       |
-|        `/math`         | Solves a math problem in natural language                                                                                                 |
 |       `/search`        | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                          |
 |   `/shortcut(name)`    | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
 |                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot.   |
@@ -318,10 +300,6 @@ This feature is recommended when you need to update a specific piece of code. So
 #### Prompt to Code Scope
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
-
-|   Scope    | Description                                                                              |
-| :--------: | ---------------------------------------------------------------------------------------- |
-|  `@sense`  | Experimental. Read the relevant information of the focused code                          |
 
 To use scopes, you can prefix a message with `@sense`.
 

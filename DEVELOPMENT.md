@@ -29,11 +29,12 @@ Most of the logics are implemented inside the package `Core` and `Tool`.
 
 1. Update the xcconfig files, bridgeLaunchAgent.plist, and Tool/Configs/Configurations.swift.
 2. Build or archive the Copilot for Xcode target.
-3. If Xcode complains that the pro package doesn't exist, please remove the package from the project.
 
-## Testing Source Editor Extension
+## Testing Source Editor Extension and Service
 
 Just run both the `ExtensionService`, `CommunicationBridge` and the `EditorExtension` Target. Read [Testing Your Source Editor Extension](https://developer.apple.com/documentation/xcodekit/testing_your_source_editor_extension) for more details.
+
+If you are not testing the source editor extension, it's recommended to archive and install a debug version of the Copilot for Xcode and test with the bundled source editor extension.
 
 ## SwiftUI Previews
 
