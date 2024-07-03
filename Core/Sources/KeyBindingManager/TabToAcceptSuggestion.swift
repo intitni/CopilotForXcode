@@ -30,7 +30,7 @@ final class TabToAcceptSuggestion {
     struct ObservationKey: Hashable {}
 
     var canTapToAcceptSuggestion: Bool {
-       UserDefaults.shared.value(for: \.acceptSuggestionWithTab)
+        UserDefaults.shared.value(for: \.acceptSuggestionWithTab)
     }
 
     var canEscToDismissSuggestion: Bool {
@@ -39,7 +39,6 @@ final class TabToAcceptSuggestion {
 
     @MainActor
     func stopForExit() {
-        Logger.debug.info("TabToAcceptSuggestion: stopForExit")
         stoppedForExit = true
         stopObservation()
     }
@@ -66,12 +65,10 @@ final class TabToAcceptSuggestion {
     }
 
     func start() {
-        Logger.debug.info("TabToAcceptSuggestion: start")
         Task { [weak self] in
             for await _ in ActiveApplicationMonitor.shared.createInfoStream() {
                 guard let self else { return }
                 try Task.checkCancellation()
-                Logger.debug.info("TabToAcceptSuggestion: Active app changed")
                 Task { @MainActor in
                     if ActiveApplicationMonitor.shared.activeXcode != nil {
                         self.startObservation()
@@ -85,7 +82,6 @@ final class TabToAcceptSuggestion {
         userDefaultsObserver.onChange = { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                Logger.debug.info("TabToAcceptSuggestion: Settings changed")
                 if self.canTapToAcceptSuggestion || self.canEscToDismissSuggestion {
                     self.startObservation()
                 } else {
@@ -97,7 +93,6 @@ final class TabToAcceptSuggestion {
 
     @MainActor
     func startObservation() {
-        Logger.debug.info("TabToAcceptSuggestion: startObservation")
         guard !stoppedForExit else { return }
         guard canTapToAcceptSuggestion || canEscToDismissSuggestion else { return }
         hook.activateIfPossible()
@@ -105,25 +100,18 @@ final class TabToAcceptSuggestion {
 
     @MainActor
     func stopObservation() {
-        Logger.debug.info("TabToAcceptSuggestion: stopObservation")
         hook.deactivate()
     }
 
     func handleEvent(_ event: CGEvent) -> CGEventManipulation.Result {
-        Logger.debug.info("TabToAcceptSuggestion: handleEvent")
         let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let tab = 48
         let esc = 53
 
         switch keycode {
         case tab:
-            Logger.debug.info(
-                "TabToAcceptSuggestion: Tab detected, flags: \(event.flags), permission: \(canTapToAcceptSuggestion)"
-            )
-
             guard let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Active file not found")
                 return .unchanged
             }
 
@@ -175,28 +163,23 @@ final class TabToAcceptSuggestion {
                 checkKeybinding(),
                 canTapToAcceptSuggestion
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Tab is invalid")
                 return .unchanged
             }
 
             guard ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Xcode not found")
                 return .unchanged
             }
             guard let editor = ThreadSafeAccessToXcodeInspector.shared.focusedEditor
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Editor not found")
                 return .unchanged
             }
             guard let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL)
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Filespace not found: \(fileURL)")
                 return .unchanged
             }
             guard let presentingSuggestion = filespace.presentingSuggestion
             else {
-                Logger.debug.info("TabToAcceptSuggestion: Suggestion not found")
                 return .unchanged
             }
 
@@ -210,11 +193,9 @@ final class TabToAcceptSuggestion {
             )
 
             if shouldAcceptSuggestion {
-                Logger.debug.info("TabToAcceptSuggestion: Perform accept suggestion")
                 acceptSuggestion()
                 return .discarded
             } else {
-                Logger.debug.info("TabToAcceptSuggestion: Do not accept the suggestion")
                 return .unchanged
             }
         case esc:
@@ -251,7 +232,6 @@ extension TabToAcceptSuggestion {
     ) -> Bool {
         let line = cursorPosition.line
         guard line >= 0, line < lines.endIndex else {
-            Logger.debug.info("TabToAcceptSuggestion: Suggestion position invalid")
             return true
         }
         let col = cursorPosition.character
@@ -273,7 +253,6 @@ extension TabToAcceptSuggestion {
         // If entering a tab doesn't invalidate the suggestion, just let the user type the tab.
         // else, accept the suggestion and discard the tab.
         guard !presentingSuggestionText.hasPrefix(contentAfterTab) else {
-            Logger.debug.info("TabToAcceptSuggestion: A tab doesn't invalidate the suggestion")
             return false
         }
         return true
