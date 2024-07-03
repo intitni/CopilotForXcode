@@ -4,7 +4,7 @@ import CustomAsyncAlgorithms
 import Dependencies
 import Foundation
 import PromptToCodeService
-import SuggestionModel
+import SuggestionBasic
 
 public struct PromptToCodeAcceptHandlerDependencyKey: DependencyKey {
     public static let liveValue: (PromptToCode.State) -> Void = { _ in

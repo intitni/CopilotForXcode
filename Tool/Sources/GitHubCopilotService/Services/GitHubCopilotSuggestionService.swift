@@ -1,6 +1,6 @@
 import CopilotForXcodeKit
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 import Workspace
 
 public final class GitHubCopilotSuggestionService: SuggestionServiceType {
@@ -59,7 +59,7 @@ public final class GitHubCopilotSuggestionService: SuggestionServiceType {
     }
 
     static func convert(
-        _ suggestion: SuggestionModel.CodeSuggestion
+        _ suggestion: SuggestionBasic.CodeSuggestion
     ) -> CopilotForXcodeKit.CodeSuggestion {
         .init(
             id: suggestion.id,
@@ -83,7 +83,7 @@ public final class GitHubCopilotSuggestionService: SuggestionServiceType {
 
     static func convert(
         _ suggestion: CopilotForXcodeKit.CodeSuggestion
-    ) -> SuggestionModel.CodeSuggestion {
+    ) -> SuggestionBasic.CodeSuggestion {
         .init(
             id: suggestion.id,
             text: suggestion.text,

@@ -1,6 +1,6 @@
 import Foundation
 import Logger
-import SuggestionModel
+import SuggestionBasic
 
 public protocol SuggestionServiceMiddleware {
     typealias Next = (SuggestionRequest) async throws -> [CodeSuggestion]

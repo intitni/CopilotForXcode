@@ -1,7 +1,7 @@
 import ASTParser
 import Foundation
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SwiftParser
 import SwiftSyntax
 

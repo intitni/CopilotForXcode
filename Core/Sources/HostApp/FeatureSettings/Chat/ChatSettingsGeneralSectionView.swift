@@ -16,6 +16,7 @@ struct ChatSettingsGeneralSectionView: View {
         @AppStorage(\.chatCodeFont) var chatCodeFont
 
         @AppStorage(\.defaultChatFeatureChatModelId) var defaultChatFeatureChatModelId
+        @AppStorage(\.preferredChatModelIdForUtilities) var utilityChatModelId
         @AppStorage(\.defaultChatSystemPrompt) var defaultChatSystemPrompt
         @AppStorage(\.chatSearchPluginMaxIterations) var chatSearchPluginMaxIterations
         @AppStorage(\.defaultChatFeatureEmbeddingModelId) var defaultChatFeatureEmbeddingModelId
@@ -100,14 +101,39 @@ struct ChatSettingsGeneralSectionView: View {
                 "Chat model",
                 selection: $settings.defaultChatFeatureChatModelId
             ) {
-                if !settings.chatModels
-                    .contains(where: { $0.id == settings.defaultChatFeatureChatModelId })
+                let allModels = settings.chatModels + [.init(
+                    id: "com.github.copilot",
+                    name: "GitHub Copilot (poc)",
+                    format: .openAI,
+                    info: .init()
+                )]
+
+                if !allModels.contains(where: { $0.id == settings.defaultChatFeatureChatModelId }) {
+                    Text(
+                        (allModels.first?.name).map { "\($0) (Default)" } ?? "No model found"
+                    )
+                    .tag(settings.defaultChatFeatureChatModelId)
+                }
+
+                ForEach(allModels, id: \.id) { chatModel in
+                    Text(chatModel.name).tag(chatModel.id)
+                }
+            }
+
+            Picker(
+                "Utility chat model",
+                selection: $settings.utilityChatModelId
+            ) {
+                Text("Use the default model").tag("")
+
+                if !settings.chatModels.contains(where: { $0.id == settings.utilityChatModelId }),
+                   !settings.utilityChatModelId.isEmpty
                 {
                     Text(
                         (settings.chatModels.first?.name).map { "\($0) (Default)" }
-                            ?? "No model found"
+                            ?? "No Model Found"
                     )
-                    .tag(settings.defaultChatFeatureChatModelId)
+                    .tag(settings.utilityChatModelId)
                 }
 
                 ForEach(settings.chatModels, id: \.id) { chatModel in
@@ -209,11 +235,7 @@ struct ChatSettingsGeneralSectionView: View {
                 Text("Wrap text in code block")
             }
 
-            #if canImport(ProHostApp)
-
             CodeHighlightThemePicker(scenario: .chat)
-
-            #endif
 
             Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
                 Text("Disable always-on-top when the chat panel is detached")

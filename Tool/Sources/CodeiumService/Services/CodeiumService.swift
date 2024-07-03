@@ -3,7 +3,7 @@ import Foundation
 import LanguageClient
 import LanguageServerProtocol
 import Logger
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 public protocol CodeiumSuggestionServiceType {
@@ -49,6 +49,7 @@ public class CodeiumService {
     let projectRootURL: URL
     var server: CodeiumLSP?
     var heartbeatTask: Task<Void, Error>?
+    var workspaceTask: Task<Void, Error>?
     var requestCounter: UInt64 = 0
     var cancellationCounter: UInt64 = 0
     let openedDocumentPool = OpenedDocumentPool()
@@ -127,6 +128,7 @@ public class CodeiumService {
         server.terminationHandler = { [weak self] in
             self?.server = nil
             self?.heartbeatTask?.cancel()
+            self?.workspaceTask?.cancel()
             self?.requestCounter = 0
             self?.cancellationCounter = 0
             self?.onServiceTerminated()
@@ -142,6 +144,14 @@ public class CodeiumService {
                     _ = try? await self?.server?.sendRequest(
                         CodeiumRequest.Heartbeat(requestBody: .init(metadata: metadata))
                     )
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                }
+            }
+
+            self.workspaceTask = Task { [weak self] in
+                while true {
+                    try Task.checkCancellation()
+                    _ = await self?.server?.updateIndexing()
                     try await Task.sleep(nanoseconds: 5_000_000_000)
                 }
             }
@@ -247,7 +257,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-        let relativePath = getRelativePath(of: fileURL) 
+        let relativePath = getRelativePath(of: fileURL)
 
         let task = Task {
             let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
@@ -340,7 +350,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
             URLQueryItem(name: "ide_name", value: metadata.ide_name),
             URLQueryItem(name: "ide_version", value: metadata.ide_version),
             URLQueryItem(name: "web_server_url", value: webServerUrl),
-            URLQueryItem(name: "ide_telemetry_enabled", value: "true")
+            URLQueryItem(name: "ide_telemetry_enabled", value: "true"),
         ]
 
         if let url = components.url {
@@ -357,7 +367,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
                 metadata: getMetadata(),
                 completion_id: suggestion.id
             )))
-    } 
+    }
 
     public func notifyOpenTextDocument(fileURL: URL, content: String) async throws {
         let relativePath = getRelativePath(of: fileURL)
@@ -382,14 +392,14 @@ extension CodeiumService: CodeiumSuggestionServiceType {
     }
 
     public func notifyOpenWorkspace(workspaceURL: URL) async throws {
-        _ = try await (try setupServerIfNeeded()).sendRequest(
+        _ = try await (setupServerIfNeeded()).sendRequest(
             CodeiumRequest
                 .AddTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
         )
     }
 
     public func notifyCloseWorkspace(workspaceURL: URL) async throws {
-        _ = try await (try setupServerIfNeeded()).sendRequest(
+        _ = try await (setupServerIfNeeded()).sendRequest(
             CodeiumRequest
                 .RemoveTrackedWorkspace(requestBody: .init(workspace: workspaceURL.path))
         )
@@ -422,7 +432,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
                 .map(\.url.path),
             workspace_paths: [workspaceURL.path]
         ))
-        _ = try await (try setupServerIfNeeded()).sendRequest(request)
+        _ = try await (setupServerIfNeeded()).sendRequest(request)
     }
 
     public func terminate() {

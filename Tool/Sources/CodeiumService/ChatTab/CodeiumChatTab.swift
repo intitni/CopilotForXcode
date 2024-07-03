@@ -2,7 +2,6 @@ import AppKit
 import ChatTab
 import Combine
 import ComposableArchitecture
-import LicenseManagement
 import Logger
 import Preferences
 import SwiftUI

@@ -1,7 +1,8 @@
 import ASTParser
+import ChatBasic
 import Foundation
 import OpenAIService
-import SuggestionModel
+import SuggestionBasic
 
 struct GetCodeCodeAroundLineFunction: ChatGPTFunction {
     struct Arguments: Codable {

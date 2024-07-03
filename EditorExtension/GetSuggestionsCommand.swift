@@ -1,6 +1,6 @@
 import Client
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 import XcodeKit
 
 class GetSuggestionsCommand: NSObject, XCSourceEditorCommand, CommandType {

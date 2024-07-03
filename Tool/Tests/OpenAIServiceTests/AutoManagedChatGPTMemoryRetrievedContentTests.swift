@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import XCTest
 
@@ -20,7 +21,7 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
 
     func test_retrieved_content_when_the_context_window_is_large_enough() async {
         let strategy = Strategy()
-        
+
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
             configuration: UserPreferenceChatGPTConfiguration(),
@@ -57,7 +58,7 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
         """
 
         let maxTokenCount = await strategy.countToken(.init(role: .user, content: fullContent))
-        
+
         let result = await memory.generateRetrievedContentMessage(
             maxTokenCount: maxTokenCount,
             strategy: strategy
@@ -159,7 +160,7 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
         D
         """)
     }
-    
+
     func test_retrieved_content_when_the_context_window_can_take_only_one_document() async {
         let strategy = Strategy()
 
@@ -200,7 +201,7 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
         A
         """)
     }
-    
+
     func test_retrieved_content_when_the_context_window_empty() async {
         let strategy = Strategy()
 

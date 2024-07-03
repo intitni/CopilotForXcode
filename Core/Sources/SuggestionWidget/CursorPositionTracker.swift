@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 import Perception
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 @Perceptible

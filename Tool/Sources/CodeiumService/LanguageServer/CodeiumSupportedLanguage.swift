@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 enum CodeiumSupportedLanguage: Int, Codable {
     case unspecified = 0

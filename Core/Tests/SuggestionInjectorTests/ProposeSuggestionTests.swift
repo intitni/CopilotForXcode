@@ -1,4 +1,4 @@
-//import SuggestionModel
+//import SuggestionBasic
 //import XCTest
 //
 //@testable import SuggestionInjector

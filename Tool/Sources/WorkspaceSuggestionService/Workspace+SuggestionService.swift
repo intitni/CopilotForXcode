@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 import SuggestionProvider
 import Workspace
 import XPCShared

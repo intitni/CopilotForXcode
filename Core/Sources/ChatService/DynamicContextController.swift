@@ -60,7 +60,7 @@ final class DynamicContextController {
             let idIndexMap = chatModels.enumerated().reduce(into: [String: Int]()) {
                 $0[$1.element.id] = $1.offset
             }
-            return ids.sorted(by: {
+            return ids.filter { !$0.isEmpty }.sorted(by: {
                 let lhs = idIndexMap[$0] ?? Int.max
                 let rhs = idIndexMap[$1] ?? Int.max
                 return lhs < rhs

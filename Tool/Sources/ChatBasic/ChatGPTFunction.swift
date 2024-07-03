@@ -100,12 +100,12 @@ public extension ChatGPTArgumentsCollectingFunction {
     }
 }
 
-struct ChatGPTFunctionSchema: Codable, Equatable {
-    var name: String
-    var description: String
-    var parameters: JSONSchemaValue
+public struct ChatGPTFunctionSchema: Codable, Equatable {
+    public var name: String
+    public var description: String
+    public var parameters: JSONSchemaValue
 
-    init(name: String, description: String, parameters: JSONSchemaValue) {
+    public init(name: String, description: String, parameters: JSONSchemaValue) {
         self.name = name
         self.description = description
         self.parameters = parameters

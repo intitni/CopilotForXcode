@@ -14,6 +14,7 @@ struct CodeiumView: View {
         @AppStorage(\.codeiumEnterpriseMode) var codeiumEnterpriseMode
         @AppStorage(\.codeiumPortalUrl) var codeiumPortalUrl
         @AppStorage(\.codeiumApiUrl) var codeiumApiUrl
+        @AppStorage(\.codeiumIndexEnabled) var indexEnabled
 
         init() {
             isSignedIn = codeiumAuthService.isSignedIn
@@ -203,6 +204,12 @@ struct CodeiumView: View {
                     case .done:
                         toast("Done!", .info)
                     }
+                }
+            }
+            
+            SubSection(title: Text("Indexing")) {
+                Form {
+                    Toggle("Enable Indexing", isOn: $viewModel.indexEnabled)
                 }
             }
 

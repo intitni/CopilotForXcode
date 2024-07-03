@@ -1,10 +1,11 @@
 import BuiltinExtension
 import CodeiumService
 import struct CopilotForXcodeKit.WorkspaceInfo
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import GitHubCopilotService
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SuggestionProvider
 import UserDefaultsObserver
 import Workspace
@@ -62,34 +63,40 @@ public extension SuggestionService {
     func getSuggestions(
         _ request: SuggestionRequest,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
-        var getSuggestion = suggestionProvider.getSuggestions(_:workspaceInfo:)
-        let configuration = await configuration
-
-        for middleware in middlewares.reversed() {
-            getSuggestion = { [getSuggestion] request, workspaceInfo in
-                try await middleware.getSuggestion(
-                    request,
-                    configuration: configuration,
-                    next: { [getSuggestion] request in
-                        try await getSuggestion(request, workspaceInfo)
-                    }
-                )
+    ) async throws -> [SuggestionBasic.CodeSuggestion] {
+        do {
+            var getSuggestion = suggestionProvider.getSuggestions(_:workspaceInfo:)
+            let configuration = await configuration
+            
+            for middleware in middlewares.reversed() {
+                getSuggestion = { [getSuggestion] request, workspaceInfo in
+                    try await middleware.getSuggestion(
+                        request,
+                        configuration: configuration,
+                        next: { [getSuggestion] request in
+                            try await getSuggestion(request, workspaceInfo)
+                        }
+                    )
+                }
             }
+            
+            return try await getSuggestion(request, workspaceInfo)
+        } catch let error as SuggestionServiceError {
+            throw error
+        } catch {
+            throw SuggestionServiceError.silent(error)
         }
-
-        return try await getSuggestion(request, workspaceInfo)
     }
 
     func notifyAccepted(
-        _ suggestion: SuggestionModel.CodeSuggestion,
+        _ suggestion: SuggestionBasic.CodeSuggestion,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         await suggestionProvider.notifyAccepted(suggestion, workspaceInfo: workspaceInfo)
     }
 
     func notifyRejected(
-        _ suggestions: [SuggestionModel.CodeSuggestion],
+        _ suggestions: [SuggestionBasic.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         await suggestionProvider.notifyRejected(suggestions, workspaceInfo: workspaceInfo)

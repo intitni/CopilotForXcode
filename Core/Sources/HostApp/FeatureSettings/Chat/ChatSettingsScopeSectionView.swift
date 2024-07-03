@@ -96,6 +96,13 @@ struct ChatSettingsScopeSectionView: View {
                     Toggle(isOn: $settings.enableSenseScopeByDefaultInChatContext) {
                         Text("Enable by default")
                     }
+                    
+                    let allModels = settings.chatModels + [.init(
+                        id: "com.github.copilot",
+                        name: "GitHub Copilot (poc)",
+                        format: .openAI,
+                        info: .init()
+                    )]
 
                     Picker(
                         "Preferred chat model",
@@ -103,20 +110,20 @@ struct ChatSettingsScopeSectionView: View {
                     ) {
                         Text("Use the default model").tag("")
 
-                        if !settings.chatModels
+                        if !allModels
                             .contains(where: {
                                 $0.id == settings.preferredChatModelIdForSenseScope
                             }),
                             !settings.preferredChatModelIdForSenseScope.isEmpty
                         {
                             Text(
-                                (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                (allModels.first?.name).map { "\($0) (Default)" }
                                     ?? "No model found"
                             )
                             .tag(settings.preferredChatModelIdForSenseScope)
                         }
 
-                        ForEach(settings.chatModels, id: \.id) { chatModel in
+                        ForEach(allModels, id: \.id) { chatModel in
                             Text(chatModel.name).tag(chatModel.id)
                         }
                     }
@@ -151,6 +158,13 @@ struct ChatSettingsScopeSectionView: View {
                     Toggle(isOn: $settings.enableProjectScopeByDefaultInChatContext) {
                         Text("Enable by default")
                     }
+                    
+                    let allModels = settings.chatModels + [.init(
+                        id: "com.github.copilot",
+                        name: "GitHub Copilot (poc)",
+                        format: .openAI,
+                        info: .init()
+                    )]
 
                     Picker(
                         "Preferred chat model",
@@ -158,20 +172,20 @@ struct ChatSettingsScopeSectionView: View {
                     ) {
                         Text("Use the default model").tag("")
 
-                        if !settings.chatModels
+                        if !allModels
                             .contains(where: {
                                 $0.id == settings.preferredChatModelIdForProjectScope
                             }),
                             !settings.preferredChatModelIdForProjectScope.isEmpty
                         {
                             Text(
-                                (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                (allModels.first?.name).map { "\($0) (Default)" }
                                     ?? "No Model Found"
                             )
                             .tag(settings.preferredChatModelIdForProjectScope)
                         }
 
-                        ForEach(settings.chatModels, id: \.id) { chatModel in
+                        ForEach(allModels, id: \.id) { chatModel in
                             Text(chatModel.name).tag(chatModel.id)
                         }
                     }
@@ -188,6 +202,13 @@ struct ChatSettingsScopeSectionView: View {
                     Toggle(isOn: $settings.enableWebScopeByDefaultInChatContext) {
                         Text("Enable @web scope by default in chat context.")
                     }
+                    
+                    let allModels = settings.chatModels + [.init(
+                        id: "com.github.copilot",
+                        name: "GitHub Copilot (poc)",
+                        format: .openAI,
+                        info: .init()
+                    )]
 
                     Picker(
                         "Preferred chat model",
@@ -195,20 +216,20 @@ struct ChatSettingsScopeSectionView: View {
                     ) {
                         Text("Use the default model").tag("")
 
-                        if !settings.chatModels
+                        if !allModels
                             .contains(where: {
                                 $0.id == settings.preferredChatModelIdForWebScope
                             }),
                             !settings.preferredChatModelIdForWebScope.isEmpty
                         {
                             Text(
-                                (settings.chatModels.first?.name).map { "\($0) (Default)" }
+                                (allModels.first?.name).map { "\($0) (Default)" }
                                     ?? "No model found"
                             )
                             .tag(settings.preferredChatModelIdForWebScope)
                         }
 
-                        ForEach(settings.chatModels, id: \.id) { chatModel in
+                        ForEach(allModels, id: \.id) { chatModel in
                             Text(chatModel.name).tag(chatModel.id)
                         }
                     }

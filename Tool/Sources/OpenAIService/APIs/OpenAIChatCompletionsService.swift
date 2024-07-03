@@ -1,5 +1,6 @@
 import AIModel
 import AsyncAlgorithms
+import ChatBasic
 import Foundation
 import Logger
 import Preferences

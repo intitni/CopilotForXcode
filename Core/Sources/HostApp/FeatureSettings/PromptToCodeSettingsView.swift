@@ -95,11 +95,7 @@ struct PromptToCodeSettingsView: View {
                     Text("Wrap code")
                 }
 
-                #if canImport(ProHostApp)
-
                 CodeHighlightThemePicker(scenario: .promptToCode)
-
-                #endif
                 
                 FontPicker(font: $settings.font) {
                     Text("Font")

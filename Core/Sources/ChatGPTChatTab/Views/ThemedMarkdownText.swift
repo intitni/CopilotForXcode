@@ -12,14 +12,18 @@ struct ThemedMarkdownText: View {
     @AppStorage(\.chatCodeFont) var chatCodeFont
     @Environment(\.colorScheme) var colorScheme
 
-    let text: String
+    let content: MarkdownContent
 
     init(_ text: String) {
-        self.text = text
+        self.content = .init(text)
+    }
+    
+    init(_ content: MarkdownContent) {
+        self.content = content
     }
 
     var body: some View {
-        Markdown(text)
+        Markdown(content)
             .textSelection(.enabled)
             .markdownTheme(.custom(
                 fontSize: chatFontSize,

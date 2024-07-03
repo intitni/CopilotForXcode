@@ -1,4 +1,5 @@
 import ASTParser
+import ChatBasic
 import ChatContextCollector
 import Dependencies
 import FocusedCodeFinder
@@ -6,7 +7,7 @@ import Foundation
 import GitIgnoreCheck
 import OpenAIService
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import XcodeInspector
 
 public final class ActiveDocumentChatContextCollector: ChatContextCollector {

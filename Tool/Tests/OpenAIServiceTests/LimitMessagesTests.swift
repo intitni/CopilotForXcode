@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import TokenEncoder
 import XCTest
@@ -103,11 +104,11 @@ class MockEncoder: TokenEncoder {
 
 struct MockStrategy: AutoManagedChatGPTMemoryStrategy {
     let encoder = MockEncoder()
-    func countToken(_ message: OpenAIService.ChatMessage) async -> Int {
+    func countToken(_ message: ChatBasic.ChatMessage) async -> Int {
         await encoder.countToken(message)
     }
 
-    func countToken<F>(_: F) async -> Int where F: OpenAIService.ChatGPTFunction {
+    func countToken<F>(_: F) async -> Int where F: ChatBasic.ChatGPTFunction {
         0
     }
 

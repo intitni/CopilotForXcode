@@ -1,3 +1,4 @@
+import ChatBasic
 import Dependencies
 import XCTest
 @testable import OpenAIService

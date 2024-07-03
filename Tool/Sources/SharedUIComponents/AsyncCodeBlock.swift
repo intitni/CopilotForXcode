@@ -42,7 +42,7 @@ public struct AsyncCodeBlock: View {
                         )
                     } else {
                         let intersection = NSIntersectionRange(targetRange, range)
-                        guard !intersection.isEmpty else { return }
+                        guard !(intersection.length == 0) else { return }
                         let rangeA = intersection
                         mutable.addAttribute(
                             .foregroundColor,

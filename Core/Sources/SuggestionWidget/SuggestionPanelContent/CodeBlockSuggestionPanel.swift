@@ -1,7 +1,7 @@
 import Combine
 import Perception
 import SharedUIComponents
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 import XcodeInspector
 

@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 
 public struct ChatGPTPrompt: Equatable {

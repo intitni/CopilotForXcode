@@ -1,4 +1,4 @@
-import SuggestionModel
+import SuggestionBasic
 import SwiftTreeSitter
 import tree_sitter
 import TreeSitterObjC

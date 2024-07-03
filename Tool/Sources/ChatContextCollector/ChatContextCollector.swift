@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import OpenAIService
 import Parsing
@@ -14,7 +15,7 @@ public struct ChatContext {
     public struct RetrievedContent {
         public var document: ChatMessage.Reference
         public var priority: Int
-        
+
         public init(document: ChatMessage.Reference, priority: Int) {
             self.document = document
             self.priority = priority

@@ -1,4 +1,5 @@
 import BingSearchService
+import ChatBasic
 import Foundation
 import OpenAIService
 import Preferences

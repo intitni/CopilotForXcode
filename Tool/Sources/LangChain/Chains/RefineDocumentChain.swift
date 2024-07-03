@@ -1,5 +1,7 @@
+import ChatBasic
 import Foundation
 import OpenAIService
+import Preferences
 
 public final class RefineDocumentChain: Chain {
     public struct Input {
@@ -75,7 +77,10 @@ public final class RefineDocumentChain: Chain {
     func buildChatModel() -> ChatModelChain<RefinementInput> {
         .init(
             chatModel: OpenAIChat(
-                configuration: UserPreferenceChatGPTConfiguration().overriding {
+                configuration: UserPreferenceChatGPTConfiguration(
+                    chatModelKey: \.preferredChatModelIdForUtilities
+                )
+                .overriding {
                     $0.temperature = 0
                     $0.runFunctionsAutomatically = false
                 },

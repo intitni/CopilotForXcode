@@ -1,10 +1,11 @@
 import AppKit
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
 import LanguageClient
 import LanguageServerProtocol
 import Logger
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 
 public protocol GitHubCopilotAuthServiceType {
     func checkStatus() async throws -> GitHubCopilotAccountStatus
@@ -36,14 +37,24 @@ public protocol GitHubCopilotSuggestionServiceType {
 }
 
 protocol GitHubCopilotLSP {
-    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response
+    func sendRequest<E: GitHubCopilotRequestType>(
+        _ endpoint: E,
+        timeout: TimeInterval?
+    ) async throws -> E.Response
     func sendNotification(_ notif: ClientNotification) async throws
+}
+
+extension GitHubCopilotLSP {
+    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response {
+        try await sendRequest(endpoint, timeout: nil)
+    }
 }
 
 enum GitHubCopilotError: Error, LocalizedError {
     case languageServerNotInstalled
     case languageServerError(ServerError)
     case failedToInstallStartScript
+    case chatEndsWithError(String)
 
     var errorDescription: String? {
         switch self {
@@ -51,6 +62,8 @@ enum GitHubCopilotError: Error, LocalizedError {
             return "Language server is not installed."
         case .failedToInstallStartScript:
             return "Failed to install start script."
+        case let .chatEndsWithError(errorMessage):
+            return "Chat ended with error message: \(errorMessage)"
         case let .languageServerError(error):
             switch error {
             case let .handlerUnavailable(handler):
@@ -95,7 +108,8 @@ public class GitHubCopilotBaseService {
     let projectRootURL: URL
     var server: GitHubCopilotLSP
     var localProcessServer: CopilotLocalProcessServer?
-    
+    let notificationHandler: ServerNotificationHandler
+
     deinit {
         localProcessServer?.terminate()
     }
@@ -103,26 +117,40 @@ public class GitHubCopilotBaseService {
     init(designatedServer: GitHubCopilotLSP) {
         projectRootURL = URL(fileURLWithPath: "/")
         server = designatedServer
+        notificationHandler = .init()
     }
 
     init(projectRootURL: URL) throws {
         self.projectRootURL = projectRootURL
-        let (server, localServer) = try {
+        let notificationHandler = ServerNotificationHandler()
+        self.notificationHandler = notificationHandler
+        let (server, localServer) = try { [notificationHandler] in
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
 
-            let agentJSURL = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
-            guard FileManager.default.fileExists(atPath: agentJSURL.path) else {
+            guard let agentJSURL = { () -> URL? in
+                let languageServerDotJS = urls.executableURL
+                    .appendingPathComponent("copilot/dist/language-server.js")
+                if FileManager.default.fileExists(atPath: languageServerDotJS.path) {
+                    return languageServerDotJS
+                }
+                let agentsDotJS = urls.executableURL.appendingPathComponent("copilot/dist/agent.js")
+                if FileManager.default.fileExists(atPath: agentsDotJS.path) {
+                    return agentsDotJS
+                }
+                return nil
+            }() else {
                 throw GitHubCopilotError.languageServerNotInstalled
             }
 
             let indexJSURL: URL = try {
                 if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
-                    let url = urls.executableURL.appendingPathComponent("load-self-signed-cert.js")
+                    let url = urls.executableURL
+                        .appendingPathComponent("load-self-signed-cert-1.34.0.js")
                     if !FileManager.default.fileExists(atPath: url.path) {
                         let file = Bundle.module.url(
-                            forResource: "load-self-signed-cert",
+                            forResource: "load-self-signed-cert-1.34.0",
                             withExtension: "js"
                         )!
                         do {
@@ -184,12 +212,12 @@ public class GitHubCopilotBaseService {
                     )
                 }()
             }
-            let localServer = CopilotLocalProcessServer(executionParameters: executionParams)
+            let localServer = CopilotLocalProcessServer(
+                executionParameters: executionParams,
+                serverNotificationHandler: notificationHandler
+            )
 
             localServer.logMessages = UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
-            localServer.notificationHandler = { notification, respond in
-                respond(.handlerUnavailable(notification.method.rawValue))
-            }
             let server = InitializingServer(server: localServer)
 
             server.initializeParamsProvider = {
@@ -273,6 +301,21 @@ public class GitHubCopilotBaseService {
         }
 
         return (supportURL, gitHubCopilotFolderURL, executableFolderURL, supportFolderURL)
+    }
+
+    func registerNotificationHandler(
+        id: AnyHashable,
+        _ block: @escaping ServerNotificationHandler.Handler
+    ) {
+        Task { @GitHubCopilotSuggestionActor in
+            self.notificationHandler.handlers[id] = block
+        }
+    }
+
+    func unregisterNotificationHandler(id: AnyHashable) {
+        Task { @GitHubCopilotSuggestionActor in
+            self.notificationHandler.handlers[id] = nil
+        }
     }
 }
 
@@ -399,6 +442,9 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 return completions
             } catch let error as ServerError {
                 switch error {
+                case .serverError(1000, _, _): // not logged-in error
+                    throw SuggestionServiceError
+                        .notice(GitHubCopilotError.languageServerError(error))
                 case .serverError:
                     // sometimes the content inside language server is not new enough, which can
                     // lead to an version mismatch error. We can try a few times until the content
@@ -417,7 +463,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
                 throw error
             }
         }
-        
+
         func recoverContent() async {
             try? await notifyChangeTextDocument(
                 fileURL: fileURL,
@@ -432,7 +478,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
         // And sometimes the language server's content was not up to date and may generate
         // weird result when the cursor position exceeds the line.
         let task = Task { @GitHubCopilotSuggestionActor in
-            try? await notifyChangeTextDocument(
+            try await notifyChangeTextDocument(
                 fileURL: fileURL,
                 content: content,
                 version: 1
@@ -544,8 +590,19 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
 }
 
 extension InitializingServer: GitHubCopilotLSP {
-    func sendRequest<E: GitHubCopilotRequestType>(_ endpoint: E) async throws -> E.Response {
-        try await sendRequest(endpoint.request)
+    func sendRequest<E: GitHubCopilotRequestType>(
+        _ endpoint: E,
+        timeout: TimeInterval? = nil
+    ) async throws -> E.Response {
+        if let timeout {
+            return try await withCheckedThrowingContinuation { continuation in
+                self.sendRequest(endpoint.request, timeout: timeout) { result in
+                    continuation.resume(with: result)
+                }
+            }
+        } else {
+            return try await sendRequest(endpoint.request)
+        }
     }
 }
 

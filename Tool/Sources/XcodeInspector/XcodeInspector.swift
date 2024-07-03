@@ -5,7 +5,7 @@ import Combine
 import Foundation
 import Logger
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import Toast
 
 public extension Notification.Name {

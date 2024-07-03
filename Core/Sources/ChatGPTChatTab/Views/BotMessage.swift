@@ -8,6 +8,7 @@ struct BotMessage: View {
     var r: Double { messageBubbleCornerRadius }
     let id: String
     let text: String
+    let markdownContent: MarkdownContent
     let references: [DisplayedChatMessage.Reference]
     let chat: StoreOf<Chat>
     @Environment(\.colorScheme) var colorScheme
@@ -43,7 +44,7 @@ struct BotMessage: View {
                     }
                 }
 
-                ThemedMarkdownText(text)
+                ThemedMarkdownText(markdownContent)
             }
             .frame(alignment: .trailing)
             .padding()
@@ -209,14 +210,16 @@ struct ReferenceIcon: View {
 }
 
 #Preview("Bot Message") {
-    BotMessage(
-        id: "1",
-        text: """
+    let text = """
         **Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?**Hey**! What can I do for you?
         ```swift
         func foo() {}
         ```
-        """,
+        """
+    return BotMessage(
+        id: "1",
+        text: text,
+        markdownContent: .init(text),
         references: .init(repeating: .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",

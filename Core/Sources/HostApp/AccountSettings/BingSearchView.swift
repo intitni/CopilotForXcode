@@ -2,7 +2,7 @@ import AppKit
 import Client
 import OpenAIService
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 
 final class BingSearchViewSettings: ObservableObject {

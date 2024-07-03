@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import Highlightr
-import SuggestionModel
+import SuggestionBasic
 import SwiftUI
 
 public enum CodeHighlighting {

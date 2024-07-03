@@ -2,6 +2,7 @@ import AIModel
 import CodableWrappers
 import Foundation
 import Preferences
+import ChatBasic
 
 struct ChatCompletionsRequestBody: Codable, Equatable {
     struct Message: Codable, Equatable {

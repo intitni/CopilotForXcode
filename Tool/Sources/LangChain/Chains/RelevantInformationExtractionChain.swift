@@ -1,5 +1,7 @@
+import ChatBasic
 import Foundation
 import OpenAIService
+import Preferences
 
 public final class RelevantInformationExtractionChain: Chain {
     public struct Input {
@@ -51,7 +53,10 @@ public final class RelevantInformationExtractionChain: Chain {
     func buildChatModel() -> ChatModelChain<TaskInput> {
         .init(
             chatModel: OpenAIChat(
-                configuration: UserPreferenceChatGPTConfiguration().overriding {
+                configuration: UserPreferenceChatGPTConfiguration(
+                    chatModelKey: \.preferredChatModelIdForUtilities
+                )
+                .overriding {
                     $0.temperature = 0.5
                     $0.runFunctionsAutomatically = false
                 },

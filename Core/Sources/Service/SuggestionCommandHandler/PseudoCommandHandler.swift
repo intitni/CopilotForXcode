@@ -1,11 +1,13 @@
 import ActiveApplicationMonitor
 import AppKit
 import CodeiumService
+import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
+import Logger
 import PlusFeatureFlag
 import Preferences
 import SuggestionInjector
-import SuggestionModel
+import SuggestionBasic
 import Toast
 import Workspace
 import WorkspaceSuggestionService
@@ -107,7 +109,16 @@ struct PseudoCommandHandler {
             } else {
                 presenter.discardSuggestion(fileURL: fileURL)
             }
+        } catch let error as SuggestionServiceError {
+            switch error {
+            case let .notice(error):
+                presenter.presentErrorMessage(error.localizedDescription)
+            case .silent:
+                Logger.service.error(error.localizedDescription)
+                return
+            }
         } catch {
+            Logger.service.error(error.localizedDescription)
             return
         }
     }

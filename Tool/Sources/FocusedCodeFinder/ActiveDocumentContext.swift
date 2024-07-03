@@ -1,5 +1,5 @@
 import Foundation
-import SuggestionModel
+import SuggestionBasic
 
 public struct ActiveDocumentContext {
     public var documentURL: URL

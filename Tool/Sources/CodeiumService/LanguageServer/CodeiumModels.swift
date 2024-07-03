@@ -1,7 +1,7 @@
 import Foundation
 import JSONRPC
 import LanguageServerProtocol
-import SuggestionModel
+import SuggestionBasic
 
 struct CodeiumCompletion: Codable {
     var completionId: String

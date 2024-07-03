@@ -2,7 +2,7 @@ import CopilotForXcodeKit
 import Foundation
 import Logger
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SuggestionProvider
 
 public final class BuiltinExtensionSuggestionServiceProvider<
@@ -42,7 +42,7 @@ public final class BuiltinExtensionSuggestionServiceProvider<
     public func getSuggestions(
         _ request: SuggestionProvider.SuggestionRequest,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
-    ) async throws -> [SuggestionModel.CodeSuggestion] {
+    ) async throws -> [SuggestionBasic.CodeSuggestion] {
         guard let service else {
             Logger.service.error("Builtin suggestion service not found.")
             throw BuiltinExtensionSuggestionServiceNotFoundError()
@@ -80,7 +80,7 @@ public final class BuiltinExtensionSuggestionServiceProvider<
     }
 
     public func notifyAccepted(
-        _ suggestion: SuggestionModel.CodeSuggestion,
+        _ suggestion: SuggestionBasic.CodeSuggestion,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         guard let service else {
@@ -91,7 +91,7 @@ public final class BuiltinExtensionSuggestionServiceProvider<
     }
 
     public func notifyRejected(
-        _ suggestions: [SuggestionModel.CodeSuggestion],
+        _ suggestions: [SuggestionBasic.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
         guard let service else {
@@ -123,7 +123,7 @@ extension SuggestionProvider.SuggestionRequest {
     }
 }
 
-extension SuggestionModel.CodeSuggestion {
+extension SuggestionBasic.CodeSuggestion {
     var converted: CopilotForXcodeKit.CodeSuggestion {
         .init(
             id: id,
@@ -147,7 +147,7 @@ extension SuggestionModel.CodeSuggestion {
 }
 
 extension CopilotForXcodeKit.CodeSuggestion {
-    var converted: SuggestionModel.CodeSuggestion {
+    var converted: SuggestionBasic.CodeSuggestion {
         .init(
             id: id,
             text: text,

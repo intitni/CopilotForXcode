@@ -7,7 +7,7 @@ import ChatTab
 import ComposableArchitecture
 import Dependencies
 import Preferences
-import SuggestionModel
+import SuggestionBasic
 import SuggestionWidget
 
 #if canImport(ProChatTabs)
