@@ -16,7 +16,7 @@ public final class CodeiumExtension: BuiltinExtension {
     
     public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
-    public let suggestionService: CodeiumSuggestionService?
+    public let suggestionService: CodeiumSuggestionService
     
     public var chatTabTypes: [any ChatTab.Type] {
         [CodeiumChatTab.self]
