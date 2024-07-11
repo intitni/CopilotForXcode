@@ -17,8 +17,8 @@ import ProExtension
 public protocol SuggestionServiceType: SuggestionServiceProvider {}
 
 public actor SuggestionService: SuggestionServiceType {
-    typealias Middleware = SuggestionServiceMiddleware
-    typealias EventHandler = SuggestionServiceEventHandler
+    public typealias Middleware = SuggestionServiceMiddleware
+    public typealias EventHandler = SuggestionServiceEventHandler
     public var configuration: SuggestionProvider.SuggestionServiceConfiguration {
         get async { await suggestionProvider.configuration }
     }

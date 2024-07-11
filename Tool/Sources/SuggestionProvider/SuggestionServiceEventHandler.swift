@@ -1,10 +1,10 @@
+import CopilotForXcodeKit
 import Foundation
 import SuggestionBasic
-import CopilotForXcodeKit
 
 public protocol SuggestionServiceEventHandler {
-    func didAccept(_ suggestion: CodeSuggestion, workspaceInfo: WorkspaceInfo)
-    func didReject(_ suggestion: CodeSuggestion, workspaceInfo: WorkspaceInfo)
+    func didAccept(_ suggestion: SuggestionBasic.CodeSuggestion, workspaceInfo: WorkspaceInfo)
+    func didReject(_ suggestions: [SuggestionBasic.CodeSuggestion], workspaceInfo: WorkspaceInfo)
 }
 
 public enum SuggestionServiceEventHandlerContainer {
@@ -19,4 +19,9 @@ public enum SuggestionServiceEventHandlerContainer {
     public static func addHandler(_ handler: SuggestionServiceEventHandler) {
         customHandlers.append(handler)
     }
+
+    public static func addHandlers(_ handlers: [SuggestionServiceEventHandler]) {
+        customHandlers.append(contentsOf: handlers)
+    }
 }
+

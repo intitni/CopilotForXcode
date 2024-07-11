@@ -6,13 +6,16 @@ public struct CodeSuggestion: Codable, Equatable {
         id: String,
         text: String,
         position: CursorPosition,
-        range: CursorRange
+        range: CursorRange,
+        middlewareComments: [String] = [],
+        metadata: [String: String] = [:]
     ) {
         self.text = text
         self.position = position
         self.id = id
         self.range = range
-        middlewareComments = []
+        self.middlewareComments = middlewareComments
+        self.metadata = metadata
     }
 
     public static func == (lhs: CodeSuggestion, rhs: CodeSuggestion) -> Bool {
@@ -32,5 +35,7 @@ public struct CodeSuggestion: Codable, Equatable {
     public var range: CursorRange
     /// A place to store comments inserted by middleware for debugging use.
     @FallbackDecoding<EmptyArray> public var middlewareComments: [String]
+    /// A place to store extra data.
+    @FallbackDecoding<EmptyDictionary> public var metadata: [String: String]
 }
 
