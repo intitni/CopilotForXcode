@@ -67,7 +67,7 @@ struct ChatSettingsGeneralSectionView: View {
                     case .browser:
                         Text("Open web page in browser").tag(mode)
                     case .codeiumChat:
-                        Text("Open Codeium chat tab (beta)").tag(mode)
+                        Text("Open Codeium chat tab").tag(mode)
                     }
                 }
             }
