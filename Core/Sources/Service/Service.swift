@@ -27,8 +27,7 @@ import ProService
 public final class Service {
     public static let shared = Service()
 
-    @WorkspaceActor
-    let workspacePool: WorkspacePool
+    @Dependency(\.workspacePool) var workspacePool
     @MainActor
     public let guiController = GraphicalUserInterfaceController()
     public let realtimeSuggestionController = RealtimeSuggestionController()
@@ -65,7 +64,7 @@ public final class Service {
         workspacePool.registerPlugin {
             BuiltinExtensionWorkspacePlugin(workspace: $0)
         }
-        self.workspacePool = workspacePool
+        
         globalShortcutManager = .init(guiController: guiController)
         keyBindingManager = .init(
             workspacePool: workspacePool,
