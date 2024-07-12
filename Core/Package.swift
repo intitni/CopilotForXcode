@@ -90,6 +90,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
@@ -386,6 +387,7 @@ var isProIncluded: Bool {
         let filePath = "\(file)"
         let fileURL = URL(fileURLWithPath: filePath)
         let rootURL = fileURL
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let confURL = rootURL.appendingPathComponent("PLUS")

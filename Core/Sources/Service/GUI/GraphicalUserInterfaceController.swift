@@ -186,7 +186,7 @@ struct GUI {
                             )
                         }
                     }
-
+                    
                 case let .sendCustomCommandToActiveChat(command):
                     @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
                         if tab.service.isReceivingMessage {
@@ -218,9 +218,7 @@ struct GUI {
 
                     return .run { send in
                         guard let (chatTab, chatTabInfo) = await chatTabPool.createTab(for: nil)
-                        else {
-                            return
-                        }
+                        else { return }
                         await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
                         await send(.openChatPanel(forceDetach: false))
                         if let chatTab = chatTab as? ChatGPTChatTab {

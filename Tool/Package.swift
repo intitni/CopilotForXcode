@@ -46,6 +46,7 @@ let package = Package(
         .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
         .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
+        .library(name: "CommandHandler", targets: ["CommandHandler"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -290,6 +291,15 @@ let package = Package(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
                 ),
+            ]
+        ),
+        
+        .target(
+            name: "CommandHandler",
+            dependencies: [
+                "XcodeInspector",
+                "Preferences",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 

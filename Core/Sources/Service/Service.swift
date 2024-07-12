@@ -1,6 +1,7 @@
 import BuiltinExtension
 import CodeiumService
 import Combine
+import CommandHandler
 import Dependencies
 import Foundation
 import GitHubCopilotService
@@ -45,6 +46,7 @@ public final class Service {
 
     private init() {
         @Dependency(\.workspacePool) var workspacePool
+        CommandHandlerDependencyKey.liveValue = PseudoCommandHandler()
 
         BuiltinExtensionManager.shared.setupExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),

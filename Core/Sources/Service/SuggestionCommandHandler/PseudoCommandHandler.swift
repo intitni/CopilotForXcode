@@ -1,13 +1,14 @@
 import ActiveApplicationMonitor
 import AppKit
 import CodeiumService
+import CommandHandler
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
 import Logger
 import PlusFeatureFlag
 import Preferences
-import SuggestionInjector
 import SuggestionBasic
+import SuggestionInjector
 import Toast
 import Workspace
 import WorkspaceSuggestionService
@@ -21,7 +22,7 @@ import BrowserChatTab
 /// It's used to run some commands without really triggering the menu bar item.
 ///
 /// For example, we can use it to generate real-time suggestions without Apple Scripts.
-struct PseudoCommandHandler {
+struct PseudoCommandHandler: CommandHandler {
     static var lastTimeCommandFailedToTriggerWithAccessibilityAPI = Date(timeIntervalSince1970: 0)
     private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
@@ -395,6 +396,33 @@ struct PseudoCommandHandler {
                 ).finish()
                 store.send(.openChatPanel(forceDetach: forceDetach))
             }
+        }
+    }
+
+    func sendChatMessage(_ message: String) async {
+        let store = Service.shared.guiController.store
+        await store.send(.sendCustomCommandToActiveChat(CustomCommand(
+            commandId: "",
+            name: "",
+            feature: .chatWithSelection(
+                extraSystemPrompt: nil,
+                prompt: message,
+                useExtraSystemPrompt: nil
+            )
+        ))).finish()
+    }
+
+    @WorkspaceActor
+    func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
+        guard let filespace = await getFilespace() else { return }
+        filespace.setSuggestions(suggestions)
+        PresentInWindowSuggestionPresenter().presentSuggestion(fileURL: filespace.fileURL)
+    }
+
+    func toast(_ message: String, as type: ToastType) {
+        Task { @MainActor in
+            let store = Service.shared.guiController.store
+            store.send(.suggestionWidget(.toastPanel(.toast(.toast(message, type, nil)))))
         }
     }
 }
