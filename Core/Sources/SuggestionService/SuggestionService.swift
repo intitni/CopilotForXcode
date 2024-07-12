@@ -35,6 +35,7 @@ public actor SuggestionService: SuggestionServiceType {
     ) {
         suggestionProvider = provider
         self.middlewares = middlewares
+        self.eventHandlers = eventHandlers
     }
 
     public static func service(
@@ -103,7 +104,7 @@ public extension SuggestionService {
         _ suggestions: [SuggestionBasic.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async {
-        eventHandlers.forEach { $0.didReject(suggestion, workspaceInfo: workspaceInfo) }
+        eventHandlers.forEach { $0.didReject(suggestions, workspaceInfo: workspaceInfo) }
         await suggestionProvider.notifyRejected(suggestions, workspaceInfo: workspaceInfo)
     }
 
