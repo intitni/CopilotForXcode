@@ -20,7 +20,7 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "SuggestionBasic", targets: ["SuggestionBasic"]),
+        .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -159,6 +159,15 @@ let package = Package(
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
             ]
         ),
+        
+        .target(
+            name: "SuggestionInjector",
+            dependencies: ["SuggestionBasic"]
+        ),
+        .testTarget(
+            name: "SuggestionInjectorTests",
+            dependencies: ["SuggestionInjector"]
+        ),
 
         .target(
             name: "AIModel",
@@ -264,6 +273,7 @@ let package = Package(
                 "SuggestionProvider",
                 "XPCShared",
                 "BuiltinExtension",
+                "SuggestionInjector",
             ]
         ),
 

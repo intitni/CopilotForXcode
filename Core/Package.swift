@@ -14,7 +14,6 @@ let package = Package(
             name: "Service",
             targets: [
                 "Service",
-                "SuggestionInjector",
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
@@ -104,7 +103,6 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "SuggestionInjector",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
@@ -146,14 +144,6 @@ let package = Package(
             ].pro([
                 "ProExtension",
             ])
-        ),
-        .target(
-            name: "SuggestionInjector",
-            dependencies: [.product(name: "SuggestionBasic", package: "Tool")]
-        ),
-        .testTarget(
-            name: "SuggestionInjectorTests",
-            dependencies: ["SuggestionInjector"]
         ),
 
         // MARK: - Prompt To Code
