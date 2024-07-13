@@ -27,7 +27,7 @@ import ProService
 public final class Service {
     public static let shared = Service()
 
-    @Dependency(\.workspacePool) var workspacePool
+    let workspacePool = WorkspacePool()
     @MainActor
     public let guiController = GraphicalUserInterfaceController()
     public let realtimeSuggestionController = RealtimeSuggestionController()
@@ -44,7 +44,7 @@ public final class Service {
     var cancellable = Set<AnyCancellable>()
 
     private init() {
-        @Dependency(\.workspacePool) var workspacePool
+        WorkspacePoolDependencyKey.liveValue = workspacePool
         CommandHandlerDependencyKey.liveValue = PseudoCommandHandler()
 
         BuiltinExtensionManager.shared.setupExtensions([
