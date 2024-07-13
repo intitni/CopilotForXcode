@@ -42,23 +42,35 @@ public extension Filespace {
     @WorkspaceActor
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
         guard let presentingSuggestion else { return false }
-
-        // cursor has moved to another line
-        if cursorPosition.line != presentingSuggestion.position.line {
+        guard Self.validateSuggestion(
+            presentingSuggestion,
+            lines: lines,
+            cursorPosition: cursorPosition
+        )
+        else {
             reset()
             resetSnapshot()
             return false
         }
+
+        return true
+    }
+}
+
+extension Filespace {
+    static func validateSuggestion(
+        _ suggestion: CodeSuggestion,
+        lines: [String],
+        cursorPosition: CursorPosition
+    ) -> Bool {
+        // cursor has moved to another line
+        if cursorPosition.line != suggestion.position.line { return false }
 
         // the cursor position is valid
-        guard cursorPosition.line >= 0, cursorPosition.line < lines.count else {
-            reset()
-            resetSnapshot()
-            return false
-        }
+        guard cursorPosition.line >= 0, cursorPosition.line < lines.count else { return false }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
-        let suggestionLines = presentingSuggestion.text.split(whereSeparator: \.isNewline)
+        let suggestionLines = suggestion.text.split(whereSeparator: \.isNewline)
         let suggestionFirstLine = suggestionLines.first ?? ""
 
         /// For example:
@@ -78,7 +90,7 @@ public extension Filespace {
         /// ```
         let typedSuggestion = {
             assert(
-                presentingSuggestion.range.start.character >= 0,
+                suggestion.range.start.character >= 0,
                 "Generating suggestion with invalid range"
             )
 
@@ -86,7 +98,7 @@ public extension Filespace {
 
             let startIndex = utf16View.index(
                 utf16View.startIndex,
-                offsetBy: max(0, presentingSuggestion.range.start.character),
+                offsetBy: max(0, suggestion.range.start.character),
                 limitedBy: utf16View.endIndex
             ) ?? utf16View.startIndex
 
@@ -103,14 +115,12 @@ public extension Filespace {
             return ""
         }()
 
-        /// if the line will not change after accepting the suggestion
+        // if the line will not change after accepting the suggestion
         if suggestionLines.count == 1 {
             if editingLine.hasPrefix(suggestionFirstLine),
                cursorPosition.character
-               >= suggestionFirstLine.utf16.count + presentingSuggestion.range.start.character
+               >= suggestionFirstLine.utf16.count + suggestion.range.start.character
             {
-                reset()
-                resetSnapshot()
                 return false
             }
         }
@@ -119,22 +129,16 @@ public extension Filespace {
         if cursorPosition.character > 0,
            !suggestionFirstLine.hasPrefix(typedSuggestion)
         {
-            reset()
-            resetSnapshot()
             return false
         }
 
         // finished typing the whole suggestion when the suggestion has only one line
         if typedSuggestion.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
-            reset()
-            resetSnapshot()
             return false
         }
 
         // undo to a state before the suggestion was generated
-        if editingLine.utf16.count < presentingSuggestion.position.character {
-            reset()
-            resetSnapshot()
+        if editingLine.utf16.count < suggestion.position.character {
             return false
         }
 
