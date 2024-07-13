@@ -1,24 +1,52 @@
 import Foundation
 import SuggestionBasic
+import SuggestionInjector
 import Workspace
 
+/// The moment when a suggestion is generated.
 public struct FilespaceSuggestionSnapshot: Equatable {
-    #warning("TODO: Can we remove it?")
-    public var linesHash: Int
+    public var editingLine: String
     public var cursorPosition: CursorPosition
+    public var editingLinePrefix: String
+    public var editingLineSuffix: String
 
-    public init(linesHash: Int, cursorPosition: CursorPosition) {
-        self.linesHash = linesHash
+    public static func == (
+        lhs: FilespaceSuggestionSnapshot,
+        rhs: FilespaceSuggestionSnapshot
+    ) -> Bool {
+        lhs.editingLine == rhs.editingLine
+            && lhs.cursorPosition == rhs.cursorPosition
+    }
+
+    public init(lines: [String], cursorPosition: CursorPosition) {
         self.cursorPosition = cursorPosition
+        editingLine = if cursorPosition.line >= 0 && cursorPosition.line < lines.count {
+            lines[cursorPosition.line]
+        } else {
+            ""
+        }
+        let col = cursorPosition.character
+        let view = editingLine.utf16
+        editingLinePrefix = if col >= 0 {
+            String(view.prefix(col)) ?? ""
+        } else {
+            ""
+        }
+        editingLineSuffix = if col >= 0, col < editingLine.utf16.count {
+            String(view[view.index(view.startIndex, offsetBy: col)...]) ?? ""
+        } else {
+            ""
+        }
     }
 }
 
 public struct FilespaceSuggestionSnapshotKey: FilespacePropertyKey {
     public static func createDefaultValue()
-        -> FilespaceSuggestionSnapshot { .init(linesHash: -1, cursorPosition: .outOfScope) }
+        -> FilespaceSuggestionSnapshot { .init(lines: [], cursorPosition: .outOfScope) }
 }
 
 public extension FilespacePropertyValues {
+    /// The state of the file when a suggestion is generated.
     @WorkspaceActor
     var suggestionSourceSnapshot: FilespaceSuggestionSnapshot {
         get { self[FilespaceSuggestionSnapshotKey.self] }
@@ -29,9 +57,8 @@ public extension FilespacePropertyValues {
 public extension Filespace {
     @WorkspaceActor
     func resetSnapshot() {
-        // swiftformat:disable redundantSelf
-        self.suggestionSourceSnapshot = FilespaceSuggestionSnapshotKey.createDefaultValue()
-        // swiftformat:enable all
+        self[keyPath: \.suggestionSourceSnapshot] = FilespaceSuggestionSnapshotKey
+            .createDefaultValue()
     }
 
     /// Validate the suggestion is still valid.
@@ -42,12 +69,15 @@ public extension Filespace {
     @WorkspaceActor
     func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
         guard let presentingSuggestion else { return false }
+        let snapshot = self[keyPath: \.suggestionSourceSnapshot]
+        if snapshot.cursorPosition == .outOfScope { return false }
+
         guard Self.validateSuggestion(
             presentingSuggestion,
+            snapshot: snapshot,
             lines: lines,
             cursorPosition: cursorPosition
-        )
-        else {
+        ) else {
             reset()
             resetSnapshot()
             return false
@@ -60,6 +90,7 @@ public extension Filespace {
 extension Filespace {
     static func validateSuggestion(
         _ suggestion: CodeSuggestion,
+        snapshot: FilespaceSuggestionSnapshot,
         lines: [String],
         cursorPosition: CursorPosition
     ) -> Bool {
@@ -71,78 +102,69 @@ extension Filespace {
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
         let suggestionLines = suggestion.text.split(whereSeparator: \.isNewline)
-        let suggestionFirstLine = suggestionLines.first ?? ""
-
-        /// For example:
-        /// ```
-        /// ABCD012     // typed text
-        ///     ^
-        ///     0123456 // suggestion range 4-11, generated after `ABCD`
-        /// ```
-        /// The suggestion should contain `012`, aka, the suggestion that is typed.
-        ///
-        /// Another case is that the suggestion may contain the whole line.
-        /// /// ```
-        /// ABCD012     // typed text
-        /// ----^
-        /// ABCD0123456 // suggestion range 0-11, generated after `ABCD`
-        /// The suggestion should contain `ABCD012`, aka, the suggestion that is typed.
-        /// ```
-        let typedSuggestion = {
-            assert(
-                suggestion.range.start.character >= 0,
-                "Generating suggestion with invalid range"
-            )
-
-            let utf16View = editingLine.utf16
-
-            let startIndex = utf16View.index(
-                utf16View.startIndex,
-                offsetBy: max(0, suggestion.range.start.character),
-                limitedBy: utf16View.endIndex
-            ) ?? utf16View.startIndex
-
-            let endIndex = utf16View.index(
-                utf16View.startIndex,
-                offsetBy: cursorPosition.character,
-                limitedBy: utf16View.endIndex
-            ) ?? utf16View.endIndex
-
-            if endIndex > startIndex {
-                return String(editingLine[startIndex..<endIndex])
-            }
-
-            return ""
-        }()
 
         // if the line will not change after accepting the suggestion
-        if suggestionLines.count == 1 {
-            if editingLine.hasPrefix(suggestionFirstLine),
-               cursorPosition.character
-               >= suggestionFirstLine.utf16.count + suggestion.range.start.character
-            {
-                return false
-            }
-        }
-
-        // the line content doesn't match the suggestion
-        if cursorPosition.character > 0,
-           !suggestionFirstLine.hasPrefix(typedSuggestion)
-        {
+        if Self.validateThatSuggestionMakeNoDifferent(
+            suggestion,
+            lines: lines,
+            suggestionLines: suggestionLines
+        ) {
             return false
         }
 
-        // finished typing the whole suggestion when the suggestion has only one line
-        if typedSuggestion.hasPrefix(suggestionFirstLine), suggestionLines.count <= 1 {
-            return false
-        }
-
-        // undo to a state before the suggestion was generated
-        if editingLine.utf16.count < suggestion.position.character {
+        // the line content doesn't match the suggestion snapshot
+        if !editingLine.hasPrefix(snapshot.editingLinePrefix) {
             return false
         }
 
         return true
+    }
+
+    static func validateThatSuggestionMakeNoDifferent(
+        _ suggestion: CodeSuggestion,
+        lines: [String],
+        suggestionLines: [Substring]
+    ) -> Bool {
+        var editingRange = suggestion.range
+        let startLine = max(0, editingRange.start.line)
+        let endLine = max(startLine, min(editingRange.end.line, lines.count - 1))
+
+        // The editing range is out of the file
+        if startLine < 0 || endLine >= lines.count {
+            return false
+        }
+
+        // The suggestion is apparently longer than the editing range
+        if endLine - startLine + 1 != suggestionLines.count {
+            return false
+        }
+
+        let originalEditingLines = Array(lines[startLine...endLine])
+        var editingLines = originalEditingLines
+        editingRange.end = .init(
+            line: editingRange.end.line - editingRange.start.line,
+            character: editingRange.end.character
+        )
+        editingRange.start = .init(line: 0, character: editingRange.start.character)
+        var cursorPosition = CursorPosition(
+            line: suggestion.position.line - startLine,
+            character: suggestion.position.character
+        )
+        let pseudoSuggestion = CodeSuggestion(
+            id: "",
+            text: suggestion.text,
+            position: cursorPosition,
+            range: editingRange
+        )
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        let injector = SuggestionInjector()
+        injector.acceptSuggestion(
+            intoContentWithoutSuggestion: &editingLines,
+            cursorPosition: &cursorPosition,
+            completion: pseudoSuggestion,
+            extraInfo: &extraInfo
+        )
+        return editingLines == originalEditingLines
     }
 }
 

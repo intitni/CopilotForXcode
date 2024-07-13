@@ -87,7 +87,7 @@ struct PseudoCommandHandler: CommandHandler {
         }
 
         let snapshot = FilespaceSuggestionSnapshot(
-            linesHash: editor.lines.hashValue,
+            lines: editor.lines,
             cursorPosition: editor.cursorPosition
         )
 
