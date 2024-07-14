@@ -651,7 +651,7 @@ public final class WidgetWindows {
     let store: StoreOf<WidgetFeature>
     let chatTabPool: ChatTabPool
     weak var controller: WidgetWindowsController?
-    let cursorPositionTracker = CursorPositionTracker()
+    let cursorPositionTracker = TextCursorTracker()
 
     // you should make these window `.transient` so they never show up in the mission control.
 

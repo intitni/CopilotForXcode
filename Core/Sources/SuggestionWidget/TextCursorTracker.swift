@@ -5,7 +5,7 @@ import SuggestionBasic
 import XcodeInspector
 
 @Perceptible
-final class CursorPositionTracker {
+final class TextCursorTracker {
     @MainActor
     var cursorPosition: CursorPosition = .zero
     @MainActor

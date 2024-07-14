@@ -7,7 +7,7 @@ import XcodeInspector
 
 struct CodeBlockSuggestionPanel: View {
     let suggestion: CodeSuggestionProvider
-    @Environment(CursorPositionTracker.self) var cursorPositionTracker
+    @Environment(TextCursorTracker.self) var cursorPositionTracker
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFont) var codeFont
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
