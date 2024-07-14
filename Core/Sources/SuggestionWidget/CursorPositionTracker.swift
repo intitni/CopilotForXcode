@@ -8,6 +8,8 @@ import XcodeInspector
 final class CursorPositionTracker {
     @MainActor
     var cursorPosition: CursorPosition = .zero
+    @MainActor
+    var currentLine: String = ""
 
     @PerceptionIgnored var editorObservationTask: Set<AnyCancellable> = []
     @PerceptionIgnored var eventObservationTask: Task<Void, Never>?
@@ -37,6 +39,13 @@ final class CursorPositionTracker {
         let content = editor.getLatestEvaluatedContent()
         Task { @MainActor in
             self.cursorPosition = content.cursorPosition
+            self.currentLine = if content.cursorPosition.line >= 0,
+                                  content.cursorPosition.line < content.lines.count
+            {
+                content.lines[content.cursorPosition.line]
+            } else {
+                ""
+            }
         }
         eventObservationTask = Task { [weak self] in
             for await event in await editor.axNotifications.notifications() {
