@@ -48,6 +48,7 @@ let package = Package(
         .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
+        .library(name: "CodeDiff", targets: ["CodeDiff"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -94,6 +95,9 @@ let package = Package(
         .target(name: "FileSystem"),
 
         .target(name: "ObjectiveCExceptionHandling"),
+
+        .target(name: "CodeDiff", dependencies: ["SuggestionBasic"]),
+        .testTarget(name: "CodeDiffTests", dependencies: ["CodeDiff"]),
 
         .target(
             name: "CustomAsyncAlgorithms",
