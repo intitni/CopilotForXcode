@@ -25,7 +25,7 @@ public struct PanelFeature {
 
     public enum Action: Equatable {
         case presentSuggestion
-        case presentSuggestionProvider(CodeSuggestionProvider, displayContent: Bool)
+        case presentSuggestionProvider(PresentingCodeSuggestion, displayContent: Bool)
         case presentError(String)
         case presentPromptToCode(PromptToCodeGroup.PromptToCodeInitialState)
         case displayPanelContent
@@ -136,7 +136,7 @@ public struct PanelFeature {
         }
     }
 
-    func fetchSuggestionProvider(fileURL: URL) async -> CodeSuggestionProvider? {
+    func fetchSuggestionProvider(fileURL: URL) async -> PresentingCodeSuggestion? {
         guard let provider = await suggestionWidgetControllerDependency
             .suggestionWidgetDataSource?
             .suggestionForFile(at: fileURL) else { return nil }

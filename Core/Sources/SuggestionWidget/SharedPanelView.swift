@@ -101,7 +101,7 @@ struct SharedPanelView: View {
         }
 
         @ViewBuilder
-        func suggestion(_ suggestion: CodeSuggestionProvider) -> some View {
+        func suggestion(_ suggestion: PresentingCodeSuggestion) -> some View {
             switch suggestionPresentationMode {
             case .nearbyTextCursor:
                 EmptyView()

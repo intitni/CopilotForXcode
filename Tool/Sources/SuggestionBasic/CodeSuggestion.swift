@@ -22,7 +22,7 @@ public struct CodeSuggestion: Codable, Equatable {
         text: String,
         position: CursorPosition,
         range: CursorRange,
-        descriptions: [Description],
+        descriptions: [Description] = [],
         middlewareComments: [String] = [],
         metadata: [String: String] = [:]
     ) {
