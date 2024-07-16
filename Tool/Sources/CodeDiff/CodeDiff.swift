@@ -2,6 +2,8 @@ import Foundation
 import SuggestionBasic
 
 public struct CodeDiff {
+    public init() {}
+    
     public typealias LineDiff = CollectionDifference<String>
 
     public struct SnippetDiff: Equatable {

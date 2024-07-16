@@ -154,6 +154,13 @@
         "identifier" : "SuggestionInjectorTests",
         "name" : "SuggestionInjectorTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "CodeDiffTests",
+        "name" : "CodeDiffTests"
+      }
     }
   ],
   "version" : 1

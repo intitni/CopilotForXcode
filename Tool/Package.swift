@@ -246,6 +246,7 @@ let package = Package(
                 "Preferences",
                 "SuggestionBasic",
                 "DebounceFunction",
+                "CodeDiff",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
@@ -327,6 +328,7 @@ let package = Package(
                 "ObjectiveCExceptionHandling",
                 "USearchIndex",
                 "ChatBasic",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
@@ -358,6 +360,7 @@ let package = Package(
                 "BuiltinExtension",
                 "Toast",
                 "SuggestionProvider",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
@@ -381,6 +384,7 @@ let package = Package(
                 "XcodeInspector",
                 "BuiltinExtension",
                 "ChatTab",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
