@@ -4,20 +4,29 @@ import SuggestionBasic
 public struct CodeDiff {
     public typealias LineDiff = CollectionDifference<String>
 
-    public struct SnippetDiff {
-        public struct Change {
+    public struct SnippetDiff: Equatable {
+        public struct Change: Equatable {
             public var offset: Int
             public var element: String
         }
 
-        public struct Line {
+        public struct Line: Equatable {
+            public enum Diff: Equatable {
+                case unchanged
+                case mutated(changes: [Change])
+            }
+
             public var text: String
-            public var diff: [Change]?
+            public var diff: Diff = .unchanged
         }
 
-        public struct Section {
+        public struct Section: Equatable {
             public var oldSnippet: [Line]
             public var newSnippet: [Line]
+
+            public var isEmpty: Bool {
+                oldSnippet.isEmpty && newSnippet.isEmpty
+            }
         }
 
         public var sections: [Section]
@@ -82,8 +91,8 @@ public struct CodeDiff {
     }
 
     public func diff(snippet: String, from oldSnippet: String) -> SnippetDiff {
-        let newLines = snippet.breakLines()
-        let oldLines = oldSnippet.breakLines()
+        let newLines = snippet.splitByNewLine(omittingEmptySubsequences: false)
+        let oldLines = oldSnippet.splitByNewLine(omittingEmptySubsequences: false)
         let diffByLine = newLines.difference(from: oldLines)
 
         struct DiffSection: Equatable {
@@ -94,15 +103,15 @@ public struct CodeDiff {
 
         func collect(
             into all: inout [DiffSection],
-            changes: [CollectionDifference<String>.Change],
-            extract: (CollectionDifference<String>.Change) -> (offset: Int, line: String)?
+            changes: [CollectionDifference<Substring>.Change],
+            extract: (CollectionDifference<Substring>.Change) -> (offset: Int, line: Substring)?
         ) {
             var current: DiffSection?
             for change in changes {
                 guard let (offset, element) = extract(change) else { continue }
                 if var section = current {
                     if offset == section.end + 1 {
-                        section.lines.append(element)
+                        section.lines.append(String(element))
                         section.end = offset
                         current = section
                         continue
@@ -111,7 +120,7 @@ public struct CodeDiff {
                     }
                 }
 
-                current = DiffSection(offset: offset, end: offset, lines: [element])
+                current = DiffSection(offset: offset, end: offset, lines: [String(element)])
             }
 
             if let current {
@@ -144,16 +153,28 @@ public struct CodeDiff {
             // handle lines before sections
             var beforeSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
 
-            while oldLineIndex < (removalSection?.offset ?? .max) {
-                beforeSection.oldSnippet.append(.init(text: oldLines[oldLineIndex], diff: nil))
+            while oldLineIndex < (removalSection?.offset ?? oldLines.endIndex) {
+                if oldLineIndex < oldLines.endIndex {
+                    beforeSection.oldSnippet.append(.init(
+                        text: String(oldLines[oldLineIndex]),
+                        diff: .unchanged
+                    ))
+                }
                 oldLineIndex += 1
             }
-            while newLineIndex < (insertionSection?.offset ?? .max) {
-                beforeSection.newSnippet.append(.init(text: newLines[newLineIndex], diff: nil))
+            while newLineIndex < (insertionSection?.offset ?? newLines.endIndex) {
+                if newLineIndex < newLines.endIndex {
+                    beforeSection.newSnippet.append(.init(
+                        text: String(newLines[newLineIndex]),
+                        diff: .unchanged
+                    ))
+                }
                 newLineIndex += 1
             }
 
-            result.sections.append(beforeSection)
+            if !beforeSection.isEmpty {
+                result.sections.append(beforeSection)
+            }
 
             // handle lines inside sections
 
@@ -166,24 +187,26 @@ public struct CodeDiff {
                 if let oldLine {
                     insideSection.oldSnippet.append(.init(
                         text: oldLine,
-                        diff: diff.removals.compactMap { change in
+                        diff: .mutated(changes: diff.removals.compactMap { change in
                             guard case let .remove(offset, element, _) = change else { return nil }
                             return .init(offset: offset, element: element)
-                        }
+                        })
                     ))
                 }
                 if let newLine {
                     insideSection.newSnippet.append(.init(
                         text: newLine,
-                        diff: diff.insertions.compactMap { change in
+                        diff: .mutated(changes: diff.insertions.compactMap { change in
                             guard case let .insert(offset, element, _) = change else { return nil }
                             return .init(offset: offset, element: element)
-                        }
+                        })
                     ))
                 }
             }
 
-            result.sections.append(insideSection)
+            if !insideSection.isEmpty {
+                result.sections.append(insideSection)
+            }
 
             oldLineIndex += removalSection?.lines.count ?? 0
             newLineIndex += insertionSection?.lines.count ?? 0
@@ -250,20 +273,23 @@ struct SnippetDiffPreview: View {
             $0.newSnippet.map {
                 let text = $0.text.trimmingCharacters(in: .newlines)
                 let string = NSMutableAttributedString(string: text)
-                if let diff = $0.diff {
+                if case let .mutated(changes) = $0.diff {
                     string.addAttribute(
                         .backgroundColor,
                         value: NSColor.green.withAlphaComponent(0.1),
                         range: NSRange(location: 0, length: text.count)
                     )
 
-                    for diffItem in diff {
+                    for diffItem in changes {
                         string.addAttribute(
                             .backgroundColor,
                             value: NSColor.green.withAlphaComponent(0.5),
                             range: NSRange(
                                 location: diffItem.offset,
-                                length: min(text.count - diffItem.offset, diffItem.element.count)
+                                length: min(
+                                    text.count - diffItem.offset,
+                                    diffItem.element.count
+                                )
                             )
                         )
                     }
@@ -276,14 +302,14 @@ struct SnippetDiffPreview: View {
             $0.oldSnippet.map {
                 let text = $0.text.trimmingCharacters(in: .newlines)
                 let string = NSMutableAttributedString(string: text)
-                if let diff = $0.diff {
+                if case let .mutated(changes) = $0.diff {
                     string.addAttribute(
                         .backgroundColor,
                         value: NSColor.red.withAlphaComponent(0.1),
                         range: NSRange(location: 0, length: text.count)
                     )
 
-                    for diffItem in diff {
+                    for diffItem in changes {
                         string.addAttribute(
                             .backgroundColor,
                             value: NSColor.red.withAlphaComponent(0.5),
