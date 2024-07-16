@@ -95,51 +95,11 @@ public struct CodeDiff {
         let oldLines = oldSnippet.splitByNewLine(omittingEmptySubsequences: false)
         let diffByLine = newLines.difference(from: oldLines)
 
-        struct DiffSection: Equatable {
-            var offset: Int
-            var end: Int
-            var lines: [String]
-        }
-
-        func collect(
-            into all: inout [DiffSection],
-            changes: [CollectionDifference<Substring>.Change],
-            extract: (CollectionDifference<Substring>.Change) -> (offset: Int, line: Substring)?
-        ) {
-            var current: DiffSection?
-            for change in changes {
-                guard let (offset, element) = extract(change) else { continue }
-                if var section = current {
-                    if offset == section.end + 1 {
-                        section.lines.append(String(element))
-                        section.end = offset
-                        current = section
-                        continue
-                    } else {
-                        all.append(section)
-                    }
-                }
-
-                current = DiffSection(offset: offset, end: offset, lines: [String(element)])
-            }
-
-            if let current {
-                all.append(current)
-            }
-        }
-
-        var insertions = [DiffSection]()
-        var removals = [DiffSection]()
-
-        collect(into: &removals, changes: diffByLine.removals) { change in
-            guard case let .remove(offset, element, _) = change else { return nil }
-            return (offset, element)
-        }
-
-        collect(into: &insertions, changes: diffByLine.insertions) { change in
-            guard case let .insert(offset, element, _) = change else { return nil }
-            return (offset, element)
-        }
+        let (insertions, removals) = generateDiffSections(
+            oldLines: oldLines,
+            newLines: newLines,
+            diffByLine: diffByLine
+        )
 
         var oldLineIndex = 0
         var newLineIndex = 0
@@ -214,6 +174,133 @@ public struct CodeDiff {
         }
 
         return result
+    }
+}
+
+extension CodeDiff {
+    struct DiffSection: Equatable {
+        var offset: Int
+        var end: Int
+        var lines: [String]
+
+        mutating func appendIfPossible(offset: Int, element: Substring) -> Bool {
+            if end + 1 != offset { return false }
+            end = offset
+            lines.append(String(element))
+            return true
+        }
+    }
+
+    func generateDiffSections(
+        oldLines: [Substring],
+        newLines: [Substring],
+        diffByLine: CollectionDifference<Substring>
+    ) -> (insertionSections: [DiffSection], removalSections: [DiffSection]) {
+        let insertionDiffs = diffByLine.insertions
+        let removalDiffs = diffByLine.removals
+        var insertions = [DiffSection]()
+        var removals = [DiffSection]()
+        var insertionIndex = 0
+        var removalIndex = 0
+        var insertionUnchangedGap = 0
+        var removalUnchangedGap = 0
+
+        while insertionIndex < insertionDiffs.endIndex || removalIndex < removalDiffs.endIndex {
+            let insertion = insertionDiffs[safe: insertionIndex]
+            let removal = removalDiffs[safe: removalIndex]
+
+            append(
+                into: &insertions,
+                change: insertion,
+                index: &insertionIndex,
+                unchangedGap: &insertionUnchangedGap
+            ) { change in
+                guard case let .insert(offset, element, _) = change else { return nil }
+                return (offset, element)
+            }
+
+            append(
+                into: &removals,
+                change: removal,
+                index: &removalIndex,
+                unchangedGap: &removalUnchangedGap
+            ) { change in
+                guard case let .remove(offset, element, _) = change else { return nil }
+                return (offset, element)
+            }
+
+            if insertionUnchangedGap > removalUnchangedGap {
+                // insert empty sections to insertions
+                if removalUnchangedGap > 0 {
+                    let count = insertionUnchangedGap - removalUnchangedGap
+                    let index = max(insertions.endIndex - 1, 0)
+                    let offset = (insertions.last?.offset ?? 0) - count
+                    insertions.insert(
+                        .init(offset: offset, end: offset, lines: []),
+                        at: index
+                    )
+                    insertionUnchangedGap -= removalUnchangedGap
+                    removalUnchangedGap = 0
+                } else if removal == nil {
+                    removalUnchangedGap = 0
+                    insertionUnchangedGap = 0
+                }
+            } else if removalUnchangedGap > insertionUnchangedGap { 
+                // insert empty sections to removals
+                if insertionUnchangedGap > 0 {
+                    let count = removalUnchangedGap - insertionUnchangedGap
+                    let index = max(removals.endIndex - 1, 0)
+                    let offset = (removals.last?.offset ?? 0) - count
+                    removals.insert(
+                        .init(offset: offset, end: offset, lines: []),
+                        at: index
+                    )
+                    removalUnchangedGap -= insertionUnchangedGap
+                    insertionUnchangedGap = 0
+                } else {
+                    removalUnchangedGap = 0
+                    insertionUnchangedGap = 0
+                }
+            } else {
+                removalUnchangedGap = 0
+                insertionUnchangedGap = 0
+            }
+        }
+
+        return (insertions, removals)
+    }
+
+    func append(
+        into sections: inout [DiffSection],
+        change: CollectionDifference<Substring>.Change?,
+        index: inout Int,
+        unchangedGap: inout Int,
+        extract: (CollectionDifference<Substring>.Change) -> (offset: Int, line: Substring)?
+    ) {
+        guard let change, let (offset, element) = extract(change) else { return }
+        if unchangedGap == 0 {
+            if !sections.isEmpty {
+                let lastIndex = sections.endIndex - 1
+                if !sections[lastIndex]
+                    .appendIfPossible(offset: offset, element: element)
+                {
+                    unchangedGap = offset - sections[lastIndex].end - 1
+                    sections.append(.init(
+                        offset: offset,
+                        end: offset,
+                        lines: [String(element)]
+                    ))
+                }
+            } else {
+                sections.append(.init(
+                    offset: offset,
+                    end: offset,
+                    lines: [String(element)]
+                ))
+                unchangedGap = offset
+            }
+            index += 1
+        }
     }
 }
 
