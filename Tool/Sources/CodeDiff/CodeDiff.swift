@@ -160,23 +160,27 @@ public struct CodeDiff {
             var insideSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
 
             for i in 0..<max(removalSection?.lines.count ?? 0, insertionSection?.lines.count ?? 0) {
-                let oldLine = removalSection?.lines[safe: i, fallback: ""] ?? ""
-                let newLine = insertionSection?.lines[safe: i, fallback: ""] ?? ""
-                let diff = diff(text: newLine, from: oldLine)
-                insideSection.oldSnippet.append(.init(
-                    text: oldLine,
-                    diff: diff.removals.compactMap { change in
-                        guard case let .remove(offset, element, _) = change else { return nil }
-                        return .init(offset: offset, element: element)
-                    }
-                ))
-                insideSection.newSnippet.append(.init(
-                    text: newLine,
-                    diff: diff.insertions.compactMap { change in
-                        guard case let .insert(offset, element, _) = change else { return nil }
-                        return .init(offset: offset, element: element)
-                    }
-                ))
+                let oldLine = removalSection?.lines[safe: i]
+                let newLine = insertionSection?.lines[safe: i]
+                let diff = diff(text: newLine ?? "", from: oldLine ?? "")
+                if let oldLine {
+                    insideSection.oldSnippet.append(.init(
+                        text: oldLine,
+                        diff: diff.removals.compactMap { change in
+                            guard case let .remove(offset, element, _) = change else { return nil }
+                            return .init(offset: offset, element: element)
+                        }
+                    ))
+                }
+                if let newLine {
+                    insideSection.newSnippet.append(.init(
+                        text: newLine,
+                        diff: diff.insertions.compactMap { change in
+                            guard case let .insert(offset, element, _) = change else { return nil }
+                            return .init(offset: offset, element: element)
+                        }
+                    ))
+                }
             }
 
             result.sections.append(insideSection)
