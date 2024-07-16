@@ -206,66 +206,6 @@ extension Array {
     }
 }
 
-extension CodeDiff.LineDiff.Change {
-    var range: NSRange {
-        switch self {
-        case let .insert(offset, element, _):
-            return NSRange(location: offset, length: element.count)
-        case let .remove(offset, element, _):
-            return NSRange(location: offset, length: element.count)
-        }
-    }
-
-    var element: String {
-        switch self {
-        case let .insert(_, element, _):
-            return element
-        case let .remove(_, element, _):
-            return element
-        }
-    }
-
-    var offset: Int {
-        switch self {
-        case let .insert(offset, _, _):
-            return offset
-        case let .remove(offset, _, _):
-            return offset
-        }
-    }
-
-    func earlierThan(offset: Int) -> Bool {
-        range.upperBound < offset
-    }
-
-    func rebased(in subRange: NSRange, text: String) -> Self? {
-        let thisRange = range
-        guard let intersection = thisRange.intersection(subRange) else { return nil }
-        let rebasedLocation = max(0, intersection.location - subRange.location)
-        let length = intersection.length
-        let rebasedRange = Range(NSRange(location: rebasedLocation, length: length), in: text)
-        let element = if let rebasedRange {
-            String(text[rebasedRange])
-        } else {
-            ""
-        }
-        switch self {
-        case let .insert(_, _, associatedWith):
-            return .insert(
-                offset: rebasedLocation,
-                element: element,
-                associatedWith: associatedWith
-            )
-        case let .remove(_, _, associatedWith):
-            return .remove(
-                offset: rebasedLocation,
-                element: element,
-                associatedWith: associatedWith
-            )
-        }
-    }
-}
-
 #if DEBUG
 
 import SwiftUI
