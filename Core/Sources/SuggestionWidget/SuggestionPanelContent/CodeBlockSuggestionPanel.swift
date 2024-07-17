@@ -241,7 +241,10 @@ struct CodeBlockSuggestionPanel: View {
                         lastLine.utf16.startIndex,
                         offsetBy: range.end.character
                     )
-                    let leftover = String(lastLine.utf16.suffix(from: startIndex))
+                    var leftover = String(lastLine.utf16.suffix(from: startIndex))
+                    if leftover?.last?.isNewline ?? false {
+                        leftover?.removeLast(1)
+                    }
                     return leftover ?? ""
                 }
             }
