@@ -163,7 +163,8 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                         language: "objective-c",
                         startLineIndex: 8,
                         suggestionCount: 2,
-                        currentSuggestionIndex: 0
+                        currentSuggestionIndex: 0,
+                        replacingRange: .zero
                     )
                 ),
                 colorScheme: .dark,

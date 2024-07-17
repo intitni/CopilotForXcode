@@ -17,7 +17,8 @@ struct MockWidgetDataSource: SuggestionWidgetDataSource {
             language: "swift",
             startLineIndex: 1,
             suggestionCount: 3,
-            currentSuggestionIndex: 0
+            currentSuggestionIndex: 0,
+            replacingRange: .zero
         )
     }
 }

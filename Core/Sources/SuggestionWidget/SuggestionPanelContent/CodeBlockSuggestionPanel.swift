@@ -13,19 +13,25 @@ public struct PresentingCodeSuggestion: Equatable {
     public var startLineIndex: Int
     public var suggestionCount: Int
     public var currentSuggestionIndex: Int
+    public var replacingRange: CursorRange
+    public var descriptions: [CodeSuggestion.Description]
 
     public init(
         code: String,
         language: String,
         startLineIndex: Int,
         suggestionCount: Int,
-        currentSuggestionIndex: Int
+        currentSuggestionIndex: Int,
+        replacingRange: CursorRange,
+        descriptions: [CodeSuggestion.Description] = []
     ) {
         self.code = code
         self.language = language
         self.startLineIndex = startLineIndex
         self.suggestionCount = suggestionCount
         self.currentSuggestionIndex = currentSuggestionIndex
+        self.replacingRange = replacingRange
+        self.descriptions = descriptions
     }
 }
 

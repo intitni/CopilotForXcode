@@ -24,7 +24,9 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                     language: filespace.language.rawValue,
                     startLineIndex: suggestion.position.line,
                     suggestionCount: filespace.suggestions.count,
-                    currentSuggestionIndex: filespace.suggestionIndex
+                    currentSuggestionIndex: filespace.suggestionIndex,
+                    replacingRange: suggestion.range,
+                    descriptions: suggestion.descriptions
                 )
             }
         }
