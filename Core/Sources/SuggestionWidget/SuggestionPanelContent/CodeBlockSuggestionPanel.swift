@@ -31,7 +31,7 @@ public struct PresentingCodeSuggestion: Equatable {
 
 struct CodeBlockSuggestionPanel: View {
     let suggestion: PresentingCodeSuggestion
-    @Environment(TextCursorTracker.self) var textCursorTracker
+    @Environment(\.textCursorTracker) var textCursorTracker
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFont) var codeFont
     @AppStorage(\.suggestionDisplayCompactMode) var suggestionDisplayCompactMode
