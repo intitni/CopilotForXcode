@@ -250,7 +250,49 @@ extension AsyncCodeBlock {
             _ highlightedCode: [NSMutableAttributedString],
             commonPrecedingSpaceCount: Int,
             diffResult: CodeDiff.SnippetDiff
-        ) {}
+        ) {
+            for (index, mutableString) in highlightedCode.enumerated() {
+                guard let line = diffResult.line(at: index, in: \.newSnippet) else { continue }
+                guard case let .mutated(changes) = line.diff, !changes.isEmpty else { continue }
+
+                for change in changes {
+                    if change.offset == 0,
+                       change.element.count - commonPrecedingSpaceCount
+                       == mutableString.string.count
+                    {
+                        // ignore the whole line change
+                        continue
+                    }
+
+                    let offset = change.offset - commonPrecedingSpaceCount
+                    let range = NSRange(
+                        location: max(0, offset),
+                        length: max(0, change.element.count + (offset < 0 ? offset : 0))
+                    )
+                    mutableString.addAttributes([
+                        .backgroundColor: NSColor.systemGreen.withAlphaComponent(0.2),
+                    ], range: range)
+                }
+            }
+
+            let lastLineIndex = highlightedCode.endIndex - 1
+            if lastLineIndex >= 0 {
+                if let line = diffResult.line(at: lastLineIndex, in: \.oldSnippet),
+                   case let .mutated(changes) = line.diff,
+                   !changes.isEmpty
+                {
+                    let lastLine = highlightedCode[lastLineIndex]
+                    let removedSuffix = line.text.suffix(max(
+                        0,
+                        line.text.count - lastLine.string.count
+                    ))
+                    lastLine.append(.init(string: String(removedSuffix), attributes: [
+                        .foregroundColor: NSColor.systemRed.withAlphaComponent(0.4),
+                        .backgroundColor: NSColor.systemRed.withAlphaComponent(0.1),
+                    ]))
+                }
+            }
+        }
     }
 
     @Perceptible
@@ -259,17 +301,10 @@ extension AsyncCodeBlock {
 
         @PerceptionIgnored var originalCode: String?
         @PerceptionIgnored var code: String?
-        @PerceptionIgnored private var debounceFunction: DebounceFunction<AsyncCodeBlock>?
         @PerceptionIgnored private var diffTask: Task<Void, Error>?
 
-        init() {
-            debounceFunction = .init(duration: 0.1, block: { view in
-                self.diff(for: view)
-            })
-        }
-
         func diff(for view: AsyncCodeBlock) {
-            Task { @MainActor in await debounceFunction?(view) }
+            performDiff(for: view)
         }
 
         private func performDiff(for view: AsyncCodeBlock) {
@@ -412,6 +447,39 @@ extension AsyncCodeBlock {
 }
 
 #Preview("Updating Content") {
-    EmptyView()
+    struct UpdateContent: View {
+        @State var index = 0
+        struct Case {
+            let code: String
+            let originalCode: String
+        }
+
+        let cases: [Case] = [
+            .init(code: "foo(123)", originalCode: "bar(234)"),
+            .init(code: "bar(456)", originalCode: "baz(567)"),
+        ]
+
+        var body: some View {
+            VStack {
+                Button("Update") {
+                    index = (index + 1) % cases.count
+                }
+                AsyncCodeBlock(
+                    code: cases[index].code,
+                    originalCode: cases[index].originalCode,
+                    language: "swift",
+                    startLineIndex: 10,
+                    scenario: "",
+                    font: .monospacedSystemFont(ofSize: 12, weight: .regular),
+                    droppingLeadingSpaces: true,
+                    proposedForegroundColor: .primary,
+                    dimmedCharacterCount: .init(prefix: 0, suffix: 0)
+                )
+            }
+        }
+    }
+
+    return UpdateContent()
+        .frame(width: 400, height: 200)
 }
 
