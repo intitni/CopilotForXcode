@@ -326,18 +326,17 @@ struct PseudoCommandHandler: CommandHandler {
 
     func dismissSuggestion() async {
         guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
+        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
-
         await filespace.reset()
-        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
 
     func openChat(forceDetach: Bool) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
-            let store = Service.shared.guiController.store
             Task { @MainActor in
+                let store = Service.shared.guiController.store
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
                 store.send(.openChatPanel(forceDetach: forceDetach))
             }
@@ -360,8 +359,8 @@ struct PseudoCommandHandler: CommandHandler {
 
             if openInApp {
                 #if canImport(BrowserChatTab)
-                let store = Service.shared.guiController.store
                 Task { @MainActor in
+                    let store = Service.shared.guiController.store
                     await store.send(.createAndSwitchToChatTabIfNeededMatching(
                         check: {
                             func match(_ tabURL: URL?) -> Bool {
@@ -386,8 +385,8 @@ struct PseudoCommandHandler: CommandHandler {
                 }
             }
         case .codeiumChat:
-            let store = Service.shared.guiController.store
             Task { @MainActor in
+                let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
                         check: { $0 is CodeiumChatTab },
@@ -400,7 +399,7 @@ struct PseudoCommandHandler: CommandHandler {
     }
 
     func sendChatMessage(_ message: String) async {
-        let store = Service.shared.guiController.store
+        let store = await Service.shared.guiController.store
         await store.send(.sendCustomCommandToActiveChat(CustomCommand(
             commandId: "",
             name: "",

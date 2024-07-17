@@ -178,7 +178,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        let store = Service.shared.guiController.store
+        let store = await Service.shared.guiController.store
 
         if let promptToCode = store.state.promptToCodeGroup.activePromptToCode {
             if promptToCode.isAttachedToSelectionRange, promptToCode.documentURL != fileURL {
@@ -388,7 +388,7 @@ extension WindowBaseCommandHandler {
             )
         }() as (String, CursorRange)
 
-        let store = Service.shared.guiController.store
+        let store = await Service.shared.guiController.store
 
         let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
 

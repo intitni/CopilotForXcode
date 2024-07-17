@@ -25,12 +25,14 @@ import ProService
 
 /// The running extension service.
 public final class Service {
+    @MainActor
     public static let shared = Service()
 
-    let workspacePool = WorkspacePool()
+    @Dependency(\.workspacePool) var workspacePool
     @MainActor
-    public let guiController = GraphicalUserInterfaceController()
-    public let realtimeSuggestionController = RealtimeSuggestionController()
+    public let guiController: GraphicalUserInterfaceController
+    public let commandHandler: CommandHandler
+    public let realtimeSuggestionController: RealtimeSuggestionController
     public let scheduledCleaner: ScheduledCleaner
     let globalShortcutManager: GlobalShortcutManager
     let keyBindingManager: KeyBindingManager
@@ -43,15 +45,47 @@ public final class Service {
     @Dependency(\.toast) var toast
     var cancellable = Set<AnyCancellable>()
 
+    @MainActor
     private init() {
-        WorkspacePoolDependencyKey.liveValue = workspacePool
-        CommandHandlerDependencyKey.liveValue = PseudoCommandHandler()
+        @Dependency(\.workspacePool) var workspacePool
+        let commandHandler = PseudoCommandHandler()
+        self.commandHandler = commandHandler
+
+        func setup<R>(_ operation: () -> R) -> R {
+            withDependencies { values in
+                values.commandHandler = commandHandler
+            } operation: {
+                operation() //
+            }
+        }
+
+        realtimeSuggestionController = setup { .init() }
+        scheduledCleaner = setup { .init() }
+        let guiController = setup { GraphicalUserInterfaceController() }
+        self.guiController = guiController
+        globalShortcutManager = setup { .init(guiController: guiController) }
+
+        keyBindingManager = setup {
+            .init(
+                workspacePool: workspacePool,
+                acceptSuggestion: {
+                    Task { await PseudoCommandHandler().acceptSuggestion() }
+                },
+                dismissSuggestion: {
+                    Task { await PseudoCommandHandler().dismissSuggestion() }
+                }
+            )
+        }
+
+        #if canImport(ProService)
+        proService = setup { ProService() }
+        #endif
 
         BuiltinExtensionManager.shared.setupExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),
             CodeiumExtension(workspacePool: workspacePool),
         ])
-        scheduledCleaner = .init()
+
         workspacePool.registerPlugin {
             SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
         }
@@ -64,21 +98,6 @@ public final class Service {
         workspacePool.registerPlugin {
             BuiltinExtensionWorkspacePlugin(workspace: $0)
         }
-        
-        globalShortcutManager = .init(guiController: guiController)
-        keyBindingManager = .init(
-            workspacePool: workspacePool,
-            acceptSuggestion: {
-                Task { await PseudoCommandHandler().acceptSuggestion() }
-            },
-            dismissSuggestion: {
-                Task { await PseudoCommandHandler().dismissSuggestion() }
-            }
-        )
-
-        #if canImport(ProService)
-        proService = ProService()
-        #endif
 
         scheduledCleaner.service = self
     }
@@ -101,9 +120,10 @@ public final class Service {
                 .removeDuplicates()
                 .filter { $0 != .init(fileURLWithPath: "/") }
                 .compactMap { $0 }
-                .sink { [weak self] fileURL in
+                .sink { fileURL in
                     Task {
-                        try await self?.workspacePool
+                        @Dependency(\.workspacePool) var workspacePool
+                        return try await workspacePool
                             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
                     }
                 }.store(in: &cancellable)
