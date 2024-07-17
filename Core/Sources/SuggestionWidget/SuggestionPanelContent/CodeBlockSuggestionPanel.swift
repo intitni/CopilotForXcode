@@ -169,13 +169,10 @@ struct CodeBlockSuggestionPanel: View {
             VStack(spacing: 0) {
                 CustomScrollView {
                     WithPerceptionTracking {
-                        let diffResult = Self.diff(
-                            suggestion: suggestion,
-                            textCursorTracker: textCursorTracker
-                        )
-
+                        let (code, originalCode, dimmedCharacterCount) = extractCode()
                         AsyncCodeBlock(
-                            code: suggestion.code,
+                            code: code,
+                            originalCode: originalCode,
                             language: suggestion.language,
                             startLineIndex: suggestion.startLineIndex,
                             scenario: "suggestion",
@@ -195,7 +192,7 @@ struct CodeBlockSuggestionPanel: View {
                                 }
                                 return nil
                             }(),
-                            dimmedCharacterCount: 0
+                            dimmedCharacterCount: dimmedCharacterCount
                         )
                         .frame(maxWidth: .infinity)
                         .background({ () -> Color in
@@ -228,21 +225,55 @@ struct CodeBlockSuggestionPanel: View {
         }
     }
 
-    struct DiffResult {
-        var dimmedRanges: [Range<String.Index>]
-        var mutatedRanges: [Range<String.Index>]
-        var deletedRanges: [Range<String.Index>]
-    }
-
     @MainActor
-    static func diff(
-        suggestion: PresentingCodeSuggestion,
-        textCursorTracker: TextCursorTracker
-    ) -> DiffResult {
-        let typedContentCount = suggestion.startLineIndex == textCursorTracker.cursorPosition.line
+    func extractCode() -> (
+        code: String,
+        originalCode: String,
+        dimmedCharacterCount: AsyncCodeBlock.DimmedCharacterCount
+    ) {
+        let range = suggestion.replacingRange
+        let codeInRange = EditorInformation.code(in: textCursorTracker.content.lines, inside: range)
+        let leftover = {
+            if range.end.line >= 0, range.end.line < textCursorTracker.content.lines.endIndex {
+                let lastLine = textCursorTracker.content.lines[range.end.line]
+                if range.end.character < lastLine.utf16.count {
+                    let startIndex = lastLine.utf16.index(
+                        lastLine.utf16.startIndex,
+                        offsetBy: range.end.character
+                    )
+                    let leftover = String(lastLine.utf16.suffix(from: startIndex))
+                    return leftover ?? ""
+                }
+            }
+            return ""
+        }()
+
+        let prefix = {
+            if range.start.line >= 0, range.start.line < textCursorTracker.content.lines.endIndex {
+                let firstLine = textCursorTracker.content.lines[range.start.line]
+                if range.start.character < firstLine.utf16.count {
+                    let endIndex = firstLine.utf16.index(
+                        firstLine.utf16.startIndex,
+                        offsetBy: range.start.character
+                    )
+                    let prefix = String(firstLine.utf16.prefix(upTo: endIndex))
+                    return prefix ?? ""
+                }
+            }
+            return ""
+        }()
+
+        let code = prefix + suggestion.code + leftover
+
+        let typedCount = suggestion.startLineIndex == textCursorTracker.cursorPosition.line
             ? textCursorTracker.cursorPosition.character
             : 0
-        return .init(dimmedRanges: [], mutatedRanges: [], deletedRanges: [])
+
+        return (
+            code,
+            codeInRange.code,
+            .init(prefix: typedCount, suffix: leftover.utf16.count)
+        )
     }
 }
 
@@ -261,7 +292,8 @@ struct CodeBlockSuggestionPanel: View {
         language: "swift",
         startLineIndex: 8,
         suggestionCount: 2,
-        currentSuggestionIndex: 0
+        currentSuggestionIndex: 0,
+        replacingRange: .outOfScope
     ), suggestionDisplayCompactMode: .init(
         wrappedValue: false,
         "suggestionDisplayCompactMode",
@@ -289,7 +321,8 @@ struct CodeBlockSuggestionPanel: View {
         language: "swift",
         startLineIndex: 8,
         suggestionCount: 2,
-        currentSuggestionIndex: 0
+        currentSuggestionIndex: 0,
+        replacingRange: .outOfScope
     ), suggestionDisplayCompactMode: .init(
         wrappedValue: true,
         "suggestionDisplayCompactMode",
@@ -315,7 +348,8 @@ struct CodeBlockSuggestionPanel: View {
         language: "objective-c",
         startLineIndex: 8,
         suggestionCount: 2,
-        currentSuggestionIndex: 0
+        currentSuggestionIndex: 0,
+        replacingRange: .outOfScope
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
