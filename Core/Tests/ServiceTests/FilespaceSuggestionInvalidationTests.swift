@@ -38,7 +38,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 4)
+            cursorPosition: .init(line: 1, character: 4),
+            alwaysTrueIfCursorNotMoved: false // TODO: What
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -55,7 +56,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 4)
+            cursorPosition: .init(line: 1, character: 4),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -72,7 +74,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 4)
+            cursorPosition: .init(line: 1, character: 4),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -89,7 +92,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 2)
+            cursorPosition: .init(line: 1, character: 2),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -109,11 +113,36 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 3)
+            cursorPosition: .init(line: 1, character: 3),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
+    }
+    
+    func test_typing_not_according_to_suggestion_should_invalidate() async throws {
+        let lines = ["\n", "hello ma\n", "\n"]
+        let filespace = try await prepare(
+            lines: lines,
+            suggestionText: "hello man",
+            cursorPosition: .init(line: 1, character: 8),
+            range: .init(startPair: (1, 0), endPair: (1, 8))
+        )
+        let wasValid = await filespace.validateSuggestions(
+            lines: lines,
+            cursorPosition: .init(line: 1, character: 8),
+            alwaysTrueIfCursorNotMoved: false
+        )
+        let isValid = await filespace.validateSuggestions(
+            lines: ["\n", "hello mat\n", "\n"],
+            cursorPosition: .init(line: 1, character: 9),
+            alwaysTrueIfCursorNotMoved: false
+        )
+        XCTAssertTrue(wasValid)
+        XCTAssertFalse(isValid)
+        let suggestion = filespace.presentingSuggestion
+        XCTAssertNil(suggestion)
     }
 
     func test_text_cursor_moved_to_another_line_should_invalidate() async throws {
@@ -126,7 +155,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 2, character: 0)
+            cursorPosition: .init(line: 2, character: 0),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -143,7 +173,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 100, character: 4)
+            cursorPosition: .init(line: 100, character: 4),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -159,7 +190,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "helo\n", "\n"],
-            cursorPosition: .init(line: 1, character: 4)
+            cursorPosition: .init(line: 1, character: 4),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -175,7 +207,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "helo\n", "\n"],
-            cursorPosition: .init(line: 1, character: 100)
+            cursorPosition: .init(line: 1, character: 100),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -192,11 +225,13 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let wasValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 8)
+            cursorPosition: .init(line: 1, character: 8),
+            alwaysTrueIfCursorNotMoved: false
         )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello man\n", "\n"],
-            cursorPosition: .init(line: 1, character: 9)
+            cursorPosition: .init(line: 1, character: 9),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(wasValid)
         XCTAssertFalse(isValid)
@@ -215,11 +250,13 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let wasValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 12)
+            cursorPosition: .init(line: 1, character: 12),
+            alwaysTrueIfCursorNotMoved: false
         )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello m🎆🎆an\n", "\n"],
-            cursorPosition: .init(line: 1, character: 13)
+            cursorPosition: .init(line: 1, character: 13),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(wasValid)
         XCTAssertFalse(isValid)
@@ -238,11 +275,13 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let wasValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 8)
+            cursorPosition: .init(line: 1, character: 8),
+            alwaysTrueIfCursorNotMoved: false
         )
         let isValid = await filespace.validateSuggestions(
             lines: ["\n", "hello man!!!!!\n", "\n"],
-            cursorPosition: .init(line: 1, character: 9)
+            cursorPosition: .init(line: 1, character: 9),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(wasValid)
         XCTAssertFalse(isValid)
@@ -260,7 +299,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 9)
+            cursorPosition: .init(line: 1, character: 9),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -278,7 +318,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 13)
+            cursorPosition: .init(line: 1, character: 13),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -296,7 +337,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 1, character: 4)
+            cursorPosition: .init(line: 1, character: 4),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertFalse(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -313,7 +355,8 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 0, character: 15)
+            cursorPosition: .init(line: 0, character: 15),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion
@@ -325,12 +368,13 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         let filespace = try await prepare(
             lines: lines,
             suggestionText: "hello world !!!",
-            cursorPosition: .init(line: 0, character: 15),
-            range: .init(startPair: (0, 0), endPair: (0, 15))
+            cursorPosition: .init(line: 0, character: 18),
+            range: .init(startPair: (0, 0), endPair: (0, 18))
         )
         let isValid = await filespace.validateSuggestions(
             lines: lines,
-            cursorPosition: .init(line: 0, character: 18)
+            cursorPosition: .init(line: 0, character: 18),
+            alwaysTrueIfCursorNotMoved: false
         )
         XCTAssertTrue(isValid)
         let suggestion = filespace.presentingSuggestion

@@ -65,9 +65,14 @@ public extension Filespace {
     /// - Parameters:
     ///    - lines: lines of the file
     ///    - cursorPosition: cursor position
+    ///    - alwaysTrueIfCursorNotMoved: for unit tests
     /// - Returns: `true` if the suggestion is still valid
     @WorkspaceActor
-    func validateSuggestions(lines: [String], cursorPosition: CursorPosition) -> Bool {
+    func validateSuggestions(
+        lines: [String],
+        cursorPosition: CursorPosition,
+        alwaysTrueIfCursorNotMoved: Bool = true
+    ) -> Bool {
         guard let presentingSuggestion else { return false }
         let snapshot = self[keyPath: \.suggestionSourceSnapshot]
         if snapshot.cursorPosition == .outOfScope { return false }
@@ -76,7 +81,8 @@ public extension Filespace {
             presentingSuggestion,
             snapshot: snapshot,
             lines: lines,
-            cursorPosition: cursorPosition
+            cursorPosition: cursorPosition,
+            alwaysTrueIfCursorNotMoved: alwaysTrueIfCursorNotMoved
         ) else {
             reset()
             resetSnapshot()
@@ -92,8 +98,13 @@ extension Filespace {
         _ suggestion: CodeSuggestion,
         snapshot: FilespaceSuggestionSnapshot,
         lines: [String],
-        cursorPosition: CursorPosition
+        cursorPosition: CursorPosition,
+        // For test
+        alwaysTrueIfCursorNotMoved: Bool = true
     ) -> Bool {
+        // cursor is not even moved during the generation.
+        if alwaysTrueIfCursorNotMoved, cursorPosition == suggestion.position { return true }
+        
         // cursor has moved to another line
         if cursorPosition.line != suggestion.position.line { return false }
 
@@ -101,7 +112,17 @@ extension Filespace {
         guard cursorPosition.line >= 0, cursorPosition.line < lines.count else { return false }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
-        let suggestionLines = suggestion.text.split(whereSeparator: \.isNewline)
+        let suggestionLines = suggestion.text.breakLines(appendLineBreakToLastLine: true)
+
+        if Self.validateThatIsNotTypingSuggestion(
+            suggestion,
+            snapshot: snapshot,
+            lines: lines,
+            suggestionLines: suggestionLines,
+            cursorPosition: cursorPosition
+        ) {
+            return false
+        }
 
         // if the line will not change after accepting the suggestion
         if Self.validateThatSuggestionMakeNoDifferent(
@@ -120,10 +141,44 @@ extension Filespace {
         return true
     }
 
+    static func validateThatIsNotTypingSuggestion(
+        _ suggestion: CodeSuggestion,
+        snapshot: FilespaceSuggestionSnapshot,
+        lines: [String],
+        suggestionLines: [String],
+        cursorPosition: CursorPosition
+    ) -> Bool {
+        let lineIndex = suggestion.range.start.line
+        let typeStart = suggestion.position.character
+        let cursorColumn = cursorPosition.character
+        let suggestionStart = max(
+            0,
+            suggestion.position.character - suggestion.range.start.character
+        )
+        func contentBeforeCursor(
+            _ string: String,
+            start: Int
+        ) -> ArraySlice<String.UTF16View.Element> {
+            if start >= cursorColumn { return [] }
+            let elements = Array(string.utf16)
+            guard start >= 0, start < elements.endIndex else { return [] }
+            let endIndex = min(elements.endIndex, cursorColumn)
+            return elements[start..<endIndex]
+        }
+
+        guard lineIndex >= 0, lineIndex < lines.endIndex else { return false }
+        let editingLine = lines[lineIndex]
+        let suggestionFirstLine = suggestionLines.first ?? ""
+
+        let typed = contentBeforeCursor(editingLine, start: typeStart)
+        let expectedTyped = contentBeforeCursor(suggestionFirstLine, start: suggestionStart)
+        return typed != expectedTyped
+    }
+
     static func validateThatSuggestionMakeNoDifferent(
         _ suggestion: CodeSuggestion,
         lines: [String],
-        suggestionLines: [Substring]
+        suggestionLines: [String]
     ) -> Bool {
         var editingRange = suggestion.range
         let startLine = max(0, editingRange.start.line)

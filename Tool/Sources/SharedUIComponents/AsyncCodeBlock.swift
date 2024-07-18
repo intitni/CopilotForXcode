@@ -269,6 +269,9 @@ extension AsyncCodeBlock {
                         location: max(0, offset),
                         length: max(0, change.element.count + (offset < 0 ? offset : 0))
                     )
+                    if range.location + range.length > mutableString.length {
+                        continue
+                    }
                     mutableString.addAttributes([
                         .backgroundColor: NSColor.systemGreen.withAlphaComponent(0.2),
                     ], range: range)
