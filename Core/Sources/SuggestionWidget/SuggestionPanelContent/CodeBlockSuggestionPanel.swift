@@ -167,6 +167,46 @@ struct CodeBlockSuggestionPanel: View {
         }
     }
 
+    struct Description: View {
+        var descriptions: [CodeSuggestion.Description]
+
+        var body: some View {
+            VStack(spacing: 0) {
+                ForEach(0..<descriptions.count, id: \.self) { index in
+                    Group {
+                        switch descriptions[index].kind {
+                        case .warning:
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(Image(systemName: "exclamationmark.circle.fill"))
+                                Text(descriptions[index].content)
+                            }
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 4)
+                            .background(.orange.opacity(0.9))
+                            
+                            Divider().background(Color.red)
+                        case .action:
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(Image(systemName: "arrowshape.right.circle.fill"))
+                                Text(descriptions[index].content)
+                            }
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 4)
+                            .background(.cyan.opacity(0.9))
+                            
+                            Divider().background(Color.blue)
+                        }
+                    }
+                    .foregroundColor(.white)
+                }
+            }
+        }
+    }
+
     var body: some View {
         WithPerceptionTracking {
             VStack(spacing: 0) {
@@ -213,6 +253,10 @@ struct CodeBlockSuggestionPanel: View {
                     }
                 }
 
+                Description(descriptions: suggestion.descriptions)
+
+                Divider()
+                
                 if suggestionDisplayCompactMode {
                     CompactToolBar(suggestion: suggestion)
                 } else {
@@ -317,6 +361,40 @@ struct CodeBlockSuggestionPanel: View {
     .padding()
 }
 
+#Preview("Code Block Suggestion Panel With Descriptions") {
+    CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
+        code: """
+        LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
+        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
+            Text(viewModel.suggestion[index])
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+        }
+        """,
+        language: "swift",
+        startLineIndex: 8,
+        suggestionCount: 2,
+        currentSuggestionIndex: 0,
+        replacingRange: .outOfScope,
+        replacingLines: [],
+        descriptions: [
+            .init(kind: .warning, content: "This is a warning message.\nwarning"),
+            .init(kind: .action, content: "This is an action message."),
+        ]
+    ), suggestionDisplayCompactMode: .init(
+        wrappedValue: false,
+        "suggestionDisplayCompactMode",
+        store: {
+            let userDefault =
+                UserDefaults(suiteName: "CodeBlockSuggestionPanel_CompactToolBar_Preview")
+            userDefault?.set(false, for: \.suggestionDisplayCompactMode)
+            return userDefault!
+        }()
+    ))
+    .frame(width: 450, height: 400)
+    .padding()
+}
+
 #Preview("Code Block Suggestion Panel Compact Mode") {
     CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
         code: """
@@ -332,7 +410,11 @@ struct CodeBlockSuggestionPanel: View {
         suggestionCount: 2,
         currentSuggestionIndex: 0,
         replacingRange: .outOfScope,
-        replacingLines: []
+        replacingLines: [],
+        descriptions: [
+            .init(kind: .warning, content: "This is a warning message."),
+            .init(kind: .action, content: "This is an action message."),
+        ]
     ), suggestionDisplayCompactMode: .init(
         wrappedValue: true,
         "suggestionDisplayCompactMode",
