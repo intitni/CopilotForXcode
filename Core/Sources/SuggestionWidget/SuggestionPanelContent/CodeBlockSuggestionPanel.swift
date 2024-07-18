@@ -283,8 +283,8 @@ struct CodeBlockSuggestionPanel: View {
         range.start = .init(line: 0, character: range.start.character)
         let codeInRange = EditorInformation.code(in: suggestion.replacingLines, inside: range)
         let leftover = {
-            if range.end.line >= 0, range.end.line < textCursorTracker.content.lines.endIndex {
-                let lastLine = textCursorTracker.content.lines[range.end.line]
+            if range.end.line >= 0, range.end.line < suggestion.replacingLines.endIndex {
+                let lastLine = suggestion.replacingLines[range.end.line]
                 if range.end.character < lastLine.utf16.count {
                     let startIndex = lastLine.utf16.index(
                         lastLine.utf16.startIndex,
@@ -301,7 +301,7 @@ struct CodeBlockSuggestionPanel: View {
         }()
 
         let prefix = {
-            if range.start.line >= 0, range.start.line < textCursorTracker.content.lines.endIndex {
+            if range.start.line >= 0, range.start.line < suggestion.replacingLines.endIndex {
                 let firstLine = suggestion.replacingLines[range.start.line]
                 if range.start.character < firstLine.utf16.count {
                     let endIndex = firstLine.utf16.index(
