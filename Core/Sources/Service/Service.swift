@@ -49,36 +49,27 @@ public final class Service {
     private init() {
         @Dependency(\.workspacePool) var workspacePool
         let commandHandler = PseudoCommandHandler()
+        UniversalCommandHandler.shared.commandHandler = commandHandler
         self.commandHandler = commandHandler
 
-        func setup<R>(_ operation: () -> R) -> R {
-            withDependencies { values in
-                values.commandHandler = commandHandler
-            } operation: {
-                operation() //
-            }
-        }
-
-        realtimeSuggestionController = setup { .init() }
-        scheduledCleaner = setup { .init() }
-        let guiController = setup { GraphicalUserInterfaceController() }
+        realtimeSuggestionController = .init()
+        scheduledCleaner = .init()
+        let guiController = GraphicalUserInterfaceController()
         self.guiController = guiController
-        globalShortcutManager = setup { .init(guiController: guiController) }
+        globalShortcutManager = .init(guiController: guiController)
 
-        keyBindingManager = setup {
-            .init(
-                workspacePool: workspacePool,
-                acceptSuggestion: {
-                    Task { await PseudoCommandHandler().acceptSuggestion() }
-                },
-                dismissSuggestion: {
-                    Task { await PseudoCommandHandler().dismissSuggestion() }
-                }
-            )
-        }
+        keyBindingManager = .init(
+            workspacePool: workspacePool,
+            acceptSuggestion: {
+                Task { await PseudoCommandHandler().acceptSuggestion() }
+            },
+            dismissSuggestion: {
+                Task { await PseudoCommandHandler().dismissSuggestion() }
+            }
+        )
 
         #if canImport(ProService)
-        proService = setup { ProService() }
+        proService = ProService()
         #endif
 
         BuiltinExtensionManager.shared.setupExtensions([
@@ -149,7 +140,7 @@ public extension Service {
     ) {
         do {
             #if canImport(ProService)
-            try Service.shared.proService.handleXPCServiceRequests(
+            try proService.handleXPCServiceRequests(
                 endpoint: endpoint,
                 requestBody: requestBody,
                 reply: reply
