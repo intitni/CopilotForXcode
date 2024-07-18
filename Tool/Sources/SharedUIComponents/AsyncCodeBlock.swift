@@ -282,14 +282,12 @@ extension AsyncCodeBlock {
             if lastLineIndex >= 0 {
                 if let line = diffResult.line(at: lastLineIndex, in: \.oldSnippet),
                    case let .mutated(changes) = line.diff,
-                   !changes.isEmpty
+                   changes.count == 1,
+                   let change = changes.last,
+                   change.offset + change.element.count == line.text.count
                 {
                     let lastLine = highlightedCode[lastLineIndex]
-                    let removedSuffix = line.text.suffix(max(
-                        0,
-                        line.text.count - lastLine.string.count
-                    ))
-                    lastLine.append(.init(string: String(removedSuffix), attributes: [
+                    lastLine.append(.init(string: String(change.element), attributes: [
                         .foregroundColor: NSColor.systemRed.withAlphaComponent(0.4),
                         .backgroundColor: NSColor.systemRed.withAlphaComponent(0.1),
                     ]))
