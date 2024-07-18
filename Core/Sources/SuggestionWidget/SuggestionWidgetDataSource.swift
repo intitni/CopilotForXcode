@@ -18,7 +18,8 @@ struct MockWidgetDataSource: SuggestionWidgetDataSource {
             startLineIndex: 1,
             suggestionCount: 3,
             currentSuggestionIndex: 0,
-            replacingRange: .zero
+            replacingRange: .zero, 
+            replacingLines: []
         )
     }
 }

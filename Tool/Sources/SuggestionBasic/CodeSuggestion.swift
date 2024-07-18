@@ -22,6 +22,7 @@ public struct CodeSuggestion: Codable, Equatable {
         text: String,
         position: CursorPosition,
         range: CursorRange,
+        replacingLines: [String] = [],
         descriptions: [Description] = [],
         middlewareComments: [String] = [],
         metadata: [String: String] = [:]
@@ -30,6 +31,7 @@ public struct CodeSuggestion: Codable, Equatable {
         self.position = position
         self.id = id
         self.range = range
+        self.replacingLines = replacingLines
         self.descriptions = descriptions
         self.middlewareComments = middlewareComments
         self.metadata = metadata
@@ -52,6 +54,8 @@ public struct CodeSuggestion: Codable, Equatable {
     public var id: String
     /// The range of the original code that should be replaced.
     public var range: CursorRange
+    /// Descriptions about this code suggestion
+    @FallbackDecoding<EmptyArray> public var replacingLines: [String]
     /// Descriptions about this code suggestion
     @FallbackDecoding<EmptyArray> public var descriptions: [Description]
     /// A place to store comments inserted by middleware for debugging use.

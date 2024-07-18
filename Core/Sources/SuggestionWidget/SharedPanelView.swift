@@ -164,7 +164,8 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                         startLineIndex: 8,
                         suggestionCount: 2,
                         currentSuggestionIndex: 0,
-                        replacingRange: .zero
+                        replacingRange: .zero,
+                        replacingLines: [""]
                     )
                 ),
                 colorScheme: .dark,

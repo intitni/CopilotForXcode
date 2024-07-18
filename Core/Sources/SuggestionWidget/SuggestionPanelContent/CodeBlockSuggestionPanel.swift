@@ -14,6 +14,7 @@ public struct PresentingCodeSuggestion: Equatable {
     public var suggestionCount: Int
     public var currentSuggestionIndex: Int
     public var replacingRange: CursorRange
+    public var replacingLines: [String]
     public var descriptions: [CodeSuggestion.Description]
 
     public init(
@@ -23,6 +24,7 @@ public struct PresentingCodeSuggestion: Equatable {
         suggestionCount: Int,
         currentSuggestionIndex: Int,
         replacingRange: CursorRange,
+        replacingLines: [String],
         descriptions: [CodeSuggestion.Description] = []
     ) {
         self.code = code
@@ -31,6 +33,7 @@ public struct PresentingCodeSuggestion: Equatable {
         self.suggestionCount = suggestionCount
         self.currentSuggestionIndex = currentSuggestionIndex
         self.replacingRange = replacingRange
+        self.replacingLines = replacingLines
         self.descriptions = descriptions
     }
 }
@@ -231,8 +234,10 @@ struct CodeBlockSuggestionPanel: View {
         originalCode: String,
         dimmedCharacterCount: AsyncCodeBlock.DimmedCharacterCount
     ) {
-        let range = suggestion.replacingRange
-        let codeInRange = EditorInformation.code(in: textCursorTracker.content.lines, inside: range)
+        var range = suggestion.replacingRange
+        range.end = .init(line: range.end.line - range.start.line, character: range.end.character)
+        range.start = .init(line: 0, character: range.start.character)
+        let codeInRange = EditorInformation.code(in: suggestion.replacingLines, inside: range)
         let leftover = {
             if range.end.line >= 0, range.end.line < textCursorTracker.content.lines.endIndex {
                 let lastLine = textCursorTracker.content.lines[range.end.line]
@@ -253,7 +258,7 @@ struct CodeBlockSuggestionPanel: View {
 
         let prefix = {
             if range.start.line >= 0, range.start.line < textCursorTracker.content.lines.endIndex {
-                let firstLine = textCursorTracker.content.lines[range.start.line]
+                let firstLine = suggestion.replacingLines[range.start.line]
                 if range.start.character < firstLine.utf16.count {
                     let endIndex = firstLine.utf16.index(
                         firstLine.utf16.startIndex,
@@ -296,7 +301,8 @@ struct CodeBlockSuggestionPanel: View {
         startLineIndex: 8,
         suggestionCount: 2,
         currentSuggestionIndex: 0,
-        replacingRange: .outOfScope
+        replacingRange: .outOfScope,
+        replacingLines: []
     ), suggestionDisplayCompactMode: .init(
         wrappedValue: false,
         "suggestionDisplayCompactMode",
@@ -325,7 +331,8 @@ struct CodeBlockSuggestionPanel: View {
         startLineIndex: 8,
         suggestionCount: 2,
         currentSuggestionIndex: 0,
-        replacingRange: .outOfScope
+        replacingRange: .outOfScope,
+        replacingLines: []
     ), suggestionDisplayCompactMode: .init(
         wrappedValue: true,
         "suggestionDisplayCompactMode",
@@ -352,7 +359,8 @@ struct CodeBlockSuggestionPanel: View {
         startLineIndex: 8,
         suggestionCount: 2,
         currentSuggestionIndex: 0,
-        replacingRange: .outOfScope
+        replacingRange: .outOfScope,
+        replacingLines: []
     ))
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)

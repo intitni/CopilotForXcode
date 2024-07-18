@@ -26,6 +26,7 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                     suggestionCount: filespace.suggestions.count,
                     currentSuggestionIndex: filespace.suggestionIndex,
                     replacingRange: suggestion.range,
+                    replacingLines: suggestion.replacingLines,
                     descriptions: suggestion.descriptions
                 )
             }
