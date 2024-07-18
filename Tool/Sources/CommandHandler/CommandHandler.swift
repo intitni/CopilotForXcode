@@ -19,7 +19,7 @@ public protocol CommandHandler {
 
     // MARK: Chat
 
-    func openChat(forceDetach: Bool)
+    func openChat(forceDetach: Bool, activateThisApp: Bool)
     func sendChatMessage(_ message: String) async
 
     // MARK: Prompt to Code
@@ -86,8 +86,8 @@ public final class UniversalCommandHandler: CommandHandler {
         await commandHandler.generateRealtimeSuggestions(sourceEditor: sourceEditor)
     }
 
-    public func openChat(forceDetach: Bool) {
-        commandHandler.openChat(forceDetach: forceDetach)
+    public func openChat(forceDetach: Bool, activateThisApp: Bool) {
+        commandHandler.openChat(forceDetach: forceDetach, activateThisApp: activateThisApp)
     }
 
     public func sendChatMessage(_ message: String) async {
@@ -115,7 +115,7 @@ struct NoopCommandHandler: CommandHandler {
     func acceptSuggestion() async {}
     func dismissSuggestion() async {}
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {}
-    func openChat(forceDetach: Bool) {}
+    func openChat(forceDetach: Bool, activateThisApp: Bool) {}
     func sendChatMessage(_: String) async {}
     func acceptPromptToCode() async {}
     func handleCustomCommand(_: CustomCommand) async {}

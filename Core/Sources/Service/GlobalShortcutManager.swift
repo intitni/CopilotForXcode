@@ -28,7 +28,7 @@ final class GlobalShortcutManager {
                !guiController.store.state.suggestionWidgetState.chatPanelState.isPanelDisplayed,
                UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally)
             {
-                guiController.store.send(.openChatPanel(forceDetach: true))
+                guiController.store.send(.openChatPanel(forceDetach: true, activateThisApp: true))
             } else {
                 guiController.store.send(.toggleWidgetsHotkeyPressed)
             }

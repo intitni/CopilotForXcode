@@ -70,17 +70,5 @@ public extension SuggestionWidgetController {
     func presentError(_ errorDescription: String) {
         store.send(.toastPanel(.toast(.toast(errorDescription, .error, nil))))
     }
-
-    func presentChatRoom() {
-        store.send(.chatPanel(.presentChatPanel(forceDetach: false)))
-    }
-
-    func presentDetachedGlobalChat() {
-        store.send(.chatPanel(.presentChatPanel(forceDetach: true)))
-    }
-
-    func closeChatRoom() {
-//        store.send(.chatPanel(.closeChatPanel))
-    }
 }
 

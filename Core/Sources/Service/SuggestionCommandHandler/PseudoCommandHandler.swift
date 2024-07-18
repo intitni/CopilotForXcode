@@ -332,13 +332,16 @@ struct PseudoCommandHandler: CommandHandler {
         await filespace.reset()
     }
 
-    func openChat(forceDetach: Bool) {
+    func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
-                store.send(.openChatPanel(forceDetach: forceDetach))
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
             }
         case .browser:
             let urlString = UserDefaults.shared.value(for: \.openChatInBrowserURL)
@@ -375,7 +378,10 @@ struct PseudoCommandHandler: CommandHandler {
                         },
                         kind: .init(BrowserChatTab.urlChatBuilder(url: url))
                     )).finish()
-                    store.send(.openChatPanel(forceDetach: forceDetach))
+                    store.send(.openChatPanel(
+                        forceDetach: forceDetach,
+                        activateThisApp: activateThisApp
+                    ))
                 }
                 #endif
             } else {
@@ -393,13 +399,17 @@ struct PseudoCommandHandler: CommandHandler {
                         kind: .init(CodeiumChatTab.defaultChatBuilder())
                     )
                 ).finish()
-                store.send(.openChatPanel(forceDetach: forceDetach))
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
             }
         }
     }
 
+    @MainActor
     func sendChatMessage(_ message: String) async {
-        let store = await Service.shared.guiController.store
+        let store = Service.shared.guiController.store
         await store.send(.sendCustomCommandToActiveChat(CustomCommand(
             commandId: "",
             name: "",
