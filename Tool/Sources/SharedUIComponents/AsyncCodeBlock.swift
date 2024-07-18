@@ -251,30 +251,63 @@ extension AsyncCodeBlock {
             commonPrecedingSpaceCount: Int,
             diffResult: CodeDiff.SnippetDiff
         ) {
-            for (index, mutableString) in highlightedCode.enumerated() {
-                guard let line = diffResult.line(at: index, in: \.newSnippet) else { continue }
-                guard case let .mutated(changes) = line.diff, !changes.isEmpty else { continue }
+            let originalCodeIsSingleLine = diffResult.sections.count == 1
+                && diffResult.sections[0].oldSnippet.count <= 1
+            if !originalCodeIsSingleLine {
+                for (index, mutableString) in highlightedCode.enumerated() {
+                    guard let line = diffResult.line(at: index, in: \.newSnippet),
+                          case let .mutated(changes) = line.diff, !changes.isEmpty
+                    else { continue }
 
-                for change in changes {
-                    if change.offset == 0,
-                       change.element.count - commonPrecedingSpaceCount
-                       == mutableString.string.count
-                    {
-                        // ignore the whole line change
-                        continue
+                    for change in changes {
+                        if change.offset == 0,
+                           change.element.count - commonPrecedingSpaceCount
+                           == mutableString.string.count
+                        {
+                            // ignore the whole line change
+                            continue
+                        }
+
+                        let offset = change.offset - commonPrecedingSpaceCount
+                        let range = NSRange(
+                            location: max(0, offset),
+                            length: max(0, change.element.count + (offset < 0 ? offset : 0))
+                        )
+                        if range.location + range.length > mutableString.length {
+                            continue
+                        }
+                        mutableString.addAttributes([
+                            .backgroundColor: NSColor.systemGreen.withAlphaComponent(0.2),
+                        ], range: range)
                     }
-
-                    let offset = change.offset - commonPrecedingSpaceCount
-                    let range = NSRange(
-                        location: max(0, offset),
-                        length: max(0, change.element.count + (offset < 0 ? offset : 0))
+                }
+            } else if let firstMutableString = highlightedCode.first,
+                      let oldLine = diffResult.line(at: 0, in: \.oldSnippet),
+                      oldLine.text.count > commonPrecedingSpaceCount
+            {
+                // Only highlight the diffs inside the dimmed area
+                let scopeRange = NSRange(
+                    location: 0,
+                    length: min(
+                        oldLine.text.count - commonPrecedingSpaceCount,
+                        firstMutableString.length
                     )
-                    if range.location + range.length > mutableString.length {
-                        continue
+                )
+                if let line = diffResult.line(at: 0, in: \.newSnippet),
+                   case let .mutated(changes) = line.diff, !changes.isEmpty
+                {
+                    for change in changes {
+                        let offset = change.offset - commonPrecedingSpaceCount
+                        let range = NSRange(
+                            location: max(0, offset),
+                            length: max(0, change.element.count + (offset < 0 ? offset : 0))
+                        )
+                        guard let limitedRange = limitRange(range, inside: scopeRange)
+                        else { continue }
+                        firstMutableString.addAttributes([
+                            .backgroundColor: NSColor.systemGreen.withAlphaComponent(0.2),
+                        ], range: limitedRange)
                     }
-                    mutableString.addAttributes([
-                        .backgroundColor: NSColor.systemGreen.withAlphaComponent(0.2),
-                    ], range: range)
                 }
             }
 
@@ -288,8 +321,8 @@ extension AsyncCodeBlock {
                 {
                     let lastLine = highlightedCode[lastLineIndex]
                     lastLine.append(.init(string: String(change.element), attributes: [
-                        .foregroundColor: NSColor.systemRed.withAlphaComponent(0.4),
-                        .backgroundColor: NSColor.systemRed.withAlphaComponent(0.1),
+                        .foregroundColor: NSColor.systemRed.withAlphaComponent(0.5),
+                        .backgroundColor: NSColor.systemRed.withAlphaComponent(0.2),
                     ]))
                 }
             }
@@ -400,6 +433,12 @@ extension AsyncCodeBlock {
             }
         }
     }
+
+    static func limitRange(_ nsRange: NSRange, inside another: NSRange) -> NSRange? {
+        let intersection = NSIntersectionRange(nsRange, another)
+        guard intersection.length > 0 else { return nil }
+        return intersection
+    }
 }
 
 #Preview("Single Line Suggestion") {
@@ -435,7 +474,7 @@ extension AsyncCodeBlock {
 #Preview("Multiple Line Suggestion") {
     AsyncCodeBlock(
         code: "    let foo = Bar()\n    print(foo)",
-        originalCode: "    var foo // comment",
+        originalCode: "    var foo // comment\n    print(bar)",
         language: "swift",
         startLineIndex: 10,
         scenario: "",
@@ -456,7 +495,7 @@ extension AsyncCodeBlock {
         }
 
         let cases: [Case] = [
-            .init(code: "foo(123)", originalCode: "bar(234)"),
+            .init(code: "foo(123)\nprint(foo)", originalCode: "bar(234)\nprint(bar)"),
             .init(code: "bar(456)", originalCode: "baz(567)"),
         ]
 
