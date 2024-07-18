@@ -101,7 +101,7 @@ struct SharedPanelView: View {
         }
 
         @ViewBuilder
-        func suggestion(_ suggestion: CodeSuggestionProvider) -> some View {
+        func suggestion(_ suggestion: PresentingCodeSuggestion) -> some View {
             switch suggestionPresentationMode {
             case .nearbyTextCursor:
                 EmptyView()
@@ -163,7 +163,9 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                         language: "objective-c",
                         startLineIndex: 8,
                         suggestionCount: 2,
-                        currentSuggestionIndex: 0
+                        currentSuggestionIndex: 0,
+                        replacingRange: .zero,
+                        replacingLines: [""]
                     )
                 ),
                 colorScheme: .dark,

@@ -1,12 +1,12 @@
 import Foundation
 
 public protocol SuggestionWidgetDataSource {
-    func suggestionForFile(at url: URL) async -> CodeSuggestionProvider?
+    func suggestionForFile(at url: URL) async -> PresentingCodeSuggestion?
 }
 
 struct MockWidgetDataSource: SuggestionWidgetDataSource {
-    func suggestionForFile(at url: URL) async -> CodeSuggestionProvider? {
-        return CodeSuggestionProvider(
+    func suggestionForFile(at url: URL) async -> PresentingCodeSuggestion? {
+        return PresentingCodeSuggestion(
             code: """
             func test() {
                 let x = 1
@@ -17,7 +17,9 @@ struct MockWidgetDataSource: SuggestionWidgetDataSource {
             language: "swift",
             startLineIndex: 1,
             suggestionCount: 3,
-            currentSuggestionIndex: 0
+            currentSuggestionIndex: 0,
+            replacingRange: .zero, 
+            replacingLines: []
         )
     }
 }

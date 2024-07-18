@@ -27,6 +27,10 @@ public enum SuggestionServiceMiddlewareContainer {
     public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
         customMiddlewares.append(middleware)
     }
+    
+    public static func addMiddlewares(_ middlewares: [SuggestionServiceMiddleware]) {
+        customMiddlewares.append(contentsOf: middlewares)
+    }
 }
 
 public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMiddleware {

@@ -20,14 +20,15 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "SuggestionBasic", targets: ["SuggestionBasic"]),
+        .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
         .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
-        .library(name: "Workspace", targets: ["Workspace", "WorkspaceSuggestionService"]),
+        .library(name: "Workspace", targets: ["Workspace"]),
+        .library(name: "WorkspaceSuggestionService", targets: ["WorkspaceSuggestionService"]),
         .library(
             name: "SuggestionProvider",
             targets: ["SuggestionProvider", "GitHubCopilotService", "CodeiumService"]
@@ -46,6 +47,8 @@ let package = Package(
         .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
         .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
+        .library(name: "CommandHandler", targets: ["CommandHandler"]),
+        .library(name: "CodeDiff", targets: ["CodeDiff"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -92,6 +95,9 @@ let package = Package(
         .target(name: "FileSystem"),
 
         .target(name: "ObjectiveCExceptionHandling"),
+
+        .target(name: "CodeDiff", dependencies: ["SuggestionBasic"]),
+        .testTarget(name: "CodeDiffTests", dependencies: ["CodeDiff"]),
 
         .target(
             name: "CustomAsyncAlgorithms",
@@ -160,6 +166,15 @@ let package = Package(
         ),
 
         .target(
+            name: "SuggestionInjector",
+            dependencies: ["SuggestionBasic"]
+        ),
+        .testTarget(
+            name: "SuggestionInjectorTests",
+            dependencies: ["SuggestionInjector"]
+        ),
+
+        .target(
             name: "AIModel",
             dependencies: [
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
@@ -170,7 +185,7 @@ let package = Package(
             name: "SuggestionBasicTests",
             dependencies: ["SuggestionBasic"]
         ),
-        
+
         .target(
             name: "ChatBasic",
             dependencies: [
@@ -231,6 +246,7 @@ let package = Package(
                 "Preferences",
                 "SuggestionBasic",
                 "DebounceFunction",
+                "CodeDiff",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
@@ -263,6 +279,7 @@ let package = Package(
                 "SuggestionProvider",
                 "XPCShared",
                 "BuiltinExtension",
+                "SuggestionInjector",
             ]
         ),
 
@@ -293,6 +310,15 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "CommandHandler",
+            dependencies: [
+                "XcodeInspector",
+                "Preferences",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            ]
+        ),
+
         // MARK: - Services
 
         .target(
@@ -302,6 +328,7 @@ let package = Package(
                 "ObjectiveCExceptionHandling",
                 "USearchIndex",
                 "ChatBasic",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
@@ -333,6 +360,7 @@ let package = Package(
                 "BuiltinExtension",
                 "Toast",
                 "SuggestionProvider",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
@@ -356,6 +384,7 @@ let package = Package(
                 "XcodeInspector",
                 "BuiltinExtension",
                 "ChatTab",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),

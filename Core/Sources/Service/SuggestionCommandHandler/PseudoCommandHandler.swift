@@ -1,13 +1,14 @@
 import ActiveApplicationMonitor
 import AppKit
 import CodeiumService
+import CommandHandler
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
 import Logger
 import PlusFeatureFlag
 import Preferences
-import SuggestionInjector
 import SuggestionBasic
+import SuggestionInjector
 import Toast
 import Workspace
 import WorkspaceSuggestionService
@@ -21,7 +22,7 @@ import BrowserChatTab
 /// It's used to run some commands without really triggering the menu bar item.
 ///
 /// For example, we can use it to generate real-time suggestions without Apple Scripts.
-struct PseudoCommandHandler {
+struct PseudoCommandHandler: CommandHandler {
     static var lastTimeCommandFailedToTriggerWithAccessibilityAPI = Date(timeIntervalSince1970: 0)
     private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
@@ -86,7 +87,7 @@ struct PseudoCommandHandler {
         }
 
         let snapshot = FilespaceSuggestionSnapshot(
-            linesHash: editor.lines.hashValue,
+            lines: editor.lines,
             cursorPosition: editor.cursorPosition
         )
 
@@ -325,20 +326,22 @@ struct PseudoCommandHandler {
 
     func dismissSuggestion() async {
         guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
+        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
-
         await filespace.reset()
-        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
     }
 
-    func openChat(forceDetach: Bool) {
+    func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
-            let store = Service.shared.guiController.store
             Task { @MainActor in
+                let store = Service.shared.guiController.store
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
-                store.send(.openChatPanel(forceDetach: forceDetach))
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
             }
         case .browser:
             let urlString = UserDefaults.shared.value(for: \.openChatInBrowserURL)
@@ -359,8 +362,8 @@ struct PseudoCommandHandler {
 
             if openInApp {
                 #if canImport(BrowserChatTab)
-                let store = Service.shared.guiController.store
                 Task { @MainActor in
+                    let store = Service.shared.guiController.store
                     await store.send(.createAndSwitchToChatTabIfNeededMatching(
                         check: {
                             func match(_ tabURL: URL?) -> Bool {
@@ -375,7 +378,10 @@ struct PseudoCommandHandler {
                         },
                         kind: .init(BrowserChatTab.urlChatBuilder(url: url))
                     )).finish()
-                    store.send(.openChatPanel(forceDetach: forceDetach))
+                    store.send(.openChatPanel(
+                        forceDetach: forceDetach,
+                        activateThisApp: activateThisApp
+                    ))
                 }
                 #endif
             } else {
@@ -385,16 +391,47 @@ struct PseudoCommandHandler {
                 }
             }
         case .codeiumChat:
-            let store = Service.shared.guiController.store
             Task { @MainActor in
+                let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
                         check: { $0 is CodeiumChatTab },
                         kind: .init(CodeiumChatTab.defaultChatBuilder())
                     )
                 ).finish()
-                store.send(.openChatPanel(forceDetach: forceDetach))
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
             }
+        }
+    }
+
+    @MainActor
+    func sendChatMessage(_ message: String) async {
+        let store = Service.shared.guiController.store
+        await store.send(.sendCustomCommandToActiveChat(CustomCommand(
+            commandId: "",
+            name: "",
+            feature: .chatWithSelection(
+                extraSystemPrompt: nil,
+                prompt: message,
+                useExtraSystemPrompt: nil
+            )
+        ))).finish()
+    }
+
+    @WorkspaceActor
+    func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
+        guard let filespace = await getFilespace() else { return }
+        filespace.setSuggestions(suggestions)
+        PresentInWindowSuggestionPresenter().presentSuggestion(fileURL: filespace.fileURL)
+    }
+
+    func toast(_ message: String, as type: ToastType) {
+        Task { @MainActor in
+            let store = Service.shared.guiController.store
+            store.send(.suggestionWidget(.toastPanel(.toast(.toast(message, type, nil)))))
         }
     }
 }

@@ -166,7 +166,6 @@ public struct ChatPanelFeature {
                             .chatPanelWindow
                             .centerInActiveSpaceIfNeeded()
                     }
-                    activateExtensionService()
                     await send(.focusActiveChatTab)
                 }
 

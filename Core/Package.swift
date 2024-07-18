@@ -14,7 +14,6 @@ let package = Package(
             name: "Service",
             targets: [
                 "Service",
-                "SuggestionInjector",
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
@@ -83,6 +82,7 @@ let package = Package(
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
+                .product(name: "WorkspaceSuggestionService", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
@@ -90,6 +90,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
@@ -103,7 +104,6 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "SuggestionInjector",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
@@ -145,14 +145,6 @@ let package = Package(
             ].pro([
                 "ProExtension",
             ])
-        ),
-        .target(
-            name: "SuggestionInjector",
-            dependencies: [.product(name: "SuggestionBasic", package: "Tool")]
-        ),
-        .testTarget(
-            name: "SuggestionInjectorTests",
-            dependencies: ["SuggestionInjector"]
         ),
 
         // MARK: - Prompt To Code
@@ -234,6 +226,7 @@ let package = Package(
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "CustomAsyncAlgorithms", package: "Tool"),
+                .product(name: "CodeDiff", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
@@ -386,6 +379,7 @@ var isProIncluded: Bool {
         let filePath = "\(file)"
         let fileURL = URL(fileURLWithPath: filePath)
         let rootURL = fileURL
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let confURL = rootURL.appendingPathComponent("PLUS")

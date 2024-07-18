@@ -6,7 +6,7 @@ import SwiftUI
 public struct SharedPanelFeature {
     public struct Content: Equatable {
         public var promptToCodeGroup = PromptToCodeGroup.State()
-        var suggestion: CodeSuggestionProvider?
+        var suggestion: PresentingCodeSuggestion?
         public var promptToCode: PromptToCode.State? { promptToCodeGroup.activePromptToCode }
         var error: String?
     }

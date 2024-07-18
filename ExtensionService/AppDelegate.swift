@@ -18,6 +18,7 @@ let serviceIdentifier = bundleIdentifierBase + ".ExtensionService"
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    @MainActor
     let service = Service.shared
     var statusBarItem: NSStatusItem!
     var xpcController: XPCController?
