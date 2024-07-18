@@ -189,7 +189,8 @@ actor CodeiumServiceLifeKeeper {
     }
 
     var isAlive: Bool {
-        weakObjects.allSatisfy { $0.isAlive }
+        if weakObjects.isEmpty { return false }
+        return weakObjects.allSatisfy { $0.isAlive }
     }
 }
 
