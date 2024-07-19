@@ -4,6 +4,7 @@ public enum ChatGPTModel: String {
     case gpt35Turbo = "gpt-3.5-turbo"
     case gpt35Turbo16k = "gpt-3.5-turbo-16k"
     case gpt4o = "gpt-4o"
+    case gpt4oMini = "gpt-4o-mini"
     case gpt4 = "gpt-4"
     case gpt432k = "gpt-4-32k"
     case gpt4Turbo = "gpt-4-turbo"
@@ -62,6 +63,8 @@ public extension ChatGPTModel {
         case .gpt4Turbo20240409:
             return 128000
         case .gpt4o:
+            return 128000
+        case .gpt4oMini:
             return 128000
         }
     }
