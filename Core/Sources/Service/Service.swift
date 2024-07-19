@@ -57,16 +57,7 @@ public final class Service {
         let guiController = GraphicalUserInterfaceController()
         self.guiController = guiController
         globalShortcutManager = .init(guiController: guiController)
-
-        keyBindingManager = .init(
-            workspacePool: workspacePool,
-            acceptSuggestion: {
-                Task { await PseudoCommandHandler().acceptSuggestion() }
-            },
-            dismissSuggestion: {
-                Task { await PseudoCommandHandler().dismissSuggestion() }
-            }
-        )
+        keyBindingManager = .init()
 
         #if canImport(ProService)
         proService = ProService()

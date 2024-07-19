@@ -329,12 +329,14 @@ let package = Package(
         .target(
             name: "KeyBindingManager",
             dependencies: [
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
-                .product(name: "CGEventOverride", package: "CGEventOverride"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
+                .product(name: "CGEventOverride", package: "CGEventOverride"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(

@@ -1,6 +1,8 @@
 import ActiveApplicationMonitor
 import AppKit
 import CGEventOverride
+import CommandHandler
+import Dependencies
 import Foundation
 import Logger
 import Preferences
@@ -14,9 +16,9 @@ final class TabToAcceptSuggestion {
         Logger.service.debug("TabToAcceptSuggestion: \(message)")
     }
 
-    let workspacePool: WorkspacePool
-    let acceptSuggestion: () -> Void
-    let dismissSuggestion: () -> Void
+    @Dependency(\.workspacePool) var workspacePool
+    @Dependency(\.commandHandler) var commandHandler
+
     private var CGEventObservationTask: Task<Void, Error>?
     private var isObserving: Bool { CGEventObservationTask != nil }
     private let userDefaultsObserver = UserDefaultsObserver(
@@ -43,16 +45,9 @@ final class TabToAcceptSuggestion {
         stopObservation()
     }
 
-    init(
-        workspacePool: WorkspacePool,
-        acceptSuggestion: @escaping () -> Void,
-        dismissSuggestion: @escaping () -> Void
-    ) {
+    init() {
         _ = ThreadSafeAccessToXcodeInspector.shared
-        self.workspacePool = workspacePool
-        self.acceptSuggestion = acceptSuggestion
-        self.dismissSuggestion = dismissSuggestion
-
+     
         hook.add(
             .init(
                 eventsOfInterest: [.keyDown],
@@ -193,7 +188,7 @@ final class TabToAcceptSuggestion {
             )
 
             if shouldAcceptSuggestion {
-                acceptSuggestion()
+                Task { await commandHandler.acceptSuggestion() }
                 return .discarded
             } else {
                 return .unchanged
@@ -215,7 +210,7 @@ final class TabToAcceptSuggestion {
                 filespace.presentingSuggestion != nil
             else { return .unchanged }
 
-            dismissSuggestion()
+            Task { await commandHandler.dismissSuggestion() }
             return .discarded
         default:
             return .unchanged
