@@ -98,7 +98,7 @@ public final class Filespace {
         Environment.now().timeIntervalSince(lastUpdateTime) > 60 * 3
     }
 
-    public private(set) var lastUpdateTime: Date = Environment.now()
+    public internal(set) var lastUpdateTime: Date = Environment.now()
     private var additionalProperties = FilespacePropertyValues()
     let fileSaveWatcher: FileSaveWatcher
     let onClose: (URL) -> Void
