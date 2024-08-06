@@ -60,6 +60,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             } else {
                 suggestion.text = ""
             }
+            suggestion.middlewareComments.append("Removed redundant closing parenthesis.")
         }
     }
 
