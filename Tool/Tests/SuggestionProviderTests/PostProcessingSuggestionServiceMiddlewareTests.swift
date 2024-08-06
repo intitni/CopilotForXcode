@@ -34,6 +34,33 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
             relevantCodeSnippets: []
         )
     }
+    
+    func test_empty() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "",
+                    position: .init(line: 0, character: 0),
+                    range: .init(startPair: (0, 0), endPair: (0, 0))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("", .init(line: 0, character: 0)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [])
+    }
 
     func test_trailing_whitespaces_and_new_lines_should_be_removed() async throws {
         let middleware = PostProcessingSuggestionServiceMiddleware()
@@ -181,6 +208,176 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 text: "let cat = 10",
                 position: .init(line: 0, character: 13),
                 range: .init(startPair: (0, 0), endPair: (0, 13))
+            ),
+        ])
+    }
+    
+    func test_remove_duplicated_trailing_closing_parenthesis_single_parenthesis() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "hello world\n}",
+                    position: .init(line: 0, character: 1),
+                    range: .init(startPair: (0, 0), endPair: (0, 1))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("h\n}\n", .init(line: 0, character: 1)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [
+            .init(
+                id: "1",
+                text: "hello world",
+                position: .init(line: 0, character: 1),
+                range: .init(startPair: (0, 0), endPair: (0, 1))
+            ),
+        ])
+    }
+    
+    func test_remove_duplicated_trailing_closing_parenthesis_single_line() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "}",
+                    position: .init(line: 0, character: 0),
+                    range: .init(startPair: (0, 0), endPair: (0, 0))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("\n}\n", .init(line: 0, character: 0)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [
+            .init(
+                id: "1",
+                text: "",
+                position: .init(line: 0, character: 0),
+                range: .init(startPair: (0, 0), endPair: (0, 0))
+            ),
+        ])
+    }
+    
+    func test_remove_duplicated_trailing_closing_parenthesis_leading_space() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "hello world\n    }",
+                    position: .init(line: 0, character: 1),
+                    range: .init(startPair: (0, 0), endPair: (0, 1))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("h\n    }\n", .init(line: 0, character: 1)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [
+            .init(
+                id: "1",
+                text: "hello world",
+                position: .init(line: 0, character: 1),
+                range: .init(startPair: (0, 0), endPair: (0, 1))
+            ),
+        ])
+    }
+    
+    func test_remove_duplicated_trailing_closing_parenthesis_commas() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "hello world\n,},",
+                    position: .init(line: 0, character: 1),
+                    range: .init(startPair: (0, 0), endPair: (0, 1))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("h\n,},\n", .init(line: 0, character: 1)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [
+            .init(
+                id: "1",
+                text: "hello world",
+                position: .init(line: 0, character: 1),
+                range: .init(startPair: (0, 0), endPair: (0, 1))
+            ),
+        ])
+    }
+    
+    func test_remove_duplicated_trailing_closing_parenthesis_multiple_parenthesis() async throws {
+        let middleware = PostProcessingSuggestionServiceMiddleware()
+
+        let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
+            [
+                .init(
+                    id: "1",
+                    text: "hello world\n}))>}}",
+                    position: .init(line: 0, character: 1),
+                    range: .init(startPair: (0, 0), endPair: (0, 1))
+                ),
+            ]
+        }
+
+        let suggestions = try await middleware.getSuggestion(
+            createRequest("h\n}))>}}\n", .init(line: 0, character: 1)),
+            configuration: .init(
+                acceptsRelevantCodeSnippets: true,
+                mixRelevantCodeSnippetsInSource: true,
+                acceptsRelevantSnippetsFromOpenedFiles: true
+            ),
+            next: handler
+        )
+
+        XCTAssertEqual(suggestions, [
+            .init(
+                id: "1",
+                text: "hello world",
+                position: .init(line: 0, character: 1),
+                range: .init(startPair: (0, 0), endPair: (0, 1))
             ),
         ])
     }
