@@ -84,16 +84,7 @@ public extension SuggestionService {
                 }
             }
 
-            var result = try await getSuggestion(request, workspaceInfo)
-            if !request.lines.isEmpty {
-                for index in result.indices {
-                    let range = result[index].range
-                    let lowerBound = max(0, range.start.line)
-                    let upperBound = max(lowerBound, min(request.lines.count - 1, range.end.line))
-                    result[index].replacingLines = Array(request.lines[lowerBound...upperBound])
-                }
-            }
-            return result
+            return try await getSuggestion(request, workspaceInfo)
         } catch let error as SuggestionServiceError {
             throw error
         } catch {
