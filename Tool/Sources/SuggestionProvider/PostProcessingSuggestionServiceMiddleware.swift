@@ -15,6 +15,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             var suggestion = $0
             if suggestion.text.allSatisfy({ $0.isWhitespace || $0.isNewline }) { return nil }
             Self.removeTrailingWhitespacesAndNewlines(&suggestion)
+            Self.removeRedundantClosingParenthesis(&suggestion, lines: request.lines)
             if !Self.checkIfSuggestionHasNoEffect(suggestion, request: request) { return nil }
             return suggestion
         }
@@ -26,6 +27,44 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             text = text.dropLast(1)
         }
         suggestion.text = String(text)
+    }
+
+    /// Remove the parenthesis in the last line of the suggestion if
+    /// - It contains only closing parenthesis
+    /// - It's identical to the next line below the range of the suggestion
+    static func removeRedundantClosingParenthesis(
+        _ suggestion: inout CodeSuggestion,
+        lines: [String]
+    ) {
+        let nextLineIndex = suggestion.range.end.line + 1
+        guard nextLineIndex < lines.endIndex, nextLineIndex >= 0 else { return }
+        let nextLine = lines[nextLineIndex].dropLast(1)
+        let lineBreakIndex = suggestion.text.lastIndex(where: { $0.isNewline })
+        let lastLineIndex = if let index = lineBreakIndex {
+            suggestion.text.index(after: index)
+        } else {
+            suggestion.text.startIndex
+        }
+        guard lastLineIndex < suggestion.text.endIndex else { return }
+        let lastSuggestionLine = suggestion.text[lastLineIndex...]
+        guard lastSuggestionLine == nextLine else { return }
+
+        let closingParenthesis: [Character] = [")", "]", "}", ">"]
+        let validCharacters = Set(closingParenthesis + [" ", ","])
+
+        let trimmedLastSuggestionLine = nextLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLastSuggestionLine.isEmpty else { return }
+
+        if trimmedLastSuggestionLine == "```"
+            || trimmedLastSuggestionLine == "\"\"\""
+            || trimmedLastSuggestionLine.allSatisfy({ validCharacters.contains($0) })
+        {
+            if let lastIndex = lineBreakIndex {
+                suggestion.text = String(suggestion.text[..<lastIndex])
+            } else {
+                suggestion.text = ""
+            }
+        }
     }
 
     static func checkIfSuggestionHasNoEffect(
