@@ -384,6 +384,7 @@ let package = Package(
                 "XcodeInspector",
                 "BuiltinExtension",
                 "ChatTab",
+                "SharedUIComponents",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
