@@ -47,21 +47,24 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     public struct Reference: Codable, Equatable {
-        public enum Kind: String, Codable {
-            case `class`
-            case `struct`
-            case `enum`
-            case `actor`
-            case `protocol`
-            case `extension`
-            case `case`
-            case property
-            case `typealias`
-            case function
-            case method
+        public enum Kind: Codable, Equatable {
+            public enum Symbol: String, Codable {
+                case `class`
+                case `struct`
+                case `enum`
+                case `actor`
+                case `protocol`
+                case `extension`
+                case `case`
+                case property
+                case `typealias`
+                case function
+                case method
+            }
+            case symbol(Symbol)
             case text
             case webpage
-            case other
+            case other(String)
         }
 
         public var title: String
@@ -78,8 +81,8 @@ public struct ChatMessage: Equatable, Codable {
             subTitle: String,
             content: String,
             uri: String,
-            startLine: Int?,
-            endLine: Int?,
+            startLine: Int? = nil,
+            endLine: Int? = nil,
             kind: Kind
         ) {
             self.title = title
@@ -116,6 +119,12 @@ public struct ChatMessage: Equatable, Codable {
 
     /// The id of the message.
     public var id: ID
+    
+    /// The id of the sender of the message.
+    public var senderId: String?
+    
+    /// The id of the message that this message is a response to.
+    public var responseTo: ID?
 
     /// The number of tokens of this message.
     public var tokensCount: Int?
@@ -134,6 +143,8 @@ public struct ChatMessage: Equatable, Codable {
 
     public init(
         id: String = UUID().uuidString,
+        senderId: String? = nil,
+        repinesToo: String? = nil,
         role: Role,
         content: String?,
         name: String? = nil,
@@ -143,6 +154,8 @@ public struct ChatMessage: Equatable, Codable {
         references: [Reference] = []
     ) {
         self.role = role
+        self.senderId = senderId
+        self.responseTo = responseTo
         self.content = content
         self.name = name
         self.toolCalls = toolCalls
@@ -154,7 +167,7 @@ public struct ChatMessage: Equatable, Codable {
 }
 
 public struct ReferenceKindFallback: FallbackValueProvider {
-    public static var defaultValue: ChatMessage.Reference.Kind { .other }
+    public static var defaultValue: ChatMessage.Reference.Kind { .other("Unknown") }
 }
 
 public struct ChatMessageRoleFallback: FallbackValueProvider {
