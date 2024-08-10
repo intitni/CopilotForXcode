@@ -144,7 +144,7 @@ public struct ChatMessage: Equatable, Codable {
     public init(
         id: String = UUID().uuidString,
         senderId: String? = nil,
-        repinesToo: String? = nil,
+        responseTo: String? = nil,
         role: Role,
         content: String?,
         name: String? = nil,

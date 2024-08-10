@@ -139,28 +139,31 @@ struct ReferenceIcon: View {
         RoundedRectangle(cornerRadius: 4)
             .fill({
                 switch kind {
-                case .class:
-                    Color.purple
-                case .struct:
-                    Color.purple
-                case .enum:
-                    Color.purple
-                case .actor:
-                    Color.purple
-                case .protocol:
-                    Color.purple
-                case .extension:
-                    Color.indigo
-                case .case:
-                    Color.green
-                case .property:
-                    Color.teal
-                case .typealias:
-                    Color.orange
-                case .function:
-                    Color.teal
-                case .method:
-                    Color.blue
+                case .symbol(let symbol):
+                    switch symbol {
+                    case .class:
+                        Color.purple
+                    case .struct:
+                        Color.purple
+                    case .enum:
+                        Color.purple
+                    case .actor:
+                        Color.purple
+                    case .protocol:
+                        Color.purple
+                    case .extension:
+                        Color.indigo
+                    case .case:
+                        Color.green
+                    case .property:
+                        Color.teal
+                    case .typealias:
+                        Color.orange
+                    case .function:
+                        Color.teal
+                    case .method:
+                        Color.blue
+                    }
                 case .text:
                     Color.gray
                 case .webpage:
@@ -173,28 +176,31 @@ struct ReferenceIcon: View {
             .overlay(alignment: .center) {
                 Group {
                     switch kind {
-                    case .class:
-                        Text("C")
-                    case .struct:
-                        Text("S")
-                    case .enum:
-                        Text("E")
-                    case .actor:
-                        Text("A")
-                    case .protocol:
-                        Text("Pr")
-                    case .extension:
-                        Text("Ex")
-                    case .case:
-                        Text("K")
-                    case .property:
-                        Text("P")
-                    case .typealias:
-                        Text("T")
-                    case .function:
-                        Text("𝑓")
-                    case .method:
-                        Text("M")
+                    case .symbol(let symbol):
+                        switch symbol {
+                        case .class:
+                            Text("C")
+                        case .struct:
+                            Text("S")
+                        case .enum:
+                            Text("E")
+                        case .actor:
+                            Text("A")
+                        case .protocol:
+                            Text("Pr")
+                        case .extension:
+                            Text("Ex")
+                        case .case:
+                            Text("K")
+                        case .property:
+                            Text("P")
+                        case .typealias:
+                            Text("T")
+                        case .function:
+                            Text("𝑓")
+                        case .method:
+                            Text("M")
+                        }
                     case .text:
                         Text("Tx")
                     case .webpage:
@@ -225,7 +231,7 @@ struct ReferenceIcon: View {
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .class
+            kind: .symbol(.class)
         ), count: 20),
         chat: .init(initialState: .init(), reducer: { Chat(service: .init()) })
     )
@@ -240,35 +246,35 @@ struct ReferenceIcon: View {
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .class
+            kind: .symbol(.class)
         ),
         .init(
             title: "BotMessage.swift:100-102",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views",
             uri: "https://google.com",
             startLine: nil,
-            kind: .struct
+            kind: .symbol(.struct)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .function
+            kind: .symbol(.function)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .case
+            kind: .symbol(.case)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .extension
+            kind: .symbol(.extension)
         ),
         .init(
             title: "ReferenceList",
