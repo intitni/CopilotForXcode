@@ -1,17 +1,22 @@
 import CodableWrappers
 import Foundation
 
+/// A chat message that can be sent or received.
 public struct ChatMessage: Equatable, Codable {
     public typealias ID = String
 
+    /// The role of a message.
     public enum Role: String, Codable, Equatable {
         case system
         case user
         case assistant
     }
 
+    /// A function call that can be made by the bot.
     public struct FunctionCall: Codable, Equatable {
+        /// The name of the function.
         public var name: String
+        /// Arguments in the format of a JSON string.
         public var arguments: String
         public init(name: String, arguments: String) {
             self.name = name
@@ -19,10 +24,14 @@ public struct ChatMessage: Equatable, Codable {
         }
     }
 
+    /// A tool call that can be made by the bot.
     public struct ToolCall: Codable, Equatable, Identifiable {
         public var id: String
+        /// The type of tool call.
         public var type: String
+        /// The actual function call.
         public var function: FunctionCall
+        /// The response of the function call.
         public var response: ToolCallResponse
         public init(
             id: String,
@@ -37,8 +46,11 @@ public struct ChatMessage: Equatable, Codable {
         }
     }
 
+    /// The response of a tool call
     public struct ToolCallResponse: Codable, Equatable {
+        /// The content of the response.
         public var content: String
+        /// The summary of the response to display in UI.
         public var summary: String?
         public init(content: String, summary: String?) {
             self.content = content
@@ -46,7 +58,9 @@ public struct ChatMessage: Equatable, Codable {
         }
     }
 
+    /// A reference to include in a chat message.
     public struct Reference: Codable, Equatable {
+        /// The kind of reference.
         public enum Kind: Codable, Equatable {
             public enum Symbol: String, Codable {
                 case `class`
@@ -61,36 +75,33 @@ public struct ChatMessage: Equatable, Codable {
                 case function
                 case method
             }
-            case symbol(Symbol)
+            /// Code symbol.
+            case symbol(Symbol, uri: String, startLine: Int?, endLine: Int?)
+            /// Some text.
             case text
-            case webpage
-            case other(String)
+            /// A webpage.
+            case webpage(uri: String)
+            /// A text file.
+            case textFile(uri: String)
+            /// Other kind of reference.
+            case other(kind: String)
         }
 
+        /// The title of the reference.
         public var title: String
-        public var subTitle: String
-        public var uri: String
+        /// The content of the reference.
         public var content: String
-        public var startLine: Int?
-        public var endLine: Int?
+        /// The kind of the reference.
         @FallbackDecoding<ReferenceKindFallback>
         public var kind: Kind
 
         public init(
             title: String,
-            subTitle: String,
             content: String,
-            uri: String,
-            startLine: Int? = nil,
-            endLine: Int? = nil,
             kind: Kind
         ) {
             self.title = title
-            self.subTitle = subTitle
             self.content = content
-            self.uri = uri
-            self.startLine = startLine
-            self.endLine = endLine
             self.kind = kind
         }
     }
@@ -167,7 +178,7 @@ public struct ChatMessage: Equatable, Codable {
 }
 
 public struct ReferenceKindFallback: FallbackValueProvider {
-    public static var defaultValue: ChatMessage.Reference.Kind { .other("Unknown") }
+    public static var defaultValue: ChatMessage.Reference.Kind { .other(kind: "Unknown") }
 }
 
 public struct ChatMessageRoleFallback: FallbackValueProvider {

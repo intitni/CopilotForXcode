@@ -139,7 +139,7 @@ struct ReferenceIcon: View {
         RoundedRectangle(cornerRadius: 4)
             .fill({
                 switch kind {
-                case .symbol(let symbol):
+                case .symbol(let symbol, _, _, _):
                     switch symbol {
                     case .class:
                         Color.purple
@@ -168,6 +168,8 @@ struct ReferenceIcon: View {
                     Color.gray
                 case .webpage:
                     Color.blue
+                case .textFile:
+                    Color.gray
                 case .other:
                     Color.gray
                 }
@@ -176,7 +178,7 @@ struct ReferenceIcon: View {
             .overlay(alignment: .center) {
                 Group {
                     switch kind {
-                    case .symbol(let symbol):
+                    case .symbol(let symbol, _, _, _):
                         switch symbol {
                         case .class:
                             Text("C")
@@ -207,6 +209,8 @@ struct ReferenceIcon: View {
                         Text("Wb")
                     case .other:
                         Text("Ot")
+                    case .textFile:
+                        Text("Tx")
                     }
                 }
                 .font(.system(size: 12).monospaced())
@@ -231,7 +235,7 @@ struct ReferenceIcon: View {
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.class)
+            kind: .symbol(.class, uri: "https://google.com", startLine: nil, endLine: nil)
         ), count: 20),
         chat: .init(initialState: .init(), reducer: { Chat(service: .init()) })
     )
@@ -246,43 +250,42 @@ struct ReferenceIcon: View {
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.class)
+            kind: .symbol(.class, uri: "https://google.com", startLine: nil, endLine: nil)
         ),
         .init(
             title: "BotMessage.swift:100-102",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.struct)
+            kind: .symbol(.struct, uri: "https://google.com", startLine: nil, endLine: nil)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.function)
+            kind: .symbol(.function, uri: "https://google.com", startLine: nil, endLine: nil)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.case)
+            kind: .symbol(.case, uri: "https://google.com", startLine: nil, endLine: nil)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .symbol(.extension)
+            kind: .symbol(.extension, uri: "https://google.com", startLine: nil, endLine: nil)
         ),
         .init(
             title: "ReferenceList",
             subtitle: "/Core/Sources/ChatGPTChatTab/Views/BotMessage.swift:100",
             uri: "https://google.com",
             startLine: nil,
-            kind: .webpage
+            kind: .webpage(uri: "https://google.com")
         ),
     ], chat: .init(initialState: .init(), reducer: { Chat(service: .init()) }))
 }
-
