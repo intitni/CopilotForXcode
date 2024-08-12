@@ -3,48 +3,46 @@ import ChatBasic
 import Foundation
 import OpenAIService
 
-public struct ChatAgentConfiguration: Codable {
-    public var capabilityIds: Set<String>
-    public var temperature: Double?
-    public var modelId: String?
-    public var model: ChatModel?
-    public var stop: [String]?
-    public var maxTokens: Int?
-    public var minimumReplyTokens: Int?
-    public var runFunctionsAutomatically: Bool?
-    public var apiKey: String?
-}
+public class RAGChatAgent: ChatAgent {
+    public let configuration: RAGChatAgentConfiguration
 
-public actor RAGChatAgent: ChatAgent {
-    let configuration: ChatAgentConfiguration
-
-    init(configuration: ChatAgentConfiguration) {
+    public init(configuration: RAGChatAgentConfiguration) {
         self.configuration = configuration
     }
 
     public func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error> {
-        fatalError()
-//        var continuation: AsyncThrowingStream<Response, any Error>.Continuation!
-//        let stream = AsyncThrowingStream<Response, any Error> { cont in
-//            continuation = cont
-//        }
-//        
-//        await withTaskCancellationHandler {
-//            <#code#>
-//        } onCancel: {
-//            continuation.finish(throwing: CancellationError())
-//        }
-//
-//        return .init { continuation in
-//            Task {
-//                let response = try await chatGPTService.send(content: request.text, summary: nil)
-//                continuation.finish()
-//            }
-//        }
+        let service = getService()
+        let stream = AsyncThrowingStream<Response, any Error> { continuation in
+            let task = Task(priority: .userInitiated) {
+                do {
+                    let response = try await service.send(content: request.text, summary: nil)
+                    for try await item in response {
+                        if Task.isCancelled {
+                            continuation.finish()
+                            return
+                        }
+                        continuation.yield(.contentToken(item))
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+        
+        return stream
     }
 }
 
 extension RAGChatAgent {
+    func getService() -> ChatGPTServiceType {
+        fatalError()
+    }
+    
     var allCapabilities: [String: any RAGChatAgentCapability] {
         RAGChatAgentCapabilityContainer.capabilities
     }
