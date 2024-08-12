@@ -47,7 +47,7 @@ final class ChatPanelWindow: WidgetWindow {
     ) {
         self.minimizeWindow = minimizeWindow
         super.init(
-            contentRect: .zero,
+            contentRect: .init(x: 0, y: 0, width: 300, height: 400),
             styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
