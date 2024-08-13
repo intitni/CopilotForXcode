@@ -82,9 +82,12 @@ final class ChatPanelWindow: WidgetWindow {
         setIsVisible(true)
         isPanelDisplayed = false
 
+        var wasDetached = false
         storeObserver.observe { [weak self] in
             guard let self else { return }
             let isDetached = store.isDetached
+            guard isDetached != wasDetached else { return }
+            wasDetached = isDetached
             Task { @MainActor in
                 if UserDefaults.shared.value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached) {
                     self.setFloatOnTop(!isDetached)
