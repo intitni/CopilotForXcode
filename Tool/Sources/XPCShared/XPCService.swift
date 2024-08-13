@@ -153,7 +153,7 @@ public func testXPCListenerEndpoint(_ endpoint: NSXPCListenerEndpoint) async -> 
         continuation.finish()
     }
     do {
-        guard let result = try await stream.first(where: { _ in true }) else {
+        guard let _ = try await stream.first(where: { _ in true }) else {
             throw EmptyResponseError()
         }
         return true
