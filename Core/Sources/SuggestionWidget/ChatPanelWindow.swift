@@ -47,7 +47,7 @@ final class ChatPanelWindow: WidgetWindow {
     ) {
         self.minimizeWindow = minimizeWindow
         super.init(
-            contentRect: .zero,
+            contentRect: .init(x: 0, y: 0, width: 300, height: 400),
             styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -82,9 +82,12 @@ final class ChatPanelWindow: WidgetWindow {
         setIsVisible(true)
         isPanelDisplayed = false
 
+        var wasDetached = false
         storeObserver.observe { [weak self] in
             guard let self else { return }
             let isDetached = store.isDetached
+            guard isDetached != wasDetached else { return }
+            wasDetached = isDetached
             Task { @MainActor in
                 if UserDefaults.shared.value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached) {
                     self.setFloatOnTop(!isDetached)

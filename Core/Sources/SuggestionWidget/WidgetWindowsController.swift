@@ -418,7 +418,12 @@ extension WidgetWindowsController {
                     windows.widgetWindow.alphaValue = if noFocus {
                         0
                     } else if previousAppIsXcode {
-                        1
+                        if windows.chatPanelWindow.isFullscreen,
+                           windows.chatPanelWindow.isOnActiveSpace {
+                            0
+                        } else {
+                            1
+                        }
                     } else {
                         0
                     }
@@ -573,11 +578,11 @@ extension WidgetWindowsController {
 
     @MainActor
     func handleXcodeFullscreenChange() async {
-        guard let activeXcode = await XcodeInspector.shared.safe.activeXcode
-        else { return }
+        let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
-        let xcode = activeXcode.appElement
-        let isFullscreen = if let xcodeWindow = xcode.focusedWindow {
+        let isFullscreen = if let xcode = activeXcode?.appElement,
+                              let xcodeWindow = xcode.focusedWindow
+        {
             xcodeWindow.isFullScreen && xcode.isFrontmost
         } else {
             false
@@ -593,10 +598,8 @@ extension WidgetWindowsController {
             $0.send(.didChangeActiveSpace(fullscreen: isFullscreen))
         }
 
-        if windows.fullscreenDetector.isOnActiveSpace {
-            if xcode.focusedWindow != nil {
-                windows.orderFront()
-            }
+        if windows.fullscreenDetector.isOnActiveSpace, isFullscreen {
+            windows.orderFront()
         }
     }
 }
@@ -856,6 +859,10 @@ class WidgetWindow: CanBecomeKeyWindow {
         [.fullScreenAuxiliary, .transient]
     }
 
+    var isFullscreen: Bool {
+        styleMask.contains(.fullScreen)
+    }
+
     private var state: State? {
         didSet {
             guard state != oldValue else { return }
@@ -885,3 +892,4 @@ func widgetLevel(_ addition: Int) -> NSWindow.Level {
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
     return .init(minimumWidgetLevel + addition)
 }
+

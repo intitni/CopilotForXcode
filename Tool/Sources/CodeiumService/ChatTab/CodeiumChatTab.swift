@@ -140,11 +140,11 @@ public class CodeiumChatTab: ChatTab {
     }
 
     public static func chatBuilders() -> [ChatTabBuilder] {
-        [Builder(title: "Codeium Chat (Beta)")]
+        [Builder(title: "Codeium Chat")]
     }
 
 	public static func defaultChatBuilder() -> ChatTabBuilder {
-        Builder(title: "Codeium Chat (Beta)")
+        Builder(title: "Codeium Chat")
     }
 }
 

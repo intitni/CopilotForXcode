@@ -351,6 +351,8 @@ extension CodeiumService: CodeiumSuggestionServiceType {
             URLQueryItem(name: "ide_version", value: metadata.ide_version),
             URLQueryItem(name: "web_server_url", value: webServerUrl),
             URLQueryItem(name: "ide_telemetry_enabled", value: "true"),
+            URLQueryItem(name: "has_enterprise_extension", value: String(UserDefaults.shared.value(for: \.codeiumEnterpriseMode))),
+            URLQueryItem(name: "has_index_service", value: String(UserDefaults.shared.value(for: \.codeiumIndexEnabled)))
         ]
 
         if let url = components.url {

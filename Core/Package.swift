@@ -83,6 +83,7 @@ let package = Package(
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
+                .product(name: "WorkspaceSuggestionService", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
@@ -386,6 +387,7 @@ var isProIncluded: Bool {
         let filePath = "\(file)"
         let fileURL = URL(fileURLWithPath: filePath)
         let rootURL = fileURL
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let confURL = rootURL.appendingPathComponent("PLUS")

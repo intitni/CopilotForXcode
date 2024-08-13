@@ -27,7 +27,8 @@ let package = Package(
         .library(name: "Keychain", targets: ["Keychain"]),
         .library(name: "SharedUIComponents", targets: ["SharedUIComponents"]),
         .library(name: "UserDefaultsObserver", targets: ["UserDefaultsObserver"]),
-        .library(name: "Workspace", targets: ["Workspace", "WorkspaceSuggestionService"]),
+        .library(name: "Workspace", targets: ["Workspace"]),
+        .library(name: "WorkspaceSuggestionService", targets: ["WorkspaceSuggestionService"]),
         .library(
             name: "SuggestionProvider",
             targets: ["SuggestionProvider", "GitHubCopilotService", "CodeiumService"]
