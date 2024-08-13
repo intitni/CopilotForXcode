@@ -132,7 +132,7 @@ Another convenient method to access commands is by using the `⇧⌘/` shortcut 
 
 #### Setting Up Global Hotkeys
 
-Currently, the is only one global hotkey you can set to show/hide the widgets under the General tab from the host app.
+Currently, there is only one global hotkey you can set to show/hide the widgets under the General tab from the host app.
 
 When this hotkey is not set to enabled globally, it will only work when the service app or Xcode is active.
 
