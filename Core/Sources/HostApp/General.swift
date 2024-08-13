@@ -32,6 +32,9 @@ struct General {
             switch action {
             case .appear:
                 return .run { send in
+                    if UserDefaults.shared.value(for: \.doNotInstallLaunchAgentAutomatically) {
+                        return
+                    }
                     await send(.setupLaunchAgentIfNeeded)
                 }
 
