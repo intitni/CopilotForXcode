@@ -17,7 +17,7 @@ class XPCService {
     let interface: NSXPCInterface
     let logger: Logger
     weak var delegate: XPCServiceDelegate?
-    
+
     @XPCServiceActor
     private var isInvalidated = false
 
@@ -101,6 +101,12 @@ private class InvalidatingConnection {
 
 struct NoDataError: Error {}
 
+struct EmptyResponseError: Error, LocalizedError {
+    var errorDescription: String? {
+        "The server is not returning a response. The app may be installed in the wrong directory."
+    }
+}
+
 struct AutoFinishContinuation<T> {
     var continuation: AsyncThrowingStream<T, Error>.Continuation
 
@@ -129,7 +135,10 @@ func withXPCServiceConnected<T, P>(
         } as! P
         fn(service, .init(continuation: continuation))
     }
-    return try await stream.first(where: { _ in true })!
+    guard let result = try await stream.first(where: { _ in true }) else {
+        throw EmptyResponseError()
+    }
+    return result
 }
 
 @XPCServiceActor
@@ -144,9 +153,12 @@ public func testXPCListenerEndpoint(_ endpoint: NSXPCListenerEndpoint) async -> 
         continuation.finish()
     }
     do {
-        try await stream.first(where: { _ in true })!
+        guard let _ = try await stream.first(where: { _ in true }) else {
+            throw EmptyResponseError()
+        }
         return true
     } catch {
         return false
     }
 }
+
