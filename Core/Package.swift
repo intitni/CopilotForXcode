@@ -388,6 +388,7 @@ var isProIncluded: Bool {
         let rootURL = fileURL
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+            .deletingLastPathComponent()
         let confURL = rootURL.appendingPathComponent("PLUS")
         return FileManager.default.fileExists(atPath: confURL.path)
     }
