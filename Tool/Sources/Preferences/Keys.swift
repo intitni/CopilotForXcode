@@ -748,5 +748,9 @@ public extension UserDefaultPreferenceKeys {
     var useCloudflareDomainNameForLicenseCheck: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-UseCloudflareDomainNameForLicenseCheck")
     }
+    
+    var doNotInstallLaunchAgentAutomatically: FeatureFlag {
+        .init(defaultValue: false, key: "FeatureFlag-DoNotInstallLaunchAgentAutomatically")
+    }
 }
 

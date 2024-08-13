@@ -29,6 +29,8 @@ final class DebugSettings: ObservableObject {
     var observeToAXNotificationWithDefaultMode
     @AppStorage(\.useCloudflareDomainNameForLicenseCheck)
     var useCloudflareDomainNameForLicenseCheck
+    @AppStorage(\.doNotInstallLaunchAgentAutomatically)
+    var doNotInstallLaunchAgentAutomatically
     init() {}
 }
 
@@ -134,6 +136,12 @@ struct DebugSettingsView: View {
                         isOn: $settings.useCloudflareDomainNameForLicenseCheck
                     ) {
                         Text("Use Cloudflare domain name for license check")
+                    }
+                    
+                    Toggle(
+                        isOn: $settings.doNotInstallLaunchAgentAutomatically
+                    ) {
+                        Text("Don't install launch agent automatically")
                     }
                     
                     Button("Reset update cycle") {
