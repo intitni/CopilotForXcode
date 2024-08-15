@@ -11,10 +11,10 @@ public class RAGChatAgent: ChatAgent {
     }
 
     public func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error> {
-        let service = getService()
         let stream = AsyncThrowingStream<Response, any Error> { continuation in
             let task = Task(priority: .userInitiated) {
                 do {
+                    let service = try await createService(for: request)
                     let response = try await service.send(content: request.text, summary: nil)
                     for try await item in response {
                         if Task.isCancelled {
@@ -28,21 +28,40 @@ public class RAGChatAgent: ChatAgent {
                     continuation.finish(throwing: error)
                 }
             }
-            
+
             continuation.onTermination = { _ in
                 task.cancel()
             }
         }
-        
+
         return stream
     }
 }
 
 extension RAGChatAgent {
-    func getService() -> ChatGPTServiceType {
-        fatalError()
+    func createService(for request: Request) async throws -> ChatGPTServiceType {
+        guard let chatGPTConfiguration = configuration.chatGPTConfiguration
+        else { throw CancellationError() }
+        let functionProvider = ChatFunctionProvider()
+        let memory = AutoManagedChatGPTMemory(
+            systemPrompt: configuration.modelConfiguration.systemPrompt,
+            configuration: chatGPTConfiguration,
+            functionProvider: functionProvider
+        )
+        
+        await memory.mutateHistory { messages in
+            for history in request.history {
+                messages.append(history)
+            }
+        }
+
+        return ChatGPTService(
+            memory: memory,
+            configuration: chatGPTConfiguration,
+            functionProvider: functionProvider
+        )
     }
-    
+
     var allCapabilities: [String: any RAGChatAgentCapability] {
         RAGChatAgentCapabilityContainer.capabilities
     }

@@ -1,5 +1,10 @@
+import AIModel
+import ChatBasic
 import CodableWrappers
 import Foundation
+import OpenAIService
+import Preferences
+import Keychain
 
 public struct RAGChatAgentConfiguration: Codable {
     public struct ModelConfiguration: Codable {
@@ -76,6 +81,39 @@ public struct RAGChatAgentConfiguration: Codable {
         _ otherConfigurations: Configuration
     ) throws {
         _otherConfigurations = try JSONEncoder().encode(otherConfigurations)
+    }
+
+    var chatGPTConfiguration: ChatGPTConfiguration? {
+        guard case let .chatModel(id) = serviceProvider else { return nil }
+        return .init(
+            model: {
+                let models = UserDefaults.shared.value(for: \.chatModels)
+                let id = UserDefaults.shared.value(for: \.defaultChatFeatureChatModelId)
+                return models.first { $0.id == id }
+                    ?? models.first
+            }(),
+            temperature: modelConfiguration.temperature,
+            stop: [],
+            maxTokens: modelConfiguration.maxTokens,
+            minimumReplyTokens: modelConfiguration.minimumReplyTokens,
+            runFunctionsAutomatically: false,
+            shouldEndTextWindow: { _ in false }
+        )
+    }
+
+    struct ChatGPTConfiguration: OpenAIService.ChatGPTConfiguration {
+        var model: ChatModel?
+        var temperature: Double
+        var stop: [String]
+        var maxTokens: Int
+        var minimumReplyTokens: Int
+        var runFunctionsAutomatically: Bool
+        var shouldEndTextWindow: (String) -> Bool
+        
+        var apiKey: String {
+            guard let name = model?.info.apiKeyName else { return "" }
+            return (try? Keychain.apiKey.get(name)) ?? ""
+        }
     }
 }
 
