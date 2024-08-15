@@ -10,7 +10,7 @@ final class ChatGPTStreamTests: XCTestCase {
             $0.model = .init(id: "id", name: "name", format: .openAI, info: .init())
         }
         let functionProvider = NoChatGPTFunctionProvider()
-        let service = ChatGPTService(
+        let service = LegacyChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider
@@ -71,7 +71,7 @@ final class ChatGPTStreamTests: XCTestCase {
             $0.model = .init(id: "id", name: "name", format: .openAI, info: .init())
         }
         let functionProvider = FunctionProvider()
-        let service = ChatGPTService(
+        let service = LegacyChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider
@@ -166,7 +166,7 @@ final class ChatGPTStreamTests: XCTestCase {
             $0.model = .init(id: "id", name: "name", format: .openAI, info: .init())
         }
         let functionProvider = FunctionProvider()
-        let service = ChatGPTService(
+        let service = LegacyChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider
@@ -304,7 +304,7 @@ final class ChatGPTStreamTests: XCTestCase {
             )
         }
         let functionProvider = FunctionProvider()
-        let service = ChatGPTService(
+        let service = LegacyChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider

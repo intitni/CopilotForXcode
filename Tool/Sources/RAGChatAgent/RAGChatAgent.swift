@@ -39,7 +39,7 @@ public class RAGChatAgent: ChatAgent {
 }
 
 extension RAGChatAgent {
-    func createService(for request: Request) async throws -> ChatGPTServiceType {
+    func createService(for request: Request) async throws -> LegacyChatGPTServiceType {
         guard let chatGPTConfiguration = configuration.chatGPTConfiguration
         else { throw CancellationError() }
         let functionProvider = ChatFunctionProvider()
@@ -55,7 +55,7 @@ extension RAGChatAgent {
             }
         }
 
-        return ChatGPTService(
+        return LegacyChatGPTService(
             memory: memory,
             configuration: chatGPTConfiguration,
             functionProvider: functionProvider

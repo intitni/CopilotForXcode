@@ -85,7 +85,7 @@ struct ChatModelEdit {
                 let model = ChatModel(state: state)
                 return .run { send in
                     do {
-                        let service = ChatGPTService(
+                        let service = LegacyChatGPTService(
                             configuration: UserPreferenceChatGPTConfiguration()
                                 .overriding {
                                     $0.model = model

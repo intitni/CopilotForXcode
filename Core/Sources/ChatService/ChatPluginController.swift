@@ -4,12 +4,12 @@ import Foundation
 import OpenAIService
 
 final class ChatPluginController {
-    let chatGPTService: any ChatGPTServiceType
+    let chatGPTService: any LegacyChatGPTServiceType
     let plugins: [String: ChatPlugin.Type]
     var runningPlugin: ChatPlugin?
     weak var chatService: ChatService?
     
-    init(chatGPTService: any ChatGPTServiceType, plugins: [ChatPlugin.Type]) {
+    init(chatGPTService: any LegacyChatGPTServiceType, plugins: [ChatPlugin.Type]) {
         self.chatGPTService = chatGPTService
         var all = [String: ChatPlugin.Type]()
         for plugin in plugins {
@@ -18,7 +18,7 @@ final class ChatPluginController {
         self.plugins = all
     }
 
-    convenience init(chatGPTService: any ChatGPTServiceType, plugins: ChatPlugin.Type...) {
+    convenience init(chatGPTService: any LegacyChatGPTServiceType, plugins: ChatPlugin.Type...) {
         self.init(chatGPTService: chatGPTService, plugins: plugins)
     }
 

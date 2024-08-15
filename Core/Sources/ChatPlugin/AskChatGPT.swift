@@ -14,7 +14,7 @@ public func askChatGPT(
         configuration: configuration,
         functionProvider: NoChatGPTFunctionProvider()
     )
-    let service = ChatGPTService(
+    let service = LegacyChatGPTService(
         memory: memory,
         configuration: configuration
     )

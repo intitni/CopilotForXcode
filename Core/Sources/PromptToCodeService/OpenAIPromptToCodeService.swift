@@ -5,7 +5,7 @@ import SuggestionBasic
 import XcodeInspector
 
 public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
-    var service: (any ChatGPTServiceType)?
+    var service: (any LegacyChatGPTServiceType)?
 
     public init() {}
 
@@ -181,7 +181,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
             configuration: configuration,
             functionProvider: NoChatGPTFunctionProvider()
         )
-        let chatGPTService = ChatGPTService(
+        let chatGPTService = LegacyChatGPTService(
             memory: memory,
             configuration: configuration
         )

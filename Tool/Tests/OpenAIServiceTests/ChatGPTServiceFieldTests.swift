@@ -5,7 +5,7 @@ final class ChatGPTServiceFieldTests: XCTestCase {
     let skip = true
     
     func test_calling_the_api() async throws {
-        let service = ChatGPTService()
+        let service = LegacyChatGPTService()
         
         if skip { return }
         
@@ -22,7 +22,7 @@ final class ChatGPTServiceFieldTests: XCTestCase {
     }
     
     func test_calling_the_api_with_function_calling() async throws {
-        let service = ChatGPTService()
+        let service = LegacyChatGPTService()
         
         if skip { return }
         
