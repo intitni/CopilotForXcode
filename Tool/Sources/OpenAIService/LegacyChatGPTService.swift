@@ -598,4 +598,3 @@ func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
     guard let remainingTokens else { return nil }
     return min(maxToken / 2, remainingTokens)
 }
-

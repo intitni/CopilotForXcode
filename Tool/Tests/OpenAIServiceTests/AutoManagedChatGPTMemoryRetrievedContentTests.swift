@@ -10,11 +10,7 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
     func ref(_ text: String) -> ChatMessage.Reference {
         .init(
             title: "",
-            subTitle: "",
             content: text,
-            uri: "",
-            startLine: nil,
-            endLine: nil,
             kind: .text
         )
     }

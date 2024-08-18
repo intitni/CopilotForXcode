@@ -1,16 +1,21 @@
 import Foundation
 
 public enum ChatAgentResponse {
+    public enum Content {
+        case text(String)
+        case modification
+    }
+    
     /// Post the status of the current message.
     case status(String)
-    /// Send a token of the text message to the current message.
-    case contentToken(String)
+    /// Update the text message to the current message.
+    case content([Content])
     /// Update the attachments of the current message.
     case attachments([URL])
     /// Update the references of the current message.
     case references([ChatMessage.Reference])
-    /// End the message. The next contents will be sent as a new message.
-    case finishMessage
+    /// End the current message. The next contents will be sent as a new message.
+    case startNewMessage
 }
 
 public struct ChatAgentRequest {

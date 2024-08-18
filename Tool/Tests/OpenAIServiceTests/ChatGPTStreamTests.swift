@@ -16,10 +16,10 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: ChatCompletionsRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
-            requestBody = _requestBody
-            return MockCompletionStreamAPI_Message()
-        }
+//        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
+//            requestBody = _requestBody
+//            return MockCompletionStreamAPI_Message()
+//        }
 
         try await withDependencies { values in
             values.uuid = .incrementing
@@ -77,13 +77,13 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: ChatCompletionsRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
-            requestBody = _requestBody
-            if _requestBody.messages.count <= 2 {
-                return MockCompletionStreamAPI_Function()
-            }
-            return MockCompletionStreamAPI_Message()
-        }
+//        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
+//            requestBody = _requestBody
+//            if _requestBody.messages.count <= 2 {
+//                return MockCompletionStreamAPI_Function()
+//            }
+//            return MockCompletionStreamAPI_Message()
+//        }
 
         try await withDependencies { values in
             values.uuid = .incrementing
@@ -173,13 +173,13 @@ final class ChatGPTStreamTests: XCTestCase {
         )
         var requestBody: ChatCompletionsRequestBody?
 
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
-            requestBody = _requestBody
-            if _requestBody.messages.count <= 4 {
-                return MockCompletionStreamAPI_Function(count: 3)
-            }
-            return MockCompletionStreamAPI_Message()
-        }
+//        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
+//            requestBody = _requestBody
+//            if _requestBody.messages.count <= 4 {
+//                return MockCompletionStreamAPI_Function(count: 3)
+//            }
+//            return MockCompletionStreamAPI_Message()
+//        }
 
         try await withDependencies { values in
             values.uuid = .incrementing
@@ -310,13 +310,13 @@ final class ChatGPTStreamTests: XCTestCase {
             functionProvider: functionProvider
         )
         var requestBody: ChatCompletionsRequestBody?
-        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
-            requestBody = _requestBody
-            if _requestBody.messages.count <= 2 {
-                return MockCompletionStreamAPI_Function()
-            }
-            return MockCompletionStreamAPI_Message()
-        }
+//        service.changeBuildCompletionStreamAPI { _, _, _, _requestBody, _ in
+//            requestBody = _requestBody
+//            if _requestBody.messages.count <= 2 {
+//                return MockCompletionStreamAPI_Function()
+//            }
+//            return MockCompletionStreamAPI_Message()
+//        }
 
         try await withDependencies { values in
             values.uuid = .incrementing
