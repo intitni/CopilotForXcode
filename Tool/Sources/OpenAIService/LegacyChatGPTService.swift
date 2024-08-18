@@ -252,8 +252,7 @@ extension LegacyChatGPTService {
             model: model,
             endpoint: url,
             apiKey: configuration.apiKey,
-            requestBody: requestBody,
-            prompt: prompt
+            requestBody: requestBody
         )
 
         #if DEBUG
@@ -351,8 +350,7 @@ extension LegacyChatGPTService {
             model: model,
             endpoint: url,
             apiKey: configuration.apiKey,
-            requestBody: requestBody,
-            prompt: prompt
+            requestBody: requestBody
         )
 
         #if DEBUG

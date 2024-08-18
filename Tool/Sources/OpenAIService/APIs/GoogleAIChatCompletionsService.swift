@@ -7,20 +7,17 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
     let apiKey: String
     let model: ChatModel
     var requestBody: ChatCompletionsRequestBody
-    let prompt: ChatGPTPrompt
     let baseURL: String
 
     init(
         apiKey: String,
         model: ChatModel,
         requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt,
         baseURL: String
     ) {
         self.apiKey = apiKey
         self.model = model
         self.requestBody = requestBody
-        self.prompt = prompt
         self.baseURL = baseURL
     }
 
@@ -36,9 +33,7 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 ? .init()
                 : .init(apiVersion: model.info.googleGenerativeAIInfo.apiVersion)
         )
-        let history = prompt.googleAICompatible.history.map { message in
-            ModelContent(message)
-        }
+        let history = Self.convertMessages(requestBody.messages)
 
         do {
             let response = try await aiModel.generateContent(history)
@@ -86,7 +81,7 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
                 ? .init()
                 : .init(apiVersion: model.info.googleGenerativeAIInfo.apiVersion)
         )
-        let history = prompt.googleAICompatible.history.map { message in
+        let history = requestBody.messages.map { message in
             ModelContent(message)
         }
 
@@ -135,15 +130,15 @@ actor GoogleAIChatCompletionsService: ChatCompletionsAPI, ChatCompletionsStreamA
 
         return stream
     }
-}
 
-extension ChatGPTPrompt {
-    var googleAICompatible: ChatGPTPrompt {
-        var history = self.history
-        var reformattedHistory = [ChatMessage]()
+    static func convertMessages(
+        _ messages: [ChatCompletionsRequestBody.Message]
+    ) -> [ModelContent] {
+        var history = messages
+        var reformattedHistory = [ChatCompletionsRequestBody.Message]()
 
         // We don't want to combine the new user message with others.
-        let newUserMessage: ChatMessage? = if history.last?.role == .user {
+        let newUserMessage: ChatCompletionsRequestBody.Message? = if history.last?.role == .user {
             history.removeLast()
         } else {
             nil
@@ -154,7 +149,6 @@ extension ChatGPTPrompt {
             guard lastIndex >= 0 else { // first message
                 if message.role == .system {
                     reformattedHistory.append(.init(
-                        id: message.id,
                         role: .user,
                         content: ModelContent.convertContent(of: message)
                     ))
@@ -174,8 +168,7 @@ extension ChatGPTPrompt {
             if ModelContent.convertRole(lastMessage.role) == ModelContent
                 .convertRole(message.role)
             {
-                let newMessage = ChatMessage(
-                    id: message.id,
+                let newMessage = ChatCompletionsRequestBody.Message(
                     role: message.role == .assistant ? .assistant : .user,
                     content: """
                     \(ModelContent.convertContent(of: lastMessage))
@@ -197,7 +190,7 @@ extension ChatGPTPrompt {
                .convertRole(newUserMessage.role)
             {
                 // Add dummy message
-                let dummyMessage = ChatMessage(
+                let dummyMessage = ChatCompletionsRequestBody.Message(
                     role: .assistant,
                     content: "OK"
                 )
@@ -206,47 +199,47 @@ extension ChatGPTPrompt {
             reformattedHistory.append(newUserMessage)
         }
 
-        return .init(
-            history: reformattedHistory,
-            references: references,
-            remainingTokenCount: remainingTokenCount
-        )
+        return reformattedHistory.map(ModelContent.init)
     }
 }
 
 extension ModelContent {
-    static func convertRole(_ role: ChatMessage.Role) -> String {
+    static func convertRole(_ role: ChatCompletionsRequestBody.Message.Role) -> String {
         switch role {
-        case .user, .system:
+        case .user, .system, .tool:
             return "user"
         case .assistant:
             return "model"
         }
     }
 
-    static func convertContent(of message: ChatMessage) -> String {
+    static func convertContent(of message: ChatCompletionsRequestBody.Message) -> String {
         switch message.role {
         case .system:
-            return "System Prompt:\n\(message.content ?? " ")"
+            return "System Prompt:\n\(message.content)"
         case .user:
-            return message.content ?? " "
+            return message.content
+        case .tool:
+            return """
+            Result of function ID: \(message.toolCallId ?? "")
+            \(message.content)
+            """
         case .assistant:
             if let toolCalls = message.toolCalls {
                 return toolCalls.map { call in
-                    let response = call.response
                     return """
+                    Function ID: \(call.id)
                     Call function: \(call.function.name)
-                    Arguments: \(call.function.arguments)
-                    Result: \(response.content)
+                    Arguments: \(call.function.arguments ?? "{}")
                     """
                 }.joined(separator: "\n")
             } else {
-                return message.content ?? " "
+                return message.content
             }
         }
     }
 
-    init(_ message: ChatMessage) {
+    init(_ message: ChatCompletionsRequestBody.Message) {
         let role = Self.convertRole(message.role)
         let parts = [ModelContent.Part.text(Self.convertContent(of: message))]
         self = .init(role: role, parts: parts)

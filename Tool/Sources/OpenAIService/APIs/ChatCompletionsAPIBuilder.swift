@@ -8,16 +8,14 @@ protocol ChatCompletionsAPIBuilder {
         model: ChatModel,
         endpoint: URL,
         apiKey: String,
-        requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt
+        requestBody: ChatCompletionsRequestBody
     ) -> any ChatCompletionsStreamAPI
 
     func buildNonStreamAPI(
         model: ChatModel,
         endpoint: URL,
         apiKey: String,
-        requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt
+        requestBody: ChatCompletionsRequestBody
     ) -> any ChatCompletionsAPI
 }
 
@@ -26,8 +24,7 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
         model: ChatModel,
         endpoint: URL,
         apiKey: String,
-        requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt
+        requestBody: ChatCompletionsRequestBody
     ) -> any ChatCompletionsStreamAPI {
         if model.id == "com.github.copilot" {
             return BuiltinExtensionChatCompletionsService(
@@ -42,7 +39,6 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
-                prompt: prompt,
                 baseURL: endpoint.absoluteString
             )
         case .openAI, .openAICompatible, .azureOpenAI:
@@ -73,8 +69,7 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
         model: ChatModel,
         endpoint: URL,
         apiKey: String,
-        requestBody: ChatCompletionsRequestBody,
-        prompt: ChatGPTPrompt
+        requestBody: ChatCompletionsRequestBody
     ) -> any ChatCompletionsAPI {
         if model.id == "com.github.copilot" {
             return BuiltinExtensionChatCompletionsService(
@@ -89,7 +84,6 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
                 apiKey: apiKey,
                 model: model,
                 requestBody: requestBody,
-                prompt: prompt,
                 baseURL: endpoint.absoluteString
             )
         case .openAI, .openAICompatible, .azureOpenAI:
@@ -118,7 +112,7 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
 }
 
 struct ChatCompletionsAPIBuilderDependencyKey: DependencyKey {
-    static var liveValue = DefaultChatCompletionsAPIBuilder()
+    static var liveValue: ChatCompletionsAPIBuilder = DefaultChatCompletionsAPIBuilder()
 }
 
 extension DependencyValues {
