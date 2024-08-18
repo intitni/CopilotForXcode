@@ -11,6 +11,7 @@ public enum ChatGPTServiceError: Error, LocalizedError {
     case embeddingModelNotAvailable
     case endpointIncorrect
     case responseInvalid
+    case unauthorized(String)
     case otherError(String)
 
     public var errorDescription: String? {
@@ -23,6 +24,8 @@ public enum ChatGPTServiceError: Error, LocalizedError {
             return "ChatGPT endpoint is incorrect"
         case .responseInvalid:
             return "Response is invalid"
+        case let .unauthorized(reason):
+            return "Unauthorized: \(reason)"
         case let .otherError(content):
             return content
         }

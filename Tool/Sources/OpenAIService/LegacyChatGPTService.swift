@@ -20,7 +20,7 @@ public class LegacyChatGPTService: LegacyChatGPTServiceType {
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
-    var runningTask: Task<Void, Never>?
+    var runningTask: Task<AsyncThrowingStream<String, any Error>, Never>?
 
     public init(
         memory: ChatGPTMemory = AutoManagedChatGPTMemory(
@@ -45,32 +45,36 @@ public class LegacyChatGPTService: LegacyChatGPTServiceType {
         content: String,
         summary: String? = nil
     ) async throws -> AsyncThrowingStream<String, Error> {
-        if !content.isEmpty || summary != nil {
-            let newMessage = ChatMessage(
-                id: uuid().uuidString,
-                role: .user,
-                content: content,
-                name: nil,
-                toolCalls: nil,
-                summary: summary,
-                references: []
-            )
-            await memory.appendMessage(newMessage)
-        }
-
-        let service = ChatGPTService(
-            configuration: configuration,
-            functionProvider: functionProvider
-        )
-
-        let responses = service.send(memory)
-
-        return responses.compactMap { response in
-            switch response {
-            case let .partialText(token): return token
-            default: return nil
+        let task = Task {
+            if !content.isEmpty || summary != nil {
+                let newMessage = ChatMessage(
+                    id: uuid().uuidString,
+                    role: .user,
+                    content: content,
+                    name: nil,
+                    toolCalls: nil,
+                    summary: summary,
+                    references: []
+                )
+                await memory.appendMessage(newMessage)
             }
-        }.eraseToThrowingStream()
+            
+            let service = ChatGPTService(
+                configuration: configuration,
+                functionProvider: functionProvider
+            )
+            
+            let responses = service.send(memory)
+            
+            return responses.compactMap { response in
+                switch response {
+                case let .partialText(token): return token
+                default: return nil
+                }
+            }.eraseToThrowingStream()
+        }
+        runningTask = task
+        return await task.value
     }
 
     /// Send a message and get the reply in return.
@@ -96,6 +100,8 @@ public class LegacyChatGPTService: LegacyChatGPTServiceType {
         return try await service.send(memory).asText()
     }
 
-    public func stopReceivingMessage() {}
+    public func stopReceivingMessage() {
+        runningTask?.cancel()
+    }
 }
 

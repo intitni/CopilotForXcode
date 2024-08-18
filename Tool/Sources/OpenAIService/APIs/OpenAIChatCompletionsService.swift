@@ -253,6 +253,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             }
             guard let data = text.data(using: .utf8)
             else { throw ChatGPTServiceError.responseInvalid }
+            if response.statusCode == 403 {
+                throw ChatGPTServiceError.unauthorized(text)
+            }
             let decoder = JSONDecoder()
             let error = try? decoder.decode(CompletionAPIError.self, from: data)
             throw error ?? ChatGPTServiceError.responseInvalid
