@@ -6,6 +6,59 @@ import Foundation
 import IdentifiedCollections
 import Preferences
 
+public enum ChatGPTServiceError: Error, LocalizedError {
+    case chatModelNotAvailable
+    case embeddingModelNotAvailable
+    case endpointIncorrect
+    case responseInvalid
+    case otherError(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .chatModelNotAvailable:
+            return "Chat model is not available, please add a model in the settings."
+        case .embeddingModelNotAvailable:
+            return "Embedding model is not available, please add a model in the settings."
+        case .endpointIncorrect:
+            return "ChatGPT endpoint is incorrect"
+        case .responseInvalid:
+            return "Response is invalid"
+        case let .otherError(content):
+            return content
+        }
+    }
+}
+
+public struct ChatGPTError: Error, Codable, LocalizedError {
+    public var error: ErrorContent
+    public init(error: ErrorContent) {
+        self.error = error
+    }
+
+    public struct ErrorContent: Codable {
+        public var message: String
+        public var type: String?
+        public var param: String?
+        public var code: String?
+
+        public init(
+            message: String,
+            type: String? = nil,
+            param: String? = nil,
+            code: String? = nil
+        ) {
+            self.message = message
+            self.type = type
+            self.param = param
+            self.code = code
+        }
+    }
+
+    public var errorDescription: String? {
+        error.message
+    }
+}
+
 public enum ChatGPTResponse: Equatable {
     case status(String)
     case partialText(String)
@@ -519,6 +572,12 @@ extension ChatGPTService {
         )
 
         return requestBody
+    }
+    
+    
+    func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
+        guard let remainingTokens else { return nil }
+        return min(maxToken / 2, remainingTokens)
     }
 }
 
