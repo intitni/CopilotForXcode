@@ -20,7 +20,7 @@ struct HostApp {
         var embeddingModelManagement = EmbeddingModelManagement.State()
     }
 
-    enum Action: Equatable {
+    enum Action {
         case appear
         case informExtensionServiceAboutLicenseKeyChange
         case general(General.Action)
