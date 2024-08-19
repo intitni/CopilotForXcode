@@ -4,14 +4,14 @@ import SharedUIComponents
 import SwiftUI
 import XPCShared
 
-#if canImport(ProHostApp)
-import ProHostApp
-#endif
-
 struct SuggestionSettingsView: View {
-    enum Tab {
+    var tabContainer: ExternalTabContainer {
+        ExternalTabContainer.tabContainer(for: "SuggestionSettings")
+    }
+    
+    enum Tab: Hashable {
         case general
-        case suggestionCheatsheet
+        case other(String)
     }
     
     @State var tabSelection: Tab = .general
@@ -20,7 +20,9 @@ struct SuggestionSettingsView: View {
         VStack(spacing: 0) {
             Picker("", selection: $tabSelection) {
                 Text("General").tag(Tab.general)
-                Text("Cheatsheet").tag(Tab.suggestionCheatsheet)
+                ForEach(tabContainer.tabs, id: \.id) { tab in
+                    Text(tab.title).tag(Tab.other(tab.id))
+                }
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -33,8 +35,8 @@ struct SuggestionSettingsView: View {
                     switch tabSelection {
                     case .general:
                         SuggestionSettingsGeneralSectionView()
-                    case .suggestionCheatsheet:
-                        SuggestionSettingsCheatsheetSectionView()
+                    case let .other(id):
+                        tabContainer.tabView(for: id)
                     }
                 }.padding()
             }
