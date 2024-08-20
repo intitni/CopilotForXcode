@@ -343,15 +343,7 @@ struct Chat {
                             }
                         }(),
                         text: message.summary ?? message.content ?? "",
-                        references: message.references.map {
-                            .init(
-                                title: $0.title,
-                                subtitle: $0.subTitle,
-                                uri: $0.uri,
-                                startLine: $0.startLine,
-                                kind: $0.kind
-                            )
-                        }
+                        references: message.references.map(convertReference)
                     ))
 
                     for call in message.toolCalls ?? [] {
@@ -511,5 +503,50 @@ private actor TimedDebounceFunction {
         lastFireTime = Date()
         await block()
     }
+}
+
+private func convertReference(
+    _ reference: ChatMessage.Reference
+) -> DisplayedChatMessage.Reference {
+    .init(
+        title: reference.title,
+        subtitle: {
+            switch reference.kind {
+            case let .symbol(_, uri, _, _):
+                return uri
+            case let .webpage(uri):
+                return uri
+            case let .textFile(uri):
+                return uri
+            case let .other(kind):
+                return kind
+            case .text:
+                return reference.content
+            }
+        }(),
+        uri: {
+            switch reference.kind {
+            case let .symbol(_, uri, _, _):
+                return uri
+            case let .webpage(uri):
+                return uri
+            case let .textFile(uri):
+                return uri
+            case .other:
+                return ""
+            case .text:
+                return ""
+            }
+        }(),
+        startLine: {
+            switch reference.kind {
+            case let .symbol(_, _, startLine, _):
+                return startLine
+            default:
+                return nil
+            }
+        }(),
+        kind: reference.kind
+    )
 }
 

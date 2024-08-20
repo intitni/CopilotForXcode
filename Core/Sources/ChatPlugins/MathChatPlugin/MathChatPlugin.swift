@@ -7,11 +7,11 @@ public actor MathChatPlugin: ChatPlugin {
     public static var command: String { "math" }
     public nonisolated var name: String { "Math" }
 
-    let chatGPTService: any ChatGPTServiceType
+    let chatGPTService: any LegacyChatGPTServiceType
     var isCancelled = false
     weak var delegate: ChatPluginDelegate?
 
-    public init(inside chatGPTService: any ChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }

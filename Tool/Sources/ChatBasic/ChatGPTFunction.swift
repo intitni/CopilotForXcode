@@ -43,14 +43,18 @@ public extension ChatGPTFunction {
         argumentsJsonString: String,
         reportProgress: @escaping ReportProgress
     ) async throws -> Result {
-        do {
-            let arguments = try JSONDecoder()
-                .decode(Arguments.self, from: argumentsJsonString.data(using: .utf8) ?? Data())
-            return try await call(arguments: arguments, reportProgress: reportProgress)
-        } catch {
-            await reportProgress("Error: Failed to decode arguments. \(error.localizedDescription)")
-            throw error
-        }
+        let arguments = try await {
+            do {
+                return try JSONDecoder()
+                    .decode(Arguments.self, from: argumentsJsonString.data(using: .utf8) ?? Data())
+            } catch {
+                await reportProgress(
+                    "Error: Failed to decode arguments. \(error.localizedDescription)"
+                )
+                throw error
+            }
+        }()
+        return try await call(arguments: arguments, reportProgress: reportProgress)
     }
 }
 
@@ -85,7 +89,7 @@ public extension ChatGPTArgumentsCollectingFunction {
         assertionFailure("This function is only used to get a structured output from the bot.")
         return ""
     }
-    
+
     @available(
         *,
         deprecated,

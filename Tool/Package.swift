@@ -346,6 +346,16 @@ let package = Package(
 
         .testTarget(name: "SuggestionProviderTests", dependencies: ["SuggestionProvider"]),
 
+        .target(
+            name: "RAGChatAgent",
+            dependencies: [
+                "ChatBasic",
+                "ChatContextCollector",
+                "OpenAIService",
+                "Preferences",
+            ]
+        ),
+
         // MARK: - GitHub Copilot
 
         .target(

@@ -6,18 +6,12 @@ import Foundation
 import IdentifiedCollections
 import Preferences
 
-public protocol ChatGPTServiceType {
-    var memory: ChatGPTMemory { get set }
-    var configuration: ChatGPTConfiguration { get set }
-    func send(content: String, summary: String?) async throws -> AsyncThrowingStream<String, Error>
-    func stopReceivingMessage() async
-}
-
 public enum ChatGPTServiceError: Error, LocalizedError {
     case chatModelNotAvailable
     case embeddingModelNotAvailable
     case endpointIncorrect
     case responseInvalid
+    case unauthorized(String)
     case otherError(String)
 
     public var errorDescription: String? {
@@ -30,6 +24,8 @@ public enum ChatGPTServiceError: Error, LocalizedError {
             return "ChatGPT endpoint is incorrect"
         case .responseInvalid:
             return "Response is invalid"
+        case let .unauthorized(reason):
+            return "Unauthorized: \(reason)"
         case let .otherError(content):
             return content
         }
@@ -66,199 +62,145 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
     }
 }
 
-typealias ChatCompletionsStreamAPIBuilder = (
-    String,
-    ChatModel,
-    URL,
-    ChatCompletionsRequestBody,
-    ChatGPTPrompt
-) -> any ChatCompletionsStreamAPI
+public enum ChatGPTResponse: Equatable {
+    case status(String)
+    case partialText(String)
+    case toolCalls([ChatMessage.ToolCall])
+}
 
-typealias ChatCompletionsAPIBuilder = (
-    String,
-    ChatModel,
-    URL,
-    ChatCompletionsRequestBody,
-    ChatGPTPrompt
-) -> any ChatCompletionsAPI
+public typealias ChatGPTResponseStream = AsyncThrowingStream<ChatGPTResponse, any Error>
+
+public extension ChatGPTResponseStream {
+    func asText() async throws -> String {
+        var text = ""
+        for try await case let .partialText(response) in self {
+            text += response
+        }
+        return text
+    }
+
+    func asToolCalls() async throws -> [ChatMessage.ToolCall] {
+        var toolCalls = [ChatMessage.ToolCall]()
+        for try await case let .toolCalls(calls) in self {
+            toolCalls.append(contentsOf: calls)
+        }
+        return toolCalls
+    }
+
+    func asArray() async throws -> [ChatGPTResponse] {
+        var responses = [ChatGPTResponse]()
+        for try await response in self {
+            responses.append(response)
+        }
+        return responses
+    }
+}
+
+public protocol ChatGPTServiceType {
+    typealias Response = ChatGPTResponse
+    var configuration: ChatGPTConfiguration { get set }
+    func send(_ memory: ChatGPTMemory) -> ChatGPTResponseStream
+}
 
 public class ChatGPTService: ChatGPTServiceType {
-    public var memory: ChatGPTMemory
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
-    var runningTask: Task<Void, Never>?
-    var buildCompletionStreamAPI: ChatCompletionsStreamAPIBuilder = {
-        apiKey, model, endpoint, requestBody, prompt in
-
-        if model.id == "com.github.copilot" {
-            return BuiltinExtensionChatCompletionsService(
-                extensionIdentifier: model.id,
-                requestBody: requestBody
-            )
-        }
-
-        switch model.format {
-        case .googleAI:
-            return GoogleAIChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                requestBody: requestBody,
-                prompt: prompt,
-                baseURL: endpoint.absoluteString
-            )
-        case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAIChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        case .ollama:
-            return OllamaChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        case .claude:
-            return ClaudeChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        }
-    }
-
-    var buildCompletionAPI: ChatCompletionsAPIBuilder = {
-        apiKey, model, endpoint, requestBody, prompt in
-
-        if model.id == "com.github.copilot" {
-            return BuiltinExtensionChatCompletionsService(
-                extensionIdentifier: model.id,
-                requestBody: requestBody
-            )
-        }
-
-        switch model.format {
-        case .googleAI:
-            return GoogleAIChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                requestBody: requestBody,
-                prompt: prompt,
-                baseURL: endpoint.absoluteString
-            )
-        case .openAI, .openAICompatible, .azureOpenAI:
-            return OpenAIChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        case .ollama:
-            return OllamaChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        case .claude:
-            return ClaudeChatCompletionsService(
-                apiKey: apiKey,
-                model: model,
-                endpoint: endpoint,
-                requestBody: requestBody
-            )
-        }
-    }
-
     public init(
-        memory: ChatGPTMemory = AutoManagedChatGPTMemory(
-            systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration(),
-            functionProvider: NoChatGPTFunctionProvider()
-        ),
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()
     ) {
-        self.memory = memory
         self.configuration = configuration
         self.functionProvider = functionProvider
     }
 
     @Dependency(\.uuid) var uuid
     @Dependency(\.date) var date
+    @Dependency(\.chatCompletionsAPIBuilder) var chatCompletionsAPIBuilder
 
-    /// Send a message and stream the reply.
-    public func send(
-        content: String,
-        summary: String? = nil
-    ) async throws -> AsyncThrowingStream<String, Error> {
-        if !content.isEmpty || summary != nil {
-            let newMessage = ChatMessage(
-                id: uuid().uuidString,
-                role: .user,
-                content: content,
-                name: nil,
-                toolCalls: nil,
-                summary: summary,
-                references: []
-            )
-            await memory.appendMessage(newMessage)
-        }
-
+    /// Send the memory and stream the reply. While it's returning the results in a
+    /// ``ChatGPTResponseStream``, it's also streaming the results to the memory.
+    ///
+    /// If ``ChatGPTConfiguration/runFunctionsAutomatically`` is enabled, the service will handle
+    /// the tool calls inside the function. Otherwise, it will return the tool calls to the caller.
+    public func send(_ memory: ChatGPTMemory) -> ChatGPTResponseStream {
         return Debugger.$id.withValue(.init()) {
-            AsyncThrowingStream<String, Error> { continuation in
+            ChatGPTResponseStream { continuation in
                 let task = Task(priority: .userInitiated) {
                     do {
                         var pendingToolCalls = [ChatMessage.ToolCall]()
                         var sourceMessageId = ""
                         var isInitialCall = true
+
                         loop: while !pendingToolCalls.isEmpty || isInitialCall {
                             try Task.checkCancellation()
                             isInitialCall = false
-                            for toolCall in pendingToolCalls {
-                                if !configuration.runFunctionsAutomatically {
-                                    break loop
-                                }
-                                await runFunctionCall(
-                                    toolCall,
-                                    sourceMessageId: sourceMessageId
-                                )
-                            }
-                            sourceMessageId = uuid()
-                                .uuidString + String(date().timeIntervalSince1970)
-                            let stream = try await sendMemory(proposedId: sourceMessageId)
 
-                            #if DEBUG
-                            var reply = ""
-                            #endif
+                            var functionCallResponses = [ChatCompletionsRequestBody.Message]()
+
+                            if !pendingToolCalls.isEmpty {
+                                if configuration.runFunctionsAutomatically {
+                                    for toolCall in pendingToolCalls {
+                                        for await response in await runFunctionCall(
+                                            toolCall,
+                                            memory: memory,
+                                            sourceMessageId: sourceMessageId
+                                        ) {
+                                            switch response {
+                                            case let .output(output):
+                                                functionCallResponses.append(.init(
+                                                    role: .tool,
+                                                    content: output,
+                                                    toolCallId: toolCall.id
+                                                ))
+                                            case let .status(status):
+                                                continuation.yield(.status(status))
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if !configuration.runFunctionsAutomatically {
+                                        continuation.yield(.toolCalls(pendingToolCalls))
+                                        continuation.finish()
+                                        return
+                                    }
+                                }
+                            }
+
+                            sourceMessageId = uuid().uuidString
+                            let stream = try await sendRequest(
+                                memory: memory,
+                                proposedMessageId: sourceMessageId
+                            )
 
                             for try await content in stream {
                                 try Task.checkCancellation()
                                 switch content {
-                                case let .text(text):
-                                    continuation.yield(text)
-                                    #if DEBUG
-                                    reply.append(text)
-                                    #endif
+                                case let .partialText(text):
+                                    continuation.yield(.partialText(text))
 
-                                case let .toolCall(toolCall):
-                                    await prepareFunctionCall(
-                                        toolCall,
-                                        sourceMessageId: sourceMessageId
-                                    )
+                                case let .partialToolCalls(toolCalls):
+                                    guard configuration.runFunctionsAutomatically else { break }
+                                    for toolCall in toolCalls.keys.sorted() {
+                                        if let toolCallValue = toolCalls[toolCall] {
+                                            for await status in await prepareFunctionCall(
+                                                toolCallValue,
+                                                memory: memory,
+                                                sourceMessageId: sourceMessageId
+                                            ) {
+                                                continuation.yield(.status(status))
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
-                            pendingToolCalls = await memory.history
-                                .last { $0.id == sourceMessageId }?
-                                .toolCalls ?? []
+                            let replyMessage = await memory.history
+                                .last { $0.id == sourceMessageId }
+                            pendingToolCalls = replyMessage?.toolCalls ?? []
 
                             #if DEBUG
-                            Debugger.didReceiveResponse(content: reply)
+                            Debugger.didReceiveResponse(content: replyMessage?.content ?? "")
                             #endif
                         }
 
@@ -276,65 +218,26 @@ public class ChatGPTService: ChatGPTServiceType {
             }
         }
     }
-
-    /// Send a message and get the reply in return.
-    public func sendAndWait(
-        content: String,
-        summary: String? = nil
-    ) async throws -> String? {
-        if !content.isEmpty || summary != nil {
-            let newMessage = ChatMessage(
-                id: uuid().uuidString,
-                role: .user,
-                content: content,
-                summary: summary
-            )
-            await memory.appendMessage(newMessage)
-        }
-        return try await Debugger.$id.withValue(.init()) {
-            let message = try await sendMemoryAndWait()
-            var finalResult = message?.content
-            var toolCalls = message?.toolCalls
-            while let sourceMessageId = message?.id, let calls = toolCalls, !calls.isEmpty {
-                try Task.checkCancellation()
-                if !configuration.runFunctionsAutomatically {
-                    break
-                }
-                toolCalls = nil
-                for call in calls {
-                    await runFunctionCall(call, sourceMessageId: sourceMessageId)
-                }
-                guard let nextMessage = try await sendMemoryAndWait() else { break }
-                finalResult = nextMessage.content
-                toolCalls = nextMessage.toolCalls
-            }
-
-            #if DEBUG
-            Debugger.didReceiveResponse(content: finalResult ?? "N/A")
-            Debugger.didFinish()
-            #endif
-
-            return finalResult
-        }
-    }
-
-    #warning("TODO: Move the cancellation up to the caller.")
-    public func stopReceivingMessage() {
-        runningTask?.cancel()
-        runningTask = nil
-    }
 }
 
 // - MARK: Internal
 
 extension ChatGPTService {
     enum StreamContent {
-        case text(String)
-        case toolCall(ChatMessage.ToolCall)
+        case partialText(String)
+        case partialToolCalls([Int: ChatMessage.ToolCall])
+    }
+
+    enum FunctionCallResult {
+        case status(String)
+        case output(String)
     }
 
     /// Send the memory as prompt to ChatGPT, with stream enabled.
-    func sendMemory(proposedId: String) async throws -> AsyncThrowingStream<StreamContent, Error> {
+    func sendRequest(
+        memory: ChatGPTMemory,
+        proposedMessageId: String
+    ) async throws -> AsyncThrowingStream<StreamContent, Error> {
         let prompt = await memory.generatePrompt()
 
         guard let model = configuration.model else {
@@ -346,12 +249,11 @@ extension ChatGPTService {
 
         let requestBody = createRequestBody(prompt: prompt, model: model, stream: true)
 
-        let api = buildCompletionStreamAPI(
-            configuration.apiKey,
-            model,
-            url,
-            requestBody,
-            prompt
+        let api = chatCompletionsAPIBuilder.buildStreamAPI(
+            model: model,
+            endpoint: url,
+            apiKey: configuration.apiKey,
+            requestBody: requestBody
         )
 
         #if DEBUG
@@ -362,15 +264,13 @@ extension ChatGPTService {
             let task = Task {
                 do {
                     await memory.streamMessage(
-                        id: proposedId,
+                        id: proposedMessageId,
                         role: .assistant,
                         references: prompt.references
                     )
                     let chunks = try await api()
                     for try await chunk in chunks {
-                        if Task.isCancelled {
-                            throw CancellationError()
-                        }
+                        try Task.checkCancellation()
                         guard let delta = chunk.message else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -390,23 +290,19 @@ extension ChatGPTService {
                             }
 
                         await memory.streamMessage(
-                            id: proposedId,
+                            id: proposedMessageId,
                             role: delta.role?.asChatMessageRole,
                             content: delta.content,
                             toolCalls: toolCalls
                         )
 
                         if let toolCalls {
-                            for toolCall in toolCalls.values {
-                                continuation.yield(.toolCall(toolCall))
-                            }
+                            continuation.yield(.partialToolCalls(toolCalls))
                         }
 
                         if let content = delta.content {
-                            continuation.yield(.text(content))
+                            continuation.yield(.partialText(content))
                         }
-
-                        try await Task.sleep(nanoseconds: 3_000_000)
                     }
 
                     continuation.finish()
@@ -416,6 +312,7 @@ extension ChatGPTService {
                     continuation.finish(throwing: error)
                 } catch {
                     await memory.appendMessage(.init(
+                        id: uuid().uuidString,
                         role: .assistant,
                         content: error.localizedDescription
                     ))
@@ -423,7 +320,39 @@ extension ChatGPTService {
                 }
             }
 
-            runningTask = task
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
+    /// When a function call is detected, but arguments are not yet ready, we can call this
+    /// to report the status.
+    func prepareFunctionCall(
+        _ call: ChatMessage.ToolCall,
+        memory: ChatGPTMemory,
+        sourceMessageId: String
+    ) async -> AsyncStream<String> {
+        return .init { continuation in
+            guard let function = functionProvider.function(named: call.function.name) else {
+                continuation.finish()
+                return
+            }
+            let task = Task {
+                await memory.streamToolCallResponse(
+                    id: sourceMessageId,
+                    toolCallId: call.id
+                )
+                await function.prepare { summary in
+                    continuation.yield(summary)
+                    await memory.streamToolCallResponse(
+                        id: sourceMessageId,
+                        toolCallId: call.id,
+                        summary: summary
+                    )
+                }
+                continuation.finish()
+            }
 
             continuation.onTermination = { _ in
                 task.cancel()
@@ -431,137 +360,92 @@ extension ChatGPTService {
         }
     }
 
-    /// Send the memory as prompt to ChatGPT, with stream disabled.
-    func sendMemoryAndWait() async throws -> ChatMessage? {
-        let proposedId = uuid().uuidString + String(date().timeIntervalSince1970)
-        let prompt = await memory.generatePrompt()
-
-        guard let model = configuration.model else {
-            throw ChatGPTServiceError.chatModelNotAvailable
-        }
-        guard let url = URL(string: configuration.endpoint) else {
-            throw ChatGPTServiceError.endpointIncorrect
-        }
-
-        let requestBody = createRequestBody(prompt: prompt, model: model, stream: false)
-
-        let api = buildCompletionAPI(
-            configuration.apiKey,
-            model,
-            url,
-            requestBody,
-            prompt
-        )
-
-        #if DEBUG
-        Debugger.didSendRequestBody(body: requestBody)
-        #endif
-
-        let response = try await api()
-
-        let choice = response.message
-        let message = ChatMessage(
-            id: proposedId,
-            role: {
-                switch choice.role {
-                case .system: .system
-                case .user: .user
-                case .assistant: .assistant
-                case .tool: .user
-                }
-            }(),
-            content: choice.content,
-            name: choice.name,
-            toolCalls: choice.toolCalls?.map {
-                ChatMessage.ToolCall(id: $0.id, type: $0.type, function: .init(
-                    name: $0.function.name,
-                    arguments: $0.function.arguments ?? ""
-                ))
-            },
-            references: prompt.references
-        )
-        await memory.appendMessage(message)
-        return message
-    }
-
-    /// When a function call is detected, but arguments are not yet ready, we can call this
-    /// to insert a message placeholder in memory.
-    func prepareFunctionCall(_ call: ChatMessage.ToolCall, sourceMessageId: String) async {
-        guard let function = functionProvider.function(named: call.function.name) else { return }
-        await memory.streamToolCallResponse(id: sourceMessageId, toolCallId: call.id)
-        await function.prepare { [weak self] summary in
-            await self?.memory.streamToolCallResponse(
-                id: sourceMessageId,
-                toolCallId: call.id,
-                summary: summary
-            )
-        }
-    }
-
-    /// Run a function call from the bot, and insert the result in memory.
+    /// Run a function call from the bot.
     @discardableResult
     func runFunctionCall(
         _ call: ChatMessage.ToolCall,
+        memory: ChatGPTMemory,
         sourceMessageId: String
-    ) async -> String {
+    ) async -> AsyncStream<FunctionCallResult> {
         #if DEBUG
         Debugger.didReceiveFunction(name: call.function.name, arguments: call.function.arguments)
         #endif
 
-        guard let function = functionProvider.function(named: call.function.name) else {
-            return await fallbackFunctionCall(call, sourceMessageId: sourceMessageId)
-        }
+        return .init { continuation in
+            let task = Task {
+                guard let function = functionProvider.function(named: call.function.name) else {
+                    let response = await fallbackFunctionCall(
+                        call,
+                        memory: memory,
+                        sourceMessageId: sourceMessageId
+                    )
+                    continuation.yield(.output(response))
+                    continuation.finish()
+                    return
+                }
 
-        await memory.streamToolCallResponse(
-            id: sourceMessageId,
-            toolCallId: call.id
-        )
-
-        do {
-            // Run the function
-            let result = try await function.call(argumentsJsonString: call.function.arguments) {
-                [weak self] summary in
-                await self?.memory.streamToolCallResponse(
+                await memory.streamToolCallResponse(
                     id: sourceMessageId,
-                    toolCallId: call.id,
-                    summary: summary
+                    toolCallId: call.id
                 )
+
+                do {
+                    // Run the function
+                    let result = try await function
+                        .call(argumentsJsonString: call.function.arguments) { summary in
+                            continuation.yield(.status(summary))
+                            await memory.streamToolCallResponse(
+                                id: sourceMessageId,
+                                toolCallId: call.id,
+                                summary: summary
+                            )
+                        }
+
+                    #if DEBUG
+                    Debugger.didReceiveFunctionResult(result: result.botReadableContent)
+                    #endif
+
+                    await memory.streamToolCallResponse(
+                        id: sourceMessageId,
+                        toolCallId: call.id,
+                        content: result.botReadableContent
+                    )
+
+                    continuation.yield(.output(result.botReadableContent))
+                    continuation.finish()
+                } catch {
+                    // For errors, use the error message as the result.
+                    let content = "Error: \(error.localizedDescription)"
+
+                    #if DEBUG
+                    Debugger.didReceiveFunctionResult(result: content)
+                    #endif
+
+                    await memory.streamToolCallResponse(
+                        id: sourceMessageId,
+                        toolCallId: call.id,
+                        content: content,
+                        summary: content
+                    )
+
+                    continuation.yield(.output(content))
+                    continuation.finish()
+                }
             }
 
-            #if DEBUG
-            Debugger.didReceiveFunctionResult(result: result.botReadableContent)
-            #endif
-
-            await memory.streamToolCallResponse(
-                id: sourceMessageId,
-                toolCallId: call.id,
-                content: result.botReadableContent
-            )
-
-            return result.botReadableContent
-        } catch {
-            // For errors, use the error message as the result.
-            let content = "Error: \(error.localizedDescription)"
-
-            #if DEBUG
-            Debugger.didReceiveFunctionResult(result: content)
-            #endif
-
-            await memory.streamToolCallResponse(
-                id: sourceMessageId,
-                toolCallId: call.id,
-                content: content
-            )
-            return content
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
         }
     }
 
     /// Mock a function call result when the bot is calling a function that is not implemented.
     func fallbackFunctionCall(
         _ call: ChatMessage.ToolCall,
+        memory: ChatGPTMemory,
         sourceMessageId: String
     ) async -> String {
-        let memory = ConversationChatGPTMemory(systemPrompt: {
+        let temporaryMemory = ConversationChatGPTMemory(systemPrompt: {
             if call.function.name == "python" {
                 return """
                 Act like a Python interpreter.
@@ -579,29 +463,29 @@ extension ChatGPTService {
         }())
 
         let service = ChatGPTService(
-            memory: memory,
-            configuration: OverridingChatGPTConfiguration(overriding: configuration, with: .init(
-                temperature: 0
-            )),
+            configuration: OverridingChatGPTConfiguration(
+                overriding: UserPreferenceChatGPTConfiguration(
+                    chatModelKey: \.preferredChatModelIdForUtilities
+                ),
+                with: .init(temperature: 0)
+            ),
             functionProvider: NoChatGPTFunctionProvider()
         )
 
-        let content: String = await {
-            do {
-                return try await service.sendAndWait(content: """
-                \(call.function.arguments)
-                """) ?? "No result."
-            } catch {
-                return "No result."
-            }
-        }()
-        await memory.streamToolCallResponse(
-            id: sourceMessageId,
-            toolCallId: call.id,
-            content: content,
-            summary: "Finished running function."
-        )
-        return content
+        let stream = service.send(temporaryMemory)
+
+        do {
+            let result = try await stream.asText()
+            await memory.streamToolCallResponse(
+                id: sourceMessageId,
+                toolCallId: call.id,
+                content: result,
+                summary: "Finished running function."
+            )
+            return result
+        } catch {
+            return error.localizedDescription
+        }
     }
 
     func createRequestBody(
@@ -692,16 +576,11 @@ extension ChatGPTService {
 
         return requestBody
     }
-}
-
-extension ChatGPTService {
-    func changeBuildCompletionStreamAPI(_ builder: @escaping ChatCompletionsStreamAPIBuilder) {
-        buildCompletionStreamAPI = builder
+    
+    
+    func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
+        guard let remainingTokens else { return nil }
+        return min(maxToken / 2, remainingTokens)
     }
-}
-
-func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
-    guard let remainingTokens else { return nil }
-    return min(maxToken / 2, remainingTokens)
 }
 

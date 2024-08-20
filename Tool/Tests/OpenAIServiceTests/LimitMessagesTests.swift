@@ -26,7 +26,7 @@ final class AutoManagedChatGPTMemoryLimitTests: XCTestCase {
         ])
 
 //        XCTAssertEqual(remainingTokens, 10000 - 12 - 6)
-        let history = await memory.history
+//        let history = await memory.history
         
 // token count caching is removed
 //        XCTAssertEqual(history.map(\.tokensCount), [

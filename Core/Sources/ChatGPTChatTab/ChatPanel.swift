@@ -504,7 +504,7 @@ struct ChatPanel_Preview: PreviewProvider {
                     subtitle: "Hi Hi Hi Hi",
                     uri: "https://google.com",
                     startLine: nil,
-                    kind: .class
+                    kind: .symbol(.class, uri: "https://google.com", startLine: nil, endLine: nil)
                 ),
             ]
         ),
