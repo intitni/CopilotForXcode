@@ -63,6 +63,8 @@ final class CodeiumLanguageServer {
 
         if isEnterpriseMode {
             process.arguments?.append("--enterprise_mode")
+            process.arguments?.append("--portal_url")
+            process.arguments?.append(UserDefaults.shared.value(for: \.codeiumPortalUrl))
         }
 
         let indexEnabled = UserDefaults.shared.value(for: \.codeiumIndexEnabled)
