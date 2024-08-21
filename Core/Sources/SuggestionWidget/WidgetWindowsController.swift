@@ -8,6 +8,10 @@ import Foundation
 import SwiftUI
 import XcodeInspector
 
+#warning("""
+TODO: This part is too messy, consider breaking it up, let each window handle their own things
+""")
+
 actor WidgetWindowsController: NSObject {
     let userDefaultsObservers = WidgetUserDefaultsObservers()
     var xcodeInspector: XcodeInspector { .shared }
