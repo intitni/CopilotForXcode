@@ -419,7 +419,8 @@ extension WidgetWindowsController {
                         0
                     } else if previousAppIsXcode {
                         if windows.chatPanelWindow.isFullscreen,
-                           windows.chatPanelWindow.isOnActiveSpace {
+                           windows.chatPanelWindow.isOnActiveSpace
+                        {
                             0
                         } else {
                             1
@@ -513,7 +514,7 @@ extension WidgetWindowsController {
             )
 
             updateWindowLocationTask = Task {
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                try await Task.sleep(nanoseconds: UInt64(delay * 500_000_000))
                 try Task.checkCancellation()
                 await update()
             }
@@ -580,9 +581,8 @@ extension WidgetWindowsController {
     func handleXcodeFullscreenChange() async {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
-        let isFullscreen = if let xcode = activeXcode?.appElement,
-                              let xcodeWindow = xcode.focusedWindow
-        {
+        let xcode = activeXcode?.appElement
+        let isFullscreen = if let xcode, let xcodeWindow = xcode.focusedWindow {
             xcodeWindow.isFullScreen && xcode.isFrontmost
         } else {
             false
@@ -598,7 +598,7 @@ extension WidgetWindowsController {
             $0.send(.didChangeActiveSpace(fullscreen: isFullscreen))
         }
 
-        if windows.fullscreenDetector.isOnActiveSpace, isFullscreen {
+        if windows.fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
             windows.orderFront()
         }
     }
@@ -819,7 +819,9 @@ public final class WidgetWindows {
         toastWindow.orderFrontRegardless()
         sharedPanelWindow.orderFrontRegardless()
         suggestionPanelWindow.orderFrontRegardless()
-        if chatPanelWindow.level.rawValue > NSWindow.Level.normal.rawValue {
+        if chatPanelWindow.level.rawValue > NSWindow.Level.normal.rawValue,
+           store.withState({ !$0.chatPanelState.isDetached })
+        {
             chatPanelWindow.orderFrontRegardless()
         }
     }
