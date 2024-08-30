@@ -74,10 +74,7 @@ struct CodeBlockSuggestionPanel: View {
                     .monospacedDigit()
 
                     Button(action: {
-                        Task {
-                            await commandHandler.presentNextSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
+                        Task { await commandHandler.presentNextSuggestion() }
                     }) {
                         Image(systemName: "chevron.right")
                     }.buttonStyle(.plain)
@@ -85,10 +82,7 @@ struct CodeBlockSuggestionPanel: View {
                     Spacer()
 
                     Button(action: {
-                        Task {
-                            await commandHandler.dismissSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
+                        Task { await commandHandler.dismissSuggestion() }
                     }) {
                         Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
                     }.buttonStyle(.plain)
@@ -126,10 +120,7 @@ struct CodeBlockSuggestionPanel: View {
             WithPerceptionTracking {
                 HStack {
                     Button(action: {
-                        Task {
-                            await commandHandler.presentPreviousSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
+                        Task { await commandHandler.presentPreviousSuggestion() }
                     }) {
                         Image(systemName: "chevron.left")
                     }.buttonStyle(.plain)
@@ -140,10 +131,7 @@ struct CodeBlockSuggestionPanel: View {
                     .monospacedDigit()
 
                     Button(action: {
-                        Task {
-                            await commandHandler.presentNextSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
+                        Task { await commandHandler.presentNextSuggestion() }
                     }) {
                         Image(systemName: "chevron.right")
                     }.buttonStyle(.plain)
