@@ -220,7 +220,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
 
     func test_selecting_a_static_function_from_an_actor_the_scope_should_be_the_actor() {
         let code = """
-        @gloablActor
+        @globalActor
         public actor A {
             static func f() {}
             static func g() {}
@@ -240,7 +240,7 @@ final class SwiftFocusedCodeFinder_Selection_Tests: XCTestCase {
         XCTAssertEqual(context, .init(
             scope: .scope(signature: [
                 .init(
-                    signature: "@gloablActor public actor A",
+                    signature: "@globalActor public actor A",
                     name: "A",
                     range: .init(startPair: (0, 0), endPair: (7, 1))
                 ),

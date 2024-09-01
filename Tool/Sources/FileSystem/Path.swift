@@ -898,7 +898,7 @@ extension AbsolutePath {
     public func relative(to base: AbsolutePath) -> RelativePath {
         let result: RelativePath
         // Split the two paths into their components.
-        // FIXME: The is needs to be optimized to avoid unncessary copying.
+        // FIXME: The is needs to be optimized to avoid unnecessary copying.
         let pathComps = self.components
         let baseComps = base.components
 

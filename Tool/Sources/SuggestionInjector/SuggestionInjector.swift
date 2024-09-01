@@ -216,12 +216,12 @@ public struct SuggestionInjector {
 
 public struct SuggestionAnalyzer {
     struct Result {
-        enum InsertPostion {
+        enum InsertPosition {
             case currentLine
             case nextLine
         }
 
-        var insertPosition: InsertPostion
+        var insertPosition: InsertPosition
         var commonPrefix: String?
     }
 

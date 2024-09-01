@@ -143,7 +143,7 @@ extension ByteString: ByteStreamable {
     }
 }
 
-/// StringLiteralConvertable conformance for a ByteString.
+/// StringLiteralConvertible conformance for a ByteString.
 extension ByteString: ExpressibleByStringLiteral {
     public typealias UnicodeScalarLiteralType = StringLiteralType
     public typealias ExtendedGraphemeClusterLiteralType = StringLiteralType
