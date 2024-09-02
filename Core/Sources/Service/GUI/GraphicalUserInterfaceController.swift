@@ -298,18 +298,7 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
-            dependencies.promptToCodeAcceptHandler = { promptToCode in
-                Task {
-                    let handler = PseudoCommandHandler()
-                    await handler.acceptPromptToCode()
-                    if !promptToCode.isContinuous {
-                        NSWorkspace.activatePreviousActiveXcode()
-                    } else {
-                        NSWorkspace.activateThisApp()
-                    }
-                }
-            }
-
+        
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
                 await chatTabPool.restore($0)
