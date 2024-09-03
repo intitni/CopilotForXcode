@@ -3,11 +3,11 @@ import Preferences
 import SwiftUI
 
 @Reducer
-public struct SharedPanelFeature {
+public struct SharedPanel {
     public struct Content: Equatable {
         public var promptToCodeGroup = PromptToCodeGroup.State()
         var suggestion: PresentingCodeSuggestion?
-        public var promptToCode: PromptToCode.State? { promptToCodeGroup.activePromptToCode }
+        public var promptToCode: PromptToCodePanel.State? { promptToCodeGroup.activePromptToCode }
         var error: String?
     }
 

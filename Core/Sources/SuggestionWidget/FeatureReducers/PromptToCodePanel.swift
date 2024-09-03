@@ -7,7 +7,7 @@ import PromptToCodeService
 import SuggestionBasic
 
 @Reducer
-public struct PromptToCode {
+public struct PromptToCodePanel {
     @ObservableState
     public struct State: Equatable, Identifiable {
         public indirect enum HistoryNode: Equatable {

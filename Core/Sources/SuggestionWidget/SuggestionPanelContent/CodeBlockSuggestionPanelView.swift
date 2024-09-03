@@ -38,7 +38,7 @@ public struct PresentingCodeSuggestion: Equatable {
     }
 }
 
-struct CodeBlockSuggestionPanel: View {
+struct CodeBlockSuggestionPanelView: View {
     let suggestion: PresentingCodeSuggestion
     @Environment(\.textCursorTracker) var textCursorTracker
     @Environment(\.colorScheme) var colorScheme
@@ -320,7 +320,7 @@ struct CodeBlockSuggestionPanel: View {
 // MARK: - Previews
 
 #Preview("Code Block Suggestion Panel") {
-    CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
+    CodeBlockSuggestionPanelView(suggestion: PresentingCodeSuggestion(
         code: """
         LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -350,7 +350,7 @@ struct CodeBlockSuggestionPanel: View {
 }
 
 #Preview("Code Block Suggestion Panel With Descriptions") {
-    CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
+    CodeBlockSuggestionPanelView(suggestion: PresentingCodeSuggestion(
         code: """
         LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -384,7 +384,7 @@ struct CodeBlockSuggestionPanel: View {
 }
 
 #Preview("Code Block Suggestion Panel Compact Mode") {
-    CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
+    CodeBlockSuggestionPanelView(suggestion: PresentingCodeSuggestion(
         code: """
         LazyVGrid(columns: [GridItem(.fixed(30)), GridItem(.flexible())]) {
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in // lkjaskldjalksjdlkasjdlkajslkdjas
@@ -419,7 +419,7 @@ struct CodeBlockSuggestionPanel: View {
 }
 
 #Preview("Code Block Suggestion Panel Highlight ObjC") {
-    CodeBlockSuggestionPanel(suggestion: PresentingCodeSuggestion(
+    CodeBlockSuggestionPanelView(suggestion: PresentingCodeSuggestion(
         code: """
         - (void)addSubview:(UIView *)view {
             [self addSubview:view];

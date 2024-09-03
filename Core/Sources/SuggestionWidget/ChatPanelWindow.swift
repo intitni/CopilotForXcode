@@ -41,7 +41,7 @@ final class ChatPanelWindow: WidgetWindow {
     }
 
     init(
-        store: StoreOf<ChatPanelFeature>,
+        store: StoreOf<ChatPanel>,
         chatTabPool: ChatTabPool,
         minimizeWindow: @escaping () -> Void
     ) {

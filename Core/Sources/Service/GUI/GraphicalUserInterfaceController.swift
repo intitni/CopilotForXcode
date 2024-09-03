@@ -22,9 +22,9 @@ import ChatTabPersistent
 struct GUI {
     @ObservableState
     struct State: Equatable {
-        var suggestionWidgetState = WidgetFeature.State()
+        var suggestionWidgetState = Widget.State()
 
-        var chatTabGroup: ChatPanelFeature.ChatTabGroup {
+        var chatTabGroup: ChatPanel.ChatTabGroup {
             get { suggestionWidgetState.chatPanelState.chatTabGroup }
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
@@ -64,7 +64,7 @@ struct GUI {
         case sendCustomCommandToActiveChat(CustomCommand)
         case toggleWidgetsHotkeyPressed
 
-        case suggestionWidget(WidgetFeature.Action)
+        case suggestionWidget(Widget.Action)
 
         static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
             .suggestionWidget(.panel(.sharedPanel(.promptToCodeGroup(action))))

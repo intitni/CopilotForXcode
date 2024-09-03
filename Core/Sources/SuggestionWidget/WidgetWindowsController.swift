@@ -17,7 +17,7 @@ actor WidgetWindowsController: NSObject {
     var xcodeInspector: XcodeInspector { .shared }
 
     let windows: WidgetWindows
-    let store: StoreOf<WidgetFeature>
+    let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
 
     var currentApplicationProcessIdentifier: pid_t?
@@ -42,7 +42,7 @@ actor WidgetWindowsController: NSObject {
         updateWindowStateTask?.cancel()
     }
 
-    init(store: StoreOf<WidgetFeature>, chatTabPool: ChatTabPool) {
+    init(store: StoreOf<Widget>, chatTabPool: ChatTabPool) {
         self.store = store
         self.chatTabPool = chatTabPool
         windows = .init(store: store, chatTabPool: chatTabPool)
@@ -50,7 +50,7 @@ actor WidgetWindowsController: NSObject {
         windows.controller = self
     }
 
-    @MainActor func send(_ action: WidgetFeature.Action) {
+    @MainActor func send(_ action: Widget.Action) {
         store.send(action)
     }
 
@@ -655,7 +655,7 @@ extension WidgetWindowsController: NSWindowDelegate {
 // MARK: - Windows
 
 public final class WidgetWindows {
-    let store: StoreOf<WidgetFeature>
+    let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
     weak var controller: WidgetWindowsController?
 
@@ -809,7 +809,7 @@ public final class WidgetWindows {
     }()
 
     init(
-        store: StoreOf<WidgetFeature>,
+        store: StoreOf<Widget>,
         chatTabPool: ChatTabPool
     ) {
         self.store = store

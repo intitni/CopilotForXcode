@@ -4,8 +4,8 @@ import SharedUIComponents
 import SuggestionBasic
 import SwiftUI
 
-struct PromptToCodePanel: View {
-    let store: StoreOf<PromptToCode>
+struct PromptToCodePanelView: View {
+    let store: StoreOf<PromptToCodePanel>
 
     var body: some View {
         WithPerceptionTracking {
@@ -28,9 +28,9 @@ struct PromptToCodePanel: View {
     }
 }
 
-extension PromptToCodePanel {
+extension PromptToCodePanelView {
     struct TopBar: View {
-        let store: StoreOf<PromptToCode>
+        let store: StoreOf<PromptToCodePanel>
 
         var body: some View {
             HStack {
@@ -42,7 +42,7 @@ extension PromptToCodePanel {
         }
 
         struct SelectionRangeButton: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             var body: some View {
                 WithPerceptionTracking {
                     Button(action: {
@@ -101,7 +101,7 @@ extension PromptToCodePanel {
         }
 
         struct CopyCodeButton: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             var body: some View {
                 WithPerceptionTracking {
                     if !store.code.isEmpty {
@@ -115,7 +115,7 @@ extension PromptToCodePanel {
     }
 
     struct ActionBar: View {
-        let store: StoreOf<PromptToCode>
+        let store: StoreOf<PromptToCodePanel>
 
         var body: some View {
             HStack {
@@ -125,7 +125,7 @@ extension PromptToCodePanel {
         }
 
         struct StopRespondingButton: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
 
             var body: some View {
                 WithPerceptionTracking {
@@ -154,7 +154,7 @@ extension PromptToCodePanel {
         }
 
         struct ActionButtons: View {
-            @Perception.Bindable var store: StoreOf<PromptToCode>
+            @Perception.Bindable var store: StoreOf<PromptToCodePanel>
 
             var body: some View {
                 WithPerceptionTracking {
@@ -205,7 +205,7 @@ extension PromptToCodePanel {
     }
 
     struct Content: View {
-        let store: StoreOf<PromptToCode>
+        let store: StoreOf<PromptToCodePanel>
         @Environment(\.colorScheme) var colorScheme
         @AppStorage(\.syncPromptToCodeHighlightTheme) var syncHighlightTheme
         @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
@@ -255,7 +255,7 @@ extension PromptToCodePanel {
         }
 
         struct ErrorMessage: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
 
             var body: some View {
                 WithPerceptionTracking {
@@ -280,7 +280,7 @@ extension PromptToCodePanel {
         }
 
         struct DescriptionContent: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             let codeForegroundColor: Color?
 
             var body: some View {
@@ -301,7 +301,7 @@ extension PromptToCodePanel {
         }
 
         struct CodeContent: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             let codeForegroundColor: Color?
 
             @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
@@ -345,7 +345,7 @@ extension PromptToCodePanel {
             }
 
             struct CodeBlockInContent: View {
-                let store: StoreOf<PromptToCode>
+                let store: StoreOf<PromptToCodePanel>
                 let codeForegroundColor: Color?
 
                 @Environment(\.colorScheme) var colorScheme
@@ -377,8 +377,8 @@ extension PromptToCodePanel {
     }
 
     struct Toolbar: View {
-        let store: StoreOf<PromptToCode>
-        @FocusState var focusField: PromptToCode.State.FocusField?
+        let store: StoreOf<PromptToCodePanel>
+        @FocusState var focusField: PromptToCodePanel.State.FocusField?
 
         struct RevertButtonState: Equatable {
             var isResponding: Bool
@@ -420,7 +420,7 @@ extension PromptToCodePanel {
         }
 
         struct RevertButton: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             var body: some View {
                 WithPerceptionTracking {
                     Button(action: {
@@ -445,8 +445,8 @@ extension PromptToCodePanel {
         }
 
         struct InputField: View {
-            @Perception.Bindable var store: StoreOf<PromptToCode>
-            var focusField: FocusState<PromptToCode.State.FocusField?>.Binding
+            @Perception.Bindable var store: StoreOf<PromptToCodePanel>
+            var focusField: FocusState<PromptToCodePanel.State.FocusField?>.Binding
 
             var body: some View {
                 WithPerceptionTracking {
@@ -459,7 +459,7 @@ extension PromptToCodePanel {
                     )
                     .opacity(store.isResponding ? 0.5 : 1)
                     .disabled(store.isResponding)
-                    .focused(focusField, equals: PromptToCode.State.FocusField.textField)
+                    .focused(focusField, equals: PromptToCodePanel.State.FocusField.textField)
                     .bind($store.focusedField, to: focusField)
                 }
                 .padding(8)
@@ -468,7 +468,7 @@ extension PromptToCodePanel {
         }
 
         struct SendButton: View {
-            let store: StoreOf<PromptToCode>
+            let store: StoreOf<PromptToCodePanel>
             var body: some View {
                 WithPerceptionTracking {
                     Button(action: {
@@ -489,7 +489,7 @@ extension PromptToCodePanel {
 // MARK: - Previews
 
 #Preview("Default") {
-    PromptToCodePanel(store: .init(initialState: .init(
+    PromptToCodePanelView(store: .init(initialState: .init(
         code: """
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
             Text(viewModel.suggestion[index])
@@ -513,12 +513,12 @@ extension PromptToCodePanel {
             start: .init(line: 8, character: 0),
             end: .init(line: 12, character: 2)
         )
-    ), reducer: { PromptToCode() }))
+    ), reducer: { PromptToCodePanel() }))
         .frame(width: 450, height: 400)
 }
 
 #Preview("Super Long File Name") {
-    PromptToCodePanel(store: .init(initialState: .init(
+    PromptToCodePanelView(store: .init(initialState: .init(
         code: """
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
             Text(viewModel.suggestion[index])
@@ -544,12 +544,12 @@ extension PromptToCodePanel {
             start: .init(line: 8, character: 0),
             end: .init(line: 12, character: 2)
         )
-    ), reducer: { PromptToCode() }))
+    ), reducer: { PromptToCodePanel() }))
         .frame(width: 450, height: 400)
 }
 
 #Preview("Error Detached") {
-    PromptToCodePanel(store: .init(initialState: .init(
+    PromptToCodePanelView(store: .init(initialState: .init(
         code: """
         ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
             Text(viewModel.suggestion[index])
@@ -574,7 +574,7 @@ extension PromptToCodePanel {
             start: .init(line: 8, character: 0),
             end: .init(line: 12, character: 2)
         )
-    ), reducer: { PromptToCode() }))
+    ), reducer: { PromptToCodePanel() }))
         .frame(width: 450, height: 400)
 }
 

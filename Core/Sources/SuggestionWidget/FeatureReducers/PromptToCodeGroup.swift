@@ -8,10 +8,10 @@ import XcodeInspector
 public struct PromptToCodeGroup {
     @ObservableState
     public struct State: Equatable {
-        public var promptToCodes: IdentifiedArrayOf<PromptToCode.State> = []
-        public var activeDocumentURL: PromptToCode.State.ID? = XcodeInspector.shared
+        public var promptToCodes: IdentifiedArrayOf<PromptToCodePanel.State> = []
+        public var activeDocumentURL: PromptToCodePanel.State.ID? = XcodeInspector.shared
             .realtimeActiveDocumentURL
-        public var activePromptToCode: PromptToCode.State? {
+        public var activePromptToCode: PromptToCodePanel.State? {
             get {
                 if let detached = promptToCodes.first(where: { !$0.isAttachedToSelectionRange }) {
                     return detached
@@ -80,12 +80,12 @@ public struct PromptToCodeGroup {
         /// Activate the prompt to code if it exists or create it if it doesn't
         case activateOrCreatePromptToCode(PromptToCodeInitialState)
         case createPromptToCode(PromptToCodeInitialState)
-        case updatePromptToCodeRange(id: PromptToCode.State.ID, range: CursorRange)
-        case discardAcceptedPromptToCodeIfNotContinuous(id: PromptToCode.State.ID)
+        case updatePromptToCodeRange(id: PromptToCodePanel.State.ID, range: CursorRange)
+        case discardAcceptedPromptToCodeIfNotContinuous(id: PromptToCodePanel.State.ID)
         case updateActivePromptToCode(documentURL: URL)
         case discardExpiredPromptToCode(documentURLs: [URL])
-        case promptToCode(PromptToCode.State.ID, PromptToCode.Action)
-        case activePromptToCode(PromptToCode.Action)
+        case promptToCode(PromptToCodePanel.State.ID, PromptToCodePanel.Action)
+        case activePromptToCode(PromptToCodePanel.Action)
     }
 
     @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
@@ -104,7 +104,7 @@ public struct PromptToCodeGroup {
                     await send(.createPromptToCode(s))
                 }
             case let .createPromptToCode(s):
-                let newPromptToCode = PromptToCode.State(
+                let newPromptToCode = PromptToCodePanel.State(
                     code: s.code,
                     prompt: s.defaultPrompt,
                     language: s.language,
@@ -127,7 +127,7 @@ public struct PromptToCodeGroup {
                         await send(.promptToCode(newPromptToCode.id, .modifyCodeButtonTapped))
                     }
                 }.cancellable(
-                    id: PromptToCode.CancellationKey.modifyCode(newPromptToCode.id),
+                    id: PromptToCodePanel.CancellationKey.modifyCode(newPromptToCode.id),
                     cancelInFlight: true
                 )
 
@@ -159,11 +159,11 @@ public struct PromptToCodeGroup {
             }
         }
         .ifLet(\.activePromptToCode, action: \.activePromptToCode) {
-            PromptToCode()
+            PromptToCodePanel()
                 .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         }
         .forEach(\.promptToCodes, action: /Action.promptToCode, element: {
-            PromptToCode()
+            PromptToCodePanel()
                 .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         })
         

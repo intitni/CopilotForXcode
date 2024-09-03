@@ -19,7 +19,7 @@ extension View {
 }
 
 struct SharedPanelView: View {
-    var store: StoreOf<SharedPanelFeature>
+    var store: StoreOf<SharedPanel>
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -62,7 +62,7 @@ struct SharedPanelView: View {
     }
 
     struct DynamicContent: View {
-        let store: StoreOf<SharedPanelFeature>
+        let store: StoreOf<SharedPanel>
 
         @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
@@ -82,7 +82,7 @@ struct SharedPanelView: View {
 
         @ViewBuilder
         func error(_ error: String) -> some View {
-            ErrorPanel(description: error) {
+            ErrorPanelView(description: error) {
                 store.send(
                     .errorMessageCloseButtonTapped,
                     animation: .easeInOut(duration: 0.2)
@@ -96,7 +96,7 @@ struct SharedPanelView: View {
                 state: \.content.promptToCodeGroup.activePromptToCode,
                 action: \.promptToCodeGroup.activePromptToCode
             ) {
-                PromptToCodePanel(store: store)
+                PromptToCodePanelView(store: store)
             }
         }
 
@@ -106,7 +106,7 @@ struct SharedPanelView: View {
             case .nearbyTextCursor:
                 EmptyView()
             case .floatingWidget:
-                CodeBlockSuggestionPanel(suggestion: suggestion)
+                CodeBlockSuggestionPanelView(suggestion: suggestion)
             }
         }
     }
@@ -143,7 +143,7 @@ struct SharedPanelView_Error_Preview: PreviewProvider {
                 colorScheme: .light,
                 isPanelDisplayed: true
             ),
-            reducer: { SharedPanelFeature() }
+            reducer: { SharedPanel() }
         ))
         .frame(width: 450, height: 200)
     }
@@ -171,7 +171,7 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                 colorScheme: .dark,
                 isPanelDisplayed: true
             ),
-            reducer: { SharedPanelFeature() }
+            reducer: { SharedPanel() }
         ))
         .frame(width: 450, height: 200)
         .background {
