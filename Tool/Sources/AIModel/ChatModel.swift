@@ -38,9 +38,12 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public struct OpenAIInfo: Codable, Equatable {
             @FallbackDecoding<EmptyString>
             public var organizationID: String
+            @FallbackDecoding<EmptyString>
+            public var projectID: String
 
-            public init(organizationID: String = "") {
+            public init(organizationID: String = "", projectID: String = "") {
                 self.organizationID = organizationID
+                self.projectID = projectID
             }
         }
         
