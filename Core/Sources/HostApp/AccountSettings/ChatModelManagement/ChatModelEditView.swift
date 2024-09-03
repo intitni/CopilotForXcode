@@ -243,6 +243,14 @@ struct ChatModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)
+                
+                TextField(text: $store.openAIOrganizationID, prompt: Text("Optional")) {
+                    Text("Organization ID")
+                }
+
+                TextField(text: $store.openAIProjectID, prompt: Text("Optional")) {
+                    Text("Project ID")
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
@@ -308,7 +316,7 @@ struct ChatModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)
-                
+
                 Toggle(isOn: $store.enforceMessageOrder) {
                     Text("Enforce message order to be user/assistant alternated")
                 }
@@ -387,9 +395,9 @@ struct ChatModelEditView: View {
                 BaseURLTextField(store: store, prompt: Text("https://api.anthropic.com")) {
                     Text("/v1/messages")
                 }
-                
+
                 ApiKeyNamePicker(store: store)
-                
+
                 TextField("Model Name", text: $store.modelName)
                     .overlay(alignment: .trailing) {
                         Picker(
@@ -411,9 +419,9 @@ struct ChatModelEditView: View {
                         )
                         .frame(width: 20)
                     }
-                
+
                 MaxTokensTextField(store: store)
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://anthropic.com](https://anthropic.com)."

@@ -350,6 +350,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                         forHTTPHeaderField: "OpenAI-Organization"
                     )
                 }
+
+                if !model.info.openAIInfo.projectID.isEmpty {
+                    request.setValue(
+                        model.info.openAIInfo.projectID,
+                        forHTTPHeaderField: "OpenAI-Project"
+                    )
+                }
+                
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
