@@ -4,7 +4,7 @@ import SwiftUI
 
 @Reducer
 public struct SharedPanel {
-    public struct Content: Equatable {
+    public struct Content {
         public var promptToCodeGroup = PromptToCodeGroup.State()
         var suggestion: PresentingCodeSuggestion?
         public var promptToCode: PromptToCodePanel.State? { promptToCodeGroup.activePromptToCode }
@@ -12,7 +12,7 @@ public struct SharedPanel {
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State {
         var content: Content = .init()
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
@@ -33,7 +33,7 @@ public struct SharedPanel {
         }
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case errorMessageCloseButtonTapped
         case promptToCodeGroup(PromptToCodeGroup.Action)
     }

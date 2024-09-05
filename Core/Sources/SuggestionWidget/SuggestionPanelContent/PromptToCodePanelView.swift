@@ -1,5 +1,7 @@
 import ComposableArchitecture
 import MarkdownUI
+import PromptToCodeBasic
+import PromptToCodeCustomization
 import SharedUIComponents
 import SuggestionBasic
 import SwiftUI
@@ -9,18 +11,23 @@ struct PromptToCodePanelView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            VStack(spacing: 0) {
-                TopBar(store: store)
+            PromptToCodeCustomization.CustomizedUI(
+                state: store.$promptToCodeState,
+                isInputFieldFocused: .constant(true)
+            ) { _ in
+                VStack(spacing: 0) {
+                    TopBar(store: store)
 
-                Content(store: store)
-                    .overlay(alignment: .bottom) {
-                        ActionBar(store: store)
-                            .padding(.bottom, 8)
-                    }
+                    Content(store: store)
+                        .overlay(alignment: .bottom) {
+                            ActionBar(store: store)
+                                .padding(.bottom, 8)
+                        }
 
-                Divider()
+                    Divider()
 
-                Toolbar(store: store)
+                    Toolbar(store: store)
+                }
             }
             .background(.ultraThickMaterial)
             .xcodeStyleFrame()
@@ -33,12 +40,39 @@ extension PromptToCodePanelView {
         let store: StoreOf<PromptToCodePanel>
 
         var body: some View {
-            HStack {
-                SelectionRangeButton(store: store)
-                Spacer()
-                CopyCodeButton(store: store)
+            WithPerceptionTracking {
+                VStack(spacing: 0) {
+                    HStack {
+                        SelectionRangeButton(store: store)
+                        Spacer()
+                    }
+                    .padding(2)
+
+                    Divider()
+
+                    if let previousStep = store.promptToCodeState.history.last {
+                        Button(action: {
+                            store.send(.revertButtonTapped)
+                        }, label: {
+                            HStack {
+                                Text(Image(systemName: "arrow.uturn.backward"))
+                                Text(previousStep.instruction)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        })
+                        .buttonStyle(.plain)
+                        .disabled(store.promptToCodeState.isGenerating)
+                        .padding(4)
+
+                        Divider()
+                    }
+                }
+                .animation(.linear(duration: 0.1), value: store.promptToCodeState.history.count)
             }
-            .padding(2)
         }
 
         struct SelectionRangeButton: View {
@@ -49,8 +83,7 @@ extension PromptToCodePanelView {
                         store.send(.selectionRangeToggleTapped, animation: .linear(duration: 0.1))
                     }) {
                         let attachedToFilename = store.filename
-                        let isAttached = store.isAttachedToSelectionRange
-                        let selectionRange = store.selectionRange
+                        let isAttached = store.promptToCodeState.isAttachedToTarget
                         let color: Color = isAttached ? .accentColor : .secondary.opacity(0.6)
                         HStack(spacing: 4) {
                             Image(
@@ -74,9 +107,6 @@ extension PromptToCodePanelView {
                                     Text(attachedToFilename)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
-                                    if let range = selectionRange {
-                                        Text(range.description)
-                                    }
                                 }.foregroundColor(.primary)
                             } else {
                                 Text("current selection").foregroundColor(.secondary)
@@ -99,19 +129,6 @@ extension PromptToCodePanelView {
                 }
             }
         }
-
-        struct CopyCodeButton: View {
-            let store: StoreOf<PromptToCodePanel>
-            var body: some View {
-                WithPerceptionTracking {
-                    if !store.code.isEmpty {
-                        CopyButton {
-                            store.send(.copyCodeButtonTapped)
-                        }
-                    }
-                }
-            }
-        }
     }
 
     struct ActionBar: View {
@@ -129,7 +146,7 @@ extension PromptToCodePanelView {
 
             var body: some View {
                 WithPerceptionTracking {
-                    if store.isResponding {
+                    if store.promptToCodeState.isGenerating {
                         Button(action: {
                             store.send(.stopRespondingButtonTapped)
                         }) {
@@ -158,14 +175,17 @@ extension PromptToCodePanelView {
 
             var body: some View {
                 WithPerceptionTracking {
-                    let isResponding = store.isResponding
-                    let isCodeEmpty = store.code.isEmpty
-                    let isDescriptionEmpty = store.description.isEmpty
+                    let isResponding = store.promptToCodeState.isGenerating
+                    let isCodeEmpty = store.promptToCodeState.snippets
+                        .allSatisfy(\.modifiedCode.isEmpty)
+                    let isDescriptionEmpty = store.promptToCodeState.snippets
+                        .allSatisfy(\.description.isEmpty)
                     var isRespondingButCodeIsReady: Bool {
                         isResponding
                             && !isCodeEmpty
                             && !isDescriptionEmpty
                     }
+                    let isAttached = store.promptToCodeState.isAttachedToTarget
                     if !isResponding || isRespondingButCodeIsReady {
                         HStack {
                             Toggle("Continuous Mode", isOn: $store.isContinuous)
@@ -183,8 +203,13 @@ extension PromptToCodePanelView {
                                 Button(action: {
                                     store.send(.acceptButtonTapped)
                                 }) {
-                                    Text("Accept(⌘ + ⏎)")
+                                    if isAttached {
+                                        Text("Accept(⌘ + ⏎)")
+                                    } else {
+                                        Text("Replace(⌘ + ⏎)")
+                                    }
                                 }
+                                
                                 .buttonStyle(CommandButtonStyle(color: .accentColor))
                                 .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                             }
@@ -206,6 +231,7 @@ extension PromptToCodePanelView {
 
     struct Content: View {
         let store: StoreOf<PromptToCodePanel>
+
         @Environment(\.colorScheme) var colorScheme
         @AppStorage(\.syncPromptToCodeHighlightTheme) var syncHighlightTheme
         @AppStorage(\.codeForegroundColorLight) var codeForegroundColorLight
@@ -243,10 +269,29 @@ extension PromptToCodePanelView {
             WithPerceptionTracking {
                 ScrollView {
                     VStack(spacing: 0) {
-                        Spacer(minLength: 60)
-                        ErrorMessage(store: store)
-                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
-                        CodeContent(store: store, codeForegroundColor: codeForegroundColor)
+                        Spacer(minLength: 56)
+
+                        VStack(spacing: 4) {
+                            let language = store.promptToCodeState.source.language
+                            let isAttached = store.promptToCodeState.isAttachedToTarget
+                            ForEach(store.scope(
+                                state: \.snippetPanels,
+                                action: \.snippetPanel
+                            )) { store in
+                                Divider()
+
+                                SnippetPanelView(
+                                    store: store,
+                                    language: language,
+                                    codeForegroundColor: codeForegroundColor ?? .primary,
+                                    codeBackgroundColor: codeBackgroundColor,
+                                    isAttached: isAttached
+                                )
+                                .padding(.horizontal, 4)
+                            }
+                        }
+
+                        Spacer(minLength: 16)
                     }
                 }
                 .background(codeBackgroundColor)
@@ -254,45 +299,98 @@ extension PromptToCodePanelView {
             }
         }
 
-        struct ErrorMessage: View {
-            let store: StoreOf<PromptToCodePanel>
+        struct SnippetPanelView: View {
+            let store: StoreOf<PromptToCodeSnippetPanel>
+            let language: CodeLanguage
+            let codeForegroundColor: Color
+            let codeBackgroundColor: Color
+            let isAttached: Bool
 
             var body: some View {
                 WithPerceptionTracking {
-                    if let errorMessage = store.error, !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                Color.red,
-                                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            )
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .stroke(Color.primary.opacity(0.2), lineWidth: 1)
-                            }
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                    VStack(spacing: 0) {
+                        ErrorMessage(store: store)
+                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+                        CodeContent(
+                            store: store,
+                            language: language,
+                            codeForegroundColor: codeForegroundColor
+                        )
+                        SnippetTitleBar(store: store, isAttached: isAttached)
+                    }
+                }
+            }
+        }
+
+        struct SnippetTitleBar: View {
+            let store: StoreOf<PromptToCodeSnippetPanel>
+            let isAttached: Bool
+            var body: some View {
+                WithPerceptionTracking {
+                    HStack {
+                        if isAttached {
+                            Text(String(describing: store.snippet.attachedRange))
+                                .foregroundStyle(.tertiary)
+                                .font(.callout)
+                        }
+                        Spacer()
+                        CopyCodeButton(store: store)
+                    }
+                    .padding(.leading, 4)
+                    .scaleEffect(x: 1, y: -1, anchor: .center)
+                }
+            }
+        }
+
+        struct CopyCodeButton: View {
+            let store: StoreOf<PromptToCodeSnippetPanel>
+            var body: some View {
+                WithPerceptionTracking {
+                    if !store.snippet.modifiedCode.isEmpty {
+                        CopyButton {
+                            store.send(.copyCodeButtonTapped)
+                        }
+                    }
+                }
+            }
+        }
+
+        struct ErrorMessage: View {
+            let store: StoreOf<PromptToCodeSnippetPanel>
+
+            var body: some View {
+                WithPerceptionTracking {
+                    if let errorMessage = store.snippet.error, !errorMessage.isEmpty {
+                        (
+                            Text(Image(systemName: "exclamationmark.triangle.fill")) +
+                                Text(" ") +
+                                Text(errorMessage)
+                        )
+                        .multilineTextAlignment(.leading)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
         }
 
         struct DescriptionContent: View {
-            let store: StoreOf<PromptToCodePanel>
+            let store: StoreOf<PromptToCodeSnippetPanel>
             let codeForegroundColor: Color?
 
             var body: some View {
                 WithPerceptionTracking {
-                    if !store.description.isEmpty {
-                        Markdown(store.description)
+                    if !store.snippet.description.isEmpty {
+                        Markdown(store.snippet.description)
                             .textSelection(.enabled)
                             .markdownTheme(.gitHub.text {
                                 BackgroundColor(Color.clear)
                                 ForegroundColor(codeForegroundColor)
                             })
-                            .padding()
+                            .padding(.horizontal)
+                            .padding(.vertical, 4)
                             .frame(maxWidth: .infinity)
                             .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
@@ -301,43 +399,33 @@ extension PromptToCodePanelView {
         }
 
         struct CodeContent: View {
-            let store: StoreOf<PromptToCodePanel>
+            let store: StoreOf<PromptToCodeSnippetPanel>
+            let language: CodeLanguage
             let codeForegroundColor: Color?
 
             @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
 
             var body: some View {
                 WithPerceptionTracking {
-                    if store.code.isEmpty {
-                        Text(
-                            store.isResponding
-                                ? "Thinking..."
-                                : "Enter your requirement to generate code."
+                    if wrapCode {
+                        CodeBlockInContent(
+                            store: store,
+                            language: language,
+                            codeForegroundColor: codeForegroundColor
                         )
-                        .foregroundColor(codeForegroundColor?.opacity(0.7) ?? .secondary)
-                        .padding()
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
                     } else {
-                        if wrapCode {
+                        ScrollView(.horizontal) {
                             CodeBlockInContent(
                                 store: store,
+                                language: language,
                                 codeForegroundColor: codeForegroundColor
                             )
-                        } else {
-                            ScrollView(.horizontal) {
-                                CodeBlockInContent(
-                                    store: store,
-                                    codeForegroundColor: codeForegroundColor
-                                )
-                            }
-                            .modify {
-                                if #available(macOS 13.0, *) {
-                                    $0.scrollIndicators(.hidden)
-                                } else {
-                                    $0
-                                }
+                        }
+                        .modify {
+                            if #available(macOS 13.0, *) {
+                                $0.scrollIndicators(.hidden)
+                            } else {
+                                $0
                             }
                         }
                     }
@@ -345,7 +433,8 @@ extension PromptToCodePanelView {
             }
 
             struct CodeBlockInContent: View {
-                let store: StoreOf<PromptToCodePanel>
+                let store: StoreOf<PromptToCodeSnippetPanel>
+                let language: CodeLanguage
                 let codeForegroundColor: Color?
 
                 @Environment(\.colorScheme) var colorScheme
@@ -354,12 +443,12 @@ extension PromptToCodePanelView {
 
                 var body: some View {
                     WithPerceptionTracking {
-                        let startLineIndex = store.selectionRange?.start.line ?? 0
-                        let firstLinePrecedingSpaceCount = store.selectionRange?.start
-                            .character ?? 0
+                        let startLineIndex = store.snippet.attachedRange.start.line
+                        let firstLinePrecedingSpaceCount = store.snippet.attachedRange.start
+                            .character
                         CodeBlock(
-                            code: store.code,
-                            language: store.language.rawValue,
+                            code: store.snippet.modifiedCode,
+                            language: language.rawValue,
                             startLineIndex: startLineIndex,
                             scenario: "promptToCode",
                             colorScheme: colorScheme,
@@ -369,6 +458,7 @@ extension PromptToCodePanelView {
                             proposedForegroundColor: codeForegroundColor
                         )
                         .frame(maxWidth: .infinity)
+
                         .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
@@ -380,15 +470,8 @@ extension PromptToCodePanelView {
         let store: StoreOf<PromptToCodePanel>
         @FocusState var focusField: PromptToCodePanel.State.FocusField?
 
-        struct RevertButtonState: Equatable {
-            var isResponding: Bool
-            var canRevert: Bool
-        }
-
         var body: some View {
             HStack {
-                RevertButton(store: store)
-
                 HStack(spacing: 0) {
                     InputField(store: store, focusField: $focusField)
                     SendButton(store: store)
@@ -419,31 +502,6 @@ extension PromptToCodePanelView {
             .background(.ultraThickMaterial)
         }
 
-        struct RevertButton: View {
-            let store: StoreOf<PromptToCodePanel>
-            var body: some View {
-                WithPerceptionTracking {
-                    Button(action: {
-                        store.send(.revertButtonTapped)
-                    }) {
-                        Group {
-                            Image(systemName: "arrow.uturn.backward")
-                        }
-                        .padding(6)
-                        .background {
-                            Circle().fill(Color(nsColor: .controlBackgroundColor))
-                        }
-                        .overlay {
-                            Circle()
-                                .stroke(Color(nsColor: .controlColor), lineWidth: 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(store.isResponding || !store.canRevert)
-                }
-            }
-        }
-
         struct InputField: View {
             @Perception.Bindable var store: StoreOf<PromptToCodePanel>
             var focusField: FocusState<PromptToCodePanel.State.FocusField?>.Binding
@@ -451,14 +509,14 @@ extension PromptToCodePanelView {
             var body: some View {
                 WithPerceptionTracking {
                     AutoresizingCustomTextEditor(
-                        text: $store.prompt,
+                        text: $store.promptToCodeState.instruction,
                         font: .systemFont(ofSize: 14),
-                        isEditable: !store.isResponding,
+                        isEditable: !store.promptToCodeState.isGenerating,
                         maxHeight: 400,
                         onSubmit: { store.send(.modifyCodeButtonTapped) }
                     )
-                    .opacity(store.isResponding ? 0.5 : 1)
-                    .disabled(store.isResponding)
+                    .opacity(store.promptToCodeState.isGenerating ? 0.5 : 1)
+                    .disabled(store.promptToCodeState.isGenerating)
                     .focused(focusField, equals: PromptToCodePanel.State.FocusField.textField)
                     .bind($store.focusedField, to: focusField)
                 }
@@ -478,7 +536,7 @@ extension PromptToCodePanelView {
                             .padding(8)
                     }
                     .buttonStyle(.plain)
-                    .disabled(store.isResponding)
+                    .disabled(store.promptToCodeState.isGenerating)
                     .keyboardShortcut(KeyEquivalent.return, modifiers: [])
                 }
             }
@@ -488,92 +546,127 @@ extension PromptToCodePanelView {
 
 // MARK: - Previews
 
-#Preview("Default") {
+#Preview("Multiple Snippets") {
     PromptToCodePanelView(store: .init(initialState: .init(
-        code: """
-        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
-            Text(viewModel.suggestion[index])
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-        }
-        """,
-        prompt: "",
-        language: .builtIn(.swift),
+        promptToCodeState: Shared(PromptToCodeState(
+            source: .init(
+                language: CodeLanguage.builtIn(.swift),
+                documentURL: URL(
+                    fileURLWithPath: "path/to/file-name-is-super-long-what-should-we-do-with-it-hah-longer-longer.txt"
+                ),
+                projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+                content: "",
+                lines: []
+            ),
+            history: [
+                .init(snippets: [
+                    .init(
+                        startLineIndex: 8,
+                        originalCode: "print(foo)",
+                        modifiedCode: "print(bar)",
+                        description: "",
+                        error: "Error",
+                        attachedRange: CursorRange(
+                            start: .init(line: 8, character: 0),
+                            end: .init(line: 12, character: 2)
+                        )
+                    ),
+                ], instruction: "Previous instruction"),
+            ],
+            snippets: [
+                .init(
+                    startLineIndex: 8,
+                    originalCode: "print(foo)",
+                    modifiedCode: "print(bar)",
+                    description: "",
+                    error: "Error",
+                    attachedRange: CursorRange(
+                        start: .init(line: 8, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+                .init(
+                    startLineIndex: 13,
+                    originalCode: """
+                      struct Bar {
+                        var foo: Int
+                      }
+                    """,
+                    modifiedCode: """
+                        struct Bar {
+                          var foo: String
+                        }
+                    """,
+                    description: "Cool",
+                    error: nil,
+                    attachedRange: CursorRange(
+                        start: .init(line: 13, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+            ],
+            instruction: "",
+            extraSystemPrompt: "",
+            isAttachedToTarget: true
+        )),
         indentSize: 4,
         usesTabsForIndentation: false,
-        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
-        documentURL: URL(fileURLWithPath: "path/to/file.txt"),
-        allCode: "",
-        allLines: [String](),
-        commandName: "Generate Code",
-        description: "Hello world",
-        isResponding: false,
-        isAttachedToSelectionRange: true,
-        selectionRange: .init(
-            start: .init(line: 8, character: 0),
-            end: .init(line: 12, character: 2)
-        )
+        commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
         .frame(width: 450, height: 400)
 }
 
-#Preview("Super Long File Name") {
+#Preview("Detached With Long File Name") {
     PromptToCodePanelView(store: .init(initialState: .init(
-        code: """
-        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
-            Text(viewModel.suggestion[index])
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-        }
-        """,
-        prompt: "",
-        language: .builtIn(.swift),
+        promptToCodeState: Shared(PromptToCodeState(
+            source: .init(
+                language: CodeLanguage.builtIn(.swift),
+                documentURL: URL(
+                    fileURLWithPath: "path/to/file-name-is-super-long-what-should-we-do-with-it-hah.txt"
+                ),
+                projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+                content: "",
+                lines: []
+            ),
+            snippets: [
+                .init(
+                    startLineIndex: 8,
+                    originalCode: "print(foo)",
+                    modifiedCode: "print(bar)",
+                    description: "",
+                    error: "Error",
+                    attachedRange: CursorRange(
+                        start: .init(line: 8, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+                .init(
+                    startLineIndex: 13,
+                    originalCode: """
+                      struct Bar {
+                        var foo: Int
+                      }
+                    """,
+                    modifiedCode: """
+                        struct Bar {
+                          var foo: String
+                        }
+                    """,
+                    description: "Cool",
+                    error: nil,
+                    attachedRange: CursorRange(
+                        start: .init(line: 13, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+            ],
+            instruction: "",
+            extraSystemPrompt: "",
+            isAttachedToTarget: false
+        )),
         indentSize: 4,
         usesTabsForIndentation: false,
-        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
-        documentURL: URL(
-            fileURLWithPath: "path/to/file-name-is-super-long-what-should-we-do-with-it-hah.txt"
-        ),
-        allCode: "",
-        allLines: [String](),
-        commandName: "Generate Code",
-        description: "Hello world",
-        isResponding: false,
-        isAttachedToSelectionRange: true,
-        selectionRange: .init(
-            start: .init(line: 8, character: 0),
-            end: .init(line: 12, character: 2)
-        )
-    ), reducer: { PromptToCodePanel() }))
-        .frame(width: 450, height: 400)
-}
-
-#Preview("Error Detached") {
-    PromptToCodePanelView(store: .init(initialState: .init(
-        code: """
-        ForEach(0..<viewModel.suggestion.count, id: \\.self) { index in
-            Text(viewModel.suggestion[index])
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-        }
-        """,
-        prompt: "",
-        language: .builtIn(.swift),
-        indentSize: 4,
-        usesTabsForIndentation: false,
-        projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
-        documentURL: URL(fileURLWithPath: "path/to/file.txt"),
-        allCode: "",
-        allLines: [String](),
-        commandName: "Generate Code",
-        description: "Hello world",
-        isResponding: false,
-        isAttachedToSelectionRange: false,
-        error: "Error",
-        selectionRange: .init(
-            start: .init(line: 8, character: 0),
-            end: .init(line: 12, character: 2)
-        )
+        commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
         .frame(width: 450, height: 400)
 }

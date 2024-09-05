@@ -1,12 +1,13 @@
 import AppKit
 import ChatService
+import ComposableArchitecture
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import OpenAIService
-import SuggestionInjector
 import SuggestionBasic
+import SuggestionInjector
 import SuggestionWidget
 import UserNotifications
 import Workspace
@@ -175,61 +176,78 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         let injector = SuggestionInjector()
         var lines = editor.lines
+        var ranges = [CursorRange]()
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
         let store = await Service.shared.guiController.store
 
         if let promptToCode = store.state.promptToCodeGroup.activePromptToCode {
-            if promptToCode.isAttachedToSelectionRange, promptToCode.documentURL != fileURL {
+            if promptToCode.promptToCodeState.isAttachedToTarget,
+               promptToCode.promptToCodeState.source.documentURL != fileURL
+            {
                 return nil
             }
 
-            let range = {
-                if promptToCode.isAttachedToSelectionRange,
-                   let range = promptToCode.selectionRange
-                {
-                    return range
-                }
-                return editor.selections.first.map {
-                    CursorRange(start: $0.start, end: $0.end)
-                } ?? CursorRange(
-                    start: editor.cursorPosition,
-                    end: editor.cursorPosition
+            for snippet in promptToCode.promptToCodeState.snippets.sorted(by: { a, b in
+                a.attachedRange.start.line > b.attachedRange.start.line
+            }) {
+                let range = {
+                    if promptToCode.promptToCodeState.isAttachedToTarget {
+                        return snippet.attachedRange
+                    }
+                    return editor.selections.first.map {
+                        CursorRange(start: $0.start, end: $0.end)
+                    } ?? CursorRange(
+                        start: editor.cursorPosition,
+                        end: editor.cursorPosition
+                    )
+                }()
+
+                ranges.append(range)
+
+                let suggestion = CodeSuggestion(
+                    id: UUID().uuidString,
+                    text: snippet.modifiedCode,
+                    position: range.start,
+                    range: range
                 )
-            }()
 
-            let suggestion = CodeSuggestion(
-                id: UUID().uuidString,
-                text: promptToCode.code,
-                position: range.start,
-                range: range
-            )
-
-            injector.acceptSuggestion(
-                intoContentWithoutSuggestion: &lines,
-                cursorPosition: &cursorPosition,
-                completion: suggestion,
-                extraInfo: &extraInfo
-            )
-
-            _ = await Task { @MainActor [cursorPosition] in
-                store.send(
-                    .promptToCodeGroup(.updatePromptToCodeRange(
-                        id: promptToCode.id,
-                        range: .init(start: range.start, end: cursorPosition)
-                    ))
+                injector.acceptSuggestion(
+                    intoContentWithoutSuggestion: &lines,
+                    cursorPosition: &cursorPosition,
+                    completion: suggestion,
+                    extraInfo: &extraInfo
                 )
+
+                _ = await Task { @MainActor [cursorPosition] in
+                    await store.send(
+                        .promptToCodeGroup(.updatePromptToCodeRange(
+                            id: promptToCode.id,
+                            snippetId: snippet.id,
+                            range: .init(start: range.start, end: cursorPosition)
+                        ))
+                    ).finish()
+                }.value
+            }
+
+            _ = await MainActor.run {
                 store.send(
                     .promptToCodeGroup(.discardAcceptedPromptToCodeIfNotContinuous(
                         id: promptToCode.id
                     ))
                 )
-            }.result
+            }
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelection: .init(start: range.start, end: cursorPosition),
+                newSelection: {
+                    if ranges.isEmpty {
+                        .init(start: cursorPosition, end: cursorPosition)
+                    } else {
+                        ranges.last
+                    }
+                }(),
                 modifications: extraInfo.modifications
             )
         }
@@ -405,22 +423,24 @@ extension WindowBaseCommandHandler {
         }
 
         _ = await Task { @MainActor in
-            // if there is already a prompt to code presenting, we should not present another one
             store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
-                code: code,
-                selectionRange: selection,
-                language: codeLanguage,
-                identSize: filespace.codeMetadata.indentSize ?? 4,
+                promptToCodeState: Shared(.init(
+                    source: .init(
+                        language: codeLanguage,
+                        documentURL: fileURL,
+                        projectRootURL: workspace.projectRootURL,
+                        content: editor.content,
+                        lines: editor.lines
+                    ),
+                    originalCode: code, 
+                    attachedRange: selection,
+                    instruction: newPrompt ?? "",
+                    extraSystemPrompt: newExtraSystemPrompt ?? ""
+                )),
+                indentSize: filespace.codeMetadata.indentSize ?? 4,
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
-                documentURL: fileURL,
-                projectRootURL: workspace.projectRootURL,
-                allCode: editor.content,
-                allLines: editor.lines,
-                isContinuous: isContinuous,
                 commandName: name,
-                defaultPrompt: newPrompt ?? "",
-                extraSystemPrompt: newExtraSystemPrompt,
-                generateDescriptionRequirement: generateDescription
+                isContinuous: isContinuous
             ))))
         }.result
     }

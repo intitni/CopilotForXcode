@@ -3,110 +3,73 @@ import ComposableArchitecture
 import CustomAsyncAlgorithms
 import Dependencies
 import Foundation
+import Preferences
+import PromptToCodeBasic
+import PromptToCodeCustomization
 import PromptToCodeService
 import SuggestionBasic
 
 @Reducer
 public struct PromptToCodePanel {
     @ObservableState
-    public struct State: Equatable, Identifiable {
-        public indirect enum HistoryNode: Equatable {
-            case empty
-            case node(code: String, description: String, previous: HistoryNode)
-
-            mutating func enqueue(code: String, description: String) {
-                let current = self
-                self = .node(code: code, description: description, previous: current)
-            }
-
-            mutating func pop() -> (code: String, description: String)? {
-                switch self {
-                case .empty:
-                    return nil
-                case let .node(code, description, previous):
-                    self = previous
-                    return (code, description)
-                }
-            }
-        }
-
+    public struct State: Identifiable {
         public enum FocusField: Equatable {
             case textField
         }
 
-        public var id: URL { documentURL }
-        public var history: HistoryNode
-        public var code: String
-        public var isResponding: Bool
-        public var description: String
-        public var error: String?
-        public var selectionRange: CursorRange?
-        public var language: CodeLanguage
+        @Shared public var promptToCodeState: PromptToCodeState
+
+        public var id: URL { promptToCodeState.source.documentURL }
+
         public var indentSize: Int
         public var usesTabsForIndentation: Bool
-        public var projectRootURL: URL
-        public var documentURL: URL
-        public var allCode: String
-        public var allLines: [String]
-        public var extraSystemPrompt: String?
-        public var generateDescriptionRequirement: Bool?
         public var commandName: String?
-        public var prompt: String
         public var isContinuous: Bool
-        public var isAttachedToSelectionRange: Bool
         public var focusedField: FocusField? = .textField
 
-        public var filename: String { documentURL.lastPathComponent }
-        public var canRevert: Bool { history != .empty }
+        public var filename: String {
+            promptToCodeState.source.documentURL.lastPathComponent
+        }
+
+        public var canRevert: Bool { !promptToCodeState.history.isEmpty }
+
+        public var generateDescriptionRequirement: Bool
+
+        public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
+            get {
+                IdentifiedArrayOf(
+                    uniqueElements: promptToCodeState.snippets.reversed().map {
+                        PromptToCodeSnippetPanel.State(snippet: $0)
+                    }
+                )
+            }
+            set {
+                promptToCodeState.snippets = IdentifiedArrayOf(
+                    uniqueElements: newValue.map(\.snippet).reversed()
+                )
+            }
+        }
 
         public init(
-            code: String,
-            prompt: String,
-            language: CodeLanguage,
+            promptToCodeState: Shared<PromptToCodeState>,
             indentSize: Int,
             usesTabsForIndentation: Bool,
-            projectRootURL: URL,
-            documentURL: URL,
-            allCode: String,
-            allLines: [String],
             commandName: String? = nil,
-            description: String = "",
-            isResponding: Bool = false,
-            isAttachedToSelectionRange: Bool = true,
-            error: String? = nil,
-            history: HistoryNode = .empty,
             isContinuous: Bool = false,
-            selectionRange: CursorRange? = nil,
-            extraSystemPrompt: String? = nil,
-            generateDescriptionRequirement: Bool? = nil
+            generateDescriptionRequirement: Bool = UserDefaults.shared
+                .value(for: \.promptToCodeGenerateDescription)
         ) {
-            self.history = history
-            self.code = code
-            self.prompt = prompt
-            self.isResponding = isResponding
-            self.description = description
-            self.error = error
+            _promptToCodeState = promptToCodeState
             self.isContinuous = isContinuous
-            self.selectionRange = selectionRange
-            self.language = language
             self.indentSize = indentSize
             self.usesTabsForIndentation = usesTabsForIndentation
-            self.projectRootURL = projectRootURL
-            self.documentURL = documentURL
-            self.allCode = allCode
-            self.allLines = allLines
-            self.extraSystemPrompt = extraSystemPrompt
             self.generateDescriptionRequirement = generateDescriptionRequirement
-            self.isAttachedToSelectionRange = isAttachedToSelectionRange
             self.commandName = commandName
-
-            if selectionRange?.isEmpty ?? true {
-                self.isAttachedToSelectionRange = false
-            }
+            focusedField = .textField
         }
     }
 
-    public enum Action: Equatable, BindableAction {
+    public enum Action: BindableAction {
         case binding(BindingAction<State>)
         case focusOnTextField
         case selectionRangeToggleTapped
@@ -114,20 +77,18 @@ public struct PromptToCodePanel {
         case revertButtonTapped
         case stopRespondingButtonTapped
         case modifyCodeFinished
-        case modifyCodeChunkReceived(code: String, description: String)
-        case modifyCodeFailed(error: String)
         case modifyCodeCancelled
         case cancelButtonTapped
         case acceptButtonTapped
-        case copyCodeButtonTapped
         case appendNewLineToPromptButtonTapped
+        case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
 
     @Dependency(\.commandHandler) var commandHandler
     @Dependency(\.promptToCodeService) var promptToCodeService
     @Dependency(\.activateThisApp) var activateThisApp
     @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
-    
+
     enum CancellationKey: Hashable {
         case modifyCode(State.ID)
     }
@@ -140,107 +101,125 @@ public struct PromptToCodePanel {
             case .binding:
                 return .none
 
+            case .snippetPanel:
+                return .none
+
             case .focusOnTextField:
                 state.focusedField = .textField
                 return .none
 
             case .selectionRangeToggleTapped:
-                state.isAttachedToSelectionRange.toggle()
+                state.promptToCodeState.isAttachedToTarget.toggle()
                 return .none
 
             case .modifyCodeButtonTapped:
-                guard !state.isResponding else { return .none }
+                guard !state.promptToCodeState.isGenerating else { return .none }
                 let copiedState = state
-                state.history.enqueue(code: state.code, description: state.description)
-                state.isResponding = true
-                state.code = ""
-                state.description = ""
-                state.error = nil
+                state.promptToCodeState.isGenerating = true
+                state.promptToCodeState.pushHistory()
+                let snippets = state.promptToCodeState.snippets
 
                 return .run { send in
                     do {
-                        let stream = try await promptToCodeService.modifyCode(
-                            code: copiedState.code,
-                            requirement: copiedState.prompt,
-                            source: .init(
-                                language: copiedState.language,
-                                documentURL: copiedState.documentURL,
-                                projectRootURL: copiedState.projectRootURL,
-                                content: copiedState.allCode,
-                                lines: copiedState.allLines,
-                                range: copiedState.selectionRange ?? .outOfScope
-                            ),
-                            isDetached: !copiedState.isAttachedToSelectionRange,
-                            extraSystemPrompt: copiedState.extraSystemPrompt,
-                            generateDescriptionRequirement: copiedState
-                                .generateDescriptionRequirement
-                        ).timedDebounce(for: 0.2)
+                        _ = try await withThrowingTaskGroup(of: Void.self) { group in
+                            for snippet in snippets {
+                                group.addTask {
+                                    let stream = try await promptToCodeService.modifyCode(
+                                        code: snippet.originalCode,
+                                        requirement: copiedState.promptToCodeState.instruction,
+                                        source: .init(
+                                            language: copiedState.promptToCodeState.source.language,
+                                            documentURL: copiedState.promptToCodeState.source
+                                                .documentURL,
+                                            projectRootURL: copiedState.promptToCodeState.source
+                                                .projectRootURL,
+                                            content: copiedState.promptToCodeState.source.content,
+                                            lines: copiedState.promptToCodeState.source.lines,
+                                            range: snippet.attachedRange
+                                        ),
+                                        isDetached: !copiedState.promptToCodeState
+                                            .isAttachedToTarget,
+                                        extraSystemPrompt: copiedState.promptToCodeState
+                                            .extraSystemPrompt,
+                                        generateDescriptionRequirement: copiedState
+                                            .generateDescriptionRequirement
+                                    ).timedDebounce(for: 0.2)
 
-                        for try await fragment in stream {
-                            try Task.checkCancellation()
-                            await send(.modifyCodeChunkReceived(
-                                code: fragment.code,
-                                description: fragment.description
-                            ))
+                                    do {
+                                        for try await fragment in stream {
+                                            try Task.checkCancellation()
+                                            await send(.snippetPanel(.element(
+                                                id: snippet.id,
+                                                action: .modifyCodeChunkReceived(
+                                                    code: fragment.code,
+                                                    description: fragment.description
+                                                )
+                                            )))
+                                        }
+                                    } catch is CancellationError {
+                                        throw CancellationError()
+                                    } catch {
+                                        try Task.checkCancellation()
+                                        if (error as NSError).code == NSURLErrorCancelled {
+                                            await send(.snippetPanel(.element(
+                                                id: snippet.id,
+                                                action: .modifyCodeFailed(error: "Cancelled")
+                                            )))
+                                            return
+                                        }
+                                        await send(.snippetPanel(.element(
+                                            id: snippet.id,
+                                            action: .modifyCodeFailed(
+                                                error: error
+                                                    .localizedDescription
+                                            )
+                                        )))
+                                    }
+                                }
+                            }
+
+                            try await group.waitForAll()
                         }
-                        try Task.checkCancellation()
+
                         await send(.modifyCodeFinished)
                     } catch is CancellationError {
                         try Task.checkCancellation()
                         await send(.modifyCodeCancelled)
                     } catch {
-                        try Task.checkCancellation()
-                        if (error as NSError).code == NSURLErrorCancelled {
-                            await send(.modifyCodeCancelled)
-                            return
-                        }
-
-                        await send(.modifyCodeFailed(error: error.localizedDescription))
+                        await send(.modifyCodeFinished)
                     }
                 }.cancellable(id: CancellationKey.modifyCode(state.id), cancelInFlight: true)
 
             case .revertButtonTapped:
-                guard let (code, description) = state.history.pop() else { return .none }
-                state.code = code
-                state.description = description
+                state.promptToCodeState.popHistory()
                 return .none
 
             case .stopRespondingButtonTapped:
-                state.isResponding = false
+                state.promptToCodeState.isGenerating = false
                 promptToCodeService.stopResponding()
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
-            case let .modifyCodeChunkReceived(code, description):
-                state.code = code
-                state.description = description
-                return .none
-
             case .modifyCodeFinished:
-                state.prompt = ""
-                state.isResponding = false
-                if state.code.isEmpty, state.description.isEmpty {
+                state.promptToCodeState.instruction = ""
+                state.promptToCodeState.isGenerating = false
+
+                if state.promptToCodeState.snippets.allSatisfy({ snippet in
+                    snippet.modifiedCode.isEmpty && snippet.description.isEmpty
+                }) {
                     // if both code and description are empty, we treat it as failed
                     return .run { send in
                         await send(.revertButtonTapped)
                     }
                 }
-
                 return .none
 
-            case let .modifyCodeFailed(error):
-                state.error = error
-                state.isResponding = false
-                return .run { send in
-                    await send(.revertButtonTapped)
-                }
-
             case .modifyCodeCancelled:
-                state.isResponding = false
+                state.promptToCodeState.isGenerating = false
                 return .none
 
             case .cancelButtonTapped:
                 promptToCodeService.stopResponding()
-                return .none
+                return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .acceptButtonTapped:
                 let isContinuous = state.isContinuous
@@ -253,13 +232,51 @@ public struct PromptToCodePanel {
                     }
                 }
 
-            case .copyCodeButtonTapped:
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(state.code, forType: .string)
+            case .appendNewLineToPromptButtonTapped:
+                state.promptToCodeState.instruction += "\n"
+                return .none
+            }
+        }
+
+        Reduce { _, _ in .none }.forEach(\.snippetPanels, action: \.snippetPanel) {
+            PromptToCodeSnippetPanel()
+        }
+    }
+}
+
+@Reducer
+public struct PromptToCodeSnippetPanel {
+    @ObservableState
+    public struct State: Identifiable {
+        public var id: UUID { snippet.id }
+        var snippet: PromptToCodeSnippet
+    }
+
+    public enum Action {
+        case modifyCodeFinished
+        case modifyCodeChunkReceived(code: String, description: String)
+        case modifyCodeFailed(error: String)
+        case copyCodeButtonTapped
+    }
+
+    public var body: some ReducerOf<Self> {
+        Reduce { state, action in
+            switch action {
+            case .modifyCodeFinished:
                 return .none
 
-            case .appendNewLineToPromptButtonTapped:
-                state.prompt += "\n"
+            case let .modifyCodeChunkReceived(code, description):
+                state.snippet.modifiedCode = code
+                state.snippet.description = description
+                return .none
+
+            case let .modifyCodeFailed(error):
+                state.snippet.error = error
+                return .none
+
+            case .copyCodeButtonTapped:
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(state.snippet.modifiedCode, forType: .string)
                 return .none
             }
         }

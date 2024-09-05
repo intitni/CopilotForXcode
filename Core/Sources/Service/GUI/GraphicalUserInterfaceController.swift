@@ -21,10 +21,10 @@ import ChatTabPersistent
 @Reducer
 struct GUI {
     @ObservableState
-    struct State: Equatable {
+    struct State {
         var suggestionWidgetState = Widget.State()
 
-        var chatTabGroup: ChatPanel.ChatTabGroup {
+        var chatTabGroup: SuggestionWidget.ChatPanel.ChatTabGroup {
             get { suggestionWidgetState.chatPanelState.chatTabGroup }
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
@@ -85,7 +85,7 @@ struct GUI {
     var body: some ReducerOf<Self> {
         CombineReducers {
             Scope(state: \.suggestionWidgetState, action: \.suggestionWidget) {
-                WidgetFeature()
+                Widget()
             }
 
             Scope(

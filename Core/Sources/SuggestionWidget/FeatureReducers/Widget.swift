@@ -22,7 +22,7 @@ public struct Widget {
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
 
@@ -90,7 +90,7 @@ public struct Widget {
         case observeUserDefaults
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case startup
         case observeActiveApplicationChange
         case observeColorSchemeChange

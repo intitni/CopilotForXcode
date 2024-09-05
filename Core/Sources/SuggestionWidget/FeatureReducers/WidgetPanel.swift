@@ -5,7 +5,7 @@ import Foundation
 @Reducer
 public struct WidgetPanel {
     @ObservableState
-    public struct State: Equatable {
+    public struct State {
         public var content: SharedPanel.Content {
             get { sharedPanelState.content }
             set {
@@ -23,11 +23,11 @@ public struct WidgetPanel {
         var suggestionPanelState = SuggestionPanel.State()
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case presentSuggestion
         case presentSuggestionProvider(PresentingCodeSuggestion, displayContent: Bool)
         case presentError(String)
-        case presentPromptToCode(PromptToCodeGroup.PromptToCodeInitialState)
+        case presentPromptToCode(PromptToCodePanel.State)
         case displayPanelContent
         case discardSuggestion
         case removeDisplayedContent

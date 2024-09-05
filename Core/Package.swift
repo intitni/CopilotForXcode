@@ -86,6 +86,7 @@ let package = Package(
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -152,6 +153,7 @@ let package = Package(
         .target(
             name: "PromptToCodeService",
             dependencies: [
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -219,6 +221,7 @@ let package = Package(
             dependencies: [
                 "PromptToCodeService",
                 "ChatGPTChatTab",
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
