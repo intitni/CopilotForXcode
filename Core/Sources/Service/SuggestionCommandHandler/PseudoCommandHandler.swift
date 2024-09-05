@@ -459,7 +459,7 @@ extension PseudoCommandHandler {
 
         // recover selection range
 
-        if let selection = result.newSelection {
+        if let selection = result.newSelections.first {
             var range = SourceEditor.convertCursorRangeToRange(selection, in: result.content)
             if let value = AXValueCreate(.cfRange, &range) {
                 AXUIElementSetAttributeValue(

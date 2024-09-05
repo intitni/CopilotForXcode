@@ -241,13 +241,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelection: {
-                    if ranges.isEmpty {
-                        .init(start: cursorPosition, end: cursorPosition)
-                    } else {
-                        ranges.last
-                    }
-                }(),
+                newSelections: ranges,
                 modifications: extraInfo.modifications
             )
         }
