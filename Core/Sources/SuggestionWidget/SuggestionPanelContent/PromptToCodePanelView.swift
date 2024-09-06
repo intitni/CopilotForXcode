@@ -173,7 +173,6 @@ extension PromptToCodePanelView {
 
         struct ActionButtons: View {
             @Perception.Bindable var store: StoreOf<PromptToCodePanel>
-            @Environment(\.modifierFlags) var modifierFlags
 
             var body: some View {
                 WithPerceptionTracking {
@@ -201,9 +200,13 @@ extension PromptToCodePanelView {
                                 }
                             } label: {
                                 Image(systemName: "gearshape.fill")
+                                    .resizable()
+                                    .scaledToFit()
                                     .foregroundStyle(.secondary)
+                                    .frame(width: 16)
+                                    .frame(maxHeight: .infinity)
+                                    .contentShape(Rectangle())
                             }
-                            .frame(width: 16)
                             .buttonStyle(.plain)
 
                             Button(action: {
@@ -215,50 +218,10 @@ extension PromptToCodePanelView {
                             .keyboardShortcut("w", modifiers: [.command])
 
                             if !isCodeEmpty {
-                                let defaultModeIsContinuous = store.isContinuous
-
-                                Button(action: {
-                                    switch (
-                                        modifierFlags.contains(.option),
-                                        defaultModeIsContinuous
-                                    ) {
-                                    case (true, true):
-                                        store.send(.acceptButtonTapped)
-                                    case (false, true):
-                                        store.send(.acceptAndContinueButtonTapped)
-                                    case (true, false):
-                                        store.send(.acceptAndContinueButtonTapped)
-                                    case (false, false):
-                                        store.send(.acceptButtonTapped)
-                                    }
-                                }) {
-                                    switch (
-                                        isAttached,
-                                        modifierFlags.contains(.option),
-                                        defaultModeIsContinuous
-                                    ) {
-                                    case (true, true, true):
-                                        Text("Accept(⌥ + ⌘ + ⏎)")
-                                    case (true, false, true):
-                                        Text("Accept and Continue(⌘ + ⏎)")
-                                    case (true, true, false):
-                                        Text("Accept and Continue(⌥ + ⌘ + ⏎)")
-                                    case (true, false, false):
-                                        Text("Accept(⌘ + ⏎)")
-                                    case (false, true, true):
-                                        Text("Replace(⌥ + ⌘ + ⏎)")
-                                    case (false, false, true):
-                                        Text("Replace and Continue(⌘ + ⏎)")
-                                    case (false, true, false):
-                                        Text("Replace and Continue(⌥ + ⌘ + ⏎)")
-                                    case (false, false, false):
-                                        Text("Replace(⌘ + ⏎)")
-                                    }
-                                }
-                                .buttonStyle(CommandButtonStyle(color: .accentColor))
-                                .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
+                                AcceptButton(store: store)
                             }
                         }
+                        .fixedSize()
                         .padding(8)
                         .background(
                             .regularMaterial,
@@ -272,6 +235,139 @@ extension PromptToCodePanelView {
                             .easeInOut(duration: 0.1),
                             value: store.promptToCodeState.snippets
                         )
+                    }
+                }
+            }
+        }
+
+        struct AcceptButton: View {
+            let store: StoreOf<PromptToCodePanel>
+            @Environment(\.modifierFlags) var modifierFlags
+
+            struct TheButtonStyle: ButtonStyle {
+                func makeBody(configuration: Configuration) -> some View {
+                    configuration.label
+                        .background(
+                            Rectangle()
+                                .fill(Color.accentColor.opacity(configuration.isPressed ? 0.8 : 1))
+                        )
+                }
+            }
+
+            var body: some View {
+                WithPerceptionTracking {
+                    let defaultModeIsContinuous = store.isContinuous
+                    let isAttached = store.promptToCodeState.isAttachedToTarget
+
+                    HStack(spacing: 0) {
+                        Button(action: {
+                            switch (
+                                modifierFlags.contains(.option),
+                                defaultModeIsContinuous
+                            ) {
+                            case (true, true):
+                                store.send(.acceptButtonTapped)
+                            case (false, true):
+                                store.send(.acceptAndContinueButtonTapped)
+                            case (true, false):
+                                store.send(.acceptAndContinueButtonTapped)
+                            case (false, false):
+                                store.send(.acceptButtonTapped)
+                            }
+                        }) {
+                            Group {
+                                switch (
+                                    isAttached,
+                                    modifierFlags.contains(.option),
+                                    defaultModeIsContinuous
+                                ) {
+                                case (true, true, true):
+                                    Text("Accept(⌥ + ⌘ + ⏎)")
+                                case (true, false, true):
+                                    Text("Accept and Continue(⌘ + ⏎)")
+                                case (true, true, false):
+                                    Text("Accept and Continue(⌥ + ⌘ + ⏎)")
+                                case (true, false, false):
+                                    Text("Accept(⌘ + ⏎)")
+                                case (false, true, true):
+                                    Text("Replace(⌥ + ⌘ + ⏎)")
+                                case (false, false, true):
+                                    Text("Replace and Continue(⌘ + ⏎)")
+                                case (false, true, false):
+                                    Text("Replace and Continue(⌥ + ⌘ + ⏎)")
+                                case (false, false, false):
+                                    Text("Replace(⌘ + ⏎)")
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.leading, 8)
+                            .padding(.trailing, 4)
+                        }
+                        .buttonStyle(TheButtonStyle())
+                        .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
+                        .background {
+                            Button(action: {
+                                switch (
+                                    modifierFlags.contains(.option),
+                                    defaultModeIsContinuous
+                                ) {
+                                case (true, true):
+                                    store.send(.acceptAndContinueButtonTapped)
+                                case (false, true):
+                                    store.send(.acceptButtonTapped)
+                                case (true, false):
+                                    store.send(.acceptButtonTapped)
+                                case (false, false):
+                                    store.send(.acceptAndContinueButtonTapped)
+                                }
+                            }) {
+                                EmptyView()
+                            }
+                            .buttonStyle(.plain)
+                            .keyboardShortcut(KeyEquivalent.return, modifiers: [.command, .option])
+                        }
+
+                        Divider()
+
+                        Menu {
+                            WithPerceptionTracking {
+                                if defaultModeIsContinuous {
+                                    Button(action: {
+                                        store.send(.acceptButtonTapped)
+                                    }) {
+                                        Text("Accept(⌥ + ⌘ + ⏎)")
+                                    }
+                                } else {
+                                    Button(action: {
+                                        store.send(.acceptAndContinueButtonTapped)
+                                    }) {
+                                        Text("Accept and Continue(⌥ + ⌘ + ⏎)")
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text(Image(systemName: "chevron.down"))
+                                .font(.footnote.weight(.bold))
+                                .scaleEffect(0.8)
+                                .foregroundStyle(.white.opacity(0.8))
+                                .frame(maxHeight: .infinity)
+                                .padding(.leading, 1)
+                                .padding(.trailing, 2)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .fixedSize()
+
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.accentColor)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
                     }
                 }
             }
