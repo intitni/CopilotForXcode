@@ -5,6 +5,7 @@ import Combine
 import ComposableArchitecture
 import Dependencies
 import Foundation
+import SharedUIComponents
 import SwiftUI
 import XcodeInspector
 
@@ -727,7 +728,7 @@ public final class WidgetWindows {
                     state: \.sharedPanelState,
                     action: \.sharedPanel
                 )
-            )
+            ).modifierFlagsMonitor()
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in

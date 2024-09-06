@@ -6,6 +6,7 @@ import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import OpenAIService
+import PromptToCodeBasic
 import SuggestionBasic
 import SuggestionInjector
 import SuggestionWidget
@@ -364,11 +365,18 @@ extension WindowBaseCommandHandler {
 
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
-        let (code, selection) = {
-            guard var selection = editor.selections.last,
-                  selection.start != selection.end
-            else { return ("", .cursor(editor.cursorPosition)) }
-
+        let snippets = editor.selections.map { selection in
+            guard selection.start != selection.end else {
+                return PromptToCodeSnippet(
+                    startLineIndex: selection.start.line,
+                    originalCode: "",
+                    modifiedCode: "",
+                    description: "",
+                    error: "",
+                    attachedRange: .init(start: selection.start, end: selection.end)
+                )
+            }
+            var selection = selection
             let isMultipleLine = selection.start.line != selection.end.line
             let isSpaceOnlyBeforeStartPositionOnTheSameLine = {
                 guard selection.start.line >= 0, selection.start.line < editor.lines.count else {
@@ -391,14 +399,16 @@ extension WindowBaseCommandHandler {
                 // indentation.
                 selection.start = .init(line: selection.start.line, character: 0)
             }
-            return (
-                editor.selectedCode(in: selection),
-                .init(
-                    start: .init(line: selection.start.line, character: selection.start.character),
-                    end: .init(line: selection.end.line, character: selection.end.character)
-                )
+            let selectedCode = editor.selectedCode(in: selection)
+            return PromptToCodeSnippet(
+                startLineIndex: selection.start.line,
+                originalCode: selectedCode,
+                modifiedCode: selectedCode,
+                description: "",
+                error: "",
+                attachedRange: .init(start: selection.start, end: selection.end)
             )
-        }() as (String, CursorRange)
+        }
 
         let store = await Service.shared.guiController.store
 
@@ -416,7 +426,7 @@ extension WindowBaseCommandHandler {
             nil
         }
 
-        _ = await Task { @MainActor in
+        _ = await MainActor.run {
             store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
                 promptToCodeState: Shared(.init(
                     source: .init(
@@ -426,17 +436,17 @@ extension WindowBaseCommandHandler {
                         content: editor.content,
                         lines: editor.lines
                     ),
-                    originalCode: code, 
-                    attachedRange: selection,
+                    snippets: IdentifiedArray(snippets),
                     instruction: newPrompt ?? "",
-                    extraSystemPrompt: newExtraSystemPrompt ?? ""
+                    extraSystemPrompt: newExtraSystemPrompt ?? "",
+                    isAttachedToTarget: false
                 )),
                 indentSize: filespace.codeMetadata.indentSize ?? 4,
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
                 commandName: name,
                 isContinuous: isContinuous
             ))))
-        }.result
+        }
     }
 
     func executeSingleRoundDialog(

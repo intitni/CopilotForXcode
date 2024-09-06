@@ -85,7 +85,7 @@ public struct AsyncCodeBlock: View { // chat: hid
             .font(.init(font))
             .padding(.leading, 4)
             .padding(.trailing)
-            .padding(.top, commonPrecedingSpaceCount > 0 ? 8 : 0)
+            .padding(.top, commonPrecedingSpaceCount > 0 ? 12 : 4)
             .padding(.bottom, 4)
             .onAppear {
                 storage.dimmedCharacterCount = dimmedCharacterCount

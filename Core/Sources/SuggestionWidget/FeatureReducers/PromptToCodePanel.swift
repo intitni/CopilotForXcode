@@ -80,6 +80,7 @@ public struct PromptToCodePanel {
         case modifyCodeCancelled
         case cancelButtonTapped
         case acceptButtonTapped
+        case acceptAndContinueButtonTapped
         case appendNewLineToPromptButtonTapped
         case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
@@ -222,14 +223,15 @@ public struct PromptToCodePanel {
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .acceptButtonTapped:
-                let isContinuous = state.isContinuous
                 return .run { _ in
                     await commandHandler.acceptPromptToCode()
-                    if !isContinuous {
-                        activatePreviousActiveXcode()
-                    } else {
-                        activateThisApp()
-                    }
+                    activatePreviousActiveXcode()
+                }
+                
+            case .acceptAndContinueButtonTapped:
+                return .run { _ in
+                    await commandHandler.acceptPromptToCode()
+                    activateThisApp()
                 }
 
             case .appendNewLineToPromptButtonTapped:

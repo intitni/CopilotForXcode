@@ -1,3 +1,4 @@
+import Cocoa
 import ComposableArchitecture
 import MarkdownUI
 import PromptToCodeBasic
@@ -54,8 +55,8 @@ extension PromptToCodePanelView {
                         Button(action: {
                             store.send(.revertButtonTapped)
                         }, label: {
-                            HStack {
-                                Text(Image(systemName: "arrow.uturn.backward"))
+                            HStack(spacing: 2) {
+                                Text(Image(systemName: "arrow.uturn.backward.circle.fill"))
                                 Text(previousStep.instruction)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
@@ -115,11 +116,11 @@ extension PromptToCodePanelView {
                         .padding(2)
                         .padding(.trailing, 4)
                         .overlay {
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .stroke(color, lineWidth: 1)
                         }
                         .background {
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .fill(color.opacity(0.2))
                         }
                         .padding(2)
@@ -172,6 +173,7 @@ extension PromptToCodePanelView {
 
         struct ActionButtons: View {
             @Perception.Bindable var store: StoreOf<PromptToCodePanel>
+            @Environment(\.modifierFlags) var modifierFlags
 
             var body: some View {
                 WithPerceptionTracking {
@@ -188,8 +190,18 @@ extension PromptToCodePanelView {
                     let isAttached = store.promptToCodeState.isAttachedToTarget
                     if !isResponding || isRespondingButCodeIsReady {
                         HStack {
-                            Toggle("Continuous Mode", isOn: $store.isContinuous)
+                            Menu {
+                                Toggle(
+                                    "Always accept and continue",
+                                    isOn: $store.isContinuous.animation(.easeInOut(duration: 0.1))
+                                )
                                 .toggleStyle(.checkbox)
+                            } label: {
+                                Image(systemName: "gearshape.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(width: 16)
+                            .buttonStyle(.plain)
 
                             Button(action: {
                                 store.send(.cancelButtonTapped)
@@ -200,16 +212,46 @@ extension PromptToCodePanelView {
                             .keyboardShortcut("w", modifiers: [.command])
 
                             if !isCodeEmpty {
+                                let defaultModeIsContinuous = store.isContinuous
+
                                 Button(action: {
-                                    store.send(.acceptButtonTapped)
+                                    switch (
+                                        modifierFlags.contains(.option),
+                                        defaultModeIsContinuous
+                                    ) {
+                                    case (true, true):
+                                        store.send(.acceptButtonTapped)
+                                    case (false, true):
+                                        store.send(.acceptAndContinueButtonTapped)
+                                    case (true, false):
+                                        store.send(.acceptAndContinueButtonTapped)
+                                    case (false, false):
+                                        store.send(.acceptButtonTapped)
+                                    }
                                 }) {
-                                    if isAttached {
+                                    switch (
+                                        isAttached,
+                                        modifierFlags.contains(.option),
+                                        defaultModeIsContinuous
+                                    ) {
+                                    case (true, true, true):
+                                        Text("Accept(⌥ + ⌘ + ⏎)")
+                                    case (true, false, true):
+                                        Text("Accept and Continue(⌘ + ⏎)")
+                                    case (true, true, false):
+                                        Text("Accept and Continue(⌥ + ⌘ + ⏎)")
+                                    case (true, false, false):
                                         Text("Accept(⌘ + ⏎)")
-                                    } else {
+                                    case (false, true, true):
+                                        Text("Replace(⌥ + ⌘ + ⏎)")
+                                    case (false, false, true):
+                                        Text("Replace and Continue(⌘ + ⏎)")
+                                    case (false, true, false):
+                                        Text("Replace and Continue(⌥ + ⌘ + ⏎)")
+                                    case (false, false, false):
                                         Text("Replace(⌘ + ⏎)")
                                     }
                                 }
-                                
                                 .buttonStyle(CommandButtonStyle(color: .accentColor))
                                 .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                             }
@@ -223,6 +265,10 @@ extension PromptToCodePanelView {
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                         }
+                        .animation(
+                            .easeInOut(duration: 0.1),
+                            value: store.promptToCodeState.snippets
+                        )
                     }
                 }
             }
@@ -271,27 +317,26 @@ extension PromptToCodePanelView {
                     VStack(spacing: 0) {
                         Spacer(minLength: 56)
 
-                        VStack(spacing: 4) {
+                        VStack(spacing: 0) {
                             let language = store.promptToCodeState.source.language
                             let isAttached = store.promptToCodeState.isAttachedToTarget
                             ForEach(store.scope(
                                 state: \.snippetPanels,
                                 action: \.snippetPanel
-                            )) { store in
-                                Divider()
+                            )) { snippetStore in
+                                if snippetStore.id != store.promptToCodeState.snippets.last?.id {
+                                    Divider()
+                                }
 
                                 SnippetPanelView(
-                                    store: store,
+                                    store: snippetStore,
                                     language: language,
                                     codeForegroundColor: codeForegroundColor ?? .primary,
                                     codeBackgroundColor: codeBackgroundColor,
                                     isAttached: isAttached
                                 )
-                                .padding(.horizontal, 4)
                             }
                         }
-
-                        Spacer(minLength: 16)
                     }
                 }
                 .background(codeBackgroundColor)
@@ -316,7 +361,12 @@ extension PromptToCodePanelView {
                             language: language,
                             codeForegroundColor: codeForegroundColor
                         )
-                        SnippetTitleBar(store: store, isAttached: isAttached)
+                        SnippetTitleBar(
+                            store: store,
+                            language: language,
+                            codeForegroundColor: codeForegroundColor,
+                            isAttached: isAttached
+                        )
                     }
                 }
             }
@@ -324,19 +374,25 @@ extension PromptToCodePanelView {
 
         struct SnippetTitleBar: View {
             let store: StoreOf<PromptToCodeSnippetPanel>
+            let language: CodeLanguage
+            let codeForegroundColor: Color
             let isAttached: Bool
             var body: some View {
                 WithPerceptionTracking {
                     HStack {
+                        Text(language.rawValue)
+                            .foregroundStyle(codeForegroundColor)
+                            .font(.callout.bold())
+                            .lineLimit(1)
                         if isAttached {
                             Text(String(describing: store.snippet.attachedRange))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(codeForegroundColor.opacity(0.5))
                                 .font(.callout)
                         }
                         Spacer()
                         CopyCodeButton(store: store)
                     }
-                    .padding(.leading, 4)
+                    .padding(.leading, 8)
                     .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
             }
@@ -407,27 +463,35 @@ extension PromptToCodePanelView {
 
             var body: some View {
                 WithPerceptionTracking {
-                    if wrapCode {
-                        CodeBlockInContent(
-                            store: store,
-                            language: language,
-                            codeForegroundColor: codeForegroundColor
-                        )
-                    } else {
-                        ScrollView(.horizontal) {
+                    if !store.snippet.modifiedCode.isEmpty {
+                        if wrapCode {
                             CodeBlockInContent(
                                 store: store,
                                 language: language,
                                 codeForegroundColor: codeForegroundColor
                             )
-                        }
-                        .modify {
-                            if #available(macOS 13.0, *) {
-                                $0.scrollIndicators(.hidden)
-                            } else {
-                                $0
+                        } else {
+                            ScrollView(.horizontal) {
+                                CodeBlockInContent(
+                                    store: store,
+                                    language: language,
+                                    codeForegroundColor: codeForegroundColor
+                                )
+                            }
+                            .modify {
+                                if #available(macOS 13.0, *) {
+                                    $0.scrollIndicators(.hidden)
+                                } else {
+                                    $0
+                                }
                             }
                         }
+                    } else {
+                        Text("Thinking...")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
@@ -444,15 +508,12 @@ extension PromptToCodePanelView {
                 var body: some View {
                     WithPerceptionTracking {
                         let startLineIndex = store.snippet.attachedRange.start.line
-                        let firstLinePrecedingSpaceCount = store.snippet.attachedRange.start
-                            .character
-                        CodeBlock(
+                        AsyncCodeBlock(
                             code: store.snippet.modifiedCode,
+                            originalCode: store.snippet.originalCode,
                             language: language.rawValue,
                             startLineIndex: startLineIndex,
                             scenario: "promptToCode",
-                            colorScheme: colorScheme,
-                            firstLinePrecedingSpaceCount: firstLinePrecedingSpaceCount,
                             font: codeFont.value.nsFont,
                             droppingLeadingSpaces: hideCommonPrecedingSpaces,
                             proposedForegroundColor: codeForegroundColor
@@ -588,13 +649,13 @@ extension PromptToCodePanelView {
                 .init(
                     startLineIndex: 13,
                     originalCode: """
-                      struct Bar {
-                        var foo: Int
-                      }
+                        struct Foo {
+                          var foo: Int
+                        }
                     """,
                     modifiedCode: """
                         struct Bar {
-                          var foo: String
+                          var bar: String
                         }
                     """,
                     description: "Cool",
@@ -613,7 +674,9 @@ extension PromptToCodePanelView {
         usesTabsForIndentation: false,
         commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
-        .frame(width: 450, height: 400)
+        .frame(maxWidth: 450, maxHeight: Style.panelHeight)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 500, height: 500, alignment: .center)
 }
 
 #Preview("Detached With Long File Name") {
@@ -668,6 +731,8 @@ extension PromptToCodePanelView {
         usesTabsForIndentation: false,
         commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
-        .frame(width: 450, height: 400)
+        .frame(maxWidth: 450, maxHeight: Style.panelHeight)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 500, height: 500, alignment: .center)
 }
 
