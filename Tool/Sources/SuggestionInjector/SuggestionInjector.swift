@@ -10,7 +10,7 @@ public struct SuggestionInjector {
     public struct ExtraInfo {
         public var didChangeContent = false
         public var didChangeCursorPosition = false
-        public var suggestionRange: ClosedRange<Int>?
+        public var modificationRanges: [String: CursorRange] = [:]
         public var modifications: [Modification] = []
         public init() {}
     }
@@ -23,7 +23,6 @@ public struct SuggestionInjector {
     ) {
         extraInfo.didChangeContent = true
         extraInfo.didChangeCursorPosition = true
-        extraInfo.suggestionRange = nil
         let start = completion.range.start
         let end = completion.range.end
         let suggestionContent = completion.text
@@ -85,6 +84,52 @@ public struct SuggestionInjector {
             line: startLine + toBeInserted.count - 1,
             character: max(0, cursorCol)
         )
+        extraInfo.modificationRanges[completion.id] = .init(start: start, end: cursorPosition)
+    }
+
+    public func acceptSuggestions(
+        intoContentWithoutSuggestion content: inout [String],
+        cursorPosition: inout CursorPosition,
+        completions: [CodeSuggestion],
+        extraInfo: inout ExtraInfo
+    ) {
+        var previousCompletion: CodeSuggestion?
+
+        let sortedCompletions = completions.sorted { $0.range.start.line < $1.range.start.line }
+
+        for var completion in sortedCompletions {
+            defer { previousCompletion = completion }
+
+            // Adjust the position of the completion by the accumulated line count change
+            if let previousCompletionId = previousCompletion?.id,
+               let previousRange = extraInfo.modificationRanges[previousCompletionId]
+            {
+                let lineCountChange = previousRange
+                    .lineCount - (completion.range.start.line - previousRange.start.line)
+                completion.position = CursorPosition(
+                    line: completion.position.line + lineCountChange,
+                    character: completion.position.character
+                )
+                completion.range = CursorRange(
+                    start: CursorPosition(
+                        line: completion.range.start.line + lineCountChange,
+                        character: completion.range.start.character
+                    ),
+                    end: CursorPosition(
+                        line: completion.range.end.line + lineCountChange,
+                        character: completion.range.end.character
+                    )
+                )
+            }
+
+            // Accept the suggestion
+            acceptSuggestion(
+                intoContentWithoutSuggestion: &content,
+                cursorPosition: &cursorPosition,
+                completion: completion,
+                extraInfo: &extraInfo
+            )
+        }
     }
 
     func recoverSuffixIfNeeded(

@@ -35,7 +35,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(
@@ -83,7 +89,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -127,7 +139,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -175,7 +193,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -218,7 +242,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 21)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 21))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -258,12 +288,18 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
         print("Hello World!")
-        
+
         """)
     }
 
@@ -302,7 +338,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 3, character: 1)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 3, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -347,7 +389,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 6, character: 1)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 6, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -394,7 +442,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 6, character: 1)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 6, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -445,7 +499,13 @@ final class AcceptSuggestionTests: XCTestCase {
 
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 4, character: 1)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 4, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -499,7 +559,13 @@ final class AcceptSuggestionTests: XCTestCase {
 
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 4, character: 7),
+                                end: .init(line: 7, character: 5)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 7, character: 5))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -551,7 +617,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_remove_the_first_adjacent_placeholder_in_the_last_line(
     ) async throws {
         let content = """
@@ -585,7 +651,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_start_from_previous_line_has_emoji_inside() async throws {
         let content = """
         struct 😹😹 {
@@ -618,7 +684,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -629,7 +701,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_overlap_with_emoji_in_the_previous_code() async throws {
         let content = """
         struct 😹😹 {
@@ -662,7 +734,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -673,7 +751,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_overlap_continue_typing_has_emoji_inside() async throws {
         let content = """
         struct 😹😹 {
@@ -710,7 +788,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 1, character: 0),
+                                end: .init(line: 2, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 2, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -721,7 +805,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_replacing_multiple_lines_with_emoji() async throws {
         let content = """
         struct 😹😹 {
@@ -758,7 +842,13 @@ final class AcceptSuggestionTests: XCTestCase {
 
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 4, character: 1)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 4, character: 1))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -770,8 +860,9 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
-    func test_accept_suggestion_overlap_continue_typing_suggestion_with_emoji_in_the_middle() async throws {
+
+    func test_accept_suggestion_overlap_continue_typing_suggestion_with_emoji_in_the_middle(
+    ) async throws {
         let content = """
         print("🐶")
         """
@@ -802,7 +893,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 19)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 19))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -810,7 +907,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_replacing_single_line_in_the_middle_should_not_remove_the_next_character_with_emoji(
     ) async throws {
         let content = """
@@ -844,7 +941,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_in_the_middle_single_line() async throws {
         let content = """
         let foobar = 1
@@ -874,7 +971,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 10)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 10))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -882,7 +985,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_in_the_middle_single_line_case_2() async throws {
         let content = """
                 let pikachecker = 1
@@ -912,7 +1015,13 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 23)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 23))
         XCTAssertEqual(lines.joined(separator: ""), """
@@ -920,7 +1029,7 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accept_suggestion_rewriting_the_single_line() async throws {
         let content = """
         let foobar =
@@ -950,13 +1059,80 @@ final class AcceptSuggestionTests: XCTestCase {
         )
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
-        XCTAssertNil(extraInfo.suggestionRange)
+        XCTAssertEqual(
+            extraInfo.modificationRanges,
+            [
+                "": CursorRange(start: .init(line: 0, character: 0),
+                                end: .init(line: 0, character: 14)),
+            ]
+        )
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
         XCTAssertEqual(cursor, .init(line: 0, character: 14))
         XCTAssertEqual(lines.joined(separator: ""), """
         let zooKoo = 2
 
         """)
+    }
+    
+    func test_accepting_multiple_suggestions_at_a_time() async throws {
+        let content = """
+        let foobar = 1
+        let zooKoo = 2
+        """
+        let text1 = """
+        let fooBar = 1
+        let fooBar = 2
+        """
+        let suggestion1 = CodeSuggestion(
+            id: "1",
+            text: text1,
+            position: .init(line: 0, character: 0),
+            range: .init(
+                start: .init(line: 0, character: 0),
+                end: .init(line: 0, character: 14)
+            ),
+            replacingLines: content.breakLines(appendLineBreakToLastLine: true)
+        )
+
+        let text2 = """
+        let zooKoo = 2
+        let zooKoo = 3
+        """
+        let suggestion2 = CodeSuggestion(
+            id: "2",
+            text: text2,
+            position: .init(line: 1, character: 0),
+            range: .init(
+                start: .init(line: 1, character: 0),
+                end: .init(line: 1, character: 14)
+            ),
+            replacingLines: content.breakLines(appendLineBreakToLastLine: true)
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 0, character: 14)
+        SuggestionInjector().acceptSuggestions(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completions: [suggestion1, suggestion2],
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 3, character: 14))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        let fooBar = 1
+        let fooBar = 2
+        let zooKoo = 2
+        let zooKoo = 3
+        
+        """)
+        XCTAssertEqual(extraInfo.modificationRanges, [
+            "1": .init(start: .init(line: 0, character: 0), end: .init(line: 1, character: 14)),
+            "2": .init(start: .init(line: 2, character: 0), end: .init(line: 3, character: 14))
+        ])
     }
 }
 
