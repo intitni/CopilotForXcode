@@ -104,7 +104,7 @@ extension Filespace {
     ) -> Bool {
         // cursor is not even moved during the generation.
         if alwaysTrueIfCursorNotMoved, cursorPosition == suggestion.position { return true }
-        
+
         // cursor has moved to another line
         if cursorPosition.line != suggestion.position.line { return false }
 
@@ -219,6 +219,23 @@ extension Filespace {
             completion: pseudoSuggestion,
             extraInfo: &extraInfo
         )
+
+        // We want that finish typing a partial suggestion should also make no difference.
+        if let lastOriginalLine = originalEditingLines.last,
+           cursorPosition.character < lastOriginalLine.utf16.count,
+           // But we also want to separate this case from the case that the suggestion is
+           // shortening the last line. Which does make a difference.
+           suggestion.range.end.character < lastOriginalLine.utf16.count - 1 // for line ending
+        {
+            let editingLinesPrefix = editingLines.dropLast()
+            let originalEditingLinesPrefix = originalEditingLines.dropLast()
+            if editingLinesPrefix != originalEditingLinesPrefix {
+                return false
+            }
+            let lastEditingLine = editingLines.last ?? "\n"
+            return lastOriginalLine.hasPrefix(lastEditingLine.dropLast(1)) // for line ending
+        }
+
         return editingLines == originalEditingLines
     }
 }
