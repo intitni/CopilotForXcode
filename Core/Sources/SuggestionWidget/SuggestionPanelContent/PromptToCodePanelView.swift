@@ -191,11 +191,13 @@ extension PromptToCodePanelView {
                     if !isResponding || isRespondingButCodeIsReady {
                         HStack {
                             Menu {
-                                Toggle(
-                                    "Always accept and continue",
-                                    isOn: $store.isContinuous.animation(.easeInOut(duration: 0.1))
-                                )
-                                .toggleStyle(.checkbox)
+                                WithPerceptionTracking {
+                                    Toggle(
+                                        "Always accept and continue",
+                                        isOn: $store.isContinuous.animation(.easeInOut(duration: 0.1))
+                                    )
+                                    .toggleStyle(.checkbox)
+                                }
                             } label: {
                                 Image(systemName: "gearshape.fill")
                                     .foregroundStyle(.secondary)
@@ -314,27 +316,32 @@ extension PromptToCodePanelView {
         var body: some View {
             WithPerceptionTracking {
                 ScrollView {
-                    VStack(spacing: 0) {
-                        Spacer(minLength: 56)
-
+                    WithPerceptionTracking {
                         VStack(spacing: 0) {
-                            let language = store.promptToCodeState.source.language
-                            let isAttached = store.promptToCodeState.isAttachedToTarget
-                            ForEach(store.scope(
-                                state: \.snippetPanels,
-                                action: \.snippetPanel
-                            )) { snippetStore in
-                                if snippetStore.id != store.promptToCodeState.snippets.last?.id {
-                                    Divider()
+                            Spacer(minLength: 56)
+                            
+                            VStack(spacing: 0) {
+                                let language = store.promptToCodeState.source.language
+                                let isAttached = store.promptToCodeState.isAttachedToTarget
+                                let lastId = store.promptToCodeState.snippets.last?.id
+                                ForEach(store.scope(
+                                    state: \.snippetPanels,
+                                    action: \.snippetPanel
+                                )) { snippetStore in
+                                    WithPerceptionTracking {
+                                        if snippetStore.id != lastId {
+                                            Divider()
+                                        }
+                                        
+                                        SnippetPanelView(
+                                            store: snippetStore,
+                                            language: language,
+                                            codeForegroundColor: codeForegroundColor ?? .primary,
+                                            codeBackgroundColor: codeBackgroundColor,
+                                            isAttached: isAttached
+                                        )
+                                    }
                                 }
-
-                                SnippetPanelView(
-                                    store: snippetStore,
-                                    language: language,
-                                    codeForegroundColor: codeForegroundColor ?? .primary,
-                                    codeBackgroundColor: codeBackgroundColor,
-                                    isAttached: isAttached
-                                )
                             }
                         }
                     }

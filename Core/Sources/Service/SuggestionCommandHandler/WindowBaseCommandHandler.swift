@@ -177,59 +177,58 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         let injector = SuggestionInjector()
         var lines = editor.lines
-        var ranges = [CursorRange]()
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
         let store = await Service.shared.guiController.store
 
-        if let promptToCode = store.state.promptToCodeGroup.activePromptToCode {
+        if let promptToCode = await MainActor
+            .run(body: { store.state.promptToCodeGroup.activePromptToCode })
+        {
             if promptToCode.promptToCodeState.isAttachedToTarget,
                promptToCode.promptToCodeState.source.documentURL != fileURL
             {
                 return nil
             }
 
-            for snippet in promptToCode.promptToCodeState.snippets.sorted(by: { a, b in
-                a.attachedRange.start.line > b.attachedRange.start.line
-            }) {
-                let range = {
-                    if promptToCode.promptToCodeState.isAttachedToTarget {
-                        return snippet.attachedRange
-                    }
-                    return editor.selections.first.map {
-                        CursorRange(start: $0.start, end: $0.end)
-                    } ?? CursorRange(
-                        start: editor.cursorPosition,
-                        end: editor.cursorPosition
+            let suggestions = promptToCode.promptToCodeState.snippets
+                .map { snippet in
+                    let range = {
+                        if promptToCode.promptToCodeState.isAttachedToTarget {
+                            return snippet.attachedRange
+                        }
+                        return editor.selections.first.map {
+                            CursorRange(start: $0.start, end: $0.end)
+                        } ?? CursorRange(
+                            start: editor.cursorPosition,
+                            end: editor.cursorPosition
+                        )
+                    }()
+                    return CodeSuggestion(
+                        id: snippet.id.uuidString,
+                        text: snippet.modifiedCode,
+                        position: range.start,
+                        range: range
                     )
-                }()
+                }
 
-                ranges.append(range)
+            injector.acceptSuggestions(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completions: suggestions,
+                extraInfo: &extraInfo
+            )
 
-                let suggestion = CodeSuggestion(
-                    id: UUID().uuidString,
-                    text: snippet.modifiedCode,
-                    position: range.start,
-                    range: range
-                )
-
-                injector.acceptSuggestion(
-                    intoContentWithoutSuggestion: &lines,
-                    cursorPosition: &cursorPosition,
-                    completion: suggestion,
-                    extraInfo: &extraInfo
-                )
-
-                _ = await Task { @MainActor [cursorPosition] in
-                    await store.send(
+            for (id, range) in extraInfo.modificationRanges {
+                _ = await MainActor.run {
+                    store.send(
                         .promptToCodeGroup(.updatePromptToCodeRange(
                             id: promptToCode.id,
-                            snippetId: snippet.id,
-                            range: .init(start: range.start, end: cursorPosition)
+                            snippetId: .init(uuidString: id) ?? .init(),
+                            range: range
                         ))
-                    ).finish()
-                }.value
+                    )
+                }
             }
 
             _ = await MainActor.run {
@@ -242,7 +241,8 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelections: ranges,
+                newSelections: extraInfo.modificationRanges.values
+                    .sorted(by: { $0.start.line <= $1.start.line }),
                 modifications: extraInfo.modifications
             )
         }
@@ -436,10 +436,10 @@ extension WindowBaseCommandHandler {
                         content: editor.content,
                         lines: editor.lines
                     ),
-                    snippets: IdentifiedArray(snippets),
+                    snippets: IdentifiedArray(uniqueElements: snippets),
                     instruction: newPrompt ?? "",
                     extraSystemPrompt: newExtraSystemPrompt ?? "",
-                    isAttachedToTarget: false
+                    isAttachedToTarget: true
                 )),
                 indentSize: filespace.codeMetadata.indentSize ?? 4,
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
