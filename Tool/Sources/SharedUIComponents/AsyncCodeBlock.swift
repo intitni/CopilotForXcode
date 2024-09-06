@@ -524,4 +524,3 @@ extension AsyncCodeBlock {
     return UpdateContent()
         .frame(width: 400, height: 200)
 }
-

@@ -194,7 +194,8 @@ extension PromptToCodePanelView {
                                 WithPerceptionTracking {
                                     Toggle(
                                         "Always accept and continue",
-                                        isOn: $store.isContinuous.animation(.easeInOut(duration: 0.1))
+                                        isOn: $store.isContinuous
+                                            .animation(.easeInOut(duration: 0.1))
                                     )
                                     .toggleStyle(.checkbox)
                                 }
@@ -319,7 +320,7 @@ extension PromptToCodePanelView {
                     WithPerceptionTracking {
                         VStack(spacing: 0) {
                             Spacer(minLength: 56)
-                            
+
                             VStack(spacing: 0) {
                                 let language = store.promptToCodeState.source.language
                                 let isAttached = store.promptToCodeState.isAttachedToTarget
@@ -332,7 +333,7 @@ extension PromptToCodePanelView {
                                         if snippetStore.id != lastId {
                                             Divider()
                                         }
-                                        
+
                                         SnippetPanelView(
                                             store: snippetStore,
                                             language: language,
@@ -471,6 +472,9 @@ extension PromptToCodePanelView {
             var body: some View {
                 WithPerceptionTracking {
                     if !store.snippet.modifiedCode.isEmpty {
+                        let wrapCode = wrapCode ||
+                            [CodeLanguage.plaintext, .builtIn(.markdown), .builtIn(.shellscript),
+                             .builtIn(.tex)].contains(language)
                         if wrapCode {
                             CodeBlockInContent(
                                 store: store,
