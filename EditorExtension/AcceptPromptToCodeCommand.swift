@@ -4,7 +4,7 @@ import SuggestionBasic
 import XcodeKit
 
 class AcceptPromptToCodeCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Accept Prompt to Code" }
+    var name: String { "Accept Modification" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,

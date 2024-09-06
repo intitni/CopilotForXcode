@@ -33,7 +33,7 @@ struct ServiceView: View {
                     )).sidebarItem(
                         tag: 2,
                         title: "Chat Models",
-                        subtitle: "Chat, Prompt to Code",
+                        subtitle: "Chat, Modification",
                         image: "globe"
                     )
                     
@@ -43,7 +43,7 @@ struct ServiceView: View {
                     )).sidebarItem(
                         tag: 3,
                         title: "Embedding Models",
-                        subtitle: "Chat, Prompt to Code",
+                        subtitle: "Chat, Modification",
                         image: "globe"
                     )
                     

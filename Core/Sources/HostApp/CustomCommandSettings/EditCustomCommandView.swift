@@ -37,7 +37,7 @@ struct EditCustomCommandView: View {
                         case .sendMessage:
                             return "Send Message"
                         case .promptToCode:
-                            return "Prompt to Code"
+                            return "Modification"
                         case .customChat:
                             return "Custom Chat"
                         case .singleRoundDialog:

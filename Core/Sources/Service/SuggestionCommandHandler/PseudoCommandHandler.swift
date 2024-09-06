@@ -207,7 +207,7 @@ struct PseudoCommandHandler: CommandHandler {
             }
             do {
                 try await XcodeInspector.shared.safe.latestActiveXcode?
-                    .triggerCopilotCommand(name: "Accept Prompt to Code")
+                    .triggerCopilotCommand(name: "Accept Modification")
             } catch {
                 let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
                 let now = Date()
