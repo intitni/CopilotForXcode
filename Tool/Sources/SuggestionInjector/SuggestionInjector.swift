@@ -93,19 +93,39 @@ public struct SuggestionInjector {
         completions: [CodeSuggestion],
         extraInfo: inout ExtraInfo
     ) {
-        var previousCompletion: CodeSuggestion?
-
-        let sortedCompletions = completions.sorted { $0.range.start.line < $1.range.start.line }
+        let sortedCompletions = completions.sorted {
+            if $0.range.start.line < $1.range.start.line {
+                true
+            } else if $0.range.start.line == $1.range.start.line {
+                $0.range.start.character < $1.range.start.character
+            } else {
+                false
+            }
+        }
 
         for var completion in sortedCompletions {
-            defer { previousCompletion = completion }
+            let lineCountChange: Int = {
+                var accumulation = 0
+                let endIndex = completion.range.start.line
+                for modification in extraInfo.modifications {
+                    switch modification {
+                    case let .deleted(range):
+                        if range.lowerBound <= endIndex {
+                            accumulation -= range.count
+                            if range.upperBound >= endIndex {
+                                accumulation += range.upperBound - endIndex
+                            }
+                        }
+                    case let .inserted(index, lines):
+                        if index <= endIndex {
+                            accumulation += lines.count
+                        }
+                    }
+                }
+                return accumulation
+            }()
 
-            // Adjust the position of the completion by the accumulated line count change
-            if let previousCompletionId = previousCompletion?.id,
-               let previousRange = extraInfo.modificationRanges[previousCompletionId]
-            {
-                let lineCountChange = previousRange
-                    .lineCount - (completion.range.start.line - previousRange.start.line)
+            if lineCountChange != 0 {
                 completion.position = CursorPosition(
                     line: completion.position.line + lineCountChange,
                     character: completion.position.character
@@ -121,6 +141,18 @@ public struct SuggestionInjector {
                     )
                 )
             }
+
+            completion.replacingLines = {
+                let start = completion.range.start.line
+                let end = completion.range.end.line
+                if start >= content.endIndex {
+                    return []
+                }
+                if end < content.endIndex {
+                    return Array(content[start...end])
+                }
+                return Array(content[start...])
+            }()
 
             // Accept the suggestion
             acceptSuggestion(

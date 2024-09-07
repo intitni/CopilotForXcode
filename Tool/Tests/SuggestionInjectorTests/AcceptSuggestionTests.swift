@@ -1073,45 +1073,152 @@ final class AcceptSuggestionTests: XCTestCase {
 
         """)
     }
-    
+
     func test_accepting_multiple_suggestions_at_a_time() async throws {
         let content = """
-        let foobar = 1
-        let zooKoo = 2
+        protocol Definition {
+            var id: String
+            var name: String
+        }
+
+        struct Foo {
+
+        }
+
+        struct Bar {
+
+        }
+
+        let foo = Foo()
+
+        struct Baz {}
         """
         let text1 = """
-        let fooBar = 1
-        let fooBar = 2
+        struct Foo: Definition {
+            var id: String
+            var name: String
+        }
         """
         let suggestion1 = CodeSuggestion(
             id: "1",
             text: text1,
-            position: .init(line: 0, character: 0),
+            position: .init(line: 5, character: 0),
             range: .init(
-                start: .init(line: 0, character: 0),
-                end: .init(line: 0, character: 14)
+                start: .init(line: 5, character: 0),
+                end: .init(line: 7, character: 1)
             ),
-            replacingLines: content.breakLines(appendLineBreakToLastLine: true)
+            replacingLines: Array(content.breakLines(appendLineBreakToLastLine: true)[5...7])
         )
 
         let text2 = """
-        let zooKoo = 2
-        let zooKoo = 3
+        struct Bar: Definition {
+            var id: String
+            var name: String
+        }
         """
         let suggestion2 = CodeSuggestion(
             id: "2",
             text: text2,
-            position: .init(line: 1, character: 0),
+            position: .init(line: 9, character: 0),
             range: .init(
-                start: .init(line: 1, character: 0),
-                end: .init(line: 1, character: 14)
+                start: .init(line: 9, character: 0),
+                end: .init(line: 11, character: 1)
             ),
-            replacingLines: content.breakLines(appendLineBreakToLastLine: true)
+            replacingLines: Array(content.breakLines(appendLineBreakToLastLine: true)[9...11])
+        )
+
+        let text3 = """
+        struct Baz: Definition {
+            var id: String
+            var name: String
+        }
+        """
+        let suggestion3 = CodeSuggestion(
+            id: "3",
+            text: text3,
+            position: .init(line: 15, character: 0),
+            range: .init(
+                start: .init(line: 15, character: 0),
+                end: .init(line: 15, character: 13)
+            ),
+            replacingLines: Array(content.breakLines(appendLineBreakToLastLine: true)[15...15])
         )
 
         var extraInfo = SuggestionInjector.ExtraInfo()
         var lines = content.breakIntoEditorStyleLines()
         var cursor = CursorPosition(line: 0, character: 14)
+        SuggestionInjector().acceptSuggestions(
+            intoContentWithoutSuggestion: &lines,
+            cursorPosition: &cursor,
+            completions: [suggestion1, suggestion2, suggestion3],
+            extraInfo: &extraInfo
+        )
+        XCTAssertTrue(extraInfo.didChangeContent)
+        XCTAssertTrue(extraInfo.didChangeCursorPosition)
+        XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
+        XCTAssertEqual(cursor, .init(line: 20, character: 1))
+        XCTAssertEqual(lines.joined(separator: ""), """
+        protocol Definition {
+            var id: String
+            var name: String
+        }
+
+        struct Foo: Definition {
+            var id: String
+            var name: String
+        }
+
+        struct Bar: Definition {
+            var id: String
+            var name: String
+        }
+
+        let foo = Foo()
+
+        struct Baz: Definition {
+            var id: String
+            var name: String
+        }
+
+        """)
+        XCTAssertEqual(extraInfo.modificationRanges, [
+            "1": .init(start: .init(line: 5, character: 0), end: .init(line: 8, character: 1)),
+            "2": .init(start: .init(line: 10, character: 0), end: .init(line: 13, character: 1)),
+            "3": .init(start: .init(line: 17, character: 0), end: .init(line: 20, character: 1)),
+        ])
+    }
+    
+    func test_accepting_multiple_same_line_suggestions_at_a_time() async throws {
+        let content = "let foo = 1\n"
+        let text1 = "berry"
+        let suggestion1 = CodeSuggestion(
+            id: "1",
+            text: text1,
+            position: .init(line: 0, character: 4),
+            range: .init(
+                start: .init(line: 0, character: 4),
+                end: .init(line: 0, character: 7)
+            ),
+            replacingLines: [content]
+        )
+
+        let text2 = """
+        200
+        """
+        let suggestion2 = CodeSuggestion(
+            id: "2",
+            text: text2,
+            position: .init(line: 0, character: 10),
+            range: .init(
+                start: .init(line: 0, character: 10),
+                end: .init(line: 0, character: 11)
+            ),
+            replacingLines: [content]
+        )
+
+        var extraInfo = SuggestionInjector.ExtraInfo()
+        var lines = content.breakIntoEditorStyleLines()
+        var cursor = CursorPosition(line: 0, character: 0)
         SuggestionInjector().acceptSuggestions(
             intoContentWithoutSuggestion: &lines,
             cursorPosition: &cursor,
@@ -1121,17 +1228,11 @@ final class AcceptSuggestionTests: XCTestCase {
         XCTAssertTrue(extraInfo.didChangeContent)
         XCTAssertTrue(extraInfo.didChangeCursorPosition)
         XCTAssertEqual(lines, content.breakIntoEditorStyleLines().applying(extraInfo.modifications))
-        XCTAssertEqual(cursor, .init(line: 3, character: 14))
-        XCTAssertEqual(lines.joined(separator: ""), """
-        let fooBar = 1
-        let fooBar = 2
-        let zooKoo = 2
-        let zooKoo = 3
-        
-        """)
+        XCTAssertEqual(cursor, .init(line: 0, character: 15))
+        XCTAssertEqual(lines.joined(separator: ""), "let berry = 200\n")
         XCTAssertEqual(extraInfo.modificationRanges, [
-            "1": .init(start: .init(line: 0, character: 0), end: .init(line: 1, character: 14)),
-            "2": .init(start: .init(line: 2, character: 0), end: .init(line: 3, character: 14))
+            "1": .init(start: .init(line: 0, character: 4), end: .init(line: 0, character: 9)),
+            "2": .init(start: .init(line: 0, character: 12), end: .init(line: 0, character: 15)),
         ])
     }
 }
