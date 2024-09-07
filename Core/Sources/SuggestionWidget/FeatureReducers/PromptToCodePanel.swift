@@ -34,6 +34,8 @@ public struct PromptToCodePanel {
         public var canRevert: Bool { !promptToCodeState.history.isEmpty }
 
         public var generateDescriptionRequirement: Bool
+        
+        public var hasEnded = false
 
         public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
             get {
@@ -223,6 +225,7 @@ public struct PromptToCodePanel {
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .acceptButtonTapped:
+                state.hasEnded = true
                 return .run { _ in
                     await commandHandler.acceptPromptToCode()
                     activatePreviousActiveXcode()

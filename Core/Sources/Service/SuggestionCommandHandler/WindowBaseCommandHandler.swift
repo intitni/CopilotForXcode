@@ -365,7 +365,38 @@ extension WindowBaseCommandHandler {
 
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
-        let snippets = editor.selections.map { selection in
+        let selections: [CursorRange] = {
+            var all = [CursorRange]()
+
+            // join the ranges if they overlaps in line
+
+            for selection in editor.selections {
+                let range = CursorRange(start: selection.start, end: selection.end)
+
+                func intersect(_ lhs: CursorRange, _ rhs: CursorRange) -> Bool {
+                    lhs.start.line <= rhs.end.line && lhs.end.line >= rhs.start.line
+                }
+
+                if let last = all.last, intersect(last, range) {
+                    all[all.count - 1] = CursorRange(
+                        start: .init(
+                            line: min(last.start.line, range.start.line),
+                            character: min(last.start.character, range.start.character)
+                        ),
+                        end: .init(
+                            line: max(last.end.line, range.end.line),
+                            character: max(last.end.character, range.end.character)
+                        )
+                    )
+                } else if !range.isEmpty {
+                    all.append(range)
+                }
+            }
+
+            return all
+        }()
+
+        let snippets = selections.map { selection in
             guard selection.start != selection.end else {
                 return PromptToCodeSnippet(
                     startLineIndex: selection.start.line,
@@ -373,7 +404,7 @@ extension WindowBaseCommandHandler {
                     modifiedCode: "",
                     description: "",
                     error: "",
-                    attachedRange: .init(start: selection.start, end: selection.end)
+                    attachedRange: selection
                 )
             }
             var selection = selection
@@ -399,7 +430,10 @@ extension WindowBaseCommandHandler {
                 // indentation.
                 selection.start = .init(line: selection.start.line, character: 0)
             }
-            let selectedCode = editor.selectedCode(in: selection)
+            let selectedCode = editor.selectedCode(in: .init(
+                start: selection.start,
+                end: selection.end
+            ))
             return PromptToCodeSnippet(
                 startLineIndex: selection.start.line,
                 originalCode: selectedCode,

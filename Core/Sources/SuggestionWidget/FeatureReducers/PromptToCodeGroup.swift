@@ -80,7 +80,7 @@ public struct PromptToCodeGroup {
                 return .none
 
             case let .discardAcceptedPromptToCodeIfNotContinuous(id):
-                state.promptToCodes.removeAll { $0.id == id && !$0.isContinuous }
+                state.promptToCodes.removeAll { $0.id == id && $0.hasEnded }
                 return .none
 
             case let .updateActivePromptToCode(documentURL):
