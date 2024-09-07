@@ -38,6 +38,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
     public var retrievedContent: [ChatMessage.Reference] = []
     public var configuration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
+    public var maxNumberOfMessages: Int
 
     var onHistoryChange: () -> Void = {}
 
@@ -47,6 +48,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         systemPrompt: String,
         configuration: ChatGPTConfiguration,
         functionProvider: ChatGPTFunctionProvider,
+        maxNumberOfMessages: Int = .max,
         composeHistory: @escaping HistoryComposer = {
             /// Default Format:
             /// ```
@@ -70,6 +72,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
         self.configuration = configuration
         self.functionProvider = functionProvider
         self.composeHistory = composeHistory
+        self.maxNumberOfMessages = maxNumberOfMessages
     }
 
     public func mutateHistory(_ update: (inout [ChatMessage]) -> Void) {
@@ -110,10 +113,7 @@ public actor AutoManagedChatGPTMemory: ChatGPTMemory {
 
 extension AutoManagedChatGPTMemory {
     /// https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    func generateSendingHistory(
-        maxNumberOfMessages: Int = UserDefaults.shared.value(for: \.chatGPTMaxMessageCount),
-        strategy: AutoManagedChatGPTMemoryStrategy
-    ) async -> ChatGPTPrompt {
+    func generateSendingHistory(strategy: AutoManagedChatGPTMemoryStrategy) async -> ChatGPTPrompt {
         // handle no function support models
 
         let (

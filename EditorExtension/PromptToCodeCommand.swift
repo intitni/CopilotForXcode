@@ -4,7 +4,7 @@ import Foundation
 import XcodeKit
 
 class PromptToCodeCommand: NSObject, XCSourceEditorCommand, CommandType {
-    var name: String { "Prompt to Code" }
+    var name: String { "Write or Modify Code" }
 
     func perform(
         with invocation: XCSourceEditorCommandInvocation,

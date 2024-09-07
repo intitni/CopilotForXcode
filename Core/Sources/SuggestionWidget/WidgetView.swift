@@ -5,7 +5,7 @@ import SuggestionBasic
 import SwiftUI
 
 struct WidgetView: View {
-    let store: StoreOf<CircularWidgetFeature>
+    let store: StoreOf<CircularWidget>
     @State var isHovering: Bool = false
     var onOpenChatClicked: () -> Void = {}
     var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }
@@ -41,7 +41,7 @@ struct WidgetView: View {
 }
 
 struct WidgetAnimatedCircle: View {
-    let store: StoreOf<CircularWidgetFeature>
+    let store: StoreOf<CircularWidget>
     @State var processingProgress: Double = 0
 
     struct OverlayCircleState: Equatable {
@@ -133,7 +133,7 @@ struct WidgetContextMenu: View {
     @AppStorage(\.suggestionFeatureEnabledProjectList) var suggestionFeatureEnabledProjectList
     @AppStorage(\.suggestionFeatureDisabledLanguageList) var suggestionFeatureDisabledLanguageList
     @AppStorage(\.customCommands) var customCommands
-    let store: StoreOf<CircularWidgetFeature>
+    let store: StoreOf<CircularWidget>
 
     @Dependency(\.xcodeInspector) var xcodeInspector
 
@@ -259,7 +259,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: { CircularWidgetFeature() }
+                    reducer: { CircularWidget() }
                 ),
                 isHovering: false
             )
@@ -273,7 +273,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: { CircularWidgetFeature() }
+                    reducer: { CircularWidget() }
                 ),
                 isHovering: true
             )
@@ -287,7 +287,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: { CircularWidgetFeature() }
+                    reducer: { CircularWidget() }
                 ),
                 isHovering: false
             )
@@ -301,7 +301,7 @@ struct WidgetView_Preview: PreviewProvider {
                         isChatPanelDetached: false,
                         isChatOpen: false
                     ),
-                    reducer: { CircularWidgetFeature() }
+                    reducer: { CircularWidget() }
                 ),
                 isHovering: false
             )

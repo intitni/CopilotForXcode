@@ -12,7 +12,8 @@ public func askChatGPT(
     let memory = AutoManagedChatGPTMemory(
         systemPrompt: systemPrompt,
         configuration: configuration,
-        functionProvider: NoChatGPTFunctionProvider()
+        functionProvider: NoChatGPTFunctionProvider(), 
+        maxNumberOfMessages: .max
     )
     let service = LegacyChatGPTService(
         memory: memory,

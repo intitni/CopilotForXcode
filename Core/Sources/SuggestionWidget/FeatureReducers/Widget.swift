@@ -10,7 +10,7 @@ import Toast
 import XcodeInspector
 
 @Reducer
-public struct WidgetFeature {
+public struct Widget {
     public struct WindowState: Equatable {
         var alphaValue: Double = 0
         var frame: CGRect = .zero
@@ -22,7 +22,7 @@ public struct WidgetFeature {
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State {
         var focusingDocumentURL: URL?
         public var colorScheme: ColorScheme = .light
 
@@ -30,21 +30,21 @@ public struct WidgetFeature {
 
         // MARK: Panels
 
-        public var panelState = PanelFeature.State()
+        public var panelState = WidgetPanel.State()
 
         // MARK: ChatPanel
 
-        public var chatPanelState = ChatPanelFeature.State()
+        public var chatPanelState = ChatPanel.State()
 
         // MARK: CircularWidget
 
         public struct CircularWidgetState: Equatable {
-            var isProcessingCounters = [CircularWidgetFeature.IsProcessingCounter]()
+            var isProcessingCounters = [CircularWidget.IsProcessingCounter]()
             var isProcessing: Bool = false
         }
 
         public var circularWidgetState = CircularWidgetState()
-        var _internalCircularWidgetState: CircularWidgetFeature.State {
+        var _internalCircularWidgetState: CircularWidget.State {
             get {
                 .init(
                     isProcessingCounters: circularWidgetState.isProcessingCounters,
@@ -90,7 +90,7 @@ public struct WidgetFeature {
         case observeUserDefaults
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case startup
         case observeActiveApplicationChange
         case observeColorSchemeChange
@@ -104,9 +104,9 @@ public struct WidgetFeature {
         case updateKeyWindow(WindowCanBecomeKey)
 
         case toastPanel(ToastPanel.Action)
-        case panel(PanelFeature.Action)
-        case chatPanel(ChatPanelFeature.Action)
-        case circularWidget(CircularWidgetFeature.Action)
+        case panel(WidgetPanel.Action)
+        case chatPanel(ChatPanel.Action)
+        case circularWidget(CircularWidget.Action)
     }
 
     var windowsController: WidgetWindowsController? {
@@ -132,7 +132,7 @@ public struct WidgetFeature {
         }
 
         Scope(state: \._internalCircularWidgetState, action: \.circularWidget) {
-            CircularWidgetFeature()
+            CircularWidget()
         }
 
         Reduce { state, action in
@@ -181,11 +181,11 @@ public struct WidgetFeature {
         }
 
         Scope(state: \.panelState, action: \.panel) {
-            PanelFeature()
+            WidgetPanel()
         }
 
         Scope(state: \.chatPanelState, action: \.chatPanel) {
-            ChatPanelFeature()
+            ChatPanel()
         }
 
         Reduce { state, action in

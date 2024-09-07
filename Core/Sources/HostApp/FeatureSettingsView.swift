@@ -26,8 +26,8 @@ struct FeatureSettingsView: View {
             }
             .sidebarItem(
                 tag: 2,
-                title: "Prompt to Code",
-                subtitle: "Write code with natural language",
+                title: "Modification",
+                subtitle: "Write or modify code with natural language",
                 image: "paintbrush"
             )
 

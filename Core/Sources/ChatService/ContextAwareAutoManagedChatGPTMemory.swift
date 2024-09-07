@@ -22,7 +22,8 @@ public final class ContextAwareAutoManagedChatGPTMemory: ChatGPTMemory {
         memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
             configuration: configuration,
-            functionProvider: functionProvider
+            functionProvider: functionProvider,
+            maxNumberOfMessages: UserDefaults.shared.value(for: \.chatGPTMaxMessageCount)
         )
         contextController = DynamicContextController(
             memory: memory,

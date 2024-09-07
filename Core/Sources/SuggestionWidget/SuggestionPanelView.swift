@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 struct SuggestionPanelView: View {
-    let store: StoreOf<SuggestionPanelFeature>
+    let store: StoreOf<SuggestionPanel>
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -54,7 +54,7 @@ struct SuggestionPanelView: View {
     }
 
     struct Content: View {
-        let store: StoreOf<SuggestionPanelFeature>
+        let store: StoreOf<SuggestionPanel>
         @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
         var body: some View {
@@ -63,7 +63,7 @@ struct SuggestionPanelView: View {
                     ZStack(alignment: .topLeading) {
                         switch suggestionPresentationMode {
                         case .nearbyTextCursor:
-                            CodeBlockSuggestionPanel(suggestion: content)
+                            CodeBlockSuggestionPanelView(suggestion: content)
                         case .floatingWidget:
                             EmptyView()
                         }

@@ -207,20 +207,25 @@ struct PseudoCommandHandler: CommandHandler {
             }
             do {
                 try await XcodeInspector.shared.safe.latestActiveXcode?
-                    .triggerCopilotCommand(name: "Accept Prompt to Code")
+                    .triggerCopilotCommand(name: "Accept Modification")
             } catch {
-                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
-                let now = Date()
-                if now.timeIntervalSince(last) > 60 * 60 {
-                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
-                    toast.toast(content: """
+                do {
+                    try await XcodeInspector.shared.safe.latestActiveXcode?
+                        .triggerCopilotCommand(name: "Accept Prompt to Code")
+                } catch {
+                    let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
+                    let now = Date()
+                    if now.timeIntervalSince(last) > 60 * 60 {
+                        Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
+                        toast.toast(content: """
                     The app is using a fallback solution to accept suggestions. \
                     For better experience, please restart Xcode to re-activate the Copilot \
                     menu item.
                     """, type: .warning)
+                    }
+                    
+                    throw error
                 }
-
-                throw error
             }
         } catch {
             guard let xcode = ActiveApplicationMonitor.shared.activeXcode
@@ -459,7 +464,7 @@ extension PseudoCommandHandler {
 
         // recover selection range
 
-        if let selection = result.newSelection {
+        if let selection = result.newSelections.first {
             var range = SourceEditor.convertCursorRangeToRange(selection, in: result.content)
             if let value = AXValueCreate(.cfRange, &range) {
                 AXUIElementSetAttributeValue(

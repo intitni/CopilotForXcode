@@ -55,8 +55,8 @@ public struct AsyncCodeBlock: View { // chat: hid
 
     public var body: some View {
         WithPerceptionTracking {
+            let commonPrecedingSpaceCount = storage.highlightStorage.commonPrecedingSpaceCount
             VStack(spacing: 2) {
-                let commonPrecedingSpaceCount = storage.highlightStorage.commonPrecedingSpaceCount
                 ForEach(Array(storage.highlightedContent.enumerated()), id: \.0) { item in
                     let (index, attributedString) = item
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -84,7 +84,9 @@ public struct AsyncCodeBlock: View { // chat: hid
             .foregroundColor(.white)
             .font(.init(font))
             .padding(.leading, 4)
-            .padding([.trailing, .top, .bottom])
+            .padding(.trailing)
+            .padding(.top, commonPrecedingSpaceCount > 0 ? 16 : 4)
+            .padding(.bottom, 4)
             .onAppear {
                 storage.dimmedCharacterCount = dimmedCharacterCount
                 storage.highlightStorage.highlight(debounce: false, for: self)
@@ -522,4 +524,3 @@ extension AsyncCodeBlock {
     return UpdateContent()
         .frame(width: 400, height: 200)
 }
-

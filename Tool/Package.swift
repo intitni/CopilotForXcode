@@ -21,6 +21,7 @@ let package = Package(
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
         .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
+        .library(name: "PromptToCode", targets: ["PromptToCodeBasic", "PromptToCodeCustomization"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -193,6 +194,26 @@ let package = Package(
                 "Preferences",
                 "Keychain",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
+            ]
+        ),
+
+        .target(
+            name: "PromptToCodeBasic",
+            dependencies: [
+                "SuggestionBasic",
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
+            ]
+        ),
+
+        .target(
+            name: "PromptToCodeCustomization",
+            dependencies: [
+                "PromptToCodeBasic",
+                "SuggestionBasic",
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
             ]
         ),
 
@@ -456,6 +477,7 @@ let package = Package(
         .target(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
+                "ASTParser",
                 "ChatContextCollector",
                 "OpenAIService",
                 "Preferences",

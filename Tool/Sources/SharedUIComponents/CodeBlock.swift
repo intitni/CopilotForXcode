@@ -84,7 +84,9 @@ public struct CodeBlock: View {
         .foregroundColor(.white)
         .font(.init(font))
         .padding(.leading, 4)
-        .padding([.trailing, .top, .bottom])
+        .padding(.trailing)
+        .padding(.top, commonPrecedingSpaceCount > 0 ? 16 : 4)
+        .padding(.bottom, 4)
     }
 
     static func highlight(

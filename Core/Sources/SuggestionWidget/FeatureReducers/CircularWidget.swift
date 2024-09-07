@@ -5,7 +5,7 @@ import SuggestionBasic
 import SwiftUI
 
 @Reducer
-public struct CircularWidgetFeature {
+public struct CircularWidget {
     public struct IsProcessingCounter: Equatable {
         var expirationDate: TimeInterval
     }

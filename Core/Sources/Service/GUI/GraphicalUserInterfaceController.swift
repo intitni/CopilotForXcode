@@ -21,10 +21,10 @@ import ChatTabPersistent
 @Reducer
 struct GUI {
     @ObservableState
-    struct State: Equatable {
-        var suggestionWidgetState = WidgetFeature.State()
+    struct State {
+        var suggestionWidgetState = Widget.State()
 
-        var chatTabGroup: ChatPanelFeature.ChatTabGroup {
+        var chatTabGroup: SuggestionWidget.ChatPanel.ChatTabGroup {
             get { suggestionWidgetState.chatPanelState.chatTabGroup }
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
@@ -64,7 +64,7 @@ struct GUI {
         case sendCustomCommandToActiveChat(CustomCommand)
         case toggleWidgetsHotkeyPressed
 
-        case suggestionWidget(WidgetFeature.Action)
+        case suggestionWidget(Widget.Action)
 
         static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
             .suggestionWidget(.panel(.sharedPanel(.promptToCodeGroup(action))))
@@ -85,7 +85,7 @@ struct GUI {
     var body: some ReducerOf<Self> {
         CombineReducers {
             Scope(state: \.suggestionWidgetState, action: \.suggestionWidget) {
-                WidgetFeature()
+                Widget()
             }
 
             Scope(
@@ -298,18 +298,7 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
-            dependencies.promptToCodeAcceptHandler = { promptToCode in
-                Task {
-                    let handler = PseudoCommandHandler()
-                    await handler.acceptPromptToCode()
-                    if !promptToCode.isContinuous {
-                        NSWorkspace.activatePreviousActiveXcode()
-                    } else {
-                        NSWorkspace.activateThisApp()
-                    }
-                }
-            }
-
+        
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
                 await chatTabPool.restore($0)

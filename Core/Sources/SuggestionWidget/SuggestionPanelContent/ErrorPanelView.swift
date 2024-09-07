@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ErrorPanel: View {
+struct ErrorPanelView: View {
     var description: String
     var onCloseButtonTap: () -> Void
 

@@ -8,7 +8,7 @@ import SwiftUI
 private let r: Double = 8
 
 struct ChatWindowView: View {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
     let toggleVisibility: (Bool) -> Void
 
     var body: some View {
@@ -38,7 +38,7 @@ struct ChatWindowView: View {
 }
 
 struct ChatTitleBar: View {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
     @State var isHovering = false
 
     var body: some View {
@@ -136,7 +136,7 @@ private extension View {
 }
 
 struct ChatTabBar: View {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
 
     struct TabBarState: Equatable {
         var tabInfo: IdentifiedArray<String, ChatTabInfo>
@@ -160,7 +160,7 @@ struct ChatTabBar: View {
     }
 
     struct Tabs: View {
-        let store: StoreOf<ChatPanelFeature>
+        let store: StoreOf<ChatPanel>
         @State var draggingTabId: String?
         @Environment(\.chatTabPool) var chatTabPool
 
@@ -226,7 +226,7 @@ struct ChatTabBar: View {
     }
 
     struct CreateButton: View {
-        let store: StoreOf<ChatPanelFeature>
+        let store: StoreOf<ChatPanel>
 
         var body: some View {
             WithPerceptionTracking {
@@ -278,7 +278,7 @@ struct ChatTabBar: View {
 }
 
 struct ChatTabBarDropDelegate: DropDelegate {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
     let tabs: IdentifiedArray<String, ChatTabInfo>
     let itemId: String
     @Binding var draggingTabId: String?
@@ -302,7 +302,7 @@ struct ChatTabBarDropDelegate: DropDelegate {
 }
 
 struct ChatTabBarButton<Content: View, Icon: View>: View {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
     let info: ChatTabInfo
     let content: () -> Content
     let icon: () -> Icon
@@ -347,7 +347,7 @@ struct ChatTabBarButton<Content: View, Icon: View>: View {
 }
 
 struct ChatTabContainer: View {
-    let store: StoreOf<ChatPanelFeature>
+    let store: StoreOf<ChatPanel>
     @Environment(\.chatTabPool) var chatTabPool
 
     var body: some View {
@@ -406,8 +406,8 @@ struct ChatWindowView_Previews: PreviewProvider {
         "7": EmptyChatTab(id: "7"),
     ])
 
-    static func createStore() -> StoreOf<ChatPanelFeature> {
-        StoreOf<ChatPanelFeature>(
+    static func createStore() -> StoreOf<ChatPanel> {
+        StoreOf<ChatPanel>(
             initialState: .init(
                 chatTabGroup: .init(
                     tabInfo: [
@@ -422,7 +422,7 @@ struct ChatWindowView_Previews: PreviewProvider {
                 ),
                 isPanelDisplayed: true
             ),
-            reducer: { ChatPanelFeature() }
+            reducer: { ChatPanel() }
         )
     }
 

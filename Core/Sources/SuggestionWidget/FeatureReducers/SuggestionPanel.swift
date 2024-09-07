@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 @Reducer
-public struct SuggestionPanelFeature {
+public struct SuggestionPanel {
     @ObservableState
     public struct State: Equatable {
         var content: PresentingCodeSuggestion?

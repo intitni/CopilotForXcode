@@ -26,7 +26,8 @@ public class LegacyChatGPTService: LegacyChatGPTServiceType {
         memory: ChatGPTMemory = AutoManagedChatGPTMemory(
             systemPrompt: "",
             configuration: UserPreferenceChatGPTConfiguration(),
-            functionProvider: NoChatGPTFunctionProvider()
+            functionProvider: NoChatGPTFunctionProvider(), 
+            maxNumberOfMessages: .max
         ),
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()

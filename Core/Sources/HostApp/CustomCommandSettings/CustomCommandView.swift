@@ -149,7 +149,7 @@ struct CustomCommandView: View {
                             case .customChat:
                                 Text("Custom Chat")
                             case .promptToCode:
-                                Text("Prompt to Code")
+                                Text("Modification")
                             case .singleRoundDialog:
                                 Text("Single Round Dialog")
                             }
@@ -201,7 +201,7 @@ struct CustomCommandView: View {
                                 "This command sends a message to the active chat tab. You can provide additional context through the \"Extra System Prompt\" as well."
                             )
                         }
-                        SubSection(title: Text("Prompt to Code")) {
+                        SubSection(title: Text("Modification")) {
                             Text(
                                 "This command opens the prompt-to-code panel and executes the provided requirements on the selected code. You can provide additional context through the \"Extra Context\" as well."
                             )
