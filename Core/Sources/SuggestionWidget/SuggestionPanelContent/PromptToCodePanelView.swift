@@ -55,8 +55,9 @@ extension PromptToCodePanelView {
                         Button(action: {
                             store.send(.revertButtonTapped)
                         }, label: {
-                            HStack(spacing: 2) {
+                            HStack(spacing: 4) {
                                 Text(Image(systemName: "arrow.uturn.backward.circle.fill"))
+                                    .foregroundStyle(.secondary)
                                 Text(previousStep.instruction)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
@@ -67,7 +68,7 @@ extension PromptToCodePanelView {
                         })
                         .buttonStyle(.plain)
                         .disabled(store.promptToCodeState.isGenerating)
-                        .padding(4)
+                        .padding(6)
 
                         Divider()
                     }
