@@ -85,7 +85,7 @@ public struct CodeBlock: View {
         .font(.init(font))
         .padding(.leading, 4)
         .padding(.trailing)
-        .padding(.top, commonPrecedingSpaceCount > 0 ? 12 : 4)
+        .padding(.top, commonPrecedingSpaceCount > 0 ? 16 : 4)
         .padding(.bottom, 4)
     }
 
