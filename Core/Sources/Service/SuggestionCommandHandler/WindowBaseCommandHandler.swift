@@ -388,7 +388,7 @@ extension WindowBaseCommandHandler {
                             character: max(last.end.character, range.end.character)
                         )
                     )
-                } else if !range.isEmpty {
+                } else {
                     all.append(range)
                 }
             }

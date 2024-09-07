@@ -187,7 +187,6 @@ extension PromptToCodePanelView {
                             && !isCodeEmpty
                             && !isDescriptionEmpty
                     }
-                    let isAttached = store.promptToCodeState.isAttachedToTarget
                     if !isResponding || isRespondingButCodeIsReady {
                         HStack {
                             Menu {
@@ -422,6 +421,7 @@ extension PromptToCodePanelView {
                                 let language = store.promptToCodeState.source.language
                                 let isAttached = store.promptToCodeState.isAttachedToTarget
                                 let lastId = store.promptToCodeState.snippets.last?.id
+                                let isGenerating = store.promptToCodeState.isGenerating
                                 ForEach(store.scope(
                                     state: \.snippetPanels,
                                     action: \.snippetPanel
@@ -436,7 +436,8 @@ extension PromptToCodePanelView {
                                             language: language,
                                             codeForegroundColor: codeForegroundColor ?? .primary,
                                             codeBackgroundColor: codeBackgroundColor,
-                                            isAttached: isAttached
+                                            isAttached: isAttached,
+                                            isGenerating: isGenerating
                                         )
                                     }
                                 }
@@ -455,6 +456,7 @@ extension PromptToCodePanelView {
             let codeForegroundColor: Color
             let codeBackgroundColor: Color
             let isAttached: Bool
+            let isGenerating: Bool
 
             var body: some View {
                 WithPerceptionTracking {
@@ -463,7 +465,8 @@ extension PromptToCodePanelView {
                         DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
                         CodeContent(
                             store: store,
-                            language: language,
+                            language: language, 
+                            isGenerating: isGenerating,
                             codeForegroundColor: codeForegroundColor
                         )
                         SnippetTitleBar(
@@ -562,6 +565,7 @@ extension PromptToCodePanelView {
         struct CodeContent: View {
             let store: StoreOf<PromptToCodeSnippetPanel>
             let language: CodeLanguage
+            let isGenerating: Bool
             let codeForegroundColor: Color?
 
             @AppStorage(\.wrapCodeInPromptToCode) var wrapCode
@@ -595,11 +599,19 @@ extension PromptToCodePanelView {
                             }
                         }
                     } else {
-                        Text("Thinking...")
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                        if isGenerating {
+                            Text("Thinking...")
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                        } else {
+                            Text("Enter your requirements to generate code.")
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                        }
                     }
                 }
             }
