@@ -22,7 +22,8 @@ func callAIFunction(
         memory: AutoManagedChatGPTMemory(
             systemPrompt: "You are now the following python function: ```# \(description)\n\(function)```\n\nOnly respond with your `return` value.",
             configuration: configuration,
-            functionProvider: NoChatGPTFunctionProvider()
+            functionProvider: NoChatGPTFunctionProvider(),
+            maxNumberOfMessages: .max
         ),
         configuration: configuration
     )
