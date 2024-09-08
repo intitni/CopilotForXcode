@@ -21,7 +21,7 @@ public extension AXUIElement {
     var value: String {
         (try? copyValue(key: kAXValueAttribute)) ?? ""
     }
-    
+
     var intValue: Int? {
         (try? copyValue(key: kAXValueAttribute))
     }
@@ -134,7 +134,7 @@ public extension AXUIElement {
     var isFullScreen: Bool {
         (try? copyValue(key: "AXFullScreen")) ?? false
     }
-    
+
     var isFrontmost: Bool {
         (try? copyValue(key: kAXFrontmostAttribute)) ?? false
     }
@@ -191,6 +191,16 @@ public extension AXUIElement {
         return nil
     }
 
+    /// Get children that match the requirement
+    ///
+    /// - important: If the element has a lot of descendant nodes, it will heavily affect the
+    /// **performance of Xcode**. Please make use ``AXUIElement\traverse(_:)`` instead.
+    @available(
+        *,
+        deprecated,
+        renamed: "traverse(_:)",
+        message: "Please make use ``AXUIElement\traverse(_:)`` instead."
+    )
     func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
         var all = [AXUIElement]()
         for child in children {
@@ -230,6 +240,52 @@ public extension AXUIElement {
 
     var verticalScrollBar: AXUIElement? {
         try? copyValue(key: kAXVerticalScrollBarAttribute)
+    }
+}
+
+public extension AXUIElement {
+    enum SearchNextStep {
+        case skipDescendants
+        case skipSiblings
+        case skipDescendantsAndSiblings
+        case continueSearching
+        case stopSearching
+    }
+
+    /// Traversing the element tree.
+    ///
+    /// - important: Traversing the element tree is resource consuming and will affect the
+    /// **performance of Xcode**. Please make sure to skip as much as possible.
+    ///
+    /// - todo: Make it not recursive.
+    func traverse(_ handle: (_ element: AXUIElement, _ level: Int) -> SearchNextStep) {
+        func _traverse(
+            element: AXUIElement,
+            level: Int,
+            handle: (AXUIElement, Int) -> SearchNextStep
+        ) -> SearchNextStep {
+            let nextStep = handle(element, level)
+            switch nextStep {
+            case .stopSearching: return .stopSearching
+            case .skipDescendants: return .continueSearching
+            case .skipDescendantsAndSiblings: return .skipSiblings
+            case .continueSearching, .skipSiblings:
+                for child in element.children {
+                    switch _traverse(element: child, level: level + 1, handle: handle) {
+                    case .skipSiblings, .skipDescendantsAndSiblings:
+                        break
+                    case .stopSearching:
+                        return .stopSearching
+                    case .continueSearching, .skipDescendants:
+                        continue
+                    }
+                }
+
+                return nextStep
+            }
+        }
+
+        _ = _traverse(element: self, level: 0, handle: handle)
     }
 }
 
