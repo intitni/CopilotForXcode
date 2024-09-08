@@ -3,7 +3,7 @@ import Dependencies
 import XcodeInspector
 
 public extension NSWorkspace {
-    static func activateThisApp(delay: TimeInterval = 0.3) {
+    static func activateThisApp(delay: TimeInterval = 0.10) {
         Task { @MainActor in
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
