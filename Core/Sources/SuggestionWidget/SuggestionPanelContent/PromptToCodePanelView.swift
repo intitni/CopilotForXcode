@@ -304,28 +304,11 @@ extension PromptToCodePanelView {
                             .padding(.trailing, 4)
                         }
                         .buttonStyle(TheButtonStyle())
-                        .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
-                        .background {
-                            Button(action: {
-                                switch (
-                                    modifierFlags.contains(.option),
-                                    defaultModeIsContinuous
-                                ) {
-                                case (true, true):
-                                    store.send(.acceptAndContinueButtonTapped)
-                                case (false, true):
-                                    store.send(.acceptButtonTapped)
-                                case (true, false):
-                                    store.send(.acceptButtonTapped)
-                                case (false, false):
-                                    store.send(.acceptAndContinueButtonTapped)
-                                }
-                            }) {
-                                EmptyView()
-                            }
-                            .buttonStyle(.plain)
-                            .keyboardShortcut(KeyEquivalent.return, modifiers: [.command, .option])
-                        }
+                        .keyboardShortcut(
+                            KeyEquivalent.return,
+                            modifiers: modifierFlags
+                                .contains(.option) ? [.command, .option] : [.command]
+                        )
 
                         Divider()
 
@@ -465,7 +448,7 @@ extension PromptToCodePanelView {
                         DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
                         CodeContent(
                             store: store,
-                            language: language, 
+                            language: language,
                             isGenerating: isGenerating,
                             codeForegroundColor: codeForegroundColor
                         )
