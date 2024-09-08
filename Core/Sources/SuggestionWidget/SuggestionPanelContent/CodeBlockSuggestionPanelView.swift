@@ -226,6 +226,7 @@ struct CodeBlockSuggestionPanelView: View {
                             dimmedCharacterCount: dimmedCharacterCount
                         )
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
                         .background({ () -> Color in
                             if syncHighlightTheme {
                                 if colorScheme == .light,
