@@ -202,6 +202,10 @@ let package = Package(
             dependencies: [
                 "SuggestionBasic",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
             ]
         ),
 
