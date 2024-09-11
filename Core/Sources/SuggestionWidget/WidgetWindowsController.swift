@@ -793,7 +793,7 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
+        it.isOpaque = false
         it.backgroundColor = .clear
         it.level = widgetLevel(0)
         it.hasShadow = false
@@ -804,7 +804,6 @@ public final class WidgetWindows {
             ))
         )
         it.setIsVisible(true)
-        it.ignoresMouseEvents = true
         it.canBecomeKeyChecker = { false }
         return it
     }()
