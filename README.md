@@ -33,11 +33,9 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - [Limitations](#limitations)
 - [License](#license)
 
-For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions).
-
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
-For more information, check the [wiki](https://github.com/intitni/CopilotForXcode/wiki)
+For more information, check the [Wiki Page](https://copilotforxcode.intii.com/wiki).
 
 ## Prerequisites
 
