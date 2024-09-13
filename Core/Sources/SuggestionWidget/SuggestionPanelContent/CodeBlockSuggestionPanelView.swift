@@ -62,7 +62,6 @@ struct CodeBlockSuggestionPanelView: View {
                     Button(action: {
                         Task {
                             await commandHandler.presentPreviousSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
                         }
                     }) {
                         Image(systemName: "chevron.left")
@@ -82,7 +81,10 @@ struct CodeBlockSuggestionPanelView: View {
                     Spacer()
 
                     Button(action: {
-                        Task { await commandHandler.dismissSuggestion() }
+                        Task {
+                            await commandHandler.dismissSuggestion()
+                            NSWorkspace.activatePreviousActiveXcode()
+                        }
                     }) {
                         Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
                     }.buttonStyle(.plain)
@@ -105,7 +107,7 @@ struct CodeBlockSuggestionPanelView: View {
                         Text("Accept")
                     }.buttonStyle(CommandButtonStyle(color: .accentColor))
                 }
-                .padding()
+                .padding(6)
                 .foregroundColor(.secondary)
                 .background(.regularMaterial)
             }
