@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ChatGPTModel: String {
+public enum ChatGPTModel: String, CaseIterable {
     case gpt35Turbo = "gpt-3.5-turbo"
     case gpt35Turbo16k = "gpt-3.5-turbo-16k"
     case gpt4o = "gpt-4o"
