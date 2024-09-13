@@ -14,7 +14,7 @@ import SuggestionWidget
 final class WidgetDataSource {}
 
 extension WidgetDataSource: SuggestionWidgetDataSource {
-    func suggestionForFile(at url: URL) async -> CodeSuggestionProvider? {
+    func suggestionForFile(at url: URL) async -> PresentingCodeSuggestion? {
         for workspace in Service.shared.workspacePool.workspaces.values {
             if let filespace = workspace.filespaces[url],
                let suggestion = filespace.presentingSuggestion
@@ -25,39 +25,9 @@ extension WidgetDataSource: SuggestionWidgetDataSource {
                     startLineIndex: suggestion.position.line,
                     suggestionCount: filespace.suggestions.count,
                     currentSuggestionIndex: filespace.suggestionIndex,
-                    onSelectPreviousSuggestionTapped: {
-                        Task {
-                            let handler = PseudoCommandHandler()
-                            await handler.presentPreviousSuggestion()
-                        }
-                    },
-                    onSelectNextSuggestionTapped: {
-                        Task {
-                            let handler = PseudoCommandHandler()
-                            await handler.presentNextSuggestion()
-                        }
-                    },
-                    onRejectSuggestionTapped: {
-                        Task {
-                            let handler = PseudoCommandHandler()
-                            await handler.rejectSuggestions()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    },
-                    onAcceptSuggestionTapped: {
-                        Task {
-                            let handler = PseudoCommandHandler()
-                            await handler.acceptSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    },
-                    onDismissSuggestionTapped: {
-                        Task {
-                            let handler = PseudoCommandHandler()
-                            await handler.dismissSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    }
+                    replacingRange: suggestion.range,
+                    replacingLines: suggestion.replacingLines,
+                    descriptions: suggestion.descriptions
                 )
             }
         }

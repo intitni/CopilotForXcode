@@ -42,17 +42,10 @@ struct PresentInWindowSuggestionPresenter {
         }
     }
 
-    func closeChatRoom(fileURL: URL) {
-        Task { @MainActor in
-            let controller = Service.shared.guiController.widgetController
-            controller.closeChatRoom()
-        }
-    }
-
     func presentChatRoom(fileURL: URL) {
         Task { @MainActor in
-            let controller = Service.shared.guiController.widgetController
-            controller.presentChatRoom()
+            let controller = Service.shared.guiController
+            controller.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
         }
     }
 }

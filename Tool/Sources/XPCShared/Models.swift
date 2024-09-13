@@ -53,12 +53,18 @@ public struct EditorContent: Codable {
 public struct UpdatedContent: Codable {
     public init(content: String, newSelection: CursorRange? = nil, modifications: [Modification]) {
         self.content = content
-        self.newSelection = newSelection
+        self.newSelections = if let newSelection { [newSelection] } else { [] }
+        self.modifications = modifications
+    }
+    
+    public init(content: String, newSelections: [CursorRange], modifications: [Modification]) {
+        self.content = content
+        self.newSelections = newSelections
         self.modifications = modifications
     }
 
     public var content: String
-    public var newSelection: CursorRange?
+    public var newSelections: [CursorRange]
     public var modifications: [Modification]
 }
 

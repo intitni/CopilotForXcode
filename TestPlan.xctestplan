@@ -32,13 +32,6 @@
     {
       "target" : {
         "containerPath" : "container:Core",
-        "identifier" : "SuggestionInjectorTests",
-        "name" : "SuggestionInjectorTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Core",
         "identifier" : "SuggestionWidgetTests",
         "name" : "SuggestionWidgetTests"
       }
@@ -153,6 +146,20 @@
         "containerPath" : "container:Tool",
         "identifier" : "SuggestionBasicTests",
         "name" : "SuggestionBasicTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionInjectorTests",
+        "name" : "SuggestionInjectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "CodeDiffTests",
+        "name" : "CodeDiffTests"
       }
     }
   ],

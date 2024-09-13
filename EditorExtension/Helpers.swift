@@ -1,5 +1,5 @@
-import SuggestionBasic
 import Foundation
+import SuggestionBasic
 import XcodeKit
 import XPCShared
 
@@ -19,16 +19,21 @@ extension XCSourceEditorCommandInvocation {
     }
 
     func accept(_ updatedContent: UpdatedContent) {
-        if let newSelection = updatedContent.newSelection {
+        if !updatedContent.newSelections.isEmpty {
             mutateCompleteBuffer(
                 modifications: updatedContent.modifications,
                 restoringSelections: false
             )
             buffer.selections.removeAllObjects()
-            buffer.selections.add(XCSourceTextRange(
-                start: .init(line: newSelection.start.line, column: newSelection.start.character),
-                end: .init(line: newSelection.end.line, column: newSelection.end.character)
-            ))
+            for newSelection in updatedContent.newSelections {
+                buffer.selections.add(XCSourceTextRange(
+                    start: .init(
+                        line: newSelection.start.line,
+                        column: newSelection.start.character
+                    ),
+                    end: .init(line: newSelection.end.line, column: newSelection.end.character)
+                ))
+            }
         } else {
             mutateCompleteBuffer(
                 modifications: updatedContent.modifications,
@@ -47,17 +52,17 @@ extension EditorContent {
             uti: buffer.contentUTI,
             cursorPosition: ((buffer.selections.lastObject as? XCSourceTextRange)?.end).map {
                 CursorPosition(line: $0.line, character: $0.column)
-            } ?? CursorPosition(line: 0, character: 0), 
+            } ?? CursorPosition(line: 0, character: 0),
             cursorOffset: -1,
             selections: buffer.selections.map {
                 let sl = ($0 as? XCSourceTextRange)?.start.line ?? 0
                 let sc = ($0 as? XCSourceTextRange)?.start.column ?? 0
                 let el = ($0 as? XCSourceTextRange)?.end.line ?? 0
                 let ec = ($0 as? XCSourceTextRange)?.end.column ?? 0
-                
+
                 return Selection(
-                    start: CursorPosition( line: sl, character: sc ),
-                    end: CursorPosition( line: el, character: ec )
+                    start: CursorPosition(line: sl, character: sc),
+                    end: CursorPosition(line: el, character: ec)
                 )
             },
             tabSize: buffer.tabWidth,
@@ -96,3 +101,4 @@ extension Task where Failure == Error {
 private struct TimeoutError: LocalizedError {
     var errorDescription: String? = "Task timed out before completion"
 }
+

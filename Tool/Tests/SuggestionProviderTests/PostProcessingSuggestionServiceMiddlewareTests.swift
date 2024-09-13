@@ -241,7 +241,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 id: "1",
                 text: "hello world",
                 position: .init(line: 0, character: 1),
-                range: .init(startPair: (0, 0), endPair: (0, 1))
+                range: .init(startPair: (0, 0), endPair: (0, 1)),
+                middlewareComments: ["Removed redundant closing parenthesis."]
             ),
         ])
     }
@@ -275,7 +276,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 id: "1",
                 text: "",
                 position: .init(line: 0, character: 0),
-                range: .init(startPair: (0, 0), endPair: (0, 0))
+                range: .init(startPair: (0, 0), endPair: (0, 0)),
+                middlewareComments: ["Removed redundant closing parenthesis."]
             ),
         ])
     }
@@ -309,7 +311,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 id: "1",
                 text: "hello world",
                 position: .init(line: 0, character: 1),
-                range: .init(startPair: (0, 0), endPair: (0, 1))
+                range: .init(startPair: (0, 0), endPair: (0, 1)),
+                middlewareComments: ["Removed redundant closing parenthesis."]
             ),
         ])
     }
@@ -343,7 +346,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 id: "1",
                 text: "hello world",
                 position: .init(line: 0, character: 1),
-                range: .init(startPair: (0, 0), endPair: (0, 1))
+                range: .init(startPair: (0, 0), endPair: (0, 1)),
+                middlewareComments: ["Removed redundant closing parenthesis."]
             ),
         ])
     }
@@ -377,7 +381,8 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 id: "1",
                 text: "hello world",
                 position: .init(line: 0, character: 1),
-                range: .init(startPair: (0, 0), endPair: (0, 1))
+                range: .init(startPair: (0, 0), endPair: (0, 1)),
+                middlewareComments: ["Removed redundant closing parenthesis."]
             ),
         ])
     }

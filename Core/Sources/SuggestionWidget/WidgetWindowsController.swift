@@ -5,6 +5,7 @@ import Combine
 import ComposableArchitecture
 import Dependencies
 import Foundation
+import SharedUIComponents
 import SwiftUI
 import XcodeInspector
 
@@ -17,7 +18,7 @@ actor WidgetWindowsController: NSObject {
     var xcodeInspector: XcodeInspector { .shared }
 
     let windows: WidgetWindows
-    let store: StoreOf<WidgetFeature>
+    let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
 
     var currentApplicationProcessIdentifier: pid_t?
@@ -42,7 +43,7 @@ actor WidgetWindowsController: NSObject {
         updateWindowStateTask?.cancel()
     }
 
-    init(store: StoreOf<WidgetFeature>, chatTabPool: ChatTabPool) {
+    init(store: StoreOf<Widget>, chatTabPool: ChatTabPool) {
         self.store = store
         self.chatTabPool = chatTabPool
         windows = .init(store: store, chatTabPool: chatTabPool)
@@ -50,7 +51,7 @@ actor WidgetWindowsController: NSObject {
         windows.controller = self
     }
 
-    @MainActor func send(_ action: WidgetFeature.Action) {
+    @MainActor func send(_ action: Widget.Action) {
         store.send(action)
     }
 
@@ -334,6 +335,7 @@ extension WidgetWindowsController {
                         return WidgetLocation(
                             widgetFrame: .zero,
                             tabFrame: .zero,
+                            sharedPanelLocation: .init(frame: .zero, alignPanelTop: false),
                             defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
                         )
                     }
@@ -478,7 +480,7 @@ extension WidgetWindowsController {
                 animate: animated
             )
             windows.sharedPanelWindow.setFrame(
-                widgetLocation.defaultPanelLocation.frame,
+                widgetLocation.sharedPanelLocation.frame,
                 display: false,
                 animate: animated
             )
@@ -655,10 +657,9 @@ extension WidgetWindowsController: NSWindowDelegate {
 // MARK: - Windows
 
 public final class WidgetWindows {
-    let store: StoreOf<WidgetFeature>
+    let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
     weak var controller: WidgetWindowsController?
-    let cursorPositionTracker = CursorPositionTracker()
 
     // you should make these window `.transient` so they never show up in the mission control.
 
@@ -728,7 +729,7 @@ public final class WidgetWindows {
                     state: \.sharedPanelState,
                     action: \.sharedPanel
                 )
-            ).environment(cursorPositionTracker)
+            ).modifierFlagsMonitor()
         )
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in
@@ -761,7 +762,7 @@ public final class WidgetWindows {
                     state: \.suggestionPanelState,
                     action: \.suggestionPanel
                 )
-            ).environment(cursorPositionTracker)
+            )
         )
         it.canBecomeKeyChecker = { false }
         it.setIsVisible(true)
@@ -793,7 +794,7 @@ public final class WidgetWindows {
             defer: false
         )
         it.isReleasedWhenClosed = false
-        it.isOpaque = true
+        it.isOpaque = false
         it.backgroundColor = .clear
         it.level = widgetLevel(0)
         it.hasShadow = false
@@ -804,13 +805,12 @@ public final class WidgetWindows {
             ))
         )
         it.setIsVisible(true)
-        it.ignoresMouseEvents = true
         it.canBecomeKeyChecker = { false }
         return it
     }()
 
     init(
-        store: StoreOf<WidgetFeature>,
+        store: StoreOf<Widget>,
         chatTabPool: ChatTabPool
     ) {
         self.store = store

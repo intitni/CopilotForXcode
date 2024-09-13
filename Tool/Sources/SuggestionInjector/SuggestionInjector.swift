@@ -10,7 +10,7 @@ public struct SuggestionInjector {
     public struct ExtraInfo {
         public var didChangeContent = false
         public var didChangeCursorPosition = false
-        public var suggestionRange: ClosedRange<Int>?
+        public var modificationRanges: [String: CursorRange] = [:]
         public var modifications: [Modification] = []
         public init() {}
     }
@@ -23,7 +23,6 @@ public struct SuggestionInjector {
     ) {
         extraInfo.didChangeContent = true
         extraInfo.didChangeCursorPosition = true
-        extraInfo.suggestionRange = nil
         let start = completion.range.start
         let end = completion.range.end
         let suggestionContent = completion.text
@@ -34,7 +33,7 @@ public struct SuggestionInjector {
         }
 
         let firstRemovedLine = content[safe: start.line]
-        let lastRemovedLine = content[safe: end.line]
+        let lastRemovedLine = completion.replacingLines[safe: max(0, end.line - start.line)]
         let startLine = max(0, start.line)
         let endLine = max(start.line, min(end.line, content.endIndex - 1))
         if startLine < content.endIndex {
@@ -72,7 +71,7 @@ public struct SuggestionInjector {
         let recoveredSuffixLength = recoverSuffixIfNeeded(
             endOfReplacedContent: end,
             toBeInserted: &toBeInserted,
-            lastRemovedLine: lastRemovedLine,
+            originalLastRemovedLine: lastRemovedLine,
             lineEnding: lineEnding
         )
 
@@ -85,57 +84,109 @@ public struct SuggestionInjector {
             line: startLine + toBeInserted.count - 1,
             character: max(0, cursorCol)
         )
+        extraInfo.modificationRanges[completion.id] = .init(start: start, end: cursorPosition)
+    }
+
+    public func acceptSuggestions(
+        intoContentWithoutSuggestion content: inout [String],
+        cursorPosition: inout CursorPosition,
+        completions: [CodeSuggestion],
+        extraInfo: inout ExtraInfo
+    ) {
+        let sortedCompletions = completions.sorted {
+            if $0.range.start.line < $1.range.start.line {
+                true
+            } else if $0.range.start.line == $1.range.start.line {
+                $0.range.start.character < $1.range.start.character
+            } else {
+                false
+            }
+        }
+
+        for var completion in sortedCompletions {
+            let lineCountChange: Int = {
+                var accumulation = 0
+                let endIndex = completion.range.start.line
+                for modification in extraInfo.modifications {
+                    switch modification {
+                    case let .deleted(range):
+                        if range.lowerBound <= endIndex {
+                            accumulation -= range.count
+                            if range.upperBound >= endIndex {
+                                accumulation += range.upperBound - endIndex
+                            }
+                        }
+                    case let .inserted(index, lines):
+                        if index <= endIndex {
+                            accumulation += lines.count
+                        }
+                    }
+                }
+                return accumulation
+            }()
+
+            if lineCountChange != 0 {
+                completion.position = CursorPosition(
+                    line: completion.position.line + lineCountChange,
+                    character: completion.position.character
+                )
+                completion.range = CursorRange(
+                    start: CursorPosition(
+                        line: completion.range.start.line + lineCountChange,
+                        character: completion.range.start.character
+                    ),
+                    end: CursorPosition(
+                        line: completion.range.end.line + lineCountChange,
+                        character: completion.range.end.character
+                    )
+                )
+            }
+
+            completion.replacingLines = {
+                let start = completion.range.start.line
+                let end = completion.range.end.line
+                if start >= content.endIndex {
+                    return []
+                }
+                if end < content.endIndex {
+                    return Array(content[start...end])
+                }
+                return Array(content[start...])
+            }()
+
+            // Accept the suggestion
+            acceptSuggestion(
+                intoContentWithoutSuggestion: &content,
+                cursorPosition: &cursorPosition,
+                completion: completion,
+                extraInfo: &extraInfo
+            )
+        }
     }
 
     func recoverSuffixIfNeeded(
         endOfReplacedContent end: CursorPosition,
         toBeInserted: inout [String],
-        lastRemovedLine: String?,
+        originalLastRemovedLine: String?,
         lineEnding: String
     ) -> Int {
         // If there is no line removed, there is no need to recover anything.
-        guard let lastRemovedLine, !lastRemovedLine.isEmptyOrNewLine else { return 0 }
+        guard let lastRemovedLine = originalLastRemovedLine,
+              !lastRemovedLine.isEmptyOrNewLine else { return 0 }
 
         let lastRemovedLineCleaned = lastRemovedLine.droppedLineBreak()
 
-        // If the replaced range covers the whole line, return immediately.
-        guard end.character >= 0, end.character - 1 < lastRemovedLineCleaned.utf16.count
-        else { return 0 }
-
-        // if we are not inserting anything, return immediately.
-        guard !toBeInserted.isEmpty,
-              let first = toBeInserted.first?.droppedLineBreak(), !first.isEmpty,
-              let last = toBeInserted.last?.droppedLineBreak(), !last.isEmpty
-        else { return 0 }
-
-        // case 1: user keeps typing as the suggestion suggests.
-
-        if first.hasPrefix(lastRemovedLineCleaned) {
-            return 0
-        }
-
-        // case 2: user also typed the suffix of the suggestion (or auto-completed by Xcode)
-
         // locate the split index, the prefix of which matches the suggestion prefix.
-        var splitIndex: String.Index?
-
-        for offset in end.character..<lastRemovedLineCleaned.utf16.count {
-            let proposedIndex = lastRemovedLineCleaned.utf16.index(
-                lastRemovedLineCleaned.utf16.startIndex,
-                offsetBy: offset,
-                limitedBy: lastRemovedLineCleaned.utf16.endIndex
-            ) ?? lastRemovedLineCleaned.utf16.endIndex
-            let prefix = String(lastRemovedLineCleaned[..<proposedIndex])
-            if first.hasPrefix(prefix) {
-                splitIndex = proposedIndex
-            }
-        }
+        let splitIndex = lastRemovedLineCleaned.utf16.index(
+            lastRemovedLineCleaned.utf16.startIndex,
+            offsetBy: end.character,
+            limitedBy: lastRemovedLineCleaned.utf16.endIndex
+        )
 
         // then check how many characters are not in the suffix of the suggestion.
-        guard let splitIndex else { return 0 }
+        guard let splitIndex, splitIndex != lastRemovedLineCleaned.utf16.endIndex else { return 0 }
 
         var suffix = String(lastRemovedLineCleaned[splitIndex...])
-        if last.hasSuffix(suffix) { return 0 }
 
         // remove the first adjacent placeholder in suffix which looks like `<#Hello#>`
 

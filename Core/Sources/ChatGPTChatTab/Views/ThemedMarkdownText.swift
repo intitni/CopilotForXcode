@@ -15,9 +15,9 @@ struct ThemedMarkdownText: View {
     let content: MarkdownContent
 
     init(_ text: String) {
-        self.content = .init(text)
+        content = .init(text)
     }
-    
+
     init(_ content: MarkdownContent) {
         self.content = content
     }
@@ -71,6 +71,8 @@ extension MarkdownUI.Theme {
         }
         .codeBlock { configuration in
             let wrapCode = UserDefaults.shared.value(for: \.wrapCodeInChatCodeBlock)
+                || ["plaintext", "text", "markdown", "sh", "bash", "shell", "latex", "tex"]
+                .contains(configuration.language)
 
             if wrapCode {
                 AsyncCodeBlockView(

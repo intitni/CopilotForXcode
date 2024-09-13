@@ -21,10 +21,10 @@ import ChatTabPersistent
 @Reducer
 struct GUI {
     @ObservableState
-    struct State: Equatable {
-        var suggestionWidgetState = WidgetFeature.State()
+    struct State {
+        var suggestionWidgetState = Widget.State()
 
-        var chatTabGroup: ChatPanelFeature.ChatTabGroup {
+        var chatTabGroup: SuggestionWidget.ChatPanel.ChatTabGroup {
             get { suggestionWidgetState.chatPanelState.chatTabGroup }
             set { suggestionWidgetState.chatPanelState.chatTabGroup = newValue }
         }
@@ -55,7 +55,7 @@ struct GUI {
 
     enum Action {
         case start
-        case openChatPanel(forceDetach: Bool)
+        case openChatPanel(forceDetach: Bool, activateThisApp: Bool)
         case createAndSwitchToChatGPTChatTabIfNeeded
         case createAndSwitchToChatTabIfNeededMatching(
             check: (any ChatTab) -> Bool,
@@ -64,7 +64,7 @@ struct GUI {
         case sendCustomCommandToActiveChat(CustomCommand)
         case toggleWidgetsHotkeyPressed
 
-        case suggestionWidget(WidgetFeature.Action)
+        case suggestionWidget(Widget.Action)
 
         static func promptToCodeGroup(_ action: PromptToCodeGroup.Action) -> Self {
             .suggestionWidget(.panel(.sharedPanel(.promptToCodeGroup(action))))
@@ -85,7 +85,7 @@ struct GUI {
     var body: some ReducerOf<Self> {
         CombineReducers {
             Scope(state: \.suggestionWidgetState, action: \.suggestionWidget) {
-                WidgetFeature()
+                Widget()
             }
 
             Scope(
@@ -138,7 +138,7 @@ struct GUI {
                     return .none
                     #endif
 
-                case let .openChatPanel(forceDetach):
+                case let .openChatPanel(forceDetach, activate):
                     return .run { send in
                         await send(
                             .suggestionWidget(
@@ -147,7 +147,9 @@ struct GUI {
                         )
                         await send(.suggestionWidget(.updateKeyWindow(.chatPanel)))
 
-                        activateThisApp()
+                        if activate {
+                            activateThisApp()
+                        }
                     }
 
                 case .createAndSwitchToChatGPTChatTabIfNeeded:
@@ -186,7 +188,7 @@ struct GUI {
                             )
                         }
                     }
-
+                    
                 case let .sendCustomCommandToActiveChat(command):
                     @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
                         if tab.service.isReceivingMessage {
@@ -199,7 +201,7 @@ struct GUI {
                        let activeTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
                     {
                         return .run { send in
-                            await send(.openChatPanel(forceDetach: false))
+                            await send(.openChatPanel(forceDetach: false, activateThisApp: false))
                             await stopAndHandleCommand(activeTab)
                         }
                     }
@@ -211,18 +213,16 @@ struct GUI {
                     {
                         state.chatTabGroup.selectedTabId = chatTab.id
                         return .run { send in
-                            await send(.openChatPanel(forceDetach: false))
+                            await send(.openChatPanel(forceDetach: false, activateThisApp: false))
                             await stopAndHandleCommand(chatTab)
                         }
                     }
 
                     return .run { send in
                         guard let (chatTab, chatTabInfo) = await chatTabPool.createTab(for: nil)
-                        else {
-                            return
-                        }
+                        else { return }
                         await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
-                        await send(.openChatPanel(forceDetach: false))
+                        await send(.openChatPanel(forceDetach: false, activateThisApp: false))
                         if let chatTab = chatTab as? ChatGPTChatTab {
                             await stopAndHandleCommand(chatTab)
                         }
@@ -298,18 +298,7 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
-            dependencies.promptToCodeAcceptHandler = { promptToCode in
-                Task {
-                    let handler = PseudoCommandHandler()
-                    await handler.acceptPromptToCode()
-                    if !promptToCode.isContinuous {
-                        NSWorkspace.activatePreviousActiveXcode()
-                    } else {
-                        NSWorkspace.activateThisApp()
-                    }
-                }
-            }
-
+        
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
                 await chatTabPool.restore($0)
@@ -349,7 +338,7 @@ public final class GraphicalUserInterfaceController {
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
                 await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
-                self?.store.send(.openChatPanel(forceDetach: false))
+                self?.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
             }
         }
         suggestionDependency.onCustomCommandClicked = { command in

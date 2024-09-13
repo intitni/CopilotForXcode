@@ -2,13 +2,10 @@ import ComposableArchitecture
 import Dependencies
 import Foundation
 import LaunchAgentManager
+import SharedUIComponents
 import SwiftUI
 import Toast
 import UpdateChecker
-
-#if canImport(ProHostApp)
-import ProHostApp
-#endif
 
 @MainActor
 let hostAppStore: StoreOf<HostApp> = .init(initialState: .init(), reducer: { HostApp() })
@@ -18,6 +15,10 @@ public struct TabContainer: View {
     @ObservedObject var toastController: ToastController
     @State private var tabBarItems = [TabBarItem]()
     @State var tag: Int = 0
+
+    var externalTabContainer: ExternalTabContainer {
+        ExternalTabContainer.tabContainer(for: "TabContainer")
+    }
 
     public init() {
         toastController = ToastControllerDependencyKey.liveValue
@@ -59,15 +60,16 @@ public struct TabContainer: View {
                         title: "Custom Command",
                         image: "command.square"
                     )
-                    #if canImport(ProHostApp)
-                    PlusView(onLicenseKeyChanged: {
-                        store.send(.informExtensionServiceAboutLicenseKeyChange)
-                    }).tabBarItem(
-                        tag: 5,
-                        title: "Plus",
-                        image: "plus.diamond"
-                    )
-                    #endif
+                    
+                    ForEach(0..<externalTabContainer.tabs.endIndex, id: \.self) { index in
+                        let tab = externalTabContainer.tabs[index]
+                        tab.viewBuilder().tabBarItem(
+                            tag: 5 + index,
+                            title: tab.title,
+                            image: "plus.diamond"
+                        )
+                    }
+                    
                     DebugSettingsView().tabBarItem(
                         tag: 4,
                         title: "Advanced",

@@ -17,15 +17,29 @@ public enum SuggestionServiceMiddlewareContainer {
         DisabledLanguageSuggestionServiceMiddleware(),
         PostProcessingSuggestionServiceMiddleware()
     ]
+    
+    static var leadingMiddlewares: [SuggestionServiceMiddleware] = []
 
-    static var customMiddlewares: [SuggestionServiceMiddleware] = []
+    static var trailingMiddlewares: [SuggestionServiceMiddleware] = []
 
     public static var middlewares: [SuggestionServiceMiddleware] {
-        builtInMiddlewares + customMiddlewares
+        leadingMiddlewares + builtInMiddlewares + trailingMiddlewares
     }
 
     public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
-        customMiddlewares.append(middleware)
+        trailingMiddlewares.append(middleware)
+    }
+    
+    public static func addMiddlewares(_ middlewares: [SuggestionServiceMiddleware]) {
+        trailingMiddlewares.append(contentsOf: middlewares)
+    }
+
+    public static func addLeadingMiddleware(_ middleware: SuggestionServiceMiddleware) {
+        leadingMiddlewares.append(middleware)
+    }
+    
+    public static func addLeadingMiddlewares(_ middlewares: [SuggestionServiceMiddleware]) {
+        leadingMiddlewares.append(contentsOf: middlewares)
     }
 }
 

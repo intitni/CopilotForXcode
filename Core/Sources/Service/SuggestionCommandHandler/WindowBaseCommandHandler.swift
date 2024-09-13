@@ -1,12 +1,14 @@
 import AppKit
 import ChatService
+import ComposableArchitecture
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import OpenAIService
-import SuggestionInjector
+import PromptToCodeBasic
 import SuggestionBasic
+import SuggestionInjector
 import SuggestionWidget
 import UserNotifications
 import Workspace
@@ -178,58 +180,69 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         var cursorPosition = editor.cursorPosition
         var extraInfo = SuggestionInjector.ExtraInfo()
 
-        let store = Service.shared.guiController.store
+        let store = await Service.shared.guiController.store
 
-        if let promptToCode = store.state.promptToCodeGroup.activePromptToCode {
-            if promptToCode.isAttachedToSelectionRange, promptToCode.documentURL != fileURL {
+        if let promptToCode = await MainActor
+            .run(body: { store.state.promptToCodeGroup.activePromptToCode })
+        {
+            if promptToCode.promptToCodeState.isAttachedToTarget,
+               promptToCode.promptToCodeState.source.documentURL != fileURL
+            {
                 return nil
             }
 
-            let range = {
-                if promptToCode.isAttachedToSelectionRange,
-                   let range = promptToCode.selectionRange
-                {
-                    return range
+            let suggestions = promptToCode.promptToCodeState.snippets
+                .map { snippet in
+                    let range = {
+                        if promptToCode.promptToCodeState.isAttachedToTarget {
+                            return snippet.attachedRange
+                        }
+                        return editor.selections.first.map {
+                            CursorRange(start: $0.start, end: $0.end)
+                        } ?? CursorRange(
+                            start: editor.cursorPosition,
+                            end: editor.cursorPosition
+                        )
+                    }()
+                    return CodeSuggestion(
+                        id: snippet.id.uuidString,
+                        text: snippet.modifiedCode,
+                        position: range.start,
+                        range: range
+                    )
                 }
-                return editor.selections.first.map {
-                    CursorRange(start: $0.start, end: $0.end)
-                } ?? CursorRange(
-                    start: editor.cursorPosition,
-                    end: editor.cursorPosition
-                )
-            }()
 
-            let suggestion = CodeSuggestion(
-                id: UUID().uuidString,
-                text: promptToCode.code,
-                position: range.start,
-                range: range
-            )
-
-            injector.acceptSuggestion(
+            injector.acceptSuggestions(
                 intoContentWithoutSuggestion: &lines,
                 cursorPosition: &cursorPosition,
-                completion: suggestion,
+                completions: suggestions,
                 extraInfo: &extraInfo
             )
 
-            _ = await Task { @MainActor [cursorPosition] in
-                store.send(
-                    .promptToCodeGroup(.updatePromptToCodeRange(
-                        id: promptToCode.id,
-                        range: .init(start: range.start, end: cursorPosition)
-                    ))
-                )
+            for (id, range) in extraInfo.modificationRanges {
+                _ = await MainActor.run {
+                    store.send(
+                        .promptToCodeGroup(.updatePromptToCodeRange(
+                            id: promptToCode.id,
+                            snippetId: .init(uuidString: id) ?? .init(),
+                            range: range
+                        ))
+                    )
+                }
+            }
+
+            _ = await MainActor.run {
                 store.send(
                     .promptToCodeGroup(.discardAcceptedPromptToCodeIfNotContinuous(
                         id: promptToCode.id
                     ))
                 )
-            }.result
+            }
 
             return .init(
                 content: String(lines.joined(separator: "")),
-                newSelection: .init(start: range.start, end: cursorPosition),
+                newSelections: extraInfo.modificationRanges.values
+                    .sorted(by: { $0.start.line <= $1.start.line }),
                 modifications: extraInfo.modifications
             )
         }
@@ -352,11 +365,49 @@ extension WindowBaseCommandHandler {
 
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
-        let (code, selection) = {
-            guard var selection = editor.selections.last,
-                  selection.start != selection.end
-            else { return ("", .cursor(editor.cursorPosition)) }
+        let selections: [CursorRange] = {
+            var all = [CursorRange]()
 
+            // join the ranges if they overlaps in line
+
+            for selection in editor.selections {
+                let range = CursorRange(start: selection.start, end: selection.end)
+
+                func intersect(_ lhs: CursorRange, _ rhs: CursorRange) -> Bool {
+                    lhs.start.line <= rhs.end.line && lhs.end.line >= rhs.start.line
+                }
+
+                if let last = all.last, intersect(last, range) {
+                    all[all.count - 1] = CursorRange(
+                        start: .init(
+                            line: min(last.start.line, range.start.line),
+                            character: min(last.start.character, range.start.character)
+                        ),
+                        end: .init(
+                            line: max(last.end.line, range.end.line),
+                            character: max(last.end.character, range.end.character)
+                        )
+                    )
+                } else {
+                    all.append(range)
+                }
+            }
+
+            return all
+        }()
+
+        let snippets = selections.map { selection in
+            guard selection.start != selection.end else {
+                return PromptToCodeSnippet(
+                    startLineIndex: selection.start.line,
+                    originalCode: "",
+                    modifiedCode: "",
+                    description: "",
+                    error: "",
+                    attachedRange: selection
+                )
+            }
+            var selection = selection
             let isMultipleLine = selection.start.line != selection.end.line
             let isSpaceOnlyBeforeStartPositionOnTheSameLine = {
                 guard selection.start.line >= 0, selection.start.line < editor.lines.count else {
@@ -379,16 +430,21 @@ extension WindowBaseCommandHandler {
                 // indentation.
                 selection.start = .init(line: selection.start.line, character: 0)
             }
-            return (
-                editor.selectedCode(in: selection),
-                .init(
-                    start: .init(line: selection.start.line, character: selection.start.character),
-                    end: .init(line: selection.end.line, character: selection.end.character)
-                )
+            let selectedCode = editor.selectedCode(in: .init(
+                start: selection.start,
+                end: selection.end
+            ))
+            return PromptToCodeSnippet(
+                startLineIndex: selection.start.line,
+                originalCode: selectedCode,
+                modifiedCode: selectedCode,
+                description: "",
+                error: "",
+                attachedRange: .init(start: selection.start, end: selection.end)
             )
-        }() as (String, CursorRange)
+        }
 
-        let store = Service.shared.guiController.store
+        let store = await Service.shared.guiController.store
 
         let customCommandTemplateProcessor = CustomCommandTemplateProcessor()
 
@@ -404,25 +460,27 @@ extension WindowBaseCommandHandler {
             nil
         }
 
-        _ = await Task { @MainActor in
-            // if there is already a prompt to code presenting, we should not present another one
+        _ = await MainActor.run {
             store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
-                code: code,
-                selectionRange: selection,
-                language: codeLanguage,
-                identSize: filespace.codeMetadata.indentSize ?? 4,
+                promptToCodeState: Shared(.init(
+                    source: .init(
+                        language: codeLanguage,
+                        documentURL: fileURL,
+                        projectRootURL: workspace.projectRootURL,
+                        content: editor.content,
+                        lines: editor.lines
+                    ),
+                    snippets: IdentifiedArray(uniqueElements: snippets),
+                    instruction: newPrompt ?? "",
+                    extraSystemPrompt: newExtraSystemPrompt ?? "",
+                    isAttachedToTarget: true
+                )),
+                indentSize: filespace.codeMetadata.indentSize ?? 4,
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
-                documentURL: fileURL,
-                projectRootURL: workspace.projectRootURL,
-                allCode: editor.content,
-                allLines: editor.lines,
-                isContinuous: isContinuous,
                 commandName: name,
-                defaultPrompt: newPrompt ?? "",
-                extraSystemPrompt: newExtraSystemPrompt,
-                generateDescriptionRequirement: generateDescription
+                isContinuous: isContinuous
             ))))
-        }.result
+        }
     }
 
     func executeSingleRoundDialog(

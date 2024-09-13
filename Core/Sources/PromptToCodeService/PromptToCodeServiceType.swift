@@ -62,6 +62,8 @@ public extension DependencyValues {
 import ContextAwarePromptToCodeService
 
 extension ContextAwarePromptToCodeService: PromptToCodeServiceType {
+    public func stopResponding() {}
+
     public func modifyCode(
         code: String,
         requirement: String,

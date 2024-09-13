@@ -23,7 +23,7 @@ public struct ChatTabKind: Equatable {
 }
 
 @Reducer
-public struct ChatPanelFeature {
+public struct ChatPanel {
     public struct ChatTabGroup: Equatable {
         public var tabInfo: IdentifiedArray<String, ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
@@ -166,7 +166,6 @@ public struct ChatPanelFeature {
                             .chatPanelWindow
                             .centerInActiveSpaceIfNeeded()
                     }
-                    activateExtensionService()
                     await send(.focusActiveChatTab)
                 }
 

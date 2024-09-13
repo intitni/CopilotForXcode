@@ -3,10 +3,10 @@ import Foundation
 import SwiftUI
 
 @Reducer
-public struct SuggestionPanelFeature {
+public struct SuggestionPanel {
     @ObservableState
     public struct State: Equatable {
-        var content: CodeSuggestionProvider?
+        var content: PresentingCodeSuggestion?
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
         var isPanelDisplayed: Bool = false

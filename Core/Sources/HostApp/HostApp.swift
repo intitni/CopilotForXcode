@@ -4,7 +4,7 @@ import Foundation
 import KeyboardShortcuts
 
 #if canImport(LicenseManagement)
-import LicenseManagement
+import ProHostApp
 #endif
 
 extension KeyboardShortcuts.Name {
@@ -20,9 +20,8 @@ struct HostApp {
         var embeddingModelManagement = EmbeddingModelManagement.State()
     }
 
-    enum Action: Equatable {
+    enum Action {
         case appear
-        case informExtensionServiceAboutLicenseKeyChange
         case general(General.Action)
         case chatModelManagement(ChatModelManagement.Action)
         case embeddingModelManagement(EmbeddingModelManagement.Action)
@@ -50,22 +49,10 @@ struct HostApp {
         Reduce { _, action in
             switch action {
             case .appear:
-                return .none
-
-            case .informExtensionServiceAboutLicenseKeyChange:
-                #if canImport(LicenseManagement)
-                return .run { _ in
-                    let service = try getService()
-                    do {
-                        try await service
-                            .postNotification(name: Notification.Name.licenseKeyChanged.rawValue)
-                    } catch {
-                        toast(error.localizedDescription, .error)
-                    }
-                }
-                #else
-                return .none
+                #if canImport(ProHostApp)
+                ProHostApp.start()
                 #endif
+                return .none
 
             case .general:
                 return .none

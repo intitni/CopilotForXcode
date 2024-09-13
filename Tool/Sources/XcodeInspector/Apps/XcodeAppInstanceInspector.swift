@@ -353,16 +353,21 @@ extension XcodeAppInstanceInspector {
 
         for window in windows {
             let workspaceIdentifier = workspaceIdentifier(window)
+            var traverseCount = 0
 
             let tabs = {
                 guard let editArea = window.firstChild(where: { $0.description == "editor area" })
                 else { return Set<String>() }
                 var allTabs = Set<String>()
-                let tabBars = editArea.children { $0.description == "tab bar" }
+                let tabBars = editArea.tabBars
                 for tabBar in tabBars {
-                    let tabs = tabBar.children { $0.roleDescription == "tab" }
-                    for tab in tabs {
-                        allTabs.insert(tab.title)
+                    tabBar.traverse { element, _ in
+                        traverseCount += 1
+                        if element.roleDescription == "tab" {
+                            allTabs.insert(element.title)
+                            return .skipDescendants
+                        }
+                        return .continueSearching
                     }
                 }
                 return allTabs
@@ -416,3 +421,54 @@ private func isCompletionPanel(_ element: AXUIElement) -> Bool {
     return matchXcode16CompletionPanel
 }
 
+public extension AXUIElement {
+    var tabBars: [AXUIElement] {
+        // Searching by traversing with AXUIElement is (Xcode) resource consuming, we should skip
+        // as much as possible!
+        
+        guard let editArea: AXUIElement = {
+            if description == "editor area" { return self }
+            return firstChild(where: { $0.description == "editor area" })
+        }() else { return [] }
+        
+        var tabBars = [AXUIElement]()
+        editArea.traverse { element, _ in
+            let description = element.description
+            if description == "Tab Bar" {
+                element.traverse { element, _ in
+                    if element.description == "tab bar" {
+                        tabBars.append(element)
+                        return .stopSearching
+                    }
+                    return .continueSearching
+                }
+
+                return .skipDescendantsAndSiblings
+            }
+            
+            if element.identifier == "editor context" {
+                return .skipDescendantsAndSiblings
+            }
+
+            if element.isSourceEditor {
+                return .skipDescendantsAndSiblings
+            }
+
+            if description == "Code Coverage Ribbon" {
+                return .skipDescendants
+            }
+
+            if description == "Debug Area" {
+                return .skipDescendants
+            }
+            
+            if description == "debug bar" {
+                return .skipDescendants
+            }
+
+            return .continueSearching
+        }
+
+        return tabBars
+    }
+}

@@ -9,6 +9,7 @@ public struct WidgetLocation: Equatable {
 
     var widgetFrame: CGRect
     var tabFrame: CGRect
+    var sharedPanelLocation: PanelLocation
     var defaultPanelLocation: PanelLocation
     var suggestionPanelLocation: PanelLocation?
 }
@@ -70,7 +71,7 @@ enum UpdateLocationStrategy {
                 .value(for: \.preferWidgetToStayInsideEditorWhenWidthGreaterThan),
             editorFrameExpendedSize: CGSize = .zero
         ) -> WidgetLocation {
-            return HorizontalMovable().framesForWindows(
+            var frames = HorizontalMovable().framesForWindows(
                 y: mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
                 alignPanelTopToAnchor: false,
                 editorFrame: editorFrame,
@@ -80,6 +81,16 @@ enum UpdateLocationStrategy {
                 hideCircularWidget: hideCircularWidget,
                 editorFrameExpendedSize: editorFrameExpendedSize
             )
+
+            frames.sharedPanelLocation.frame.size.height = max(
+                frames.defaultPanelLocation.frame.height,
+                editorFrame.height - Style.widgetHeight
+            )
+            frames.defaultPanelLocation.frame.size.height = max(
+                frames.defaultPanelLocation.frame.height,
+                (editorFrame.height - Style.widgetHeight) / 2
+            )
+            return frames
         }
     }
 
@@ -155,6 +166,10 @@ enum UpdateLocationStrategy {
                 return .init(
                     widgetFrame: widgetFrameOnTheRightSide,
                     tabFrame: tabFrame,
+                    sharedPanelLocation: .init(
+                        frame: panelFrame,
+                        alignPanelTop: alignPanelTopToAnchor
+                    ),
                     defaultPanelLocation: .init(
                         frame: panelFrame,
                         alignPanelTop: alignPanelTopToAnchor
@@ -214,6 +229,10 @@ enum UpdateLocationStrategy {
                     return .init(
                         widgetFrame: widgetFrameOnTheLeftSide,
                         tabFrame: tabFrame,
+                        sharedPanelLocation: .init(
+                            frame: panelFrame,
+                            alignPanelTop: alignPanelTopToAnchor
+                        ),
                         defaultPanelLocation: .init(
                             frame: panelFrame,
                             alignPanelTop: alignPanelTopToAnchor
@@ -241,6 +260,10 @@ enum UpdateLocationStrategy {
                     return .init(
                         widgetFrame: widgetFrameOnTheRightSide,
                         tabFrame: tabFrame,
+                        sharedPanelLocation: .init(
+                            frame: panelFrame,
+                            alignPanelTop: alignPanelTopToAnchor
+                        ),
                         defaultPanelLocation: .init(
                             frame: panelFrame,
                             alignPanelTop: alignPanelTopToAnchor

@@ -29,6 +29,8 @@ struct ChatModelEdit {
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
         var enforceMessageOrder: Bool = false
+        var openAIOrganizationID: String = ""
+        var openAIProjectID: String = ""
     }
 
     enum Action: Equatable, BindableAction {
@@ -85,7 +87,7 @@ struct ChatModelEdit {
                 let model = ChatModel(state: state)
                 return .run { send in
                     do {
-                        let service = ChatGPTService(
+                        let service = LegacyChatGPTService(
                             configuration: UserPreferenceChatGPTConfiguration()
                                 .overriding {
                                     $0.model = model
@@ -197,6 +199,10 @@ extension ChatModel {
                     }
                 }(),
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
+                openAIInfo: .init(
+                    organizationID: state.openAIOrganizationID,
+                    projectID: state.openAIProjectID
+                ),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
                 googleGenerativeAIInfo: .init(apiVersion: state.apiVersion),
                 openAICompatibleInfo: .init(enforceMessageOrder: state.enforceMessageOrder)
@@ -219,7 +225,9 @@ extension ChatModel {
                 apiKeyManagement: .init(availableAPIKeyNames: [info.apiKeyName])
             ),
             baseURLSelection: .init(baseURL: info.baseURL, isFullURL: info.isFullURL),
-            enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder
+            enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder,
+            openAIOrganizationID: info.openAIInfo.organizationID,
+            openAIProjectID: info.openAIInfo.projectID
         )
     }
 }

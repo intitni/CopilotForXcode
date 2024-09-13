@@ -26,7 +26,7 @@ public struct OpenAIChat: ChatModel {
     ) async throws -> ChatMessage {
         let memory = memory ?? EmptyChatGPTMemory()
         
-        let service = ChatGPTService(
+        let service = LegacyChatGPTService(
             memory: memory,
             configuration: configuration,
             functionProvider: functionProvider

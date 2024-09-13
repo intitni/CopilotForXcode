@@ -8,10 +8,10 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 
 ## Features
 
-- Code Suggestions (powered by GitHub Copilot and Codeium).
-- Chat (powered by OpenAI ChatGPT).
-- Prompt to Code (powered by OpenAI ChatGPT).
-- Custom Commands to extend Chat and Prompt to Code.
+- Code Suggestions
+- Chat
+- Modification
+- Custom Commands to extend Chat and Modification.
 
 ## Table of Contents
 
@@ -33,11 +33,9 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 - [Limitations](#limitations)
 - [License](#license)
 
-For frequently asked questions, check [FAQ](https://github.com/intitni/CopilotForXcode/wiki/Frequently-Asked-Questions).
-
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
-For more information, check the [wiki](https://github.com/intitni/CopilotForXcode/wiki)
+For more information, check the [Wiki Page](https://copilotforxcode.intii.com/wiki).
 
 ## Prerequisites
 
@@ -297,7 +295,7 @@ This feature is recommended when you need to update a specific piece of code. So
 - Polishing and correcting grammar and spelling errors in the documentation.
 - Translating a localizable strings file.
 
-#### Prompt to Code Scope
+#### Modification Scope
 
 The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
 
@@ -307,14 +305,14 @@ You can use shorthand to represent a scope, such as `@sense`, and enable multipl
 
 #### Commands
 
-- Prompt to Code: Open a prompt to code window, where you can use natural language to write or edit selected code.
-- Accept Prompt to Code: Accept the result of prompt to code.
+- Write or Modify Code: Open a modification window, where you can use natural language to write or edit selected code.
+- Accept Modification: Accept the result of modification.
 
 ### Custom Commands
 
-You can create custom commands that run Chat and Prompt to Code with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. There are 3 types of custom commands:
+You can create custom commands that run Chat and Modification with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. There are 3 types of custom commands:
 
-- Prompt to Code: Run Prompt to Code with the selected code, and update or write the code using the given prompt, if provided. You can provide additional information through the extra system prompt field.
+- Modification: Run Modification with the selected code, and update or write the code using the given prompt, if provided. You can provide additional information through the extra system prompt field.
 - Send Message: Open the chat window and immediately send a message, if provided. You can provide more information through the extra system prompt field.
 - Custom Chat: Open the chat window and immediately send a message, if provided. You can overwrite the entire system prompt through the system prompt field.
 - Single Round Dialog: Send a message to a temporary chat. Useful when you want to run a terminal command with `/run`.

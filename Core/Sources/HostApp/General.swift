@@ -12,48 +12,195 @@ struct General {
         var xpcServiceVersion: String?
         var isAccessibilityPermissionGranted: Bool?
         var isReloading = false
+        @Presents var alert: AlertState<Action.Alert>?
     }
 
-    enum Action: Equatable {
+    enum Action {
         case appear
         case setupLaunchAgentIfNeeded
+        case setupLaunchAgentClicked
+        case removeLaunchAgentClicked
+        case reloadLaunchAgentClicked
         case openExtensionManager
         case reloadStatus
         case finishReloading(xpcServiceVersion: String, permissionGranted: Bool)
         case failedReloading
+        case alert(PresentationAction<Alert>)
+
+        case setupLaunchAgent
+        case finishSetupLaunchAgent
+        case finishRemoveLaunchAgent
+        case finishReloadLaunchAgent
+
+        @CasePathable
+        enum Alert: Equatable {
+            case moveToApplications
+            case moveTo(URL)
+            case install
+        }
     }
 
     @Dependency(\.toast) var toast
-    
+
     struct ReloadStatusCancellableId: Hashable {}
+
+    static var didWarnInstallationPosition: Bool {
+        get { UserDefaults.standard.bool(forKey: "didWarnInstallationPosition") }
+        set { UserDefaults.standard.set(newValue, forKey: "didWarnInstallationPosition") }
+    }
+
+    static var bundleIsInApplicationsFolder: Bool {
+        Bundle.main.bundleURL.path.hasPrefix("/Applications")
+    }
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .appear:
-                return .run { send in
-                    if UserDefaults.shared.value(for: \.doNotInstallLaunchAgentAutomatically) {
-                        return
+                if Self.bundleIsInApplicationsFolder {
+                    return .run { send in
+                        await send(.setupLaunchAgentIfNeeded)
                     }
-                    await send(.setupLaunchAgentIfNeeded)
                 }
+
+                if !Self.didWarnInstallationPosition {
+                    Self.didWarnInstallationPosition = true
+                    state.alert = .init {
+                        TextState("Move to Applications Folder?")
+                    } actions: {
+                        ButtonState(action: .moveToApplications) {
+                            TextState("Move")
+                        }
+                        ButtonState(role: .cancel) {
+                            TextState("Not Now")
+                        }
+                    } message: {
+                        TextState(
+                            "To ensure the best experience, please move the app to the Applications folder. If the app is not inside the Applications folder, please set up the launch agent manually by clicking the button."
+                        )
+                    }
+                }
+
+                return .none
 
             case .setupLaunchAgentIfNeeded:
                 return .run { send in
                     #if DEBUG
                     // do not auto install on debug build
                     #else
-                    Task {
-                        do {
-                            try await LaunchAgentManager()
-                                .setupLaunchAgentForTheFirstTimeIfNeeded()
-                        } catch {
-                            toast(error.localizedDescription, .error)
-                        }
+                    do {
+                        try await LaunchAgentManager()
+                            .setupLaunchAgentForTheFirstTimeIfNeeded()
+                    } catch {
+                        toast(error.localizedDescription, .error)
                     }
                     #endif
                     await send(.reloadStatus)
                 }
+
+            case .setupLaunchAgentClicked:
+                if Self.bundleIsInApplicationsFolder {
+                    return .run { send in
+                        await send(.setupLaunchAgent)
+                    }
+                }
+
+                state.alert = .init {
+                    TextState("Setup Launch Agent")
+                } actions: {
+                    ButtonState(action: .install) {
+                        TextState("Setup")
+                    }
+
+                    ButtonState(action: .moveToApplications) {
+                        TextState("Move to Applications Folder")
+                    }
+
+                    ButtonState(role: .cancel) {
+                        TextState("Cancel")
+                    }
+                } message: {
+                    TextState(
+                        "It's recommended to move the app into the Applications folder. But you can still keep it in the current folder and install the launch agent to ~/Library/LaunchAgents."
+                    )
+                }
+
+                return .none
+
+            case .removeLaunchAgentClicked:
+                return .run { send in
+                    do {
+                        try await LaunchAgentManager().removeLaunchAgent()
+                        await send(.finishRemoveLaunchAgent)
+                    } catch {
+                        toast(error.localizedDescription, .error)
+                    }
+                    await send(.reloadStatus)
+                }
+
+            case .reloadLaunchAgentClicked:
+                return .run { send in
+                    do {
+                        try await LaunchAgentManager().reloadLaunchAgent()
+                        await send(.finishReloadLaunchAgent)
+                    } catch {
+                        toast(error.localizedDescription, .error)
+                    }
+                    await send(.reloadStatus)
+                }
+
+            case .setupLaunchAgent:
+                return .run { send in
+                    do {
+                        try await LaunchAgentManager().setupLaunchAgent()
+                        await send(.finishSetupLaunchAgent)
+                    } catch {
+                        toast(error.localizedDescription, .error)
+                    }
+                    await send(.reloadStatus)
+                }
+
+            case .finishSetupLaunchAgent:
+                state.alert = .init {
+                    TextState("Launch Agent Installed")
+                } actions: {
+                    ButtonState {
+                        TextState("OK")
+                    }
+                } message: {
+                    TextState(
+                        "The launch agent has been installed. Please restart the app."
+                    )
+                }
+                return .none
+
+            case .finishRemoveLaunchAgent:
+                state.alert = .init {
+                    TextState("Launch Agent Removed")
+                } actions: {
+                    ButtonState {
+                        TextState("OK")
+                    }
+                } message: {
+                    TextState(
+                        "The launch agent has been removed."
+                    )
+                }
+                return .none
+
+            case .finishReloadLaunchAgent:
+                state.alert = .init {
+                    TextState("Launch Agent Reloaded")
+                } actions: {
+                    ButtonState {
+                        TextState("OK")
+                    }
+                } message: {
+                    TextState(
+                        "The launch agent has been reloaded."
+                    )
+                }
+                return .none
 
             case .openExtensionManager:
                 return .run { send in
@@ -106,6 +253,38 @@ struct General {
 
             case .failedReloading:
                 state.isReloading = false
+                return .none
+
+            case let .alert(.presented(action)):
+                switch action {
+                case .moveToApplications:
+                    return .run { send in
+                        let appURL = URL(fileURLWithPath: "/Applications")
+                        await send(.alert(.presented(.moveTo(appURL))))
+                    }
+
+                case let .moveTo(url):
+                    return .run { _ in
+                        do {
+                            try FileManager.default.moveItem(
+                                at: Bundle.main.bundleURL,
+                                to: url.appendingPathComponent(
+                                    Bundle.main.bundleURL.lastPathComponent
+                                )
+                            )
+                            await NSApplication.shared.terminate(nil)
+                        } catch {
+                            toast(error.localizedDescription, .error)
+                        }
+                    }
+                case .install:
+                    return .run { send in
+                        await send(.setupLaunchAgent)
+                    }
+                }
+
+            case .alert(.dismiss):
+                state.alert = nil
                 return .none
             }
         }

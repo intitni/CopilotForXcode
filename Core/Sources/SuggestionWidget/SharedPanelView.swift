@@ -19,7 +19,7 @@ extension View {
 }
 
 struct SharedPanelView: View {
-    var store: StoreOf<SharedPanelFeature>
+    var store: StoreOf<SharedPanel>
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -29,40 +29,41 @@ struct SharedPanelView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            VStack(spacing: 0) {
-                if !store.alignTopToAnchor {
-                    Spacer()
-                        .frame(minHeight: 0, maxHeight: .infinity)
-                        .allowsHitTesting(false)
+        GeometryReader { geometry in
+            WithPerceptionTracking {
+                VStack(spacing: 0) {
+                    if !store.alignTopToAnchor {
+                        Spacer()
+                            .frame(minHeight: 0, maxHeight: .infinity)
+                            .allowsHitTesting(false)
+                    }
+
+                    DynamicContent(store: store)
+                        .frame(maxWidth: .infinity, maxHeight: geometry.size.height)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .allowsHitTesting(store.isPanelDisplayed)
+                        .layoutPriority(1)
+
+                    if store.alignTopToAnchor {
+                        Spacer()
+                            .frame(minHeight: 0, maxHeight: .infinity)
+                            .allowsHitTesting(false)
+                    }
                 }
-
-                DynamicContent(store: store)
-
-                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(store.isPanelDisplayed)
-                    .frame(maxWidth: .infinity)
-
-                if store.alignTopToAnchor {
-                    Spacer()
-                        .frame(minHeight: 0, maxHeight: .infinity)
-                        .allowsHitTesting(false)
-                }
+                .preferredColorScheme(store.colorScheme)
+                .opacity(store.opacity)
+                .animation(
+                    featureFlag: \.animationBCrashSuggestion,
+                    .easeInOut(duration: 0.2),
+                    value: store.isPanelDisplayed
+                )
+                .frame(maxWidth: Style.panelWidth, maxHeight: .infinity)
             }
-            .preferredColorScheme(store.colorScheme)
-            .opacity(store.opacity)
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelDisplayed
-            )
-            .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
         }
     }
 
     struct DynamicContent: View {
-        let store: StoreOf<SharedPanelFeature>
+        let store: StoreOf<SharedPanel>
 
         @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
@@ -82,7 +83,7 @@ struct SharedPanelView: View {
 
         @ViewBuilder
         func error(_ error: String) -> some View {
-            ErrorPanel(description: error) {
+            ErrorPanelView(description: error) {
                 store.send(
                     .errorMessageCloseButtonTapped,
                     animation: .easeInOut(duration: 0.2)
@@ -96,17 +97,17 @@ struct SharedPanelView: View {
                 state: \.content.promptToCodeGroup.activePromptToCode,
                 action: \.promptToCodeGroup.activePromptToCode
             ) {
-                PromptToCodePanel(store: store)
+                PromptToCodePanelView(store: store)
             }
         }
 
         @ViewBuilder
-        func suggestion(_ suggestion: CodeSuggestionProvider) -> some View {
+        func suggestion(_ suggestion: PresentingCodeSuggestion) -> some View {
             switch suggestionPresentationMode {
             case .nearbyTextCursor:
                 EmptyView()
             case .floatingWidget:
-                CodeBlockSuggestionPanel(suggestion: suggestion)
+                CodeBlockSuggestionPanelView(suggestion: suggestion)
             }
         }
     }
@@ -143,7 +144,7 @@ struct SharedPanelView_Error_Preview: PreviewProvider {
                 colorScheme: .light,
                 isPanelDisplayed: true
             ),
-            reducer: { SharedPanelFeature() }
+            reducer: { SharedPanel() }
         ))
         .frame(width: 450, height: 200)
     }
@@ -163,13 +164,15 @@ struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
                         language: "objective-c",
                         startLineIndex: 8,
                         suggestionCount: 2,
-                        currentSuggestionIndex: 0
+                        currentSuggestionIndex: 0,
+                        replacingRange: .zero,
+                        replacingLines: [""]
                     )
                 ),
                 colorScheme: .dark,
                 isPanelDisplayed: true
             ),
-            reducer: { SharedPanelFeature() }
+            reducer: { SharedPanel() }
         ))
         .frame(width: 450, height: 200)
         .background {

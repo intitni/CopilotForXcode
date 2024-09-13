@@ -7,12 +7,12 @@ public actor TerminalChatPlugin: ChatPlugin {
     public static var command: String { "run" }
     public nonisolated var name: String { "Terminal" }
 
-    let chatGPTService: any ChatGPTServiceType
+    let chatGPTService: any LegacyChatGPTServiceType
     var terminal: TerminalType = Terminal()
     var isCancelled = false
     weak var delegate: ChatPluginDelegate?
 
-    public init(inside chatGPTService: any ChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }

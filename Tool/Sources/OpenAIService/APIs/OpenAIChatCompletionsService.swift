@@ -253,6 +253,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             }
             guard let data = text.data(using: .utf8)
             else { throw ChatGPTServiceError.responseInvalid }
+            if response.statusCode == 403 {
+                throw ChatGPTServiceError.unauthorized(text)
+            }
             let decoder = JSONDecoder()
             let error = try? decoder.decode(CompletionAPIError.self, from: data)
             throw error ?? ChatGPTServiceError.responseInvalid
@@ -347,6 +350,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                         forHTTPHeaderField: "OpenAI-Organization"
                     )
                 }
+
+                if !model.info.openAIInfo.projectID.isEmpty {
+                    request.setValue(
+                        model.info.openAIInfo.projectID,
+                        forHTTPHeaderField: "OpenAI-Project"
+                    )
+                }
+                
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")

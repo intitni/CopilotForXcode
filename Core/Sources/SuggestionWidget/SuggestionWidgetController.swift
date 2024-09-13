@@ -11,7 +11,7 @@ import XcodeInspector
 
 @MainActor
 public final class SuggestionWidgetController: NSObject {
-    let store: StoreOf<WidgetFeature>
+    let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
     let windowsController: WidgetWindowsController
     private var cancellable = Set<AnyCancellable>()
@@ -19,7 +19,7 @@ public final class SuggestionWidgetController: NSObject {
     public let dependency: SuggestionWidgetControllerDependency
 
     public init(
-        store: StoreOf<WidgetFeature>,
+        store: StoreOf<Widget>,
         chatTabPool: ChatTabPool,
         dependency: SuggestionWidgetControllerDependency
     ) {
@@ -69,18 +69,6 @@ public extension SuggestionWidgetController {
 
     func presentError(_ errorDescription: String) {
         store.send(.toastPanel(.toast(.toast(errorDescription, .error, nil))))
-    }
-
-    func presentChatRoom() {
-        store.send(.chatPanel(.presentChatPanel(forceDetach: false)))
-    }
-
-    func presentDetachedGlobalChat() {
-        store.send(.chatPanel(.presentChatPanel(forceDetach: true)))
-    }
-
-    func closeChatRoom() {
-//        store.send(.chatPanel(.closeChatPanel))
     }
 }
 

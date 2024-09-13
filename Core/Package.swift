@@ -14,7 +14,6 @@ let package = Package(
             name: "Service",
             targets: [
                 "Service",
-                "SuggestionInjector",
                 "FileChangeChecker",
                 "LaunchAgentManager",
                 "UpdateChecker",
@@ -45,7 +44,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.10.4"
+            exact: "1.10.4"
         ),
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts
@@ -87,10 +86,12 @@ let package = Package(
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
@@ -104,7 +105,6 @@ let package = Package(
             dependencies: [
                 "Service",
                 "Client",
-                "SuggestionInjector",
                 .product(name: "XPCShared", package: "Tool"),
                 .product(name: "SuggestionProvider", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
@@ -147,20 +147,13 @@ let package = Package(
                 "ProExtension",
             ])
         ),
-        .target(
-            name: "SuggestionInjector",
-            dependencies: [.product(name: "SuggestionBasic", package: "Tool")]
-        ),
-        .testTarget(
-            name: "SuggestionInjectorTests",
-            dependencies: ["SuggestionInjector"]
-        ),
 
         // MARK: - Prompt To Code
 
         .target(
             name: "PromptToCodeService",
             dependencies: [
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "FocusedCodeFinder", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -228,6 +221,7 @@ let package = Package(
             dependencies: [
                 "PromptToCodeService",
                 "ChatGPTChatTab",
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
@@ -235,6 +229,7 @@ let package = Package(
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "CustomAsyncAlgorithms", package: "Tool"),
+                .product(name: "CodeDiff", package: "Tool"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
@@ -337,12 +332,14 @@ let package = Package(
         .target(
             name: "KeyBindingManager",
             dependencies: [
+                .product(name: "CommandHandler", package: "Tool"),
                 .product(name: "Workspace", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
-                .product(name: "CGEventOverride", package: "CGEventOverride"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "UserDefaultsObserver", package: "Tool"),
+                .product(name: "CGEventOverride", package: "CGEventOverride"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
         .testTarget(

@@ -3,10 +3,10 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-public struct PanelFeature {
+public struct WidgetPanel {
     @ObservableState
-    public struct State: Equatable {
-        public var content: SharedPanelFeature.Content {
+    public struct State {
+        public var content: SharedPanel.Content {
             get { sharedPanelState.content }
             set {
                 sharedPanelState.content = newValue
@@ -16,25 +16,25 @@ public struct PanelFeature {
 
         // MARK: SharedPanel
 
-        var sharedPanelState = SharedPanelFeature.State()
+        var sharedPanelState = SharedPanel.State()
 
         // MARK: SuggestionPanel
 
-        var suggestionPanelState = SuggestionPanelFeature.State()
+        var suggestionPanelState = SuggestionPanel.State()
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case presentSuggestion
-        case presentSuggestionProvider(CodeSuggestionProvider, displayContent: Bool)
+        case presentSuggestionProvider(PresentingCodeSuggestion, displayContent: Bool)
         case presentError(String)
-        case presentPromptToCode(PromptToCodeGroup.PromptToCodeInitialState)
+        case presentPromptToCode(PromptToCodePanel.State)
         case displayPanelContent
         case discardSuggestion
         case removeDisplayedContent
         case switchToAnotherEditorAndUpdateContent
 
-        case sharedPanel(SharedPanelFeature.Action)
-        case suggestionPanel(SuggestionPanelFeature.Action)
+        case sharedPanel(SharedPanel.Action)
+        case suggestionPanel(SuggestionPanel.Action)
     }
 
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
@@ -44,11 +44,11 @@ public struct PanelFeature {
 
     public var body: some ReducerOf<Self> {
         Scope(state: \.suggestionPanelState, action: \.suggestionPanel) {
-            SuggestionPanelFeature()
+            SuggestionPanel()
         }
 
         Scope(state: \.sharedPanelState, action: \.sharedPanel) {
-            SharedPanelFeature()
+            SharedPanel()
         }
 
         Reduce { state, action in
@@ -136,7 +136,7 @@ public struct PanelFeature {
         }
     }
 
-    func fetchSuggestionProvider(fileURL: URL) async -> CodeSuggestionProvider? {
+    func fetchSuggestionProvider(fileURL: URL) async -> PresentingCodeSuggestion? {
         guard let provider = await suggestionWidgetControllerDependency
             .suggestionWidgetDataSource?
             .suggestionForFile(at: fileURL) else { return nil }

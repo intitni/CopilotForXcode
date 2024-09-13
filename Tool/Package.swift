@@ -20,7 +20,8 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "SuggestionBasic", targets: ["SuggestionBasic"]),
+        .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
+        .library(name: "PromptToCode", targets: ["PromptToCodeBasic", "PromptToCodeCustomization"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -47,6 +48,8 @@ let package = Package(
         .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
         .library(name: "AsyncPassthroughSubject", targets: ["AsyncPassthroughSubject"]),
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
+        .library(name: "CommandHandler", targets: ["CommandHandler"]),
+        .library(name: "CodeDiff", targets: ["CodeDiff"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -62,7 +65,7 @@ let package = Package(
         .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.10.4"
+            exact: "1.10.4"
         ),
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
@@ -93,6 +96,9 @@ let package = Package(
         .target(name: "FileSystem"),
 
         .target(name: "ObjectiveCExceptionHandling"),
+
+        .target(name: "CodeDiff", dependencies: ["SuggestionBasic"]),
+        .testTarget(name: "CodeDiffTests", dependencies: ["CodeDiff"]),
 
         .target(
             name: "CustomAsyncAlgorithms",
@@ -161,6 +167,15 @@ let package = Package(
         ),
 
         .target(
+            name: "SuggestionInjector",
+            dependencies: ["SuggestionBasic"]
+        ),
+        .testTarget(
+            name: "SuggestionInjectorTests",
+            dependencies: ["SuggestionInjector"]
+        ),
+
+        .target(
             name: "AIModel",
             dependencies: [
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
@@ -171,7 +186,7 @@ let package = Package(
             name: "SuggestionBasicTests",
             dependencies: ["SuggestionBasic"]
         ),
-        
+
         .target(
             name: "ChatBasic",
             dependencies: [
@@ -179,6 +194,30 @@ let package = Package(
                 "Preferences",
                 "Keychain",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
+            ]
+        ),
+
+        .target(
+            name: "PromptToCodeBasic",
+            dependencies: [
+                "SuggestionBasic",
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
+            ]
+        ),
+
+        .target(
+            name: "PromptToCodeCustomization",
+            dependencies: [
+                "PromptToCodeBasic",
+                "SuggestionBasic",
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
             ]
         ),
 
@@ -232,6 +271,7 @@ let package = Package(
                 "Preferences",
                 "SuggestionBasic",
                 "DebounceFunction",
+                "CodeDiff",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
@@ -264,6 +304,7 @@ let package = Package(
                 "SuggestionProvider",
                 "XPCShared",
                 "BuiltinExtension",
+                "SuggestionInjector",
             ]
         ),
 
@@ -294,6 +335,15 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "CommandHandler",
+            dependencies: [
+                "XcodeInspector",
+                "Preferences",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            ]
+        ),
+
         // MARK: - Services
 
         .target(
@@ -303,6 +353,7 @@ let package = Package(
                 "ObjectiveCExceptionHandling",
                 "USearchIndex",
                 "ChatBasic",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
@@ -320,6 +371,16 @@ let package = Package(
 
         .testTarget(name: "SuggestionProviderTests", dependencies: ["SuggestionProvider"]),
 
+        .target(
+            name: "RAGChatAgent",
+            dependencies: [
+                "ChatBasic",
+                "ChatContextCollector",
+                "OpenAIService",
+                "Preferences",
+            ]
+        ),
+
         // MARK: - GitHub Copilot
 
         .target(
@@ -334,6 +395,7 @@ let package = Package(
                 "BuiltinExtension",
                 "Toast",
                 "SuggestionProvider",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "LanguageServerProtocol", package: "LanguageServerProtocol"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ],
@@ -357,6 +419,8 @@ let package = Package(
                 "XcodeInspector",
                 "BuiltinExtension",
                 "ChatTab",
+                "SharedUIComponents",
+                .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "CopilotForXcodeKit", package: "CopilotForXcodeKit"),
             ]
         ),
@@ -417,6 +481,7 @@ let package = Package(
         .target(
             name: "ActiveDocumentChatContextCollector",
             dependencies: [
+                "ASTParser",
                 "ChatContextCollector",
                 "OpenAIService",
                 "Preferences",

@@ -163,10 +163,10 @@ public actor RealtimeSuggestionController {
 
     func cancelInFlightTasks(excluding: Task<Void, Never>? = nil) async {
         inflightPrefetchTask?.cancel()
-
+        let workspaces = await Service.shared.workspacePool.workspaces
         // cancel in-flight tasks
         await withTaskGroup(of: Void.self) { group in
-            for (_, workspace) in Service.shared.workspacePool.workspaces {
+            for (_, workspace) in workspaces {
                 group.addTask {
                     await workspace.cancelInFlightRealtimeSuggestionRequests()
                 }

@@ -16,7 +16,7 @@ struct GeneralView: View {
                 SettingsDivider()
                 ExtensionServiceView(store: store)
                 SettingsDivider()
-                LaunchAgentView()
+                LaunchAgentView(store: store)
                 SettingsDivider()
                 GeneralSettingsView()
             }
@@ -30,64 +30,68 @@ struct GeneralView: View {
 struct AppInfoView: View {
     @State var appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     @Environment(\.updateChecker) var updateChecker
-    let store: StoreOf<General>
+    @Perception.Bindable var store: StoreOf<General>
 
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack(alignment: .top) {
-                Text(
-                    Bundle.main
-                        .object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
-                        ?? "Copilot for Xcode"
-                )
-                .font(.title)
-                Text(appVersion ?? "")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+        WithPerceptionTracking {
+            VStack(alignment: .leading) {
+                HStack(alignment: .top) {
+                    Text(
+                        Bundle.main
+                            .object(forInfoDictionaryKey: "HOST_APP_NAME") as? String
+                            ?? "Copilot for Xcode"
+                    )
+                    .font(.title)
+                    Text(appVersion ?? "")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    store.send(.openExtensionManager)
-                }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "puzzlepiece.extension.fill")
-                        Text("Extensions")
+                    Button(action: {
+                        store.send(.openExtensionManager)
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "puzzlepiece.extension.fill")
+                            Text("Extensions")
+                        }
+                    }
+
+                    Button(action: {
+                        updateChecker.checkForUpdates()
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "arrow.up.right.circle.fill")
+                            Text("Check for Updates")
+                        }
                     }
                 }
 
-                Button(action: {
-                    updateChecker.checkForUpdates()
-                }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "arrow.up.right.circle.fill")
-                        Text("Check for Updates")
+                HStack(spacing: 16) {
+                    Link(
+                        destination: URL(string: "https://github.com/intitni/CopilotForXcode")!
+                    ) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "link")
+                            Text("GitHub")
+                        }
                     }
+                    .focusable(false)
+                    .foregroundColor(.accentColor)
+
+                    Link(destination: URL(string: "https://www.buymeacoffee.com/intitni")!) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "cup.and.saucer.fill")
+                            Text("Buy Me A Coffee")
+                        }
+                    }
+                    .foregroundColor(.accentColor)
+                    .focusable(false)
                 }
             }
-
-            HStack(spacing: 16) {
-                Link(
-                    destination: URL(string: "https://github.com/intitni/CopilotForXcode")!
-                ) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "link")
-                        Text("GitHub")
-                    }
-                }
-                .focusable(false)
-                .foregroundColor(.accentColor)
-
-                Link(destination: URL(string: "https://www.buymeacoffee.com/intitni")!) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "cup.and.saucer.fill")
-                        Text("Buy Me A Coffee")
-                    }
-                }
-                .foregroundColor(.accentColor)
-                .focusable(false)
-            }
-        }.padding()
+            .padding()
+            .alert($store.scope(state: \.alert, action: \.alert))
+        }
     }
 }
 
@@ -149,75 +153,34 @@ struct ExtensionServiceView: View {
 }
 
 struct LaunchAgentView: View {
+    @Perception.Bindable var store: StoreOf<General>
     @Environment(\.toast) var toast
-    @State var isDidRemoveLaunchAgentAlertPresented = false
-    @State var isDidSetupLaunchAgentAlertPresented = false
-    @State var isDidRestartLaunchAgentAlertPresented = false
 
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Button(action: {
-                    Task {
-                        do {
-                            try await LaunchAgentManager().setupLaunchAgent()
-                            isDidSetupLaunchAgentAlertPresented = true
-                        } catch {
-                            toast(error.localizedDescription, .error)
-                        }
+        WithPerceptionTracking {
+            VStack(alignment: .leading) {
+                HStack {
+                    Button(action: {
+                        store.send(.setupLaunchAgentClicked)
+                    }) {
+                        Text("Setup Launch Agent")
                     }
-                }) {
-                    Text("Set Up Launch Agent")
-                }
-                .alert(isPresented: $isDidSetupLaunchAgentAlertPresented) {
-                    .init(
-                        title: Text("Finished Launch Agent Setup"),
-                        message: Text(
-                            "Please refresh the Copilot status. (The first refresh may fail)"
-                        ),
-                        dismissButton: .default(Text("OK"))
-                    )
-                }
 
-                Button(action: {
-                    Task {
-                        do {
-                            try await LaunchAgentManager().removeLaunchAgent()
-                            isDidRemoveLaunchAgentAlertPresented = true
-                        } catch {
-                            toast(error.localizedDescription, .error)
-                        }
+                    Button(action: {
+                        store.send(.removeLaunchAgentClicked)
+                    }) {
+                        Text("Remove Launch Agent")
                     }
-                }) {
-                    Text("Remove Launch Agent")
-                }
-                .alert(isPresented: $isDidRemoveLaunchAgentAlertPresented) {
-                    .init(
-                        title: Text("Launch Agent Removed"),
-                        dismissButton: .default(Text("OK"))
-                    )
-                }
 
-                Button(action: {
-                    Task {
-                        do {
-                            try await LaunchAgentManager().reloadLaunchAgent()
-                            isDidRestartLaunchAgentAlertPresented = true
-                        } catch {
-                            toast(error.localizedDescription, .error)
-                        }
+                    Button(action: {
+                        store.send(.reloadLaunchAgentClicked)
+                    }) {
+                        Text("Reload Launch Agent")
                     }
-                }) {
-                    Text("Reload Launch Agent")
-                }.alert(isPresented: $isDidRestartLaunchAgentAlertPresented) {
-                    .init(
-                        title: Text("Launch Agent Reloaded"),
-                        dismissButton: .default(Text("OK"))
-                    )
                 }
             }
+            .padding()
         }
-        .padding()
     }
 }
 

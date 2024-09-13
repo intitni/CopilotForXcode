@@ -17,16 +17,24 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             Self.removeTrailingWhitespacesAndNewlines(&suggestion)
             Self.removeRedundantClosingParenthesis(&suggestion, lines: request.lines)
             if !Self.checkIfSuggestionHasNoEffect(suggestion, request: request) { return nil }
+            Self.injectReplacingLines(&suggestion, request: request)
             return suggestion
         }
     }
 
     static func removeTrailingWhitespacesAndNewlines(_ suggestion: inout CodeSuggestion) {
-        var text = suggestion.text[...]
-        while let last = text.last, last.isNewline || last.isWhitespace {
-            text = text.dropLast(1)
-        }
-        suggestion.text = String(text)
+        suggestion.text = suggestion.text.removedTrailingWhitespacesAndNewlines()
+    }
+    
+    static func injectReplacingLines(
+        _ suggestion: inout CodeSuggestion,
+        request: SuggestionRequest
+    ) {
+        guard !request.lines.isEmpty else { return }
+        let range = suggestion.range
+        let lowerBound = max(0, range.start.line)
+        let upperBound = max(lowerBound, min(request.lines.count - 1, range.end.line))
+        suggestion.replacingLines = Array(request.lines[lowerBound...upperBound])
     }
 
     /// Remove the parenthesis in the last line of the suggestion if
@@ -64,6 +72,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             } else {
                 suggestion.text = ""
             }
+            suggestion.middlewareComments.append("Removed redundant closing parenthesis.")
         }
     }
 

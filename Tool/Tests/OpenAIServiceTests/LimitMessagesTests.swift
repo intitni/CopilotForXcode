@@ -26,7 +26,7 @@ final class AutoManagedChatGPTMemoryLimitTests: XCTestCase {
         ])
 
 //        XCTAssertEqual(remainingTokens, 10000 - 12 - 6)
-        let history = await memory.history
+//        let history = await memory.history
         
 // token count caching is removed
 //        XCTAssertEqual(history.map(\.tokensCount), [
@@ -131,7 +131,8 @@ private func runService(
     let memory = AutoManagedChatGPTMemory(
         systemPrompt: systemPrompt,
         configuration: configuration,
-        functionProvider: NoChatGPTFunctionProvider()
+        functionProvider: NoChatGPTFunctionProvider(),
+        maxNumberOfMessages: maxNumberOfMessages
     )
 
     for message in messages {
@@ -139,7 +140,6 @@ private func runService(
     }
 
     let messages = await memory.generateSendingHistory(
-        maxNumberOfMessages: maxNumberOfMessages,
         strategy: MockStrategy()
     )
 

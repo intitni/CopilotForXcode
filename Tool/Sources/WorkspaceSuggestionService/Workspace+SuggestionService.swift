@@ -47,7 +47,7 @@ public extension Workspace {
         filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
 
         let snapshot = FilespaceSuggestionSnapshot(
-            linesHash: editor.lines.hashValue,
+            lines: editor.lines,
             cursorPosition: editor.cursorPosition
         )
 

@@ -3,16 +3,16 @@ import Preferences
 import SwiftUI
 
 @Reducer
-public struct SharedPanelFeature {
-    public struct Content: Equatable {
+public struct SharedPanel {
+    public struct Content {
         public var promptToCodeGroup = PromptToCodeGroup.State()
-        var suggestion: CodeSuggestionProvider?
-        public var promptToCode: PromptToCode.State? { promptToCodeGroup.activePromptToCode }
+        var suggestion: PresentingCodeSuggestion?
+        public var promptToCode: PromptToCodePanel.State? { promptToCodeGroup.activePromptToCode }
         var error: String?
     }
 
     @ObservableState
-    public struct State: Equatable {
+    public struct State {
         var content: Content = .init()
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
@@ -33,7 +33,7 @@ public struct SharedPanelFeature {
         }
     }
 
-    public enum Action: Equatable {
+    public enum Action {
         case errorMessageCloseButtonTapped
         case promptToCodeGroup(PromptToCodeGroup.Action)
     }

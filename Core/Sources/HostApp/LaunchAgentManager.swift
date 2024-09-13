@@ -7,11 +7,10 @@ extension LaunchAgentManager {
             serviceIdentifier: Bundle.main
                 .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String +
                 ".CommunicationBridge",
-            executablePath: Bundle.main.bundleURL
+            executableURL: Bundle.main.bundleURL
                 .appendingPathComponent("Contents")
                 .appendingPathComponent("Applications")
-                .appendingPathComponent("CommunicationBridge")
-                .path,
+                .appendingPathComponent("CommunicationBridge"),
             bundleIdentifier: Bundle.main
                 .object(forInfoDictionaryKey: "BUNDLE_IDENTIFIER_BASE") as! String
         )
