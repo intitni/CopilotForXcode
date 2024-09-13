@@ -26,6 +26,8 @@ public struct AsyncCodeBlock: View { // chat: hid
     let dimmedCharacterCount: DimmedCharacterCount
     /// Whether to drop common leading spaces of each line.
     let droppingLeadingSpaces: Bool
+    /// Whether to ignore whole line change in diff.
+    let ignoreWholeLineChangeInDiff: Bool
 
     public init(
         code: String,
@@ -36,7 +38,8 @@ public struct AsyncCodeBlock: View { // chat: hid
         font: NSFont,
         droppingLeadingSpaces: Bool,
         proposedForegroundColor: Color?,
-        dimmedCharacterCount: DimmedCharacterCount = .init(prefix: 0, suffix: 0)
+        dimmedCharacterCount: DimmedCharacterCount = .init(prefix: 0, suffix: 0),
+        ignoreWholeLineChangeInDiff: Bool = true
     ) {
         self.code = code
         self.originalCode = originalCode
@@ -47,6 +50,7 @@ public struct AsyncCodeBlock: View { // chat: hid
         self.proposedForegroundColor = proposedForegroundColor
         self.dimmedCharacterCount = dimmedCharacterCount
         self.droppingLeadingSpaces = droppingLeadingSpaces
+        self.ignoreWholeLineChangeInDiff = ignoreWholeLineChangeInDiff
     }
 
     var foregroundColor: Color {
@@ -89,6 +93,7 @@ public struct AsyncCodeBlock: View { // chat: hid
             .padding(.bottom, 4)
             .onAppear {
                 storage.dimmedCharacterCount = dimmedCharacterCount
+                storage.ignoreWholeLineChangeInDiff = ignoreWholeLineChangeInDiff
                 storage.highlightStorage.highlight(debounce: false, for: self)
                 storage.diffStorage.diff(for: self)
             }
@@ -119,6 +124,9 @@ public struct AsyncCodeBlock: View { // chat: hid
             .onChange(of: dimmedCharacterCount) { value in
                 storage.dimmedCharacterCount = value
             }
+            .onChange(of: ignoreWholeLineChangeInDiff) { value in
+                storage.ignoreWholeLineChangeInDiff = value
+            }
         }
     }
 }
@@ -146,6 +154,7 @@ extension AsyncCodeBlock {
         var dimmedCharacterCount: DimmedCharacterCount = .init(prefix: 0, suffix: 0)
         let diffStorage = DiffStorage()
         let highlightStorage = HighlightStorage()
+        var ignoreWholeLineChangeInDiff: Bool = true
 
         var code: String? {
             get { highlightStorage.code }
@@ -175,6 +184,7 @@ extension AsyncCodeBlock {
                 Self.presentDiff(
                     highlightedCode,
                     commonPrecedingSpaceCount: commonPrecedingSpaceCount,
+                    ignoreWholeLineChange: ignoreWholeLineChangeInDiff,
                     diffResult: diffResult
                 )
             }
@@ -251,6 +261,7 @@ extension AsyncCodeBlock {
         static func presentDiff(
             _ highlightedCode: [NSMutableAttributedString],
             commonPrecedingSpaceCount: Int,
+            ignoreWholeLineChange: Bool,
             diffResult: CodeDiff.SnippetDiff
         ) {
             let originalCodeIsSingleLine = diffResult.sections.count == 1
@@ -266,8 +277,9 @@ extension AsyncCodeBlock {
                            change.element.count - commonPrecedingSpaceCount
                            == mutableString.string.count
                         {
-                            // ignore the whole line change
-                            continue
+                            if ignoreWholeLineChange {
+                                continue
+                            }
                         }
 
                         let offset = change.offset - commonPrecedingSpaceCount
@@ -488,6 +500,22 @@ extension AsyncCodeBlock {
     .frame(width: 400, height: 100)
 }
 
+#Preview("Multiple Line Suggestion Including Whole Line Change in Diff") {
+    AsyncCodeBlock(
+        code: "// comment\n    let foo = Bar()\n    print(bar)\n    print(foo)",
+        originalCode: "    let foo = Bar()\n",
+        language: "swift",
+        startLineIndex: 10,
+        scenario: "",
+        font: .monospacedSystemFont(ofSize: 12, weight: .regular),
+        droppingLeadingSpaces: true,
+        proposedForegroundColor: .primary,
+        dimmedCharacterCount: .init(prefix: 11, suffix: 0),
+        ignoreWholeLineChangeInDiff: false
+    )
+    .frame(width: 400, height: 100)
+}
+
 #Preview("Updating Content") {
     struct UpdateContent: View {
         @State var index = 0
@@ -524,3 +552,4 @@ extension AsyncCodeBlock {
     return UpdateContent()
         .frame(width: 400, height: 200)
 }
+

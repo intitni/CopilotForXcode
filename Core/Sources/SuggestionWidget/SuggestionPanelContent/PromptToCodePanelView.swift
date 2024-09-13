@@ -619,7 +619,8 @@ extension PromptToCodePanelView {
                             scenario: "promptToCode",
                             font: codeFont.value.nsFont,
                             droppingLeadingSpaces: hideCommonPrecedingSpaces,
-                            proposedForegroundColor: codeForegroundColor
+                            proposedForegroundColor: codeForegroundColor,
+                            ignoreWholeLineChange: false
                         )
                         .frame(maxWidth: .infinity)
 
@@ -741,7 +742,7 @@ extension PromptToCodePanelView {
                 .init(
                     startLineIndex: 8,
                     originalCode: "print(foo)",
-                    modifiedCode: "print(bar)",
+                    modifiedCode: "print(bar)\nprint(baz)",
                     description: "",
                     error: "Error",
                     attachedRange: CursorRange(
