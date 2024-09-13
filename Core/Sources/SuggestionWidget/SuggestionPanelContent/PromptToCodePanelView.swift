@@ -620,7 +620,7 @@ extension PromptToCodePanelView {
                             font: codeFont.value.nsFont,
                             droppingLeadingSpaces: hideCommonPrecedingSpaces,
                             proposedForegroundColor: codeForegroundColor,
-                            ignoreWholeLineChange: false
+                            ignoreWholeLineChangeInDiff: false
                         )
                         .frame(maxWidth: .infinity)
 

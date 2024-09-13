@@ -29,35 +29,36 @@ struct SharedPanelView: View {
     }
 
     var body: some View {
-        WithPerceptionTracking {
-            VStack(spacing: 0) {
-                if !store.alignTopToAnchor {
-                    Spacer()
-                        .frame(minHeight: 0, maxHeight: .infinity)
-                        .allowsHitTesting(false)
+        GeometryReader { geometry in
+            WithPerceptionTracking {
+                VStack(spacing: 0) {
+                    if !store.alignTopToAnchor {
+                        Spacer()
+                            .frame(minHeight: 0, maxHeight: .infinity)
+                            .allowsHitTesting(false)
+                    }
+
+                    DynamicContent(store: store)
+                        .frame(maxWidth: .infinity, maxHeight: geometry.size.height)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .allowsHitTesting(store.isPanelDisplayed)
+                        .layoutPriority(1)
+
+                    if store.alignTopToAnchor {
+                        Spacer()
+                            .frame(minHeight: 0, maxHeight: .infinity)
+                            .allowsHitTesting(false)
+                    }
                 }
-
-                DynamicContent(store: store)
-
-                    .frame(maxWidth: .infinity, maxHeight: Style.panelHeight)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .allowsHitTesting(store.isPanelDisplayed)
-                    .frame(maxWidth: .infinity)
-
-                if store.alignTopToAnchor {
-                    Spacer()
-                        .frame(minHeight: 0, maxHeight: .infinity)
-                        .allowsHitTesting(false)
-                }
+                .preferredColorScheme(store.colorScheme)
+                .opacity(store.opacity)
+                .animation(
+                    featureFlag: \.animationBCrashSuggestion,
+                    .easeInOut(duration: 0.2),
+                    value: store.isPanelDisplayed
+                )
+                .frame(maxWidth: Style.panelWidth, maxHeight: .infinity)
             }
-            .preferredColorScheme(store.colorScheme)
-            .opacity(store.opacity)
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelDisplayed
-            )
-            .frame(maxWidth: Style.panelWidth, maxHeight: Style.panelHeight)
         }
     }
 

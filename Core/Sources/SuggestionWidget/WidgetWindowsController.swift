@@ -335,6 +335,7 @@ extension WidgetWindowsController {
                         return WidgetLocation(
                             widgetFrame: .zero,
                             tabFrame: .zero,
+                            sharedPanelLocation: .init(frame: .zero, alignPanelTop: false),
                             defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
                         )
                     }
@@ -479,7 +480,7 @@ extension WidgetWindowsController {
                 animate: animated
             )
             windows.sharedPanelWindow.setFrame(
-                widgetLocation.defaultPanelLocation.frame,
+                widgetLocation.sharedPanelLocation.frame,
                 display: false,
                 animate: animated
             )
