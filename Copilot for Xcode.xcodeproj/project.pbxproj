@@ -775,7 +775,7 @@
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTENSION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -803,7 +803,7 @@
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTENSION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

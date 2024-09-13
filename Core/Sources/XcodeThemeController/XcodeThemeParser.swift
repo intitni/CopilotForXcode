@@ -113,7 +113,7 @@ struct XcodeThemeParser {
         guard let theme = plist else { throw Error.invalidData }
 
         /// The source value is an `r g b a` string, for example: `0.5 0.5 0.2 1`
-        func converColor(source: String) -> XcodeTheme.ThemeColor {
+        func convertColor(source: String) -> XcodeTheme.ThemeColor {
             let components = source.split(separator: " ")
             let red = (components[0] as NSString).doubleValue
             let green = (components[1] as NSString).doubleValue
@@ -136,7 +136,7 @@ struct XcodeThemeParser {
                 currentDict = value
             }
             if let value = currentDict[path.last!] as? String {
-                return converColor(source: value)
+                return convertColor(source: value)
             }
             return defaultValue
         }
