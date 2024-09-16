@@ -17,7 +17,7 @@ actor WidgetWindowsController: NSObject {
     let userDefaultsObservers = WidgetUserDefaultsObservers()
     var xcodeInspector: XcodeInspector { .shared }
 
-    let windows: WidgetWindows
+    nonisolated let windows: WidgetWindows
     let store: StoreOf<Widget>
     let chatTabPool: ChatTabPool
 

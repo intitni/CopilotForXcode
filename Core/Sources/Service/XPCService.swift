@@ -210,11 +210,13 @@ public class XPCService: NSObject, XPCServiceProtocol {
         requestBody: Data,
         reply: @escaping (Data?, Error?) -> Void
     ) {
-        Service.shared.handleXPCServiceRequests(
-            endpoint: endpoint,
-            requestBody: requestBody,
-            reply: reply
-        )
+        Task {
+            await Service.shared.handleXPCServiceRequests(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            )
+        }
     }
 }
 

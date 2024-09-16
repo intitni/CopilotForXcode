@@ -129,7 +129,7 @@ struct Chat {
     var body: some ReducerOf<Self> {
         BindingReducer()
 
-        Scope(state: \.chatMenu, action: /Action.chatMenu) {
+        Scope(state: \.chatMenu, action: \.chatMenu) {
             ChatMenu(service: service)
         }
 

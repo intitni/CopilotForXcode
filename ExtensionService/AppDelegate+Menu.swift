@@ -240,11 +240,13 @@ private extension AppDelegate {
     @objc func openExtensionManager() {
         guard let data = try? JSONEncoder().encode(ExtensionServiceRequests.OpenExtensionManager())
         else { return }
-        service.handleXPCServiceRequests(
-            endpoint: ExtensionServiceRequests.OpenExtensionManager.endpoint,
-            requestBody: data,
-            reply: { _, _ in }
-        )
+        Task {
+            await service.handleXPCServiceRequests(
+                endpoint: ExtensionServiceRequests.OpenExtensionManager.endpoint,
+                requestBody: data,
+                reply: { _, _ in }
+            )
+        }
     }
 }
 

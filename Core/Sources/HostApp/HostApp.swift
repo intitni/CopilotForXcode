@@ -34,15 +34,15 @@ struct HostApp {
     }
 
     var body: some ReducerOf<Self> {
-        Scope(state: \.general, action: /Action.general) {
+        Scope(state: \.general, action: \.general) {
             General()
         }
 
-        Scope(state: \.chatModelManagement, action: /Action.chatModelManagement) {
+        Scope(state: \.chatModelManagement, action: \.chatModelManagement) {
             ChatModelManagement()
         }
 
-        Scope(state: \.embeddingModelManagement, action: /Action.embeddingModelManagement) {
+        Scope(state: \.embeddingModelManagement, action: \.embeddingModelManagement) {
             EmbeddingModelManagement()
         }
 

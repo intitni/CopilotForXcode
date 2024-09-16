@@ -320,5 +320,5 @@ public extension AXUIElement {
     }
 }
 
-extension AXError: Error {}
+extension AXError: @retroactive Error {}
 

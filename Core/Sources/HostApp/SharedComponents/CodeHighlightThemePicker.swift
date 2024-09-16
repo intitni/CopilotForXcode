@@ -65,7 +65,7 @@ public struct CodeHighlightThemePicker: View {
 }
 
 #Preview {
-    @State var sync = false
-    return CodeHighlightThemePicker.SyncToggle(sync: $sync)
+    CodeHighlightThemePicker.SyncToggle(sync: .constant(true))
+    CodeHighlightThemePicker.SyncToggle(sync: .constant(false))
 }
 

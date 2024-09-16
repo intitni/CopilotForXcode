@@ -5,6 +5,29 @@ import SuggestionBasic
 import SwiftUI
 
 public enum CodeHighlighting {
+    public struct SendableFont: @unchecked Sendable {
+        public let font: NSFont
+        public init(font: NSFont) {
+            self.font = font
+        }
+    }
+
+    public static func highlightedCodeBlock(
+        code: String,
+        language: String,
+        scenario: String,
+        brightMode: Bool,
+        font: SendableFont
+    ) -> NSAttributedString {
+        highlightedCodeBlock(
+            code: code,
+            language: language,
+            scenario: scenario,
+            brightMode: brightMode,
+            font: font.font
+        )
+    }
+
     public static func highlightedCodeBlock(
         code: String,
         language: String,
@@ -44,6 +67,26 @@ public enum CodeHighlighting {
             return unhighlightedCode()
         }
         return formatted
+    }
+
+    public static func highlighted(
+        code: String,
+        language: String,
+        scenario: String,
+        brightMode: Bool,
+        droppingLeadingSpaces: Bool,
+        font: SendableFont,
+        replaceSpacesWithMiddleDots: Bool = true
+    ) -> (code: [NSAttributedString], commonLeadingSpaceCount: Int) {
+        highlighted(
+            code: code,
+            language: language,
+            scenario: scenario,
+            brightMode: brightMode,
+            droppingLeadingSpaces: droppingLeadingSpaces,
+            font: font.font,
+            replaceSpacesWithMiddleDots: replaceSpacesWithMiddleDots
+        )
     }
 
     public static func highlighted(
