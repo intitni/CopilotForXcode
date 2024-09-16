@@ -134,7 +134,7 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        do {
+        Task { @MainActor in
             var lastTrigger = -1
             observer.observe { [weak self] in
                 guard let self else { return }
@@ -147,7 +147,7 @@ public class ChatGPTChatTab: ChatTab {
             }
         }
 
-        do {
+        Task { @MainActor in
             var lastTitle = ""
             observer.observe { [weak self] in
                 guard let self else { return }
@@ -160,14 +160,16 @@ public class ChatGPTChatTab: ChatTab {
             }
         }
 
-        observer.observe { [weak self] in
-            guard let self else { return }
-            _ = chat.history
-            _ = chat.title
-            _ = chat.isReceivingMessage
-            Task {
-                await self.updateContentDebounce.debounce { @MainActor [weak self] in
-                    self?.chatTabStore.send(.tabContentUpdated)
+        Task { @MainActor in
+            observer.observe { [weak self] in
+                guard let self else { return }
+                _ = chat.history
+                _ = chat.title
+                _ = chat.isReceivingMessage
+                Task {
+                    await self.updateContentDebounce.debounce { @MainActor [weak self] in
+                        self?.chatTabStore.send(.tabContentUpdated)
+                    }
                 }
             }
         }
