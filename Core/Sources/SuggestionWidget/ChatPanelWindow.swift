@@ -9,8 +9,13 @@ final class ChatPanelWindow: WidgetWindow {
     override var canBecomeMain: Bool { true }
 
     private let storeObserver = NSObject()
+    private let store: StoreOf<ChatPanel>
 
     var minimizeWindow: () -> Void = {}
+    
+    var isDetached: Bool {
+        store.withState({$0.isDetached})
+    }
 
     override var defaultCollectionBehavior: NSWindow.CollectionBehavior {
         [
@@ -21,30 +26,12 @@ final class ChatPanelWindow: WidgetWindow {
         ]
     }
 
-    override var switchingSpaceCollectionBehavior: NSWindow.CollectionBehavior {
-        [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-        ]
-    }
-    
-    override var fullscreenCollectionBehavior: NSWindow.CollectionBehavior {
-        [
-            .fullScreenAuxiliary,
-            .transient,
-            .fullScreenPrimary,
-            .fullScreenAllowsTiling,
-            .canJoinAllSpaces,
-        ]
-    }
-
     init(
         store: StoreOf<ChatPanel>,
         chatTabPool: ChatTabPool,
         minimizeWindow: @escaping () -> Void
     ) {
+        self.store = store
         self.minimizeWindow = minimizeWindow
         super.init(
             contentRect: .init(x: 0, y: 0, width: 300, height: 400),
@@ -97,7 +84,7 @@ final class ChatPanelWindow: WidgetWindow {
             }
         }
     }
-    
+
     func centerInActiveSpaceIfNeeded() {
         guard !isOnActiveSpace else { return }
         center()
