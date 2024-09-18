@@ -803,7 +803,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = widgetLevel(0)
+        it.level = widgetLevel(2)
         it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: ToastPanelView(store: store.scope(
