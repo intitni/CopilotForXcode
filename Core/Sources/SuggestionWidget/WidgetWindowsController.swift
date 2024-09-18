@@ -82,7 +82,7 @@ actor WidgetWindowsController: NSObject {
         }
 
         updateWindowStateTask = Task { [weak self] in
-            if let self { await handleXcodeFullscreenChange() }
+            if let self { await handleSpaceChange() }
 
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 // active space did change
@@ -92,7 +92,7 @@ actor WidgetWindowsController: NSObject {
                     for await _ in sequence {
                         guard let self else { return }
                         try Task.checkCancellation()
-                        await handleXcodeFullscreenChange()
+                        await handleSpaceChange()
                     }
                 }
             }
@@ -160,7 +160,7 @@ private extension WidgetWindowsController {
 
                 switch notification.kind {
                 case .focusedWindowChanged:
-                    await handleXcodeFullscreenChange()
+                    await handleSpaceChange()
                     await hideWidgetForTransitions()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
                 case .focusedUIElementChanged:
@@ -402,7 +402,7 @@ extension WidgetWindowsController {
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
 
                     if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = !hasChat
+                        windows.chatPanelWindow.isWindowHidden = false
                     } else {
                         windows.chatPanelWindow.isWindowHidden = noFocus
                     }
@@ -436,7 +436,7 @@ extension WidgetWindowsController {
                     }
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
                     if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = !hasChat
+                        windows.chatPanelWindow.isWindowHidden = false
                     } else {
                         windows.chatPanelWindow.isWindowHidden = noFocus && !windows
                             .chatPanelWindow.isKeyWindow
@@ -584,7 +584,7 @@ extension WidgetWindowsController {
     }
 
     @MainActor
-    func handleXcodeFullscreenChange() async {
+    func handleSpaceChange() async {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
         let xcode = activeXcode?.appElement
@@ -593,19 +593,26 @@ extension WidgetWindowsController {
         } else {
             false
         }
+        
+        let isXcodeActive = xcode?.isFrontmost ?? false
 
-        [
-            windows.chatPanelWindow,
+        await [
             windows.sharedPanelWindow,
             windows.suggestionPanelWindow,
             windows.widgetWindow,
             windows.toastWindow,
         ].forEach {
-            $0.send(.didChangeActiveSpace(fullscreen: isFullscreen))
+            if isXcodeActive {
+                $0.moveToActiveSpace()
+            }
+        }
+        
+        if isXcodeActive, !windows.chatPanelWindow.isDetached {
+            await windows.chatPanelWindow.moveToActiveSpace()
         }
 
-        if windows.fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
-            windows.orderFront()
+        if await windows.fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
+            await windows.orderFront()
         }
     }
 }
@@ -796,7 +803,7 @@ public final class WidgetWindows {
         it.isReleasedWhenClosed = false
         it.isOpaque = false
         it.backgroundColor = .clear
-        it.level = widgetLevel(0)
+        it.level = widgetLevel(2)
         it.hasShadow = false
         it.contentView = NSHostingView(
             rootView: ToastPanelView(store: store.scope(
@@ -845,23 +852,7 @@ class WidgetWindow: CanBecomeKeyWindow {
         case switchingSpace
     }
 
-    enum Action {
-        case didChangeActiveSpace(fullscreen: Bool)
-    }
-
     var defaultCollectionBehavior: NSWindow.CollectionBehavior {
-        [.fullScreenAuxiliary, .transient]
-    }
-
-    var fullscreenCollectionBehavior: NSWindow.CollectionBehavior {
-        // .canJoinAllSpaces is required for macOS 15 (beta?) to display widgets in fullscreen mode.
-        // But adding this behavior will create another issue that the widgets will display
-        // whenever user switch spaces, so we are setting it only when the window is in fullscreen
-        // mode.
-        [.fullScreenAuxiliary, .transient, .canJoinAllSpaces]
-    }
-
-    var switchingSpaceCollectionBehavior: NSWindow.CollectionBehavior {
         [.fullScreenAuxiliary, .transient]
     }
 
@@ -876,19 +867,19 @@ class WidgetWindow: CanBecomeKeyWindow {
             case .none:
                 collectionBehavior = defaultCollectionBehavior
             case .switchingSpace:
-                collectionBehavior = switchingSpaceCollectionBehavior
-            case let .normal(fullscreen):
-                collectionBehavior = fullscreen
-                    ? fullscreenCollectionBehavior
-                    : defaultCollectionBehavior
+                collectionBehavior = defaultCollectionBehavior.union(.moveToActiveSpace)
+            case .normal:
+                collectionBehavior = defaultCollectionBehavior
             }
         }
     }
-
-    func send(_ action: Action) {
-        switch action {
-        case let .didChangeActiveSpace(fullscreen):
-            state = .normal(fullscreen: fullscreen)
+    
+    func moveToActiveSpace() {
+        let previousState = state
+        state = .switchingSpace
+        Task { @MainActor in
+            try await Task.sleep(nanoseconds: 50_000_000)
+            self.state = previousState
         }
     }
 }

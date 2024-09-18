@@ -26,21 +26,23 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
         let editorContent = await XcodeInspector.shared.getFocusedEditorContent()
         let workDoneToken = UUID().uuidString
         let turns = convertHistory(history: history, message: message)
+        let doc = GitHubCopilotDoc(
+            source: editorContent?.editorContent?.content ?? "",
+            tabSize: 1,
+            indentSize: 4,
+            insertSpaces: true,
+            path: editorContent?.documentURL.path ?? "",
+            uri: editorContent?.documentURL.path ?? "",
+            relativePath: editorContent?.relativePath ?? "",
+            languageId: editorContent?.language ?? .plaintext,
+            position: editorContent?.editorContent?.cursorPosition ?? .zero
+        )
+
         let request = GitHubCopilotRequest.ConversationCreate(requestBody: .init(
             workDoneToken: workDoneToken,
             turns: turns,
             capabilities: .init(allSkills: true, skills: []),
-            doc: .init(
-                source: editorContent?.editorContent?.content ?? "",
-                tabSize: 1,
-                indentSize: 4,
-                insertSpaces: true,
-                path: editorContent?.documentURL.path ?? "",
-                uri: editorContent?.documentURL.path ?? "",
-                relativePath: editorContent?.relativePath ?? "",
-                languageId: editorContent?.language ?? .plaintext,
-                position: editorContent?.editorContent?.cursorPosition ?? .zero
-            ),
+            doc: doc,
             source: .panel,
             workspaceFolder: workspace.projectURL.path
         ))
@@ -132,11 +134,11 @@ extension GitHubCopilotChatService {
         let systemPrompt = history
             .filter { $0.role == .system }.compactMap(\.content)
             .joined(separator: "\n\n")
-        
+
         if !systemPrompt.isEmpty {
             turns.append(.init(request: "[System Prompt]\n\(systemPrompt)", response: "OK!"))
         }
-        
+
         for i in firstIndexOfUserMessage..<history.endIndex {
             let message = history[i]
             let text = message.content ?? ""
