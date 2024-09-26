@@ -45,6 +45,13 @@ public protocol ChatTabType {
     /// It will be called only once so long as you don't call it yourself.
     /// It will be called from MainActor.
     func start()
+    /// Whenever the user close the tab, this method will be called.
+    func close()
+    
+    /// Whether this chat tab should be the default chat tab replacement.
+    static var isDefaultChatTabReplacement: Bool { get }
+    /// Whether this chat tab can handle open chat command.
+    static var canHandleOpenChatCommand: Bool { get }
 }
 
 /// The base class for all chat tabs.
@@ -67,10 +74,10 @@ open class BaseChatTab {
 
     public init(store: StoreOf<ChatTabItem>) {
         chatTabStore = store
-        self.id = store.id
-        self.title = store.title
-        
+
         Task { @MainActor in
+            self.title = store.title
+            self.id = store.id
             storeObserver.observe { [weak self] in
                 guard let self else { return }
                 self.title = store.title
@@ -166,6 +173,12 @@ public struct DisabledChatTabBuilder: ChatTabBuilder {
 public extension ChatTabType {
     /// The name of this chat tab type.
     var name: String { Self.name }
+
+    /// Default implementation that does nothing.
+    func close() {}
+    
+    static var canHandleOpenChatCommand: Bool { false }
+    static var isDefaultChatTabReplacement: Bool { false }
 }
 
 /// A chat tab that does nothing.
