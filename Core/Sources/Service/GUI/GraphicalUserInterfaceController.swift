@@ -373,7 +373,14 @@ extension ChatTabPool {
     ) async -> (any ChatTab, ChatTabInfo)? {
         let id = UUID().uuidString
         let info = ChatTabInfo(id: id, title: "")
-        let builder = kind?.builder ?? ChatGPTChatTab.defaultBuilder()
+        let builder = kind?.builder ?? {
+            for ext in BuiltinExtensionManager.shared.extensions {
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement } )
+                else { continue }
+                return tab.defaultChatBuilder()
+            }
+            return ChatGPTChatTab.defaultBuilder()
+        }()
         guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
         setTab(chatTap)
         return (chatTap, info)

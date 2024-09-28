@@ -1,5 +1,6 @@
 import ActiveApplicationMonitor
 import AppKit
+import BuiltinExtension
 import CodeiumService
 import CommandHandler
 import enum CopilotForXcodeKit.SuggestionServiceError
@@ -218,12 +219,12 @@ struct PseudoCommandHandler: CommandHandler {
                     if now.timeIntervalSince(last) > 60 * 60 {
                         Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
                         toast.toast(content: """
-                    The app is using a fallback solution to accept suggestions. \
-                    For better experience, please restart Xcode to re-activate the Copilot \
-                    menu item.
-                    """, type: .warning)
+                        The app is using a fallback solution to accept suggestions. \
+                        For better experience, please restart Xcode to re-activate the Copilot \
+                        menu item.
+                        """, type: .warning)
                     }
-                    
+
                     throw error
                 }
             }
@@ -340,6 +341,24 @@ struct PseudoCommandHandler: CommandHandler {
     func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
+            for ext in BuiltinExtensionManager.shared.extensions {
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement } )
+                else { continue }
+                Task { @MainActor in
+                    let store = Service.shared.guiController.store
+                    await store.send(
+                        .createAndSwitchToChatTabIfNeededMatching(
+                            check: { $0.name == tab.name },
+                            kind: .init(tab.defaultChatBuilder())
+                        )
+                    ).finish()
+                    store.send(.openChatPanel(
+                        forceDetach: forceDetach,
+                        activateThisApp: activateThisApp
+                    ))
+                }
+                return
+            }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
@@ -395,13 +414,17 @@ struct PseudoCommandHandler: CommandHandler {
                     await openURL(url)
                 }
             }
-        case .codeiumChat:
+        case let .builtinExtension(extensionIdentifier, tabName):
+            guard let ext = BuiltinExtensionManager.shared.extensions
+                .first(where: { $0.extensionIdentifier == extensionIdentifier }),
+                let tab = ext.chatTabTypes.first(where: { $0.name == tabName })
+            else { return }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
-                        check: { $0 is CodeiumChatTab },
-                        kind: .init(CodeiumChatTab.defaultChatBuilder())
+                        check: { $0.name == tabName },
+                        kind: .init(tab.defaultChatBuilder())
                     )
                 ).finish()
                 store.send(.openChatPanel(
@@ -409,6 +432,8 @@ struct PseudoCommandHandler: CommandHandler {
                     activateThisApp: activateThisApp
                 ))
             }
+        case let .externalExtension(extensionIdentifier, tabName):
+            return
         }
     }
 

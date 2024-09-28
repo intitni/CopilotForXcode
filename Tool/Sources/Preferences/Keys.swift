@@ -518,7 +518,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
     }
 
-    var openChatMode: PreferenceKey<OpenChatMode> {
+    var openChatMode: PreferenceKey<UserDefaultsStorageBox<OpenChatMode>> {
+        .init(defaultValue: .init(.chatPanel), key: "DefaultOpenChatMode")
+    }
+    
+    var legacyOpenChatMode: DeprecatedPreferenceKey<OpenChatMode.LegacyOpenChatMode> {
         .init(defaultValue: .chatPanel, key: "OpenChatMode")
     }
 

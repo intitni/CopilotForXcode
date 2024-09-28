@@ -37,6 +37,8 @@ public protocol ChatTabType {
     /// Available builders for this chat tab.
     /// It's used to generate a list of tab types for user to create.
     static func chatBuilders() -> [ChatTabBuilder]
+    /// The default chat tab builder to be used in open chat
+    static func defaultChatBuilder() -> ChatTabBuilder
     /// Restorable state
     func restorableState() async -> Data
     /// Restore state
@@ -179,6 +181,9 @@ public extension ChatTabType {
     
     static var canHandleOpenChatCommand: Bool { false }
     static var isDefaultChatTabReplacement: Bool { false }
+    static func defaultChatBuilder() -> ChatTabBuilder {
+        DisabledChatTabBuilder(title: name)
+    }
 }
 
 /// A chat tab that does nothing.
