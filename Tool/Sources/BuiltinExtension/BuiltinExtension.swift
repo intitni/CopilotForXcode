@@ -11,7 +11,7 @@ public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
     var extensionIdentifier: String { get }
 
     /// All chat builders provided by this extension.
-    var chatTabTypes: [any ChatTab.Type] { get }
+    var chatTabTypes: [any CustomChatTab] { get }
 
     /// It's usually called when the app is about to quit,
     /// you should clean up all the resources here.
@@ -22,7 +22,7 @@ public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
 
 public extension BuiltinExtension {
     var suggestionServiceId: BuiltInSuggestionFeatureProvider? { nil }
-    var chatTabTypes: [any ChatTab.Type] { [] }
+    var chatTabTypes: [any CustomChatTab] { [] }
 }
 
 // MAKR: - ChatService
@@ -42,7 +42,7 @@ public protocol BuiltinExtensionChatServiceType: ChatServiceType {
 public struct RetrievedContent {
     public var document: ChatMessage.Reference
     public var priority: Int
-    
+
     public init(document: ChatMessage.Reference, priority: Int) {
         self.document = document
         self.priority = priority
@@ -61,5 +61,31 @@ public enum ChatServiceMemoryMutation: Codable {
     case updateMessage(id: String, role: Message.Role, text: String)
     /// Stream the content into a message with the given id.
     case streamIntoMessage(id: String, role: Message.Role?, text: String?)
+}
+
+public protocol CustomChatTab {
+    var name: String { get }
+    var isDefaultChatTabReplacement: Bool { get }
+    var canHandleOpenChatCommand: Bool { get }
+    func chatBuilders() -> [ChatTabBuilder]
+    func defaultChatBuilder() -> ChatTabBuilder
+    func restore(from data: Data) async throws -> any ChatTabBuilder
+}
+
+public struct TypedCustomChatTab: CustomChatTab {
+    public let type: ChatTab.Type
+
+    public init(of type: ChatTab.Type) {
+        self.type = type
+    }
+
+    public var name: String { type.name }
+    public var isDefaultChatTabReplacement: Bool { type.isDefaultChatTabReplacement }
+    public var canHandleOpenChatCommand: Bool { type.canHandleOpenChatCommand }
+    public func chatBuilders() -> [ChatTabBuilder] { type.chatBuilders() }
+    public func defaultChatBuilder() -> ChatTabBuilder { type.defaultChatBuilder() }
+    public func restore(from data: Data) async throws -> any ChatTabBuilder {
+        try await type.restore(from: data)
+    }
 }
 
