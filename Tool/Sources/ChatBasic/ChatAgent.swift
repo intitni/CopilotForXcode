@@ -6,7 +6,7 @@ public enum ChatAgentResponse {
     }
 
     /// Post the status of the current message.
-    case status(String)
+    case status([String])
     /// Update the text message to the current message.
     case content(Content)
     /// Update the attachments of the current message.

@@ -63,7 +63,7 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 }
 
 public enum ChatGPTResponse: Equatable {
-    case status(String)
+    case status([String])
     case partialText(String)
     case toolCalls([ChatMessage.ToolCall])
 }
@@ -140,7 +140,9 @@ public class ChatGPTService: ChatGPTServiceType {
 
                             if !pendingToolCalls.isEmpty {
                                 if configuration.runFunctionsAutomatically {
+                                    var toolCallStatuses = [String: String]()
                                     for toolCall in pendingToolCalls {
+                                        let id = toolCall.id
                                         for await response in await runFunctionCall(
                                             toolCall,
                                             memory: memory,
@@ -151,13 +153,19 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 functionCallResponses.append(.init(
                                                     role: .tool,
                                                     content: output,
-                                                    toolCallId: toolCall.id
+                                                    toolCallId: id
                                                 ))
                                             case let .status(status):
-                                                continuation.yield(.status(status))
+                                                toolCallStatuses[id] = status
+                                                continuation
+                                                    .yield(.status(Array(toolCallStatuses.values)))
                                             }
                                         }
+                                        toolCallStatuses[id] = nil
+                                        continuation
+                                            .yield(.status(Array(toolCallStatuses.values)))
                                     }
+                                    continuation.yield(.status([]))
                                 } else {
                                     if !configuration.runFunctionsAutomatically {
                                         continuation.yield(.toolCalls(pendingToolCalls))
@@ -177,10 +185,11 @@ public class ChatGPTService: ChatGPTServiceType {
                                 try Task.checkCancellation()
                                 switch content {
                                 case let .partialText(text):
-                                    continuation.yield(.partialText(text))
+                                    continuation.yield(ChatGPTResponse.partialText(text))
 
                                 case let .partialToolCalls(toolCalls):
                                     guard configuration.runFunctionsAutomatically else { break }
+                                    var toolCallStatuses = [String: String]()
                                     for toolCall in toolCalls.keys.sorted() {
                                         if let toolCallValue = toolCalls[toolCall] {
                                             for await status in await prepareFunctionCall(
@@ -188,7 +197,9 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 memory: memory,
                                                 sourceMessageId: sourceMessageId
                                             ) {
-                                                continuation.yield(.status(status))
+                                                toolCallStatuses[toolCallValue.id] = status
+                                                continuation
+                                                    .yield(.status(Array(toolCallStatuses.values)))
                                             }
                                         }
                                     }
@@ -576,8 +587,7 @@ extension ChatGPTService {
 
         return requestBody
     }
-    
-    
+
     func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
         guard let remainingTokens else { return nil }
         return min(maxToken / 2, remainingTokens)
