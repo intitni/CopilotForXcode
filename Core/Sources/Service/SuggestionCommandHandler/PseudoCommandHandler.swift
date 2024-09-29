@@ -342,7 +342,7 @@ struct PseudoCommandHandler: CommandHandler {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
             for ext in BuiltinExtensionManager.shared.extensions {
-                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement } )
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement })
                 else { continue }
                 Task { @MainActor in
                     let store = Service.shared.guiController.store
@@ -433,7 +433,24 @@ struct PseudoCommandHandler: CommandHandler {
                 ))
             }
         case let .externalExtension(extensionIdentifier, tabName):
-            return
+            guard let ext = BuiltinExtensionManager.shared.extensions
+                .first(where: { $0.extensionIdentifier == "plus" }),
+                let tab = ext.chatTabTypes
+                .first(where: { $0.name == "\(extensionIdentifier).\(tabName)" })
+            else { return }
+            Task { @MainActor in
+                let store = Service.shared.guiController.store
+                await store.send(
+                    .createAndSwitchToChatTabIfNeededMatching(
+                        check: { $0.name == "\(extensionIdentifier).\(tabName)" },
+                        kind: .init(tab.defaultChatBuilder())
+                    )
+                ).finish()
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
+            }
         }
     }
 
