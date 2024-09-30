@@ -233,21 +233,7 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     var chatModels: PreferenceKey<[ChatModel]> {
-        .init(defaultValue: [
-            .init(
-                id: UUID().uuidString,
-                name: "OpenAI",
-                format: .openAI,
-                info: .init(
-                    apiKeyName: "",
-                    baseURL: "",
-                    isFullURL: false,
-                    maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
-                    supportsFunctionCalling: true,
-                    modelName: ChatGPTModel.gpt35Turbo.rawValue
-                )
-            ),
-        ], key: "ChatModels")
+        .init(defaultValue: [], key: "ChatModels")
     }
 
     var chatGPTLanguage: PreferenceKey<String> {
@@ -267,20 +253,7 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     var embeddingModels: PreferenceKey<[EmbeddingModel]> {
-        .init(defaultValue: [
-            .init(
-                id: UUID().uuidString,
-                name: "OpenAI",
-                format: .openAI,
-                info: .init(
-                    apiKeyName: "",
-                    baseURL: "",
-                    isFullURL: false,
-                    maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
-                    modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
-                )
-            ),
-        ], key: "EmbeddingModels")
+        .init(defaultValue: [], key: "EmbeddingModels")
     }
 }
 
