@@ -37,7 +37,7 @@ enum BingSearchError: Error, LocalizedError {
         case let .searchURLFormatIncorrect(url):
             return "The search URL format is incorrect: \(url)"
         case .subscriptionKeyNotAvailable:
-            return "The I didn't provide a subscription key to use Bing search."
+            return "Bing search subscription key is not available, please set it up in the service tab."
         }
     }
 }

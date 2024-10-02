@@ -52,6 +52,7 @@ let package = Package(
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
         .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
+        .library(name: "BingSearchService", targets: ["BingSearchService"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
