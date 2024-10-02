@@ -67,10 +67,10 @@ open class BaseChatTab {
 
     public init(store: StoreOf<ChatTabItem>) {
         chatTabStore = store
-        self.id = store.id
-        self.title = store.title
         
         Task { @MainActor in
+            self.title = store.title
+            self.id = store.id
             storeObserver.observe { [weak self] in
                 guard let self else { return }
                 self.title = store.title

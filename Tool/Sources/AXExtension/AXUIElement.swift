@@ -136,7 +136,16 @@ public extension AXUIElement {
     }
 
     var isFrontmost: Bool {
-        (try? copyValue(key: kAXFrontmostAttribute)) ?? false
+        get {
+            (try? copyValue(key: kAXFrontmostAttribute)) ?? false
+        }
+        set {
+            AXUIElementSetAttributeValue(
+                self,
+                kAXFrontmostAttribute as CFString,
+                newValue as CFBoolean
+            )
+        }
     }
 
     var focusedWindow: AXUIElement? {
