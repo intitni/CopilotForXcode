@@ -277,7 +277,6 @@ extension CodeiumService: CodeiumSuggestionServiceType {
                         let languageId = languageIdentifierFromFileURL(openedDocument.url)
                         return .init(
                             absolute_path_migrate_me_to_uri: openedDocument.url.path,
-//                            relative_path: openedDocument.relativePath,
                             text: openedDocument.content,
                             editor_language: languageId.rawValue,
                             language: .init(codeLanguage: languageId)
