@@ -257,14 +257,12 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-//        let relativePath = getRelativePath(of: fileURL)
 
         let task = Task {
             let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
                 metadata: getMetadata(),
                 document: .init(
                     absolute_path_migrate_me_to_uri: fileURL.path,
-//                    relative_path: relativePath,
                     text: content,
                     editor_language: languageId.rawValue,
                     language: .init(codeLanguage: languageId),
@@ -417,11 +415,9 @@ extension CodeiumService: CodeiumSuggestionServiceType {
         workspaceURL: URL
     ) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
-//        let relativePath = getRelativePath(of: fileURL)
         let request = await CodeiumRequest.RefreshContextForIdeAction(requestBody: .init(
             active_document: .init(
                 absolute_path_migrate_me_to_uri: fileURL.path,
-//                relative_path: relativePath,
                 text: content,
                 editor_language: languageId.rawValue,
                 language: .init(codeLanguage: languageId),
