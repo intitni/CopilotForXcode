@@ -257,14 +257,12 @@ extension CodeiumService: CodeiumSuggestionServiceType {
 
         requestCounter += 1
         let languageId = languageIdentifierFromFileURL(fileURL)
-        let relativePath = getRelativePath(of: fileURL)
 
         let task = Task {
             let request = try await CodeiumRequest.GetCompletion(requestBody: .init(
                 metadata: getMetadata(),
                 document: .init(
-                    absolute_path: fileURL.path,
-                    relative_path: relativePath,
+                    absolute_path_migrate_me_to_uri: fileURL.path,
                     text: content,
                     editor_language: languageId.rawValue,
                     language: .init(codeLanguage: languageId),
@@ -278,8 +276,7 @@ extension CodeiumService: CodeiumSuggestionServiceType {
                     .map { openedDocument in
                         let languageId = languageIdentifierFromFileURL(openedDocument.url)
                         return .init(
-                            absolute_path: openedDocument.url.path,
-                            relative_path: openedDocument.relativePath,
+                            absolute_path_migrate_me_to_uri: openedDocument.url.path,
                             text: openedDocument.content,
                             editor_language: languageId.rawValue,
                             language: .init(codeLanguage: languageId)
@@ -417,11 +414,9 @@ extension CodeiumService: CodeiumSuggestionServiceType {
         workspaceURL: URL
     ) async throws {
         let languageId = languageIdentifierFromFileURL(fileURL)
-        let relativePath = getRelativePath(of: fileURL)
         let request = await CodeiumRequest.RefreshContextForIdeAction(requestBody: .init(
             active_document: .init(
-                absolute_path: fileURL.path,
-                relative_path: relativePath,
+                absolute_path_migrate_me_to_uri: fileURL.path,
                 text: content,
                 editor_language: languageId.rawValue,
                 language: .init(codeLanguage: languageId),
