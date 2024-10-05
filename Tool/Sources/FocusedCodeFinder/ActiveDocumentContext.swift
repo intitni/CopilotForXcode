@@ -80,6 +80,21 @@ public struct ActiveDocumentContext {
         self.includes = includes
         self.focusedContext = focusedContext
     }
+    
+    public static func empty() -> ActiveDocumentContext {
+        .init(
+            documentURL: .init(fileURLWithPath: "/"),
+            relativePath: "",
+            language: .builtIn(.swift),
+            fileContent: "",
+            lines: [],
+            selectedCode: "",
+            selectionRange: .outOfScope,
+            lineAnnotations: [],
+            imports: [],
+            includes: []
+        )
+    }
 
     public mutating func moveToFocusedCode() {
         moveToCodeContainingRange(selectionRange)
