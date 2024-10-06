@@ -72,9 +72,7 @@ struct CompletionPart: Codable {
 }
 
 struct CodeiumDocument: Codable {
-    var absolute_path: String
-    // Path relative to the root of the workspace.
-    var relative_path: String
+    var absolute_path_migrate_me_to_uri: String
     var text: String
     // Language ID provided by the editor.
     var editor_language: String
