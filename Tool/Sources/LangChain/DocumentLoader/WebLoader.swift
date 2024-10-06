@@ -36,9 +36,6 @@ public struct WebLoader: DocumentLoader {
             for url in urls {
                 let strategy: LoadWebPageMainContentStrategy = {
                     switch url {
-                    case let url
-                        where url.absoluteString.contains("developer.apple.com/documentation"):
-                        return Developer_Apple_Documentation_LoadContentStrategy()
                     default:
                         return DefaultLoadContentStrategy()
                     }
@@ -208,31 +205,6 @@ extension WebLoader {
 
         func validate(_: SwiftSoup.Document) -> Bool {
             return true
-        }
-    }
-
-    /// https://developer.apple.com/documentation
-    struct Developer_Apple_Documentation_LoadContentStrategy: LoadWebPageMainContentStrategy {
-        func load(
-            _ document: SwiftSoup.Document,
-            metadata: Document.Metadata
-        ) throws -> [Document] {
-            if let mainContent = try? {
-                if let main = text(inFirstTag: "main", from: document) { return main }
-                let body = try document.body()?.text()
-                return body
-            }() {
-                return [.init(pageContent: mainContent, metadata: metadata)]
-            }
-            return []
-        }
-
-        func validate(_ document: SwiftSoup.Document) -> Bool {
-            do {
-                return !(try document.getElementsByTag("main").isEmpty())
-            } catch {
-                return false
-            }
         }
     }
 }
