@@ -102,7 +102,7 @@ public class CodeiumService {
             languageServerVersion = version
         case .notInstalled:
             throw CodeiumError.languageServerNotInstalled
-        case let .outdated(version, _):
+        case let .outdated(version, _, _):
             languageServerVersion = version
             throw CodeiumError.languageServerOutdated
         }
