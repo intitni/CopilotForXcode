@@ -22,6 +22,11 @@ public final class BuiltinExtensionManager {
         checkAppConfiguration()
     }
 
+    public func addExtensions(_ extensions: [any BuiltinExtension]) {
+        self.extensions.append(contentsOf: extensions)
+        checkAppConfiguration()
+    }
+
     public func terminate() {
         for ext in extensions {
             ext.terminate()
@@ -33,8 +38,11 @@ extension BuiltinExtensionManager {
     func checkAppConfiguration() {
         let suggestionFeatureProvider = UserDefaults.shared.value(for: \.suggestionFeatureProvider)
         for ext in extensions {
-            let isSuggestionFeatureInUse = suggestionFeatureProvider ==
-                .builtIn(ext.suggestionServiceId)
+            let isSuggestionFeatureInUse = if let id = ext.suggestionServiceId {
+                suggestionFeatureProvider == .builtIn(id)
+            } else {
+                false
+            }
             let isChatFeatureInUse = false
             ext.extensionUsageDidChange(.init(
                 isSuggestionServiceInUse: isSuggestionFeatureInUse,

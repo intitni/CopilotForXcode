@@ -6,8 +6,6 @@
 	<array>
 		<string>$(TeamIdentifierPrefix)group.$(BUNDLE_IDENTIFIER_BASE)</string>
 	</array>
-	<key>com.apple.security.cs.disable-library-validation</key>
-	<true/>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)$(BUNDLE_IDENTIFIER_BASE).Shared</string>

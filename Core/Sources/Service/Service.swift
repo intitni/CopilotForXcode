@@ -54,19 +54,20 @@ public final class Service {
 
         realtimeSuggestionController = .init()
         scheduledCleaner = .init()
-        let guiController = GraphicalUserInterfaceController()
-        self.guiController = guiController
-        globalShortcutManager = .init(guiController: guiController)
-        keyBindingManager = .init()
 
         #if canImport(ProService)
         proService = ProService()
         #endif
 
-        BuiltinExtensionManager.shared.setupExtensions([
+        BuiltinExtensionManager.shared.addExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),
             CodeiumExtension(workspacePool: workspacePool),
         ])
+
+        let guiController = GraphicalUserInterfaceController()
+        self.guiController = guiController
+        globalShortcutManager = .init(guiController: guiController)
+        keyBindingManager = .init()
 
         workspacePool.registerPlugin {
             SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }

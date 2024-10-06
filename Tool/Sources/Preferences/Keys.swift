@@ -293,7 +293,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var wrapCodeInPromptToCode: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "WrapCodeInPromptToCode")
+        .init(defaultValue: false, key: "WrapCodeInPromptToCode")
     }
 }
 
@@ -444,7 +444,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var wrapCodeInChatCodeBlock: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "WrapCodeInChatCodeBlock")
+        .init(defaultValue: false, key: "WrapCodeInChatCodeBlock")
     }
 
     var enableFileScopeByDefaultInChatContext: PreferenceKey<Bool> {
@@ -491,7 +491,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
     }
 
-    var openChatMode: PreferenceKey<OpenChatMode> {
+    var openChatMode: PreferenceKey<UserDefaultsStorageBox<OpenChatMode>> {
+        .init(defaultValue: .init(.chatPanel), key: "DefaultOpenChatMode")
+    }
+    
+    var legacyOpenChatMode: DeprecatedPreferenceKey<OpenChatMode.LegacyOpenChatMode> {
         .init(defaultValue: .chatPanel, key: "OpenChatMode")
     }
 

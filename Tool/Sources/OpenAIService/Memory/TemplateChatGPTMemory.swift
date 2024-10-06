@@ -46,7 +46,7 @@ public actor TemplateChatGPTMemory: ChatGPTMemory {
 
         while !(await checkTokenCount()) {
             do {
-                try memoryTemplate.truncate()
+                try await memoryTemplate.truncate()
             } catch {
                 Logger.service.error("Failed to truncate prompt template: \(error)")
                 break
@@ -84,7 +84,7 @@ public struct MemoryTemplate {
                 content = .text(value)
             }
 
-            public init(content: Content, truncatePriority: Int = 0) {
+            public init(_ content: Content, truncatePriority: Int = 0) {
                 self.content = content
                 self.truncatePriority = truncatePriority
             }
@@ -144,21 +144,31 @@ public struct MemoryTemplate {
     let truncateRule: ((
         _ messages: inout [Message],
         _ followUpMessages: inout [ChatMessage]
-    ) throws -> Void)?
+    ) async throws -> Void)?
+
+    public init(
+        messages: [Message],
+        followUpMessages: [ChatMessage] = [],
+        truncateRule: ((inout [Message], inout [ChatMessage]) async throws -> Void)? = nil
+    ) {
+        self.messages = messages
+        self.truncateRule = truncateRule
+        self.followUpMessages = followUpMessages
+    }
 
     func resolved() -> [ChatMessage] {
         messages.compactMap { message in message.resolved() } + followUpMessages
     }
 
-    func truncated() throws -> MemoryTemplate {
+    func truncated() async throws -> MemoryTemplate {
         var copy = self
-        try copy.truncate()
+        try await copy.truncate()
         return copy
     }
 
-    mutating func truncate() throws {
+    mutating func truncate() async throws {
         if let truncateRule = truncateRule {
-            try truncateRule(&messages, &followUpMessages)
+            try await truncateRule(&messages, &followUpMessages)
             return
         }
 
@@ -170,7 +180,7 @@ public struct MemoryTemplate {
         _ followUpMessages: inout [ChatMessage]
     ) throws {
         // Remove the oldest followup messages when available.
-        
+
         if followUpMessages.count > 20 {
             followUpMessages.removeFirst(followUpMessages.count / 2)
             return
@@ -186,7 +196,7 @@ public struct MemoryTemplate {
         }
 
         // Remove according to the priority.
-        
+
         var truncatingMessageIndex: Int?
         for (index, message) in messages.enumerated() {
             if message.truncatePriority <= 0 { continue }
@@ -242,15 +252,4 @@ public struct MemoryTemplate {
             }
         }
     }
-
-    public init(
-        messages: [Message],
-        followUpMessages: [ChatMessage] = [],
-        truncateRule: ((inout [Message], inout [ChatMessage]) -> Void)? = nil
-    ) {
-        self.messages = messages
-        self.truncateRule = truncateRule
-        self.followUpMessages = followUpMessages
-    }
 }
-

@@ -22,6 +22,7 @@ let package = Package(
         ),
         .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
         .library(name: "PromptToCode", targets: ["PromptToCodeBasic", "PromptToCodeCustomization"]),
+        .library(name: "Chat", targets: ["ChatBasic"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -50,6 +51,8 @@ let package = Package(
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
+        .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
+        .library(name: "BingSearchService", targets: ["BingSearchService"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.

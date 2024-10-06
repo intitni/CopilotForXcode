@@ -3,13 +3,12 @@ import Foundation
 public enum ChatAgentResponse {
     public enum Content {
         case text(String)
-        case modification
     }
-    
+
     /// Post the status of the current message.
-    case status(String)
+    case status([String])
     /// Update the text message to the current message.
-    case content([Content])
+    case content(Content)
     /// Update the attachments of the current message.
     case attachments([URL])
     /// Update the references of the current message.
@@ -21,11 +20,18 @@ public enum ChatAgentResponse {
 public struct ChatAgentRequest {
     public var text: String
     public var history: [ChatMessage]
+    public var references: [ChatMessage.Reference]
     public var extraContext: String
 
-    public init(text: String, history: [ChatMessage], extraContext: String) {
+    public init(
+        text: String,
+        history: [ChatMessage],
+        references: [ChatMessage.Reference],
+        extraContext: String
+    ) {
         self.text = text
         self.history = history
+        self.references = references
         self.extraContext = extraContext
     }
 }
