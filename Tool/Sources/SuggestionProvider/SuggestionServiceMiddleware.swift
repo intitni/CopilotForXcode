@@ -45,6 +45,13 @@ public enum SuggestionServiceMiddlewareContainer {
 
 public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMiddleware {
     public init() {}
+    
+    struct DisabledLanguageError: Error, LocalizedError {
+        let language: String
+        var errorDescription: String? {
+            "Suggestion service is disabled for \(language)."
+        }
+    }
 
     public func getSuggestion(
         _ request: SuggestionRequest,
@@ -55,10 +62,7 @@ public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMidd
         if UserDefaults.shared.value(for: \.suggestionFeatureDisabledLanguageList)
             .contains(where: { $0 == language.rawValue })
         {
-            #if DEBUG
-            Logger.service.info("Suggestion service is disabled for \(language).")
-            #endif
-            return []
+            throw DisabledLanguageError(language: language.rawValue)
         }
 
         return try await next(request)

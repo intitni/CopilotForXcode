@@ -104,6 +104,7 @@ public extension AppInstanceInspector {
                     .joined(separator: " of ")
                 return """
                 click menu item "\(button)" of \(list) \
+                of menu 1 \
                 of menu bar item "\(menuBarItem)" \
                 of menu bar 1
                 """

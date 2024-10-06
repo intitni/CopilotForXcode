@@ -3,7 +3,8 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion = "1.8.83"
+    static let latestSupportedVersion = "1.20.9"
+    static let minimumSupportedVersion = "1.20.0"
 
     public init() {}
 
@@ -60,7 +61,7 @@ public struct CodeiumInstallationManager {
     public enum InstallationStatus {
         case notInstalled
         case installed(String)
-        case outdated(current: String, latest: String)
+        case outdated(current: String, latest: String, mandatory: Bool)
         case unsupported(current: String, latest: String)
     }
 
@@ -87,14 +88,21 @@ public struct CodeiumInstallationManager {
         {
             switch version.compare(targetVersion, options: .numeric) {
             case .orderedAscending:
-                return .outdated(current: version, latest: targetVersion)
+                switch version.compare(Self.minimumSupportedVersion) {
+                case .orderedAscending:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: true)
+                case .orderedSame:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                case .orderedDescending:
+                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                }
             case .orderedSame:
                 return .installed(version)
             case .orderedDescending:
                 return .unsupported(current: version, latest: targetVersion)
             }
         }
-        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion)
+        return .outdated(current: "Unknown", latest: Self.latestSupportedVersion, mandatory: false)
     }
 
     public enum InstallationStep {

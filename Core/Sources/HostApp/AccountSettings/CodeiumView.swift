@@ -151,7 +151,7 @@ struct CodeiumView: View {
                         Text("Language Server Version: \(version)")
                         uninstallButton
                     }
-                case let .outdated(current: current, latest: latest):
+                case let .outdated(current: current, latest: latest, _):
                     HStack {
                         Text("Language Server Version: \(current) (Update Available: \(latest))")
                         uninstallButton
@@ -323,7 +323,7 @@ struct CodeiumView_Previews: PreviewProvider {
                 
                 CodeiumView(viewModel: TestViewModel(
                     isSignedIn: true,
-                    installationStatus: .outdated(current: "1.2.9", latest: "1.3.0"),
+                    installationStatus: .outdated(current: "1.2.9", latest: "1.3.0", mandatory: true),
                     installationStep: .downloading
                 ))
                 
