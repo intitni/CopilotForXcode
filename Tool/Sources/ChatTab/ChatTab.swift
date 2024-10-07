@@ -148,6 +148,7 @@ open class BaseChatTab {
 
         if let tab = self as? (any ChatTabType) {
             tab.start()
+            chatTabStore.send(.tabContentUpdated)
         }
     }
 }
