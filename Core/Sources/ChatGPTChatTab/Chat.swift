@@ -522,6 +522,8 @@ private func convertReference(
                 return kind
             case .text:
                 return reference.content
+            case .error:
+                return reference.content
             }
         }(),
         uri: {
@@ -535,6 +537,8 @@ private func convertReference(
             case .other:
                 return ""
             case .text:
+                return ""
+            case .error:
                 return ""
             }
         }(),

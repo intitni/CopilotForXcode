@@ -172,6 +172,8 @@ struct ReferenceIcon: View {
                     Color.gray
                 case .other:
                     Color.gray
+                case .error:
+                    Color.red
                 }
             }())
             .frame(width: 22, height: 22)
@@ -211,6 +213,8 @@ struct ReferenceIcon: View {
                         Text("Ot")
                     case .textFile:
                         Text("Tx")
+                    case .error:
+                        Text("Er")
                     }
                 }
                 .font(.system(size: 12).monospaced())

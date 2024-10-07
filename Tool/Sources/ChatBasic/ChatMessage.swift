@@ -85,6 +85,8 @@ public struct ChatMessage: Equatable, Codable {
             case textFile(uri: String)
             /// Other kind of reference.
             case other(kind: String)
+            /// Error case.
+            case error
         }
 
         /// The title of the reference.
