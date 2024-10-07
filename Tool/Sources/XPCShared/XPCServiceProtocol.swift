@@ -92,6 +92,27 @@ public enum ExtensionServiceRequests {
 
         public init() {}
     }
+    
+    public struct GetExtensionOpenChatHandlers: ExtensionServiceRequestType {
+        public struct HandlerInfo: Codable {
+            public var bundleIdentifier: String
+            public var id: String
+            public var tabName: String
+            public var isBuiltIn: Bool
+            
+            public init(bundleIdentifier: String, id: String, tabName: String, isBuiltIn: Bool) {
+                self.bundleIdentifier = bundleIdentifier
+                self.id = id
+                self.tabName = tabName
+                self.isBuiltIn = isBuiltIn
+            }
+        }
+
+        public typealias ResponseBody = [HandlerInfo]
+        public static let endpoint = "GetExtensionOpenChatHandlers"
+
+        public init() {}
+    }
 }
 
 public struct XPCRequestHandlerHitError: Error, LocalizedError {

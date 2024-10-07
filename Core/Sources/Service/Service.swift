@@ -138,6 +138,26 @@ public extension Service {
                 reply: reply
             )
             #endif
+
+            try ExtensionServiceRequests.GetExtensionOpenChatHandlers.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { _ in
+                BuiltinExtensionManager.shared.extensions.reduce(into: []) { result, ext in
+                    let tabs = ext.chatTabTypes
+                    for tab in tabs {
+                        if tab.canHandleOpenChatCommand {
+                            result.append(.init(
+                                bundleIdentifier: ext.extensionIdentifier,
+                                id: tab.name,
+                                tabName: tab.name,
+                                isBuiltIn: true
+                            ))
+                        }
+                    }
+                }
+            }
         } catch is XPCRequestHandlerHitError {
             return
         } catch {

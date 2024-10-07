@@ -60,6 +60,7 @@ public extension UserDefaults {
                 case .codeiumChat:
                     return .init(.builtinExtension(
                         extensionIdentifier: "com.codeium",
+                        id: "Codeium Chat",
                         tabName: "Codeium Chat"
                     ))
                 }

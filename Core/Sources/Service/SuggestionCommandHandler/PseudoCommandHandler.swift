@@ -414,16 +414,16 @@ struct PseudoCommandHandler: CommandHandler {
                     await openURL(url)
                 }
             }
-        case let .builtinExtension(extensionIdentifier, tabName):
+        case let .builtinExtension(extensionIdentifier, id, _):
             guard let ext = BuiltinExtensionManager.shared.extensions
                 .first(where: { $0.extensionIdentifier == extensionIdentifier }),
-                let tab = ext.chatTabTypes.first(where: { $0.name == tabName })
+                let tab = ext.chatTabTypes.first(where: { $0.name == id })
             else { return }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
-                        check: { $0.name == tabName },
+                        check: { $0.name == id },
                         kind: .init(tab.defaultChatBuilder())
                     )
                 ).finish()
@@ -432,17 +432,17 @@ struct PseudoCommandHandler: CommandHandler {
                     activateThisApp: activateThisApp
                 ))
             }
-        case let .externalExtension(extensionIdentifier, tabName):
+        case let .externalExtension(extensionIdentifier, id, _):
             guard let ext = BuiltinExtensionManager.shared.extensions
                 .first(where: { $0.extensionIdentifier == "plus" }),
                 let tab = ext.chatTabTypes
-                .first(where: { $0.name == "\(extensionIdentifier).\(tabName)" })
+                .first(where: { $0.name == "\(extensionIdentifier).\(id)" })
             else { return }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
-                        check: { $0.name == "\(extensionIdentifier).\(tabName)" },
+                        check: { $0.name == "\(extensionIdentifier).\(id)" },
                         kind: .init(tab.defaultChatBuilder())
                     )
                 ).finish()

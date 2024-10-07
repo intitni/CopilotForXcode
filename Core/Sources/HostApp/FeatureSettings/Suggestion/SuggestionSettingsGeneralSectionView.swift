@@ -88,8 +88,6 @@ struct SuggestionSettingsGeneralSectionView: View {
                 extensionSuggestionFeatureProviderOptions = services.map {
                     .init(name: $0.name, bundleIdentifier: $0.bundleIdentifier)
                 }
-                print(services.map(\.bundleIdentifier))
-                print(suggestionFeatureProvider)
             }
         }
     }
