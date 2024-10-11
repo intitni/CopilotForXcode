@@ -63,6 +63,10 @@ public struct MemoryTemplate {
             public enum Content: ExpressibleByStringLiteral {
                 case text(String)
                 case list([String], formatter: ([String]) -> String)
+                case priorityList(
+                    [(content: String, priority: Int)],
+                    formatter: ([String]) -> String
+                )
 
                 public init(stringLiteral value: String) {
                     self = .text(value)
@@ -70,29 +74,32 @@ public struct MemoryTemplate {
             }
 
             public var content: Content
-            public var truncatePriority: Int = 0
+            public var priority: Int
             public var isEmpty: Bool {
                 switch content {
                 case let .text(text):
                     return text.isEmpty
                 case let .list(list, _):
                     return list.isEmpty
+                case let .priorityList(list, _):
+                    return list.isEmpty
                 }
             }
 
             public init(stringLiteral value: String) {
                 content = .text(value)
+                priority = .max
             }
 
-            public init(_ content: Content, truncatePriority: Int = 0) {
+            public init(_ content: Content, priority: Int = .max) {
                 self.content = content
-                self.truncatePriority = truncatePriority
+                self.priority = priority
             }
         }
 
         public var chatMessage: ChatMessage
         public var dynamicContent: [DynamicContent] = []
-        public var truncatePriority: Int = 0
+        public var priority: Int
 
         public func resolved() -> ChatMessage? {
             var baseMessage = chatMessage
@@ -108,6 +115,8 @@ public struct MemoryTemplate {
                     return text
                 case let .list(list, formatter):
                     return formatter(list)
+                case let .priorityList(list, formatter):
+                    return formatter(list.map { $0.0 })
                 }
             }
 
@@ -130,26 +139,28 @@ public struct MemoryTemplate {
         public init(
             chatMessage: ChatMessage,
             dynamicContent: [DynamicContent] = [],
-            truncatePriority: Int = 0
+            priority: Int = .max
         ) {
             self.chatMessage = chatMessage
             self.dynamicContent = dynamicContent
-            self.truncatePriority = truncatePriority
+            self.priority = priority
         }
     }
 
     public var messages: [Message]
     public var followUpMessages: [ChatMessage]
 
-    let truncateRule: ((
+    public typealias TruncateRule = (
         _ messages: inout [Message],
         _ followUpMessages: inout [ChatMessage]
-    ) async throws -> Void)?
+    ) async throws -> Void
+    
+    let truncateRule: TruncateRule?
 
     public init(
         messages: [Message],
         followUpMessages: [ChatMessage] = [],
-        truncateRule: ((inout [Message], inout [ChatMessage]) async throws -> Void)? = nil
+        truncateRule: TruncateRule? = nil
     ) {
         self.messages = messages
         self.truncateRule = truncateRule
@@ -172,84 +183,107 @@ public struct MemoryTemplate {
             return
         }
 
-        try Self.defaultTruncateRule(&messages, &followUpMessages)
+        try await Self.defaultTruncateRule()(&messages, &followUpMessages)
+    }
+    
+    public struct DefaultTruncateRuleOptions {
+        public var numberOfContentListItemToKeep: (Int) -> Int = { $0 * 2 / 3 }
     }
 
     public static func defaultTruncateRule(
-        _ messages: inout [Message],
-        _ followUpMessages: inout [ChatMessage]
-    ) throws {
-        // Remove the oldest followup messages when available.
-
-        if followUpMessages.count > 20 {
-            followUpMessages.removeFirst(followUpMessages.count / 2)
-            return
-        }
-
-        if followUpMessages.count > 2 {
-            if followUpMessages.count.isMultiple(of: 2) {
-                followUpMessages.removeFirst(2)
-            } else {
-                followUpMessages.removeFirst(1)
+        options updateOptions: (inout DefaultTruncateRuleOptions) -> Void = { _ in }
+    ) -> TruncateRule {
+        var options = DefaultTruncateRuleOptions()
+        updateOptions(&options)
+        return { messages, followUpMessages in
+            
+            // Remove the oldest followup messages when available.
+            
+            if followUpMessages.count > 20 {
+                followUpMessages.removeFirst(followUpMessages.count / 2)
+                return
             }
-            return
-        }
-
-        // Remove according to the priority.
-
-        var truncatingMessageIndex: Int?
-        for (index, message) in messages.enumerated() {
-            if message.truncatePriority <= 0 { continue }
-            if let previousIndex = truncatingMessageIndex,
-               message.truncatePriority > messages[previousIndex].truncatePriority
-            {
-                truncatingMessageIndex = index
+            
+            if followUpMessages.count > 2 {
+                if followUpMessages.count.isMultiple(of: 2) {
+                    followUpMessages.removeFirst(2)
+                } else {
+                    followUpMessages.removeFirst(1)
+                }
+                return
             }
-        }
-
-        guard let truncatingMessageIndex else { throw CancellationError() }
-        var truncatingMessage: Message {
-            get { messages[truncatingMessageIndex] }
-            set { messages[truncatingMessageIndex] = newValue }
-        }
-
-        if truncatingMessage.isEmpty {
-            messages.remove(at: truncatingMessageIndex)
-            return
-        }
-
-        truncatingMessage.dynamicContent.removeAll(where: { $0.isEmpty })
-
-        var truncatingContentIndex: Int?
-        for (index, content) in truncatingMessage.dynamicContent.enumerated() {
-            if content.isEmpty { continue }
-            if let previousIndex = truncatingContentIndex,
-               content.truncatePriority > truncatingMessage.dynamicContent[previousIndex]
-               .truncatePriority
-            {
-                truncatingContentIndex = index
+            
+            // Remove according to the priority.
+            
+            var truncatingMessageIndex: Int?
+            for (index, message) in messages.enumerated() {
+                if message.priority == .max { continue }
+                if let previousIndex = truncatingMessageIndex,
+                   message.priority < messages[previousIndex].priority
+                {
+                    truncatingMessageIndex = index
+                }
             }
-        }
-
-        guard let truncatingContentIndex else { throw CancellationError() }
-        var truncatingContent: Message.DynamicContent {
-            get { truncatingMessage.dynamicContent[truncatingContentIndex] }
-            set { truncatingMessage.dynamicContent[truncatingContentIndex] = newValue }
-        }
-
-        switch truncatingContent.content {
-        case .text:
-            truncatingMessage.dynamicContent.remove(at: truncatingContentIndex)
-        case let .list(list, formatter: formatter):
-            let count = list.count * 2 / 3
-            if count > 0 {
-                truncatingContent.content = .list(
-                    Array(list.prefix(count)),
-                    formatter: formatter
-                )
-            } else {
+            
+            guard let truncatingMessageIndex else { throw CancellationError() }
+            var truncatingMessage: Message {
+                get { messages[truncatingMessageIndex] }
+                set { messages[truncatingMessageIndex] = newValue }
+            }
+            
+            if truncatingMessage.isEmpty {
+                messages.remove(at: truncatingMessageIndex)
+                return
+            }
+            
+            truncatingMessage.dynamicContent.removeAll(where: { $0.isEmpty })
+            
+            var truncatingContentIndex: Int?
+            for (index, content) in truncatingMessage.dynamicContent.enumerated() {
+                if content.isEmpty { continue }
+                if let previousIndex = truncatingContentIndex,
+                   content.priority < truncatingMessage.dynamicContent[previousIndex].priority
+                {
+                    truncatingContentIndex = index
+                }
+            }
+            
+            guard let truncatingContentIndex else { throw CancellationError() }
+            var truncatingContent: Message.DynamicContent {
+                get { truncatingMessage.dynamicContent[truncatingContentIndex] }
+                set { truncatingMessage.dynamicContent[truncatingContentIndex] = newValue }
+            }
+            
+            switch truncatingContent.content {
+            case .text:
                 truncatingMessage.dynamicContent.remove(at: truncatingContentIndex)
+            case let .list(list, formatter):
+                let count = options.numberOfContentListItemToKeep(list.count)
+                if count > 0 {
+                    truncatingContent.content = .list(
+                        Array(list.prefix(count)),
+                        formatter: formatter
+                    )
+                } else {
+                    truncatingMessage.dynamicContent.remove(at: truncatingContentIndex)
+                }
+            case let .priorityList(list, formatter):
+                let count = options.numberOfContentListItemToKeep(list.count)
+                if count > 0 {
+                    let orderedList = list.enumerated()
+                    let orderedByPriority = orderedList
+                        .sorted { $0.element.priority >= $1.element.priority }
+                    let kept = orderedByPriority.prefix(count)
+                    let reordered = kept.sorted { $0.offset < $1.offset }
+                    truncatingContent.content = .priorityList(
+                        Array(reordered.map { $0.element }),
+                        formatter: formatter
+                    )
+                } else {
+                    truncatingMessage.dynamicContent.remove(at: truncatingContentIndex)
+                }
             }
         }
     }
 }
+
