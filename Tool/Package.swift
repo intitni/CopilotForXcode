@@ -21,7 +21,7 @@ let package = Package(
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
         .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
-        .library(name: "PromptToCode", targets: ["PromptToCodeBasic", "PromptToCodeCustomization"]),
+        .library(name: "PromptToCode", targets: ["ModificationBasic", "PromptToCodeCustomization"]),
         .library(name: "Chat", targets: ["ChatBasic"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
@@ -201,7 +201,7 @@ let package = Package(
         ),
 
         .target(
-            name: "PromptToCodeBasic",
+            name: "ModificationBasic",
             dependencies: [
                 "SuggestionBasic",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
@@ -215,7 +215,7 @@ let package = Package(
         .target(
             name: "PromptToCodeCustomization",
             dependencies: [
-                "PromptToCodeBasic",
+                "ModificationBasic",
                 "SuggestionBasic",
                 .product(
                     name: "ComposableArchitecture",

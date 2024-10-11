@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import Dependencies
 import Foundation
-import PromptToCodeBasic
+import ModificationBasic
 import SuggestionBasic
 import SwiftUI
 
@@ -83,8 +83,8 @@ public struct PromptToCodeState: Equatable {
     }
 
     public var source: Source
-    public var history: [PromptToCodeHistoryNode] = []
-    public var snippets: IdentifiedArrayOf<PromptToCodeSnippet> = []
+    public var history: [ModificationHistoryNode] = []
+    public var snippets: IdentifiedArrayOf<ModificationSnippet> = []
     public var isGenerating: Bool = false
     public var instruction: String
     public var extraSystemPrompt: String
@@ -92,8 +92,8 @@ public struct PromptToCodeState: Equatable {
 
     public init(
         source: Source,
-        history: [PromptToCodeHistoryNode] = [],
-        snippets: IdentifiedArrayOf<PromptToCodeSnippet>,
+        history: [ModificationHistoryNode] = [],
+        snippets: IdentifiedArrayOf<ModificationSnippet>,
         instruction: String,
         extraSystemPrompt: String,
         isAttachedToTarget: Bool

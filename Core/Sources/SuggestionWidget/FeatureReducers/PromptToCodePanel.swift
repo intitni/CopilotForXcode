@@ -4,7 +4,7 @@ import CustomAsyncAlgorithms
 import Dependencies
 import Foundation
 import Preferences
-import PromptToCodeBasic
+import ModificationBasic
 import PromptToCodeCustomization
 import PromptToCodeService
 import SuggestionBasic
@@ -254,7 +254,7 @@ public struct PromptToCodeSnippetPanel {
     @ObservableState
     public struct State: Identifiable {
         public var id: UUID { snippet.id }
-        var snippet: PromptToCodeSnippet
+        var snippet: ModificationSnippet
     }
 
     public enum Action {

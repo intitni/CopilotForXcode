@@ -1,7 +1,7 @@
 import Cocoa
 import ComposableArchitecture
 import MarkdownUI
-import PromptToCodeBasic
+import ModificationBasic
 import PromptToCodeCustomization
 import SharedUIComponents
 import SuggestionBasic

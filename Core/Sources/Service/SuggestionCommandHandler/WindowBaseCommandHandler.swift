@@ -6,7 +6,7 @@ import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
 import OpenAIService
-import PromptToCodeBasic
+import ModificationBasic
 import SuggestionBasic
 import SuggestionInjector
 import SuggestionWidget
@@ -398,7 +398,7 @@ extension WindowBaseCommandHandler {
 
         let snippets = selections.map { selection in
             guard selection.start != selection.end else {
-                return PromptToCodeSnippet(
+                return ModificationSnippet(
                     startLineIndex: selection.start.line,
                     originalCode: "",
                     modifiedCode: "",
@@ -434,7 +434,7 @@ extension WindowBaseCommandHandler {
                 start: selection.start,
                 end: selection.end
             ))
-            return PromptToCodeSnippet(
+            return ModificationSnippet(
                 startLineIndex: selection.start.line,
                 originalCode: selectedCode,
                 modifiedCode: selectedCode,

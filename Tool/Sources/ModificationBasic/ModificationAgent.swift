@@ -2,12 +2,12 @@ import ComposableArchitecture
 import Foundation
 import SuggestionBasic
 
-public enum PromptToCodeAgentResponse {
+public enum ModificationAgentResponse {
     case code(String)
     case description(String)
 }
 
-public struct PromptToCodeAgentRequest {
+public struct ModificationAgentRequest {
     var code: String
     var requirement: String
     var source: PromptToCodeSource
@@ -41,14 +41,14 @@ public struct PromptToCodeAgentRequest {
     }
 }
 
-public protocol PromptToCodeAgent {
-    typealias Request = PromptToCodeAgentRequest
-    typealias Response = PromptToCodeAgentResponse
+public protocol ModificationAgent {
+    typealias Request = ModificationAgentRequest
+    typealias Response = ModificationAgentResponse
 
     func send(_ request: Request) -> AsyncThrowingStream<Response, any Error>
 }
 
-public struct PromptToCodeSnippet: Equatable, Identifiable {
+public struct ModificationSnippet: Equatable, Identifiable {
     public let id = UUID()
     public var startLineIndex: Int
     public var originalCode: String
@@ -74,16 +74,16 @@ public struct PromptToCodeSnippet: Equatable, Identifiable {
     }
 }
 
-public enum PromptToCodeAttachedTarget: Equatable {
+public enum ModificationAttachedTarget: Equatable {
     case file(URL, projectURL: URL, code: String, lines: [String])
     case dynamic
 }
 
-public struct PromptToCodeHistoryNode: Equatable {
-    public var snippets: IdentifiedArrayOf<PromptToCodeSnippet>
+public struct ModificationHistoryNode: Equatable {
+    public var snippets: IdentifiedArrayOf<ModificationSnippet>
     public var instruction: String
 
-    public init(snippets: IdentifiedArrayOf<PromptToCodeSnippet>, instruction: String) {
+    public init(snippets: IdentifiedArrayOf<ModificationSnippet>, instruction: String) {
         self.snippets = snippets
         self.instruction = instruction
     }
