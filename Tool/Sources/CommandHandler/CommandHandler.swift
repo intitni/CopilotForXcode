@@ -1,5 +1,6 @@
 import Dependencies
 import Foundation
+import ModificationBasic
 import Preferences
 import SuggestionBasic
 import Toast
@@ -22,9 +23,10 @@ public protocol CommandHandler {
     func openChat(forceDetach: Bool, activateThisApp: Bool)
     func sendChatMessage(_ message: String) async
 
-    // MARK: Prompt to Code
+    // MARK: Modification
 
     func acceptPromptToCode() async
+    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async
 
     // MARK: Custom Command
 
@@ -33,11 +35,15 @@ public protocol CommandHandler {
     // MARK: Toast
 
     func toast(_ string: String, as type: ToastType)
+
+    // MARK: Others
+
+    func presentFile(at fileURL: URL, line: Int) async
 }
 
 public struct CommandHandlerDependencyKey: DependencyKey {
     public static var liveValue: CommandHandler = UniversalCommandHandler.shared
-    public static var testValue: CommandHandler = NoopCommandHandler()
+    public static var testValue: CommandHandler = NOOPCommandHandler()
 }
 
 public extension DependencyValues {
@@ -52,10 +58,10 @@ public extension DependencyValues {
 }
 
 public final class UniversalCommandHandler: CommandHandler {
-    public static let shared: UniversalCommandHandler = UniversalCommandHandler()
-    
-    public var commandHandler: CommandHandler = NoopCommandHandler()
-    
+    public static let shared: UniversalCommandHandler = .init()
+
+    public var commandHandler: CommandHandler = NOOPCommandHandler()
+
     private init() {}
 
     public func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
@@ -98,6 +104,10 @@ public final class UniversalCommandHandler: CommandHandler {
         await commandHandler.acceptPromptToCode()
     }
 
+    public func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async {
+        await commandHandler.presentModification(fileURL: fileURL, snippets: snippets)
+    }
+
     public func handleCustomCommand(_ command: CustomCommand) async {
         await commandHandler.handleCustomCommand(command)
     }
@@ -105,20 +115,67 @@ public final class UniversalCommandHandler: CommandHandler {
     public func toast(_ string: String, as type: ToastType) {
         commandHandler.toast(string, as: type)
     }
+
+    public func presentFile(at fileURL: URL, line: Int) async {
+        await commandHandler.presentFile(at: fileURL, line: line)
+    }
 }
 
-struct NoopCommandHandler: CommandHandler {
-    func presentSuggestions(_: [CodeSuggestion]) async {}
-    func presentPreviousSuggestion() async {}
-    func presentNextSuggestion() async {}
-    func rejectSuggestions() async {}
-    func acceptSuggestion() async {}
-    func dismissSuggestion() async {}
-    func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {}
-    func openChat(forceDetach: Bool, activateThisApp: Bool) {}
-    func sendChatMessage(_: String) async {}
-    func acceptPromptToCode() async {}
-    func handleCustomCommand(_: CustomCommand) async {}
-    func toast(_: String, as: ToastType) {}
+struct NOOPCommandHandler: CommandHandler {
+    func presentSuggestions(_ suggestions: [CodeSuggestion]) async {
+        print("present \(suggestions.count) suggestions")
+    }
+
+    func presentPreviousSuggestion() async {
+        print("previous suggestion")
+    }
+
+    func presentNextSuggestion() async {
+        print("next suggestion")
+    }
+
+    func rejectSuggestions() async {
+        print("reject suggestions")
+    }
+
+    func acceptSuggestion() async {
+        print("accept suggestion")
+    }
+
+    func dismissSuggestion() async {
+        print("dismiss suggestion")
+    }
+
+    func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
+        print("generate realtime suggestions")
+    }
+
+    func openChat(forceDetach: Bool, activateThisApp: Bool) {
+        print("open chat")
+    }
+
+    func sendChatMessage(_: String) async {
+        print("send chat message")
+    }
+
+    func acceptPromptToCode() async {
+        print("accept prompt to code")
+    }
+
+    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) {
+        print("present modification")
+    }
+
+    func handleCustomCommand(_: CustomCommand) async {
+        print("handle custom command")
+    }
+
+    func toast(_: String, as: ToastType) {
+        print("toast")
+    }
+
+    func presentFile(at fileURL: URL, line: Int) async {
+        print("present file")
+    }
 }
 

@@ -10,12 +10,12 @@ public enum ModificationAgentResponse {
 public struct ModificationAgentRequest {
     var code: String
     var requirement: String
-    var source: PromptToCodeSource
+    var source: ModificationSource
     var isDetached: Bool
     var extraSystemPrompt: String?
     var generateDescriptionRequirement: Bool?
 
-    public struct PromptToCodeSource {
+    public struct ModificationSource {
         public var language: CodeLanguage
         public var documentURL: URL
         public var projectRootURL: URL

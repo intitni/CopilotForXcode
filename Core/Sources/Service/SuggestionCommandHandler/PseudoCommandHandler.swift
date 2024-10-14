@@ -3,13 +3,16 @@ import AppKit
 import BuiltinExtension
 import CodeiumService
 import CommandHandler
+import ComposableArchitecture
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
 import Logger
+import ModificationBasic
 import PlusFeatureFlag
 import Preferences
 import SuggestionBasic
 import SuggestionInjector
+import Terminal
 import Toast
 import Workspace
 import WorkspaceSuggestionService
@@ -268,6 +271,38 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
+    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async {
+        do {
+            @Dependency(\.workspacePool) var workspacePool
+            let (workspace, filespace) = try await workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            let store = await Service.shared.guiController.store
+            let content = try String(contentsOf: fileURL)
+            let lines = content.breakLines(appendLineBreakToLastLine: false)
+            await store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
+                promptToCodeState: Shared(.init(
+                    source: .init(
+                        language: filespace.language,
+                        documentURL: filespace.fileURL,
+                        projectRootURL: workspace.projectRootURL,
+                        content: content,
+                        lines: lines
+                    ),
+                    snippets: IdentifiedArray(uniqueElements: snippets),
+                    instruction: "",
+                    extraSystemPrompt: "",
+                    isAttachedToTarget: true
+                )),
+                indentSize: filespace.codeMetadata.indentSize ?? 4,
+                usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
+                commandName: nil,
+                isContinuous: false
+            ))))
+        } catch {
+            toast.toast(content: error.localizedDescription, type: .error)
+        }
+    }
+
     func acceptSuggestion() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
@@ -479,6 +514,22 @@ struct PseudoCommandHandler: CommandHandler {
         Task { @MainActor in
             let store = Service.shared.guiController.store
             store.send(.suggestionWidget(.toastPanel(.toast(.toast(message, type, nil)))))
+        }
+    }
+
+    func presentFile(at fileURL: URL, line: Int = 0) async {
+        let terminal = Terminal()
+        do {
+            _ = try await terminal.runCommand(
+                "/bin/bash",
+                arguments: [
+                    "-c",
+                    "xed -l \(line) \"\(fileURL.path)\"",
+                ],
+                environment: [:]
+            )
+        } catch {
+            print(error)
         }
     }
 }
