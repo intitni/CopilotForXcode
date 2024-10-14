@@ -22,7 +22,7 @@ public struct CopyButton: View {
                 }
             }
         }) {
-            Image(systemName: isCopied ? "checkmark.circle" : "doc.on.doc")
+            Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 14, height: 14)
@@ -32,6 +32,10 @@ public struct CopyButton: View {
                     .regularMaterial,
                     in: RoundedRectangle(cornerRadius: 4, style: .circular)
                 )
+                .background {
+                    RoundedRectangle(cornerRadius: 4, style: .circular)
+                        .fill(Color.primary.opacity(0.1))
+                }
                 .padding(4)
         }
         .buttonStyle(.borderless)
