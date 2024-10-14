@@ -277,10 +277,10 @@ struct PseudoCommandHandler: CommandHandler {
     ) async {
         do {
             @Dependency(\.workspacePool) var workspacePool
-            let (workspace, filespace) = try await workspacePool
+            let (_, filespace) = try await workspacePool
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: source.documentURL)
             let store = await Service.shared.guiController.store
-            await store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
+            await store.send(.promptToCodeGroup(.createPromptToCode(.init(
                 promptToCodeState: Shared(.init(
                     source: source,
                     snippets: IdentifiedArray(uniqueElements: snippets),
