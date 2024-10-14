@@ -271,23 +271,18 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async {
+    func presentModification(
+        source: ModificationAgentRequest.ModificationSource,
+        snippets: [ModificationSnippet]
+    ) async {
         do {
             @Dependency(\.workspacePool) var workspacePool
             let (workspace, filespace) = try await workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: source.documentURL)
             let store = await Service.shared.guiController.store
-            let content = try String(contentsOf: fileURL)
-            let lines = content.breakLines(appendLineBreakToLastLine: false)
             await store.send(.promptToCodeGroup(.activateOrCreatePromptToCode(.init(
                 promptToCodeState: Shared(.init(
-                    source: .init(
-                        language: filespace.language,
-                        documentURL: filespace.fileURL,
-                        projectRootURL: workspace.projectRootURL,
-                        content: content,
-                        lines: lines
-                    ),
+                    source: source,
                     snippets: IdentifiedArray(uniqueElements: snippets),
                     instruction: "",
                     extraSystemPrompt: "",

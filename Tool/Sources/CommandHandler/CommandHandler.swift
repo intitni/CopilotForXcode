@@ -26,7 +26,10 @@ public protocol CommandHandler {
     // MARK: Modification
 
     func acceptPromptToCode() async
-    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async
+    func presentModification(
+        source: ModificationAgentRequest.ModificationSource,
+        snippets: [ModificationSnippet]
+    ) async
 
     // MARK: Custom Command
 
@@ -104,8 +107,11 @@ public final class UniversalCommandHandler: CommandHandler {
         await commandHandler.acceptPromptToCode()
     }
 
-    public func presentModification(fileURL: URL, snippets: [ModificationSnippet]) async {
-        await commandHandler.presentModification(fileURL: fileURL, snippets: snippets)
+    public func presentModification(
+        source: ModificationAgentRequest.ModificationSource,
+        snippets: [ModificationSnippet]
+    ) async {
+        await commandHandler.presentModification(source: source, snippets: snippets)
     }
 
     public func handleCustomCommand(_ command: CustomCommand) async {
@@ -162,7 +168,10 @@ struct NOOPCommandHandler: CommandHandler {
         print("accept prompt to code")
     }
 
-    func presentModification(fileURL: URL, snippets: [ModificationSnippet]) {
+    func presentModification(
+        source: ModificationAgentRequest.ModificationSource,
+        snippets: [ModificationSnippet]
+    ) {
         print("present modification")
     }
 

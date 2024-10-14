@@ -8,36 +8,52 @@ public enum ModificationAgentResponse {
 }
 
 public struct ModificationAgentRequest {
-    var code: String
-    var requirement: String
-    var source: ModificationSource
-    var isDetached: Bool
-    var extraSystemPrompt: String?
-    var generateDescriptionRequirement: Bool?
+    public var code: String
+    public var requirement: String
+    public var source: ModificationSource
+    public var isDetached: Bool
+    public var extraSystemPrompt: String?
+    public var generateDescriptionRequirement: Bool?
+    public var range: CursorRange
 
-    public struct ModificationSource {
+    public struct ModificationSource: Equatable {
         public var language: CodeLanguage
         public var documentURL: URL
         public var projectRootURL: URL
         public var content: String
         public var lines: [String]
-        public var range: CursorRange
 
         public init(
             language: CodeLanguage,
             documentURL: URL,
             projectRootURL: URL,
             content: String,
-            lines: [String],
-            range: CursorRange
+            lines: [String]
         ) {
             self.language = language
             self.documentURL = documentURL
             self.projectRootURL = projectRootURL
             self.content = content
             self.lines = lines
-            self.range = range
         }
+    }
+
+    public init(
+        code: String,
+        requirement: String,
+        source: ModificationSource,
+        isDetached: Bool,
+        extraSystemPrompt: String? = nil,
+        generateDescriptionRequirement: Bool? = nil,
+        range: CursorRange
+    ) {
+        self.code = code
+        self.requirement = requirement
+        self.source = source
+        self.isDetached = isDetached
+        self.extraSystemPrompt = extraSystemPrompt
+        self.generateDescriptionRequirement = generateDescriptionRequirement
+        self.range = range
     }
 }
 

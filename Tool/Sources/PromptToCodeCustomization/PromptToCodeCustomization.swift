@@ -60,27 +60,7 @@ struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
 }
 
 public struct PromptToCodeState: Equatable {
-    public struct Source: Equatable {
-        public var language: CodeLanguage
-        public var documentURL: URL
-        public var projectRootURL: URL
-        public var content: String
-        public var lines: [String]
-
-        public init(
-            language: CodeLanguage,
-            documentURL: URL,
-            projectRootURL: URL,
-            content: String,
-            lines: [String]
-        ) {
-            self.language = language
-            self.documentURL = documentURL
-            self.projectRootURL = projectRootURL
-            self.content = content
-            self.lines = lines
-        }
-    }
+    public typealias Source = ModificationAgentRequest.ModificationSource
 
     public var source: Source
     public var history: [ModificationHistoryNode] = []
