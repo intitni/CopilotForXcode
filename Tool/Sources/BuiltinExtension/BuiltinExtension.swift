@@ -5,8 +5,6 @@ import Foundation
 import Preferences
 
 public protocol BuiltinExtension: CopilotForXcodeExtensionCapability {
-    /// An id that let the extension manager determine whether the extension is in use.
-    var suggestionServiceId: BuiltInSuggestionFeatureProvider? { get }
     /// An identifier for the extension.
     var extensionIdentifier: String { get }
 
