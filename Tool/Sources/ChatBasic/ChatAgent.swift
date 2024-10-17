@@ -42,3 +42,27 @@ public protocol ChatAgent {
     func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error>
 }
 
+public extension AsyncThrowingStream<ChatAgentResponse, any Error> {
+    func asTexts() async throws -> [String] {
+        var result = [String]()
+        var text = ""
+        for try await response in self {
+            switch response {
+            case let .content(.text(content)):
+                text += content
+            case .startNewMessage:
+                if !text.isEmpty {
+                    result.append(text)
+                    text = ""
+                }
+            default:
+                break
+            }
+        }
+        if !text.isEmpty {
+            result.append(text)
+        }
+        return result
+    }
+}
+
