@@ -81,8 +81,7 @@ let package = Package(
             url: "https://github.com/intitni/generative-ai-swift",
             branch: "support-setting-base-url"
         ),
-//        .package(url: "https://github.com/intitni/CopilotForXcodeKit", from: "0.7.1"),
-        .package(path: "../../../CopilotForXcodeKit"),
+        .package(url: "https://github.com/intitni/CopilotForXcodeKit", branch: "custom-chat-tab"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
