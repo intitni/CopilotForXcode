@@ -53,6 +53,10 @@ let package = Package(
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
         .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
         .library(name: "BingSearchService", targets: ["BingSearchService"]),
+        .library(
+            name: "CustomCommandTemplateProcessor",
+            targets: ["CustomCommandTemplateProcessor"]
+        ),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -127,6 +131,14 @@ let package = Package(
                 name: "ComposableArchitecture",
                 package: "swift-composable-architecture"
             )]
+        ),
+
+        .target(
+            name: "CustomCommandTemplateProcessor",
+            dependencies: [
+                "XcodeInspector",
+                "SuggestionBasic",
+            ]
         ),
 
         .target(name: "DebounceFunction"),

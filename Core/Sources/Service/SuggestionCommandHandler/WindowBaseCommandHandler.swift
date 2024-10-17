@@ -1,12 +1,13 @@
 import AppKit
 import ChatService
 import ComposableArchitecture
+import CustomCommandTemplateProcessor
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
-import OpenAIService
 import ModificationBasic
+import OpenAIService
 import SuggestionBasic
 import SuggestionInjector
 import SuggestionWidget

@@ -96,6 +96,7 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+                .product(name: "CustomCommandTemplateProcessor", package: "Tool"),
             ].pro([
                 "ProService",
             ])
@@ -142,7 +143,7 @@ let package = Package(
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
-                .product(name: "SuggestionProvider", package: "Tool")
+                .product(name: "SuggestionProvider", package: "Tool"),
             ].pro([
                 "ProExtension",
             ])
@@ -186,6 +187,7 @@ let package = Package(
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "CustomCommandTemplateProcessor", package: "Tool"),
             ].pro([
                 "ProService",
             ])
@@ -326,7 +328,7 @@ let package = Package(
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
         ),
-        
+
         // MARK: Key Binding
 
         .target(
@@ -346,7 +348,7 @@ let package = Package(
             name: "KeyBindingManagerTests",
             dependencies: ["KeyBindingManager"]
         ),
-        
+
         // MARK: Theming
 
         .target(
@@ -357,7 +359,6 @@ let package = Package(
                 .product(name: "Highlightr", package: "Highlightr"),
             ]
         ),
-
     ]
 )
 
@@ -393,3 +394,4 @@ var isProIncluded: Bool {
 
     return isProIncluded()
 }
+
