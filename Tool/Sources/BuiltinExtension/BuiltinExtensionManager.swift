@@ -38,10 +38,16 @@ extension BuiltinExtensionManager {
     func checkAppConfiguration() {
         let suggestionFeatureProvider = UserDefaults.shared.value(for: \.suggestionFeatureProvider)
         for ext in extensions {
-            let isSuggestionFeatureInUse = if let id = ext.suggestionServiceId {
-                suggestionFeatureProvider == .builtIn(id)
-            } else {
-                false
+            let isSuggestionFeatureInUse = switch suggestionFeatureProvider {
+            case let .builtIn(provider):
+                switch provider {
+                case .gitHubCopilot:
+                    ext.extensionIdentifier == "com.github.copilot"
+                case .codeium:
+                    ext.extensionIdentifier == "com.codeium"
+                }
+            case let .extension(_, bundleIdentifier):
+                ext.extensionIdentifier == bundleIdentifier
             }
             let isChatFeatureInUse = false
             ext.extensionUsageDidChange(.init(
