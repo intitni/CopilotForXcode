@@ -41,6 +41,8 @@ struct ChatCompletionsRequestBody: Codable, Equatable {
         ///
         /// - important: It's required when the role is `tool`.
         var toolCallId: String?
+        /// Cache the message if possible.
+        var cacheIfPossible: Bool = false
     }
 
     struct MessageFunctionCall: Codable, Equatable {

@@ -538,7 +538,8 @@ extension ChatGPTService {
                     } else {
                         nil
                     }
-                }()
+                }(),
+                cacheIfPossible: chatMessage.cacheIfPossible
             ))
 
             for call in chatMessage.toolCalls ?? [] {
