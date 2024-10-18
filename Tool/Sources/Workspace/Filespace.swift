@@ -95,7 +95,7 @@ public final class Filespace {
     // MARK: Life Cycle
 
     public var isExpired: Bool {
-        Environment.now().timeIntervalSince(lastUpdateTime) > 60 * 3
+        Environment.now().timeIntervalSince(lastUpdateTime) > 60 * 60
     }
 
     public internal(set) var lastUpdateTime: Date = Environment.now()
