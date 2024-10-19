@@ -1,4 +1,5 @@
 import AIModel
+import ChatBasic
 import AsyncAlgorithms
 import CodableWrappers
 import Foundation
@@ -124,6 +125,14 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
     }
 
     struct RequestBody: Encodable, Equatable {
+        struct CacheControl: Encodable, Equatable {
+            enum CacheControlType: String, Codable, Equatable {
+                case ephemeral
+            }
+
+            var type: CacheControlType = .ephemeral
+        }
+
         struct MessageContent: Encodable, Equatable {
             enum MessageContentType: String, Encodable, Equatable {
                 case text
@@ -141,6 +150,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             var type: MessageContentType
             var text: String?
             var source: ImageSource?
+            var cache_control: CacheControl?
         }
 
         struct Message: Encodable, Equatable {
@@ -169,13 +179,26 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             }
         }
 
+        struct SystemPrompt: Encodable, Equatable {
+            let type = "text"
+            var text: String
+            var cache_control: CacheControl?
+        }
+        
+        struct Tool: Encodable, Equatable {
+            var name: String
+            var description: String
+            var input_schema: JSONSchemaValue
+        }
+
         var model: String
-        var system: String
+        var system: [SystemPrompt]
         var messages: [Message]
         var temperature: Double?
         var stream: Bool?
         var stop_sequences: [String]?
         var max_tokens: Int
+        var tools: [RequestBody.Tool]?
     }
 
     var apiKey: String
@@ -261,6 +284,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("prompt-caching-2024-07-31", forHTTPHeaderField: "anthropic-beta")
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         }
@@ -330,37 +354,85 @@ extension ClaudeChatCompletionsService.RequestBody {
     init(_ body: ChatCompletionsRequestBody) {
         model = body.model
 
-        var systemPrompts = [String]()
+        var systemPrompts = [SystemPrompt]()
         var nonSystemMessages = [Message]()
+
+        enum JoinType {
+            case joinMessage
+            case appendToList
+            case padMessageAndAppendToList
+        }
+
+        func checkJoinType(for message: ChatCompletionsRequestBody.Message) -> JoinType {
+            guard let last = nonSystemMessages.last else { return .appendToList }
+            let newMessageRole: ClaudeChatCompletionsService.MessageRole = message.role == .user
+                ? .user
+                : .assistant
+
+            if newMessageRole != last.role {
+                return .appendToList
+            }
+
+            if message.cacheIfPossible != last.content
+                .contains(where: { $0.cache_control != nil })
+            {
+                return .padMessageAndAppendToList
+            }
+
+            return .joinMessage
+        }
 
         for message in body.messages {
             switch message.role {
             case .system:
-                systemPrompts.append(message.content)
+                systemPrompts.append(.init(text: message.content, cache_control: {
+                    if message.cacheIfPossible {
+                        return .init()
+                    } else {
+                        return nil
+                    }
+                }()))
             case .tool, .assistant:
-                if let last = nonSystemMessages.last, last.role == .assistant {
-                    nonSystemMessages[nonSystemMessages.endIndex - 1].appendText(message.content)
-                } else {
+                switch checkJoinType(for: message) {
+                case .appendToList:
                     nonSystemMessages.append(.init(
                         role: .assistant,
                         content: [.init(type: .text, text: message.content)]
                     ))
+                case .padMessageAndAppendToList, .joinMessage:
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
+                        .init(type: .text, text: message.content, cache_control: {
+                            if message.cacheIfPossible {
+                                return .init()
+                            } else {
+                                return nil
+                            }
+                        }())
+                    )
                 }
             case .user:
-                if let last = nonSystemMessages.last, last.role == .user {
-                    nonSystemMessages[nonSystemMessages.endIndex - 1].appendText(message.content)
-                } else {
+                switch checkJoinType(for: message) {
+                case .appendToList:
                     nonSystemMessages.append(.init(
                         role: .user,
                         content: [.init(type: .text, text: message.content)]
                     ))
+                case .padMessageAndAppendToList, .joinMessage:
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
+                        .init(type: .text, text: message.content, cache_control: {
+                            if message.cacheIfPossible {
+                                return .init()
+                            } else {
+                                return nil
+                            }
+                        }())
+                    )
                 }
             }
         }
 
         messages = nonSystemMessages
-        system = systemPrompts.joined(separator: "\n\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        system = systemPrompts
         temperature = body.temperature
         stream = body.stream
         stop_sequences = body.stop
