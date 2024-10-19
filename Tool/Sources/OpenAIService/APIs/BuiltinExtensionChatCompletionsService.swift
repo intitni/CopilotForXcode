@@ -51,7 +51,8 @@ extension BuiltinExtensionChatCompletionsService: ChatCompletionsAPI {
             model: model,
             message: .init(role: .assistant, content: content),
             otherChoices: [],
-            finishReason: ""
+            finishReason: "",
+            usage: nil
         )
     }
 }

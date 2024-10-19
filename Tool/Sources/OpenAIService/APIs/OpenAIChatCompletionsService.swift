@@ -95,6 +95,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         var object: String?
         var model: String?
         var choices: [Choice]?
+        var usage: ResponseBody.Usage?
 
         struct Choice: Codable {
             var delta: Delta?
@@ -143,6 +144,18 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var prompt_tokens: Int?
             var completion_tokens: Int?
             var total_tokens: Int?
+            var prompt_tokens_details: PromptTokensDetails?
+            var completion_tokens_details: CompletionTokensDetails?
+
+            struct PromptTokensDetails: Codable, Equatable {
+                var cached_tokens: Int?
+                var audio_tokens: Int?
+            }
+
+            struct CompletionTokensDetails: Codable, Equatable {
+                var reasoning_tokens: Int?
+                var audio_tokens: Int?
+            }
         }
 
         var id: String?
@@ -198,14 +211,19 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var function: ChatGPTFunctionSchema
         }
 
+        struct StreamOptions: Codable, Equatable {
+            var include_usage: Bool = true
+        }
+
         var model: String
         var messages: [Message]
         var temperature: Double?
         var stream: Bool?
         var stop: [String]?
-        var max_tokens: Int?
+        var max_completion_tokens: Int?
         var tool_choice: FunctionCallStrategy?
         var tools: [Tool]?
+        var stream_options: StreamOptions?
     }
 
     var apiKey: String
@@ -295,7 +313,13 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             model: "",
             message: .init(role: .assistant, content: ""),
             otherChoices: [],
-            finishReason: ""
+            finishReason: "",
+            usage: .init(
+                promptTokens: 0,
+                completionTokens: 0,
+                cachedTokens: 0,
+                otherUsage: [:]
+            )
         )
         for try await chunk in stream {
             if let id = chunk.id {
@@ -315,6 +339,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             }
             if let text = chunk.message?.content {
                 body.message.content += text
+            }
+            if let usage = chunk.usage {
+                body.usage?.merge(with: usage)
             }
         }
         return body
@@ -357,7 +384,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                         forHTTPHeaderField: "OpenAI-Project"
                     )
                 }
-                
+
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .openAICompatible:
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -420,6 +447,16 @@ extension OpenAIChatCompletionsService.ResponseBody {
             message = .init(role: .assistant, content: "")
             otherMessages = []
         }
+        
+        let usage = ChatCompletionResponseBody.Usage(
+            promptTokens: usage.prompt_tokens ?? 0,
+            completionTokens: usage.completion_tokens ?? 0,
+            cachedTokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
+            otherUsage: [
+                "audio_tokens": usage.completion_tokens_details?.audio_tokens ?? 0,
+                "reasoning_tokens": usage.completion_tokens_details?.reasoning_tokens ?? 0,
+            ]
+        )
 
         return .init(
             id: id,
@@ -427,7 +464,8 @@ extension OpenAIChatCompletionsService.ResponseBody {
             model: model,
             message: message,
             otherChoices: otherMessages,
-            finishReason: choices.first?.finish_reason ?? ""
+            finishReason: choices.first?.finish_reason ?? "",
+            usage: usage
         )
     }
 }
@@ -478,7 +516,22 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
                 }
                 return nil
             }(),
-            finishReason: choices?.first?.finish_reason
+            finishReason: choices?.first?.finish_reason,
+            usage: .init(
+                promptTokens: usage?.prompt_tokens,
+                completionTokens: usage?.completion_tokens,
+                cachedTokens: usage?.prompt_tokens_details?.cached_tokens,
+                otherUsage: {
+                    var dict = [String: Int]()
+                    if let audioTokens = usage?.completion_tokens_details?.audio_tokens {
+                        dict["audio_tokens"] = audioTokens
+                    }
+                    if let reasoningTokens = usage?.completion_tokens_details?.reasoning_tokens {
+                        dict["reasoning_tokens"] = reasoningTokens
+                    }
+                    return dict
+                }()
+            )
         )
     }
 }
@@ -576,13 +629,18 @@ extension OpenAIChatCompletionsService.RequestBody {
         temperature = body.temperature
         stream = body.stream
         stop = body.stop
-        max_tokens = body.maxTokens
+        max_completion_tokens = body.maxTokens
         tool_choice = body.toolChoice
         tools = body.tools?.map {
             Tool(
                 type: $0.type,
                 function: $0.function
             )
+        }
+        stream_options = if body.stream ?? false {
+            StreamOptions()
+        } else {
+            nil
         }
     }
 }

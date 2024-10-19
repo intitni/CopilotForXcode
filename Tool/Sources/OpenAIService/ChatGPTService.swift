@@ -4,6 +4,7 @@ import ChatBasic
 import Dependencies
 import Foundation
 import IdentifiedCollections
+import Logger
 import Preferences
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -280,8 +281,19 @@ extension ChatGPTService {
                         references: prompt.references
                     )
                     let chunks = try await api()
+                    var usage: ChatCompletionResponseBody.Usage = .init(
+                        promptTokens: 0,
+                        completionTokens: 0,
+                        cachedTokens: 0,
+                        otherUsage: [:]
+                    )
                     for try await chunk in chunks {
                         try Task.checkCancellation()
+
+                        if let newUsage = chunk.usage {
+                            usage.merge(with: newUsage)
+                        }
+
                         guard let delta = chunk.message else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -315,6 +327,8 @@ extension ChatGPTService {
                             continuation.yield(.partialText(content))
                         }
                     }
+
+                    Logger.service.info("ChatGPT usage: \(usage)")
 
                     continuation.finish()
                 } catch let error as CancellationError {

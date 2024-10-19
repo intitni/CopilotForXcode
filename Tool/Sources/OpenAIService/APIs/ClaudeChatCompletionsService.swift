@@ -1,6 +1,6 @@
 import AIModel
-import ChatBasic
 import AsyncAlgorithms
+import ChatBasic
 import CodableWrappers
 import Foundation
 import Logger
@@ -57,6 +57,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         var content_block: ContentBlock?
         var delta: Delta?
         var error: APIError?
+        var usage: ResponseBody.Usage?
 
         struct Message: Decodable {
             var id: String
@@ -66,7 +67,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             var model: String
             var stop_reason: String?
             var stop_sequence: String?
-            var usage: Usage?
+            var usage: ResponseBody.Usage?
         }
 
         struct ContentBlock: Decodable {
@@ -75,16 +76,10 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         }
 
         struct Delta: Decodable {
-            var type: String
+            var type: String?
             var text: String?
             var stop_reason: String?
             var stop_sequence: String?
-            var usage: Usage?
-        }
-
-        struct Usage: Decodable {
-            var input_tokens: Int?
-            var output_tokens: Int?
         }
     }
 
@@ -112,6 +107,8 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         struct Usage: Codable, Equatable {
             var input_tokens: Int?
             var output_tokens: Int?
+            var cache_creation_input_tokens: Int?
+            var cache_read_input_tokens: Int?
         }
 
         var id: String?
@@ -184,7 +181,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             var text: String
             var cache_control: CacheControl?
         }
-        
+
         struct Tool: Encodable, Equatable {
             var name: String
             var description: String
@@ -325,13 +322,26 @@ extension ClaudeChatCompletionsService.ResponseBody {
                 }
             ),
             otherChoices: [],
-            finishReason: stop_reason ?? ""
+            finishReason: stop_reason ?? "",
+            usage: .init(
+                promptTokens: usage.input_tokens ?? 0,
+                completionTokens: usage.output_tokens ?? 0,
+                cachedTokens: usage.cache_read_input_tokens ?? 0,
+                otherUsage: {
+                    var otherUsage = [String: Int]()
+                    if let cacheCreation = usage.cache_creation_input_tokens {
+                        otherUsage["cache_creation_input_tokens"] = cacheCreation
+                    }
+                    return otherUsage
+                }()
+            )
         )
     }
 }
 
 extension ClaudeChatCompletionsService.StreamDataChunk {
     func formalized() -> ChatCompletionsStreamDataChunk {
+        let usage = usage ?? message?.usage
         return .init(
             id: message?.id,
             object: "chat.completions",
@@ -345,7 +355,19 @@ extension ClaudeChatCompletionsService.StreamDataChunk {
                 }
                 return nil
             }(),
-            finishReason: delta?.stop_reason
+            finishReason: delta?.stop_reason,
+            usage: .init(
+                promptTokens: usage?.input_tokens ,
+                completionTokens: usage?.output_tokens,
+                cachedTokens: usage?.cache_read_input_tokens,
+                otherUsage: {
+                    var otherUsage = [String: Int]()
+                    if let cacheCreation = usage?.cache_creation_input_tokens {
+                        otherUsage["cache_creation_input_tokens"] = cacheCreation
+                    }
+                    return otherUsage
+                }()
+            )
         )
     }
 }
