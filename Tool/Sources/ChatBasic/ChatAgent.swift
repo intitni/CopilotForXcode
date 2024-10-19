@@ -21,18 +21,18 @@ public struct ChatAgentRequest {
     public var text: String
     public var history: [ChatMessage]
     public var references: [ChatMessage.Reference]
-    public var extraContext: String
+    public var topics: [String]
 
     public init(
         text: String,
         history: [ChatMessage],
         references: [ChatMessage.Reference],
-        extraContext: String
+        topics: [String]
     ) {
         self.text = text
         self.history = history
         self.references = references
-        self.extraContext = extraContext
+        self.topics = topics
     }
 }
 
