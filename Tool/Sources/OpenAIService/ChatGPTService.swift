@@ -105,13 +105,17 @@ public protocol ChatGPTServiceType {
 
 public class ChatGPTService: ChatGPTServiceType {
     public var configuration: ChatGPTConfiguration
+    public var utilityConfiguration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        utilityConfiguration: ChatGPTConfiguration =
+            UserPreferenceChatGPTConfiguration(chatModelKey: \.preferredChatModelIdForUtilities),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()
     ) {
         self.configuration = configuration
+        self.utilityConfiguration = utilityConfiguration
         self.functionProvider = functionProvider
     }
 
@@ -141,7 +145,15 @@ public class ChatGPTService: ChatGPTServiceType {
 
                             if !pendingToolCalls.isEmpty {
                                 if configuration.runFunctionsAutomatically {
-                                    var toolCallStatuses = [String: String]()
+                                    var toolCallStatuses = [String: String]() {
+                                        didSet {
+                                            if toolCallStatuses != oldValue {
+                                                continuation.yield(.status(
+                                                    Array(toolCallStatuses.values).sorted()
+                                                ))
+                                            }
+                                        }
+                                    }
                                     for toolCall in pendingToolCalls {
                                         let id = toolCall.id
                                         for await response in await runFunctionCall(
@@ -158,15 +170,11 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 ))
                                             case let .status(status):
                                                 toolCallStatuses[id] = status
-                                                continuation
-                                                    .yield(.status(Array(toolCallStatuses.values)))
                                             }
                                         }
                                         toolCallStatuses[id] = nil
-                                        continuation
-                                            .yield(.status(Array(toolCallStatuses.values)))
                                     }
-                                    continuation.yield(.status([]))
+                                    toolCallStatuses = [:]
                                 } else {
                                     if !configuration.runFunctionsAutomatically {
                                         continuation.yield(.toolCalls(pendingToolCalls))
@@ -190,7 +198,15 @@ public class ChatGPTService: ChatGPTServiceType {
 
                                 case let .partialToolCalls(toolCalls):
                                     guard configuration.runFunctionsAutomatically else { break }
-                                    var toolCallStatuses = [String: String]()
+                                    var toolCallStatuses = [String: String]() {
+                                        didSet {
+                                            if toolCallStatuses != oldValue {
+                                                continuation.yield(.status(
+                                                    Array(toolCallStatuses.values).sorted()
+                                                ))
+                                            }
+                                        }
+                                    }
                                     for toolCall in toolCalls.keys.sorted() {
                                         if let toolCallValue = toolCalls[toolCall] {
                                             for await status in await prepareFunctionCall(
@@ -199,8 +215,6 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 sourceMessageId: sourceMessageId
                                             ) {
                                                 toolCallStatuses[toolCallValue.id] = status
-                                                continuation
-                                                    .yield(.status(Array(toolCallStatuses.values)))
                                             }
                                         }
                                     }
@@ -489,9 +503,7 @@ extension ChatGPTService {
 
         let service = ChatGPTService(
             configuration: OverridingChatGPTConfiguration(
-                overriding: UserPreferenceChatGPTConfiguration(
-                    chatModelKey: \.preferredChatModelIdForUtilities
-                ),
+                overriding: utilityConfiguration,
                 with: .init(temperature: 0)
             ),
             functionProvider: NoChatGPTFunctionProvider()

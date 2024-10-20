@@ -183,6 +183,7 @@ let package = Package(
                 "SystemInfoChatContextCollector",
 
                 .product(name: "ChatContextCollector", package: "Tool"),
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),

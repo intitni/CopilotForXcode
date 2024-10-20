@@ -66,7 +66,7 @@ public final class Workspace {
             "Can't find workspace."
         }
     }
-    
+
     public struct CantFindFileError: Error, LocalizedError {
         public var fileURL: URL
         public var errorDescription: String? {
@@ -124,13 +124,19 @@ public final class Workspace {
     }
 
     @WorkspaceActor
-    public func createFilespaceIfNeeded(fileURL: URL) throws -> Filespace {
+    public func createFilespaceIfNeeded(
+        fileURL: URL,
+        checkIfFileExists: Bool = true
+    ) throws -> Filespace {
         let extensionName = fileURL.pathExtension
         if ["xcworkspace", "xcodeproj"].contains(extensionName) {
             throw UnsupportedFileError(extensionName: extensionName)
         }
         var isDirectory: ObjCBool = false
-        if !FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDirectory) {
+        if checkIfFileExists, !FileManager.default.fileExists(
+            atPath: fileURL.path,
+            isDirectory: &isDirectory
+        ) {
             throw CantFindFileError(fileURL: fileURL)
         }
         if isDirectory.boolValue {

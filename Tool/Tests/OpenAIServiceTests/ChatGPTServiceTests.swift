@@ -173,14 +173,16 @@ class ChatGPTServiceTests: XCTestCase {
 
         let response = try await stream.asArray()
         XCTAssertEqual(response, [
-            .status("start foo 1"),
-            .status("start foo 2"),
-            .status("start foo 3"),
-            .status("start bar 1"),
-            .status("start bar 2"),
-            .status("start bar 3"),
-            .status("foo hi"),
-            .status("bar bye"),
+            .status(["start foo 1"]),
+            .status(["start foo 2"]),
+            .status(["start foo 3"]),
+            .status(["start bar 1", "start foo 3"]),
+            .status(["start bar 2", "start foo 3"]),
+            .status(["start bar 3", "start foo 3"]),
+            .status(["foo hi"]),
+            .status([]),
+            .status(["bar bye"]),
+            .status([]),
             .partialText("hello"),
             .partialText(" "),
             .partialText("world"),
@@ -262,6 +264,7 @@ class ChatGPTServiceTests: XCTestCase {
                 configuration: EmptyConfiguration().overriding {
                     $0.runFunctionsAutomatically = true
                 },
+                utilityConfiguration: EmptyConfiguration(),
                 functionProvider: FunctionProvider()
             )
             return service.send(memory)

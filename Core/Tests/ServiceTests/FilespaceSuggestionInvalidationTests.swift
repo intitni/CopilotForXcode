@@ -14,8 +14,10 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         range: CursorRange
     ) async throws -> Filespace {
         let pool = WorkspacePool()
-        let (_, filespace) = try await pool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: URL(fileURLWithPath: "file/path/to.swift"))
+        let (_, filespace) = try await pool.fetchOrCreateWorkspaceAndFilespace(
+            fileURL: URL(fileURLWithPath: "file/path/to.swift"),
+            checkIfFileExists: false
+        )
         filespace.suggestions = [
             .init(
                 id: "",
@@ -120,7 +122,7 @@ class FilespaceSuggestionInvalidationTests: XCTestCase {
         let suggestion = filespace.presentingSuggestion
         XCTAssertNotNil(suggestion)
     }
-    
+
     func test_typing_not_according_to_suggestion_should_invalidate() async throws {
         let lines = ["\n", "hello ma\n", "\n"]
         let filespace = try await prepare(

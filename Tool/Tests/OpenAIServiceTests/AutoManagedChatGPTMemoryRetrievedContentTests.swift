@@ -20,7 +20,9 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
 
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration(),
+            configuration: UserPreferenceChatGPTConfiguration().overriding {
+                $0.maxTokens = 999999
+            },
             functionProvider: EmptyFunctionProvider()
         )
 
@@ -93,7 +95,9 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
 
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration(),
+            configuration: UserPreferenceChatGPTConfiguration().overriding {
+                $0.maxTokens = 999999
+            },
             functionProvider: EmptyFunctionProvider()
         )
 
@@ -162,7 +166,9 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
 
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration(),
+            configuration: UserPreferenceChatGPTConfiguration().overriding {
+                $0.maxTokens = 999999
+            },
             functionProvider: EmptyFunctionProvider()
         )
 
@@ -203,7 +209,9 @@ class AutoManagedChatGPTMemoryRetrievedContentTests: XCTestCase {
 
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: "",
-            configuration: UserPreferenceChatGPTConfiguration(),
+            configuration: UserPreferenceChatGPTConfiguration().overriding {
+                $0.maxTokens = 999999
+            },
             functionProvider: EmptyFunctionProvider()
         )
 
