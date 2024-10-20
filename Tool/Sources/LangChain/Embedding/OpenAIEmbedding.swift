@@ -45,33 +45,12 @@ extension OpenAIEmbedding {
     func getEmbeddings(
         documents: [Document]
     ) async throws -> [EmbeddedDocument] {
-        try await withThrowingTaskGroup(
-            of: (document: Document, embeddings: [Float]).self
-        ) { group in
-            for document in documents {
-                group.addTask {
-                    var retryCount = 6
-                    var previousError: Error?
-                    while retryCount > 0 {
-                        do {
-                            let embeddings = try await service.embed(text: document.pageContent)
-                                .data
-                                .map(\.embedding).first ?? []
-                            return (document, embeddings)
-                        } catch {
-                            retryCount -= 1
-                            previousError = error
-                        }
-                    }
-                    throw previousError ?? CancellationError()
-                }
+        try await service.embed(text: documents.map(\.pageContent)).data
+            .compactMap {
+                let index = $0.index
+                guard index >= 0, index < documents.endIndex else { return nil }
+                return EmbeddedDocument(document: documents[index], embeddings: $0.embedding)
             }
-            var all = [EmbeddedDocument]()
-            for try await result in group {
-                all.append(.init(document: result.document, embeddings: result.embeddings))
-            }
-            return all
-        }
     }
 
     /// OpenAI's embedding API doesn't support embedding inputs longer than the max token.
@@ -112,27 +91,27 @@ extension OpenAIEmbedding {
                         do {
                             if text.chunkedTokens.count <= 1 {
                                 // if possible, we should just let OpenAI do the tokenization.
-                                return (
+                                return try (
                                     text.document,
-                                    try await service.embed(text: text.document.pageContent)
+                                    await service.embed(text: text.document.pageContent)
                                         .data
                                         .map(\.embedding)
                                 )
                             }
 
                             if shouldAverageLongEmbeddings {
-                                return (
+                                return try (
                                     text.document,
-                                    try await service.embed(tokens: text.chunkedTokens)
+                                    await service.embed(tokens: text.chunkedTokens)
                                         .data
                                         .map(\.embedding)
                                 )
                             }
                             // if `shouldAverageLongEmbeddings` is false,
                             // we only embed the first chunk to save some money.
-                            return (
+                            return try (
                                 text.document,
-                                try await service.embed(tokens: [text.chunkedTokens.first ?? []])
+                                await service.embed(tokens: [text.chunkedTokens.first ?? []])
                                     .data
                                     .map(\.embedding)
                             )
