@@ -33,7 +33,7 @@ public actor TemplateChatGPTMemory: ChatGPTMemory {
 
         var memoryTemplate = self.memoryTemplate
         func checkTokenCount() async -> Bool {
-            let history = self.history
+            let history = memoryTemplate.resolved()
             var tokenCount = 0
             for message in history {
                 tokenCount += await strategy.countToken(message)
