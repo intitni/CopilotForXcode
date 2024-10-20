@@ -102,11 +102,11 @@ public class ChatGPTChatTab: ChatTab {
             return nil
         }
 
-        return [Builder(title: "New Chat", customCommand: nil)] + customCommands
+        return [Builder(title: "Legacy Chat", customCommand: nil)] + customCommands
     }
     
     public static func defaultBuilder() -> ChatTabBuilder {
-        Builder(title: "New Chat", customCommand: nil)
+        Builder(title: "Legacy Chat", customCommand: nil)
     }
 
     @MainActor
