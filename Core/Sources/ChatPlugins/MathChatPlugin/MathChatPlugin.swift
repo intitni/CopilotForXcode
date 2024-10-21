@@ -1,17 +1,17 @@
-import ChatPlugin
+import LegacyChatPlugin
 import Foundation
 import OpenAIService
 
 /// Use Python to solve math problems.
-public actor MathChatPlugin: ChatPlugin {
+public actor MathChatPlugin: LegacyChatPlugin {
     public static var command: String { "math" }
     public nonisolated var name: String { "Math" }
 
     let chatGPTService: any LegacyChatGPTServiceType
     var isCancelled = false
-    weak var delegate: ChatPluginDelegate?
+    weak var delegate: LegacyChatPluginDelegate?
 
-    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: LegacyChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }

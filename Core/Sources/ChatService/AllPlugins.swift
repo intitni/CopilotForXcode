@@ -1,11 +1,10 @@
-import ChatPlugin
+import LegacyChatPlugin
 import MathChatPlugin
 import SearchChatPlugin
 import ShortcutChatPlugin
 
-let allPlugins: [ChatPlugin.Type] = [
+let allPlugins: [LegacyChatPlugin.Type] = [
     TerminalChatPlugin.self,
-    AITerminalChatPlugin.self,
     MathChatPlugin.self,
     SearchChatPlugin.self,
     ShortcutChatPlugin.self,

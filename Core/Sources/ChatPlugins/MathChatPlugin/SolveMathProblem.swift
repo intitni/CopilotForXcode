@@ -1,4 +1,4 @@
-import ChatPlugin
+import LegacyChatPlugin
 import Foundation
 import LangChain
 import Logger

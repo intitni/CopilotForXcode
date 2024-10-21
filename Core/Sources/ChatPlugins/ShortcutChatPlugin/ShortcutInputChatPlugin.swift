@@ -1,19 +1,19 @@
-import ChatPlugin
+import LegacyChatPlugin
 import Foundation
 import OpenAIService
 import Parsing
 import Terminal
 
-public actor ShortcutInputChatPlugin: ChatPlugin {
+public actor ShortcutInputChatPlugin: LegacyChatPlugin {
     public static var command: String { "shortcutInput" }
     public nonisolated var name: String { "Shortcut Input" }
 
     let chatGPTService: any LegacyChatGPTServiceType
     var terminal: TerminalType = Terminal()
     var isCancelled = false
-    weak var delegate: ChatPluginDelegate?
+    weak var delegate: LegacyChatPluginDelegate?
 
-    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: LegacyChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }

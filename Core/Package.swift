@@ -171,7 +171,7 @@ let package = Package(
         .target(
             name: "ChatService",
             dependencies: [
-                "ChatPlugin",
+                "LegacyChatPlugin",
 
                 // plugins
                 "MathChatPlugin",
@@ -195,7 +195,7 @@ let package = Package(
         ),
         .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
-            name: "ChatPlugin",
+            name: "LegacyChatPlugin",
             dependencies: [
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -279,7 +279,7 @@ let package = Package(
         .target(
             name: "MathChatPlugin",
             dependencies: [
-                "ChatPlugin",
+                "LegacyChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
             ],
@@ -289,7 +289,7 @@ let package = Package(
         .target(
             name: "SearchChatPlugin",
             dependencies: [
-                "ChatPlugin",
+                "LegacyChatPlugin",
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "LangChain", package: "Tool"),
                 .product(name: "ExternalServices", package: "Tool"),
@@ -300,7 +300,7 @@ let package = Package(
         .target(
             name: "ShortcutChatPlugin",
             dependencies: [
-                "ChatPlugin",
+                "LegacyChatPlugin",
                 .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "Terminal", package: "Tool"),
             ],

@@ -11,6 +11,10 @@ public enum ChatAgentResponse {
     case content(Content)
     /// Update the attachments of the current message.
     case attachments([URL])
+    /// start a new action.
+    case startAction(id: String, task: String)
+    /// Finish the current action.
+    case finishAction(id: String, result: String)
     /// Update the references of the current message.
     case references([ChatMessage.Reference])
     /// End the current message. The next contents will be sent as a new message.

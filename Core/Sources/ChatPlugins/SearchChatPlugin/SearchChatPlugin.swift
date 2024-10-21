@@ -1,16 +1,16 @@
-import ChatPlugin
+import LegacyChatPlugin
 import Foundation
 import OpenAIService
 
-public actor SearchChatPlugin: ChatPlugin {
+public actor SearchChatPlugin: LegacyChatPlugin {
     public static var command: String { "search" }
     public nonisolated var name: String { "Search" }
 
     let chatGPTService: any LegacyChatGPTServiceType
     var isCancelled = false
-    weak var delegate: ChatPluginDelegate?
+    weak var delegate: LegacyChatPluginDelegate?
 
-    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: LegacyChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }
