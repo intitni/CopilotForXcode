@@ -7,7 +7,7 @@ public enum ChatAgentResponse {
 
     /// Post the status of the current message.
     case status([String])
-    /// Update the text message to the current message.
+    /// Stream the content to the current message.
     case content(Content)
     /// Update the attachments of the current message.
     case attachments([URL])
@@ -43,6 +43,7 @@ public struct ChatAgentRequest {
 public protocol ChatAgent {
     typealias Response = ChatAgentResponse
     typealias Request = ChatAgentRequest
+    /// Send a request to the agent.
     func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error>
 }
 

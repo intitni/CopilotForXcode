@@ -74,7 +74,7 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             exact: "1.15.0"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", exact: "600.0.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "600.0.0"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         // A fork of https://github.com/google/generative-ai-swift to support setting base url.
         .package(

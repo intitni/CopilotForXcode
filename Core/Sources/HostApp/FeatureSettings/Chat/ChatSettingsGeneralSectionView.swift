@@ -155,7 +155,7 @@ struct ChatSettingsGeneralSectionView: View {
             ) {
                 let allModels = settings.chatModels + [.init(
                     id: "com.github.copilot",
-                    name: "GitHub Copilot (poc)",
+                    name: "GitHub Copilot as chat model",
                     format: .openAI,
                     info: .init()
                 )]
