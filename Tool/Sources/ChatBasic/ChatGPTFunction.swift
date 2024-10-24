@@ -68,20 +68,10 @@ public extension ChatGPTFunction where Arguments == NoArguments {
 public protocol ChatGPTArgumentsCollectingFunction: ChatGPTFunction where Result == String {}
 
 public extension ChatGPTArgumentsCollectingFunction {
-    @available(
-        *,
-        deprecated,
-        message: "This function is only used to get a structured output from the bot."
-    )
     func prepare(reportProgress: @escaping ReportProgress = { _ in }) async {
         assertionFailure("This function is only used to get a structured output from the bot.")
     }
 
-    @available(
-        *,
-        deprecated,
-        message: "This function is only used to get a structured output from the bot."
-    )
     func call(
         arguments: Arguments,
         reportProgress: @escaping ReportProgress = { _ in }
@@ -90,11 +80,6 @@ public extension ChatGPTArgumentsCollectingFunction {
         return ""
     }
 
-    @available(
-        *,
-        deprecated,
-        message: "This function is only used to get a structured output from the bot."
-    )
     func call(
         argumentsJsonString: String,
         reportProgress: @escaping ReportProgress
