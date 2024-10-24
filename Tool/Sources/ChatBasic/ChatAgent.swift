@@ -4,6 +4,11 @@ public enum ChatAgentResponse {
     public enum Content {
         case text(String)
     }
+    
+    public enum ActionResult {
+        case success(String)
+        case failure(String)
+    }
 
     /// Post the status of the current message.
     case status([String])
@@ -14,7 +19,7 @@ public enum ChatAgentResponse {
     /// start a new action.
     case startAction(id: String, task: String)
     /// Finish the current action.
-    case finishAction(id: String, result: String)
+    case finishAction(id: String, result: ActionResult)
     /// Update the references of the current message.
     case references([ChatMessage.Reference])
     /// End the current message. The next contents will be sent as a new message.

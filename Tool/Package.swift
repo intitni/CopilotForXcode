@@ -355,6 +355,8 @@ let package = Package(
             dependencies: [
                 "XcodeInspector",
                 "Preferences",
+                "ChatBasic",
+                "ModificationBasic",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),

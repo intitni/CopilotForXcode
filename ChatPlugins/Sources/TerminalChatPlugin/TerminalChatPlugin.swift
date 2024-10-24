@@ -42,7 +42,10 @@ public final class TerminalChatPlugin: ChatPlugin {
                             id: "run",
                             task: "Continue `\(request.text)`"
                         ))
-                        continuation.yield(.finishAction(id: "run", result: "Printing output..."))
+                        continuation.yield(.finishAction(
+                            id: "run",
+                            result: .success("Printing output...")
+                        ))
                         continuation.yield(.content(.text("[continue]\n")))
                         continuation.yield(.content(.text(content)))
                     } else {
@@ -76,7 +79,10 @@ public final class TerminalChatPlugin: ChatPlugin {
                         environment: environment
                     )
 
-                    continuation.yield(.finishAction(id: "run", result: "Printing output..."))
+                    continuation.yield(.finishAction(
+                        id: "run",
+                        result: .success("Printing output...")
+                    ))
 
                     for try await content in output {
                         try Task.checkCancellation()

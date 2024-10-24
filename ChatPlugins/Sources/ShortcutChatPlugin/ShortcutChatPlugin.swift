@@ -62,14 +62,21 @@ public final class ShortcutChatPlugin: ChatPlugin {
                         task: "Run shortcut \(shortcutName)"
                     ))
 
-                    let result = try await terminal.runCommand(
-                        shell,
-                        arguments: ["-i", "-l", "-c", command],
-                        currentDirectoryURL: nil,
-                        environment: [:]
-                    )
-
-                    continuation.yield(.finishAction(id: "run", result: result))
+                    do {
+                        let result = try await terminal.runCommand(
+                            shell,
+                            arguments: ["-i", "-l", "-c", command],
+                            currentDirectoryURL: nil,
+                            environment: [:]
+                        )
+                        continuation.yield(.finishAction(id: "run", result: .success(result)))
+                    } catch {
+                        continuation.yield(.finishAction(
+                            id: "run",
+                            result: .failure(error.localizedDescription)
+                        ))
+                        throw error
+                    }
 
                     await Task.yield()
                     try Task.checkCancellation()
