@@ -18,6 +18,7 @@ public protocol ChatPlugin {
     static var id: String { get }
     static var command: String { get }
     static var name: String { get }
+    static var description: String { get }
     func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error>
     func formatContent(_ content: Response.Content) -> Response.Content
     init()

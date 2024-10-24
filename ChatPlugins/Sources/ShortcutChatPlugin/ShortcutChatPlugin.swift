@@ -6,6 +6,9 @@ public final class ShortcutChatPlugin: ChatPlugin {
     public static var id: String { "com.intii.shortcut" }
     public static var command: String { "shortcut" }
     public static var name: String { "Shortcut" }
+    public static var description: String { """
+    Run a shortcut and use message content as input. You need to provide the shortcut name as an argument, for example, `/shortcut(Shortcut Name)`.
+    """ }
 
     let terminal: TerminalType
 
