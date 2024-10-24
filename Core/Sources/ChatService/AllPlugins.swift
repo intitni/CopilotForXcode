@@ -84,7 +84,12 @@ final class LegacyChatPluginWrapper<Plugin: ChatPlugin>: LegacyChatPlugin {
                 case let .startAction(id, task):
                     actions.append((id: id, name: task))
                 case let .finishAction(id, result):
-                    actionResults[id] = result
+                    actionResults[id] = switch result {
+                    case let .failure(error):
+                        error
+                    case let .success(result):
+                        result
+                    }
                 case .references:
                     break
                 case .startNewMessage:
