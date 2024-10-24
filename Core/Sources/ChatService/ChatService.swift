@@ -1,5 +1,5 @@
 import ChatContextCollector
-import ChatPlugin
+import LegacyChatPlugin
 import Combine
 import CustomCommandTemplateProcessor
 import Foundation

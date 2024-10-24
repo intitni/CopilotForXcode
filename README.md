@@ -280,11 +280,8 @@ If you need to end a plugin, you can just type
 | :--------------------: | ----------------------------------------------------------------------------------------------------------------------------------------- |
 |         `/run`         | Runs the command under the project root.                                                                                                  |
 |                        | Environment variable: <br>- `PROJECT_ROOT` to get the project root. <br>- `FILE_PATH` to get the editing file path.                       |
-|       `/search`        | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                          |
 |   `/shortcut(name)`    | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
 |                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot.   |
-| `/shortcutInput(name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
-|                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be send to the bot as a user message. |
 
 ### Prompt to Code
 

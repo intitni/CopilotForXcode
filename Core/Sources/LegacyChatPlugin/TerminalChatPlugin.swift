@@ -3,16 +3,16 @@ import OpenAIService
 import Terminal
 import XcodeInspector
 
-public actor TerminalChatPlugin: ChatPlugin {
+public actor TerminalChatPlugin: LegacyChatPlugin {
     public static var command: String { "run" }
     public nonisolated var name: String { "Terminal" }
 
     let chatGPTService: any LegacyChatGPTServiceType
     var terminal: TerminalType = Terminal()
     var isCancelled = false
-    weak var delegate: ChatPluginDelegate?
+    weak var delegate: LegacyChatPluginDelegate?
 
-    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: ChatPluginDelegate) {
+    public init(inside chatGPTService: any LegacyChatGPTServiceType, delegate: LegacyChatPluginDelegate) {
         self.chatGPTService = chatGPTService
         self.delegate = delegate
     }

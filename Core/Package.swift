@@ -37,6 +37,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
+        .package(path: "../ChatPlugins"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
@@ -171,12 +172,7 @@ let package = Package(
         .target(
             name: "ChatService",
             dependencies: [
-                "ChatPlugin",
-
-                // plugins
-                "MathChatPlugin",
-                "SearchChatPlugin",
-                "ShortcutChatPlugin",
+                "LegacyChatPlugin",
 
                 // context collectors
                 "WebChatContextCollector",
@@ -185,17 +181,18 @@ let package = Package(
                 .product(name: "ChatContextCollector", package: "Tool"),
                 .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "CustomCommandTemplateProcessor", package: "Tool"),
+                .product(name: "ChatPlugins", package: "ChatPlugins"),
+                .product(name: "Parsing", package: "swift-parsing"),
             ].pro([
                 "ProService",
             ])
         ),
         .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
-            name: "ChatPlugin",
+            name: "LegacyChatPlugin",
             dependencies: [
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -272,39 +269,6 @@ let package = Package(
             ].pro([
                 "LicenseManagement",
             ])
-        ),
-
-        // MARK: - Chat Plugins
-
-        .target(
-            name: "MathChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "LangChain", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/MathChatPlugin"
-        ),
-
-        .target(
-            name: "SearchChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "LangChain", package: "Tool"),
-                .product(name: "ExternalServices", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/SearchChatPlugin"
-        ),
-
-        .target(
-            name: "ShortcutChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "Parsing", package: "swift-parsing"),
-                .product(name: "Terminal", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/ShortcutChatPlugin"
         ),
 
         // MAKR: - Chat Context Collector
