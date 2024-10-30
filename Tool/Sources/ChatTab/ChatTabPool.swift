@@ -22,8 +22,8 @@ public final class ChatTabPool {
         pool[id]
     }
 
-    public func setTab(_ tab: any ChatTab) {
-        pool[tab.id] = tab
+    public func setTab(_ tab: any ChatTab, forId id: String) {
+        pool[id] = tab
     }
 
     public func removeTab(of id: String) {
