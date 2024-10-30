@@ -367,7 +367,7 @@ extension ChatTabPool {
         let id = id
         let info = ChatTabInfo(id: id, title: "")
         guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
-        setTab(chatTap)
+        setTab(chatTap, forId: id)
         return (chatTap, info)
     }
 
@@ -379,7 +379,7 @@ extension ChatTabPool {
         let info = ChatTabInfo(id: id, title: "")
         let builder = kind?.builder ?? ChatGPTChatTab.defaultBuilder()
         guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
-        setTab(chatTap)
+        setTab(chatTap, forId: id)
         return (chatTap, info)
     }
 

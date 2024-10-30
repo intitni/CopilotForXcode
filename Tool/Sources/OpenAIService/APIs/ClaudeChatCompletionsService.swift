@@ -7,9 +7,10 @@ import Preferences
 
 /// https://docs.anthropic.com/claude/reference/messages_post
 public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
+    /// https://docs.anthropic.com/en/docs/about-claude/models
     public enum KnownModel: String, CaseIterable {
-        case claude35Sonnet = "claude-3-5-sonnet-20240620"
-        case claude3Opus = "claude-3-opus-20240229"
+        case claude35Sonnet = "claude-3-5-sonnet-latest"
+        case claude3Opus = "claude-3-opus-latest"
         case claude3Sonnet = "claude-3-sonnet-20240229"
         case claude3Haiku = "claude-3-haiku-20240307"
 
