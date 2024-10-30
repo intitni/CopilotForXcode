@@ -12,9 +12,9 @@ final class ChatPanelWindow: WidgetWindow {
     private let store: StoreOf<ChatPanel>
 
     var minimizeWindow: () -> Void = {}
-    
+
     var isDetached: Bool {
-        store.withState({$0.isDetached})
+        store.withState { $0.isDetached }
     }
 
     override var defaultCollectionBehavior: NSWindow.CollectionBehavior {
@@ -35,7 +35,7 @@ final class ChatPanelWindow: WidgetWindow {
         self.minimizeWindow = minimizeWindow
         super.init(
             contentRect: .init(x: 0, y: 0, width: 300, height: 400),
-            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView],
+            styleMask: [.resizable, .titled, .miniaturizable, .fullSizeContentView, .closable],
             backing: .buffered,
             defer: false
         )
@@ -120,6 +120,10 @@ final class ChatPanelWindow: WidgetWindow {
 
     override func miniaturize(_: Any?) {
         minimizeWindow()
+    }
+
+    override func close() {
+        store.send(.closeActiveTabClicked)
     }
 }
 
