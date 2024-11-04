@@ -1,7 +1,9 @@
+import ComposableArchitecture
 import Dependencies
 import Foundation
 import ModificationBasic
 import Preferences
+import PromptToCodeCustomization
 import SuggestionBasic
 import Toast
 import XcodeInspector
@@ -26,10 +28,7 @@ public protocol CommandHandler {
     // MARK: Modification
 
     func acceptModification() async
-    func presentModification(
-        source: ModificationAgentRequest.ModificationSource,
-        snippets: [ModificationSnippet]
-    ) async
+    func presentModification(state: Shared<ModificationState>) async
 
     // MARK: Custom Command
 
@@ -107,11 +106,8 @@ public final class UniversalCommandHandler: CommandHandler {
         await commandHandler.acceptModification()
     }
 
-    public func presentModification(
-        source: ModificationAgentRequest.ModificationSource,
-        snippets: [ModificationSnippet]
-    ) async {
-        await commandHandler.presentModification(source: source, snippets: snippets)
+    public func presentModification(state: Shared<ModificationState>) async {
+        await commandHandler.presentModification(state: state)
     }
 
     public func handleCustomCommand(_ command: CustomCommand) async {
@@ -168,10 +164,7 @@ struct NOOPCommandHandler: CommandHandler {
         print("accept prompt to code")
     }
 
-    func presentModification(
-        source: ModificationAgentRequest.ModificationSource,
-        snippets: [ModificationSnippet]
-    ) {
+    func presentModification(state: Shared<ModificationState>) {
         print("present modification")
     }
 
