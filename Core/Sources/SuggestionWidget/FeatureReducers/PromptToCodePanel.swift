@@ -227,13 +227,13 @@ public struct PromptToCodePanel {
             case .acceptButtonTapped:
                 state.hasEnded = true
                 return .run { _ in
-                    await commandHandler.acceptPromptToCode()
+                    await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
                 
             case .acceptAndContinueButtonTapped:
                 return .run { _ in
-                    await commandHandler.acceptPromptToCode()
+                    await commandHandler.acceptModification()
                     activateThisApp()
                 }
 

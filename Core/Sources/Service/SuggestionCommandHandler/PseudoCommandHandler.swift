@@ -204,7 +204,7 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func acceptPromptToCode() async {
+    func acceptModification() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()

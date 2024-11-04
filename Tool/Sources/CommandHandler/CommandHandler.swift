@@ -25,7 +25,7 @@ public protocol CommandHandler {
 
     // MARK: Modification
 
-    func acceptPromptToCode() async
+    func acceptModification() async
     func presentModification(
         source: ModificationAgentRequest.ModificationSource,
         snippets: [ModificationSnippet]
@@ -103,8 +103,8 @@ public final class UniversalCommandHandler: CommandHandler {
         await commandHandler.sendChatMessage(message)
     }
 
-    public func acceptPromptToCode() async {
-        await commandHandler.acceptPromptToCode()
+    public func acceptModification() async {
+        await commandHandler.acceptModification()
     }
 
     public func presentModification(
@@ -164,7 +164,7 @@ struct NOOPCommandHandler: CommandHandler {
         print("send chat message")
     }
 
-    func acceptPromptToCode() async {
+    func acceptModification() async {
         print("accept prompt to code")
     }
 
