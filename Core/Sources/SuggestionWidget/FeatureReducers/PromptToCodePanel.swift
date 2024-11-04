@@ -17,7 +17,7 @@ public struct PromptToCodePanel {
             case textField
         }
 
-        @Shared public var promptToCodeState: PromptToCodeState
+        @Shared public var promptToCodeState: ModificationState
 
         public var id: URL { promptToCodeState.source.documentURL }
 
@@ -53,7 +53,7 @@ public struct PromptToCodePanel {
         }
 
         public init(
-            promptToCodeState: Shared<PromptToCodeState>,
+            promptToCodeState: Shared<ModificationState>,
             indentSize: Int,
             usesTabsForIndentation: Bool,
             commandName: String? = nil,
@@ -227,13 +227,13 @@ public struct PromptToCodePanel {
             case .acceptButtonTapped:
                 state.hasEnded = true
                 return .run { _ in
-                    await commandHandler.acceptPromptToCode()
+                    await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
                 
             case .acceptAndContinueButtonTapped:
                 return .run { _ in
-                    await commandHandler.acceptPromptToCode()
+                    await commandHandler.acceptModification()
                     activateThisApp()
                 }
 

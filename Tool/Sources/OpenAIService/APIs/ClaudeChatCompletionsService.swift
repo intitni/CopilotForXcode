@@ -226,6 +226,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("prompt-caching-2024-07-31", forHTTPHeaderField: "anthropic-beta")
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         }
@@ -358,7 +359,7 @@ extension ClaudeChatCompletionsService.StreamDataChunk {
             }(),
             finishReason: delta?.stop_reason,
             usage: .init(
-                promptTokens: usage?.input_tokens ,
+                promptTokens: usage?.input_tokens,
                 completionTokens: usage?.output_tokens,
                 cachedTokens: usage?.cache_read_input_tokens,
                 otherUsage: {
@@ -376,6 +377,13 @@ extension ClaudeChatCompletionsService.StreamDataChunk {
 extension ClaudeChatCompletionsService.RequestBody {
     init(_ body: ChatCompletionsRequestBody) {
         model = body.model
+        let supportsPromptCache = if model.hasPrefix("claude-3-5-sonnet") || model
+            .hasPrefix("claude-3-opus") || model.hasPrefix("claude-3-haiku")
+        {
+            true
+        } else {
+            false
+        }
 
         var systemPrompts = [SystemPrompt]()
         var nonSystemMessages = [Message]()
@@ -409,7 +417,7 @@ extension ClaudeChatCompletionsService.RequestBody {
             switch message.role {
             case .system:
                 systemPrompts.append(.init(text: message.content, cache_control: {
-                    if message.cacheIfPossible {
+                    if message.cacheIfPossible, supportsPromptCache {
                         return .init()
                     } else {
                         return nil
@@ -425,7 +433,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                 case .padMessageAndAppendToList, .joinMessage:
                     nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
                         .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible {
+                            if message.cacheIfPossible, supportsPromptCache {
                                 return .init()
                             } else {
                                 return nil
@@ -443,7 +451,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                 case .padMessageAndAppendToList, .joinMessage:
                     nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
                         .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible {
+                            if message.cacheIfPossible, supportsPromptCache {
                                 return .init()
                             } else {
                                 return nil

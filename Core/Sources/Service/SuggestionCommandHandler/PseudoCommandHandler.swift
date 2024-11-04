@@ -10,6 +10,7 @@ import Logger
 import ModificationBasic
 import PlusFeatureFlag
 import Preferences
+import PromptToCodeCustomization
 import SuggestionBasic
 import SuggestionInjector
 import Terminal
@@ -204,7 +205,7 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func acceptPromptToCode() async {
+    func acceptModification() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
@@ -271,23 +272,14 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func presentModification(
-        source: ModificationAgentRequest.ModificationSource,
-        snippets: [ModificationSnippet]
-    ) async {
+    func presentModification(state: Shared<ModificationState>) async {
         do {
             @Dependency(\.workspacePool) var workspacePool
             let (_, filespace) = try await workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: source.documentURL)
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: state.wrappedValue.source.documentURL)
             let store = await Service.shared.guiController.store
             await store.send(.promptToCodeGroup(.createPromptToCode(.init(
-                promptToCodeState: Shared(.init(
-                    source: source,
-                    snippets: IdentifiedArray(uniqueElements: snippets),
-                    instruction: "",
-                    extraSystemPrompt: "",
-                    isAttachedToTarget: true
-                )),
+                promptToCodeState: state,
                 indentSize: filespace.codeMetadata.indentSize ?? 4,
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
                 commandName: nil,
