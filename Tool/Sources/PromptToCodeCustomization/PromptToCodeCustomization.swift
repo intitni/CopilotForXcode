@@ -34,7 +34,7 @@ public protocol PromptToCodeCustomizedUI {
     )
 
     func callAsFunction<V: View>(
-        state: Shared<PromptToCodeState>,
+        state: Shared<ModificationState>,
         isInputFieldFocused: Binding<Bool>,
         @ViewBuilder view: @escaping (PromptToCodeCustomizedViews) -> V
     ) -> PromptToCodeCustomizationContextWrapper<V>
@@ -44,7 +44,7 @@ struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
     private class Context {}
 
     func callAsFunction<V: View>(
-        state: Shared<PromptToCodeState>,
+        state: Shared<ModificationState>,
         isInputFieldFocused: Binding<Bool>,
         @ViewBuilder view: @escaping (PromptToCodeCustomizedViews) -> V
     ) -> PromptToCodeCustomizationContextWrapper<V> {
@@ -59,7 +59,7 @@ struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
     }
 }
 
-public struct PromptToCodeState: Equatable {
+public struct ModificationState: Equatable {
     public typealias Source = ModificationAgentRequest.ModificationSource
 
     public var source: Source
