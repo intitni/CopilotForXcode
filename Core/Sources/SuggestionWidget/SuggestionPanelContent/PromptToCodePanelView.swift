@@ -611,7 +611,7 @@ extension PromptToCodePanelView {
                 var body: some View {
                     WithPerceptionTracking {
                         let startLineIndex = store.snippet.attachedRange.start.line
-                        AsyncCodeBlock(
+                        AsyncDiffCodeBlock(
                             code: store.snippet.modifiedCode,
                             originalCode: store.snippet.originalCode,
                             language: language.rawValue,
@@ -619,12 +619,10 @@ extension PromptToCodePanelView {
                             scenario: "promptToCode",
                             font: codeFont.value.nsFont,
                             droppingLeadingSpaces: hideCommonPrecedingSpaces,
-                            proposedForegroundColor: codeForegroundColor,
-                            ignoreWholeLineChangeInDiff: false
+                            proposedForegroundColor: codeForegroundColor
                         )
-                        .frame(maxWidth: .infinity)
-
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
+                        .frame(maxWidth: CGFloat.infinity)
+                        .scaleEffect(x: 1, y: -1, anchor: UnitPoint.center)
                     }
                 }
             }

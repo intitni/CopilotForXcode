@@ -85,7 +85,7 @@ public struct CodeDiff {
         }
         
         public var description: String {
-            "Diff:\n" + sections.map(\.description).joined(separator: "\n") + "\n"
+            "Diff:\n" + sections.map(\.description).joined(separator: "\n---\n") + "\n"
         }
     }
 
@@ -154,6 +154,31 @@ public struct CodeDiff {
             let removalSection = removals[safe: sectionIndex]
             let insertionSection = insertions[safe: sectionIndex]
 
+            if removalSection == nil, insertionSection == nil {
+                let finishingSection = SnippetDiff.Section(
+                    oldOffset: oldLineIndex,
+                    newOffset: newLineIndex,
+                    oldSnippet: {
+                        guard oldLineIndex < oldLines.endIndex else { return [] }
+                        return oldLines[oldLineIndex..<oldLines.endIndex].map {
+                            .init(text: String($0), diff: .unchanged)
+                        }
+                    }(),
+                    newSnippet: {
+                        guard newLineIndex < newLines.endIndex else { return [] }
+                        return newLines[newLineIndex..<newLines.endIndex].map {
+                            .init(text: String($0), diff: .unchanged)
+                        }
+                    }()
+                )
+
+                if !finishingSection.isEmpty {
+                    result.sections.append(finishingSection)
+                }
+
+                break
+            }
+
             // handle lines before sections
             var beforeSection = SnippetDiff.Section(
                 oldOffset: oldLineIndex,
@@ -162,7 +187,7 @@ public struct CodeDiff {
                 newSnippet: []
             )
 
-            while oldLineIndex < (removalSection?.offset ?? oldLines.endIndex) {
+            while oldLineIndex < (removalSection?.offset ?? (sectionIndex == 0 ? 0 : oldLines.endIndex)) {
                 if oldLineIndex < oldLines.endIndex {
                     beforeSection.oldSnippet.append(.init(
                         text: String(oldLines[oldLineIndex]),
@@ -171,7 +196,7 @@ public struct CodeDiff {
                 }
                 oldLineIndex += 1
             }
-            while newLineIndex < (insertionSection?.offset ?? newLines.endIndex) {
+            while newLineIndex < (insertionSection?.offset ?? (sectionIndex == 0 ? 0 : newLines.endIndex)) {
                 if newLineIndex < newLines.endIndex {
                     beforeSection.newSnippet.append(.init(
                         text: String(newLines[newLineIndex]),
@@ -182,6 +207,7 @@ public struct CodeDiff {
             }
 
             if !beforeSection.isEmpty {
+//                print("before section\n\n",beforeSection)
                 result.sections.append(beforeSection)
             }
 
@@ -218,13 +244,14 @@ public struct CodeDiff {
                 }
             }
 
-            if !insideSection.isEmpty {
-                result.sections.append(insideSection)
-            }
-
             oldLineIndex += removalSection?.lines.count ?? 0
             newLineIndex += insertionSection?.lines.count ?? 0
             sectionIndex += 1
+
+            if !insideSection.isEmpty {
+//                print("inside section\n\n", insideSection)
+                result.sections.append(insideSection)
+            }
         }
 
         return result

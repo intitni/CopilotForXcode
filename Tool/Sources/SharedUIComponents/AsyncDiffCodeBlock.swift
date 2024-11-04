@@ -230,21 +230,27 @@ extension AsyncDiffCodeBlock {
 
             for section in diffResult.sections {
                 guard !section.isEmpty else { continue }
-                let startIndex = section.oldOffset
-                let endIndex = section.oldOffset + section.oldSnippet.count
+             
+                for (index, line) in section.oldSnippet.enumerated() {
+                    if line.diff == .unchanged { continue }
+                    let lineIndex = section.oldOffset + index
+                    if lineIndex >= 0, lineIndex < originalHighlightedCode.count {
+                        let oldLine = originalHighlightedCode[lineIndex]
+                        lines.append(Line(index: lineIndex, kind: .deleted, string: oldLine))
+                    }
+                }
 
-                let oldLines = originalHighlightedCode[startIndex..<endIndex]
-                lines.append(contentsOf: oldLines.enumerated().map {
-                    Line(index: $0 + startIndex, kind: .deleted, string: $1)
-                })
-
-                let newStartIndex = section.newOffset
-                let newEndIndex = section.newOffset + section.newSnippet.count
-
-                let newLines = highlightedCode[newStartIndex..<newEndIndex]
-                lines.append(contentsOf: newLines.enumerated().map {
-                    Line(index: $0 + newStartIndex, kind: .added, string: $1)
-                })
+                for (index, line) in section.newSnippet.enumerated() {
+                    let lineIndex = section.newOffset + index
+                    guard lineIndex >= 0, lineIndex < highlightedCode.count else { continue }
+                    if line.diff == .unchanged {
+                        let newLine = highlightedCode[lineIndex]
+                        lines.append(Line(index: lineIndex, kind: .unchanged, string: newLine))
+                    } else {
+                        let newLine = highlightedCode[lineIndex]
+                        lines.append(Line(index: lineIndex, kind: .added, string: newLine))
+                    }
+                }
             }
 
             return lines
@@ -384,8 +390,8 @@ extension AsyncDiffCodeBlock {
 
 #Preview("Multiple Line Suggestion") {
     AsyncDiffCodeBlock(
-        code: "    let foo = Bar()\n    print(foo)",
-        originalCode: "    var foo // comment\n    print(bar)",
+        code: "    let foo = Bar()\n    print(foo)\n    print(a)",
+        originalCode: "    var foo // comment\n    print(bar)\n    print(a)",
         language: "swift",
         startLineIndex: 10,
         scenario: "",
@@ -397,8 +403,8 @@ extension AsyncDiffCodeBlock {
 }
 
 #Preview("Multiple Line Suggestion Including Whole Line Change in Diff") {
-    AsyncCodeBlock(
-        code: "// comment\n    let foo = Bar()\n    print(bar)\n    print(foo)",
+    AsyncDiffCodeBlock(
+        code: "// comment\n    let foo = Bar()\n    print(bar)\n    print(foo)\n",
         originalCode: "    let foo = Bar()\n",
         language: "swift",
         startLineIndex: 10,
