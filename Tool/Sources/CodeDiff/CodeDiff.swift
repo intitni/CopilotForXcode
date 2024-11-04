@@ -3,7 +3,7 @@ import SuggestionBasic
 
 public struct CodeDiff {
     public init() {}
-    
+
     public typealias LineDiff = CollectionDifference<String>
 
     public struct SnippetDiff: Equatable {
@@ -23,6 +23,8 @@ public struct CodeDiff {
         }
 
         public struct Section: Equatable {
+            public var oldOffset: Int
+            public var newOffset: Int
             public var oldSnippet: [Line]
             public var newSnippet: [Line]
 
@@ -113,7 +115,12 @@ public struct CodeDiff {
             let insertionSection = insertions[safe: sectionIndex]
 
             // handle lines before sections
-            var beforeSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
+            var beforeSection = SnippetDiff.Section(
+                oldOffset: 0,
+                newOffset: 0,
+                oldSnippet: [],
+                newSnippet: []
+            )
 
             while oldLineIndex < (removalSection?.offset ?? oldLines.endIndex) {
                 if oldLineIndex < oldLines.endIndex {
@@ -140,7 +147,12 @@ public struct CodeDiff {
 
             // handle lines inside sections
 
-            var insideSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
+            var insideSection = SnippetDiff.Section(
+                oldOffset: removalSection?.offset ?? 0,
+                newOffset: insertionSection?.offset ?? 0,
+                oldSnippet: [],
+                newSnippet: []
+            )
 
             for i in 0..<max(removalSection?.lines.count ?? 0, insertionSection?.lines.count ?? 0) {
                 let oldLine = removalSection?.lines[safe: i]
@@ -247,7 +259,7 @@ extension CodeDiff {
                     removalUnchangedGap = 0
                     insertionUnchangedGap = 0
                 }
-            } else if removalUnchangedGap > insertionUnchangedGap { 
+            } else if removalUnchangedGap > insertionUnchangedGap {
                 // insert empty sections to removals
                 if insertionUnchangedGap > 0 {
                     let count = removalUnchangedGap - insertionUnchangedGap

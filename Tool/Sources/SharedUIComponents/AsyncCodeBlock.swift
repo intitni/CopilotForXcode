@@ -4,7 +4,7 @@ import Foundation
 import Perception
 import SwiftUI
 
-public struct AsyncCodeBlock: View { // chat: hid
+public struct AsyncCodeBlock: View {
     @State var storage = Storage()
     @Environment(\.colorScheme) var colorScheme
 

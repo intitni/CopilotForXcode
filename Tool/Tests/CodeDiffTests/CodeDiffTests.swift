@@ -328,10 +328,12 @@ class CodeDiffTests: XCTestCase {
             ),
             .init(sections: [
                 .init(
+                    offset: 0,
                     oldSnippet: [.init(text: "// unchanged"), .init(text: "// unchanged")],
                     newSnippet: [.init(text: "// unchanged"), .init(text: "// unchanged")]
                 ),
                 .init(
+                    offset: 2,
                     oldSnippet: [
                         .init(
                             text: "var foo = Bar()",
@@ -364,10 +366,12 @@ class CodeDiffTests: XCTestCase {
                     ]
                 ),
                 .init(
+                    offset: 4,
                     oldSnippet: [.init(text: "// divider a")],
                     newSnippet: [.init(text: "// divider a")]
                 ),
                 .init(
+                    offset: 5,
                     oldSnippet: [.init(
                         text: "print(foo)",
                         diff: .mutated(changes: [
@@ -406,6 +410,7 @@ class CodeDiffTests: XCTestCase {
             ),
             .init(sections: [
                 .init(
+                    offset: 0,
                     oldSnippet: [
                         .init(
                             text: "var foo = Bar()",
@@ -438,10 +443,12 @@ class CodeDiffTests: XCTestCase {
                     ]
                 ),
                 .init(
+                    offset: 2,
                     oldSnippet: [.init(text: "// divider a")],
                     newSnippet: [.init(text: "// divider a")]
                 ),
                 .init(
+                    offset: 3,
                     oldSnippet: [.init(
                         text: "print(foo)",
                         diff: .mutated(changes: [
