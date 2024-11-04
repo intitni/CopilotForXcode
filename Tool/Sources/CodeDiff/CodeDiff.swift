@@ -6,7 +6,7 @@ public struct CodeDiff {
 
     public typealias LineDiff = CollectionDifference<String>
 
-    public struct SnippetDiff: Equatable {
+    public struct SnippetDiff: Equatable, CustomStringConvertible {
         public struct Change: Equatable {
             public var offset: Int
             public var element: String
@@ -20,9 +20,20 @@ public struct CodeDiff {
 
             public var text: String
             public var diff: Diff = .unchanged
+            
+            var description: String {
+                switch diff {
+                case .unchanged:
+                    return text
+                case let .mutated(changes):
+                    return text + "   [" + changes.map { change in
+                        return "\(change.offset): \(change.element)"
+                    }.joined(separator: " | ") + "]"
+                }
+            }
         }
 
-        public struct Section: Equatable {
+        public struct Section: Equatable, CustomStringConvertible {
             public var oldOffset: Int
             public var newOffset: Int
             public var oldSnippet: [Line]
@@ -30,6 +41,31 @@ public struct CodeDiff {
 
             public var isEmpty: Bool {
                 oldSnippet.isEmpty && newSnippet.isEmpty
+            }
+
+            public var description: String {
+                """
+                \(oldSnippet.enumerated().compactMap { item in
+                    let (index, line) = item
+                    let lineIndex = String(format: "%3d", oldOffset + index) + "   "
+                    switch line.diff {
+                    case .unchanged:
+                        return "\(lineIndex)|    \(line.description)"
+                    case .mutated:
+                        return "\(lineIndex)| -  \(line.description)"
+                    }
+                }.joined(separator: "\n"))
+                \(newSnippet.enumerated().map { item in
+                    let (index, line) = item
+                    let lineIndex = "   " + String(format: "%3d", newOffset + index)
+                    switch line.diff {
+                    case .unchanged:
+                        return "\(lineIndex)|    \(line.description)"
+                    case .mutated:
+                        return "\(lineIndex)| +  \(line.description)"
+                    }
+                }.joined(separator: "\n"))
+                """
             }
         }
 
@@ -46,6 +82,10 @@ public struct CodeDiff {
                 previousSectionEnd += lines.endIndex
             }
             return nil
+        }
+        
+        public var description: String {
+            "Diff:\n" + sections.map(\.description).joined(separator: "\n") + "\n"
         }
     }
 
