@@ -156,8 +156,8 @@ public struct CodeDiff {
 
             // handle lines before sections
             var beforeSection = SnippetDiff.Section(
-                oldOffset: 0,
-                newOffset: 0,
+                oldOffset: oldLineIndex,
+                newOffset: newLineIndex,
                 oldSnippet: [],
                 newSnippet: []
             )
@@ -188,8 +188,8 @@ public struct CodeDiff {
             // handle lines inside sections
 
             var insideSection = SnippetDiff.Section(
-                oldOffset: removalSection?.offset ?? 0,
-                newOffset: insertionSection?.offset ?? 0,
+                oldOffset: oldLineIndex,
+                newOffset: newLineIndex,
                 oldSnippet: [],
                 newSnippet: []
             )
