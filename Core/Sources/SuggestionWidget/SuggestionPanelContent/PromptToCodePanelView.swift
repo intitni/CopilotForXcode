@@ -563,14 +563,16 @@ extension PromptToCodePanelView {
                             CodeBlockInContent(
                                 store: store,
                                 language: language,
-                                codeForegroundColor: codeForegroundColor
+                                codeForegroundColor: codeForegroundColor,
+                                presentAllContent: !isGenerating
                             )
                         } else {
                             ScrollView(.horizontal) {
                                 CodeBlockInContent(
                                     store: store,
                                     language: language,
-                                    codeForegroundColor: codeForegroundColor
+                                    codeForegroundColor: codeForegroundColor,
+                                    presentAllContent: !isGenerating
                                 )
                             }
                             .modify {
@@ -603,6 +605,7 @@ extension PromptToCodePanelView {
                 let store: StoreOf<PromptToCodeSnippetPanel>
                 let language: CodeLanguage
                 let codeForegroundColor: Color?
+                let presentAllContent: Bool
 
                 @Environment(\.colorScheme) var colorScheme
                 @AppStorage(\.promptToCodeCodeFont) var codeFont
@@ -619,7 +622,8 @@ extension PromptToCodePanelView {
                             scenario: "promptToCode",
                             font: codeFont.value.nsFont,
                             droppingLeadingSpaces: hideCommonPrecedingSpaces,
-                            proposedForegroundColor: codeForegroundColor
+                            proposedForegroundColor: codeForegroundColor,
+                            skipLastOnlyRemovalSection: !presentAllContent
                         )
                         .frame(maxWidth: CGFloat.infinity)
                         .scaleEffect(x: 1, y: -1, anchor: UnitPoint.center)

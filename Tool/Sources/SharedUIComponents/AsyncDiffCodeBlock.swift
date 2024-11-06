@@ -24,6 +24,8 @@ public struct AsyncDiffCodeBlock: View {
     let proposedForegroundColor: Color?
     /// Whether to drop common leading spaces of each line.
     let droppingLeadingSpaces: Bool
+    /// Whether to render the last diff section that only contains removals.
+    let skipLastOnlyRemovalSection: Bool
 
     public init(
         code: String,
@@ -34,7 +36,8 @@ public struct AsyncDiffCodeBlock: View {
         font: NSFont,
         droppingLeadingSpaces: Bool,
         proposedForegroundColor: Color?,
-        ignoreWholeLineChangeInDiff: Bool = true
+        ignoreWholeLineChangeInDiff: Bool = true,
+        skipLastOnlyRemovalSection: Bool = false
     ) {
         self.code = code
         self.originalCode = originalCode
@@ -44,6 +47,7 @@ public struct AsyncDiffCodeBlock: View {
         self.font = font
         self.proposedForegroundColor = proposedForegroundColor
         self.droppingLeadingSpaces = droppingLeadingSpaces
+        self.skipLastOnlyRemovalSection = skipLastOnlyRemovalSection
     }
 
     var foregroundColor: Color {
@@ -89,6 +93,9 @@ public struct AsyncDiffCodeBlock: View {
             }
             .onChange(of: proposedForegroundColor) { _ in
                 storage.highlightStorage.highlight(debounce: true, for: self)
+            }
+            .onChange(of: skipLastOnlyRemovalSection) { _ in
+                storage.skipLastOnlyRemovalSection = skipLastOnlyRemovalSection
             }
         }
     }
@@ -170,7 +177,7 @@ extension AsyncDiffCodeBlock {
     class Storage {
         let diffStorage = DiffStorage()
         let highlightStorage = HighlightStorage()
-        var ignoreWholeLineChangeInDiff: Bool = true
+        var skipLastOnlyRemovalSection: Bool = false
 
         var code: String? {
             get { highlightStorage.code }
@@ -209,7 +216,7 @@ extension AsyncDiffCodeBlock {
                     new: highlightedCode,
                     original: highlightedOriginalCode,
                     commonPrecedingSpaceCount: commonPrecedingSpaceCount,
-                    ignoreWholeLineChange: ignoreWholeLineChangeInDiff,
+                    skipLastOnlyRemovalSection: skipLastOnlyRemovalSection,
                     diffResult: diffResult
                 )
             }
@@ -223,14 +230,21 @@ extension AsyncDiffCodeBlock {
             new highlightedCode: [NSAttributedString],
             original originalHighlightedCode: [NSAttributedString],
             commonPrecedingSpaceCount: Int,
-            ignoreWholeLineChange: Bool,
+            skipLastOnlyRemovalSection: Bool,
             diffResult: CodeDiff.SnippetDiff
         ) -> [Line] {
             var lines = [Line]()
 
-            for section in diffResult.sections {
+            for (index, section) in diffResult.sections.enumerated() {
                 guard !section.isEmpty else { continue }
-             
+
+                if skipLastOnlyRemovalSection,
+                   index == diffResult.sections.count - 1,
+                   section.newSnippet.isEmpty
+                {
+                    continue
+                }
+
                 for (index, line) in section.oldSnippet.enumerated() {
                     if line.diff == .unchanged { continue }
                     let lineIndex = section.oldOffset + index
