@@ -284,7 +284,7 @@ struct PseudoCommandHandler: CommandHandler {
                 usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
                 commandName: nil,
                 isContinuous: false
-            ))))
+            ), sendImmediately: false)))
         } catch {
             toast.toast(content: error.localizedDescription, type: .error)
         }

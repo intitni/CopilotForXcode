@@ -32,7 +32,7 @@ public struct PromptToCodeGroup {
     public enum Action {
         /// Activate the prompt to code if it exists or create it if it doesn't
         case activateOrCreatePromptToCode(PromptToCodePanel.State)
-        case createPromptToCode(PromptToCodePanel.State)
+        case createPromptToCode(PromptToCodePanel.State, sendImmediately: Bool)
         case updatePromptToCodeRange(
             id: PromptToCodePanel.State.ID,
             snippetId: UUID,
@@ -58,13 +58,13 @@ public struct PromptToCodeGroup {
                     }
                 }
                 return .run { send in
-                    await send(.createPromptToCode(s))
+                    await send(.createPromptToCode(s, sendImmediately: false))
                 }
-            case let .createPromptToCode(newPromptToCode):
+            case let .createPromptToCode(newPromptToCode, sendImmediately):
                 // insert at 0 so it has high priority then the other detached prompt to codes
                 state.promptToCodes.insert(newPromptToCode, at: 0)
                 return .run { send in
-                    if !newPromptToCode.promptToCodeState.instruction.isEmpty {
+                    if sendImmediately, !newPromptToCode.promptToCodeState.instruction.isEmpty {
                         await send(.promptToCode(newPromptToCode.id, .modifyCodeButtonTapped))
                     }
                 }.cancellable(
