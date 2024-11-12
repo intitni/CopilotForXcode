@@ -408,8 +408,6 @@ extension PromptToCodePanelView {
                 ScrollView {
                     WithPerceptionTracking {
                         VStack(spacing: 0) {
-                            Spacer(minLength: 56)
-
                             VStack(spacing: 0) {
                                 let language = store.promptToCodeState.source.language
                                 let isAttached = store.promptToCodeState.isAttachedToTarget
@@ -420,10 +418,6 @@ extension PromptToCodePanelView {
                                     action: \.snippetPanel
                                 )) { snippetStore in
                                     WithPerceptionTracking {
-                                        if snippetStore.id != lastId {
-                                            Divider()
-                                        }
-
                                         SnippetPanelView(
                                             store: snippetStore,
                                             language: language,
@@ -432,14 +426,19 @@ extension PromptToCodePanelView {
                                             isAttached: isAttached,
                                             isGenerating: isGenerating
                                         )
+
+                                        if snippetStore.id != lastId {
+                                            Divider()
+                                        }
                                     }
                                 }
                             }
+                            
+                            Spacer(minLength: 56)
                         }
                     }
                 }
                 .background(codeBackgroundColor)
-                .scaleEffect(x: 1, y: -1, anchor: .center)
             }
         }
 
@@ -454,20 +453,20 @@ extension PromptToCodePanelView {
             var body: some View {
                 WithPerceptionTracking {
                     VStack(spacing: 0) {
-                        ErrorMessage(store: store)
-                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
-                        CodeContent(
-                            store: store,
-                            language: language,
-                            isGenerating: isGenerating,
-                            codeForegroundColor: codeForegroundColor
-                        )
                         SnippetTitleBar(
                             store: store,
                             language: language,
                             codeForegroundColor: codeForegroundColor,
                             isAttached: isAttached
                         )
+                        CodeContent(
+                            store: store,
+                            language: language,
+                            isGenerating: isGenerating,
+                            codeForegroundColor: codeForegroundColor
+                        )
+                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+                        ErrorMessage(store: store)
                     }
                 }
             }
@@ -494,7 +493,6 @@ extension PromptToCodePanelView {
                         CopyCodeButton(store: store)
                     }
                     .padding(.leading, 8)
-                    .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
             }
         }
@@ -527,7 +525,6 @@ extension PromptToCodePanelView {
                         .foregroundColor(.red)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
@@ -549,7 +546,6 @@ extension PromptToCodePanelView {
                             .padding(.horizontal)
                             .padding(.vertical, 4)
                             .frame(maxWidth: .infinity)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
@@ -599,13 +595,11 @@ extension PromptToCodePanelView {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
                         } else {
                             Text("Enter your requirements to generate code.")
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
                         }
                     }
                 }
@@ -636,7 +630,6 @@ extension PromptToCodePanelView {
                             skipLastOnlyRemovalSection: !presentAllContent
                         )
                         .frame(maxWidth: CGFloat.infinity)
-                        .scaleEffect(x: 1, y: -1, anchor: UnitPoint.center)
                     }
                 }
             }
