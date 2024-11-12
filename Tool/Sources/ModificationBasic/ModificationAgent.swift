@@ -1,10 +1,10 @@
+import ChatBasic
 import ComposableArchitecture
 import Foundation
 import SuggestionBasic
 
 public enum ModificationAgentResponse {
     case code(String)
-    case description(String)
 }
 
 public struct ModificationAgentRequest {
@@ -13,8 +13,9 @@ public struct ModificationAgentRequest {
     public var source: ModificationSource
     public var isDetached: Bool
     public var extraSystemPrompt: String?
-    public var generateDescriptionRequirement: Bool?
     public var range: CursorRange
+    public var references: [ChatMessage.Reference]
+    public var topics: [ChatMessage.Reference]
 
     public struct ModificationSource: Equatable {
         public var language: CodeLanguage
@@ -44,16 +45,18 @@ public struct ModificationAgentRequest {
         source: ModificationSource,
         isDetached: Bool,
         extraSystemPrompt: String? = nil,
-        generateDescriptionRequirement: Bool? = nil,
-        range: CursorRange
+        range: CursorRange,
+        references: [ChatMessage.Reference],
+        topics: [ChatMessage.Reference]
     ) {
         self.code = code
         self.requirement = requirement
         self.source = source
         self.isDetached = isDetached
         self.extraSystemPrompt = extraSystemPrompt
-        self.generateDescriptionRequirement = generateDescriptionRequirement
         self.range = range
+        self.references = references
+        self.topics = topics
     }
 }
 
@@ -95,11 +98,14 @@ public enum ModificationAttachedTarget: Equatable {
     case dynamic
 }
 
-public struct ModificationHistoryNode: Equatable {
+public struct ModificationHistoryNode {
     public var snippets: IdentifiedArrayOf<ModificationSnippet>
-    public var instruction: String
+    public var instruction: NSAttributedString
 
-    public init(snippets: IdentifiedArrayOf<ModificationSnippet>, instruction: String) {
+    public init(
+        snippets: IdentifiedArrayOf<ModificationSnippet>,
+        instruction: NSAttributedString
+    ) {
         self.snippets = snippets
         self.instruction = instruction
     }

@@ -63,7 +63,9 @@ public struct PromptToCodeGroup {
                 // insert at 0 so it has high priority then the other detached prompt to codes
                 state.promptToCodes.insert(newPromptToCode, at: 0)
                 return .run { send in
-                    if sendImmediately, !newPromptToCode.promptToCodeState.instruction.isEmpty {
+                    if sendImmediately,
+                       !newPromptToCode.contextInputController.instruction.string.isEmpty
+                    {
                         await send(.promptToCode(newPromptToCode.id, .modifyCodeButtonTapped))
                     }
                 }.cancellable(

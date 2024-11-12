@@ -1,3 +1,4 @@
+import ChatBasic
 import ComposableArchitecture
 import Dependencies
 import Foundation
@@ -7,13 +8,18 @@ import SwiftUI
 
 public enum PromptToCodeCustomization {
     public static var CustomizedUI: any PromptToCodeCustomizedUI = NoPromptToCodeCustomizedUI()
+    public static var contextInputControllerFactory: (
+        Shared<ModificationState>
+    ) -> PromptToCodeContextInputController = { _ in
+        DefaultPromptToCodeContextInputController()
+    }
 }
 
 public struct PromptToCodeCustomizationContextWrapper<Content: View>: View {
     @State var context: AnyObject
     let content: (AnyObject) -> Content
 
-    init<O: AnyObject>(context: O, @ViewBuilder content: @escaping (O) -> Content) {
+    public init<O: AnyObject>(context: O, @ViewBuilder content: @escaping (O) -> Content) {
         self.context = context
         self.content = { context in
             content(context as! O)
@@ -30,14 +36,31 @@ public protocol PromptToCodeCustomizedUI {
         extraMenuItems: AnyView?,
         extraButtons: AnyView?,
         extraAcceptButtonVariants: AnyView?,
-        inputField: AnyView?
+        contextInputField: AnyView?
     )
 
     func callAsFunction<V: View>(
         state: Shared<ModificationState>,
-        isInputFieldFocused: Binding<Bool>,
+        delegate: PromptToCodeContextInputControllerDelegate,
+        contextInputController: PromptToCodeContextInputController,
+        isInputFieldFocused: FocusState<Bool>,
         @ViewBuilder view: @escaping (PromptToCodeCustomizedViews) -> V
     ) -> PromptToCodeCustomizationContextWrapper<V>
+}
+
+public protocol PromptToCodeContextInputControllerDelegate {
+    func modifyCodeButtonClicked()
+}
+
+public protocol PromptToCodeContextInputController: Perception.Perceptible {
+    var instruction: NSAttributedString { get set }
+
+    func resolveContext() async -> (
+        instruction: String,
+        references: [ChatMessage.Reference],
+        topics: [ChatMessage.Reference],
+        agent: (() -> any ModificationAgent)?
+    )
 }
 
 struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
@@ -45,7 +68,9 @@ struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
 
     func callAsFunction<V: View>(
         state: Shared<ModificationState>,
-        isInputFieldFocused: Binding<Bool>,
+        delegate: PromptToCodeContextInputControllerDelegate,
+        contextInputController: PromptToCodeContextInputController,
+        isInputFieldFocused: FocusState<Bool>,
         @ViewBuilder view: @escaping (PromptToCodeCustomizedViews) -> V
     ) -> PromptToCodeCustomizationContextWrapper<V> {
         PromptToCodeCustomizationContextWrapper(context: Context()) { _ in
@@ -53,9 +78,40 @@ struct NoPromptToCodeCustomizedUI: PromptToCodeCustomizedUI {
                 extraMenuItems: nil,
                 extraButtons: nil,
                 extraAcceptButtonVariants: nil,
-                inputField: nil
+                contextInputField: nil
             ))
         }
+    }
+}
+
+@Perceptible
+public final class DefaultPromptToCodeContextInputController: PromptToCodeContextInputController {
+    public var instruction: NSAttributedString = .init()
+    public var instructionString: String {
+        get { instruction.string }
+        set { instruction = .init(string: newValue) }
+    }
+
+    public func appendNewLineToPromptButtonTapped() {
+        let mutable = NSMutableAttributedString(
+            attributedString: instruction
+        )
+        mutable.append(NSAttributedString(string: "\n"))
+        instruction = mutable
+    }
+
+    public func resolveContext() -> (
+        instruction: String,
+        references: [ChatMessage.Reference],
+        topics: [ChatMessage.Reference],
+        agent: (() -> any ModificationAgent)?
+    ) {
+        return (
+            instruction: instructionString,
+            references: [],
+            topics: [],
+            agent: nil
+        )
     }
 }
 

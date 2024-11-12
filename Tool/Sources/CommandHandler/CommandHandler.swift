@@ -3,7 +3,6 @@ import Dependencies
 import Foundation
 import ModificationBasic
 import Preferences
-import PromptToCodeCustomization
 import SuggestionBasic
 import Toast
 import XcodeInspector

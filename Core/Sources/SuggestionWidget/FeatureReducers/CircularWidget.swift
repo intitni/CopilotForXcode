@@ -24,6 +24,7 @@ public struct CircularWidget {
         case widgetClicked
         case detachChatPanelToggleClicked
         case openChatButtonClicked
+        case openModificationButtonClicked
         case runCustomCommandButtonClicked(CustomCommand)
         case markIsProcessing
         case endIsProcessing
@@ -43,6 +44,11 @@ public struct CircularWidget {
             case .openChatButtonClicked:
                 return .run { _ in
                     suggestionWidgetControllerDependency.onOpenChatClicked()
+                }
+                
+            case .openModificationButtonClicked:
+                return .run { _ in
+                    suggestionWidgetControllerDependency.onOpenModificationButtonClicked()
                 }
                 
             case let .runCustomCommandButtonClicked(command):

@@ -2,14 +2,13 @@ import Foundation
 import IdentifiedCollections
 import SuggestionBasic
 
-public struct ModificationState: Equatable {
+public struct ModificationState {
     public typealias Source = ModificationAgentRequest.ModificationSource
 
     public var source: Source
     public var history: [ModificationHistoryNode] = []
     public var snippets: IdentifiedArrayOf<ModificationSnippet> = []
     public var isGenerating: Bool = false
-    public var instruction: String
     public var extraSystemPrompt: String
     public var isAttachedToTarget: Bool = true
 
@@ -17,14 +16,12 @@ public struct ModificationState: Equatable {
         source: Source,
         history: [ModificationHistoryNode] = [],
         snippets: IdentifiedArrayOf<ModificationSnippet>,
-        instruction: String,
         extraSystemPrompt: String,
         isAttachedToTarget: Bool
     ) {
         self.history = history
         self.snippets = snippets
         isGenerating = false
-        self.instruction = instruction
         self.isAttachedToTarget = isAttachedToTarget
         self.extraSystemPrompt = extraSystemPrompt
         self.source = source
@@ -49,21 +46,23 @@ public struct ModificationState: Equatable {
                     attachedRange: attachedRange
                 ),
             ],
-            instruction: instruction,
             extraSystemPrompt: extraSystemPrompt,
             isAttachedToTarget: !attachedRange.isEmpty
         )
     }
 
-    public mutating func popHistory() {
+    public mutating func popHistory() -> NSAttributedString? {
         if !history.isEmpty {
             let last = history.removeLast()
             snippets = last.snippets
-            instruction = last.instruction
+            let instruction = last.instruction
+            return instruction
         }
+        
+        return nil
     }
 
-    public mutating func pushHistory() {
+    public mutating func pushHistory(instruction: NSAttributedString) {
         history.append(.init(snippets: snippets, instruction: instruction))
         let oldSnippets = snippets
         snippets = IdentifiedArrayOf()
