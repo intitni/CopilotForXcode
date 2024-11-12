@@ -45,7 +45,6 @@ public struct PromptToCodeGroup {
         case activePromptToCode(PromptToCodePanel.Action)
     }
 
-    @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
     @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
 
     public var body: some ReducerOf<Self> {
@@ -102,11 +101,9 @@ public struct PromptToCodeGroup {
         }
         .ifLet(\.activePromptToCode, action: \.activePromptToCode) {
             PromptToCodePanel()
-                .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         }
         .forEach(\.promptToCodes, action: /Action.promptToCode, element: {
             PromptToCodePanel()
-                .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         })
 
         Reduce { state, action in
