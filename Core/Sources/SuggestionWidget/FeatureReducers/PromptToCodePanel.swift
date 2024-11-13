@@ -213,7 +213,7 @@ public struct PromptToCodePanel {
                 state.promptToCodeState.isGenerating = false
 
                 if state.promptToCodeState.snippets.allSatisfy({ snippet in
-                    snippet.modifiedCode.isEmpty && snippet.description.isEmpty
+                    snippet.modifiedCode.isEmpty && snippet.description.isEmpty && snippet.error == nil
                 }) {
                     // if both code and description are empty, we treat it as failed
                     return .run { send in
