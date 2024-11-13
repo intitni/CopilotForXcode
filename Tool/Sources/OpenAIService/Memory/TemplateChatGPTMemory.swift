@@ -119,9 +119,11 @@ public struct MemoryTemplate {
                     return formatter(list.map { $0.0 })
                 }
             }
+            
+            let composedContent = contents.joined(separator: "\n\n")
+            if composedContent.isEmpty { return nil }
 
-            baseMessage.content = contents.joined(separator: "\n\n")
-
+            baseMessage.content = composedContent
             return baseMessage
         }
 
