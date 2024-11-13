@@ -35,7 +35,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         var type: String
 
         var errorDescription: String? {
-            error?.message ?? "Unknown Error"
+            error?.message ?? error?.type ?? type
         }
     }
 
@@ -265,7 +265,13 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
                     StreamDataChunk.self,
                     from: line.data(using: .utf8) ?? Data()
                 )
+                if let error = chunk.error {
+                    throw error
+                }
                 return .init(chunk: chunk, done: chunk.type == "message_stop")
+            } catch let error as APIError {
+                Logger.service.error(error.errorDescription ?? "Unknown Error")
+                throw error
             } catch {
                 Logger.service.error("Error decoding stream data: \(error)")
                 return .init(chunk: nil, done: false)
@@ -413,11 +419,22 @@ extension ClaudeChatCompletionsService.RequestBody {
             return .joinMessage
         }
 
+        /// Claude only supports caching at most 4 messages.
+        var cacheControlMax = 4
+
+        func consumeCacheControl() -> Bool {
+            if cacheControlMax > 0 {
+                cacheControlMax -= 1
+                return true
+            }
+            return false
+        }
+
         for message in body.messages {
             switch message.role {
             case .system:
                 systemPrompts.append(.init(text: message.content, cache_control: {
-                    if message.cacheIfPossible, supportsPromptCache {
+                    if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
                         return .init()
                     } else {
                         return nil
@@ -433,7 +450,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                 case .padMessageAndAppendToList, .joinMessage:
                     nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
                         .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible, supportsPromptCache {
+                            if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
                                 return .init()
                             } else {
                                 return nil
@@ -451,7 +468,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                 case .padMessageAndAppendToList, .joinMessage:
                     nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
                         .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible, supportsPromptCache {
+                            if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
                                 return .init()
                             } else {
                                 return nil
