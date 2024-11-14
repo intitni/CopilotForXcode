@@ -9,29 +9,39 @@ import SwiftUI
 
 struct PromptToCodePanelView: View {
     let store: StoreOf<PromptToCodePanel>
+    @FocusState var isTextFieldFocused: Bool
 
     var body: some View {
         WithPerceptionTracking {
             PromptToCodeCustomization.CustomizedUI(
                 state: store.$promptToCodeState,
-                isInputFieldFocused: .constant(true)
-            ) { _ in
+                delegate: DefaultPromptToCodeContextInputControllerDelegate(store: store),
+                contextInputController: store.contextInputController,
+                isInputFieldFocused: _isTextFieldFocused
+            ) { customizedViews in
                 VStack(spacing: 0) {
                     TopBar(store: store)
 
                     Content(store: store)
                         .overlay(alignment: .bottom) {
                             ActionBar(store: store)
-                                .padding(.bottom, 8)
                         }
-
-                    Divider()
-
-                    Toolbar(store: store)
+                        .safeAreaInset(edge: .bottom) {
+                            if let inputField = customizedViews.contextInputField {
+                                inputField
+                            } else {
+                                Toolbar(store: store)
+                            }
+                        }
                 }
             }
             .background(.ultraThickMaterial)
             .xcodeStyleFrame()
+        }
+        .task {
+            await MainActor.run {
+                isTextFieldFocused = true
+            }
         }
     }
 }
@@ -58,7 +68,7 @@ extension PromptToCodePanelView {
                             HStack(spacing: 4) {
                                 Text(Image(systemName: "arrow.uturn.backward.circle.fill"))
                                     .foregroundStyle(.secondary)
-                                Text(previousStep.instruction)
+                                Text(previousStep.instruction.string)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
                                     .foregroundStyle(.secondary)
@@ -398,8 +408,6 @@ extension PromptToCodePanelView {
                 ScrollView {
                     WithPerceptionTracking {
                         VStack(spacing: 0) {
-                            Spacer(minLength: 56)
-
                             VStack(spacing: 0) {
                                 let language = store.promptToCodeState.source.language
                                 let isAttached = store.promptToCodeState.isAttachedToTarget
@@ -410,10 +418,6 @@ extension PromptToCodePanelView {
                                     action: \.snippetPanel
                                 )) { snippetStore in
                                     WithPerceptionTracking {
-                                        if snippetStore.id != lastId {
-                                            Divider()
-                                        }
-
                                         SnippetPanelView(
                                             store: snippetStore,
                                             language: language,
@@ -422,14 +426,19 @@ extension PromptToCodePanelView {
                                             isAttached: isAttached,
                                             isGenerating: isGenerating
                                         )
+
+                                        if snippetStore.id != lastId {
+                                            Divider()
+                                        }
                                     }
                                 }
                             }
+                            
+                            Spacer(minLength: 56)
                         }
                     }
                 }
                 .background(codeBackgroundColor)
-                .scaleEffect(x: 1, y: -1, anchor: .center)
             }
         }
 
@@ -444,20 +453,20 @@ extension PromptToCodePanelView {
             var body: some View {
                 WithPerceptionTracking {
                     VStack(spacing: 0) {
-                        ErrorMessage(store: store)
-                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
-                        CodeContent(
-                            store: store,
-                            language: language,
-                            isGenerating: isGenerating,
-                            codeForegroundColor: codeForegroundColor
-                        )
                         SnippetTitleBar(
                             store: store,
                             language: language,
                             codeForegroundColor: codeForegroundColor,
                             isAttached: isAttached
                         )
+                        CodeContent(
+                            store: store,
+                            language: language,
+                            isGenerating: isGenerating,
+                            codeForegroundColor: codeForegroundColor
+                        )
+                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+                        ErrorMessage(store: store)
                     }
                 }
             }
@@ -484,7 +493,6 @@ extension PromptToCodePanelView {
                         CopyCodeButton(store: store)
                     }
                     .padding(.leading, 8)
-                    .scaleEffect(x: 1, y: -1, anchor: .center)
                 }
             }
         }
@@ -517,7 +525,6 @@ extension PromptToCodePanelView {
                         .foregroundColor(.red)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
@@ -539,7 +546,6 @@ extension PromptToCodePanelView {
                             .padding(.horizontal)
                             .padding(.vertical, 4)
                             .frame(maxWidth: .infinity)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
                     }
                 }
             }
@@ -589,13 +595,11 @@ extension PromptToCodePanelView {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
                         } else {
                             Text("Enter your requirements to generate code.")
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
                         }
                     }
                 }
@@ -626,7 +630,6 @@ extension PromptToCodePanelView {
                             skipLastOnlyRemovalSection: !presentAllContent
                         )
                         .frame(maxWidth: CGFloat.infinity)
-                        .scaleEffect(x: 1, y: -1, anchor: UnitPoint.center)
                     }
                 }
             }
@@ -640,8 +643,16 @@ extension PromptToCodePanelView {
         var body: some View {
             HStack {
                 HStack(spacing: 0) {
-                    InputField(store: store, focusField: $focusField)
-                    SendButton(store: store)
+                    if let contextInputController = store.contextInputController
+                        as? DefaultPromptToCodeContextInputController
+                    {
+                        InputField(
+                            store: store,
+                            contextInputField: contextInputController,
+                            focusField: $focusField
+                        )
+                        SendButton(store: store)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .background {
@@ -653,7 +664,12 @@ extension PromptToCodePanelView {
                         .stroke(Color(nsColor: .controlColor), lineWidth: 1)
                 }
                 .background {
-                    Button(action: { store.send(.appendNewLineToPromptButtonTapped) }) {
+                    Button(action: {
+                        (
+                            store.contextInputController
+                                as? DefaultPromptToCodeContextInputController
+                        )?.appendNewLineToPromptButtonTapped()
+                    }) {
                         EmptyView()
                     }
                     .keyboardShortcut(KeyEquivalent.return, modifiers: [.shift])
@@ -671,12 +687,13 @@ extension PromptToCodePanelView {
 
         struct InputField: View {
             @Perception.Bindable var store: StoreOf<PromptToCodePanel>
+            @Perception.Bindable var contextInputField: DefaultPromptToCodeContextInputController
             var focusField: FocusState<PromptToCodePanel.State.FocusField?>.Binding
 
             var body: some View {
                 WithPerceptionTracking {
                     AutoresizingCustomTextEditor(
-                        text: $store.promptToCodeState.instruction,
+                        text: $contextInputField.instructionString,
                         font: .systemFont(ofSize: 14),
                         isEditable: !store.promptToCodeState.isGenerating,
                         maxHeight: 400,
@@ -738,7 +755,7 @@ extension PromptToCodePanelView {
                             end: .init(line: 12, character: 2)
                         )
                     ),
-                ], instruction: "Previous instruction"),
+                ], instruction: .init("Previous instruction")),
             ],
             snippets: [
                 .init(
@@ -772,12 +789,10 @@ extension PromptToCodePanelView {
                     )
                 ),
             ],
-            instruction: "",
             extraSystemPrompt: "",
             isAttachedToTarget: true
         )),
-        indentSize: 4,
-        usesTabsForIndentation: false,
+        instruction: nil,
         commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
         .frame(maxWidth: 450, maxHeight: Style.panelHeight)
@@ -829,12 +844,10 @@ extension PromptToCodePanelView {
                     )
                 ),
             ],
-            instruction: "",
             extraSystemPrompt: "",
             isAttachedToTarget: false
         )),
-        indentSize: 4,
-        usesTabsForIndentation: false,
+        instruction: nil,
         commandName: "Generate Code"
     ), reducer: { PromptToCodePanel() }))
         .frame(maxWidth: 450, maxHeight: Style.panelHeight)

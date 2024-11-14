@@ -472,12 +472,10 @@ extension WindowBaseCommandHandler {
                         lines: editor.lines
                     ),
                     snippets: IdentifiedArray(uniqueElements: snippets),
-                    instruction: newPrompt ?? "",
                     extraSystemPrompt: newExtraSystemPrompt ?? "",
                     isAttachedToTarget: true
                 )),
-                indentSize: filespace.codeMetadata.indentSize ?? 4,
-                usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
+                instruction: newPrompt,
                 commandName: name,
                 isContinuous: isContinuous
             ))))

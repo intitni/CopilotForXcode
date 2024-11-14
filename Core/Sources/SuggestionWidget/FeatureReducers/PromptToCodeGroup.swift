@@ -45,7 +45,6 @@ public struct PromptToCodeGroup {
         case activePromptToCode(PromptToCodePanel.Action)
     }
 
-    @Dependency(\.promptToCodeServiceFactory) var promptToCodeServiceFactory
     @Dependency(\.activatePreviousActiveXcode) var activatePreviousActiveXcode
 
     public var body: some ReducerOf<Self> {
@@ -64,7 +63,9 @@ public struct PromptToCodeGroup {
                 // insert at 0 so it has high priority then the other detached prompt to codes
                 state.promptToCodes.insert(newPromptToCode, at: 0)
                 return .run { send in
-                    if sendImmediately, !newPromptToCode.promptToCodeState.instruction.isEmpty {
+                    if sendImmediately,
+                       !newPromptToCode.contextInputController.instruction.string.isEmpty
+                    {
                         await send(.promptToCode(newPromptToCode.id, .modifyCodeButtonTapped))
                     }
                 }.cancellable(
@@ -102,11 +103,9 @@ public struct PromptToCodeGroup {
         }
         .ifLet(\.activePromptToCode, action: \.activePromptToCode) {
             PromptToCodePanel()
-                .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         }
         .forEach(\.promptToCodes, action: /Action.promptToCode, element: {
             PromptToCodePanel()
-                .dependency(\.promptToCodeService, promptToCodeServiceFactory())
         })
 
         Reduce { state, action in

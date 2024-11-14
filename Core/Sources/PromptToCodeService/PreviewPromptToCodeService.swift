@@ -1,10 +1,47 @@
 import Foundation
+import ModificationBasic
 import SuggestionBasic
 
-public final class PreviewPromptToCodeService: PromptToCodeServiceType {
+public final class PreviewModificationAgent: ModificationAgent {
+    public func send(_ request: Request) -> AsyncThrowingStream<Response, any Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let stream = try await modifyCode(
+                        code: request.code,
+                        requirement: request.requirement,
+                        source: .init(
+                            language: request.source.language,
+                            documentURL: request.source.documentURL,
+                            projectRootURL: request.source.projectRootURL,
+                            content: request.source.content,
+                            lines: request.source.lines,
+                            range: request.range
+                        ),
+                        isDetached: request.isDetached,
+                        extraSystemPrompt: request.extraSystemPrompt,
+                        generateDescriptionRequirement: false
+                    )
+
+                    for try await (code, description) in stream {
+                        continuation.yield(.code(code))
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
     public init() {}
 
-    public func modifyCode(
+    func modifyCode(
         code: String,
         requirement: String,
         source: PromptToCodeSource,

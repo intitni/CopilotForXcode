@@ -337,6 +337,13 @@ public final class GraphicalUserInterfaceController {
                 self?.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
             }
         }
+        suggestionDependency.onOpenModificationButtonClicked = { 
+            Task {
+                guard let content = await PseudoCommandHandler().getEditorContent(sourceEditor: nil)
+                else { return }
+                _ = try await WindowBaseCommandHandler().promptToCode(editor: content)
+            }
+        }
         suggestionDependency.onCustomCommandClicked = { command in
             Task {
                 let commandHandler = PseudoCommandHandler()

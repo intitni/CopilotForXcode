@@ -273,21 +273,13 @@ struct PseudoCommandHandler: CommandHandler {
     }
 
     func presentModification(state: Shared<ModificationState>) async {
-        do {
-            @Dependency(\.workspacePool) var workspacePool
-            let (_, filespace) = try await workspacePool
-                .fetchOrCreateWorkspaceAndFilespace(fileURL: state.wrappedValue.source.documentURL)
-            let store = await Service.shared.guiController.store
-            await store.send(.promptToCodeGroup(.createPromptToCode(.init(
-                promptToCodeState: state,
-                indentSize: filespace.codeMetadata.indentSize ?? 4,
-                usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
-                commandName: nil,
-                isContinuous: false
-            ), sendImmediately: false)))
-        } catch {
-            toast.toast(content: error.localizedDescription, type: .error)
-        }
+        let store = await Service.shared.guiController.store
+        await store.send(.promptToCodeGroup(.createPromptToCode(.init(
+            promptToCodeState: state,
+            instruction: nil,
+            commandName: nil,
+            isContinuous: false
+        ), sendImmediately: false)))
     }
 
     func acceptSuggestion() async {
