@@ -5,7 +5,6 @@ import SwiftUI
 struct ChatSettingsView: View {
     enum Tab {
         case general
-        case scopes
     }
     
     @State var tabSelection: Tab = .general
@@ -14,7 +13,6 @@ struct ChatSettingsView: View {
         VStack(spacing: 0) {
             Picker("", selection: $tabSelection) {
                 Text("General").tag(Tab.general)
-                Text("Scopes").tag(Tab.scopes)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -27,8 +25,6 @@ struct ChatSettingsView: View {
                     switch tabSelection {
                     case .general:
                         ChatSettingsGeneralSectionView()
-                    case .scopes:
-                        ChatSettingsScopeSectionView()
                     }
                 }.padding()
             }
