@@ -40,14 +40,14 @@ public struct PromptToCodePanel {
         public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
             get {
                 IdentifiedArrayOf(
-                    uniqueElements: promptToCodeState.snippets.reversed().map {
+                    uniqueElements: promptToCodeState.snippets.map {
                         PromptToCodeSnippetPanel.State(snippet: $0)
                     }
                 )
             }
             set {
                 promptToCodeState.snippets = IdentifiedArrayOf(
-                    uniqueElements: newValue.map(\.snippet).reversed()
+                    uniqueElements: newValue.map(\.snippet)
                 )
             }
         }
@@ -67,7 +67,8 @@ public struct PromptToCodePanel {
             contextInputController = PromptToCodeCustomization
                 .contextInputControllerFactory(promptToCodeState)
             focusedField = .textField
-            contextInputController.instruction = instruction.map(NSAttributedString.init(string:)) ?? .init()
+            contextInputController.instruction = instruction
+                .map(NSAttributedString.init(string:)) ?? .init()
         }
     }
 
@@ -118,7 +119,11 @@ public struct PromptToCodePanel {
                 let copiedState = state
                 let contextInputController = state.contextInputController
                 state.promptToCodeState.isGenerating = true
-                state.promptToCodeState.pushHistory(instruction: .init(attributedString: contextInputController.instruction))
+                state.promptToCodeState
+                    .pushHistory(instruction: .init(
+                        attributedString: contextInputController
+                            .instruction
+                    ))
                 let snippets = state.promptToCodeState.snippets
 
                 return .run { send in
@@ -153,7 +158,7 @@ public struct PromptToCodePanel {
                                     do {
                                         for try await response in stream {
                                             try Task.checkCancellation()
-                                            
+
                                             switch response {
                                             case let .code(code):
                                                 await send(.snippetPanel(.element(
@@ -213,7 +218,8 @@ public struct PromptToCodePanel {
                 state.promptToCodeState.isGenerating = false
 
                 if state.promptToCodeState.snippets.allSatisfy({ snippet in
-                    snippet.modifiedCode.isEmpty && snippet.description.isEmpty && snippet.error == nil
+                    snippet.modifiedCode.isEmpty && snippet.description.isEmpty && snippet
+                        .error == nil
                 }) {
                     // if both code and description are empty, we treat it as failed
                     return .run { send in
