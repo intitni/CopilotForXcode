@@ -11,6 +11,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
     /// https://docs.anthropic.com/en/docs/about-claude/models
     public enum KnownModel: String, CaseIterable {
         case claude35Sonnet = "claude-3-5-sonnet-latest"
+        case claude35Haiku = "claude-3-5-haiku-latest"
         case claude3Opus = "claude-3-opus-latest"
         case claude3Sonnet = "claude-3-sonnet-20240229"
         case claude3Haiku = "claude-3-haiku-20240307"
@@ -18,6 +19,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         public var contextWindow: Int {
             switch self {
             case .claude35Sonnet: return 200_000
+            case .claude35Haiku: return 200_000
             case .claude3Opus: return 200_000
             case .claude3Sonnet: return 200_000
             case .claude3Haiku: return 200_000
