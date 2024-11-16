@@ -6,6 +6,7 @@ import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import Dependencies
+import Logger
 import Preferences
 import SuggestionBasic
 import SuggestionWidget
@@ -337,7 +338,7 @@ public final class GraphicalUserInterfaceController {
                 self?.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
             }
         }
-        suggestionDependency.onOpenModificationButtonClicked = { 
+        suggestionDependency.onOpenModificationButtonClicked = {
             Task {
                 guard let content = await PseudoCommandHandler().getEditorContent(sourceEditor: nil)
                 else { return }
@@ -382,7 +383,7 @@ extension ChatTabPool {
         let info = ChatTabInfo(id: id, title: "")
         let builder = kind?.builder ?? {
             for ext in BuiltinExtensionManager.shared.extensions {
-                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement } )
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement })
                 else { continue }
                 return tab.defaultChatBuilder()
             }
@@ -407,8 +408,13 @@ extension ChatTabPool {
             let chatTabTypes = BuiltinExtensionManager.shared.extensions.flatMap(\.chatTabTypes)
             for type in chatTabTypes {
                 if type.name == data.name {
-                    guard let builder = try? await type.restore(from: data.data) else { break }
-                    return await createTab(id: data.id, from: builder)
+                    do {
+                        let builder = try await type.restore(from: data.data)
+                        return await createTab(id: data.id, from: builder)
+                    } catch {
+                        Logger.service.error("Failed to restore chat tab \(data.name): \(error)")
+                        break
+                    }
                 }
             }
         }
