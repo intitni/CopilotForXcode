@@ -226,7 +226,7 @@ struct PseudoCommandHandler: CommandHandler {
                         The app is using a fallback solution to accept suggestions. \
                         For better experience, please restart Xcode to re-activate the Copilot \
                         menu item.
-                        """, type: .warning)
+                        """, type: .warning, duration: 10)
                     }
 
                     throw error
@@ -299,7 +299,7 @@ struct PseudoCommandHandler: CommandHandler {
                     The app is using a fallback solution to accept suggestions. \
                     For better experience, please restart Xcode to re-activate the Copilot \
                     menu item.
-                    """, type: .warning)
+                    """, type: .warning, duration: 10)
                 }
 
                 throw error
