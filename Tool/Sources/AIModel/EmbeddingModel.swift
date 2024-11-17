@@ -26,6 +26,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
     public struct Info: Codable, Equatable {
         public typealias OllamaInfo = ChatModel.Info.OllamaInfo
         public typealias OpenAIInfo = ChatModel.Info.OpenAIInfo
+        public typealias CustomHeaderInfo = ChatModel.Info.CustomHeaderInfo
 
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
@@ -44,6 +45,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         public var openAIInfo: OpenAIInfo
         @FallbackDecoding<EmptyChatModelOllamaInfo>
         public var ollamaInfo: OllamaInfo
+        @FallbackDecoding<EmptyChatModelCustomHeaderInfo>
+        public var customHeaderInfo: CustomHeaderInfo
 
         public init(
             apiKeyName: String = "",
@@ -53,7 +56,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             dimensions: Int = 1536,
             modelName: String = "",
             openAIInfo: OpenAIInfo = OpenAIInfo(),
-            ollamaInfo: OllamaInfo = OllamaInfo()
+            ollamaInfo: OllamaInfo = OllamaInfo(),
+            customHeaderInfo: CustomHeaderInfo = CustomHeaderInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -63,6 +67,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             self.modelName = modelName
             self.openAIInfo = openAIInfo
             self.ollamaInfo = ollamaInfo
+            self.customHeaderInfo = customHeaderInfo
         }
     }
 

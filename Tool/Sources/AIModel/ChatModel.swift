@@ -64,6 +64,25 @@ public struct ChatModel: Codable, Equatable, Identifiable {
                 self.apiVersion = apiVersion
             }
         }
+        
+        public struct CustomHeaderInfo: Codable, Equatable {
+            public struct HeaderField: Codable, Equatable {
+                public var key: String
+                public var value: String
+                
+                public init(key: String, value: String) {
+                    self.key = key
+                    self.value = value
+                }
+            }
+            
+            @FallbackDecoding<EmptyArray>
+            public var headers: [HeaderField]
+            
+            public init(headers: [HeaderField] = []) {
+                self.headers = headers
+            }
+        }
 
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
@@ -86,6 +105,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var googleGenerativeAIInfo: GoogleGenerativeAIInfo
         @FallbackDecoding<EmptyChatModelOpenAICompatibleInfo>
         public var openAICompatibleInfo: OpenAICompatibleInfo
+        @FallbackDecoding<EmptyChatModelCustomHeaderInfo>
+        public var customHeaderInfo: CustomHeaderInfo
 
         public init(
             apiKeyName: String = "",
@@ -97,7 +118,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             openAIInfo: OpenAIInfo = OpenAIInfo(),
             ollamaInfo: OllamaInfo = OllamaInfo(),
             googleGenerativeAIInfo: GoogleGenerativeAIInfo = GoogleGenerativeAIInfo(),
-            openAICompatibleInfo: OpenAICompatibleInfo = OpenAICompatibleInfo()
+            openAICompatibleInfo: OpenAICompatibleInfo = OpenAICompatibleInfo(),
+            customHeaderInfo: CustomHeaderInfo = CustomHeaderInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -109,6 +131,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             self.ollamaInfo = ollamaInfo
             self.googleGenerativeAIInfo = googleGenerativeAIInfo
             self.openAICompatibleInfo = openAICompatibleInfo
+            self.customHeaderInfo = customHeaderInfo
         }
     }
 
@@ -167,4 +190,8 @@ public struct EmptyChatModelGoogleGenerativeAIInfo: FallbackValueProvider {
 
 public struct EmptyChatModelOpenAICompatibleInfo: FallbackValueProvider {
     public static var defaultValue: ChatModel.Info.OpenAICompatibleInfo { .init() }
+}
+
+public struct EmptyChatModelCustomHeaderInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.CustomHeaderInfo { .init() }
 }

@@ -259,6 +259,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
 
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
+        Self.setupExtraHeaderFields(&request, model: model)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -397,6 +398,12 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             case .claude:
                 assertionFailure("Unsupported")
             }
+        }
+    }
+    
+    static func setupExtraHeaderFields(_ request: inout URLRequest, model: ChatModel) {
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            request.setValue(field.value, forHTTPHeaderField: field.key)
         }
     }
 }

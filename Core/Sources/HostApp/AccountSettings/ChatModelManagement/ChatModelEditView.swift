@@ -285,6 +285,7 @@ struct ChatModelEditView: View {
 
     struct OpenAICompatibleForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
+        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -320,6 +321,12 @@ struct ChatModelEditView: View {
                 Toggle(isOn: $store.enforceMessageOrder) {
                     Text("Enforce message order to be user/assistant alternated")
                 }
+                
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
