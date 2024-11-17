@@ -131,8 +131,13 @@ public struct PromptToCodePanel {
                         let context = await contextInputController.resolveContext()
                         let agentFactory = context.agent ?? { SimpleModificationAgent() }
                         _ = try await withThrowingTaskGroup(of: Void.self) { group in
-                            for snippet in snippets {
+                            for (index, snippet) in snippets.enumerated() {
+                                if index > 3 { // at most 3 at a time
+                                    _ = try await group.next()
+                                }
                                 group.addTask {
+                                    try await Task
+                                        .sleep(nanoseconds: UInt64.random(in: 0...1_000_000_000))
                                     let agent = agentFactory()
                                     let stream = agent.send(.init(
                                         code: snippet.originalCode,
@@ -153,7 +158,7 @@ public struct PromptToCodePanel {
                                         range: snippet.attachedRange,
                                         references: context.references,
                                         topics: context.topics
-                                    )).timedDebounce(for: 0.5)
+                                    )).timedDebounce(for: 0.4)
 
                                     do {
                                         for try await response in stream {
