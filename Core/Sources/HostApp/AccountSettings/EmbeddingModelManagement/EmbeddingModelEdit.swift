@@ -26,6 +26,7 @@ struct EmbeddingModelEdit {
         var suggestedMaxTokens: Int?
         var apiKeySelection: APIKeySelection.State = .init()
         var baseURLSelection: BaseURLSelection.State = .init()
+        var customHeaders: [ChatModel.Info.CustomHeaderInfo.HeaderField] = []
     }
 
     enum Action: Equatable, BindableAction {
@@ -168,7 +169,8 @@ extension EmbeddingModel {
                 isFullURL: state.isFullURL,
                 maxTokens: state.maxTokens,
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
-                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive)
+                ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
+                customHeaderInfo: .init(headers: state.customHeaders)
             )
         )
     }
@@ -188,7 +190,8 @@ extension EmbeddingModel {
             baseURLSelection: .init(
                 baseURL: info.baseURL,
                 isFullURL: info.isFullURL
-            )
+            ),
+            customHeaders: info.customHeaderInfo.headers
         )
     }
 }

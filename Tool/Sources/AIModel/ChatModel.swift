@@ -66,10 +66,20 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         }
         
         public struct CustomHeaderInfo: Codable, Equatable {
-            @FallbackDecoding<EmptyDictionary>
-            public var headers: [String: String]
+            public struct HeaderField: Codable, Equatable {
+                public var key: String
+                public var value: String
+                
+                public init(key: String, value: String) {
+                    self.key = key
+                    self.value = value
+                }
+            }
             
-            public init(headers: [String : String] = [:]) {
+            @FallbackDecoding<EmptyArray>
+            public var headers: [HeaderField]
+            
+            public init(headers: [HeaderField] = []) {
                 self.headers = headers
             }
         }

@@ -248,6 +248,7 @@ struct EmbeddingModelEditView: View {
 
     struct OpenAICompatibleForm: View {
         @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
+        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -278,6 +279,12 @@ struct EmbeddingModelEditView: View {
                 TextField("Model Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)
+                
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
