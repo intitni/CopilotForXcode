@@ -75,6 +75,7 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
 
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
+        Self.setupExtraHeaderFields(&request, model: model)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -141,6 +142,12 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             case .ollama:
                 assertionFailure("Unsupported")
             }
+        }
+    }
+    
+    static func setupExtraHeaderFields(_ request: inout URLRequest, model: EmbeddingModel) {
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            request.setValue(field.value, forHTTPHeaderField: field.key)
         }
     }
 }
