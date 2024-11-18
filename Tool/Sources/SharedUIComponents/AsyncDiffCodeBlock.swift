@@ -466,3 +466,43 @@ extension AsyncDiffCodeBlock {
         .frame(width: 400, height: 200)
 }
 
+#Preview("Code Diff Editor") {
+    struct V: View {
+        @State var originalCode = ""
+        @State var newCode = ""
+
+        var body: some View {
+            VStack {
+                HStack {
+                    VStack {
+                        Text("Original")
+                        TextEditor(text: $originalCode)
+                            .frame(width: 300, height: 200)
+                    }
+                    VStack {
+                        Text("New")
+                        TextEditor(text: $newCode)
+                            .frame(width: 300, height: 200)
+                    }
+                }
+                .font(.body.monospaced())
+                ScrollView {
+                    AsyncDiffCodeBlock(
+                        code: newCode,
+                        originalCode: originalCode,
+                        language: "swift",
+                        startLineIndex: 0,
+                        scenario: "",
+                        font: .monospacedSystemFont(ofSize: 12, weight: .regular),
+                        droppingLeadingSpaces: true,
+                        proposedForegroundColor: .primary
+                    )
+                }
+            }
+            .padding()
+            .frame(height: 600)
+        }
+    }
+    
+    return V()
+}
