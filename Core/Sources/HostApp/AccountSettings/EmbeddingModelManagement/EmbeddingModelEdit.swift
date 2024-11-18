@@ -191,6 +191,7 @@ extension EmbeddingModel {
                 baseURL: state.baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
                 isFullURL: state.isFullURL,
                 maxTokens: state.maxTokens,
+                dimensions: state.dimensions,
                 modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
                 customHeaderInfo: .init(headers: state.customHeaders)
@@ -204,6 +205,7 @@ extension EmbeddingModel {
             name: name,
             format: format,
             maxTokens: info.maxTokens,
+            dimensions: info.dimensions,
             modelName: info.modelName,
             ollamaKeepAlive: info.ollamaInfo.keepAlive,
             apiKeySelection: .init(
