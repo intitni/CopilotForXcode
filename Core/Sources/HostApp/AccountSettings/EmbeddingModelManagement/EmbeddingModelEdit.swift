@@ -15,6 +15,7 @@ struct EmbeddingModelEdit {
         var name: String
         var format: EmbeddingModel.Format
         var maxTokens: Int = 8191
+        var dimensions: Int = 1536
         var modelName: String = ""
         var ollamaKeepAlive: String = ""
         var apiKeyName: String { apiKeySelection.apiKeyName }
@@ -38,6 +39,7 @@ struct EmbeddingModelEdit {
         case testButtonClicked
         case testSucceeded(String)
         case testFailed(String)
+        case fixDimensions(Int)
         case checkSuggestedMaxTokens
         case apiKeySelection(APIKeySelection.Action)
         case baseURLSelection(BaseURLSelection.Action)
@@ -80,6 +82,7 @@ struct EmbeddingModelEdit {
             case .testButtonClicked:
                 guard !state.isTesting else { return .none }
                 state.isTesting = true
+                let dimensions = state.dimensions
                 let model = EmbeddingModel(
                     id: state.id,
                     name: state.name,
@@ -89,18 +92,33 @@ struct EmbeddingModelEdit {
                         baseURL: state.baseURL,
                         isFullURL: state.isFullURL,
                         maxTokens: state.maxTokens,
+                        dimensions: dimensions,
                         modelName: state.modelName
                     )
                 )
                 return .run { send in
                     do {
-                        _ = try await EmbeddingService(
+                        let result = try await EmbeddingService(
                             configuration: UserPreferenceEmbeddingConfiguration()
                                 .overriding {
                                     $0.model = model
                                 }
                         ).embed(text: "Hello")
-                        await send(.testSucceeded("Succeeded!"))
+                        if result.data.isEmpty {
+                            await send(.testFailed("No data returned"))
+                            return
+                        }
+                        let actualDimensions = result.data.first?.embedding.count ?? 0
+                        if actualDimensions != dimensions {
+                            await send(
+                                .testFailed("Invalid dimension, should be \(actualDimensions)")
+                            )
+                            await send(.fixDimensions(actualDimensions))
+                        } else {
+                            await send(
+                                .testSucceeded("Succeeded! (Dimensions: \(actualDimensions))")
+                            )
+                        }
                     } catch {
                         await send(.testFailed(error.localizedDescription))
                     }
@@ -131,6 +149,11 @@ struct EmbeddingModelEdit {
                     return .none
                 }
                 state.suggestedMaxTokens = knownModel.maxToken
+                state.dimensions = knownModel.dimensions
+                return .none
+
+            case let .fixDimensions(value):
+                state.dimensions = value
                 return .none
 
             case .apiKeySelection:

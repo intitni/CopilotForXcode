@@ -15,5 +15,16 @@ public extension OpenAIEmbeddingModel {
             return 8191
         }
     }
+    
+    var dimensions: Int {
+        switch self {
+        case .textEmbeddingAda002:
+            return 1536
+        case .textEmbedding3Small:
+            return 1536
+        case .textEmbedding3Large:
+            return 3072
+        }
+    }
 }
 
