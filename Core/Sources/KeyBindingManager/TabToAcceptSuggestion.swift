@@ -47,7 +47,7 @@ final class TabToAcceptSuggestion {
 
     init() {
         _ = ThreadSafeAccessToXcodeInspector.shared
-     
+
         hook.add(
             .init(
                 eventsOfInterest: [.keyDown],
@@ -103,10 +103,15 @@ final class TabToAcceptSuggestion {
         let tab = 48
         let esc = 53
 
+        Logger.service.info("TabToAcceptSuggestion: \(keycode)")
+
         switch keycode {
         case tab:
+            Logger.service.info("TabToAcceptSuggestion: Tab")
+
             guard let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL
             else {
+                Logger.service.info("TabToAcceptSuggestion: No active document")
                 return .unchanged
             }
 
@@ -158,23 +163,28 @@ final class TabToAcceptSuggestion {
                 checkKeybinding(),
                 canTapToAcceptSuggestion
             else {
+                Logger.service.info("TabToAcceptSuggestion: Feature not available")
                 return .unchanged
             }
 
             guard ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil
             else {
+                Logger.service.info("TabToAcceptSuggestion: Xcode not found")
                 return .unchanged
             }
             guard let editor = ThreadSafeAccessToXcodeInspector.shared.focusedEditor
             else {
+                Logger.service.info("TabToAcceptSuggestion: No editor found")
                 return .unchanged
             }
             guard let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL)
             else {
+                Logger.service.info("TabToAcceptSuggestion: No file found")
                 return .unchanged
             }
             guard let presentingSuggestion = filespace.presentingSuggestion
             else {
+                Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
                 return .unchanged
             }
 
@@ -188,9 +198,11 @@ final class TabToAcceptSuggestion {
             )
 
             if shouldAcceptSuggestion {
+                Logger.service.info("TabToAcceptSuggestion: Accept")
                 Task { await commandHandler.acceptSuggestion() }
                 return .discarded
             } else {
+                Logger.service.info("TabToAcceptSuggestion: Should not accept")
                 return .unchanged
             }
         case esc:
@@ -248,6 +260,7 @@ extension TabToAcceptSuggestion {
         // If entering a tab doesn't invalidate the suggestion, just let the user type the tab.
         // else, accept the suggestion and discard the tab.
         guard !presentingSuggestionText.hasPrefix(contentAfterTab) else {
+            Logger.service.info("TabToAcceptSuggestion: Space for tab")
             return false
         }
         return true
