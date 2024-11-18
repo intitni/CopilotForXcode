@@ -50,15 +50,6 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         }
 
         let embeddingResponse = try JSONDecoder().decode(EmbeddingResponse.self, from: result)
-        #if DEBUG
-        Logger.service.info("""
-        Embedding usage
-        - number of strings: \(text.count)
-        - prompt tokens: \(embeddingResponse.usage.prompt_tokens)
-        - total tokens: \(embeddingResponse.usage.total_tokens)
-
-        """)
-        #endif
         return embeddingResponse
     }
 
@@ -92,15 +83,6 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         }
 
         let embeddingResponse = try JSONDecoder().decode(EmbeddingResponse.self, from: result)
-        #if DEBUG
-        Logger.service.info("""
-        Embedding usage
-        - number of strings: \(tokens.count)
-        - prompt tokens: \(embeddingResponse.usage.prompt_tokens)
-        - total tokens: \(embeddingResponse.usage.total_tokens)
-
-        """)
-        #endif
         return embeddingResponse
     }
 
