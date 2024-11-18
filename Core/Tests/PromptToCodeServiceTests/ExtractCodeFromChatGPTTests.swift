@@ -3,7 +3,7 @@ import XCTest
 
 final class ExtractCodeFromChatGPTTests: XCTestCase {
     func test_extract_from_no_code_block() {
-        let api = OpenAIPromptToCodeService()
+        let api = SimpleModificationAgent()
         let result = api.extractCodeAndDescription(from: """
         hello world!
         """)
@@ -13,7 +13,7 @@ final class ExtractCodeFromChatGPTTests: XCTestCase {
     }
     
     func test_extract_from_incomplete_code_block() {
-        let api = OpenAIPromptToCodeService()
+        let api = SimpleModificationAgent()
         let result = api.extractCodeAndDescription(from: """
         ```swift
         func foo() {}
@@ -24,7 +24,7 @@ final class ExtractCodeFromChatGPTTests: XCTestCase {
     }
     
     func test_extract_from_complete_code_block() {
-        let api = OpenAIPromptToCodeService()
+        let api = SimpleModificationAgent()
         let result = api.extractCodeAndDescription(from: """
         ```swift
         func foo() {}
@@ -40,7 +40,7 @@ final class ExtractCodeFromChatGPTTests: XCTestCase {
     }
     
     func test_extract_from_incomplete_code_block_without_language() {
-        let api = OpenAIPromptToCodeService()
+        let api = SimpleModificationAgent()
         let result = api.extractCodeAndDescription(from: """
         ```
         func foo() {}
@@ -51,7 +51,7 @@ final class ExtractCodeFromChatGPTTests: XCTestCase {
     }
     
     func test_extract_from_code_block_without_language() {
-        let api = OpenAIPromptToCodeService()
+        let api = SimpleModificationAgent()
         let result = api.extractCodeAndDescription(from: """
         ```
         func foo() {}
