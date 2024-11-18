@@ -49,7 +49,7 @@ public final class TerminalChatPlugin: ChatPlugin {
                         ))
                         continuation.yield(.finishAction(
                             id: "run",
-                            result: .success("Printing output...")
+                            result: .success("Executed.")
                         ))
                         continuation.yield(.content(.text("[continue]\n")))
                         continuation.yield(.content(.text(content)))
@@ -86,7 +86,7 @@ public final class TerminalChatPlugin: ChatPlugin {
 
                     continuation.yield(.finishAction(
                         id: "run",
-                        result: .success("Printing output...")
+                        result: .success("Executed.")
                     ))
 
                     for try await content in output {
