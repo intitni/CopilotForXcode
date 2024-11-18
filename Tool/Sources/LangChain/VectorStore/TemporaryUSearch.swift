@@ -18,7 +18,7 @@ public actor TemporaryUSearch: VectorStore {
     let index: USearchIndex
     var documents: [USearchLabel: LabeledDocument] = [:]
 
-    public init(identifier: String, dimensions: Int = 1536 /* text-embedding-ada-002 */ ) {
+    public init(identifier: String, dimensions: Int) {
         self.identifier = calculateMD5Hash(identifier)
         index = .init(
             metric: .IP,
@@ -29,8 +29,8 @@ public actor TemporaryUSearch: VectorStore {
     }
 
     /// Load a USearch index if found.
-    public static func load(identifier: String) async -> TemporaryUSearch? {
-        let it = TemporaryUSearch(identifier: identifier)
+    public static func load(identifier: String, dimensions: Int) async -> TemporaryUSearch? {
+        let it = TemporaryUSearch(identifier: identifier, dimensions: dimensions)
         do {
             try await it.load()
             return it
@@ -40,8 +40,8 @@ public actor TemporaryUSearch: VectorStore {
     }
 
     /// Create a readonly USearch instance if the index is found.
-    public static func view(identifier: String) async -> TemporaryUSearch? {
-        let it = TemporaryUSearch(identifier: identifier)
+    public static func view(identifier: String, dimensions: Int) async -> TemporaryUSearch? {
+        let it = TemporaryUSearch(identifier: identifier, dimensions: dimensions)
         do {
             try await it.view()
             return it

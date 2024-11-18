@@ -54,12 +54,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
 
-            do {
-                error = try container.decode(ErrorDetail.self, forKey: .error)
-            } catch {
-                print(error)
-                self.error = nil
-            }
+            error = try container.decode(ErrorDetail.self, forKey: .error)
             message = {
                 if let e = try? container.decode(MistralAIErrorMessage.self, forKey: .message) {
                     return CompletionAPIError.Message.mistralAI(e)

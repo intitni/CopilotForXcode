@@ -55,16 +55,23 @@ struct QueryWebsiteFunction: ChatGPTFunction {
         reportProgress: @escaping (String) async -> Void
     ) async throws -> Result {
         do {
-            let embedding = OpenAIEmbedding(configuration: UserPreferenceEmbeddingConfiguration())
+            let configuration = UserPreferenceEmbeddingConfiguration()
+            let embedding = OpenAIEmbedding(configuration: configuration)
+            let dimensions = configuration.dimensions
+            let modelName = configuration.model?.name ?? "model"
 
             let result = try await withThrowingTaskGroup(of: String.self) { group in
                 for urlString in arguments.urls {
+                    let storeIdentifier = "\(urlString)-\(modelName)-\(dimensions)"
                     guard let url = URL(string: urlString) else { continue }
                     group.addTask {
                         // 1. grab the website content
                         await reportProgress("Loading \(url)..")
 
-                        if let database = await TemporaryUSearch.view(identifier: urlString) {
+                        if let database = await TemporaryUSearch.view(
+                            identifier: storeIdentifier,
+                            dimensions: dimensions
+                        ) {
                             await reportProgress("Getting relevant information..")
                             let qa = QAInformationRetrievalChain(
                                 vectorStore: database,
@@ -77,14 +84,17 @@ struct QueryWebsiteFunction: ChatGPTFunction {
                         await reportProgress("Processing \(url)..")
                         // 2. split the content
                         let splitter = RecursiveCharacterTextSplitter(
-                            chunkSize: 1000,
+                            chunkSize: 1500,
                             chunkOverlap: 100
                         )
                         let splitDocuments = try await splitter.transformDocuments(documents)
                         // 3. embedding and store in db
                         await reportProgress("Embedding \(url)..")
                         let embeddedDocuments = try await embedding.embed(documents: splitDocuments)
-                        let database = TemporaryUSearch(identifier: urlString)
+                        let database = TemporaryUSearch(
+                            identifier: storeIdentifier,
+                            dimensions: dimensions
+                        )
                         try await database.set(embeddedDocuments)
                         // 4. generate answer
                         await reportProgress("Getting relevant information..")
