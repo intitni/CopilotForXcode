@@ -104,7 +104,7 @@ public class ChatGPTChatTab: ChatTab {
 
         return [Builder(title: "Legacy Chat", customCommand: nil)] + customCommands
     }
-    
+
     public static func defaultBuilder() -> ChatTabBuilder {
         Builder(title: "Legacy Chat", customCommand: nil)
     }
@@ -173,6 +173,16 @@ public class ChatGPTChatTab: ChatTab {
                 }
             }
         }
+    }
+
+    public func handleCustomCommand(_ customCommand: CustomCommand) -> Bool {
+        Task {
+            if service.isReceivingMessage {
+                await service.stopReceivingMessage()
+            }
+            try? await service.handleCustomCommand(customCommand)
+        }
+        return true
     }
 }
 

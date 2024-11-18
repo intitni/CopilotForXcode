@@ -187,31 +187,26 @@ struct GUI {
                     }
 
                 case let .sendCustomCommandToActiveChat(command):
-                    @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
-                        if tab.service.isReceivingMessage {
-                            await tab.service.stopReceivingMessage()
-                        }
-                        try? await tab.service.handleCustomCommand(command)
-                    }
-
                     if let info = state.chatTabGroup.selectedTabInfo,
-                       let activeTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
+                       let tab = chatTabPool.getTab(of: info.id),
+                       tab.handleCustomCommand(command)
                     {
                         return .run { send in
                             await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                            await stopAndHandleCommand(activeTab)
                         }
                     }
 
-                    if let info = state.chatTabGroup.tabInfo.first(where: {
-                        chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
-                    }),
-                        let chatTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
-                    {
-                        state.chatTabGroup.selectedTabId = chatTab.id
-                        return .run { send in
-                            await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                            await stopAndHandleCommand(chatTab)
+                    for info in state.chatTabGroup.tabInfo {
+                        if let chatTab = chatTabPool.getTab(of: info.id),
+                           chatTab.handleCustomCommand(command)
+                        {
+                            state.chatTabGroup.selectedTabId = chatTab.id
+                            return .run { send in
+                                await send(.openChatPanel(
+                                    forceDetach: false,
+                                    activateThisApp: false
+                                ))
+                            }
                         }
                     }
 
@@ -220,9 +215,7 @@ struct GUI {
                         else { return }
                         await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
                         await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                        if let chatTab = chatTab as? ChatGPTChatTab {
-                            await stopAndHandleCommand(chatTab)
-                        }
+                        _ = chatTab.handleCustomCommand(command)
                     }
 
                 case .toggleWidgetsHotkeyPressed:

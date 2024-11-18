@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Preferences
 import Foundation
 import SwiftUI
 
@@ -49,6 +50,8 @@ public protocol ChatTabType {
     func start()
     /// Whenever the user close the tab, this method will be called.
     func close()
+    /// Handle custom command.
+    func handleCustomCommand(_ customCommand: CustomCommand) -> Bool
     
     /// Whether this chat tab should be the default chat tab replacement.
     static var isDefaultChatTabReplacement: Bool { get }
@@ -179,6 +182,9 @@ public extension ChatTabType {
 
     /// Default implementation that does nothing.
     func close() {}
+    
+    /// By default it can't handle custom command.
+    func handleCustomCommand(_ customCommand: CustomCommand) -> Bool { false }
     
     static var canHandleOpenChatCommand: Bool { false }
     static var isDefaultChatTabReplacement: Bool { false }
