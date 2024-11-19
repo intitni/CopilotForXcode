@@ -40,7 +40,7 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
         let request = GitHubCopilotRequest.ConversationCreate(requestBody: .init(
             workDoneToken: workDoneToken,
             turns: turns,
-            capabilities: .init(allSkills: true, skills: []),
+            capabilities: .init(allSkills: false, skills: []),
             doc: doc,
             source: .panel,
             workspaceFolder: workspace.projectURL.path
