@@ -48,14 +48,6 @@ struct PromptToCodeSettingsView: View {
                         Text(chatModel.name).tag(chatModel.id)
                     }
                 }
-
-                Toggle(isOn: $settings.promptToCodeGenerateDescription) {
-                    Text("Generate description")
-                }
-
-                Toggle(isOn: $settings.promptToCodeGenerateDescriptionInUserPreferredLanguage) {
-                    Text("Generate description in user preferred language")
-                }
             }
 
             SettingsDivider("UI")
