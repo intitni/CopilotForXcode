@@ -71,7 +71,8 @@ public final class Terminal: TerminalType, @unchecked Sendable {
             continuation = cont
         }
 
-        Task { [continuation, self] in
+        Task { [continuation, process, self] in
+            _ = self
             let notificationCenter = NotificationCenter.default
             let notifications = notificationCenter.notifications(
                 named: FileHandle.readCompletionNotification,
@@ -79,26 +80,33 @@ public final class Terminal: TerminalType, @unchecked Sendable {
             )
             for await notification in notifications {
                 let userInfo = notification.userInfo
+                guard let object = notification.object as? FileHandle,
+                      object === outputPipe.fileHandleForReading
+                else {
+                    continue
+                }
                 if let data = userInfo?[NSFileHandleNotificationDataItem] as? Data,
                    let content = String(data: data, encoding: .utf8),
                    !content.isEmpty
                 {
                     continuation?.yield(content)
                 }
-                if !(self.process?.isRunning ?? false) {
-                    let reason = self.process?.terminationReason ?? .exit
-                    let status = self.process?.terminationStatus ?? 1
-                    if let output = (self.process?.standardOutput as? Pipe)?.fileHandleForReading
-                        .readDataToEndOfFile(),
-                        let content = String(data: output, encoding: .utf8),
+                if !process.isRunning {
+                    if let fileHandle = (process.standardOutput as? Pipe)?
+                        .fileHandleForReading,
+                        let data = try? fileHandle.readToEnd(),
+                        let content = String(data: data, encoding: .utf8),
                         !content.isEmpty
                     {
                         continuation?.yield(content)
                     }
 
+                    let status = process.terminationStatus
+
                     if status == 0 {
                         continuation?.finish()
                     } else {
+                        let reason = process.terminationReason
                         continuation?.finish(throwing: TerminationError(
                             reason: reason,
                             status: status
