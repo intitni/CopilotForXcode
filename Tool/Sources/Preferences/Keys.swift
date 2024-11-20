@@ -426,15 +426,7 @@ public extension UserDefaultPreferenceKeys {
 
     var defaultChatSystemPrompt: PreferenceKey<String> {
         .init(
-            defaultValue: """
-            You are a helpful senior programming assistant.
-            You should respond in natural language.
-            Your response should be correct, concise, clear, informative and logical.
-            Use markdown if you need to present code, table, list, etc.
-            If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
-            If you are asked to explain code, you MUST explain it step-by-step in a ordered list concisely.
-            Make your answer short and structured.
-            """,
+            defaultValue: "",
             key: "DefaultChatSystemPrompt"
         )
     }
