@@ -502,8 +502,10 @@ extension PromptToCodePanelView {
             var body: some View {
                 WithPerceptionTracking {
                     if !store.snippet.modifiedCode.isEmpty {
-                        CopyButton {
-                            store.send(.copyCodeButtonTapped)
+                        DraggableCopyButton {
+                            store.withState {
+                                $0.snippet.modifiedCode
+                            }
                         }
                     }
                 }
