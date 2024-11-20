@@ -385,8 +385,10 @@ extension ClaudeChatCompletionsService.StreamDataChunk {
 extension ClaudeChatCompletionsService.RequestBody {
     init(_ body: ChatCompletionsRequestBody) {
         model = body.model
-        let supportsPromptCache = if model.hasPrefix("claude-3-5-sonnet") || model
-            .hasPrefix("claude-3-opus") || model.hasPrefix("claude-3-haiku")
+        let supportsPromptCache = if model.hasPrefix("claude-3-5-sonnet")
+            || model.hasPrefix("claude-3-5-haiku")
+            || model.hasPrefix("claude-3-opus")
+            || model.hasPrefix("claude-3-haiku")
         {
             true
         } else {
