@@ -1,6 +1,8 @@
+import Client
 import Preferences
 import SharedUIComponents
 import SwiftUI
+import XPCShared
 
 #if canImport(ProHostApp)
 import ProHostApp
@@ -33,7 +35,51 @@ struct ChatSettingsGeneralSectionView: View {
         @AppStorage(\.openChatInBrowserURL) var openChatInBrowserURL
         @AppStorage(\.openChatInBrowserInInAppBrowser) var openChatInBrowserInInAppBrowser
 
-        init() {}
+        var refreshExtensionExtensionOpenChatHandlerTask: Task<Void, Never>?
+
+        @MainActor
+        @Published
+        var openChatOptions = [OpenChatMode]()
+
+        init() {
+            Task { @MainActor in
+                refreshExtensionOpenChatHandlers()
+            }
+            refreshExtensionExtensionOpenChatHandlerTask = Task { [weak self] in
+                let sequence = NotificationCenter.default
+                    .notifications(named: NSApplication.didBecomeActiveNotification)
+                for await _ in sequence {
+                    guard let self else { return }
+                    await MainActor.run {
+                        self.refreshExtensionOpenChatHandlers()
+                    }
+                }
+            }
+        }
+
+        @MainActor
+        func refreshExtensionOpenChatHandlers() {
+            guard let service = try? getService() else { return }
+            Task { @MainActor in
+                let handlers = try await service
+                    .send(requestBody: ExtensionServiceRequests.GetExtensionOpenChatHandlers())
+                openChatOptions = handlers.map {
+                    if $0.isBuiltIn {
+                        return .builtinExtension(
+                            extensionIdentifier: $0.bundleIdentifier,
+                            id: $0.id,
+                            tabName: $0.tabName
+                        )
+                    } else {
+                        return .externalExtension(
+                            extensionIdentifier: $0.bundleIdentifier,
+                            id: $0.id,
+                            tabName: $0.tabName
+                        )
+                    }
+                }
+            }
+        }
     }
 
     @Environment(\.openURL) var openURL
@@ -58,21 +104,27 @@ struct ChatSettingsGeneralSectionView: View {
         Form {
             Picker(
                 "Open Chat Mode",
-                selection: $settings.openChatMode
+                selection: .init(get: {
+                    settings.openChatMode.value
+                }, set: {
+                    settings.openChatMode = .init($0)
+                })
             ) {
-                ForEach(OpenChatMode.allCases, id: \.rawValue) { mode in
+                Text("Open chat panel").tag(OpenChatMode.chatPanel)
+                Text("Open web page in browser").tag(OpenChatMode.browser)
+                ForEach(settings.openChatOptions) { mode in
                     switch mode {
-                    case .chatPanel:
-                        Text("Open chat panel").tag(mode)
-                    case .browser:
-                        Text("Open web page in browser").tag(mode)
-                    case .codeiumChat:
-                        Text("Open Codeium chat tab").tag(mode)
+                    case let .builtinExtension(_, _, name):
+                        Text("Open \(name) tab").tag(mode)
+                    case let .externalExtension(_, _, name):
+                        Text("Open \(name) tab").tag(mode)
+                    default:
+                        EmptyView()
                     }
                 }
             }
 
-            if settings.openChatMode == .browser {
+            if settings.openChatMode.value == .browser {
                 TextField(
                     "Chat web page URL",
                     text: $settings.openChatInBrowserURL,
@@ -103,7 +155,7 @@ struct ChatSettingsGeneralSectionView: View {
             ) {
                 let allModels = settings.chatModels + [.init(
                     id: "com.github.copilot",
-                    name: "GitHub Copilot (poc)",
+                    name: "GitHub Copilot as chat model",
                     format: .openAI,
                     info: .init()
                 )]

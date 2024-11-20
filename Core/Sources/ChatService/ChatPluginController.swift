@@ -1,24 +1,27 @@
-import ChatPlugin
 import Combine
 import Foundation
+import LegacyChatPlugin
 import OpenAIService
 
 final class ChatPluginController {
     let chatGPTService: any LegacyChatGPTServiceType
-    let plugins: [String: ChatPlugin.Type]
-    var runningPlugin: ChatPlugin?
+    let plugins: [String: LegacyChatPlugin.Type]
+    var runningPlugin: LegacyChatPlugin?
     weak var chatService: ChatService?
-    
-    init(chatGPTService: any LegacyChatGPTServiceType, plugins: [ChatPlugin.Type]) {
+
+    init(chatGPTService: any LegacyChatGPTServiceType, plugins: [LegacyChatPlugin.Type]) {
         self.chatGPTService = chatGPTService
-        var all = [String: ChatPlugin.Type]()
+        var all = [String: LegacyChatPlugin.Type]()
         for plugin in plugins {
             all[plugin.command.lowercased()] = plugin
         }
         self.plugins = all
     }
 
-    convenience init(chatGPTService: any LegacyChatGPTServiceType, plugins: ChatPlugin.Type...) {
+    convenience init(
+        chatGPTService: any LegacyChatGPTServiceType,
+        plugins: LegacyChatPlugin.Type...
+    ) {
         self.init(chatGPTService: chatGPTService, plugins: plugins)
     }
 
@@ -94,11 +97,11 @@ final class ChatPluginController {
             return false
         }
     }
-    
+
     func stopResponding() async {
         await runningPlugin?.stopResponding()
     }
-    
+
     func cancel() async {
         await runningPlugin?.cancel()
     }
@@ -106,26 +109,29 @@ final class ChatPluginController {
 
 // MARK: - ChatPluginDelegate
 
-extension ChatPluginController: ChatPluginDelegate {
-    public func pluginDidStartResponding(_: ChatPlugin) {
+extension ChatPluginController: LegacyChatPluginDelegate {
+    public func pluginDidStartResponding(_: LegacyChatPlugin) {
         chatService?.isReceivingMessage = true
     }
 
-    public func pluginDidEndResponding(_: ChatPlugin) {
+    public func pluginDidEndResponding(_: LegacyChatPlugin) {
         chatService?.isReceivingMessage = false
     }
 
-    public func pluginDidStart(_ plugin: ChatPlugin) {
+    public func pluginDidStart(_ plugin: LegacyChatPlugin) {
         runningPlugin = plugin
     }
 
-    public func pluginDidEnd(_ plugin: ChatPlugin) {
+    public func pluginDidEnd(_ plugin: LegacyChatPlugin) {
         if runningPlugin === plugin {
             runningPlugin = nil
         }
     }
 
-    public func shouldStartAnotherPlugin(_ type: ChatPlugin.Type, withContent content: String) {
+    public func shouldStartAnotherPlugin(
+        _ type: LegacyChatPlugin.Type,
+        withContent content: String
+    ) {
         let plugin = type.init(inside: chatGPTService, delegate: self)
         Task {
             await plugin.send(content: content, originalMessage: content)

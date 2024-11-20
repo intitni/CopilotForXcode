@@ -78,7 +78,10 @@ public struct WidgetPanel {
 
             case let .presentPromptToCode(initialState):
                 return .run { send in
-                    await send(.sharedPanel(.promptToCodeGroup(.createPromptToCode(initialState))))
+                    await send(.sharedPanel(.promptToCodeGroup(.createPromptToCode(
+                        initialState,
+                        sendImmediately: true
+                    ))))
                 }
 
             case .displayPanelContent:

@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import SuggestionBasic
 
-final class TextExtrationFromCodeTests: XCTestCase {
+final class TextExtractionFromCodeTests: XCTestCase {
     func test_empty_selection() {
         let selection = CursorRange(
             start: CursorPosition(line: 0, character: 0),

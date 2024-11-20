@@ -129,7 +129,7 @@ struct Chat {
     var body: some ReducerOf<Self> {
         BindingReducer()
 
-        Scope(state: \.chatMenu, action: /Action.chatMenu) {
+        Scope(state: \.chatMenu, action: \.chatMenu) {
             ChatMenu(service: service)
         }
 
@@ -522,6 +522,8 @@ private func convertReference(
                 return kind
             case .text:
                 return reference.content
+            case .error:
+                return reference.content
             }
         }(),
         uri: {
@@ -535,6 +537,8 @@ private func convertReference(
             case .other:
                 return ""
             case .text:
+                return ""
+            case .error:
                 return ""
             }
         }(),

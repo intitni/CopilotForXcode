@@ -37,6 +37,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Tool"),
+        .package(path: "../ChatPlugins"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.1.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
@@ -44,7 +45,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.10.4"
+            exact: "1.15.0"
         ),
         // quick hack to support custom UserDefaults
         // https://github.com/sindresorhus/KeyboardShortcuts
@@ -96,6 +97,7 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+                .product(name: "CustomCommandTemplateProcessor", package: "Tool"),
             ].pro([
                 "ProService",
             ])
@@ -142,7 +144,7 @@ let package = Package(
                 .product(name: "UserDefaultsObserver", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
-                .product(name: "SuggestionProvider", package: "Tool")
+                .product(name: "SuggestionProvider", package: "Tool"),
             ].pro([
                 "ProExtension",
             ])
@@ -170,29 +172,27 @@ let package = Package(
         .target(
             name: "ChatService",
             dependencies: [
-                "ChatPlugin",
-
-                // plugins
-                "MathChatPlugin",
-                "SearchChatPlugin",
-                "ShortcutChatPlugin",
+                "LegacyChatPlugin",
 
                 // context collectors
                 "WebChatContextCollector",
                 "SystemInfoChatContextCollector",
 
                 .product(name: "ChatContextCollector", package: "Tool"),
+                .product(name: "PromptToCode", package: "Tool"),
                 .product(name: "AppMonitoring", package: "Tool"),
-                .product(name: "Parsing", package: "swift-parsing"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "CustomCommandTemplateProcessor", package: "Tool"),
+                .product(name: "ChatPlugins", package: "ChatPlugins"),
+                .product(name: "Parsing", package: "swift-parsing"),
             ].pro([
                 "ProService",
             ])
         ),
         .testTarget(name: "ChatServiceTests", dependencies: ["ChatService"]),
         .target(
-            name: "ChatPlugin",
+            name: "LegacyChatPlugin",
             dependencies: [
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
@@ -271,39 +271,6 @@ let package = Package(
             ])
         ),
 
-        // MARK: - Chat Plugins
-
-        .target(
-            name: "MathChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "LangChain", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/MathChatPlugin"
-        ),
-
-        .target(
-            name: "SearchChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "OpenAIService", package: "Tool"),
-                .product(name: "LangChain", package: "Tool"),
-                .product(name: "ExternalServices", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/SearchChatPlugin"
-        ),
-
-        .target(
-            name: "ShortcutChatPlugin",
-            dependencies: [
-                "ChatPlugin",
-                .product(name: "Parsing", package: "swift-parsing"),
-                .product(name: "Terminal", package: "Tool"),
-            ],
-            path: "Sources/ChatPlugins/ShortcutChatPlugin"
-        ),
-
         // MAKR: - Chat Context Collector
 
         .target(
@@ -326,7 +293,7 @@ let package = Package(
             ],
             path: "Sources/ChatContextCollectors/SystemInfoChatContextCollector"
         ),
-        
+
         // MARK: Key Binding
 
         .target(
@@ -346,7 +313,7 @@ let package = Package(
             name: "KeyBindingManagerTests",
             dependencies: ["KeyBindingManager"]
         ),
-        
+
         // MARK: Theming
 
         .target(
@@ -357,7 +324,6 @@ let package = Package(
                 .product(name: "Highlightr", package: "Highlightr"),
             ]
         ),
-
     ]
 )
 
@@ -393,3 +359,4 @@ var isProIncluded: Bool {
 
     return isProIncluded()
 }
+

@@ -1,6 +1,6 @@
 import Client
-import SuggestionBasic
 import Foundation
+import SuggestionBasic
 import XcodeKit
 import XPCShared
 

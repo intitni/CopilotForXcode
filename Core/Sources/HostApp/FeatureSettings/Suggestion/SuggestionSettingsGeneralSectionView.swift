@@ -68,7 +68,7 @@ struct SuggestionSettingsGeneralSectionView: View {
                 refreshExtensionSuggestionFeatureProviders()
             }
             refreshExtensionSuggestionFeatureProvidersTask = Task { [weak self] in
-                let sequence = await NotificationCenter.default
+                let sequence = NotificationCenter.default
                     .notifications(named: NSApplication.didBecomeActiveNotification)
                 for await _ in sequence {
                     guard let self else { return }
@@ -88,8 +88,6 @@ struct SuggestionSettingsGeneralSectionView: View {
                 extensionSuggestionFeatureProviderOptions = services.map {
                     .init(name: $0.name, bundleIdentifier: $0.bundleIdentifier)
                 }
-                print(services.map(\.bundleIdentifier))
-                print(suggestionFeatureProvider)
             }
         }
     }

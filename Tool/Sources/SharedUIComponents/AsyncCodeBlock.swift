@@ -4,7 +4,7 @@ import Foundation
 import Perception
 import SwiftUI
 
-public struct AsyncCodeBlock: View { // chat: hid
+public struct AsyncCodeBlock: View {
     @State var storage = Storage()
     @Environment(\.colorScheme) var colorScheme
 
@@ -134,7 +134,7 @@ public struct AsyncCodeBlock: View { // chat: hid
 // MARK: - Storage
 
 extension AsyncCodeBlock {
-    static let queue = DispatchQueue(
+    nonisolated static let queue = DispatchQueue(
         label: "code-block-highlight",
         qos: .userInteractive,
         attributes: .concurrent
@@ -409,6 +409,7 @@ extension AsyncCodeBlock {
             let scenario = view.scenario
             let brightMode = view.colorScheme != .dark
             let droppingLeadingSpaces = view.droppingLeadingSpaces
+            let font = CodeHighlighting.SendableFont(font: view.font)
             foregroundColor = view.foregroundColor
 
             if highlightedCode.isEmpty {
@@ -427,7 +428,6 @@ extension AsyncCodeBlock {
             highlightTask = Task {
                 let result = await withUnsafeContinuation { continuation in
                     AsyncCodeBlock.queue.async {
-                        let font = view.font
                         let content = CodeHighlighting.highlighted(
                             code: code,
                             language: language,

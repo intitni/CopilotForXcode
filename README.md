@@ -15,23 +15,38 @@ Copilot for Xcode is an Xcode Source Editor Extension that provides GitHub Copil
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Permissions Required](#permissions-required)
-- [Installation and Setup](#installation-and-setup)
-  - [Install](#install)
-  - [Enable the Extension](#enable-the-extension)
-  - [Granting Permissions to the App](#granting-permissions-to-the-app)
-  - [Setting Up Key Bindings](#setting-up-key-bindings)
-  - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
-    - [Setting Up GitHub Copilot](#setting-up-github-copilot)
-    - [Setting Up Codeium](#setting-up-codeium)
-    - [Using Locally Run LLMs](#using-locally-run-llms)
-  - [Setting Up Chat Feature](#setting-up-chat-feature)
-  - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
-- [Update](#update)
-- [Feature](#feature)
-- [Limitations](#limitations)
-- [License](#license)
+- [Copilot for Xcode ](#copilot-for-xcode-)
+  - [Features](#features)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Permissions Required](#permissions-required)
+  - [Installation and Setup](#installation-and-setup)
+    - [Install](#install)
+    - [Enable the Extension](#enable-the-extension)
+      - [macOS 15](#macos-15)
+      - [MacOS 14](#macos-14)
+      - [Older Versions](#older-versions)
+    - [Granting Permissions to the App](#granting-permissions-to-the-app)
+    - [Setting Up Key Bindings](#setting-up-key-bindings)
+      - [Setting Up Global Hotkeys](#setting-up-global-hotkeys)
+    - [Setting Up Suggestion Feature](#setting-up-suggestion-feature)
+      - [Setting Up GitHub Copilot](#setting-up-github-copilot)
+      - [Setting Up Codeium](#setting-up-codeium)
+    - [Setting Up Chat Feature](#setting-up-chat-feature)
+    - [Managing `CopilotForXcodeExtensionService.app`](#managing-copilotforxcodeextensionserviceapp)
+  - [Update](#update)
+  - [Feature](#feature)
+    - [Suggestion](#suggestion)
+      - [Commands](#commands)
+    - [Chat](#chat)
+      - [Commands](#commands-1)
+      - [Keyboard Shortcuts](#keyboard-shortcuts)
+      - [Chat Commands](#chat-commands)
+    - [Prompt to Code](#prompt-to-code)
+      - [Commands](#commands-2)
+    - [Custom Commands](#custom-commands)
+  - [Limitations](#limitations)
+  - [License](#license)
 
 For development instruction, check [Development.md](DEVELOPMENT.md).
 
@@ -252,17 +267,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
 
-#### Chat Scope
-
-The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
-
-`@code` is on by default, if `Use @code scope by default in chat context.` is on. Otherwise, `@file` will be on by default.
-
-To use scopes, you can prefix a message with `@code`.
-
-You can use shorthand to represent a scope, such as `@c`, and enable multiple scopes with `@c+web`.
-
-#### Chat Plugins
+#### Chat Commands
 
 The chat panel supports chat plugins that may not require an OpenAI API key. For example, if you need to use the `/run` plugin, you just type
 
@@ -280,11 +285,8 @@ If you need to end a plugin, you can just type
 | :--------------------: | ----------------------------------------------------------------------------------------------------------------------------------------- |
 |         `/run`         | Runs the command under the project root.                                                                                                  |
 |                        | Environment variable: <br>- `PROJECT_ROOT` to get the project root. <br>- `FILE_PATH` to get the editing file path.                       |
-|       `/search`        | Search on Bing and summarize the results. You have to setup the Bing Search API in the host app before using it.                          |
 |   `/shortcut(name)`    | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
 |                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot.   |
-| `/shortcutInput(name)` | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
-|                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be send to the bot as a user message. |
 
 ### Prompt to Code
 
@@ -299,14 +301,6 @@ This feature is recommended when you need to update a specific piece of code. So
 - Generating code with a specific template through custom commands.
 - Polishing and correcting grammar and spelling errors in the documentation.
 - Translating a localizable strings file.
-
-#### Modification Scope
-
-The chat panel allows for chat scope to temporarily control the context of the conversation for the latest message. To use a scope, simply prefix the message with `@scope`.
-
-To use scopes, you can prefix a message with `@sense`.
-
-You can use shorthand to represent a scope, such as `@sense`, and enable multiple scopes with `@c+web`.
 
 #### Commands
 

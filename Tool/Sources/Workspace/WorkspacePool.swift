@@ -85,20 +85,29 @@ public class WorkspacePool {
     }
 
     @WorkspaceActor
-    public func fetchOrCreateWorkspaceAndFilespace(fileURL: URL) async throws
+    public func fetchOrCreateWorkspaceAndFilespace(
+        fileURL: URL,
+        checkIfFileExists: Bool = true
+    ) async throws
         -> (workspace: Workspace, filespace: Filespace)
     {
         // If we can get the workspace URL directly.
         if let currentWorkspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL {
             if let existed = workspaces[currentWorkspaceURL] {
                 // Reuse the existed workspace.
-                let filespace = existed.createFilespaceIfNeeded(fileURL: fileURL)
+                let filespace = try existed.createFilespaceIfNeeded(
+                    fileURL: fileURL,
+                    checkIfFileExists: checkIfFileExists
+                )
                 return (existed, filespace)
             }
 
             let new = createNewWorkspace(workspaceURL: currentWorkspaceURL)
             workspaces[currentWorkspaceURL] = new
-            let filespace = new.createFilespaceIfNeeded(fileURL: fileURL)
+            let filespace = try new.createFilespaceIfNeeded(
+                fileURL: fileURL,
+                checkIfFileExists: checkIfFileExists
+            )
             return (new, filespace)
         }
 
@@ -132,12 +141,15 @@ public class WorkspacePool {
                 return createNewWorkspace(workspaceURL: workspaceURL)
             }()
 
-            let filespace = workspace.createFilespaceIfNeeded(fileURL: fileURL)
+            let filespace = try workspace.createFilespaceIfNeeded(
+                fileURL: fileURL,
+                checkIfFileExists: checkIfFileExists
+            )
             workspaces[workspaceURL] = workspace
             workspace.refreshUpdateTime()
             return (workspace, filespace)
         }
-        
+
         throw Workspace.CantFindWorkspaceError()
     }
 

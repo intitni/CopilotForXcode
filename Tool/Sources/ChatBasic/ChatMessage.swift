@@ -85,6 +85,8 @@ public struct ChatMessage: Equatable, Codable {
             case textFile(uri: String)
             /// Other kind of reference.
             case other(kind: String)
+            /// Error case.
+            case error
         }
 
         /// The title of the reference.
@@ -143,6 +145,9 @@ public struct ChatMessage: Equatable, Codable {
     /// The references of this message.
     @FallbackDecoding<EmptyArray<Reference>>
     public var references: [Reference]
+    
+    /// Cache the message in the prompt if possible.
+    public var cacheIfPossible: Bool
 
     /// Is the message considered empty.
     public var isEmpty: Bool {
@@ -162,7 +167,8 @@ public struct ChatMessage: Equatable, Codable {
         toolCalls: [ToolCall]? = nil,
         summary: String? = nil,
         tokenCount: Int? = nil,
-        references: [Reference] = []
+        references: [Reference] = [],
+        cacheIfPossible: Bool = false
     ) {
         self.role = role
         self.senderId = senderId
@@ -174,6 +180,7 @@ public struct ChatMessage: Equatable, Codable {
         self.id = id
         tokensCount = tokenCount
         self.references = references
+        self.cacheIfPossible = cacheIfPossible
     }
 }
 

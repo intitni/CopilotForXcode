@@ -41,7 +41,7 @@ struct AsyncCodeBlockView: View {
             let content = view.content
             let language = view.fenceInfo ?? ""
             let brightMode = view.colorScheme != .dark
-            let font = view.font
+            let font = CodeHighlighting.SendableFont(font: view.font)
             highlightTask = Task {
                 let string = await withUnsafeContinuation { continuation in
                     Self.queue.async {
@@ -50,7 +50,7 @@ struct AsyncCodeBlockView: View {
                             language: language,
                             scenario: "chat",
                             brightMode: brightMode,
-                            font: font
+                            font:font
                         )
                         continuation.resume(returning: AttributedString(content))
                     }

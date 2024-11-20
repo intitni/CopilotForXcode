@@ -4,6 +4,7 @@ import ChatBasic
 import Dependencies
 import Foundation
 import IdentifiedCollections
+import Logger
 import Preferences
 
 public enum ChatGPTServiceError: Error, LocalizedError {
@@ -63,7 +64,7 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 }
 
 public enum ChatGPTResponse: Equatable {
-    case status(String)
+    case status([String])
     case partialText(String)
     case toolCalls([ChatMessage.ToolCall])
 }
@@ -104,13 +105,17 @@ public protocol ChatGPTServiceType {
 
 public class ChatGPTService: ChatGPTServiceType {
     public var configuration: ChatGPTConfiguration
+    public var utilityConfiguration: ChatGPTConfiguration
     public var functionProvider: ChatGPTFunctionProvider
 
     public init(
         configuration: ChatGPTConfiguration = UserPreferenceChatGPTConfiguration(),
+        utilityConfiguration: ChatGPTConfiguration =
+            UserPreferenceChatGPTConfiguration(chatModelKey: \.preferredChatModelIdForUtilities),
         functionProvider: ChatGPTFunctionProvider = NoChatGPTFunctionProvider()
     ) {
         self.configuration = configuration
+        self.utilityConfiguration = utilityConfiguration
         self.functionProvider = functionProvider
     }
 
@@ -140,7 +145,17 @@ public class ChatGPTService: ChatGPTServiceType {
 
                             if !pendingToolCalls.isEmpty {
                                 if configuration.runFunctionsAutomatically {
+                                    var toolCallStatuses = [String: String]() {
+                                        didSet {
+                                            if toolCallStatuses != oldValue {
+                                                continuation.yield(.status(
+                                                    Array(toolCallStatuses.values).sorted()
+                                                ))
+                                            }
+                                        }
+                                    }
                                     for toolCall in pendingToolCalls {
+                                        let id = toolCall.id
                                         for await response in await runFunctionCall(
                                             toolCall,
                                             memory: memory,
@@ -151,13 +166,15 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 functionCallResponses.append(.init(
                                                     role: .tool,
                                                     content: output,
-                                                    toolCallId: toolCall.id
+                                                    toolCallId: id
                                                 ))
                                             case let .status(status):
-                                                continuation.yield(.status(status))
+                                                toolCallStatuses[id] = status
                                             }
                                         }
+                                        toolCallStatuses[id] = nil
                                     }
+                                    toolCallStatuses = [:]
                                 } else {
                                     if !configuration.runFunctionsAutomatically {
                                         continuation.yield(.toolCalls(pendingToolCalls))
@@ -177,10 +194,19 @@ public class ChatGPTService: ChatGPTServiceType {
                                 try Task.checkCancellation()
                                 switch content {
                                 case let .partialText(text):
-                                    continuation.yield(.partialText(text))
+                                    continuation.yield(ChatGPTResponse.partialText(text))
 
                                 case let .partialToolCalls(toolCalls):
                                     guard configuration.runFunctionsAutomatically else { break }
+                                    var toolCallStatuses = [String: String]() {
+                                        didSet {
+                                            if toolCallStatuses != oldValue {
+                                                continuation.yield(.status(
+                                                    Array(toolCallStatuses.values).sorted()
+                                                ))
+                                            }
+                                        }
+                                    }
                                     for toolCall in toolCalls.keys.sorted() {
                                         if let toolCallValue = toolCalls[toolCall] {
                                             for await status in await prepareFunctionCall(
@@ -188,7 +214,7 @@ public class ChatGPTService: ChatGPTServiceType {
                                                 memory: memory,
                                                 sourceMessageId: sourceMessageId
                                             ) {
-                                                continuation.yield(.status(status))
+                                                toolCallStatuses[toolCallValue.id] = status
                                             }
                                         }
                                     }
@@ -269,8 +295,19 @@ extension ChatGPTService {
                         references: prompt.references
                     )
                     let chunks = try await api()
+                    var usage: ChatCompletionResponseBody.Usage = .init(
+                        promptTokens: 0,
+                        completionTokens: 0,
+                        cachedTokens: 0,
+                        otherUsage: [:]
+                    )
                     for try await chunk in chunks {
                         try Task.checkCancellation()
+
+                        if let newUsage = chunk.usage {
+                            usage.merge(with: newUsage)
+                        }
+
                         guard let delta = chunk.message else { continue }
 
                         // The api will always return a function call with JSON object.
@@ -304,6 +341,8 @@ extension ChatGPTService {
                             continuation.yield(.partialText(content))
                         }
                     }
+
+                    Logger.service.info("ChatGPT usage: \(usage)")
 
                     continuation.finish()
                 } catch let error as CancellationError {
@@ -464,9 +503,7 @@ extension ChatGPTService {
 
         let service = ChatGPTService(
             configuration: OverridingChatGPTConfiguration(
-                overriding: UserPreferenceChatGPTConfiguration(
-                    chatModelKey: \.preferredChatModelIdForUtilities
-                ),
+                overriding: utilityConfiguration,
                 with: .init(temperature: 0)
             ),
             functionProvider: NoChatGPTFunctionProvider()
@@ -527,7 +564,8 @@ extension ChatGPTService {
                     } else {
                         nil
                     }
-                }()
+                }(),
+                cacheIfPossible: chatMessage.cacheIfPossible
             ))
 
             for call in chatMessage.toolCalls ?? [] {
@@ -576,8 +614,7 @@ extension ChatGPTService {
 
         return requestBody
     }
-    
-    
+
     func maxTokenForReply(maxToken: Int, remainingTokens: Int?) -> Int? {
         guard let remainingTokens else { return nil }
         return min(maxToken / 2, remainingTokens)

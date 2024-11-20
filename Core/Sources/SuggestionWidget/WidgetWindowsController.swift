@@ -17,9 +17,9 @@ actor WidgetWindowsController: NSObject {
     let userDefaultsObservers = WidgetUserDefaultsObservers()
     var xcodeInspector: XcodeInspector { .shared }
 
-    let windows: WidgetWindows
-    let store: StoreOf<Widget>
-    let chatTabPool: ChatTabPool
+    nonisolated let windows: WidgetWindows
+    nonisolated let store: StoreOf<Widget>
+    nonisolated let chatTabPool: ChatTabPool
 
     var currentApplicationProcessIdentifier: pid_t?
 
@@ -390,7 +390,6 @@ extension WidgetWindowsController {
             await MainActor.run {
                 let state = store.withState { $0 }
                 let isChatPanelDetached = state.chatPanelState.isDetached
-                let hasChat = !state.chatPanelState.chatTabGroup.tabInfo.isEmpty
 
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
@@ -588,15 +587,10 @@ extension WidgetWindowsController {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
         let xcode = activeXcode?.appElement
-        let isFullscreen = if let xcode, let xcodeWindow = xcode.focusedWindow {
-            xcodeWindow.isFullScreen && xcode.isFrontmost
-        } else {
-            false
-        }
         
         let isXcodeActive = xcode?.isFrontmost ?? false
 
-        await [
+        [
             windows.sharedPanelWindow,
             windows.suggestionPanelWindow,
             windows.widgetWindow,
@@ -608,11 +602,11 @@ extension WidgetWindowsController {
         }
         
         if isXcodeActive, !windows.chatPanelWindow.isDetached {
-            await windows.chatPanelWindow.moveToActiveSpace()
+            windows.chatPanelWindow.moveToActiveSpace()
         }
 
-        if await windows.fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
-            await windows.orderFront()
+        if windows.fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
+            windows.orderFront()
         }
     }
 }

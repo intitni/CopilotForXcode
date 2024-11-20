@@ -1,19 +1,50 @@
 import Foundation
+import ModificationBasic
 import OpenAIService
 import Preferences
 import SuggestionBasic
 import XcodeInspector
 
-public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
-    var service: (any LegacyChatGPTServiceType)?
+public final class SimpleModificationAgent: ModificationAgent {
+    public func send(_ request: Request) -> AsyncThrowingStream<Response, any Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let stream = try await modifyCode(
+                        code: request.code,
+                        requirement: request.requirement,
+                        source: .init(
+                            language: request.source.language,
+                            documentURL: request.source.documentURL,
+                            projectRootURL: request.source.projectRootURL,
+                            content: request.source.content,
+                            lines: request.source.lines,
+                            range: request.range
+                        ),
+                        isDetached: request.isDetached,
+                        extraSystemPrompt: request.extraSystemPrompt,
+                        generateDescriptionRequirement: false
+                    )
+
+                    for try await (code, description) in stream {
+                        continuation.yield(.code(code))
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
 
     public init() {}
 
-    public func stopResponding() {
-        Task { await service?.stopReceivingMessage() }
-    }
-
-    public func modifyCode(
+    func modifyCode(
         code: String,
         requirement: String,
         source: PromptToCodeSource,
@@ -37,7 +68,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
                     content: source.content,
                     lines: source.lines,
                     selections: [source.range],
-                    cursorPosition: .outOfScope, 
+                    cursorPosition: .outOfScope,
                     cursorOffset: -1,
                     lineAnnotations: []
                 ),
@@ -176,24 +207,32 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
         let configuration =
             UserPreferenceChatGPTConfiguration(chatModelKey: \.promptToCodeChatModelId)
                 .overriding(.init(temperature: 0))
+
         let memory = AutoManagedChatGPTMemory(
             systemPrompt: systemPrompt,
             configuration: configuration,
-            functionProvider: NoChatGPTFunctionProvider(), 
+            functionProvider: NoChatGPTFunctionProvider(),
             maxNumberOfMessages: .max
         )
-        let chatGPTService = LegacyChatGPTService(
-            memory: memory,
-            configuration: configuration
+        let chatGPTService = ChatGPTService(
+            configuration: configuration,
+            functionProvider: NoChatGPTFunctionProvider()
         )
-        service = chatGPTService
+
         if let firstMessage {
             await memory.mutateHistory { history in
                 history.append(.init(role: .user, content: firstMessage))
                 history.append(.init(role: .assistant, content: secondMessage))
+                history.append(.init(role: .user, content: requirement))
             }
         }
-        let stream = try await chatGPTService.send(content: requirement)
+        let stream = chatGPTService.send(memory).compactMap { response in
+            switch response {
+            case let .partialText(token): return token
+            default: return nil
+            }
+        }.eraseToThrowingStream()
+        
         return .init { continuation in
             Task {
                 var content = ""
@@ -219,7 +258,7 @@ public final class OpenAIPromptToCodeService: PromptToCodeServiceType {
 
 // MAKR: - Internal
 
-extension OpenAIPromptToCodeService {
+extension SimpleModificationAgent {
     func extractCodeAndDescription(from content: String)
         -> (code: String, description: String)
     {

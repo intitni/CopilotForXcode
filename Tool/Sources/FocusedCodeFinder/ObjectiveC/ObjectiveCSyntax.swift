@@ -75,7 +75,7 @@ enum ObjectiveCNodeType: String {
     /// `__GENERICS` in category interface and implementation.
     case genericsTypeReference = "generics_type_reference"
     /// `IB_DESIGNABLE`, etc. The typo is from the original source.
-    case classInterfaceAttributeSpecifier = "class_interface_attribute_sepcifier"
+    case classInterfaceAttributeSpecifier = "class_interface_attribute_specifier"
 }
 
 extension ObjectiveCNodeType {

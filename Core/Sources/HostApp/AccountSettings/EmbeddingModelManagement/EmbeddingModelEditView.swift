@@ -174,6 +174,51 @@ struct EmbeddingModelEditView: View {
             }
         }
     }
+    
+    struct DimensionsTextField: View {
+        @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
+
+        var body: some View {
+            WithPerceptionTracking {
+                HStack {
+                    let textFieldBinding = Binding(
+                        get: { String(store.dimensions) },
+                        set: {
+                            if let selectionDimensions = Int($0) {
+                                $store.dimensions.wrappedValue = selectionDimensions
+                            } else {
+                                $store.dimensions.wrappedValue = 0
+                            }
+                        }
+                    )
+
+                    TextField(text: textFieldBinding) {
+                        Text("Dimensions")
+                            .multilineTextAlignment(.trailing)
+                    }
+                    .overlay(alignment: .trailing) {
+                        Stepper(
+                            value: $store.dimensions,
+                            in: 0...Int.max,
+                            step: 100
+                        ) {
+                            EmptyView()
+                        }
+                    }
+                    .foregroundColor({
+                        if store.dimensions <= 0 {
+                            return .red
+                        }
+                        return .primary
+                    }() as Color)
+                }
+                
+                Text("If you are not sure, run test to get the correct value.")
+                    .font(.caption)
+                    .dynamicHeightTextInFormWorkaround()
+            }
+        }
+    }
 
     struct ApiKeyNamePicker: View {
         let store: StoreOf<EmbeddingModelEdit>
@@ -215,6 +260,7 @@ struct EmbeddingModelEditView: View {
                     }
 
                 MaxTokensTextField(store: store)
+                DimensionsTextField(store: store)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
@@ -242,12 +288,14 @@ struct EmbeddingModelEditView: View {
                 TextField("Deployment Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)
+                DimensionsTextField(store: store)
             }
         }
     }
 
     struct OpenAICompatibleForm: View {
         @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
+        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -278,6 +326,13 @@ struct EmbeddingModelEditView: View {
                 TextField("Model Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)
+                DimensionsTextField(store: store)
+                
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
@@ -292,6 +347,7 @@ struct EmbeddingModelEditView: View {
                 TextField("Model Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)
+                DimensionsTextField(store: store)
 
                 WithPerceptionTracking {
                     TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {

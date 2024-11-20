@@ -26,7 +26,7 @@ class TemporaryUSearchTests: XCTestCase {
 
     func test_setting_data() async throws {
         let identifier = "hello-world"
-        let store = TemporaryUSearch(identifier: identifier)
+        let store = TemporaryUSearch(identifier: identifier, dimensions: 4)
         try await store.set(EmbeddingData.data.map { datum in
             .init(
                 document: .init(pageContent: datum.text, metadata: [:]),

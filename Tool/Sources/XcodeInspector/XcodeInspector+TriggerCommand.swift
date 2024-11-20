@@ -30,12 +30,13 @@ public extension AppInstanceInspector {
         guard path.count >= 2 else { throw cantRunCommand("Path too short.") }
 
         if activateApp {
-            if !runningApplication.activate() {
-                Logger.service.error("""
-                Trigger menu item \(sourcePath): \
-                Xcode not activated.
-                """)
-            }
+            appElement.isFrontmost = true
+//            if !runningApplication.activate() {
+//                Logger.service.error("""
+//                Trigger menu item \(sourcePath): \
+//                Xcode not activated.
+//                """)
+//            }
         } else {
             if !runningApplication.isActive {
                 Logger.service.error("""

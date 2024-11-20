@@ -1,13 +1,14 @@
 import ChatContextCollector
-import ChatPlugin
+import LegacyChatPlugin
 import Combine
+import CustomCommandTemplateProcessor
 import Foundation
 import OpenAIService
 import Preferences
 
 public final class ChatService: ObservableObject {
     public typealias Scope = ChatContext.Scope
-    
+
     public let memory: ContextAwareAutoManagedChatGPTMemory
     public let configuration: OverridingChatGPTConfiguration
     public let chatGPTService: any LegacyChatGPTServiceType
@@ -91,7 +92,7 @@ public final class ChatService: ObservableObject {
         if UserDefaults.shared.value(for: \.enableWebScopeByDefaultInChatContext) {
             scopes.insert(.web)
         }
-        
+
         defaultScopes = scopes
     }
 

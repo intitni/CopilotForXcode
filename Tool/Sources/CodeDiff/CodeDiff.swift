@@ -3,10 +3,10 @@ import SuggestionBasic
 
 public struct CodeDiff {
     public init() {}
-    
+
     public typealias LineDiff = CollectionDifference<String>
 
-    public struct SnippetDiff: Equatable {
+    public struct SnippetDiff: Equatable, CustomStringConvertible {
         public struct Change: Equatable {
             public var offset: Int
             public var element: String
@@ -20,14 +20,52 @@ public struct CodeDiff {
 
             public var text: String
             public var diff: Diff = .unchanged
+
+            var description: String {
+                switch diff {
+                case .unchanged:
+                    return text
+                case let .mutated(changes):
+                    return text + "   [" + changes.map { change in
+                        "\(change.offset): \(change.element)"
+                    }.joined(separator: " | ") + "]"
+                }
+            }
         }
 
-        public struct Section: Equatable {
+        public struct Section: Equatable, CustomStringConvertible {
+            public var oldOffset: Int
+            public var newOffset: Int
             public var oldSnippet: [Line]
             public var newSnippet: [Line]
 
             public var isEmpty: Bool {
                 oldSnippet.isEmpty && newSnippet.isEmpty
+            }
+
+            public var description: String {
+                """
+                \(oldSnippet.enumerated().compactMap { item in
+                    let (index, line) = item
+                    let lineIndex = String(format: "%3d", oldOffset + index + 1) + "   "
+                    switch line.diff {
+                    case .unchanged:
+                        return "\(lineIndex)|    \(line.description)"
+                    case .mutated:
+                        return "\(lineIndex)| -  \(line.description)"
+                    }
+                }.joined(separator: "\n"))
+                \(newSnippet.enumerated().map { item in
+                    let (index, line) = item
+                    let lineIndex = "   " + String(format: "%3d", newOffset + index + 1)
+                    switch line.diff {
+                    case .unchanged:
+                        return "\(lineIndex)|    \(line.description)"
+                    case .mutated:
+                        return "\(lineIndex)| +  \(line.description)"
+                    }
+                }.joined(separator: "\n"))
+                """
             }
         }
 
@@ -44,6 +82,10 @@ public struct CodeDiff {
                 previousSectionEnd += lines.endIndex
             }
             return nil
+        }
+
+        public var description: String {
+            "Diff:\n" + sections.map(\.description).joined(separator: "\n---\n") + "\n"
         }
     }
 
@@ -97,11 +139,7 @@ public struct CodeDiff {
         let oldLines = oldSnippet.splitByNewLine(omittingEmptySubsequences: false)
         let diffByLine = newLines.difference(from: oldLines)
 
-        let (insertions, removals) = generateDiffSections(
-            oldLines: oldLines,
-            newLines: newLines,
-            diffByLine: diffByLine
-        )
+        let groups = generateDiffSections(diffByLine)
 
         var oldLineIndex = 0
         var newLineIndex = 0
@@ -109,30 +147,63 @@ public struct CodeDiff {
         var result = SnippetDiff(sections: [])
 
         while oldLineIndex < oldLines.endIndex || newLineIndex < newLines.endIndex {
-            let removalSection = removals[safe: sectionIndex]
-            let insertionSection = insertions[safe: sectionIndex]
+            guard let groupItem = groups[safe: sectionIndex] else {
+                let finishingSection = SnippetDiff.Section(
+                    oldOffset: oldLineIndex,
+                    newOffset: newLineIndex,
+                    oldSnippet: {
+                        guard oldLineIndex < oldLines.endIndex else { return [] }
+                        return oldLines[oldLineIndex..<oldLines.endIndex].map {
+                            .init(text: String($0), diff: .unchanged)
+                        }
+                    }(),
+                    newSnippet: {
+                        guard newLineIndex < newLines.endIndex else { return [] }
+                        return newLines[newLineIndex..<newLines.endIndex].map {
+                            .init(text: String($0), diff: .unchanged)
+                        }
+                    }()
+                )
 
+                if !finishingSection.isEmpty {
+                    result.sections.append(finishingSection)
+                }
+
+                break
+            }
+
+            let unchangedLines: [SnippetDiff.Line] = {
+                var all = [SnippetDiff.Line]()
+                if let offset = groupItem.remove.first?.offset {
+                    var line = oldLineIndex
+                    while line < offset {
+                        if line < oldLines.endIndex {
+                            all.append(.init(text: String(oldLines[line]), diff: .unchanged))
+                        }
+                        line += 1
+                    }
+                } else if let offset = groupItem.insert.first?.offset {
+                    var line = newLineIndex
+                    while line < offset {
+                        if line < newLines.endIndex {
+                            all.append(.init(text: String(newLines[line]), diff: .unchanged))
+                        }
+                        line += 1
+                    }
+                }
+                return all
+            }()
+ 
             // handle lines before sections
-            var beforeSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
-
-            while oldLineIndex < (removalSection?.offset ?? oldLines.endIndex) {
-                if oldLineIndex < oldLines.endIndex {
-                    beforeSection.oldSnippet.append(.init(
-                        text: String(oldLines[oldLineIndex]),
-                        diff: .unchanged
-                    ))
-                }
-                oldLineIndex += 1
-            }
-            while newLineIndex < (insertionSection?.offset ?? newLines.endIndex) {
-                if newLineIndex < newLines.endIndex {
-                    beforeSection.newSnippet.append(.init(
-                        text: String(newLines[newLineIndex]),
-                        diff: .unchanged
-                    ))
-                }
-                newLineIndex += 1
-            }
+            let beforeSection = SnippetDiff.Section(
+                oldOffset: oldLineIndex,
+                newOffset: newLineIndex,
+                oldSnippet: unchangedLines,
+                newSnippet: unchangedLines
+            )
+            
+            oldLineIndex += unchangedLines.count
+            newLineIndex += unchangedLines.count
 
             if !beforeSection.isEmpty {
                 result.sections.append(beforeSection)
@@ -140,11 +211,16 @@ public struct CodeDiff {
 
             // handle lines inside sections
 
-            var insideSection = SnippetDiff.Section(oldSnippet: [], newSnippet: [])
+            var insideSection = SnippetDiff.Section(
+                oldOffset: oldLineIndex,
+                newOffset: newLineIndex,
+                oldSnippet: [],
+                newSnippet: []
+            )
 
-            for i in 0..<max(removalSection?.lines.count ?? 0, insertionSection?.lines.count ?? 0) {
-                let oldLine = removalSection?.lines[safe: i]
-                let newLine = insertionSection?.lines[safe: i]
+            for i in 0..<max(groupItem.remove.count, groupItem.insert.count) {
+                let oldLine = (groupItem.remove[safe: i]?.element).map(String.init)
+                let newLine = (groupItem.insert[safe: i]?.element).map(String.init)
                 let diff = diff(text: newLine ?? "", from: oldLine ?? "")
                 if let oldLine {
                     insideSection.oldSnippet.append(.init(
@@ -166,147 +242,86 @@ public struct CodeDiff {
                 }
             }
 
+            oldLineIndex += groupItem.remove.count
+            newLineIndex += groupItem.insert.count
+            sectionIndex += 1
+
             if !insideSection.isEmpty {
                 result.sections.append(insideSection)
             }
-
-            oldLineIndex += removalSection?.lines.count ?? 0
-            newLineIndex += insertionSection?.lines.count ?? 0
-            sectionIndex += 1
         }
 
         return result
     }
 }
 
-extension CodeDiff {
-    struct DiffSection: Equatable {
-        var offset: Int
-        var end: Int
-        var lines: [String]
+private extension CodeDiff {
+    func generateDiffSections(_ diff: CollectionDifference<Substring>)
+        -> [DiffGroupItem<Substring>]
+    {
+        guard !diff.isEmpty else { return [] }
 
-        mutating func appendIfPossible(offset: Int, element: Substring) -> Bool {
-            if end + 1 != offset { return false }
-            end = offset
-            lines.append(String(element))
-            return true
-        }
-    }
+        let removes = ChangeSection.sectioning(diff.removals)
+        let inserts = ChangeSection.sectioning(diff.insertions)
 
-    func generateDiffSections(
-        oldLines: [Substring],
-        newLines: [Substring],
-        diffByLine: CollectionDifference<Substring>
-    ) -> (insertionSections: [DiffSection], removalSections: [DiffSection]) {
-        let insertionDiffs = diffByLine.insertions
-        let removalDiffs = diffByLine.removals
-        var insertions = [DiffSection]()
-        var removals = [DiffSection]()
-        var insertionIndex = 0
-        var removalIndex = 0
-        var insertionUnchangedGap = 0
-        var removalUnchangedGap = 0
+        var groups = [DiffGroupItem<Substring>]()
 
-        while insertionIndex < insertionDiffs.endIndex || removalIndex < removalDiffs.endIndex {
-            let insertion = insertionDiffs[safe: insertionIndex]
-            let removal = removalDiffs[safe: removalIndex]
+        var removeOffset = 0
+        var insertOffset = 0
+        var removeIndex = 0
+        var insertIndex = 0
 
-            append(
-                into: &insertions,
-                change: insertion,
-                index: &insertionIndex,
-                unchangedGap: &insertionUnchangedGap
-            ) { change in
-                guard case let .insert(offset, element, _) = change else { return nil }
-                return (offset, element)
-            }
+        while removeIndex < removes.count || insertIndex < inserts.count {
+            let removeSection = removes[safe: removeIndex]
+            let insertSection = inserts[safe: insertIndex]
 
-            append(
-                into: &removals,
-                change: removal,
-                index: &removalIndex,
-                unchangedGap: &removalUnchangedGap
-            ) { change in
-                guard case let .remove(offset, element, _) = change else { return nil }
-                return (offset, element)
-            }
-
-            if insertionUnchangedGap > removalUnchangedGap {
-                // insert empty sections to insertions
-                if removalUnchangedGap > 0 {
-                    let count = insertionUnchangedGap - removalUnchangedGap
-                    let index = max(insertions.endIndex - 1, 0)
-                    let offset = (insertions.last?.offset ?? 0) - count
-                    insertions.insert(
-                        .init(offset: offset, end: offset, lines: []),
-                        at: index
-                    )
-                    insertionUnchangedGap -= removalUnchangedGap
-                    removalUnchangedGap = 0
-                } else if removal == nil {
-                    removalUnchangedGap = 0
-                    insertionUnchangedGap = 0
-                }
-            } else if removalUnchangedGap > insertionUnchangedGap { 
-                // insert empty sections to removals
-                if insertionUnchangedGap > 0 {
-                    let count = removalUnchangedGap - insertionUnchangedGap
-                    let index = max(removals.endIndex - 1, 0)
-                    let offset = (removals.last?.offset ?? 0) - count
-                    removals.insert(
-                        .init(offset: offset, end: offset, lines: []),
-                        at: index
-                    )
-                    removalUnchangedGap -= insertionUnchangedGap
-                    insertionUnchangedGap = 0
-                } else {
-                    removalUnchangedGap = 0
-                    insertionUnchangedGap = 0
-                }
-            } else {
-                removalUnchangedGap = 0
-                insertionUnchangedGap = 0
-            }
-        }
-
-        return (insertions, removals)
-    }
-
-    func append(
-        into sections: inout [DiffSection],
-        change: CollectionDifference<Substring>.Change?,
-        index: inout Int,
-        unchangedGap: inout Int,
-        extract: (CollectionDifference<Substring>.Change) -> (offset: Int, line: Substring)?
-    ) {
-        guard let change, let (offset, element) = extract(change) else { return }
-        if unchangedGap == 0 {
-            if !sections.isEmpty {
-                let lastIndex = sections.endIndex - 1
-                if !sections[lastIndex]
-                    .appendIfPossible(offset: offset, element: element)
-                {
-                    unchangedGap = offset - sections[lastIndex].end - 1
-                    sections.append(.init(
-                        offset: offset,
-                        end: offset,
-                        lines: [String(element)]
+            if let removeSection, let insertSection {
+                let ro = removeSection.offset - removeOffset
+                let io = insertSection.offset - insertOffset
+                if ro == io {
+                    groups.append(.init(
+                        remove: removeSection.changes.map { .init(change: $0) },
+                        insert: insertSection.changes.map { .init(change: $0) }
                     ))
+                    removeOffset += removeSection.changes.count
+                    insertOffset += insertSection.changes.count
+                    removeIndex += 1
+                    insertIndex += 1
+                } else if ro < io {
+                    groups.append(.init(
+                        remove: removeSection.changes.map { .init(change: $0) },
+                        insert: []
+                    ))
+                    removeOffset += removeSection.changes.count
+                    removeIndex += 1
+                } else {
+                    groups.append(.init(
+                        remove: [],
+                        insert: insertSection.changes.map { .init(change: $0) }
+                    ))
+                    insertOffset += insertSection.changes.count
+                    insertIndex += 1
                 }
-            } else {
-                sections.append(.init(
-                    offset: offset,
-                    end: offset,
-                    lines: [String(element)]
+            } else if let removeSection {
+                groups.append(.init(
+                    remove: removeSection.changes.map { .init(change: $0) },
+                    insert: []
                 ))
-                unchangedGap = offset
+                removeIndex += 1
+            } else if let insertSection {
+                groups.append(.init(
+                    remove: [],
+                    insert: insertSection.changes.map { .init(change: $0) }
+                ))
+                insertIndex += 1
             }
-            index += 1
         }
+
+        return groups
     }
 }
 
-extension Array {
+private extension Array {
     subscript(safe index: Int) -> Element? {
         guard index >= 0, index < count else { return nil }
         return self[index]
@@ -315,6 +330,76 @@ extension Array {
     subscript(safe index: Int, fallback fallback: Element) -> Element {
         guard index >= 0, index < count else { return fallback }
         return self[index]
+    }
+}
+
+private extension CollectionDifference.Change {
+    var offset: Int {
+        switch self {
+        case let .insert(offset, _, _):
+            return offset
+        case let .remove(offset, _, _):
+            return offset
+        }
+    }
+}
+
+private struct DiffGroupItem<Element> {
+    struct Item {
+        var offset: Int
+        var element: Element
+
+        init(offset: Int, element: Element) {
+            self.offset = offset
+            self.element = element
+        }
+
+        init(change: CollectionDifference<Element>.Change) {
+            offset = change.offset
+            switch change {
+            case let .insert(_, element, _):
+                self.element = element
+            case let .remove(_, element, _):
+                self.element = element
+            }
+        }
+    }
+
+    var remove: [Item]
+    var insert: [Item]
+}
+
+private struct ChangeSection<Element> {
+    var offset: Int { changes.first?.offset ?? 0 }
+    var changes: [CollectionDifference<Element>.Change]
+
+    static func sectioning(_ changes: [CollectionDifference<Element>.Change]) -> [Self] {
+        guard !changes.isEmpty else { return [] }
+
+        let sortedChanges = changes.sorted { $0.offset < $1.offset }
+        var sections = [Self]()
+        var currentSection = [CollectionDifference<Element>.Change]()
+
+        for change in sortedChanges {
+            if let lastOffset = currentSection.last?.offset {
+                if change.offset == lastOffset + 1 {
+                    currentSection.append(change)
+                } else {
+                    sections.append(Self(changes: currentSection))
+                    currentSection.removeAll()
+                    currentSection.append(change)
+                }
+            } else {
+                currentSection.append(change)
+                continue
+            }
+        }
+
+        if !currentSection.isEmpty {
+            sections.append(Self(changes: currentSection))
+        }
+
+        return sections
     }
 }
 
@@ -357,7 +442,6 @@ struct SnippetDiffPreview: View {
 
     func generateTexts() -> (original: [AttributedString], new: [AttributedString]) {
         let diff = CodeDiff().diff(snippet: newCode, from: originalCode)
-
         let new = diff.sections.flatMap {
             $0.newSnippet.map {
                 let text = $0.text.trimmingCharacters(in: .newlines)
@@ -488,6 +572,36 @@ struct LineDiffPreview: View {
     """
 
     return SnippetDiffPreview(originalCode: originalCode, newCode: newCode)
+}
+
+#Preview("Code Diff Editor") {
+    struct V: View {
+        @State var originalCode = ""
+        @State var newCode = ""
+
+        var body: some View {
+            VStack {
+                HStack {
+                    VStack {
+                        Text("Original")
+                        TextEditor(text: $originalCode)
+                            .frame(width: 300, height: 200)
+                    }
+                    VStack {
+                        Text("New")
+                        TextEditor(text: $newCode)
+                            .frame(width: 300, height: 200)
+                    }
+                }
+                .font(.body.monospaced())
+                SnippetDiffPreview(originalCode: originalCode, newCode: newCode)
+            }
+            .padding()
+            .frame(height: 600)
+        }
+    }
+
+    return V()
 }
 
 #endif

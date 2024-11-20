@@ -13,13 +13,11 @@ import Workspace
 
 public final class CodeiumExtension: BuiltinExtension {
     public var extensionIdentifier: String { "com.codeium" }
-    
-    public var suggestionServiceId: Preferences.BuiltInSuggestionFeatureProvider { .codeium }
 
     public let suggestionService: CodeiumSuggestionService
-    
-    public var chatTabTypes: [any ChatTab.Type] {
-        [CodeiumChatTab.self]
+
+    public var chatTabTypes: [any CustomChatTab] {
+        [TypedCustomChatTab(of: CodeiumChatTab.self)]
     }
 
     private var extensionUsage = ExtensionUsage(

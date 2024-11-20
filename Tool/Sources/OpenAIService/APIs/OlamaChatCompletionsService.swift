@@ -94,7 +94,8 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
                 )
             } ?? .init(role: .assistant, content: ""),
             otherChoices: [],
-            finishReason: ""
+            finishReason: "",
+            usage: nil
         )
     }
 }

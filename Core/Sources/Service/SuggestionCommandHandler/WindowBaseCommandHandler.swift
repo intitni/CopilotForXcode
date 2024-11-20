@@ -1,12 +1,13 @@
 import AppKit
 import ChatService
 import ComposableArchitecture
+import CustomCommandTemplateProcessor
 import Foundation
 import GitHubCopilotService
 import LanguageServerProtocol
 import Logger
+import ModificationBasic
 import OpenAIService
-import PromptToCodeBasic
 import SuggestionBasic
 import SuggestionInjector
 import SuggestionWidget
@@ -398,7 +399,7 @@ extension WindowBaseCommandHandler {
 
         let snippets = selections.map { selection in
             guard selection.start != selection.end else {
-                return PromptToCodeSnippet(
+                return ModificationSnippet(
                     startLineIndex: selection.start.line,
                     originalCode: "",
                     modifiedCode: "",
@@ -434,7 +435,7 @@ extension WindowBaseCommandHandler {
                 start: selection.start,
                 end: selection.end
             ))
-            return PromptToCodeSnippet(
+            return ModificationSnippet(
                 startLineIndex: selection.start.line,
                 originalCode: selectedCode,
                 modifiedCode: selectedCode,
@@ -471,12 +472,10 @@ extension WindowBaseCommandHandler {
                         lines: editor.lines
                     ),
                     snippets: IdentifiedArray(uniqueElements: snippets),
-                    instruction: newPrompt ?? "",
                     extraSystemPrompt: newExtraSystemPrompt ?? "",
                     isAttachedToTarget: true
                 )),
-                indentSize: filespace.codeMetadata.indentSize ?? 4,
-                usesTabsForIndentation: filespace.codeMetadata.usesTabsForIndentation ?? false,
+                instruction: newPrompt,
                 commandName: name,
                 isContinuous: isContinuous
             ))))

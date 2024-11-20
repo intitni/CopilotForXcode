@@ -33,7 +33,7 @@ public extension Workspace {
     ) async throws -> [CodeSuggestion] {
         refreshUpdateTime()
 
-        let filespace = createFilespaceIfNeeded(fileURL: fileURL)
+        let filespace = try createFilespaceIfNeeded(fileURL: fileURL)
 
         guard !(await filespace.isGitIgnored) else { return [] }
 

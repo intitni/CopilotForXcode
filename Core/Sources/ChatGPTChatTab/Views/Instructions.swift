@@ -16,10 +16,7 @@ struct Instruction: View {
                 | Plugin Name | Description |
                 | --- | --- |
                 | `/run` | Runs a command under the project root |
-                | `/math` | Solves a math problem in natural language |
-                | `/search` | Searches on Bing and summarizes the results |
                 | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
-                | `/shortcutInput(name)` | Runs a shortcut and uses its result as a new message |
                 
                 To use plugins, you can prefix a message with `/pluginName`.
                 """

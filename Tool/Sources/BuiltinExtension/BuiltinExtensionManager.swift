@@ -22,6 +22,11 @@ public final class BuiltinExtensionManager {
         checkAppConfiguration()
     }
 
+    public func addExtensions(_ extensions: [any BuiltinExtension]) {
+        self.extensions.append(contentsOf: extensions)
+        checkAppConfiguration()
+    }
+
     public func terminate() {
         for ext in extensions {
             ext.terminate()
@@ -33,8 +38,17 @@ extension BuiltinExtensionManager {
     func checkAppConfiguration() {
         let suggestionFeatureProvider = UserDefaults.shared.value(for: \.suggestionFeatureProvider)
         for ext in extensions {
-            let isSuggestionFeatureInUse = suggestionFeatureProvider ==
-                .builtIn(ext.suggestionServiceId)
+            let isSuggestionFeatureInUse = switch suggestionFeatureProvider {
+            case let .builtIn(provider):
+                switch provider {
+                case .gitHubCopilot:
+                    ext.extensionIdentifier == "com.github.copilot"
+                case .codeium:
+                    ext.extensionIdentifier == "com.codeium"
+                }
+            case let .extension(_, bundleIdentifier):
+                ext.extensionIdentifier == bundleIdentifier
+            }
             let isChatFeatureInUse = false
             ext.extensionUsageDidChange(.init(
                 isSuggestionServiceInUse: isSuggestionFeatureInUse,

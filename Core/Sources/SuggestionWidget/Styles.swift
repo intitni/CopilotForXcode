@@ -45,35 +45,6 @@ extension NSAppearance {
     }
 }
 
-struct XcodeLikeFrame<Content: View>: View {
-    @Environment(\.colorScheme) var colorScheme
-    let content: Content
-    let cornerRadius: Double
-
-    var body: some View {
-        content.clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Material.bar)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: max(0, cornerRadius), style: .continuous)
-                    .stroke(Color.black.opacity(0.1), style: .init(lineWidth: 1))
-            ) // Add an extra border just incase the background is not displayed.
-            .overlay(
-                RoundedRectangle(cornerRadius: max(0, cornerRadius - 1), style: .continuous)
-                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
-                    .padding(1)
-            )
-    }
-}
-
-extension View {
-    func xcodeStyleFrame(cornerRadius: Double? = nil) -> some View {
-        XcodeLikeFrame(content: self, cornerRadius: cornerRadius ?? 10)
-    }
-}
-
 extension MarkdownUI.Theme {
     static func custom(fontSize: Double) -> MarkdownUI.Theme {
         .gitHub.text {

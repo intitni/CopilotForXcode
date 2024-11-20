@@ -11,6 +11,7 @@ public final class QAInformationRetrievalChain: Chain {
     public struct Output {
         public var information: String
         public var sourceDocuments: [Document]
+        public var distance: [Float]
     }
 
     public init(
@@ -79,7 +80,11 @@ public final class QAInformationRetrievalChain: Chain {
             callbackManagers: callbackManagers
         )
 
-        return .init(information: relevantInformation, sourceDocuments: documents.map(\.document))
+        return .init(
+            information: relevantInformation,
+            sourceDocuments: documents.map(\.document),
+            distance: documents.map(\.distance)
+        )
     }
 
     public func parseOutput(_ output: Output) -> String {

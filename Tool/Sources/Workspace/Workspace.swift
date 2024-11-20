@@ -67,6 +67,13 @@ public final class Workspace {
         }
     }
 
+    public struct CantFindFileError: Error, LocalizedError {
+        public var fileURL: URL
+        public var errorDescription: String? {
+            "Can't find \(fileURL)."
+        }
+    }
+
     private var additionalProperties = WorkspacePropertyValues()
     public internal(set) var plugins = [ObjectIdentifier: WorkspacePlugin]()
     public let workspaceURL: URL
@@ -107,7 +114,7 @@ public final class Workspace {
         let openedFiles = openedFileRecoverableStorage.openedFiles
         Task { @WorkspaceActor in
             for fileURL in openedFiles {
-                _ = createFilespaceIfNeeded(fileURL: fileURL)
+                _ = try? createFilespaceIfNeeded(fileURL: fileURL)
             }
         }
     }
@@ -117,7 +124,25 @@ public final class Workspace {
     }
 
     @WorkspaceActor
-    public func createFilespaceIfNeeded(fileURL: URL) -> Filespace {
+    public func createFilespaceIfNeeded(
+        fileURL: URL,
+        checkIfFileExists: Bool = true
+    ) throws -> Filespace {
+        let extensionName = fileURL.pathExtension
+        if ["xcworkspace", "xcodeproj"].contains(extensionName) {
+            throw UnsupportedFileError(extensionName: extensionName)
+        }
+        var isDirectory: ObjCBool = false
+        if checkIfFileExists, !FileManager.default.fileExists(
+            atPath: fileURL.path,
+            isDirectory: &isDirectory
+        ) {
+            throw CantFindFileError(fileURL: fileURL)
+        }
+        if isDirectory.boolValue {
+            throw UnsupportedFileError(extensionName: extensionName)
+        }
+
         let existedFilespace = filespaces[fileURL]
         let filespace = existedFilespace ?? .init(
             fileURL: fileURL,

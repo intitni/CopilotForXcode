@@ -80,6 +80,7 @@ public struct ChatPanel {
         case chatTab(id: String, action: ChatTabItem.Action)
     }
 
+    @Dependency(\.chatTabPool) var chatTabPool
     @Dependency(\.suggestionWidgetControllerDependency) var suggestionWidgetControllerDependency
     @Dependency(\.xcodeInspector) var xcodeInspector
     @Dependency(\.activatePreviousActiveXcode) var activatePreviouslyActiveXcode
@@ -197,6 +198,7 @@ public struct ChatPanel {
                     return max(nextIndex, 0)
                 }()
                 state.chatTabGroup.tabInfo.removeAll { $0.id == id }
+                chatTabPool.getTab(of: id)?.close()
                 if state.chatTabGroup.tabInfo.isEmpty {
                     state.isPanelDisplayed = false
                 }

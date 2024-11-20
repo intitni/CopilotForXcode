@@ -45,7 +45,7 @@ class XPCService {
 
     @XPCServiceActor
     private func buildConnection() -> InvalidatingConnection {
-        logger.info("Rebuilding connection")
+//        logger.info("Rebuilding connection")
         let connection = switch kind {
         case let .machService(name):
             NSXPCConnection(machServiceName: name)
@@ -54,14 +54,14 @@ class XPCService {
         }
         connection.remoteObjectInterface = interface
         connection.invalidationHandler = { [weak self] in
-            self?.logger.info("XPCService Invalidated")
+//            self?.logger.info("XPCService Invalidated")
             Task { [weak self] in
                 self?.markAsInvalidated()
                 await self?.delegate?.connectionDidInvalidate()
             }
         }
         connection.interruptionHandler = { [weak self] in
-            self?.logger.info("XPCService interrupted")
+//            self?.logger.info("XPCService interrupted")
             Task { [weak self] in
                 await self?.delegate?.connectionDidInterrupt()
             }

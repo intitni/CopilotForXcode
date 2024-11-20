@@ -227,7 +227,7 @@ extension ModelContent {
         case .assistant:
             if let toolCalls = message.toolCalls {
                 return toolCalls.map { call in
-                    return """
+                    """
                     Function ID: \(call.id)
                     Call function: \(call.function.name)
                     Arguments: \(call.function.arguments ?? "{}")
@@ -277,7 +277,8 @@ extension GenerateContentResponse {
             model: "",
             message: message,
             otherChoices: otherMessages,
-            finishReason: candidates.first?.finishReason?.rawValue ?? ""
+            finishReason: candidates.first?.finishReason?.rawValue ?? "",
+            usage: nil
         )
     }
 

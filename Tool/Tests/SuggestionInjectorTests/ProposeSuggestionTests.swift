@@ -47,7 +47,7 @@
 //            *///======== End of Copilot Suggestion
 //            }
 //            """,
-//            "The user may want to keep typing on the empty line, so suggestion is addded to the next line"
+//            "The user may want to keep typing on the empty line, so suggestion is added to the next line"
 //        )
 //    }
 //

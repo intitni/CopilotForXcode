@@ -205,6 +205,7 @@
 		C8216B772980370100AD38C7 /* ReloadLaunchAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadLaunchAgent.swift; sourceTree = "<group>"; };
 		C828B27D2B1F241500E7612A /* ExtensionPoint.appextensionpoint */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = ExtensionPoint.appextensionpoint; sourceTree = "<group>"; };
 		C82E38492A1F025F00D4EADF /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		C84FD9D72CC671C600BE5093 /* ChatPlugins */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ChatPlugins; sourceTree = "<group>"; };
 		C8520300293C4D9000460097 /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		C8520308293D805800460097 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C861A6A229E5503F005C41A3 /* PromptToCodeCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptToCodeCommand.swift; sourceTree = "<group>"; };
@@ -341,6 +342,7 @@
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
 				C828B27D2B1F241500E7612A /* ExtensionPoint.appextensionpoint */,
+				C84FD9D72CC671C600BE5093 /* ChatPlugins */,
 				C81D181E2A1B509B006C1B70 /* Tool */,
 				C8189B282938979000C9DCDA /* Core */,
 				C8189B182938972F00C9DCDA /* Copilot for Xcode */,
@@ -775,7 +777,7 @@
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTENSION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -803,7 +805,7 @@
 				DEVELOPMENT_TEAM = 5YKZ4Y3DAW;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = EditorExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTESNION_BUNDLE_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(EXTENSION_BUNDLE_NAME)";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -41,6 +41,8 @@ struct ChatCompletionsRequestBody: Codable, Equatable {
         ///
         /// - important: It's required when the role is `tool`.
         var toolCallId: String?
+        /// Cache the message if possible.
+        var cacheIfPossible: Bool = false
     }
 
     struct MessageFunctionCall: Codable, Equatable {
@@ -180,12 +182,21 @@ struct ChatCompletionsStreamDataChunk {
         var content: String?
         var toolCalls: [ToolCall]?
     }
+    
+    struct Usage: Codable, Equatable {
+        var promptTokens: Int?
+        var completionTokens: Int?
+        
+        var cachedTokens: Int?
+        var otherUsage: [String: Int]
+    }
 
     var id: String?
     var object: String?
     var model: String?
     var message: Delta?
     var finishReason: String?
+    var usage: Usage?
 }
 
 // MARK: - Non Stream API
@@ -196,6 +207,32 @@ protocol ChatCompletionsAPI {
 
 struct ChatCompletionResponseBody: Codable, Equatable {
     typealias Message = ChatCompletionsRequestBody.Message
+    
+    struct Usage: Codable, Equatable {
+        var promptTokens: Int
+        var completionTokens: Int
+        
+        var cachedTokens: Int
+        var otherUsage: [String: Int]
+        
+        mutating func merge(with other: ChatCompletionsStreamDataChunk.Usage) {
+            promptTokens += other.promptTokens ?? 0
+            completionTokens += other.completionTokens ?? 0
+            cachedTokens += other.cachedTokens ?? 0
+            for (key, value) in other.otherUsage {
+                otherUsage[key, default: 0] += value
+            }
+        }
+        
+        mutating func merge(with other: Self) {
+            promptTokens += other.promptTokens
+            completionTokens += other.completionTokens
+            cachedTokens += other.cachedTokens
+            for (key, value) in other.otherUsage {
+                otherUsage[key, default: 0] += value
+            }
+        }
+    }
 
     var id: String?
     var object: String
@@ -203,5 +240,6 @@ struct ChatCompletionResponseBody: Codable, Equatable {
     var message: Message
     var otherChoices: [Message]
     var finishReason: String
+    var usage: Usage?
 }
 

@@ -1,14 +1,19 @@
 import ActiveApplicationMonitor
 import AppKit
+import BuiltinExtension
 import CodeiumService
 import CommandHandler
+import ComposableArchitecture
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Dependencies
 import Logger
+import ModificationBasic
 import PlusFeatureFlag
 import Preferences
+import PromptToCodeCustomization
 import SuggestionBasic
 import SuggestionInjector
+import Terminal
 import Toast
 import Workspace
 import WorkspaceSuggestionService
@@ -200,7 +205,7 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func acceptPromptToCode() async {
+    func acceptModification() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
                 throw CancellationError()
@@ -218,12 +223,12 @@ struct PseudoCommandHandler: CommandHandler {
                     if now.timeIntervalSince(last) > 60 * 60 {
                         Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
                         toast.toast(content: """
-                    The app is using a fallback solution to accept suggestions. \
-                    For better experience, please restart Xcode to re-activate the Copilot \
-                    menu item.
-                    """, type: .warning)
+                        The app is using a fallback solution to accept suggestions. \
+                        For better experience, please restart Xcode to re-activate the Copilot \
+                        menu item.
+                        """, type: .warning, duration: 10)
                     }
-                    
+
                     throw error
                 }
             }
@@ -267,6 +272,16 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
+    func presentModification(state: Shared<ModificationState>) async {
+        let store = await Service.shared.guiController.store
+        await store.send(.promptToCodeGroup(.createPromptToCode(.init(
+            promptToCodeState: state,
+            instruction: nil,
+            commandName: nil,
+            isContinuous: false
+        ), sendImmediately: false)))
+    }
+
     func acceptSuggestion() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
@@ -284,7 +299,7 @@ struct PseudoCommandHandler: CommandHandler {
                     The app is using a fallback solution to accept suggestions. \
                     For better experience, please restart Xcode to re-activate the Copilot \
                     menu item.
-                    """, type: .warning)
+                    """, type: .warning, duration: 10)
                 }
 
                 throw error
@@ -340,6 +355,24 @@ struct PseudoCommandHandler: CommandHandler {
     func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
         case .chatPanel:
+            for ext in BuiltinExtensionManager.shared.extensions {
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement })
+                else { continue }
+                Task { @MainActor in
+                    let store = Service.shared.guiController.store
+                    await store.send(
+                        .createAndSwitchToChatTabIfNeededMatching(
+                            check: { $0.name == tab.name },
+                            kind: .init(tab.defaultChatBuilder())
+                        )
+                    ).finish()
+                    store.send(.openChatPanel(
+                        forceDetach: forceDetach,
+                        activateThisApp: activateThisApp
+                    ))
+                }
+                return
+            }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
@@ -395,13 +428,36 @@ struct PseudoCommandHandler: CommandHandler {
                     await openURL(url)
                 }
             }
-        case .codeiumChat:
+        case let .builtinExtension(extensionIdentifier, id, _):
+            guard let ext = BuiltinExtensionManager.shared.extensions
+                .first(where: { $0.extensionIdentifier == extensionIdentifier }),
+                let tab = ext.chatTabTypes.first(where: { $0.name == id })
+            else { return }
             Task { @MainActor in
                 let store = Service.shared.guiController.store
                 await store.send(
                     .createAndSwitchToChatTabIfNeededMatching(
-                        check: { $0 is CodeiumChatTab },
-                        kind: .init(CodeiumChatTab.defaultChatBuilder())
+                        check: { $0.name == id },
+                        kind: .init(tab.defaultChatBuilder())
+                    )
+                ).finish()
+                store.send(.openChatPanel(
+                    forceDetach: forceDetach,
+                    activateThisApp: activateThisApp
+                ))
+            }
+        case let .externalExtension(extensionIdentifier, id, _):
+            guard let ext = BuiltinExtensionManager.shared.extensions
+                .first(where: { $0.extensionIdentifier == "plus" }),
+                let tab = ext.chatTabTypes
+                .first(where: { $0.name == "\(extensionIdentifier).\(id)" })
+            else { return }
+            Task { @MainActor in
+                let store = Service.shared.guiController.store
+                await store.send(
+                    .createAndSwitchToChatTabIfNeededMatching(
+                        check: { $0.name == "\(extensionIdentifier).\(id)" },
+                        kind: .init(tab.defaultChatBuilder())
                     )
                 ).finish()
                 store.send(.openChatPanel(
@@ -437,6 +493,22 @@ struct PseudoCommandHandler: CommandHandler {
         Task { @MainActor in
             let store = Service.shared.guiController.store
             store.send(.suggestionWidget(.toastPanel(.toast(.toast(message, type, nil)))))
+        }
+    }
+
+    func presentFile(at fileURL: URL, line: Int = 0) async {
+        let terminal = Terminal()
+        do {
+            _ = try await terminal.runCommand(
+                "/bin/bash",
+                arguments: [
+                    "-c",
+                    "xed -l \(line) \"\(fileURL.path)\"",
+                ],
+                environment: [:]
+            )
+        } catch {
+            print(error)
         }
     }
 }

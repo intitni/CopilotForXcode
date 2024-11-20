@@ -233,21 +233,7 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     var chatModels: PreferenceKey<[ChatModel]> {
-        .init(defaultValue: [
-            .init(
-                id: UUID().uuidString,
-                name: "OpenAI",
-                format: .openAI,
-                info: .init(
-                    apiKeyName: "",
-                    baseURL: "",
-                    isFullURL: false,
-                    maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
-                    supportsFunctionCalling: true,
-                    modelName: ChatGPTModel.gpt35Turbo.rawValue
-                )
-            ),
-        ], key: "ChatModels")
+        .init(defaultValue: [], key: "ChatModels")
     }
 
     var chatGPTLanguage: PreferenceKey<String> {
@@ -267,20 +253,7 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     var embeddingModels: PreferenceKey<[EmbeddingModel]> {
-        .init(defaultValue: [
-            .init(
-                id: UUID().uuidString,
-                name: "OpenAI",
-                format: .openAI,
-                info: .init(
-                    apiKeyName: "",
-                    baseURL: "",
-                    isFullURL: false,
-                    maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
-                    modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
-                )
-            ),
-        ], key: "EmbeddingModels")
+        .init(defaultValue: [], key: "EmbeddingModels")
     }
 }
 
@@ -320,7 +293,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var wrapCodeInPromptToCode: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "WrapCodeInPromptToCode")
+        .init(defaultValue: false, key: "WrapCodeInPromptToCode")
     }
 }
 
@@ -453,15 +426,7 @@ public extension UserDefaultPreferenceKeys {
 
     var defaultChatSystemPrompt: PreferenceKey<String> {
         .init(
-            defaultValue: """
-            You are a helpful senior programming assistant.
-            You should respond in natural language.
-            Your response should be correct, concise, clear, informative and logical.
-            Use markdown if you need to present code, table, list, etc.
-            If you are asked to help perform a task, you MUST think step-by-step, then describe each step concisely.
-            If you are asked to explain code, you MUST explain it step-by-step in a ordered list concisely.
-            Make your answer short and structured.
-            """,
+            defaultValue: "",
             key: "DefaultChatSystemPrompt"
         )
     }
@@ -471,7 +436,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var wrapCodeInChatCodeBlock: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "WrapCodeInChatCodeBlock")
+        .init(defaultValue: false, key: "WrapCodeInChatCodeBlock")
     }
 
     var enableFileScopeByDefaultInChatContext: PreferenceKey<Bool> {
@@ -518,7 +483,11 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: true, key: "KeepFloatOnTopIfChatPanelAndXcodeOverlaps")
     }
 
-    var openChatMode: PreferenceKey<OpenChatMode> {
+    var openChatMode: PreferenceKey<UserDefaultsStorageBox<OpenChatMode>> {
+        .init(defaultValue: .init(.chatPanel), key: "DefaultOpenChatMode")
+    }
+    
+    var legacyOpenChatMode: DeprecatedPreferenceKey<OpenChatMode.LegacyOpenChatMode> {
         .init(defaultValue: .chatPanel, key: "OpenChatMode")
     }
 

@@ -140,12 +140,16 @@ struct WidgetContextMenu: View {
     var body: some View {
         WithPerceptionTracking {
             Group { // Commands
-                if !store.isChatOpen {
-                    Button(action: {
-                        store.send(.openChatButtonClicked)
-                    }) {
-                        Text("Open Chat")
-                    }
+                Button(action: {
+                    store.send(.openChatButtonClicked)
+                }) {
+                    Text("Open Chat")
+                }
+                
+                Button(action: {
+                    store.send(.openModificationButtonClicked)
+                }) {
+                    Text("Write or Modify Code")
                 }
 
                 customCommandMenu()

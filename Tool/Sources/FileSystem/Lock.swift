@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ProcessLockError: Error {
-    case unableToAquireLock(errno: Int32)
+    case unableToAcquireLock(errno: Int32)
 }
 
 extension ProcessLockError: CustomNSError {
@@ -42,7 +42,7 @@ public final class FileLock {
         self.init(at: cachePath.appending(component: name + ".lock"))
     }
 
-    /// Try to acquire a lock. This method will block until lock the already aquired by other process.
+    /// Try to acquire a lock. This method will block until lock the already acquired by other process.
     ///
     /// Note: This method can throw if underlying POSIX methods fail.
     public func lock(type: LockType = .exclusive, blocking: Bool = true) throws {
@@ -78,7 +78,7 @@ public final class FileLock {
         }
         if !LockFileEx(handle, DWORD(dwFlags), 0,
                        UInt32.max, UInt32.max, &overlapped) {
-            throw ProcessLockError.unableToAquireLock(errno: Int32(GetLastError()))
+            throw ProcessLockError.unableToAcquireLock(errno: Int32(GetLastError()))
         }
       #else
         // Open the lock file.
@@ -97,14 +97,14 @@ public final class FileLock {
         if !blocking {
             flags |= LOCK_NB
         }
-        // Aquire lock on the file.
+        // Acquire lock on the file.
         while true {
             if flock(fileDescriptor!, flags) == 0 {
                 break
             }
             // Retry if interrupted.
             if errno == EINTR { continue }
-            throw ProcessLockError.unableToAquireLock(errno: errno)
+            throw ProcessLockError.unableToAcquireLock(errno: errno)
         }
       #endif
     }

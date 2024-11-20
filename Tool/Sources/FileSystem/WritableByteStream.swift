@@ -9,7 +9,7 @@
 */
 
 /// Closable entity is one that manages underlying resources and needs to be closed for cleanup
-/// The intent of this method is for the sole owner of the refernece/handle of the resource to close it completely, comapred to releasing a shared resource.
+/// The intent of this method is for the sole owner of the refernece/handle of the resource to close it completely, compared to releasing a shared resource.
 public protocol Closable {
     func close() throws
 }
@@ -156,7 +156,7 @@ extension WritableByteStream {
 
     // MARK: helpers that return `self`
 
-    // FIXME: This override shouldn't be necesary but removing it causes a 30% performance regression. This problem is
+    // FIXME: This override shouldn't be necessary but removing it causes a 30% performance regression. This problem is
     // tracked by the following bug: https://bugs.swift.org/browse/SR-8535
     @discardableResult
     public func send(_ value: ArraySlice<UInt8>) -> WritableByteStream {
@@ -408,7 +408,7 @@ precedencegroup StreamingPrecedence {
 
 // MARK: Output Operator Implementations
 
-// FIXME: This override shouldn't be necesary but removing it causes a 30% performance regression. This problem is
+// FIXME: This override shouldn't be necessary but removing it causes a 30% performance regression. This problem is
 // tracked by the following bug: https://bugs.swift.org/browse/SR-8535
 
 @available(*, deprecated, message: "use send(_:) function on WritableByteStream instead")

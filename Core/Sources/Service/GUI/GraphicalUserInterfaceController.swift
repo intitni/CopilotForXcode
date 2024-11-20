@@ -6,13 +6,10 @@ import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import Dependencies
+import Logger
 import Preferences
 import SuggestionBasic
 import SuggestionWidget
-
-#if canImport(ProChatTabs)
-import ProChatTabs
-#endif
 
 #if canImport(ChatTabPersistent)
 import ChatTabPersistent
@@ -188,33 +185,28 @@ struct GUI {
                             )
                         }
                     }
-                    
+
                 case let .sendCustomCommandToActiveChat(command):
-                    @Sendable func stopAndHandleCommand(_ tab: ChatGPTChatTab) async {
-                        if tab.service.isReceivingMessage {
-                            await tab.service.stopReceivingMessage()
-                        }
-                        try? await tab.service.handleCustomCommand(command)
-                    }
-
                     if let info = state.chatTabGroup.selectedTabInfo,
-                       let activeTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
+                       let tab = chatTabPool.getTab(of: info.id),
+                       tab.handleCustomCommand(command)
                     {
                         return .run { send in
                             await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                            await stopAndHandleCommand(activeTab)
                         }
                     }
 
-                    if let info = state.chatTabGroup.tabInfo.first(where: {
-                        chatTabPool.getTab(of: $0.id) is ChatGPTChatTab
-                    }),
-                        let chatTab = chatTabPool.getTab(of: info.id) as? ChatGPTChatTab
-                    {
-                        state.chatTabGroup.selectedTabId = chatTab.id
-                        return .run { send in
-                            await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                            await stopAndHandleCommand(chatTab)
+                    for info in state.chatTabGroup.tabInfo {
+                        if let chatTab = chatTabPool.getTab(of: info.id),
+                           chatTab.handleCustomCommand(command)
+                        {
+                            state.chatTabGroup.selectedTabId = chatTab.id
+                            return .run { send in
+                                await send(.openChatPanel(
+                                    forceDetach: false,
+                                    activateThisApp: false
+                                ))
+                            }
                         }
                     }
 
@@ -223,9 +215,7 @@ struct GUI {
                         else { return }
                         await send(.suggestionWidget(.chatPanel(.appendAndSelectTab(chatTabInfo))))
                         await send(.openChatPanel(forceDetach: false, activateThisApp: false))
-                        if let chatTab = chatTab as? ChatGPTChatTab {
-                            await stopAndHandleCommand(chatTab)
-                        }
+                        _ = chatTab.handleCustomCommand(command)
                     }
 
                 case .toggleWidgetsHotkeyPressed:
@@ -298,7 +288,7 @@ public final class GraphicalUserInterfaceController {
             dependencies.suggestionWidgetUserDefaultsObservers = .init()
             dependencies.chatTabPool = chatTabPool
             dependencies.chatTabBuilderCollection = ChatTabFactory.chatTabBuilderCollection
-        
+
             #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
             dependencies.restoreChatTabInPool = {
                 await chatTabPool.restore($0)
@@ -341,6 +331,13 @@ public final class GraphicalUserInterfaceController {
                 self?.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
             }
         }
+        suggestionDependency.onOpenModificationButtonClicked = {
+            Task {
+                guard let content = await PseudoCommandHandler().getEditorContent(sourceEditor: nil)
+                else { return }
+                _ = try await WindowBaseCommandHandler().promptToCode(editor: content)
+            }
+        }
         suggestionDependency.onCustomCommandClicked = { command in
             Task {
                 let commandHandler = PseudoCommandHandler()
@@ -377,33 +374,40 @@ extension ChatTabPool {
     ) async -> (any ChatTab, ChatTabInfo)? {
         let id = UUID().uuidString
         let info = ChatTabInfo(id: id, title: "")
-        let builder = kind?.builder ?? ChatGPTChatTab.defaultBuilder()
+        let builder = kind?.builder ?? {
+            for ext in BuiltinExtensionManager.shared.extensions {
+                guard let tab = ext.chatTabTypes.first(where: { $0.isDefaultChatTabReplacement })
+                else { continue }
+                return tab.defaultChatBuilder()
+            }
+            return ChatGPTChatTab.defaultBuilder()
+        }()
         guard let chatTap = await builder.build(store: createStore(id)) else { return nil }
         setTab(chatTap, forId: id)
         return (chatTap, info)
     }
 
-    #if canImport(ChatTabPersistent) && canImport(ProChatTabs)
+    #if canImport(ChatTabPersistent)
     @MainActor
     func restore(
         _ data: ChatTabPersistent.RestorableTabData
     ) async -> (any ChatTab, ChatTabInfo)? {
         switch data.name {
         case ChatGPTChatTab.name:
-            guard let builder = try? await ChatGPTChatTab.restore(from: data.data) else { break }
-            return await createTab(id: data.id, from: builder)
-        case BrowserChatTab.name:
-            guard let builder = try? BrowserChatTab.restore(from: data.data) else { break }
-            return await createTab(id: data.id, from: builder)
-        case TerminalChatTab.name:
-            guard let builder = try? await TerminalChatTab.restore(from: data.data) else { break }
+            guard let builder = try? await ChatGPTChatTab.restore(from: data.data)
+            else { fallthrough }
             return await createTab(id: data.id, from: builder)
         default:
             let chatTabTypes = BuiltinExtensionManager.shared.extensions.flatMap(\.chatTabTypes)
             for type in chatTabTypes {
                 if type.name == data.name {
-                    guard let builder = try? await type.restore(from: data.data) else { break }
-                    return await createTab(id: data.id, from: builder)
+                    do {
+                        let builder = try await type.restore(from: data.data)
+                        return await createTab(id: data.id, from: builder)
+                    } catch {
+                        Logger.service.error("Failed to restore chat tab \(data.name): \(error)")
+                        break
+                    }
                 }
             }
         }

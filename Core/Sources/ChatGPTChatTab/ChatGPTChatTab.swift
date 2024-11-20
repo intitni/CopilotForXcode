@@ -102,11 +102,11 @@ public class ChatGPTChatTab: ChatTab {
             return nil
         }
 
-        return [Builder(title: "New Chat", customCommand: nil)] + customCommands
+        return [Builder(title: "Legacy Chat", customCommand: nil)] + customCommands
     }
-    
+
     public static func defaultBuilder() -> ChatTabBuilder {
-        Builder(title: "New Chat", customCommand: nil)
+        Builder(title: "Legacy Chat", customCommand: nil)
     }
 
     @MainActor
@@ -134,7 +134,7 @@ public class ChatGPTChatTab: ChatTab {
             }
         }.store(in: &cancellable)
 
-        do {
+        Task { @MainActor in
             var lastTrigger = -1
             observer.observe { [weak self] in
                 guard let self else { return }
@@ -147,7 +147,7 @@ public class ChatGPTChatTab: ChatTab {
             }
         }
 
-        do {
+        Task { @MainActor in
             var lastTitle = ""
             observer.observe { [weak self] in
                 guard let self else { return }
@@ -160,17 +160,29 @@ public class ChatGPTChatTab: ChatTab {
             }
         }
 
-        observer.observe { [weak self] in
-            guard let self else { return }
-            _ = chat.history
-            _ = chat.title
-            _ = chat.isReceivingMessage
-            Task {
-                await self.updateContentDebounce.debounce { @MainActor [weak self] in
-                    self?.chatTabStore.send(.tabContentUpdated)
+        Task { @MainActor in
+            observer.observe { [weak self] in
+                guard let self else { return }
+                _ = chat.history
+                _ = chat.title
+                _ = chat.isReceivingMessage
+                Task {
+                    await self.updateContentDebounce.debounce { @MainActor [weak self] in
+                        self?.chatTabStore.send(.tabContentUpdated)
+                    }
                 }
             }
         }
+    }
+
+    public func handleCustomCommand(_ customCommand: CustomCommand) -> Bool {
+        Task {
+            if service.isReceivingMessage {
+                await service.stopReceivingMessage()
+            }
+            try? await service.handleCustomCommand(customCommand)
+        }
+        return true
     }
 }
 

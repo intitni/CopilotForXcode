@@ -1,5 +1,9 @@
 import AppKit
 import Foundation
+import Logger
+#if DEBUG
+import IssueReporting
+#endif
 
 // MARK: - State
 
@@ -136,7 +140,16 @@ public extension AXUIElement {
     }
 
     var isFrontmost: Bool {
-        (try? copyValue(key: kAXFrontmostAttribute)) ?? false
+        get {
+            (try? copyValue(key: kAXFrontmostAttribute)) ?? false
+        }
+        set {
+            AXUIElementSetAttributeValue(
+                self,
+                kAXFrontmostAttribute as CFString,
+                newValue as CFBoolean
+            )
+        }
     }
 
     var focusedWindow: AXUIElement? {
@@ -170,8 +183,15 @@ public extension AXUIElement {
     func child(
         identifier: String? = nil,
         title: String? = nil,
-        role: String? = nil
+        role: String? = nil,
+        depth: Int = 0
     ) -> AXUIElement? {
+        #if DEBUG
+        if depth >= 50 {
+            reportIssue("AXUIElement.child: Exceeding recommended depth.")
+        }
+        #endif
+
         for child in children {
             let match = {
                 if let identifier, child.identifier != identifier { return false }
@@ -185,7 +205,8 @@ public extension AXUIElement {
             if let target = child.child(
                 identifier: identifier,
                 title: title,
-                role: role
+                role: role,
+                depth: depth + 1
             ) { return target }
         }
         return nil
@@ -201,13 +222,19 @@ public extension AXUIElement {
         renamed: "traverse(_:)",
         message: "Please make use ``AXUIElement\traverse(_:)`` instead."
     )
-    func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
+    func children(depth: Int = 0, where match: (AXUIElement) -> Bool) -> [AXUIElement] {
+        #if DEBUG
+        if depth >= 50 {
+            reportIssue("AXUIElement.children: Exceeding recommended depth.")
+        }
+        #endif
+        
         var all = [AXUIElement]()
         for child in children {
             if match(child) { all.append(child) }
         }
         for child in children {
-            all.append(contentsOf: child.children(where: match))
+            all.append(contentsOf: child.children(depth: depth + 1, where: match))
         }
         return all
     }
@@ -218,12 +245,17 @@ public extension AXUIElement {
         return parent.firstParent(where: match)
     }
 
-    func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
+    func firstChild(depth: Int = 0, where match: (AXUIElement) -> Bool) -> AXUIElement? {
+        #if DEBUG
+        if depth >= 50 {
+            reportIssue("AXUIElement.firstChild: Exceeding recommended depth.")
+        }
+        #endif
         for child in children {
             if match(child) { return child }
         }
         for child in children {
-            if let target = child.firstChild(where: match) {
+            if let target = child.firstChild(depth: depth + 1, where: match) {
                 return target
             }
         }
@@ -320,5 +352,5 @@ public extension AXUIElement {
     }
 }
 
-extension AXError: Error {}
+extension AXError: @retroactive Error {}
 

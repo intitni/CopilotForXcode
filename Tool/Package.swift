@@ -21,7 +21,8 @@ let package = Package(
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
         .library(name: "SuggestionBasic", targets: ["SuggestionBasic", "SuggestionInjector"]),
-        .library(name: "PromptToCode", targets: ["PromptToCodeBasic", "PromptToCodeCustomization"]),
+        .library(name: "PromptToCode", targets: ["ModificationBasic", "PromptToCodeCustomization"]),
+        .library(name: "Chat", targets: ["ChatBasic"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
         .library(name: "Toast", targets: ["Toast"]),
@@ -50,6 +51,12 @@ let package = Package(
         .library(name: "CustomAsyncAlgorithms", targets: ["CustomAsyncAlgorithms"]),
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
+        .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
+        .library(name: "BingSearchService", targets: ["BingSearchService"]),
+        .library(
+            name: "CustomCommandTemplateProcessor",
+            targets: ["CustomCommandTemplateProcessor"]
+        ),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -65,16 +72,16 @@ let package = Package(
         .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            exact: "1.10.4"
+            exact: "1.15.0"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "600.0.0"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         // A fork of https://github.com/google/generative-ai-swift to support setting base url.
         .package(
             url: "https://github.com/intitni/generative-ai-swift",
             branch: "support-setting-base-url"
         ),
-        .package(url: "https://github.com/intitni/CopilotForXcodeKit", from: "0.7.1"),
+        .package(url: "https://github.com/intitni/CopilotForXcodeKit", branch: "feature/custom-chat-tab"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -123,6 +130,14 @@ let package = Package(
                 name: "ComposableArchitecture",
                 package: "swift-composable-architecture"
             )]
+        ),
+
+        .target(
+            name: "CustomCommandTemplateProcessor",
+            dependencies: [
+                "XcodeInspector",
+                "SuggestionBasic",
+            ]
         ),
 
         .target(name: "DebounceFunction"),
@@ -198,7 +213,7 @@ let package = Package(
         ),
 
         .target(
-            name: "PromptToCodeBasic",
+            name: "ModificationBasic",
             dependencies: [
                 "SuggestionBasic",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
@@ -212,7 +227,7 @@ let package = Package(
         .target(
             name: "PromptToCodeCustomization",
             dependencies: [
-                "PromptToCodeBasic",
+                "ModificationBasic",
                 "SuggestionBasic",
                 .product(
                     name: "ComposableArchitecture",
@@ -340,6 +355,8 @@ let package = Package(
             dependencies: [
                 "XcodeInspector",
                 "Preferences",
+                "ChatBasic",
+                "ModificationBasic",
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),

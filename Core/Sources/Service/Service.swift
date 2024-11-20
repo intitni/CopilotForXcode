@@ -54,19 +54,20 @@ public final class Service {
 
         realtimeSuggestionController = .init()
         scheduledCleaner = .init()
-        let guiController = GraphicalUserInterfaceController()
-        self.guiController = guiController
-        globalShortcutManager = .init(guiController: guiController)
-        keyBindingManager = .init()
 
         #if canImport(ProService)
         proService = ProService()
         #endif
 
-        BuiltinExtensionManager.shared.setupExtensions([
+        BuiltinExtensionManager.shared.addExtensions([
             GitHubCopilotExtension(workspacePool: workspacePool),
             CodeiumExtension(workspacePool: workspacePool),
         ])
+
+        let guiController = GraphicalUserInterfaceController()
+        self.guiController = guiController
+        globalShortcutManager = .init(guiController: guiController)
+        keyBindingManager = .init()
 
         workspacePool.registerPlugin {
             SuggestionServiceWorkspacePlugin(workspace: $0) { SuggestionService.service() }
@@ -137,6 +138,26 @@ public extension Service {
                 reply: reply
             )
             #endif
+
+            try ExtensionServiceRequests.GetExtensionOpenChatHandlers.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { _ in
+                BuiltinExtensionManager.shared.extensions.reduce(into: []) { result, ext in
+                    let tabs = ext.chatTabTypes
+                    for tab in tabs {
+                        if tab.canHandleOpenChatCommand {
+                            result.append(.init(
+                                bundleIdentifier: ext.extensionIdentifier,
+                                id: tab.name,
+                                tabName: tab.name,
+                                isBuiltIn: true
+                            ))
+                        }
+                    }
+                }
+            }
         } catch is XPCRequestHandlerHitError {
             return
         } catch {
