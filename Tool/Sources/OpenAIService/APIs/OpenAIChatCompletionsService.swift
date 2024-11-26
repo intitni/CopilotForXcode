@@ -160,12 +160,73 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         var choices: [Choice]
     }
 
-    struct RequestBody: Codable, Equatable {
-        struct Message: Codable, Equatable {
+    struct RequestBody: Encodable, Equatable {
+        typealias ClaudeCacheControl = ClaudeChatCompletionsService.RequestBody.CacheControl
+
+        struct Message: Encodable, Equatable {
+            enum MessageContent: Encodable, Equatable {
+                struct TextContentPart: Encodable, Equatable {
+                    var type = "text"
+                    var text: String
+                    var cache_control: ClaudeCacheControl?
+                }
+
+                struct ImageContentPart: Encodable, Equatable {
+                    struct ImageURL: Encodable, Equatable {
+                        var url: String
+                        var detail: String?
+                    }
+
+                    var type = "image_url"
+                    var image_url: ImageURL
+                }
+
+                struct AudioContentPart: Encodable, Equatable {
+                    struct InputAudio: Encodable, Equatable {
+                        var data: String
+                        var format: String
+                    }
+
+                    var type = "input_audio"
+                    var input_audio: InputAudio
+                }
+
+                enum ContentPart: Encodable, Equatable {
+                    case text(TextContentPart)
+                    case image(ImageContentPart)
+                    case audio(AudioContentPart)
+
+                    func encode(to encoder: any Encoder) throws {
+                        var container = encoder.singleValueContainer()
+                        switch self {
+                        case let .text(text):
+                            try container.encode(text)
+                        case let .image(image):
+                            try container.encode(image)
+                        case let .audio(audio):
+                            try container.encode(audio)
+                        }
+                    }
+                }
+
+                case contentParts([ContentPart])
+                case text(String)
+
+                func encode(to encoder: any Encoder) throws {
+                    var container = encoder.singleValueContainer()
+                    switch self {
+                    case let .contentParts(parts):
+                        try container.encode(parts)
+                    case let .text(text):
+                        try container.encode(text)
+                    }
+                }
+            }
+
             /// The role of the message.
             var role: MessageRole
             /// The content of the message.
-            var content: String
+            var content: MessageContent
             /// When we want to reply to a function call with the result, we have to provide the
             /// name of the function call, and include the result in `content`.
             ///
@@ -201,12 +262,12 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var function: MessageFunctionCall?
         }
 
-        struct Tool: Codable, Equatable {
+        struct Tool: Encodable, Equatable {
             var type: String = "function"
             var function: ChatGPTFunctionSchema
         }
 
-        struct StreamOptions: Codable, Equatable {
+        struct StreamOptions: Encodable, Equatable {
             var include_usage: Bool = true
         }
 
@@ -236,8 +297,11 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         self.endpoint = endpoint
         self.requestBody = .init(
             requestBody,
+            endpoint: endpoint,
             enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
-            canUseTool: model.info.supportsFunctionCalling
+            canUseTool: model.info.supportsFunctionCalling,
+            supportsImage: model.info.supportsImage,
+            supportsAudio: model.info.supportsAudio
         )
         self.model = model
     }
@@ -334,7 +398,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 body.message.role = role
             }
             if let text = chunk.message?.content {
-                body.message.content += text
+                let existed = body.message.content ?? ""
+                body.message.content = existed + text
             }
             if let usage = chunk.usage {
                 body.usage?.merge(with: usage)
@@ -395,7 +460,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             }
         }
     }
-    
+
     static func setupExtraHeaderFields(_ request: inout URLRequest, model: ChatModel) {
         for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
             request.setValue(field.value, forHTTPHeaderField: field.key)
@@ -449,7 +514,7 @@ extension OpenAIChatCompletionsService.ResponseBody {
             message = .init(role: .assistant, content: "")
             otherMessages = []
         }
-        
+
         let usage = ChatCompletionResponseBody.Usage(
             promptTokens: usage.prompt_tokens ?? 0,
             completionTokens: usage.completion_tokens ?? 0,
@@ -539,95 +604,84 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
 }
 
 extension OpenAIChatCompletionsService.RequestBody {
-    init(_ body: ChatCompletionsRequestBody, enforceMessageOrder: Bool, canUseTool: Bool) {
-        model = body.model
-        if enforceMessageOrder {
-            var systemPrompts = [String]()
-            var nonSystemMessages = [Message]()
+    static func convertContentPart(
+        content: String,
+        images: [ChatCompletionsRequestBody.Message.Image],
+        audios: [ChatCompletionsRequestBody.Message.Audio]
+    ) -> [Message.MessageContent.ContentPart] {
+        var all = [Message.MessageContent.ContentPart]()
+        all.append(.text(.init(text: content)))
 
-            for message in body.messages {
-                switch (message.role, canUseTool) {
-                case (.system, _):
-                    systemPrompts.append(message.content)
-                case (.tool, true):
-                    if let last = nonSystemMessages.last, last.role == .tool {
-                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
-                            += "\n\n\(message.content)"
-                    } else {
-                        nonSystemMessages.append(.init(
-                            role: .tool,
-                            content: message.content,
-                            tool_calls: message.toolCalls?.map { tool in
-                                MessageToolCall(
-                                    id: tool.id,
-                                    type: tool.type,
-                                    function: MessageFunctionCall(
-                                        name: tool.function.name,
-                                        arguments: tool.function.arguments
-                                    )
-                                )
-                            }
-                        ))
-                    }
-                case (.assistant, _), (.tool, false):
-                    if let last = nonSystemMessages.last, last.role == .assistant {
-                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
-                            += "\n\n\(message.content)"
-                    } else {
-                        nonSystemMessages.append(.init(role: .assistant, content: message.content))
-                    }
-                case (.user, _):
-                    if let last = nonSystemMessages.last, last.role == .user {
-                        nonSystemMessages[nonSystemMessages.endIndex - 1].content
-                            += "\n\n\(message.content)"
-                    } else {
-                        nonSystemMessages.append(.init(
-                            role: .user,
-                            content: message.content,
-                            name: message.name,
-                            tool_call_id: message.toolCallId
-                        ))
-                    }
-                }
-            }
-            messages = [
-                .init(
-                    role: .system,
-                    content: systemPrompts.joined(separator: "\n\n")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                ),
-            ] + nonSystemMessages
-        } else {
-            messages = body.messages.map { message in
-                .init(
-                    role: {
-                        switch message.role {
-                        case .user:
-                            return .user
-                        case .assistant:
-                            return .assistant
-                        case .system:
-                            return .system
-                        case .tool:
-                            return .tool
-                        }
-                    }(),
-                    content: message.content,
-                    name: message.name,
-                    tool_calls: message.toolCalls?.map { tool in
-                        MessageToolCall(
-                            id: tool.id,
-                            type: tool.type,
-                            function: MessageFunctionCall(
-                                name: tool.function.name,
-                                arguments: tool.function.arguments
-                            )
-                        )
-                    },
-                    tool_call_id: message.toolCallId
+        for image in images {
+            all.append(.image(.init(
+                image_url: .init(
+                    url: image.dataURLString,
+                    detail: nil
                 )
+            )))
+        }
+
+        for audio in audios {
+            all.append(.audio(.init(
+                input_audio: .init(
+                    data: audio.data.base64EncodedString(),
+                    format: audio.format.rawValue
+                )
+            )))
+        }
+
+        return all
+    }
+
+    static func convertContentPart(
+        _ part: ClaudeChatCompletionsService.RequestBody.MessageContent
+    ) -> Message.MessageContent.ContentPart? {
+        switch part.type {
+        case .text:
+            return .text(.init(text: part.text ?? "", cache_control: part.cache_control))
+        case .image:
+            let type = part.source?.type ?? "base64"
+            let base64Data = part.source?.data ?? ""
+            let mediaType = part.source?.media_type ?? "image/png"
+            return .image(.init(image_url: .init(url: "data:\(mediaType);\(type),\(base64Data)")))
+        }
+    }
+
+    static func joinMessageContent(
+        _ message: inout Message,
+        content: String,
+        images: [ChatCompletionsRequestBody.Message.Image],
+        audios: [ChatCompletionsRequestBody.Message.Audio]
+    ) {
+        switch message.role {
+        case .system, .assistant, .user:
+            let newParts = Self.convertContentPart(
+                content: content,
+                images: images,
+                audios: audios
+            )
+            if case let .contentParts(existingParts) = message.content {
+                message.content = .contentParts(existingParts + newParts)
+            } else {
+                message.content = .contentParts(newParts)
+            }
+        case .tool, .function:
+            if case let .text(existingText) = message.content {
+                message.content = .text(existingText + "\n\n" + content)
+            } else {
+                message.content = .text(content)
             }
         }
+    }
+
+    init(
+        _ body: ChatCompletionsRequestBody,
+        endpoint: URL,
+        enforceMessageOrder: Bool,
+        canUseTool: Bool,
+        supportsImage: Bool,
+        supportsAudio: Bool
+    ) {
         temperature = body.temperature
         stream = body.stream
         stop = body.stop
@@ -643,6 +697,167 @@ extension OpenAIChatCompletionsService.RequestBody {
             StreamOptions()
         } else {
             nil
+        }
+
+        model = body.model
+
+        // Special case for Claude through OpenRouter
+        
+        if endpoint.absoluteString.contains("openrouter.ai"), model.hasPrefix("anthropic/") {
+            var body = body
+            body.model = model.replacingOccurrences(of: "anthropic/", with: "")
+            let claudeRequestBody = ClaudeChatCompletionsService.RequestBody(body)
+            messages = claudeRequestBody.system.map {
+                Message(
+                    role: .system,
+                    content: .contentParts([.text(.init(
+                        text: $0.text,
+                        cache_control: $0.cache_control
+                    ))])
+                )
+            } + claudeRequestBody.messages.map {
+                (message: ClaudeChatCompletionsService.RequestBody.Message) in
+                let role: OpenAIChatCompletionsService.MessageRole = switch message.role {
+                case .user: .user
+                case .assistant: .assistant
+                }
+                return Message(
+                    role: role,
+                    content: .contentParts(message.content.compactMap(Self.convertContentPart)),
+                    name: nil,
+                    tool_calls: nil,
+                    tool_call_id: nil
+                )
+            }
+            return
+        }
+        
+        // Enforce message order
+
+        if enforceMessageOrder {
+            var systemPrompts = [Message.MessageContent.ContentPart]()
+            var nonSystemMessages = [Message]()
+
+            for message in body.messages {
+                switch (message.role, canUseTool) {
+                case (.system, _):
+                    systemPrompts.append(contentsOf: Self.convertContentPart(
+                        content: message.content,
+                        images: supportsImage ? message.images : [],
+                        audios: supportsAudio ? message.audios : []
+                    ))
+                case (.tool, true):
+                    if let last = nonSystemMessages.last, last.role == .tool {
+                        Self.joinMessageContent(
+                            &nonSystemMessages[nonSystemMessages.endIndex - 1],
+                            content: message.content,
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
+                        )
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .tool,
+                            content: .contentParts(Self.convertContentPart(
+                                content: message.content,
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
+                            )),
+                            tool_calls: message.toolCalls?.map { tool in
+                                MessageToolCall(
+                                    id: tool.id,
+                                    type: tool.type,
+                                    function: MessageFunctionCall(
+                                        name: tool.function.name,
+                                        arguments: tool.function.arguments
+                                    )
+                                )
+                            }
+                        ))
+                    }
+                case (.assistant, _), (.tool, false):
+                    if let last = nonSystemMessages.last, last.role == .assistant {
+                        Self.joinMessageContent(
+                            &nonSystemMessages[nonSystemMessages.endIndex - 1],
+                            content: message.content,
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
+                        )
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .assistant,
+                            content: .contentParts(Self.convertContentPart(
+                                content: message.content,
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
+                            ))
+                        ))
+                    }
+                case (.user, _):
+                    if let last = nonSystemMessages.last, last.role == .user {
+                        Self.joinMessageContent(
+                            &nonSystemMessages[nonSystemMessages.endIndex - 1],
+                            content: message.content,
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
+                        )
+                    } else {
+                        nonSystemMessages.append(.init(
+                            role: .user,
+                            content: .contentParts(Self.convertContentPart(
+                                content: message.content,
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
+                            )),
+                            name: message.name,
+                            tool_call_id: message.toolCallId
+                        ))
+                    }
+                }
+            }
+            messages = [
+                .init(
+                    role: .system,
+                    content: .contentParts(systemPrompts)
+                ),
+            ] + nonSystemMessages
+
+            return
+        }
+        
+        // Default
+        
+        messages = body.messages.map { message in
+            .init(
+                role: {
+                    switch message.role {
+                    case .user:
+                        return .user
+                    case .assistant:
+                        return .assistant
+                    case .system:
+                        return .system
+                    case .tool:
+                        return .tool
+                    }
+                }(),
+                content: .contentParts(Self.convertContentPart(
+                    content: message.content,
+                    images: supportsImage ? message.images : [],
+                    audios: supportsAudio ? message.audios : []
+                )),
+                name: message.name,
+                tool_calls: message.toolCalls?.map { tool in
+                    MessageToolCall(
+                        id: tool.id,
+                        type: tool.type,
+                        function: MessageFunctionCall(
+                            name: tool.function.name,
+                            arguments: tool.function.arguments
+                        )
+                    )
+                },
+                tool_call_id: message.toolCallId
+            )
         }
     }
 }

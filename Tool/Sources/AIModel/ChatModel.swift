@@ -94,6 +94,10 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var maxTokens: Int
         @FallbackDecoding<EmptyBool>
         public var supportsFunctionCalling: Bool
+        @FallbackDecoding<EmptyBool>
+        public var supportsImage: Bool
+        @FallbackDecoding<EmptyBool>
+        public var supportsAudio: Bool
         @FallbackDecoding<EmptyString>
         public var modelName: String
 
@@ -114,6 +118,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             isFullURL: Bool = false,
             maxTokens: Int = 4000,
             supportsFunctionCalling: Bool = true,
+            supportsImage: Bool = false,
+            supportsAudio: Bool = false,
             modelName: String = "",
             openAIInfo: OpenAIInfo = OpenAIInfo(),
             ollamaInfo: OllamaInfo = OllamaInfo(),
@@ -126,6 +132,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             self.isFullURL = isFullURL
             self.maxTokens = maxTokens
             self.supportsFunctionCalling = supportsFunctionCalling
+            self.supportsImage = supportsImage
+            self.supportsAudio = supportsAudio
             self.modelName = modelName
             self.openAIInfo = openAIInfo
             self.ollamaInfo = ollamaInfo
