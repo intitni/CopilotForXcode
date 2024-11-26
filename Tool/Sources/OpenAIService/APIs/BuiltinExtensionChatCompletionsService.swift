@@ -115,7 +115,11 @@ extension BuiltinExtensionChatCompletionsService {
                 .joined(separator: "\n\n")
             let history = Array(messages[0...lastIndexNotUserMessage])
             return (message, history.map {
-                .init(id: UUID().uuidString, role: $0.role.asChatMessageRole, content: $0.content)
+                .init(
+                    id: UUID().uuidString,
+                    role: $0.role.asChatMessageRole,
+                    content: $0.content
+                )
             })
         } else { // everything is user message
             let message = messages.map { $0.content }.joined(separator: "\n\n")

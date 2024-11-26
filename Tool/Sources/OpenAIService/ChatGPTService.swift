@@ -565,6 +565,8 @@ extension ChatGPTService {
                         nil
                     }
                 }(),
+                images: [],
+                audios: [],
                 cacheIfPossible: chatMessage.cacheIfPossible
             ))
 
