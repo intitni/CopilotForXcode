@@ -46,6 +46,7 @@ public actor TemplateChatGPTMemory: ChatGPTMemory {
 
         while !(await checkTokenCount()) {
             do {
+                try Task.checkCancellation()
                 try await memoryTemplate.truncate()
             } catch {
                 Logger.service.error("Failed to truncate prompt template: \(error)")
@@ -180,6 +181,8 @@ public struct MemoryTemplate {
     }
 
     mutating func truncate() async throws {
+        if Task.isCancelled { return }
+        
         if let truncateRule = truncateRule {
             try await truncateRule(&messages, &followUpMessages)
             return
