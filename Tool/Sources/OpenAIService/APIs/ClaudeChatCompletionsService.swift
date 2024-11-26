@@ -414,6 +414,12 @@ extension ClaudeChatCompletionsService.RequestBody {
                 return .appendToList
             }
 
+            if message.cacheIfPossible != last.content
+                .contains(where: { $0.cache_control != nil })
+            {
+                return .padMessageAndAppendToList
+            }
+
             return .joinMessage
         }
 
