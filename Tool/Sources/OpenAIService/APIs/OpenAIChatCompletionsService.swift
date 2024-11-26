@@ -299,7 +299,9 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             requestBody,
             endpoint: endpoint,
             enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
-            canUseTool: model.info.supportsFunctionCalling
+            canUseTool: model.info.supportsFunctionCalling,
+            supportsImage: model.info.supportsImage,
+            supportsAudio: model.info.supportsAudio
         )
         self.model = model
     }
@@ -676,7 +678,9 @@ extension OpenAIChatCompletionsService.RequestBody {
         _ body: ChatCompletionsRequestBody,
         endpoint: URL,
         enforceMessageOrder: Bool,
-        canUseTool: Bool
+        canUseTool: Bool,
+        supportsImage: Bool,
+        supportsAudio: Bool
     ) {
         temperature = body.temperature
         stream = body.stream
@@ -739,24 +743,24 @@ extension OpenAIChatCompletionsService.RequestBody {
                 case (.system, _):
                     systemPrompts.append(contentsOf: Self.convertContentPart(
                         content: message.content,
-                        images: message.images,
-                        audios: message.audios
+                        images: supportsImage ? message.images : [],
+                        audios: supportsAudio ? message.audios : []
                     ))
                 case (.tool, true):
                     if let last = nonSystemMessages.last, last.role == .tool {
                         Self.joinMessageContent(
                             &nonSystemMessages[nonSystemMessages.endIndex - 1],
                             content: message.content,
-                            images: message.images,
-                            audios: message.audios
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
                         )
                     } else {
                         nonSystemMessages.append(.init(
                             role: .tool,
                             content: .contentParts(Self.convertContentPart(
                                 content: message.content,
-                                images: message.images,
-                                audios: message.audios
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
                             )),
                             tool_calls: message.toolCalls?.map { tool in
                                 MessageToolCall(
@@ -775,16 +779,16 @@ extension OpenAIChatCompletionsService.RequestBody {
                         Self.joinMessageContent(
                             &nonSystemMessages[nonSystemMessages.endIndex - 1],
                             content: message.content,
-                            images: message.images,
-                            audios: message.audios
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
                         )
                     } else {
                         nonSystemMessages.append(.init(
                             role: .assistant,
                             content: .contentParts(Self.convertContentPart(
                                 content: message.content,
-                                images: message.images,
-                                audios: message.audios
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
                             ))
                         ))
                     }
@@ -793,16 +797,16 @@ extension OpenAIChatCompletionsService.RequestBody {
                         Self.joinMessageContent(
                             &nonSystemMessages[nonSystemMessages.endIndex - 1],
                             content: message.content,
-                            images: message.images,
-                            audios: message.audios
+                            images: supportsImage ? message.images : [],
+                            audios: supportsAudio ? message.audios : []
                         )
                     } else {
                         nonSystemMessages.append(.init(
                             role: .user,
                             content: .contentParts(Self.convertContentPart(
                                 content: message.content,
-                                images: message.images,
-                                audios: message.audios
+                                images: supportsImage ? message.images : [],
+                                audios: supportsAudio ? message.audios : []
                             )),
                             name: message.name,
                             tool_call_id: message.toolCallId
@@ -838,8 +842,8 @@ extension OpenAIChatCompletionsService.RequestBody {
                 }(),
                 content: .contentParts(Self.convertContentPart(
                     content: message.content,
-                    images: message.images,
-                    audios: message.audios
+                    images: supportsImage ? message.images : [],
+                    audios: supportsAudio ? message.audios : []
                 )),
                 name: message.name,
                 tool_calls: message.toolCalls?.map { tool in
