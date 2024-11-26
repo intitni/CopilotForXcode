@@ -44,8 +44,13 @@ public actor TemplateChatGPTMemory: ChatGPTMemory {
             return tokenCount <= configuration.maxTokens - configuration.minimumReplyTokens
         }
 
+        var truncationTimes = 500
         while !(await checkTokenCount()) {
             do {
+                truncationTimes -= 1
+                if truncationTimes <= 0 {
+                    throw CancellationError()
+                }
                 try Task.checkCancellation()
                 try await memoryTemplate.truncate()
             } catch {
