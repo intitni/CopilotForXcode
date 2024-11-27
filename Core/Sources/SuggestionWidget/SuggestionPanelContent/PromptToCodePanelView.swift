@@ -433,7 +433,7 @@ extension PromptToCodePanelView {
                                     }
                                 }
                             }
-                            
+
                             Spacer(minLength: 56)
                         }
                     }
@@ -575,7 +575,7 @@ extension PromptToCodePanelView {
                                 presentAllContent: !isGenerating
                             )
                         } else {
-                            ScrollView(.horizontal) {
+                            MinScrollView {
                                 CodeBlockInContent(
                                     store: store,
                                     language: language,
@@ -603,6 +603,37 @@ extension PromptToCodePanelView {
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                         }
+                    }
+                }
+            }
+
+            struct MinWidthPreferenceKey: PreferenceKey {
+                static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+                    value = nextValue()
+                }
+
+                static var defaultValue: CGFloat = 0
+            }
+
+            struct MinScrollView<Content: View>: View {
+                @ViewBuilder let content: Content
+                @State var minWidth: CGFloat = 0
+
+                var body: some View {
+                    ScrollView(.horizontal) {
+                        content
+                            .frame(minWidth: minWidth)
+                    }
+                    .overlay {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: MinWidthPreferenceKey.self,
+                                value: proxy.size.width
+                            )
+                        }
+                    }
+                    .onPreferenceChange(MinWidthPreferenceKey.self) {
+                        minWidth = $0
                     }
                 }
             }
