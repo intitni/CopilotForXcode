@@ -14,6 +14,7 @@ class CopilotLocalProcessServer {
     private var wrappedServer: CustomJSONRPCLanguageServer?
     var terminationHandler: (() -> Void)?
     @MainActor var ongoingCompletionRequestIDs: [JSONId] = []
+    @MainActor var ongoingConversationRequestIDs: [String: JSONId] = [:]
 
     public convenience init(
         path: String,
@@ -57,6 +58,21 @@ class CopilotLocalProcessServer {
             {
                 Task { @MainActor [weak self] in
                     self?.ongoingCompletionRequestIDs.append(request.id)
+                }
+            } else if request.method == "conversation/create" {
+                Task { @MainActor [weak self] in
+                    if let paramsData = try? JSONEncoder().encode(request.params) {
+                        do {
+                            let params = try JSONDecoder().decode(
+                                GitHubCopilotRequest.ConversationCreate.RequestBody.self,
+                                from: paramsData
+                            )
+                            self?.ongoingConversationRequestIDs[params.workDoneToken] = request.id
+                        } catch {
+                            // Handle decoding error
+                            print("Error decoding ConversationCreateParams: \(error)")
+                        }
+                    }
                 }
             }
         }
@@ -131,17 +147,33 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
 
         let task = Task { @MainActor in
             for id in self.ongoingCompletionRequestIDs {
-                switch id {
-                case let .numericId(id):
-                    try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
-                case let .stringId(id):
-                    try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
-                }
+                await cancelTask(id)
             }
             self.ongoingCompletionRequestIDs = []
         }
 
         await task.value
+    }
+
+    public func cancelOngoingTask(workDoneToken: String) async {
+        let task = Task { @MainActor in
+            guard let id = ongoingConversationRequestIDs[workDoneToken] else { return }
+            await cancelTask(id)
+        }
+        await task.value
+    }
+
+    public func cancelTask(_ id: JSONId) async {
+        guard let server = wrappedServer, process.isRunning else {
+            return
+        }
+
+        switch id {
+        case let .numericId(id):
+            try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
+        case let .stringId(id):
+            try? await server.sendNotification(.protocolCancelRequest(.init(id: id)))
+        }
     }
 
     public func sendRequest<Response: Codable>(
