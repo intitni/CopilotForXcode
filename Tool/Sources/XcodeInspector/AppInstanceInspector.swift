@@ -6,6 +6,7 @@ public class AppInstanceInspector: ObservableObject {
     public let processIdentifier: pid_t
     public let bundleURL: URL?
     public let bundleIdentifier: String?
+    public let name: String
 
     public var appElement: AXUIElement {
         let app = AXUIElementCreateApplication(runningApplication.processIdentifier)
@@ -38,6 +39,7 @@ public class AppInstanceInspector: ObservableObject {
 
     init(runningApplication: NSRunningApplication) {
         self.runningApplication = runningApplication
+        name = runningApplication.localizedName ?? "Unknown"
         processIdentifier = runningApplication.processIdentifier
         bundleURL = runningApplication.bundleURL
         bundleIdentifier = runningApplication.bundleIdentifier
