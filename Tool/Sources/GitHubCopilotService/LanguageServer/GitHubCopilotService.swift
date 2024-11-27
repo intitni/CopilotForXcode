@@ -167,6 +167,16 @@ public class GitHubCopilotBaseService {
                 }
             }()
 
+            #if DEBUG
+            let environment: [String: String] = [
+                "GH_COPILOT_DEBUG_UI_PORT": "8080",
+                "GH_COPILOT_VERBOSE": UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
+                    ? "true" : "false",
+            ]
+            #else
+            let environment = [String: String]()
+            #endif
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
@@ -178,7 +188,7 @@ public class GitHubCopilotBaseService {
                 executionParams = Process.ExecutionParameters(
                     path: "/bin/bash",
                     arguments: ["-i", "-l", "-c", command],
-                    environment: [:],
+                    environment: environment,
                     currentDirectoryURL: urls.supportURL
                 )
             case .shell:
@@ -192,7 +202,7 @@ public class GitHubCopilotBaseService {
                 executionParams = Process.ExecutionParameters(
                     path: shell,
                     arguments: ["-i", "-l", "-c", command],
-                    environment: [:],
+                    environment: environment,
                     currentDirectoryURL: urls.supportURL
                 )
             case .env:
@@ -244,7 +254,10 @@ public class GitHubCopilotBaseService {
                     initializationOptions: nil,
                     capabilities: capabilities,
                     trace: .off,
-                    workspaceFolders: nil
+                    workspaceFolders: [WorkspaceFolder(
+                        uri: projectRootURL.path,
+                        name: projectRootURL.lastPathComponent
+                    )]
                 )
             }
 
@@ -593,7 +606,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
     public func terminate() async {
         // automatically handled
     }
-    
+
     public func cancelOngoingTask(workDoneToken: String) async {
         await localProcessServer?.cancelOngoingTask(workDoneToken: workDoneToken)
     }
