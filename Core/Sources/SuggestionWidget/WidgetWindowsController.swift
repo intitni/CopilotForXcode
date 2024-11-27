@@ -789,7 +789,7 @@ public final class WidgetWindows {
     @MainActor
     lazy var toastWindow = {
         let it = WidgetWindow(
-            contentRect: .zero,
+            contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
