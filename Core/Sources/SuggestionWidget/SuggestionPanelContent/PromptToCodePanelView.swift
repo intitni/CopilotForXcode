@@ -955,7 +955,7 @@ extension PromptToCodePanelView {
         .frame(width: 500, height: 500, alignment: .center)
 }
 
-#Preview("Geenrating") {
+#Preview("Generating") {
     PromptToCodePanelView(store: .init(initialState: .init(
         promptToCodeState: Shared(ModificationState(
             source: .init(
