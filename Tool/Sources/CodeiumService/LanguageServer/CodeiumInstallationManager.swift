@@ -3,7 +3,7 @@ import Terminal
 
 public struct CodeiumInstallationManager {
     private static var isInstalling = false
-    static let latestSupportedVersion = "1.20.9"
+    static let latestSupportedVersion = "1.28.3"
     static let minimumSupportedVersion = "1.20.0"
 
     public init() {}
@@ -90,11 +90,23 @@ public struct CodeiumInstallationManager {
             case .orderedAscending:
                 switch version.compare(Self.minimumSupportedVersion) {
                 case .orderedAscending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: true)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: true
+                    )
                 case .orderedSame:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 case .orderedDescending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 }
             case .orderedSame:
                 return .installed(version)
