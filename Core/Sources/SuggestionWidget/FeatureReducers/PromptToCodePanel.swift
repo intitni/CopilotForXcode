@@ -84,6 +84,7 @@ public struct PromptToCodePanel {
         case cancelButtonTapped
         case acceptButtonTapped
         case acceptAndContinueButtonTapped
+        case statusUpdated([String])
         case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
 
@@ -128,7 +129,9 @@ public struct PromptToCodePanel {
 
                 return .run { send in
                     do {
-                        let context = await contextInputController.resolveContext()
+                        let context = await contextInputController.resolveContext(onStatusChange: {
+                            await send(.statusUpdated($0))
+                        })
                         let agentFactory = context.agent ?? { SimpleModificationAgent() }
                         _ = try await withThrowingTaskGroup(of: Void.self) { group in
                             for (index, snippet) in snippets.enumerated() {
@@ -216,11 +219,13 @@ public struct PromptToCodePanel {
 
             case .stopRespondingButtonTapped:
                 state.promptToCodeState.isGenerating = false
+                state.promptToCodeState.status = []
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .modifyCodeFinished:
                 state.contextInputController.instruction = .init("")
                 state.promptToCodeState.isGenerating = false
+                state.promptToCodeState.status = []
 
                 if state.promptToCodeState.snippets.allSatisfy({ snippet in
                     snippet.modifiedCode.isEmpty && snippet.description.isEmpty && snippet
@@ -252,6 +257,10 @@ public struct PromptToCodePanel {
                     await commandHandler.acceptModification()
                     activateThisApp()
                 }
+            
+            case let .statusUpdated(status):
+                state.promptToCodeState.status = status
+                return .none
             }
         }
 
