@@ -252,10 +252,19 @@ struct ChatSettingsGeneralSectionView: View {
                 Text("7 Messages").tag(7)
                 Text("9 Messages").tag(9)
                 Text("11 Messages").tag(11)
+                Text("21 Messages").tag(21)
+                Text("31 Messages").tag(31)
+                Text("41 Messages").tag(41)
+                Text("51 Messages").tag(51)
+                Text("71 Messages").tag(71)
+                Text("91 Messages").tag(91)
+                Text("111 Messages").tag(111)
+                Text("151 Messages").tag(151)
+                Text("201 Messages").tag(201)
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Default system prompt")
+                Text("Additional system prompt")
                 EditableText(text: $settings.defaultChatSystemPrompt)
                     .lineLimit(6)
             }
