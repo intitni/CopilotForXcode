@@ -80,7 +80,7 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                                 if error.contains("400") {
                                     continuation.finish(
                                         throwing: GitHubCopilotError.chatEndsWithError(
-                                            "\(error). Please try enabling pretend IDE as VSCode."
+                                            "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
                                         )
                                     )
                                 } else {
