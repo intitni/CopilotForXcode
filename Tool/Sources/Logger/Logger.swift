@@ -23,7 +23,6 @@ public final class Logger {
     public static let license = Logger(category: "License")
     public static let `extension` = Logger(category: "Extension")
     public static let communicationBridge = Logger(category: "CommunicationBridge")
-    public static let resolver = Logger(category: "Resolver")
     public static let debug = Logger(category: "Debug")
     #if DEBUG
     /// Use a temp logger to log something temporary. I won't be available in release builds.
