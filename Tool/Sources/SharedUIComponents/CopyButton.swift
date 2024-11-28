@@ -26,18 +26,19 @@ public struct CopyButton: View {
             }
             .padding(4)
             .simultaneousGesture(
-                TapGesture().onEnded { _ in
-                    withAnimation(.linear(duration: 0.1)) {
-                        isCopied = true
-                    }
-                    copy()
-                    Task {
-                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                TapGesture()
+                    .onEnded { _ in
                         withAnimation(.linear(duration: 0.1)) {
-                            isCopied = false
+                            isCopied = true
+                        }
+                        copy()
+                        Task {
+                            try await Task.sleep(nanoseconds: 1_000_000_000)
+                            withAnimation(.linear(duration: 0.1)) {
+                                isCopied = false
+                            }
                         }
                     }
-                }
             )
     }
 }

@@ -1,6 +1,7 @@
 import FileChangeChecker
 import LaunchAgentManager
 import Logger
+import Perception
 import Preferences
 import Service
 import ServiceManagement
@@ -29,6 +30,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     )
 
     func applicationDidFinishLaunching(_: Notification) {
+//        isPerceptionCheckingEnabled = false
         if ProcessInfo.processInfo.environment["IS_UNIT_TEST"] == "YES" { return }
         _ = XcodeInspector.shared
         updateChecker.updateCheckerDelegate = self

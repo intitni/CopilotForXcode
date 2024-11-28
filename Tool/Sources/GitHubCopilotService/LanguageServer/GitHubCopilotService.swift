@@ -6,6 +6,7 @@ import LanguageServerProtocol
 import Logger
 import Preferences
 import SuggestionBasic
+import XcodeInspector
 
 public protocol GitHubCopilotAuthServiceType {
     func checkStatus() async throws -> GitHubCopilotAccountStatus
@@ -34,6 +35,7 @@ public protocol GitHubCopilotSuggestionServiceType {
     func notifySaveTextDocument(fileURL: URL) async throws
     func cancelRequest() async
     func terminate() async
+    func cancelOngoingTask(workDoneToken: String) async
 }
 
 protocol GitHubCopilotLSP {
@@ -165,6 +167,16 @@ public class GitHubCopilotBaseService {
                 }
             }()
 
+            #if DEBUG
+            let environment: [String: String] = [
+                "GH_COPILOT_DEBUG_UI_PORT": "8080",
+                "GH_COPILOT_VERBOSE": UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog)
+                    ? "true" : "false",
+            ]
+            #else
+            let environment = [String: String]()
+            #endif
+
             switch runner {
             case .bash:
                 let nodePath = UserDefaults.shared.value(for: \.nodePath)
@@ -176,7 +188,7 @@ public class GitHubCopilotBaseService {
                 executionParams = Process.ExecutionParameters(
                     path: "/bin/bash",
                     arguments: ["-i", "-l", "-c", command],
-                    environment: [:],
+                    environment: environment,
                     currentDirectoryURL: urls.supportURL
                 )
             case .shell:
@@ -190,7 +202,7 @@ public class GitHubCopilotBaseService {
                 executionParams = Process.ExecutionParameters(
                     path: shell,
                     arguments: ["-i", "-l", "-c", command],
-                    environment: [:],
+                    environment: environment,
                     currentDirectoryURL: urls.supportURL
                 )
             case .env:
@@ -242,7 +254,10 @@ public class GitHubCopilotBaseService {
                     initializationOptions: nil,
                     capabilities: capabilities,
                     trace: .off,
-                    workspaceFolders: nil
+                    workspaceFolders: [WorkspaceFolder(
+                        uri: projectRootURL.path,
+                        name: projectRootURL.lastPathComponent
+                    )]
                 )
             }
 
@@ -255,11 +270,15 @@ public class GitHubCopilotBaseService {
         let notifications = NotificationCenter.default
             .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
         Task { [weak self] in
-            _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+            _ = try? await server.sendRequest(
+                GitHubCopilotRequest.SetEditorInfo(xcodeVersion: xcodeVersion() ?? "16.0")
+            )
 
             for await _ in notifications {
                 guard self != nil else { return }
-                _ = try? await server.sendRequest(GitHubCopilotRequest.SetEditorInfo())
+                _ = try? await server.sendRequest(
+                    GitHubCopilotRequest.SetEditorInfo(xcodeVersion: xcodeVersion() ?? "16.0")
+                )
             }
         }
     }
@@ -587,6 +606,10 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
     public func terminate() async {
         // automatically handled
     }
+
+    public func cancelOngoingTask(workDoneToken: String) async {
+        await localProcessServer?.cancelOngoingTask(workDoneToken: workDoneToken)
+    }
 }
 
 extension InitializingServer: GitHubCopilotLSP {
@@ -604,5 +627,32 @@ extension InitializingServer: GitHubCopilotLSP {
             return try await sendRequest(endpoint.request)
         }
     }
+}
+
+private func xcodeVersion() async -> String? {
+    if let xcode = await XcodeInspector.shared.safe.latestActiveXcode {
+        return xcode.version
+    }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+    process.arguments = ["xcodebuild", "-version"]
+
+    let pipe = Pipe()
+    process.standardOutput = pipe
+
+    do {
+        try process.run()
+    } catch {
+        print("Error running xcrun xcodebuild: \(error)")
+        return nil
+    }
+
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    guard let output = String(data: data, encoding: .utf8) else {
+        return nil
+    }
+
+    let lines = output.split(separator: "\n")
+    return lines.first?.split(separator: " ").last.map(String.init)
 }
 

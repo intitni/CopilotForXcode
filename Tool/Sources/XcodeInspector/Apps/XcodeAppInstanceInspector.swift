@@ -423,9 +423,6 @@ private func isCompletionPanel(_ element: AXUIElement) -> Bool {
 
 public extension AXUIElement {
     var tabBars: [AXUIElement] {
-        // Searching by traversing with AXUIElement is (Xcode) resource consuming, we should skip
-        // as much as possible!
-        
         guard let editArea: AXUIElement = {
             if description == "editor area" { return self }
             return firstChild(where: { $0.description == "editor area" })
@@ -470,5 +467,45 @@ public extension AXUIElement {
         }
 
         return tabBars
+    }
+    
+    var debugArea: AXUIElement? {
+        guard let editArea: AXUIElement = {
+            if description == "editor area" { return self }
+            return firstChild(where: { $0.description == "editor area" })
+        }() else { return nil }
+        
+        var debugArea: AXUIElement?
+        editArea.traverse { element, _ in
+            let description = element.description
+            if description == "Tab Bar" {
+                return .skipDescendants
+            }
+            
+            if element.identifier == "editor context" {
+                return .skipDescendantsAndSiblings
+            }
+
+            if element.isSourceEditor {
+                return .skipDescendantsAndSiblings
+            }
+
+            if description == "Code Coverage Ribbon" {
+                return .skipDescendants
+            }
+
+            if description == "Debug Area" {
+                debugArea = element
+                return .skipDescendants
+            }
+            
+            if description == "debug bar" {
+                return .skipDescendants
+            }
+
+            return .continueSearching
+        }
+
+        return debugArea
     }
 }

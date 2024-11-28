@@ -2,6 +2,7 @@ import Foundation
 import JSONRPC
 import LanguageServerProtocol
 import SuggestionBasic
+import XcodeInspector
 
 struct GitHubCopilotDoc: Codable {
     var source: String
@@ -55,6 +56,8 @@ enum GitHubCopilotChatSource: String, Codable {
 
 enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
+        let xcodeVersion: String
+        
         struct Response: Codable {}
 
         var networkProxy: JSONValue? {
@@ -142,12 +145,13 @@ enum GitHubCopilotRequest {
                     "name": "vscode",
                     "version": "1.89.1",
                 ]) : .hash([
-                    "name": "xcode",
-                    "version": "",
+                    "name": "Xcode",
+                    "version": .string(xcodeVersion),
                 ]),
                 "editorPluginInfo": .hash([
                     "name": "Copilot for Xcode",
-                    "version": "",
+                    "version": .string(Bundle.main
+                        .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""),
                 ]),
             ]
 

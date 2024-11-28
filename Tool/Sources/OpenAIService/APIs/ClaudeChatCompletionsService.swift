@@ -385,9 +385,11 @@ extension ClaudeChatCompletionsService.StreamDataChunk {
 extension ClaudeChatCompletionsService.RequestBody {
     init(_ body: ChatCompletionsRequestBody) {
         model = body.model
-        let supportsPromptCache = if model.hasPrefix("claude-3-5-sonnet") || model
-            .hasPrefix("claude-3-opus") || model.hasPrefix("claude-3-haiku")
-        {
+        let prefixChecks = [
+            "claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus", "claude-3-haiku",
+            "claude-3.5-sonnet", "claude-3.5-haiku",
+        ]
+        let supportsPromptCache = if prefixChecks.contains(where: model.hasPrefix) {
             true
         } else {
             false
@@ -432,6 +434,41 @@ extension ClaudeChatCompletionsService.RequestBody {
             return false
         }
 
+        func convertMessageContent(
+            _ message: ChatCompletionsRequestBody.Message
+        ) -> [MessageContent] {
+            var content = [MessageContent]()
+
+            content.append(.init(type: .text, text: message.content, cache_control: {
+                if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
+                    return .init()
+                } else {
+                    return nil
+                }
+            }()))
+            for image in message.images {
+                content.append(.init(type: .image, source: .init(
+                    type: "base64",
+                    media_type: image.format.rawValue,
+                    data: image.data.base64EncodedString()
+                )))
+            }
+            
+            return content
+        }
+
+        func convertMessage(_ message: ChatCompletionsRequestBody.Message) -> Message {
+            let role: ClaudeChatCompletionsService.MessageRole = switch message.role {
+            case .system: .assistant
+            case .assistant, .tool: .assistant
+            case .user: .user
+            }
+
+            let content: [MessageContent] = convertMessageContent(message)
+
+            return .init(role: role, content: content)
+        }
+
         for message in body.messages {
             switch message.role {
             case .system:
@@ -445,38 +482,18 @@ extension ClaudeChatCompletionsService.RequestBody {
             case .tool, .assistant:
                 switch checkJoinType(for: message) {
                 case .appendToList:
-                    nonSystemMessages.append(.init(
-                        role: .assistant,
-                        content: [.init(type: .text, text: message.content)]
-                    ))
+                    nonSystemMessages.append(convertMessage(message))
                 case .padMessageAndAppendToList, .joinMessage:
-                    nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
-                        .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
-                                return .init()
-                            } else {
-                                return nil
-                            }
-                        }())
-                    )
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                        .append(contentsOf: convertMessageContent(message))
                 }
             case .user:
                 switch checkJoinType(for: message) {
                 case .appendToList:
-                    nonSystemMessages.append(.init(
-                        role: .user,
-                        content: [.init(type: .text, text: message.content)]
-                    ))
+                    nonSystemMessages.append(convertMessage(message))
                 case .padMessageAndAppendToList, .joinMessage:
-                    nonSystemMessages[nonSystemMessages.endIndex - 1].content.append(
-                        .init(type: .text, text: message.content, cache_control: {
-                            if message.cacheIfPossible, supportsPromptCache, consumeCacheControl() {
-                                return .init()
-                            } else {
-                                return nil
-                            }
-                        }())
-                    )
+                    nonSystemMessages[nonSystemMessages.endIndex - 1].content
+                        .append(contentsOf: convertMessageContent(message))
                 }
             }
         }

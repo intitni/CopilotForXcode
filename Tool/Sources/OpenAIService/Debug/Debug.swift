@@ -7,20 +7,15 @@ enum Debugger {
 
     #if DEBUG
     static func didSendRequestBody(body: ChatCompletionsRequestBody) {
-        do {
-            let json = try JSONEncoder().encode(body)
-            let center = NotificationCenter.default
-            center.post(
-                name: .init("ServiceDebugger.ChatRequestDebug.requestSent"),
-                object: nil,
-                userInfo: [
-                    "id": id ?? UUID(),
-                    "data": json,
-                ]
-            )
-        } catch {
-            print("Failed to encode request body: \(error)")
-        }
+        let center = NotificationCenter.default
+        center.post(
+            name: .init("ServiceDebugger.ChatRequestDebug.requestSent"),
+            object: nil,
+            userInfo: [
+                "id": id ?? UUID(),
+                "data": body,
+            ]
+        )
     }
 
     static func didReceiveFunction(name: String, arguments: String) {

@@ -1,17 +1,17 @@
 import AIModel
+import ChatBasic
 import CodableWrappers
 import Foundation
 import Preferences
-import ChatBasic
 
-struct ChatCompletionsRequestBody: Codable, Equatable {
-    struct Message: Codable, Equatable {
-        enum Role: String, Codable, Equatable {
+struct ChatCompletionsRequestBody: Equatable {
+    struct Message: Equatable {
+        enum Role: String, Equatable {
             case system
             case user
             case assistant
             case tool
-            
+
             var asChatMessageRole: ChatMessage.Role {
                 switch self {
                 case .system:
@@ -25,6 +25,31 @@ struct ChatCompletionsRequestBody: Codable, Equatable {
                 }
             }
         }
+        
+        struct Image: Equatable {
+            enum Format: String {
+                case png = "image/png"
+                case jpeg = "image/jpeg"
+                case gif = "image/gif"
+            }
+            var data: Data
+            var format: Format
+            
+            var dataURLString: String {
+                let base64 = data.base64EncodedString()
+                return "data:\(format.rawValue);base64,\(base64)"
+            }
+        }
+        
+        struct Audio: Equatable {
+            enum Format: String {
+                case wav
+                case mp3
+            }
+            
+            var data: Data
+            var format: Format
+        }
 
         /// The role of the message.
         var role: Role
@@ -34,25 +59,29 @@ struct ChatCompletionsRequestBody: Codable, Equatable {
         /// name of the function call, and include the result in `content`.
         ///
         /// - important: It's required when the role is `function`.
-        var name: String?
+        var name: String? = nil
         /// Tool calls in an assistant message.
-        var toolCalls: [MessageToolCall]?
+        var toolCalls: [MessageToolCall]? = nil
         /// When we want to call a tool, we have to provide the id of the call.
         ///
         /// - important: It's required when the role is `tool`.
-        var toolCallId: String?
+        var toolCallId: String? = nil
+        /// Images to include in the message.
+        var images: [Image] = []
+        /// Audios to include in the message.
+        var audios: [Audio] = []
         /// Cache the message if possible.
         var cacheIfPossible: Bool = false
     }
 
-    struct MessageFunctionCall: Codable, Equatable {
+    struct MessageFunctionCall: Equatable {
         /// The name of the
         var name: String
         /// A JSON string.
         var arguments: String?
     }
 
-    struct MessageToolCall: Codable, Equatable {
+    struct MessageToolCall: Equatable {
         /// The id of the tool call.
         var id: String
         /// The type of the tool.
@@ -61,7 +90,7 @@ struct ChatCompletionsRequestBody: Codable, Equatable {
         var function: MessageFunctionCall
     }
 
-    struct Tool: Codable, Equatable {
+    struct Tool: Equatable {
         var type: String = "function"
         var function: ChatGPTFunctionSchema
     }
@@ -182,11 +211,11 @@ struct ChatCompletionsStreamDataChunk {
         var content: String?
         var toolCalls: [ToolCall]?
     }
-    
+
     struct Usage: Codable, Equatable {
         var promptTokens: Int?
         var completionTokens: Int?
-        
+
         var cachedTokens: Int?
         var otherUsage: [String: Int]
     }
@@ -205,16 +234,35 @@ protocol ChatCompletionsAPI {
     func callAsFunction() async throws -> ChatCompletionResponseBody
 }
 
-struct ChatCompletionResponseBody: Codable, Equatable {
-    typealias Message = ChatCompletionsRequestBody.Message
-    
-    struct Usage: Codable, Equatable {
+struct ChatCompletionResponseBody: Equatable {
+    struct Message: Equatable {
+        typealias Role = ChatCompletionsRequestBody.Message.Role
+        typealias MessageToolCall = ChatCompletionsRequestBody.MessageToolCall
+
+        /// The role of the message.
+        var role: Role
+        /// The content of the message.
+        var content: String?
+        /// When we want to reply to a function call with the result, we have to provide the
+        /// name of the function call, and include the result in `content`.
+        ///
+        /// - important: It's required when the role is `function`.
+        var name: String?
+        /// Tool calls in an assistant message.
+        var toolCalls: [MessageToolCall]?
+        /// When we want to call a tool, we have to provide the id of the call.
+        ///
+        /// - important: It's required when the role is `tool`.
+        var toolCallId: String?
+    }
+
+    struct Usage: Equatable {
         var promptTokens: Int
         var completionTokens: Int
-        
+
         var cachedTokens: Int
         var otherUsage: [String: Int]
-        
+
         mutating func merge(with other: ChatCompletionsStreamDataChunk.Usage) {
             promptTokens += other.promptTokens ?? 0
             completionTokens += other.completionTokens ?? 0
@@ -223,7 +271,7 @@ struct ChatCompletionResponseBody: Codable, Equatable {
                 otherUsage[key, default: 0] += value
             }
         }
-        
+
         mutating func merge(with other: Self) {
             promptTokens += other.promptTokens
             completionTokens += other.completionTokens

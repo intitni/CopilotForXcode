@@ -18,7 +18,7 @@ public struct StorableColor: Codable, Equatable {
 import SwiftUI
 public extension StorableColor {
     var swiftUIColor: SwiftUI.Color {
-        SwiftUI.Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha)
+        SwiftUI.Color(nsColor: nsColor)
     }
 }
 #endif
@@ -28,7 +28,7 @@ import AppKit
 public extension StorableColor {
     var nsColor: NSColor {
         NSColor(
-            srgbRed: CGFloat(red),
+            calibratedRed: CGFloat(red),
             green: CGFloat(green),
             blue: CGFloat(blue),
             alpha: CGFloat(alpha)

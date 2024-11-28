@@ -23,14 +23,17 @@ struct PromptToCodePanelView: View {
                     TopBar(store: store)
 
                     Content(store: store)
-                        .overlay(alignment: .bottom) {
-                            ActionBar(store: store)
-                        }
                         .safeAreaInset(edge: .bottom) {
-                            if let inputField = customizedViews.contextInputField {
-                                inputField
-                            } else {
-                                Toolbar(store: store)
+                            VStack {
+                                StatusBar(store: store)
+
+                                ActionBar(store: store)
+
+                                if let inputField = customizedViews.contextInputField {
+                                    inputField
+                                } else {
+                                    Toolbar(store: store)
+                                }
                             }
                         }
                 }
@@ -138,6 +141,70 @@ extension PromptToCodePanelView {
                     }
                     .keyboardShortcut("j", modifiers: [.command])
                     .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    struct StatusBar: View {
+        let store: StoreOf<PromptToCodePanel>
+        @State var isAllStatusesPresented = false
+        var body: some View {
+            WithPerceptionTracking {
+                if store.promptToCodeState.isGenerating, !store.promptToCodeState.status.isEmpty {
+                    if let firstStatus = store.promptToCodeState.status.first {
+                        let count = store.promptToCodeState.status.count
+                        Button(action: {
+                            isAllStatusesPresented = true
+                        }) {
+                            HStack {
+                                Text(firstStatus)
+                                    .lineLimit(1)
+                                    .font(.caption)
+
+                                Text("\(count)")
+                                    .lineLimit(1)
+                                    .font(.caption)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.secondary.opacity(0.3))
+                                            .frame(width: 12, height: 12)
+                                    )
+                            }
+                            .padding(8)
+                            .background(
+                                .regularMaterial,
+                                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 400)
+                        .popover(isPresented: $isAllStatusesPresented, arrowEdge: .top) {
+                            WithPerceptionTracking {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    ForEach(store.promptToCodeState.status, id: \.self) { status in
+                                        HStack {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle())
+                                                .controlSize(.small)
+                                            Text(status)
+                                        }
+                                    }
+                                }
+                                .padding()
+                            }
+                        }
+                        .onChange(of: store.promptToCodeState.isGenerating) { isGenerating in
+                            if !isGenerating {
+                                isAllStatusesPresented = false
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -433,7 +500,7 @@ extension PromptToCodePanelView {
                                     }
                                 }
                             }
-                            
+
                             Spacer(minLength: 56)
                         }
                     }
@@ -575,7 +642,7 @@ extension PromptToCodePanelView {
                                 presentAllContent: !isGenerating
                             )
                         } else {
-                            ScrollView(.horizontal) {
+                            MinScrollView {
                                 CodeBlockInContent(
                                     store: store,
                                     language: language,
@@ -603,6 +670,37 @@ extension PromptToCodePanelView {
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                         }
+                    }
+                }
+            }
+
+            struct MinWidthPreferenceKey: PreferenceKey {
+                static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+                    value = nextValue()
+                }
+
+                static var defaultValue: CGFloat = 0
+            }
+
+            struct MinScrollView<Content: View>: View {
+                @ViewBuilder let content: Content
+                @State var minWidth: CGFloat = 0
+
+                var body: some View {
+                    ScrollView(.horizontal) {
+                        content
+                            .frame(minWidth: minWidth)
+                    }
+                    .overlay {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: MinWidthPreferenceKey.self,
+                                value: proxy.size.width
+                            )
+                        }
+                    }
+                    .onPreferenceChange(MinWidthPreferenceKey.self) {
+                        minWidth = $0
                     }
                 }
             }
@@ -857,3 +955,59 @@ extension PromptToCodePanelView {
         .frame(width: 500, height: 500, alignment: .center)
 }
 
+#Preview("Generating") {
+    PromptToCodePanelView(store: .init(initialState: .init(
+        promptToCodeState: Shared(ModificationState(
+            source: .init(
+                language: CodeLanguage.builtIn(.swift),
+                documentURL: URL(
+                    fileURLWithPath: "path/to/file-name-is-super-long-what-should-we-do-with-it-hah.txt"
+                ),
+                projectRootURL: URL(fileURLWithPath: "path/to/file.txt"),
+                content: "",
+                lines: []
+            ),
+            snippets: [
+                .init(
+                    startLineIndex: 8,
+                    originalCode: "print(foo)",
+                    modifiedCode: "print(bar)",
+                    description: "",
+                    error: "Error",
+                    attachedRange: CursorRange(
+                        start: .init(line: 8, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+                .init(
+                    startLineIndex: 13,
+                    originalCode: """
+                      struct Bar {
+                        var foo: Int
+                      }
+                    """,
+                    modifiedCode: """
+                        struct Bar {
+                          var foo: String
+                        }
+                    """,
+                    description: "Cool",
+                    error: nil,
+                    attachedRange: CursorRange(
+                        start: .init(line: 13, character: 0),
+                        end: .init(line: 12, character: 2)
+                    )
+                ),
+            ],
+            extraSystemPrompt: "",
+            isAttachedToTarget: true,
+            isGenerating: true,
+            status: ["Status 1", "Status 2"]
+        )),
+        instruction: nil,
+        commandName: "Generate Code"
+    ), reducer: { PromptToCodePanel() }))
+        .frame(maxWidth: 450, maxHeight: Style.panelHeight)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 500, height: 500, alignment: .center)
+}

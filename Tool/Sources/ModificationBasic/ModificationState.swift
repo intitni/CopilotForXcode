@@ -11,20 +11,24 @@ public struct ModificationState {
     public var isGenerating: Bool = false
     public var extraSystemPrompt: String
     public var isAttachedToTarget: Bool = true
+    public var status = [String]()
 
     public init(
         source: Source,
         history: [ModificationHistoryNode] = [],
         snippets: IdentifiedArrayOf<ModificationSnippet>,
         extraSystemPrompt: String,
-        isAttachedToTarget: Bool
+        isAttachedToTarget: Bool,
+        isGenerating: Bool = false,
+        status: [String] = []
     ) {
         self.history = history
         self.snippets = snippets
-        isGenerating = false
+        self.isGenerating = isGenerating
         self.isAttachedToTarget = isAttachedToTarget
         self.extraSystemPrompt = extraSystemPrompt
         self.source = source
+        self.status = status
     }
 
     public init(

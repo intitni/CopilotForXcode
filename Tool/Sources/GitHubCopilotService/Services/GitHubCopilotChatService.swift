@@ -50,7 +50,10 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             let startTimestamp = Date()
 
             continuation.onTermination = { _ in
-                Task { service.unregisterNotificationHandler(id: id) }
+                Task {
+                    service.unregisterNotificationHandler(id: id)
+                    await service.cancelOngoingTask(workDoneToken: workDoneToken)
+                }
             }
 
             service.registerNotificationHandler(id: id) { notification, data in
@@ -71,12 +74,20 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                         if let reply = progress.value.reply, progress.value.kind == "report" {
                             continuation.yield(reply)
                         } else if progress.value.kind == "end" {
-                            if let error = progress.value.error,
+                            if let error = progress.value.error?.message,
                                progress.value.cancellationReason == nil
                             {
-                                continuation.finish(
-                                    throwing: GitHubCopilotError.chatEndsWithError(error)
-                                )
+                                if error.contains("400") {
+                                    continuation.finish(
+                                        throwing: GitHubCopilotError.chatEndsWithError(
+                                            "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
+                                        )
+                                    )
+                                } else {
+                                    continuation.finish(
+                                        throwing: GitHubCopilotError.chatEndsWithError(error)
+                                    )
+                                }
                             } else {
                                 continuation.finish()
                             }
@@ -198,6 +209,11 @@ extension GitHubCopilotChatService {
                 var message: String
             }
 
+            struct Error: Decodable {
+                var responseIsIncomplete: Bool?
+                var message: String?
+            }
+
             var kind: String
             var title: String?
             var conversationId: String
@@ -209,7 +225,7 @@ extension GitHubCopilotChatService {
             var annotations: [String]?
             var hideText: Bool?
             var cancellationReason: String?
-            var error: String?
+            var error: Error?
         }
 
         var token: String
