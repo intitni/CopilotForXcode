@@ -376,6 +376,7 @@ enum GitHubCopilotRequest {
 
             var source: GitHubCopilotChatSource? // inline or panel
             var workspaceFolder: String?
+            var userLanguage: String?
         }
 
         let requestBody: RequestBody
