@@ -30,13 +30,12 @@ public extension AppInstanceInspector {
         guard path.count >= 2 else { throw cantRunCommand("Path too short.") }
 
         if activateApp {
-            appElement.isFrontmost = true
-//            if !runningApplication.activate() {
-//                Logger.service.error("""
-//                Trigger menu item \(sourcePath): \
-//                Xcode not activated.
-//                """)
-//            }
+            if !runningApplication.isActive {
+                // we prefer `.activate()` because it only brings the active window to the front
+                if !activate() {
+                    appElement.isFrontmost = true
+                }
+            }
         } else {
             if !runningApplication.isActive {
                 Logger.service.error("""
