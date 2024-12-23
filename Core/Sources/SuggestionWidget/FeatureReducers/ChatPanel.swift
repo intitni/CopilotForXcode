@@ -25,13 +25,18 @@ public struct ChatTabKind: Equatable {
 @Reducer
 public struct ChatPanel {
     public struct ChatTabGroup: Equatable {
-        public var tabInfo: IdentifiedArray<String, ChatTabInfo>
+        public var tabInfo: IdentifiedArrayOf<ChatTabInfo>
         public var tabCollection: [ChatTabBuilderCollection]
         public var selectedTabId: String?
 
         public var selectedTabInfo: ChatTabInfo? {
             guard let id = selectedTabId else { return tabInfo.first }
             return tabInfo[id: id]
+        }
+
+        public subscript(chatTab id: String) -> ChatTabItem.State {
+            guard let tab = tabInfo[id: id] else { return .init(id: id, title: "") }
+            return tab
         }
 
         init(
@@ -77,7 +82,7 @@ public struct ChatPanel {
         case moveChatTab(from: Int, to: Int)
         case focusActiveChatTab
 
-        case chatTab(id: String, action: ChatTabItem.Action)
+        case chatTab(IdentifiedActionOf<ChatTabItem>)
     }
 
     @Dependency(\.chatTabPool) var chatTabPool
@@ -280,10 +285,10 @@ public struct ChatPanel {
                 let id = state.chatTabGroup.selectedTabInfo?.id
                 guard let id else { return .none }
                 return .run { send in
-                    await send(.chatTab(id: id, action: .focus))
+                    await send(.chatTab(.element(id: id, action: .focus)))
                 }
 
-            case let .chatTab(id, .close):
+            case let .chatTab(.element(id, .close)):
                 return .run { send in
                     await send(.closeTabButtonClicked(id: id))
                 }
@@ -291,7 +296,7 @@ public struct ChatPanel {
             case .chatTab:
                 return .none
             }
-        }.forEach(\.chatTabGroup.tabInfo, action: /Action.chatTab) {
+        }.forEach(\.chatTabGroup.tabInfo, action: \.chatTab) {
             ChatTabItem()
         }
     }
