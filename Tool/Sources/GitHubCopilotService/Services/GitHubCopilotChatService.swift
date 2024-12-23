@@ -43,7 +43,14 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             capabilities: .init(allSkills: false, skills: []),
             doc: doc,
             source: .panel,
-            workspaceFolder: workspace.projectURL.path
+            workspaceFolder: workspace.projectURL.path,
+            userLanguage: {
+                let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
+                if language.isEmpty {
+                    return "Auto Detected"
+                }
+                return language
+            }()
         ))
 
         let stream = AsyncThrowingStream<String, Error> { continuation in
