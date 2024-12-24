@@ -10,6 +10,7 @@ import XcodeInspector
 
 public class CodeiumChatTab: ChatTab {
     public static var name: String { "Codeium Chat" }
+    public static var canHandleOpenChatCommand: Bool { true }
 
     struct RestorableState: Codable {}
 
