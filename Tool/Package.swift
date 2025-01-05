@@ -57,6 +57,7 @@ let package = Package(
             name: "CustomCommandTemplateProcessor",
             targets: ["CustomCommandTemplateProcessor"]
         ),
+        .library(name: "RunEnvironment", targets: ["RunEnvironment"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -81,7 +82,10 @@ let package = Package(
             url: "https://github.com/intitni/generative-ai-swift",
             branch: "support-setting-base-url"
         ),
-        .package(url: "https://github.com/intitni/CopilotForXcodeKit", branch: "feature/custom-chat-tab"),
+        .package(
+            url: "https://github.com/intitni/CopilotForXcodeKit",
+            branch: "feature/custom-chat-tab"
+        ),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -91,6 +95,8 @@ let package = Package(
         // MARK: - Helpers
 
         .target(name: "XPCShared", dependencies: ["SuggestionBasic", "Logger"]),
+
+        .target(name: "RunEnvironment"),
 
         .target(name: "Configs"),
 

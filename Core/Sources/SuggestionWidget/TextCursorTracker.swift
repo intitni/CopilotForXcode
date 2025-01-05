@@ -1,9 +1,10 @@
 import Combine
 import Foundation
 import Perception
+import RunEnvironment
 import SuggestionBasic
-import XcodeInspector
 import SwiftUI
+import XcodeInspector
 
 /// A passive tracker that observe the changes of the source editor content.
 @Perceptible
@@ -39,13 +40,9 @@ final class TextCursorTracker {
     deinit {
         eventObservationTask?.cancel()
     }
-    
-    var isPreview: Bool {
-        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-    }
 
     private func observeAppChange() {
-        if isPreview { return }
+        if RunEnvironment.isPreview { return }
         editorObservationTask = []
         Task {
             await XcodeInspector.shared.safe.$focusedEditor.sink { [weak self] editor in
@@ -58,7 +55,7 @@ final class TextCursorTracker {
     }
 
     private func observeAXNotifications(_ editor: SourceEditor) {
-        if isPreview { return }
+        if RunEnvironment.isPreview { return }
         eventObservationTask?.cancel()
         let content = editor.getLatestEvaluatedContent()
         Task { @MainActor in
@@ -87,3 +84,4 @@ extension EnvironmentValues {
         set { self[TextCursorTrackerEnvironmentKey.self] = newValue }
     }
 }
+

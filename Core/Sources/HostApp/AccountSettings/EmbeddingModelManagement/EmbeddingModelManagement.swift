@@ -2,6 +2,7 @@ import AIModel
 import ComposableArchitecture
 import Keychain
 import Preferences
+import RunEnvironment
 import SwiftUI
 
 extension EmbeddingModel: ManageableAIModel {
@@ -59,7 +60,7 @@ struct EmbeddingModelManagement: AIModelManagement {
         Reduce { state, action in
             switch action {
             case .appear:
-                if isPreview { return .none }
+                if RunEnvironment.isPreview { return .none }
                 state.models = .init(
                     userDefaults.value(for: \.embeddingModels),
                     id: \.id,

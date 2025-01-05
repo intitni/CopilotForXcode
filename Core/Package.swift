@@ -126,9 +126,10 @@ let package = Package(
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
-                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
+                .product(name: "RunEnvironment", package: "Tool"),
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ].pro([
@@ -209,6 +210,7 @@ let package = Package(
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "ChatTab", package: "Tool"),
                 .product(name: "Terminal", package: "Tool"),
+                .product(name: "RunEnvironment", package: "Tool"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]

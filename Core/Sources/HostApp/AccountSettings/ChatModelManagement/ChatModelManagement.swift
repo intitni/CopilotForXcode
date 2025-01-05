@@ -2,6 +2,7 @@ import AIModel
 import ComposableArchitecture
 import Keychain
 import Preferences
+import RunEnvironment
 import SwiftUI
 
 extension ChatModel: ManageableAIModel {
@@ -67,7 +68,7 @@ struct ChatModelManagement: AIModelManagement {
         Reduce { state, action in
             switch action {
             case .appear:
-                if isPreview { return .none }
+                if RunEnvironment.isPreview { return .none }
                 state.models = .init(
                     userDefaults.value(for: \.chatModels),
                     id: \.id,

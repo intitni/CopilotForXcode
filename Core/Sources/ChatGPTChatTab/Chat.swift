@@ -6,6 +6,7 @@ import MarkdownUI
 import OpenAIService
 import Preferences
 import Terminal
+import RunEnvironment
 
 public struct DisplayedChatMessage: Equatable {
     public enum Role: Equatable {
@@ -52,10 +53,6 @@ public struct DisplayedChatMessage: Equatable {
         markdownContent = .init(text)
         self.references = references
     }
-}
-
-private var isPreview: Bool {
-    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 }
 
 @Reducer
@@ -137,7 +134,7 @@ struct Chat {
             switch action {
             case .appear:
                 return .run { send in
-                    if isPreview { return }
+                    if RunEnvironment.isPreview { return }
                     await send(.observeChatService)
                     await send(.historyChanged)
                     await send(.isReceivingMessageChanged)
