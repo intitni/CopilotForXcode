@@ -1,7 +1,7 @@
 import CodableWrappers
 import Foundation
 
-public struct CodeSuggestion: Codable, Equatable {
+public struct CodeSuggestion: Codable, Equatable, Identifiable {
     public struct Description: Codable, Equatable {
         public enum Kind: Codable, Equatable {
             case warning
@@ -17,11 +17,19 @@ public struct CodeSuggestion: Codable, Equatable {
         }
     }
     
+    public enum EffectiveRange: Codable, Equatable {
+        case replacingRange
+        case line
+        case full
+        case ignored
+    }
+    
     public init(
         id: String,
         text: String,
         position: CursorPosition,
         range: CursorRange,
+        effectiveRange: EffectiveRange = .replacingRange,
         replacingLines: [String] = [],
         descriptions: [Description] = [],
         middlewareComments: [String] = [],
@@ -31,6 +39,7 @@ public struct CodeSuggestion: Codable, Equatable {
         self.position = position
         self.id = id
         self.range = range
+        self.effectiveRange = effectiveRange
         self.replacingLines = replacingLines
         self.descriptions = descriptions
         self.middlewareComments = middlewareComments
@@ -54,6 +63,8 @@ public struct CodeSuggestion: Codable, Equatable {
     public var id: String
     /// The range of the original code that should be replaced.
     public var range: CursorRange
+    /// The range of the suggestion that has an effect.
+    public var effectiveRange: EffectiveRange
     /// Descriptions about this code suggestion
     @FallbackDecoding<EmptyArray> public var replacingLines: [String]
     /// Descriptions about this code suggestion
