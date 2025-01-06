@@ -338,7 +338,10 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             }
             let decoder = JSONDecoder()
             let error = try? decoder.decode(CompletionAPIError.self, from: data)
-            throw error ?? ChatGPTServiceError.responseInvalid
+            throw error ?? ChatGPTServiceError.otherError(
+                text +
+                    "\n\nPlease check your model settings, some capabilities may not be supported by the model."
+            )
         }
 
         let stream = ResponseStream<StreamDataChunk>(result: result) {
