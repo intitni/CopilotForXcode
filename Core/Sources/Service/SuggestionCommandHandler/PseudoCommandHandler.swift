@@ -478,7 +478,9 @@ struct PseudoCommandHandler: CommandHandler {
                 extraSystemPrompt: nil,
                 prompt: message,
                 useExtraSystemPrompt: nil
-            )
+            ),
+            ignoreExistingAttachments: false,
+            attachments: []
         ))).finish()
     }
 

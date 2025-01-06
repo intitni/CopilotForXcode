@@ -275,7 +275,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                     extraSystemPrompt: nil,
                     prompt: "Hello",
                     useExtraSystemPrompt: false
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
             .init(
                 commandId: "2",
@@ -285,7 +287,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                     prompt: "Refactor",
                     continuousMode: false,
                     generateDescription: true
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
         ], "CustomCommandView_Preview"))
 
@@ -299,7 +303,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                             extraSystemPrompt: nil,
                             prompt: "Hello",
                             useExtraSystemPrompt: false
-                        )
+                        ),
+                        ignoreExistingAttachments: false,
+                        attachments: [] as [CustomCommand.Attachment]
                     )))
                 ),
                 reducer: { CustomCommandFeature(settings: settings) }
@@ -319,7 +325,9 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                     extraSystemPrompt: nil,
                     prompt: "Hello",
                     useExtraSystemPrompt: false
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
             .init(
                 commandId: "2",
@@ -329,7 +337,9 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                     prompt: "Refactor",
                     continuousMode: false,
                     generateDescription: true
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
         ], "CustomCommandView_Preview"))
 
