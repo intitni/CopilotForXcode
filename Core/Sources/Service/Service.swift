@@ -81,6 +81,9 @@ public final class Service {
         workspacePool.registerPlugin {
             BuiltinExtensionWorkspacePlugin(workspace: $0)
         }
+        workspacePool.registerPlugin {
+            FileSuggestionManagerPlugin(filespace: $0)
+        }
 
         scheduledCleaner.service = self
     }
