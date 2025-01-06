@@ -32,6 +32,7 @@ public class WorkspacePool {
 
     public internal(set) var workspaces: [URL: Workspace] = [:]
     var plugins = [ObjectIdentifier: (Workspace) -> WorkspacePlugin]()
+    var filespacePlugins = [ObjectIdentifier: (Filespace) -> FilespacePlugin]()
 
     public init(
         workspaces: [URL: Workspace] = [:],
@@ -57,6 +58,29 @@ public class WorkspacePool {
 
         for workspace in workspaces.values {
             removePlugin(id: id, from: workspace)
+        }
+    }
+
+    public func registerPlugin<Plugin: FilespacePlugin>(_ plugin: @escaping (Filespace) -> Plugin) {
+        let id = ObjectIdentifier(Plugin.self)
+        let erasedPlugin: (Filespace) -> FilespacePlugin = { plugin($0) }
+        filespacePlugins[id] = erasedPlugin
+
+        for workspace in workspaces.values {
+            for filespace in workspace.filespaces {
+                addPlugin(erasedPlugin, id: id, to: filespace.value)
+            }
+        }
+    }
+
+    public func unregisterPlugin<Plugin: FilespacePlugin>(_: Plugin.Type) {
+        let id = ObjectIdentifier(Plugin.self)
+        filespacePlugins[id] = nil
+
+        for workspace in workspaces.values {
+            for filespace in workspace.filespaces {
+                removePlugin(id: id, from: filespace.value)
+            }
         }
     }
 
@@ -95,7 +119,8 @@ public class WorkspacePool {
         if let currentWorkspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL {
             if let existed = workspaces[currentWorkspaceURL] {
                 // Reuse the existed workspace.
-                let filespace = try existed.createFilespaceIfNeeded(
+                let filespace = try createNewFilespace(
+                    in: existed,
                     fileURL: fileURL,
                     checkIfFileExists: checkIfFileExists
                 )
@@ -104,7 +129,8 @@ public class WorkspacePool {
 
             let new = createNewWorkspace(workspaceURL: currentWorkspaceURL)
             workspaces[currentWorkspaceURL] = new
-            let filespace = try new.createFilespaceIfNeeded(
+            let filespace = try createNewFilespace(
+                in: new,
                 fileURL: fileURL,
                 checkIfFileExists: checkIfFileExists
             )
@@ -141,7 +167,8 @@ public class WorkspacePool {
                 return createNewWorkspace(workspaceURL: workspaceURL)
             }()
 
-            let filespace = try workspace.createFilespaceIfNeeded(
+            let filespace = try createNewFilespace(
+                in: workspace,
                 fileURL: fileURL,
                 checkIfFileExists: checkIfFileExists
             )
@@ -179,6 +206,37 @@ extension WorkspacePool {
             addPlugin(plugin, id: id, to: new)
         }
         return new
+    }
+}
+
+extension WorkspacePool {
+    func addPlugin(
+        _ plugin: (Filespace) -> FilespacePlugin,
+        id: ObjectIdentifier,
+        to filespace: Filespace
+    ) {
+        if filespace.plugins[id] != nil { return }
+        filespace.plugins[id] = plugin(filespace)
+    }
+
+    func removePlugin(id: ObjectIdentifier, from filespace: Filespace) {
+        filespace.plugins[id] = nil
+    }
+
+    @WorkspaceActor
+    func createNewFilespace(
+        in workspace: Workspace,
+        fileURL: URL,
+        checkIfFileExists: Bool
+    ) throws -> Filespace {
+        let filespace = try workspace.createFilespaceIfNeeded(
+            fileURL: fileURL,
+            checkIfFileExists: checkIfFileExists
+        )
+        for (id, plugin) in filespacePlugins {
+            addPlugin(plugin, id: id, to: filespace)
+        }
+        return filespace
     }
 }
 

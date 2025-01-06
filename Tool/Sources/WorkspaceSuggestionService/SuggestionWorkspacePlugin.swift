@@ -11,7 +11,7 @@ import ProExtension
 #endif
 
 public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
-    public typealias SuggestionServiceFactory = () -> any SuggestionServiceProvider
+    public typealias SuggestionServiceFactory = () -> any SuggestionServiceType
     let suggestionServiceFactory: SuggestionServiceFactory
 
     let suggestionFeatureUsabilityObserver = UserDefaultsObserver(
@@ -31,9 +31,9 @@ public final class SuggestionServiceWorkspacePlugin: WorkspacePlugin {
         UserDefaults.shared.value(for: \.realtimeSuggestionToggle)
     }
 
-    private var _suggestionService: SuggestionServiceProvider?
+    private var _suggestionService: SuggestionServiceType?
 
-    public var suggestionService: SuggestionServiceProvider? {
+    public var suggestionService: SuggestionServiceType? {
         // Check if the workspace is disabled.
         let isSuggestionDisabledGlobally = UserDefaults.shared
             .value(for: \.disableSuggestionFeatureGlobally)
