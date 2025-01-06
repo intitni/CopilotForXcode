@@ -7,6 +7,7 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
     public func getSuggestion(
         _ request: SuggestionRequest,
         configuration: SuggestionServiceConfiguration,
+        emitSuggestions: @escaping EmitSuggestions,
         next: Next
     ) async throws -> [CodeSuggestion] {
         let suggestions = try await next(request)

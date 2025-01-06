@@ -326,6 +326,7 @@ let package = Package(
                 "XPCShared",
                 "BuiltinExtension",
                 "SuggestionInjector",
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
 
