@@ -32,6 +32,7 @@ struct ChatModelEdit {
         var openAIOrganizationID: String = ""
         var openAIProjectID: String = ""
         var customHeaders: [ChatModel.Info.CustomHeaderInfo.HeaderField] = []
+        var openAICompatibleSupportsMultipartMessageContent = true
     }
 
     enum Action: Equatable, BindableAction {
@@ -206,7 +207,11 @@ extension ChatModel {
                 ),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
                 googleGenerativeAIInfo: .init(apiVersion: state.apiVersion),
-                openAICompatibleInfo: .init(enforceMessageOrder: state.enforceMessageOrder),
+                openAICompatibleInfo: .init(
+                    enforceMessageOrder: state.enforceMessageOrder,
+                    supportsMultipartMessageContent: state
+                        .openAICompatibleSupportsMultipartMessageContent
+                ),
                 customHeaderInfo: .init(headers: state.customHeaders)
             )
         )
@@ -230,7 +235,9 @@ extension ChatModel {
             enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder,
             openAIOrganizationID: info.openAIInfo.organizationID,
             openAIProjectID: info.openAIInfo.projectID,
-            customHeaders: info.customHeaderInfo.headers
+            customHeaders: info.customHeaderInfo.headers,
+            openAICompatibleSupportsMultipartMessageContent: info.openAICompatibleInfo
+                .supportsMultipartMessageContent
         )
     }
 }
