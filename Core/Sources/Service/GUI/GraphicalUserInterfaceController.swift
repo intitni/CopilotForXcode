@@ -320,7 +320,6 @@ public final class GraphicalUserInterfaceController {
             )
         }
 
-        suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
                 await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
