@@ -322,6 +322,10 @@ struct ChatModelEditView: View {
                     Text("Enforce message order to be user/assistant alternated")
                 }
                 
+                Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
+                    Text("Support multi-part message content")
+                }
+                
                 Button("Custom Headers") {
                     isEditingCustomHeader.toggle()
                 }
