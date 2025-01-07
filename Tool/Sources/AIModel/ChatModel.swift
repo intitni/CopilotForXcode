@@ -46,16 +46,22 @@ public struct ChatModel: Codable, Equatable, Identifiable {
                 self.projectID = projectID
             }
         }
-        
+
         public struct OpenAICompatibleInfo: Codable, Equatable {
             @FallbackDecoding<EmptyBool>
             public var enforceMessageOrder: Bool
+            @FallbackDecoding<EmptyTrue>
+            public var supportsMultipartMessageContent: Bool
 
-            public init(enforceMessageOrder: Bool = false) {
+            public init(
+                enforceMessageOrder: Bool = false,
+                supportsMultipartMessageContent: Bool = true
+            ) {
                 self.enforceMessageOrder = enforceMessageOrder
+                self.supportsMultipartMessageContent = supportsMultipartMessageContent
             }
         }
-        
+
         public struct GoogleGenerativeAIInfo: Codable, Equatable {
             @FallbackDecoding<EmptyString>
             public var apiVersion: String
@@ -64,21 +70,21 @@ public struct ChatModel: Codable, Equatable, Identifiable {
                 self.apiVersion = apiVersion
             }
         }
-        
+
         public struct CustomHeaderInfo: Codable, Equatable {
             public struct HeaderField: Codable, Equatable {
                 public var key: String
                 public var value: String
-                
+
                 public init(key: String, value: String) {
                     self.key = key
                     self.value = value
                 }
             }
-            
+
             @FallbackDecoding<EmptyArray>
             public var headers: [HeaderField]
-            
+
             public init(headers: [HeaderField] = []) {
                 self.headers = headers
             }
@@ -202,4 +208,8 @@ public struct EmptyChatModelOpenAICompatibleInfo: FallbackValueProvider {
 
 public struct EmptyChatModelCustomHeaderInfo: FallbackValueProvider {
     public static var defaultValue: ChatModel.Info.CustomHeaderInfo { .init() }
+}
+
+public struct EmptyTrue: FallbackValueProvider {
+    public static var defaultValue: Bool { true }
 }

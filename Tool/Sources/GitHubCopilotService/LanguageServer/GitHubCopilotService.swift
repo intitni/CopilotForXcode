@@ -630,9 +630,6 @@ extension InitializingServer: GitHubCopilotLSP {
 }
 
 private func xcodeVersion() async -> String? {
-    if let xcode = await XcodeInspector.shared.safe.latestActiveXcode {
-        return xcode.version
-    }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
     process.arguments = ["xcodebuild", "-version"]

@@ -30,27 +30,63 @@ public struct CustomCommand: Codable, Equatable {
         )
     }
 
+    public struct Attachment: Codable, Equatable {
+        public enum Kind: Codable, Equatable, Hashable {
+            case activeDocument
+            case debugArea
+            case clipboard
+            case senseScope
+            case projectScope
+            case webScope
+            case gitStatus
+            case gitLog
+            case file(path: String)
+        }
+        public var kind: Kind
+        public init(kind: Kind) {
+            self.kind = kind
+        }
+    }
+
     public var id: String { commandId ?? legacyId }
     public var commandId: String?
     public var name: String
     public var feature: Feature
 
-    public init(commandId: String, name: String, feature: Feature) {
+    public var ignoreExistingAttachments: Bool
+    public var attachments: [Attachment]
+
+    public init(
+        commandId: String,
+        name: String,
+        feature: Feature,
+        ignoreExistingAttachments: Bool,
+        attachments: [Attachment]
+    ) {
         self.commandId = commandId
         self.name = name
         self.feature = feature
+        self.ignoreExistingAttachments = ignoreExistingAttachments
+        self.attachments = attachments
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         commandId = try container.decodeIfPresent(String.self, forKey: .commandId)
         name = try container.decode(String.self, forKey: .name)
-        feature = (try? container
-            .decode(CustomCommand.Feature.self, forKey: .feature)) ?? .chatWithSelection(
-                extraSystemPrompt: "",
-                prompt: "",
-                useExtraSystemPrompt: false
-            )
+        feature = (
+            try? container
+                .decode(CustomCommand.Feature.self, forKey: .feature)
+        ) ?? .chatWithSelection(
+            extraSystemPrompt: "",
+            prompt: "",
+            useExtraSystemPrompt: false
+        )
+        ignoreExistingAttachments = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .ignoreExistingAttachments
+        ) ?? false
+        attachments = try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
     }
 
     var legacyId: String {

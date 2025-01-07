@@ -198,7 +198,7 @@ struct CustomCommandView: View {
                     VStack {
                         SubSection(title: Text("Send Message")) {
                             Text(
-                                "This command sends a message to the active chat tab. You can provide additional context through the \"Extra System Prompt\" as well."
+                                "This command sends a message to the active chat tab. You can provide additional context as well. The additional context will be removed once a message is sent. If the message provided is empty, you can manually type the message in the chat."
                             )
                         }
                         SubSection(title: Text("Modification")) {
@@ -208,7 +208,7 @@ struct CustomCommandView: View {
                         }
                         SubSection(title: Text("Custom Chat")) {
                             Text(
-                                "This command will overwrite the system prompt to let the bot behave differently."
+                                "This command will overwrite the context of the chat. You can use it to switch to different contexts in the chat. If a message is provided, it will be sent to the chat as well."
                             )
                         }
                         SubSection(title: Text("Single Round Dialog")) {
@@ -275,7 +275,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                     extraSystemPrompt: nil,
                     prompt: "Hello",
                     useExtraSystemPrompt: false
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
             .init(
                 commandId: "2",
@@ -285,7 +287,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                     prompt: "Refactor",
                     continuousMode: false,
                     generateDescription: true
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
         ], "CustomCommandView_Preview"))
 
@@ -299,7 +303,9 @@ struct CustomCommandView_Preview: PreviewProvider {
                             extraSystemPrompt: nil,
                             prompt: "Hello",
                             useExtraSystemPrompt: false
-                        )
+                        ),
+                        ignoreExistingAttachments: false,
+                        attachments: [] as [CustomCommand.Attachment]
                     )))
                 ),
                 reducer: { CustomCommandFeature(settings: settings) }
@@ -319,7 +325,9 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                     extraSystemPrompt: nil,
                     prompt: "Hello",
                     useExtraSystemPrompt: false
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
             .init(
                 commandId: "2",
@@ -329,7 +337,9 @@ struct CustomCommandView_NoEditing_Preview: PreviewProvider {
                     prompt: "Refactor",
                     continuousMode: false,
                     generateDescription: true
-                )
+                ),
+                ignoreExistingAttachments: false,
+                attachments: []
             ),
         ], "CustomCommandView_Preview"))
 

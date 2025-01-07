@@ -251,6 +251,8 @@ extension PromptToCodePanelView {
 
         struct ActionButtons: View {
             @Perception.Bindable var store: StoreOf<PromptToCodePanel>
+            @AppStorage(\.chatModels) var chatModels
+            @AppStorage(\.promptToCodeChatModelId) var defaultChatModelId
 
             var body: some View {
                 WithPerceptionTracking {
@@ -275,6 +277,8 @@ extension PromptToCodePanelView {
                                     )
                                     .toggleStyle(.checkbox)
                                 }
+
+                                chatModelMenu
                             } label: {
                                 Image(systemName: "gearshape.fill")
                                     .resizable()
@@ -312,6 +316,53 @@ extension PromptToCodePanelView {
                             .easeInOut(duration: 0.1),
                             value: store.promptToCodeState.snippets
                         )
+                    }
+                }
+            }
+
+            @ViewBuilder
+            var chatModelMenu: some View {
+                let allModels = chatModels
+
+                Menu("Chat Model") {
+                    Button(action: {
+                        defaultChatModelId = ""
+                    }) {
+                        HStack {
+                            Text("Same as chat feature")
+                            if defaultChatModelId.isEmpty {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+
+                    if !allModels.contains(where: { $0.id == defaultChatModelId }),
+                       !defaultChatModelId.isEmpty
+                    {
+                        Button(action: {
+                            defaultChatModelId = allModels.first?.id ?? ""
+                        }) {
+                            HStack {
+                                Text(
+                                    (allModels.first?.name).map { "\($0) (Default)" }
+                                        ?? "No model found"
+                                )
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+
+                    ForEach(allModels, id: \.id) { model in
+                        Button(action: {
+                            defaultChatModelId = model.id
+                        }) {
+                            HStack {
+                                Text(model.name)
+                                if model.id == defaultChatModelId {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1011,3 +1062,4 @@ extension PromptToCodePanelView {
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: 500, height: 500, alignment: .center)
 }
+
