@@ -93,37 +93,29 @@ struct ChatModelEdit {
                             $0.model = model
                         }
                         let service = ChatGPTService(configuration: configuration)
-                        let reply = try await service.send(TemplateChatGPTMemory(
-                            memoryTemplate: .init(messages: [
-                                .init(chatMessage: .init(
-                                    role: .user,
-                                    content: "Respond with \"Test succeeded\""
-                                )),
-                            ]),
-                            configuration: configuration,
-                            functionProvider: NoChatGPTFunctionProvider()
-                        )).asText()
-
-                        await send(.testSucceeded(reply))
                         let stream = service.send(TemplateChatGPTMemory(
                             memoryTemplate: .init(messages: [
                                 .init(chatMessage: .init(
+                                    role: .system,
+                                    content: "You are a bot. Just do what is told."
+                                )),
+                                .init(chatMessage: .init(
+                                    role: .assistant,
+                                    content: "Hello"
+                                )),
+                                .init(chatMessage: .init(
                                     role: .user,
-                                    content: "Respond with \"Stream response is working\""
+                                    content: "Respond with \"Test succeeded.\""
+                                )),
+                                .init(chatMessage: .init(
+                                    role: .user,
+                                    content: "Respond with \"Test succeeded.\""
                                 )),
                             ]),
                             configuration: configuration,
                             functionProvider: NoChatGPTFunctionProvider()
                         ))
-                        var streamReply = ""
-                        for try await chunk in stream {
-                            switch chunk {
-                            case let .partialText(text):
-                                streamReply += text
-                            default:
-                                continue
-                            }
-                        }
+                        let streamReply = try await stream.asText()
                         await send(.testSucceeded(streamReply))
                     } catch {
                         await send(.testFailed(error.localizedDescription))
