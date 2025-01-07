@@ -57,6 +57,10 @@ struct EditCustomCommandView: View {
                     store: store.scope(
                         state: \.sendMessage,
                         action: \.sendMessage
+                    ),
+                    attachmentStore: store.scope(
+                        state: \.attachments,
+                        action: \.attachments
                     )
                 )
             case .promptToCode:
@@ -71,6 +75,10 @@ struct EditCustomCommandView: View {
                     store: store.scope(
                         state: \.customChat,
                         action: \.customChat
+                    ),
+                    attachmentStore: store.scope(
+                        state: \.attachments,
+                        action: \.attachments
                     )
                 )
             case .singleRoundDialog:
@@ -88,19 +96,19 @@ struct EditCustomCommandView: View {
         WithPerceptionTracking {
             VStack {
                 Divider()
-                
+
                 VStack(alignment: .trailing) {
                     Text(
                         "After renaming or adding a custom command, please restart Xcode to refresh the menu."
                     )
                     .foregroundStyle(.secondary)
-                    
+
                     HStack {
                         Spacer()
                         Button("Close") {
                             store.send(.close)
                         }
-                        
+
                         if store.isNewCommand {
                             Button("Add") {
                                 store.send(.saveCommand)
@@ -120,22 +128,168 @@ struct EditCustomCommandView: View {
     }
 }
 
+struct CustomCommandAttachmentPickerView: View {
+    @Perception.Bindable var store: StoreOf<EditCustomCommandAttachment>
+    @State private var isFileInputPresented = false
+    @State private var filePath = ""
+
+    #if canImport(ProHostApp)
+    var body: some View {
+        WithPerceptionTracking {
+            VStack(alignment: .leading) {
+                Text("Contexts")
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if store.attachments.isEmpty {
+                            Text("No context")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(store.attachments, id: \.kind) { attachment in
+                                HStack {
+                                    switch attachment.kind {
+                                    case let .file(path: path):
+                                        HStack {
+                                            Text("File:")
+                                            Text(path).foregroundStyle(.secondary)
+                                        }
+                                    default:
+                                        Text(attachment.kind.description)
+                                    }
+                                    Spacer()
+                                    Button {
+                                        store.attachments.removeAll { $0.kind == attachment.kind }
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    .frame(minWidth: 240)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 8)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(.separator, lineWidth: 1)
+                    }
+
+                    Form {
+                        Menu {
+                            ForEach(CustomCommand.Attachment.Kind.allCases.filter { kind in
+                                !store.attachments.contains { $0.kind == kind }
+                            }, id: \.self) { kind in
+                                if kind == .file(path: "") {
+                                    Button {
+                                        isFileInputPresented = true
+                                    } label: {
+                                        Text("File...")
+                                    }
+                                } else {
+                                    Button {
+                                        store.attachments.append(.init(kind: kind))
+                                    } label: {
+                                        Text(kind.description)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label("Add context", systemImage: "plus")
+                        }
+
+                        Toggle(
+                            "Ignore existing contexts",
+                            isOn: $store.ignoreExistingAttachments
+                        )
+                    }
+                }
+            }
+            .sheet(isPresented: $isFileInputPresented) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Enter file path:")
+                        .font(.headline)
+                    Text(
+                        "You can enter either an absolute path or a path relative to the project root."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    TextField("File path", text: $filePath)
+                        .textFieldStyle(.roundedBorder)
+                    HStack {
+                        Spacer()
+                        Button("Cancel") {
+                            isFileInputPresented = false
+                            filePath = ""
+                        }
+                        Button("Add") {
+                            store.attachments.append(.init(kind: .file(path: filePath)))
+                            isFileInputPresented = false
+                            filePath = ""
+                        }
+                        .disabled(filePath.isEmpty)
+                    }
+                }
+                .padding()
+                .frame(minWidth: 400)
+            }
+        }
+    }
+    #else
+    var body: some View { EmptyView() }
+    #endif
+}
+
+extension CustomCommand.Attachment.Kind {
+    public static var allCases: [CustomCommand.Attachment.Kind] {
+        [
+            .activeDocument,
+            .debugArea,
+            .clipboard,
+            .senseScope,
+            .projectScope,
+            .webScope,
+            .gitStatus,
+            .gitLog,
+            .file(path: ""),
+        ]
+    }
+
+    var description: String {
+        switch self {
+        case .activeDocument: return "Active Document"
+        case .debugArea: return "Debug Area"
+        case .clipboard: return "Clipboard"
+        case .senseScope: return "Sense Scope"
+        case .projectScope: return "Project Scope"
+        case .webScope: return "Web Scope"
+        case .gitStatus: return "Git Status"
+        case .gitLog: return "Git Log"
+        case .file: return "File"
+        }
+    }
+}
+
 struct EditSendMessageCommandView: View {
     @Perception.Bindable var store: StoreOf<EditSendMessageCommand>
+    var attachmentStore: StoreOf<EditCustomCommandAttachment>
 
     var body: some View {
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Extra System Prompt", isOn: $store.useExtraSystemPrompt)
+                Toggle("Extra Context", isOn: $store.useExtraSystemPrompt)
                 EditableText(text: $store.extraSystemPrompt)
             }
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Prompt")
+                Text("Send immediately")
                 EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
+
+            CustomCommandAttachmentPickerView(store: attachmentStore)
+                .padding(.vertical, 4)
         }
     }
 }
@@ -146,7 +300,6 @@ struct EditPromptToCodeCommandView: View {
     var body: some View {
         WithPerceptionTracking {
             Toggle("Continuous Mode", isOn: $store.continuousMode)
-            Toggle("Generate Description", isOn: $store.generateDescription)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Extra Context")
@@ -155,7 +308,7 @@ struct EditPromptToCodeCommandView: View {
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Prompt")
+                Text("Instruction")
                 EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
@@ -165,20 +318,24 @@ struct EditPromptToCodeCommandView: View {
 
 struct EditCustomChatCommandView: View {
     @Perception.Bindable var store: StoreOf<EditCustomChatCommand>
+    var attachmentStore: StoreOf<EditCustomCommandAttachment>
 
     var body: some View {
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
-                Text("System Prompt")
+                Text("Topic")
                 EditableText(text: $store.systemPrompt)
             }
             .padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Prompt")
+                Text("Send immediately")
                 EditableText(text: $store.prompt)
             }
             .padding(.vertical, 4)
+
+            CustomCommandAttachmentPickerView(store: attachmentStore)
+                .padding(.vertical, 4)
         }
     }
 }
@@ -195,8 +352,8 @@ struct EditSingleRoundDialogCommandView: View {
             .padding(.vertical, 4)
 
             Picker(selection: $store.overwriteSystemPrompt) {
-                Text("Append to Default System Prompt").tag(false)
-                Text("Overwrite Default System Prompt").tag(true)
+                Text("Append to default system prompt").tag(false)
+                Text("Overwrite default system prompt").tag(true)
             } label: {
                 Text("Mode")
             }
@@ -208,7 +365,7 @@ struct EditSingleRoundDialogCommandView: View {
             }
             .padding(.vertical, 4)
 
-            Toggle("Receive Reply in Notification", isOn: $store.receiveReplyInNotification)
+            Toggle("Receive response in notification", isOn: $store.receiveReplyInNotification)
             Text(
                 "You will be prompted to grant the app permission to send notifications for the first time."
             )
@@ -232,7 +389,9 @@ struct EditCustomCommandView_Preview: PreviewProvider {
                         prompt: "Hello",
                         continuousMode: false,
                         generateDescription: true
-                    )
+                    ),
+                    ignoreExistingAttachments: false,
+                    attachments: [] as [CustomCommand.Attachment]
                 )),
                 reducer: {
                     EditCustomCommand(

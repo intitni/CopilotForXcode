@@ -23,11 +23,16 @@ struct EditCustomCommand {
         var promptToCode = EditPromptToCodeCommand.State()
         var customChat = EditCustomChatCommand.State()
         var singleRoundDialog = EditSingleRoundDialogCommand.State()
+        var attachments = EditCustomCommandAttachment.State()
 
         init(_ command: CustomCommand?) {
             isNewCommand = command == nil
             commandId = command?.id ?? UUID().uuidString
             name = command?.name ?? "New Command"
+            attachments = .init(
+                attachments: command?.attachments ?? [],
+                ignoreExistingAttachments: command?.ignoreExistingAttachments ?? false
+            )
 
             switch command?.feature {
             case let .chatWithSelection(extraSystemPrompt, prompt, useExtraSystemPrompt):
@@ -83,6 +88,7 @@ struct EditCustomCommand {
         case promptToCode(EditPromptToCodeCommand.Action)
         case customChat(EditCustomChatCommand.Action)
         case singleRoundDialog(EditSingleRoundDialogCommand.Action)
+        case attachments(EditCustomCommandAttachment.Action)
     }
 
     let settings: CustomCommandView.Settings
@@ -104,6 +110,10 @@ struct EditCustomCommand {
 
         Scope(state: \.singleRoundDialog, action: \.singleRoundDialog) {
             EditSingleRoundDialogCommand()
+        }
+
+        Scope(state: \.attachments, action: \.attachments) {
+            EditCustomCommandAttachment()
         }
 
         BindingReducer()
@@ -151,7 +161,9 @@ struct EditCustomCommand {
                                 receiveReplyInNotification: state.receiveReplyInNotification
                             )
                         }
-                    }()
+                    }(),
+                    ignoreExistingAttachments: state.attachments.ignoreExistingAttachments,
+                    attachments: state.attachments.attachments
                 )
 
                 if state.isNewCommand {
@@ -183,6 +195,32 @@ struct EditCustomCommand {
             case .customChat:
                 return .none
             case .singleRoundDialog:
+                return .none
+            case .attachments:
+                return .none
+            }
+        }
+    }
+}
+
+@Reducer
+struct EditCustomCommandAttachment {
+    @ObservableState
+    struct State: Equatable {
+        var attachments: [CustomCommand.Attachment] = []
+        var ignoreExistingAttachments: Bool = false
+    }
+
+    enum Action: BindableAction, Equatable {
+        case binding(BindingAction<State>)
+    }
+
+    var body: some ReducerOf<Self> {
+        BindingReducer()
+
+        Reduce { _, action in
+            switch action {
+            case .binding:
                 return .none
             }
         }

@@ -32,6 +32,7 @@ struct ChatModelEdit {
         var openAIOrganizationID: String = ""
         var openAIProjectID: String = ""
         var customHeaders: [ChatModel.Info.CustomHeaderInfo.HeaderField] = []
+        var openAICompatibleSupportsMultipartMessageContent = true
     }
 
     enum Action: Equatable, BindableAction {
@@ -88,21 +89,33 @@ struct ChatModelEdit {
                 let model = ChatModel(state: state)
                 return .run { send in
                     do {
-                        let service = LegacyChatGPTService(
-                            configuration: UserPreferenceChatGPTConfiguration()
-                                .overriding {
-                                    $0.model = model
-                                }
-                        )
-                        let reply = try await service
-                            .sendAndWait(content: "Respond with \"Test succeeded\"")
-                        await send(.testSucceeded(reply ?? "No Message"))
-                        let stream = try await service
-                            .send(content: "Respond with \"Stream response is working\"")
-                        var streamReply = ""
-                        for try await chunk in stream {
-                            streamReply += chunk
+                        let configuration = UserPreferenceChatGPTConfiguration().overriding {
+                            $0.model = model
                         }
+                        let service = ChatGPTService(configuration: configuration)
+                        let stream = service.send(TemplateChatGPTMemory(
+                            memoryTemplate: .init(messages: [
+                                .init(chatMessage: .init(
+                                    role: .system,
+                                    content: "You are a bot. Just do what is told."
+                                )),
+                                .init(chatMessage: .init(
+                                    role: .assistant,
+                                    content: "Hello"
+                                )),
+                                .init(chatMessage: .init(
+                                    role: .user,
+                                    content: "Respond with \"Test succeeded.\""
+                                )),
+                                .init(chatMessage: .init(
+                                    role: .user,
+                                    content: "Respond with \"Test succeeded.\""
+                                )),
+                            ]),
+                            configuration: configuration,
+                            functionProvider: NoChatGPTFunctionProvider()
+                        ))
+                        let streamReply = try await stream.asText()
                         await send(.testSucceeded(streamReply))
                     } catch {
                         await send(.testFailed(error.localizedDescription))
@@ -206,7 +219,11 @@ extension ChatModel {
                 ),
                 ollamaInfo: .init(keepAlive: state.ollamaKeepAlive),
                 googleGenerativeAIInfo: .init(apiVersion: state.apiVersion),
-                openAICompatibleInfo: .init(enforceMessageOrder: state.enforceMessageOrder),
+                openAICompatibleInfo: .init(
+                    enforceMessageOrder: state.enforceMessageOrder,
+                    supportsMultipartMessageContent: state
+                        .openAICompatibleSupportsMultipartMessageContent
+                ),
                 customHeaderInfo: .init(headers: state.customHeaders)
             )
         )
@@ -230,7 +247,9 @@ extension ChatModel {
             enforceMessageOrder: info.openAICompatibleInfo.enforceMessageOrder,
             openAIOrganizationID: info.openAIInfo.organizationID,
             openAIProjectID: info.openAIInfo.projectID,
-            customHeaders: info.customHeaderInfo.headers
+            customHeaders: info.customHeaderInfo.headers,
+            openAICompatibleSupportsMultipartMessageContent: info.openAICompatibleInfo
+                .supportsMultipartMessageContent
         )
     }
 }
