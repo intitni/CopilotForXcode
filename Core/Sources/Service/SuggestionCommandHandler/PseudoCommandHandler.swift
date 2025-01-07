@@ -79,46 +79,23 @@ struct PseudoCommandHandler: CommandHandler {
         presenter.markAsProcessing(true)
         defer { presenter.markAsProcessing(false) }
 
-        if filespace.presentingSuggestion != nil {
-            // Check if the current suggestion is still valid.
-            if filespace.validateSuggestions(
-                lines: editor.lines,
-                cursorPosition: editor.cursorPosition
-            ) {
-                return
-            } else {
-                presenter.discardSuggestion(fileURL: filespace.fileURL)
-            }
-        }
-
-        let snapshot = FilespaceSuggestionSnapshot(
-            lines: editor.lines,
-            cursorPosition: editor.cursorPosition
-        )
-
-        guard filespace.suggestionSourceSnapshot != snapshot else { return }
-
         do {
             try await workspace.generateSuggestions(
                 forFileAt: fileURL,
                 editor: editor
             )
-            if let sourceEditor {
+            if let sourceEditor, filespace.activeCodeSuggestion != nil {
                 let editorContent = sourceEditor.getContent()
+                // Make sure the new suggestions are still valid.
                 _ = filespace.validateSuggestions(
                     lines: editorContent.lines,
                     cursorPosition: editorContent.cursorPosition
                 )
             }
-            if filespace.presentingSuggestion != nil {
-                presenter.presentSuggestion(fileURL: fileURL)
-            } else {
-                presenter.discardSuggestion(fileURL: fileURL)
-            }
         } catch let error as SuggestionServiceError {
             switch error {
             case let .notice(error):
-                presenter.presentErrorMessage(error.localizedDescription)
+                toast.toast(content: error.localizedDescription, type: .error)
             case .silent:
                 Logger.service.error(error.localizedDescription)
                 return
@@ -134,17 +111,15 @@ struct PseudoCommandHandler: CommandHandler {
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
-        if filespace.presentingSuggestion == nil {
+        if filespace.activeCodeSuggestion == nil {
             return // skip if there's no suggestion presented.
         }
 
         let content = sourceEditor.getContent()
-        if !filespace.validateSuggestions(
+        filespace.validateSuggestions(
             lines: content.lines,
             cursorPosition: content.cursorPosition
-        ) {
-            PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: fileURL)
-        }
+        )
     }
 
     func rejectSuggestions() async {
@@ -190,8 +165,7 @@ struct PseudoCommandHandler: CommandHandler {
                 try await XcodeInspector.shared.safe.latestActiveXcode?
                     .triggerCopilotCommand(name: command.name)
             } catch {
-                let presenter = PresentInWindowSuggestionPresenter()
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
             return
         }
@@ -200,8 +174,7 @@ struct PseudoCommandHandler: CommandHandler {
         do {
             try await handler.handleCustomCommand(id: command.id, editor: editor)
         } catch {
-            let presenter = PresentInWindowSuggestionPresenter()
-            presenter.presentError(error)
+            toast.toast(content: error.localizedDescription, type: .error)
         }
     }
 
@@ -247,8 +220,7 @@ struct PseudoCommandHandler: CommandHandler {
                 cursorOffset
             ) = await getFileContent(sourceEditor: nil)
             else {
-                PresentInWindowSuggestionPresenter()
-                    .presentErrorMessage("Unable to get file content.")
+                toast.toast(content: "Unable to get file content.", type: .error)
                 return
             }
             let handler = WindowBaseCommandHandler()
@@ -267,7 +239,7 @@ struct PseudoCommandHandler: CommandHandler {
 
                 try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
             } catch {
-                PresentInWindowSuggestionPresenter().presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
     }
@@ -319,8 +291,7 @@ struct PseudoCommandHandler: CommandHandler {
                 cursorOffset
             ) = await getFileContent(sourceEditor: nil)
             else {
-                PresentInWindowSuggestionPresenter()
-                    .presentErrorMessage("Unable to get file content.")
+                toast.toast(content: "Unable to get file content.", type: .error)
                 return
             }
             let handler = WindowBaseCommandHandler()
@@ -339,17 +310,16 @@ struct PseudoCommandHandler: CommandHandler {
 
                 try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
             } catch {
-                PresentInWindowSuggestionPresenter().presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
     }
 
     func dismissSuggestion() async {
         guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
-        PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
-        guard let (_, filespace) = try? await Service.shared.workspacePool
+        guard let (workspace, _) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
-        await filespace.reset()
+        await workspace.dismissSuggestions(forFileAt: documentURL)
     }
 
     func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
@@ -488,7 +458,6 @@ struct PseudoCommandHandler: CommandHandler {
     func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
         guard let filespace = await getFilespace() else { return }
         filespace.setSuggestions(suggestions)
-        PresentInWindowSuggestionPresenter().presentSuggestion(fileURL: filespace.fileURL)
     }
 
     func toast(_ message: String, as type: ToastType) {
@@ -532,8 +501,7 @@ extension PseudoCommandHandler {
         )
 
         if error != AXError.success {
-            PresentInWindowSuggestionPresenter()
-                .presentErrorMessage("Fail to set editor content.")
+            toast.toast(content: "Fail to set editor content.", type: .error)
         }
 
         // recover selection range
