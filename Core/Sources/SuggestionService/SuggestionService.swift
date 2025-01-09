@@ -9,12 +9,11 @@ import SuggestionBasic
 import SuggestionProvider
 import UserDefaultsObserver
 import Workspace
+import WorkspaceSuggestionService
 
 #if canImport(ProExtension)
 import ProExtension
 #endif
-
-public protocol SuggestionServiceType: SuggestionServiceProvider {}
 
 public actor SuggestionService: SuggestionServiceType {
     public typealias Middleware = SuggestionServiceMiddleware
@@ -67,29 +66,41 @@ public extension SuggestionService {
     func getSuggestions(
         _ request: SuggestionRequest,
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
-    ) async throws -> [SuggestionBasic.CodeSuggestion] {
-        do {
-            var getSuggestion = suggestionProvider.getSuggestions(_:workspaceInfo:)
-            let configuration = await configuration
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error> {
+        var getSuggestion: (SuggestionRequest, WorkspaceInfo) async -> AsyncThrowingStream<
+            [CodeSuggestion],
+            Error
+        > = { [base = suggestionProvider.getSuggestions] request, workspaceInfo in
+            AsyncThrowingStream { continuation in
+                let task = Task {
+                    do {
+                        let suggestions = try await base(request, workspaceInfo)
+                        continuation.yield(suggestions)
+                        continuation.finish()
+                    } catch {
+                        continuation.finish(throwing: error)
+                    }
+                }
 
-            for middleware in middlewares.reversed() {
-                getSuggestion = { [getSuggestion] request, workspaceInfo in
-                    try await middleware.getSuggestion(
-                        request,
-                        configuration: configuration,
-                        next: { [getSuggestion] request in
-                            try await getSuggestion(request, workspaceInfo)
-                        }
-                    )
+                continuation.onTermination = { _ in
+                    task.cancel()
                 }
             }
-
-            return try await getSuggestion(request, workspaceInfo)
-        } catch let error as SuggestionServiceError {
-            throw error
-        } catch {
-            throw SuggestionServiceError.silent(error)
         }
+        let configuration = await configuration
+        for middleware in middlewares.reversed() {
+            getSuggestion = { [getSuggestion] request, workspaceInfo in
+                await middleware.getSuggestion(
+                    request,
+                    configuration: configuration,
+                    next: { [getSuggestion] request in
+                        await getSuggestion(request, workspaceInfo)
+                    }
+                )
+            }
+        }
+
+        return await getSuggestion(request, workspaceInfo)
     }
 
     func notifyAccepted(

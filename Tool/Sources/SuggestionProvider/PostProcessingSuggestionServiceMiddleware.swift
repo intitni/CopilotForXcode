@@ -7,26 +7,29 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
     public func getSuggestion(
         _ request: SuggestionRequest,
         configuration: SuggestionServiceConfiguration,
-        emitSuggestions: @escaping EmitSuggestions,
         next: Next
-    ) async throws -> [CodeSuggestion] {
-        let suggestions = try await next(request)
-
-        return suggestions.compactMap {
-            var suggestion = $0
-            if suggestion.text.allSatisfy({ $0.isWhitespace || $0.isNewline }) { return nil }
-            Self.removeTrailingWhitespacesAndNewlines(&suggestion)
-            Self.removeRedundantClosingParenthesis(&suggestion, lines: request.lines)
-            if !Self.checkIfSuggestionHasNoEffect(suggestion, request: request) { return nil }
-            Self.injectReplacingLines(&suggestion, request: request)
-            return suggestion
-        }
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error> {
+        return await next(request).handled(
+            handleCodeSuggestions: {
+                $0.compactMap { suggestion in
+                    var suggestion = suggestion
+                    if suggestion.text
+                        .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return nil }
+                    Self.removeTrailingWhitespacesAndNewlines(&suggestion)
+                    Self.removeRedundantClosingParenthesis(&suggestion, lines: request.lines)
+                    if !Self
+                        .checkIfSuggestionHasNoEffect(suggestion, request: request) { return nil }
+                    Self.injectReplacingLines(&suggestion, request: request)
+                    return suggestion
+                }
+            }
+        )
     }
 
     static func removeTrailingWhitespacesAndNewlines(_ suggestion: inout CodeSuggestion) {
         suggestion.text = suggestion.text.removedTrailingWhitespacesAndNewlines()
     }
-    
+
     static func injectReplacingLines(
         _ suggestion: inout CodeSuggestion,
         request: SuggestionRequest

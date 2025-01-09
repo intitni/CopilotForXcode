@@ -5,6 +5,8 @@ import SuggestionBasic
 import Workspace
 
 public final class FileSuggestionManagerPlugin: FilespacePlugin {
+//    static var suggestionProviders
+    
     public let suggestionManager = FileSuggestionManager()
 }
 

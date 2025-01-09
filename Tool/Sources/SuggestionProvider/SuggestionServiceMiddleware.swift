@@ -3,23 +3,21 @@ import Logger
 import SuggestionBasic
 
 public protocol SuggestionServiceMiddleware {
-    typealias Next = (SuggestionRequest) async throws -> [CodeSuggestion]
-    typealias EmitSuggestions = ([CodeSuggestion]) -> Void
+    typealias Next = (SuggestionRequest) async -> AsyncThrowingStream<[CodeSuggestion], Error>
 
     func getSuggestion(
         _ request: SuggestionRequest,
         configuration: SuggestionServiceConfiguration,
-        emitSuggestions: @escaping EmitSuggestions,
-        next: Next
-    ) async throws -> [CodeSuggestion]
+        next: @escaping Next
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error>
 }
 
 public enum SuggestionServiceMiddlewareContainer {
     static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
         DisabledLanguageSuggestionServiceMiddleware(),
-        PostProcessingSuggestionServiceMiddleware()
+        PostProcessingSuggestionServiceMiddleware(),
     ]
-    
+
     static var leadingMiddlewares: [SuggestionServiceMiddleware] = []
 
     static var trailingMiddlewares: [SuggestionServiceMiddleware] = []
@@ -31,7 +29,7 @@ public enum SuggestionServiceMiddlewareContainer {
     public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
         trailingMiddlewares.append(middleware)
     }
-    
+
     public static func addMiddlewares(_ middlewares: [SuggestionServiceMiddleware]) {
         trailingMiddlewares.append(contentsOf: middlewares)
     }
@@ -39,7 +37,7 @@ public enum SuggestionServiceMiddlewareContainer {
     public static func addLeadingMiddleware(_ middleware: SuggestionServiceMiddleware) {
         leadingMiddlewares.append(middleware)
     }
-    
+
     public static func addLeadingMiddlewares(_ middlewares: [SuggestionServiceMiddleware]) {
         leadingMiddlewares.append(contentsOf: middlewares)
     }
@@ -47,7 +45,7 @@ public enum SuggestionServiceMiddlewareContainer {
 
 public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMiddleware {
     public init() {}
-    
+
     struct DisabledLanguageError: Error, LocalizedError {
         let language: String
         var errorDescription: String? {
@@ -58,17 +56,18 @@ public struct DisabledLanguageSuggestionServiceMiddleware: SuggestionServiceMidd
     public func getSuggestion(
         _ request: SuggestionRequest,
         configuration: SuggestionServiceConfiguration,
-        emitSuggestions: @escaping EmitSuggestions,
-        next: Next
-    ) async throws -> [CodeSuggestion] {
+        next: @escaping Next
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error> {
         let language = languageIdentifierFromFileURL(request.fileURL)
         if UserDefaults.shared.value(for: \.suggestionFeatureDisabledLanguageList)
             .contains(where: { $0 == language.rawValue })
         {
-            throw DisabledLanguageError(language: language.rawValue)
+            return .init {
+                $0.finish(throwing: DisabledLanguageError(language: language.rawValue))
+            }
         }
 
-        return try await next(request)
+        return await next(request)
     }
 }
 
@@ -78,24 +77,67 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
     public func getSuggestion(
         _ request: SuggestionRequest,
         configuration: SuggestionServiceConfiguration,
-        emitSuggestions: @escaping EmitSuggestions,
-        next: Next
-    ) async throws -> [CodeSuggestion] {
+        next: @escaping Next
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error> {
         Logger.service.info("""
         Get suggestion for \(request.fileURL) at \(request.cursorPosition)
         """)
-        do {
-            let suggestions = try await next(request)
-            Logger.service.info("""
-            Receive \(suggestions.count) suggestions for \(request.fileURL) \
-            at \(request.cursorPosition)
-            """)
-            return suggestions
-        } catch {
-            Logger.service.info("""
-            Error: \(error.localizedDescription)
-            """)
-            throw error
+
+        return await next(request).handled(
+            handleCodeSuggestions: { suggestions in
+                Logger.service.info("""
+                Receive \(suggestions.count) suggestions for \(request.fileURL) \
+                at \(request.cursorPosition)
+                """)
+                return suggestions
+            },
+            handleError: { error in
+                Logger.service.info("""
+                Error: \(error.localizedDescription)
+                """)
+                return error
+            }
+        )
+    }
+}
+
+public extension AsyncThrowingStream<[CodeSuggestion], Error> {
+    func handled(
+        handleCodeSuggestions: @escaping ([CodeSuggestion]) -> [CodeSuggestion] = { $0 },
+        handleError: @escaping (Error) -> Error = { $0 },
+        onFinish: @escaping () -> Void = {}
+    ) -> AsyncThrowingStream<[CodeSuggestion], Error> {
+        .init { continuation in
+            let task = Task {
+                do {
+                    for try await suggestions in self {
+                        continuation.yield(handleCodeSuggestions(suggestions))
+                    }
+                    continuation.finish()
+                    onFinish()
+                } catch {
+                    continuation.finish(throwing: handleError(error))
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
+    static func suggestions(_ suggestions: [CodeSuggestion])
+        -> AsyncThrowingStream<[CodeSuggestion], Error>
+    {
+        .init { continuation in
+            continuation.yield(suggestions)
+            continuation.finish()
+        }
+    }
+
+    static func error(_ error: Error) -> AsyncThrowingStream<[CodeSuggestion], Error> {
+        .init { continuation in
+            continuation.finish(throwing: error)
         }
     }
 }
