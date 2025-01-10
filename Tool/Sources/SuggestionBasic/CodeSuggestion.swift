@@ -7,23 +7,23 @@ public struct CodeSuggestion: Codable, Equatable, Identifiable {
             case warning
             case action
         }
-        
+
         public var kind: Kind
         public var content: String
-        
+
         public init(kind: Kind, content: String) {
             self.kind = kind
             self.content = content
         }
     }
-    
+
     public enum EffectiveRange: Codable, Equatable {
         case replacingRange
         case line
         case full
         case ignored
     }
-    
+
     public init(
         id: String,
         text: String,
@@ -33,7 +33,7 @@ public struct CodeSuggestion: Codable, Equatable, Identifiable {
         replacingLines: [String] = [],
         descriptions: [Description] = [],
         middlewareComments: [String] = [],
-        metadata: [String: String] = [:]
+        metadata: [MetadataKey: String] = [:]
     ) {
         self.text = text
         self.position = position
@@ -72,6 +72,39 @@ public struct CodeSuggestion: Codable, Equatable, Identifiable {
     /// A place to store comments inserted by middleware for debugging use.
     @FallbackDecoding<EmptyArray> public var middlewareComments: [String]
     /// A place to store extra data.
-    @FallbackDecoding<EmptyDictionary> public var metadata: [String: String]
+    @FallbackDecoding<EmptyDictionary> public var metadata: [MetadataKey: String]
+
+    public struct MetadataKey: ExpressibleByStringLiteral, Hashable, Codable {
+        public let rawValue: String
+        public static var group: MetadataKey { "group" }
+        public static func custom(_ key: String) -> MetadataKey { .init(rawValue: key) }
+        
+        public init(rawValue: String) {
+            self.rawValue = rawValue
+        }
+
+        public init(stringLiteral value: StringLiteralType) {
+            self.rawValue = value
+        }
+        
+        public enum CodingKeys: CodingKey {
+            case rawValue
+        }
+        
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(rawValue)
+        }
+        
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            self.rawValue = try container.decode(String.self)
+        }
+    }
+
+    public subscript(metadata key: MetadataKey) -> String? {
+        get { metadata[key] }
+        set { metadata[key] = newValue }
+    }
 }
 
