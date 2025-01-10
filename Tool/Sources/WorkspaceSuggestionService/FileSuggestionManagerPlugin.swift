@@ -5,9 +5,25 @@ import SuggestionBasic
 import Workspace
 
 public final class FileSuggestionManagerPlugin: FilespacePlugin {
-//    static var suggestionProviders
-    
-    public let suggestionManager = FileSuggestionManager()
+    static var suggestionProviders: [ObjectIdentifier: (FileSuggestionManager)
+        -> FilespaceSuggestionProvider] = [:]
+
+    public let suggestionManager = {
+        let suggestionManager = FileSuggestionManager()
+        for provider in suggestionProviders.values {
+            let provider = provider(suggestionManager)
+            suggestionManager.suggestionProviders.append(provider)
+            provider.delegate = suggestionManager
+        }
+        return suggestionManager
+    }()
+
+    public static func registerSuggestionProvider<Provider: FilespaceSuggestionProvider>(
+        _ provider: @escaping (FileSuggestionManager) -> Provider
+    ) {
+        let id = ObjectIdentifier(Provider.self)
+        suggestionProviders[id] = provider
+    }
 }
 
 public extension Filespace {
@@ -25,7 +41,7 @@ public final class FileSuggestionManager {
     let defaultSuggestionProvider = DefaultFilespaceSuggestionProvider()
 
     @PerceptionIgnored
-    private(set) var suggestionProviders: [FilespaceSuggestionProvider] = []
+    fileprivate(set) var suggestionProviders: [FilespaceSuggestionProvider] = []
 
     public private(set) var displaySuggestions: CircularSuggestionList = .init()
 
@@ -259,7 +275,7 @@ extension FileSuggestionManager {
             if isSuggestionAnAction(suggestion) {
                 actions.append(.init(id: suggestion.id, suggestion: suggestion))
             } else {
-                let group = suggestion.metadata["group"] ?? ""
+                let group = suggestion[metadata: .group] ?? ""
                 if groups[id: group] != nil {
                     groups[id: group]?.suggestions.append(suggestion)
                 } else {
