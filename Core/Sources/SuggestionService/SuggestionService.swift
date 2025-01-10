@@ -118,6 +118,13 @@ public extension SuggestionService {
         eventHandlers.forEach { $0.didReject(suggestions, workspaceInfo: workspaceInfo) }
         await suggestionProvider.notifyRejected(suggestions, workspaceInfo: workspaceInfo)
     }
+    
+    func notifyDismissed(
+        _ suggestions: [SuggestionBasic.CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async {
+        eventHandlers.forEach { $0.didDismiss(suggestions, workspaceInfo: workspaceInfo) }
+    }
 
     func cancelRequest(workspaceInfo: CopilotForXcodeKit.WorkspaceInfo) async {
         await suggestionProvider.cancelRequest(workspaceInfo: workspaceInfo)

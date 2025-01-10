@@ -19,6 +19,10 @@ public protocol SuggestionServiceType {
         _ suggestions: [CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
     ) async
+    func notifyDismissed(
+        _ suggestions: [CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
     func cancelRequest(workspaceInfo: CopilotForXcodeKit.WorkspaceInfo) async
 
     var configuration: SuggestionServiceConfiguration { get async }
@@ -230,7 +234,26 @@ public extension Workspace {
     func dismissSuggestions(forFileAt fileURL: URL) {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return }
+        let displayedSuggestions = filespace.suggestionManager?.displaySuggestions.flatMap {
+            switch $0 {
+            case let .action(action):
+                return [action.suggestion]
+            case let .group(group):
+                return group.suggestions
+            }
+        } ?? []
+
         filespace.suggestionManager?.invalidateDisplaySuggestions()
+
+        Task {
+            await suggestionService?.notifyDismissed(
+                displayedSuggestions,
+                workspaceInfo: .init(
+                    workspaceURL: workspaceURL,
+                    projectURL: projectRootURL
+                )
+            )
+        }
     }
 }
 

@@ -5,6 +5,7 @@ import SuggestionBasic
 public protocol SuggestionServiceEventHandler {
     func didAccept(_ suggestion: SuggestionBasic.CodeSuggestion, workspaceInfo: WorkspaceInfo)
     func didReject(_ suggestions: [SuggestionBasic.CodeSuggestion], workspaceInfo: WorkspaceInfo)
+    func didDismiss(_ suggestions: [SuggestionBasic.CodeSuggestion], workspaceInfo: WorkspaceInfo)
 }
 
 public enum SuggestionServiceEventHandlerContainer {
