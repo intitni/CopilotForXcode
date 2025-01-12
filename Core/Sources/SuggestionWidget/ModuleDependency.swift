@@ -10,7 +10,6 @@ import UserDefaultsObserver
 import XcodeInspector
 
 public final class SuggestionWidgetControllerDependency {
-    public var suggestionWidgetDataSource: SuggestionWidgetDataSource?
     public var onOpenChatClicked: () -> Void = {}
     public var onOpenModificationButtonClicked: () -> Void = {}
     public var onCustomCommandClicked: (CustomCommand) -> Void = { _ in }

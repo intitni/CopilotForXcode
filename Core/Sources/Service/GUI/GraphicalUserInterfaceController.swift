@@ -273,7 +273,6 @@ struct GUI {
 public final class GraphicalUserInterfaceController {
     let store: StoreOf<GUI>
     let widgetController: SuggestionWidgetController
-    let widgetDataSource: WidgetDataSource
     let chatTabPool: ChatTabPool
 
     class WeakStoreHolder {
@@ -302,7 +301,6 @@ public final class GraphicalUserInterfaceController {
         )
         self.store = store
         self.chatTabPool = chatTabPool
-        widgetDataSource = .init()
 
         widgetController = SuggestionWidgetController(
             store: store.scope(
