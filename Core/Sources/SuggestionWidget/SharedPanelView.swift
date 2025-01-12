@@ -70,44 +70,13 @@ struct SharedPanelView: View {
         var body: some View {
             WithPerceptionTracking {
                 ZStack(alignment: .topLeading) {
-                    if let errorMessage = store.content.error {
-                        error(errorMessage)
-                    } else if let _ = store.content.promptToCode {
-                        promptToCode()
-                    } else if let suggestionProvider = store.content.suggestion {
-                        suggestion(suggestionProvider)
+                    if let store = store.scope(
+                        state: \.content.promptToCodeGroup.activePromptToCode,
+                        action: \.promptToCodeGroup.activePromptToCode
+                    ) {
+                        PromptToCodePanelView(store: store)
                     }
                 }
-            }
-        }
-
-        @ViewBuilder
-        func error(_ error: String) -> some View {
-            ErrorPanelView(description: error) {
-                store.send(
-                    .errorMessageCloseButtonTapped,
-                    animation: .easeInOut(duration: 0.2)
-                )
-            }
-        }
-
-        @ViewBuilder
-        func promptToCode() -> some View {
-            if let store = store.scope(
-                state: \.content.promptToCodeGroup.activePromptToCode,
-                action: \.promptToCodeGroup.activePromptToCode
-            ) {
-                PromptToCodePanelView(store: store)
-            }
-        }
-
-        @ViewBuilder
-        func suggestion(_ suggestion: PresentingCodeSuggestion) -> some View {
-            switch suggestionPresentationMode {
-            case .nearbyTextCursor:
-                EmptyView()
-            case .floatingWidget:
-                CodeBlockSuggestionPanelView(suggestion: suggestion)
             }
         }
     }
@@ -133,55 +102,3 @@ struct CommandButtonStyle: ButtonStyle {
             }
     }
 }
-
-// MARK: - Previews
-
-struct SharedPanelView_Error_Preview: PreviewProvider {
-    static var previews: some View {
-        SharedPanelView(store: .init(
-            initialState: .init(
-                content: .init(error: "This is an error\nerror"),
-                colorScheme: .light,
-                isPanelDisplayed: true
-            ),
-            reducer: { SharedPanel() }
-        ))
-        .frame(width: 450, height: 200)
-    }
-}
-
-struct SharedPanelView_Both_DisplayingSuggestion_Preview: PreviewProvider {
-    static var previews: some View {
-        SharedPanelView(store: .init(
-            initialState: .init(
-                content: .init(
-                    suggestion: .init(
-                        code: """
-                        - (void)addSubview:(UIView *)view {
-                            [self addSubview:view];
-                        }
-                        """,
-                        language: "objective-c",
-                        startLineIndex: 8,
-                        suggestionCount: 2,
-                        currentSuggestionIndex: 0,
-                        replacingRange: .zero,
-                        replacingLines: [""]
-                    )
-                ),
-                colorScheme: .dark,
-                isPanelDisplayed: true
-            ),
-            reducer: { SharedPanel() }
-        ))
-        .frame(width: 450, height: 200)
-        .background {
-            HStack {
-                Color.red
-                Color.green
-                Color.blue
-            }
-        }
-    }
-}
-
