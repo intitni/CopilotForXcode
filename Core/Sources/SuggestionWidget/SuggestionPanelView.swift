@@ -36,16 +36,6 @@ struct SuggestionPanelView: View {
             }
             .preferredColorScheme(store.colorScheme)
             .opacity(store.opacity)
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelDisplayed
-            )
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelOutOfFrame
-            )
             .frame(
                 maxWidth: Style.inlineSuggestionMinWidth,
                 maxHeight: Style.inlineSuggestionMaxHeight
