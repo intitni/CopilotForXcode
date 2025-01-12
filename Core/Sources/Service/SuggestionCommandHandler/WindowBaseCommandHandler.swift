@@ -11,6 +11,7 @@ import OpenAIService
 import SuggestionBasic
 import SuggestionInjector
 import SuggestionWidget
+import Toast
 import UserNotifications
 import Workspace
 import WorkspaceSuggestionService
@@ -21,6 +22,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     nonisolated init() {}
 
     let presenter = PresentInWindowSuggestionPresenter()
+    private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
     func presentSuggestions(editor: EditorContent) async throws -> UpdatedContent? {
         Task {
@@ -29,7 +31,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             } catch let error as ServerError {
                 Logger.service.error(error)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
                 Logger.service.error(error)
             }
         }
@@ -44,7 +46,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         }
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-        let (workspace, filespace) = try await Service.shared.workspacePool
+        let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
 
         try Task.checkCancellation()
@@ -55,12 +57,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         )
 
         try Task.checkCancellation()
-
-        if filespace.presentingSuggestion != nil {
-            presenter.presentSuggestion(fileURL: fileURL)
-        } else {
-            presenter.discardSuggestion(fileURL: fileURL)
-        }
     }
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
@@ -68,7 +64,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _presentNextSuggestion(editor: editor)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
         return nil
@@ -78,15 +74,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     private func _presentNextSuggestion(editor: EditorContent) async throws {
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-        let (workspace, filespace) = try await Service.shared.workspacePool
+        let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectNextSuggestion(forFileAt: fileURL)
-
-        if filespace.presentingSuggestion != nil {
-            presenter.presentSuggestion(fileURL: fileURL)
-        } else {
-            presenter.discardSuggestion(fileURL: fileURL)
-        }
     }
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
@@ -94,7 +84,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _presentPreviousSuggestion(editor: editor)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
         return nil
@@ -104,15 +94,9 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     private func _presentPreviousSuggestion(editor: EditorContent) async throws {
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-        let (workspace, filespace) = try await Service.shared.workspacePool
+        let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.selectPreviousSuggestion(forFileAt: fileURL)
-
-        if filespace.presentingSuggestion != nil {
-            presenter.presentSuggestion(fileURL: fileURL)
-        } else {
-            presenter.discardSuggestion(fileURL: fileURL)
-        }
     }
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
@@ -120,7 +104,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await _rejectSuggestion(editor: editor)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
         return nil
@@ -134,7 +118,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
-        presenter.discardSuggestion(fileURL: fileURL)
     }
 
     @WorkspaceActor
@@ -159,8 +142,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                 completion: acceptedSuggestion,
                 extraInfo: &extraInfo
             )
-
-            presenter.discardSuggestion(fileURL: fileURL)
 
             return .init(
                 content: String(lines.joined(separator: "")),
@@ -288,7 +269,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
                     name: nil
                 )
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
         return nil
@@ -299,7 +280,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
             do {
                 try await handleCustomCommand(id: id, editor: editor)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         }
         return nil
@@ -357,10 +338,10 @@ extension WindowBaseCommandHandler {
     ) async throws {
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-        let (workspace, filespace) = try await Service.shared.workspacePool
+        let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         guard workspace.suggestionPlugin?.isSuggestionFeatureEnabled ?? false else {
-            presenter.presentErrorMessage("Prompt to code is disabled for this project")
+            toast.toast(content: "Prompt to code is disabled for this project", type: .error)
             return
         }
 
@@ -515,10 +496,10 @@ extension WindowBaseCommandHandler {
             do {
                 try await UNUserNotificationCenter.current().add(request)
             } catch {
-                presenter.presentError(error)
+                toast.toast(content: error.localizedDescription, type: .error)
             }
         } else {
-            presenter.presentErrorMessage("Notification permission is not granted.")
+            toast.toast(content: "Notification permission is not granted.", type: .error)
         }
     }
 }
