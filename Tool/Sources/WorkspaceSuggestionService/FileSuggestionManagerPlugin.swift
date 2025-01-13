@@ -196,6 +196,9 @@ public extension FileSuggestionManager {
         public var indices: IdentifiedArrayOf<DisplaySuggestion>.Indices {
             suggestions.indices
         }
+
+        public var count: Int { suggestions.count }
+        public var isEmpty: Bool { suggestions.isEmpty }
     }
 
     enum DisplaySuggestion: Identifiable {

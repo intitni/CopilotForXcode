@@ -1,22 +1,20 @@
 import Foundation
 import Workspace
 
-
 public final class KeyBindingManager {
-    let tabToAcceptSuggestion: TabToAcceptSuggestion
+    let keybindingController: KeyBindingController
 
     public init() {
-        tabToAcceptSuggestion = .init()
+        keybindingController = .init()
     }
-    
+
     public func start() {
-        tabToAcceptSuggestion.start()
+        keybindingController.start()
     }
-    
+
     @MainActor
     public func stopForExit() {
-        tabToAcceptSuggestion.stopForExit()
+        keybindingController.stopForExit()
     }
 }
 
-    

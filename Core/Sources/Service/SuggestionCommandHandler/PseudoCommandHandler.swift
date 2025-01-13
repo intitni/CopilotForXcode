@@ -31,111 +31,107 @@ struct PseudoCommandHandler: CommandHandler {
     static var lastTimeCommandFailedToTriggerWithAccessibilityAPI = Date(timeIntervalSince1970: 0)
     private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
-    func presentPreviousSuggestion() async {
-        let handler = WindowBaseCommandHandler()
-        _ = try? await handler.presentPreviousSuggestion(editor: .init(
-            content: "",
-            lines: [],
-            uti: "",
-            cursorPosition: .outOfScope,
-            cursorOffset: -1,
-            selections: [],
-            tabSize: 0,
-            indentSize: 0,
-            usesTabsForIndentation: false
-        ))
-    }
+    // MARK: Suggestion
 
-    func presentNextSuggestion() async {
-        let handler = WindowBaseCommandHandler()
-        _ = try? await handler.presentNextSuggestion(editor: .init(
-            content: "",
-            lines: [],
-            uti: "",
-            cursorPosition: .outOfScope,
-            cursorOffset: -1,
-            selections: [],
-            tabSize: 0,
-            indentSize: 0,
-            usesTabsForIndentation: false
-        ))
-    }
-
-    @WorkspaceActor
-    func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
-        guard let filespace = await getFilespace(),
-              let (workspace, _) = try? await Service.shared.workspacePool
-              .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
-
-        if Task.isCancelled { return }
-
-        // Can't use handler if content is not available.
-        guard let editor = await getEditorContent(sourceEditor: sourceEditor)
+    func presentPreviousSuggestion(atIndex index: Int?) async {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-
-        let fileURL = filespace.fileURL
-        let presenter = PresentInWindowSuggestionPresenter()
-
-        presenter.markAsProcessing(true)
-        defer { presenter.markAsProcessing(false) }
-
         do {
-            try await workspace.generateSuggestions(
-                forFileAt: fileURL,
-                editor: editor
-            )
-            if let sourceEditor, filespace.activeCodeSuggestion != nil {
-                let editorContent = sourceEditor.getContent()
-                // Make sure the new suggestions are still valid.
-                _ = filespace.validateSuggestions(
-                    lines: editorContent.lines,
-                    cursorPosition: editorContent.cursorPosition
-                )
-            }
-        } catch let error as SuggestionServiceError {
-            switch error {
-            case let .notice(error):
-                toast.toast(content: error.localizedDescription, type: .error)
-            case .silent:
-                Logger.service.error(error.localizedDescription)
-                return
-            }
+            let (workspace, _) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            await workspace.selectPreviousSuggestion(forFileAt: fileURL)
         } catch {
             Logger.service.error(error.localizedDescription)
-            return
+        }
+    }
+
+    func presentNextSuggestion(atIndex index: Int?) async {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return }
+        do {
+            let (workspace, _) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            await workspace.selectNextSuggestion(forFileAt: fileURL)
+        } catch {
+            Logger.service.error(error.localizedDescription)
+        }
+    }
+
+    func presentNextSuggestionGroup() async {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return }
+        do {
+            let (workspace, _) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            await workspace.selectNextSuggestionGroup(forFileAt: fileURL)
+        } catch {
+            Logger.service.error(error.localizedDescription)
+        }
+    }
+
+    func presentPreviousSuggestionGroup() async {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return }
+        do {
+            let (workspace, _) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            await workspace.selectPreviousSuggestionGroup(forFileAt: fileURL)
+        } catch {
+            Logger.service.error(error.localizedDescription)
         }
     }
 
     @WorkspaceActor
-    func invalidateRealtimeSuggestionsIfNeeded(fileURL: URL, sourceEditor: SourceEditor) async {
-        guard let (_, filespace) = try? await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
+    func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
+        guard let filespace = await getFilespace() else { return }
+        filespace.setSuggestions(suggestions)
+    }
 
-        if filespace.activeCodeSuggestion == nil {
-            return // skip if there's no suggestion presented.
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        await triggerAcceptActiveSuggestionCommand(
+            groupIndex: index,
+            commandName: "Accept Suggestion Line"
+        ) { editor in
+            let handler = WindowBaseCommandHandler()
+            return try await handler.acceptSuggestionLine(editor: editor)
         }
-
-        let content = sourceEditor.getContent()
-        filespace.validateSuggestions(
-            lines: content.lines,
-            cursorPosition: content.cursorPosition
-        )
     }
 
-    func rejectSuggestions() async {
-        let handler = WindowBaseCommandHandler()
-        _ = try? await handler.rejectSuggestion(editor: .init(
-            content: "",
-            lines: [],
-            uti: "",
-            cursorPosition: .outOfScope,
-            cursorOffset: -1,
-            selections: [],
-            tabSize: 0,
-            indentSize: 0,
-            usesTabsForIndentation: false
-        ))
+    func acceptActiveSuggestionInGroup(atIndex index: Int?) async {
+        await triggerAcceptActiveSuggestionCommand(
+            groupIndex: index,
+            commandName: "Accept Suggestion"
+        ) { editor in
+            let handler = WindowBaseCommandHandler()
+            return try await handler.acceptSuggestion(editor: editor)
+        }
     }
+
+    func dismissSuggestion() async {
+        guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
+        guard let (workspace, _) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
+        await workspace.dismissSuggestions(forFileAt: documentURL)
+    }
+
+    func rejectSuggestionGroup(atIndex index: Int?) async {
+        await rejectSuggestionGroup(editor: nil, atIndex: index)
+    }
+
+    func rejectSuggestionGroup(editor: EditorContent?, atIndex index: Int?) async {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return }
+
+        do {
+            let (workspace, _) = try await Service.shared.workspacePool
+                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+            await workspace.rejectSuggestion(forFileAt: fileURL, editor: editor, groupIndex: index)
+        } catch {
+            Logger.service.error(error.localizedDescription)
+        }
+    }
+
+    // MARK: Custom Command
 
     func handleCustomCommand(_ command: CustomCommand) async {
         guard let editor = await {
@@ -177,6 +173,8 @@ struct PseudoCommandHandler: CommandHandler {
             toast.toast(content: error.localizedDescription, type: .error)
         }
     }
+
+    // MARK: Modification
 
     func acceptModification() async {
         do {
@@ -254,73 +252,7 @@ struct PseudoCommandHandler: CommandHandler {
         ), sendImmediately: false)))
     }
 
-    func acceptSuggestion() async {
-        do {
-            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
-                throw CancellationError()
-            }
-            do {
-                try await XcodeInspector.shared.safe.latestActiveXcode?
-                    .triggerCopilotCommand(name: "Accept Suggestion")
-            } catch {
-                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
-                let now = Date()
-                if now.timeIntervalSince(last) > 60 * 60 {
-                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
-                    toast.toast(content: """
-                    The app is using a fallback solution to accept suggestions. \
-                    For better experience, please restart Xcode to re-activate the Copilot \
-                    menu item.
-                    """, type: .warning, duration: 10)
-                }
-
-                throw error
-            }
-        } catch {
-            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
-                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
-            let application = AXUIElementCreateApplication(xcode.processIdentifier)
-            guard let focusElement = application.focusedElement,
-                  focusElement.description == "Source Editor"
-            else { return }
-            guard let (
-                content,
-                lines,
-                _,
-                cursorPosition,
-                cursorOffset
-            ) = await getFileContent(sourceEditor: nil)
-            else {
-                toast.toast(content: "Unable to get file content.", type: .error)
-                return
-            }
-            let handler = WindowBaseCommandHandler()
-            do {
-                guard let result = try await handler.acceptSuggestion(editor: .init(
-                    content: content,
-                    lines: lines,
-                    uti: "",
-                    cursorPosition: cursorPosition,
-                    cursorOffset: cursorOffset,
-                    selections: [],
-                    tabSize: 0,
-                    indentSize: 0,
-                    usesTabsForIndentation: false
-                )) else { return }
-
-                try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
-            } catch {
-                toast.toast(content: error.localizedDescription, type: .error)
-            }
-        }
-    }
-
-    func dismissSuggestion() async {
-        guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
-        guard let (workspace, _) = try? await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
-        await workspace.dismissSuggestions(forFileAt: documentURL)
-    }
+    // MARK: Chat
 
     func openChat(forceDetach: Bool, activateThisApp: Bool = true) {
         switch UserDefaults.shared.value(for: \.openChatMode) {
@@ -454,11 +386,7 @@ struct PseudoCommandHandler: CommandHandler {
         ))).finish()
     }
 
-    @WorkspaceActor
-    func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
-        guard let filespace = await getFilespace() else { return }
-        filespace.setSuggestions(suggestions)
-    }
+    // MAKR: Toast
 
     func toast(_ message: String, as type: ToastType) {
         Task { @MainActor in
@@ -466,6 +394,8 @@ struct PseudoCommandHandler: CommandHandler {
             store.send(.suggestionWidget(.toastPanel(.toast(.toast(message, type, nil)))))
         }
     }
+
+    // MARK: Others
 
     func presentFile(at fileURL: URL, line: Int = 0) async {
         let terminal = Terminal()
@@ -479,10 +409,207 @@ struct PseudoCommandHandler: CommandHandler {
                 environment: [:]
             )
         } catch {
-            print(error)
+            Logger.service.error(error.localizedDescription)
         }
     }
 }
+
+extension PseudoCommandHandler {
+    @WorkspaceActor
+    func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async {
+        guard let filespace = await getFilespace(),
+              let (workspace, _) = try? await Service.shared.workspacePool
+              .fetchOrCreateWorkspaceAndFilespace(fileURL: filespace.fileURL) else { return }
+
+        if Task.isCancelled { return }
+
+        // Can't use handler if content is not available.
+        guard let editor = await getEditorContent(sourceEditor: sourceEditor)
+        else { return }
+
+        let fileURL = filespace.fileURL
+        let presenter = PresentInWindowSuggestionPresenter()
+
+        presenter.markAsProcessing(true)
+        defer { presenter.markAsProcessing(false) }
+
+        do {
+            try await workspace.generateSuggestions(
+                forFileAt: fileURL,
+                editor: editor
+            )
+            if let sourceEditor, filespace.activeCodeSuggestion != nil {
+                let editorContent = sourceEditor.getContent()
+                // Make sure the new suggestions are still valid.
+                _ = filespace.validateSuggestions(
+                    lines: editorContent.lines,
+                    cursorPosition: editorContent.cursorPosition
+                )
+            }
+        } catch let error as SuggestionServiceError {
+            switch error {
+            case let .notice(error):
+                toast.toast(content: error.localizedDescription, type: .error)
+            case .silent:
+                Logger.service.error(error.localizedDescription)
+                return
+            }
+        } catch {
+            Logger.service.error(error.localizedDescription)
+            return
+        }
+    }
+
+    @WorkspaceActor
+    func invalidateRealtimeSuggestionsIfNeeded(fileURL: URL, sourceEditor: SourceEditor) async {
+        guard let (_, filespace) = try? await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
+
+        if filespace.activeCodeSuggestion == nil {
+            return // skip if there's no suggestion presented.
+        }
+
+        let content = sourceEditor.getContent()
+        filespace.validateSuggestions(
+            lines: content.lines,
+            cursorPosition: content.cursorPosition
+        )
+    }
+
+    func triggerAcceptActiveSuggestionCommand(
+        groupIndex: Int?,
+        commandName: String,
+        fallbackToGetUpdatedContent: (EditorContent) async throws -> UpdatedContent?
+    ) async {
+        do {
+            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                throw CancellationError()
+            }
+            do {
+                let filePath = await XcodeInspector.shared.safe.realtimeActiveDocumentURL?.path
+                await AcceptSuggestionEventController.shared.cacheEvent(.init(
+                    filePath: filePath ?? "",
+                    groupIndex: groupIndex ?? 0
+                ))
+                try await XcodeInspector.shared.safe.latestActiveXcode?
+                    .triggerCopilotCommand(name: commandName)
+            } catch {
+                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
+                let now = Date()
+                if now.timeIntervalSince(last) > 60 * 60 {
+                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
+                    toast.toast(content: """
+                    The app is using a fallback solution to accept suggestions. \
+                    For better experience, please restart Xcode to re-activate the Copilot \
+                    menu item.
+                    """, type: .warning, duration: 10)
+                }
+
+                throw error
+            }
+        } catch {
+            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            guard let focusElement = application.focusedElement,
+                  focusElement.description == "Source Editor"
+            else { return }
+            guard let (
+                content,
+                lines,
+                _,
+                cursorPosition,
+                cursorOffset
+            ) = await getFileContent(sourceEditor: nil)
+            else {
+                toast.toast(content: "Unable to get file content.", type: .error)
+                return
+            }
+            let handler = WindowBaseCommandHandler()
+            do {
+                guard let result = try await fallbackToGetUpdatedContent(.init(
+                    content: content,
+                    lines: lines,
+                    uti: "",
+                    cursorPosition: cursorPosition,
+                    cursorOffset: cursorOffset,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )) else { return }
+
+                try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
+            } catch {
+                toast.toast(content: error.localizedDescription, type: .error)
+            }
+        }
+    }
+
+    func handleAcceptSuggestionCommand(editor: EditorContent) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+        let groupIndex = await AcceptSuggestionEventController.shared.consumeEvent(
+            fileURL.path
+        )?.groupIndex
+
+        return try await acceptSuggestionInGroup(
+            atIndex: groupIndex,
+            editor: editor
+        )
+    }
+
+    func acceptSuggestionInGroup(
+        atIndex index: Int?,
+        editor: EditorContent
+    ) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+
+        return await workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor,
+            groupIndex: index
+        )
+    }
+    
+    func handleAcceptSuggestionLineCommand(editor: EditorContent) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+        let groupIndex = await AcceptSuggestionEventController.shared.consumeEvent(
+            fileURL.path
+        )?.groupIndex
+
+        return try await acceptSuggestionLineInGroup(
+            atIndex: groupIndex,
+            editor: editor
+        )
+    }
+
+    func acceptSuggestionLineInGroup(
+        atIndex index: Int?,
+        editor: EditorContent
+    ) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+
+        guard var acceptedSuggestion = await workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor,
+            groupIndex: index
+        ) else { return nil }
+
+        let text = acceptedSuggestion.text
+        acceptedSuggestion.text = String(text.splitByNewLine().first ?? "")
+        return acceptedSuggestion
+    }
+}
+
+// MARK: - Helpers
 
 extension PseudoCommandHandler {
     /// When Xcode commands are not available, we can fallback to directly
@@ -542,15 +669,69 @@ extension PseudoCommandHandler {
         }
     }
 
-    func getFileContent(sourceEditor: AXUIElement?) async
-        -> (
-            content: String,
-            lines: [String],
-            selections: [CursorRange],
-            cursorPosition: CursorPosition,
-            cursorOffset: Int
-        )?
-    {
+    /// When Xcode commands are not available, we can fallback to directly select the target code
+    /// from the editor, save the updated content to the paste board and paste it onto the editor.
+    ///
+    /// After pasting, we should update the selection range.
+    func injectUpdatedCodeWithSelectAndPaste(
+        _ result: UpdatedContent,
+        focusElement: AXUIElement
+    ) throws {
+        guard let selection = result.newSelections.first else { return }
+
+        // Save the current pasteboard content
+        let pasteboard = NSPasteboard.general
+        var originalPasteboardItems: [NSPasteboardItem]?
+        if pasteboard.types?.isEmpty == false {
+            originalPasteboardItems = pasteboard.pasteboardItems
+        }
+
+        // Select the target code
+        var range = SourceEditor.convertCursorRangeToRange(selection, in: result.content)
+        if let value = AXValueCreate(.cfRange, &range) {
+            AXUIElementSetAttributeValue(
+                focusElement,
+                kAXSelectedTextRangeAttribute as CFString,
+                value
+            )
+        }
+
+        // Copy the selected code to pasteboard
+        pasteboard.clearContents()
+        pasteboard.setString(result.content, forType: .string)
+
+        // Paste the updated content
+        let eventSource = CGEventSource(stateID: .combinedSessionState)
+        let keyDownEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: 9, keyDown: true)
+        let keyUpEvent = CGEvent(keyboardEventSource: eventSource, virtualKey: 9, keyDown: false)
+        keyDownEvent?.flags = .maskCommand
+        keyUpEvent?.flags = .maskCommand
+        keyDownEvent?.post(tap: .cghidEventTap)
+        keyUpEvent?.post(tap: .cghidEventTap)
+
+        // Update the selection range
+        if let value = AXValueCreate(.cfRange, &range) {
+            AXUIElementSetAttributeValue(
+                focusElement,
+                kAXSelectedTextRangeAttribute as CFString,
+                value
+            )
+        }
+
+        // Restore the original pasteboard content
+        pasteboard.clearContents()
+        if let originalPasteboardItems {
+            pasteboard.writeObjects(originalPasteboardItems)
+        }
+    }
+
+    func getFileContent(sourceEditor: AXUIElement?) async -> (
+        content: String,
+        lines: [String],
+        selections: [CursorRange],
+        cursorPosition: CursorPosition,
+        cursorOffset: Int
+    )? {
         guard let xcode = ActiveApplicationMonitor.shared.activeXcode
             ?? ActiveApplicationMonitor.shared.latestXcode else { return nil }
         let application = AXUIElementCreateApplication(xcode.processIdentifier)
@@ -606,5 +787,39 @@ extension PseudoCommandHandler {
             usesTabsForIndentation: usesTabsForIndentation
         )
     }
+}
+
+@MainActor
+final class AcceptSuggestionEventController {
+    static let shared = AcceptSuggestionEventController()
+
+    struct Event {
+        var date: Date
+        var groupIndex: Int
+        var filePath: String
+        var isOutdated: Bool { date.timeIntervalSinceNow < -10 }
+
+        init(filePath: String, groupIndex: Int) {
+            date = Date()
+            self.groupIndex = groupIndex
+            self.filePath = filePath
+        }
+    }
+
+    private var event: Event?
+
+    func cacheEvent(_ event: Event) {
+        self.event = event
+    }
+
+    func consumeEvent(_ filePath: String) -> Event? {
+        defer { event = nil }
+        guard let event else { return nil }
+        guard event.isOutdated == false else { return nil }
+        guard event.filePath == filePath else { return nil }
+        return event
+    }
+
+    private init() {}
 }
 

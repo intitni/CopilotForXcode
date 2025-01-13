@@ -16,6 +16,7 @@ public enum SuggestionServiceMiddlewareContainer {
     static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
         DisabledLanguageSuggestionServiceMiddleware(),
         PostProcessingSuggestionServiceMiddleware(),
+        MockResultSuggestionServiceMiddleware(),
     ]
 
     static var leadingMiddlewares: [SuggestionServiceMiddleware] = []
@@ -98,6 +99,71 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
                 return error
             }
         )
+    }
+}
+
+public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware {
+    public init() {}
+
+    public func getSuggestion(
+        _ request: SuggestionRequest,
+        configuration: SuggestionServiceConfiguration,
+        next: @escaping Next
+    ) async -> AsyncThrowingStream<[CodeSuggestion], any Error> {
+        #if DEBUG
+        let stream = await next(request)
+        return .init { continuation in
+            let task = Task {
+                let lineNumber = request.cursorPosition.line
+                let lineContent = request.lines[lineNumber]
+                continuation.yield([
+                    CodeSuggestion(
+                        id: "mock-suggestion-1",
+                        text: lineContent,
+                        position: CursorPosition(
+                            line: lineNumber,
+                            character: lineContent.utf16.count - 1
+                        ),
+                        range: CursorRange(
+                            start: CursorPosition(line: lineNumber, character: 0),
+                            end: CursorPosition(
+                                line: lineNumber,
+                                character: lineContent.utf16.count - 1
+                            )
+                        ),
+                        effectiveRange: .replacingRange,
+                        replacingLines: [lineContent],
+                        descriptions: [],
+                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
+                        metadata: [.group: "Mock Suggestions"]
+                    ),
+                ])
+                continuation.yield([
+                    CodeSuggestion(
+                        id: "mock-suggestion-2",
+                        text: "",
+                        position: .zero,
+                        range: .zero,
+                        effectiveRange: .full,
+                        replacingLines: [],
+                        descriptions: [.init(kind: .action, content: "mock")],
+                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
+                        metadata: [.group: "Mock Action"]
+                    ),
+                ])
+                do {
+                    for try await suggestions in stream {
+                        continuation.yield(suggestions)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish()
+                }
+            }
+        }
+        #else
+        return await next(request)
+        #endif
     }
 }
 

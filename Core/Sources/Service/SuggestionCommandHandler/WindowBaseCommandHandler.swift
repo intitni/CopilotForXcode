@@ -60,82 +60,55 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func presentNextSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _presentNextSuggestion(editor: editor)
-            } catch {
-                toast.toast(content: error.localizedDescription, type: .error)
-            }
-        }
+        Task { await PseudoCommandHandler().presentNextSuggestion(atIndex: nil) }
         return nil
-    }
-
-    @WorkspaceActor
-    private func _presentNextSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-        else { return }
-        let (workspace, _) = try await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-        workspace.selectNextSuggestion(forFileAt: fileURL)
     }
 
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _presentPreviousSuggestion(editor: editor)
-            } catch {
-                toast.toast(content: error.localizedDescription, type: .error)
-            }
-        }
+        Task { await PseudoCommandHandler().presentPreviousSuggestion(atIndex: nil) }
         return nil
-    }
-
-    @WorkspaceActor
-    private func _presentPreviousSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-        else { return }
-        let (workspace, _) = try await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-        workspace.selectPreviousSuggestion(forFileAt: fileURL)
     }
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        Task {
-            do {
-                try await _rejectSuggestion(editor: editor)
-            } catch {
-                toast.toast(content: error.localizedDescription, type: .error)
-            }
-        }
+        Task { await PseudoCommandHandler().rejectSuggestionGroup(editor: editor, atIndex: nil) }
         return nil
     }
 
-    @WorkspaceActor
-    private func _rejectSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-        else { return }
-
-        let (workspace, _) = try await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-        workspace.rejectSuggestion(forFileAt: fileURL, editor: editor)
-    }
-
-    @WorkspaceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-        else { return nil }
-        let (workspace, _) = try await Service.shared.workspacePool
-            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-
-        let injector = SuggestionInjector()
-        var lines = editor.lines
-        var cursorPosition = editor.cursorPosition
-        var extraInfo = SuggestionInjector.ExtraInfo()
-
-        if let acceptedSuggestion = workspace.acceptSuggestion(
-            forFileAt: fileURL,
+        if let acceptedSuggestion = try await PseudoCommandHandler().handleAcceptSuggestionCommand(
             editor: editor
         ) {
+            let injector = SuggestionInjector()
+            var lines = editor.lines
+            var cursorPosition = editor.cursorPosition
+            var extraInfo = SuggestionInjector.ExtraInfo()
+
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: acceptedSuggestion,
+                extraInfo: &extraInfo
+            )
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .cursor(cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        }
+
+        return nil
+    }
+
+    func acceptSuggestionLine(editor: EditorContent) async throws -> UpdatedContent? {
+        if let acceptedSuggestion = try await PseudoCommandHandler()
+            .handleAcceptSuggestionLineCommand(editor: editor)
+        {
+            let injector = SuggestionInjector()
+            var lines = editor.lines
+            var cursorPosition = editor.cursorPosition
+            var extraInfo = SuggestionInjector.ExtraInfo()
+
             injector.acceptSuggestion(
                 intoContentWithoutSuggestion: &lines,
                 cursorPosition: &cursorPosition,
