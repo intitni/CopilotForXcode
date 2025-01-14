@@ -85,22 +85,26 @@ struct SuggestionPanelGroupView: View {
                         switch suggestion {
                         case let .group(group):
                             if let suggestion = group.activeSuggestion {
-                                CodeBlockSuggestionPanelView(suggestion: PresentingCodeSuggestion(
-                                    code: suggestion.text,
-                                    language: manager.filespace.language.rawValue,
-                                    startLineIndex: suggestion.position.line,
-                                    suggestionCount: group.suggestions.count,
-                                    currentSuggestionIndex: group.suggestionIndex,
-                                    replacingRange: suggestion.range,
-                                    replacingLines: suggestion.replacingLines,
-                                    descriptions: suggestion.descriptions
-                                ))
+                                CodeBlockSuggestionPanelView(
+                                    suggestion: PresentingCodeSuggestion(
+                                        code: suggestion.text,
+                                        language: manager.filespace.language.rawValue,
+                                        startLineIndex: suggestion.position.line,
+                                        suggestionCount: group.suggestions.count,
+                                        currentSuggestionIndex: group.suggestionIndex,
+                                        replacingRange: suggestion.range,
+                                        replacingLines: suggestion.replacingLines,
+                                        descriptions: suggestion.descriptions
+                                    ),
+                                    groupIndex: index
+                                )
                             }
                         case let .action(action):
                             ActionSuggestionPanel(
                                 descriptions: action.descriptions,
                                 suggestionCount: 1,
-                                suggestionIndex: 0
+                                suggestionIndex: 0,
+                                groupIndex: index
                             )
                         }
                     }
@@ -120,11 +124,18 @@ struct ActionSuggestionPanel: View {
     let descriptions: [CodeSuggestion.Description]
     let suggestionCount: Int
     let suggestionIndex: Int
+    let groupIndex: Int
 
-    init(descriptions: [CodeSuggestion.Description], suggestionCount: Int, suggestionIndex: Int) {
+    init(
+        descriptions: [CodeSuggestion.Description],
+        suggestionCount: Int,
+        suggestionIndex: Int,
+        groupIndex: Int
+    ) {
         self.descriptions = descriptions.sorted { lhs, _ in lhs.kind != .action }
         self.suggestionCount = suggestionCount
         self.suggestionIndex = suggestionIndex
+        self.groupIndex = groupIndex
     }
 
     var body: some View {
@@ -189,7 +200,7 @@ struct ActionSuggestionPanel: View {
                 if suggestionCount > 1 {
                     HStack {
                         Button(action: {
-                            Task { await commandHandler.presentPreviousSuggestion() }
+                            Task { await commandHandler.presentPreviousSuggestion(atIndex: nil) }
                         }) {
                             Image(systemName: "chevron.left")
                         }.buttonStyle(.plain)
@@ -198,7 +209,7 @@ struct ActionSuggestionPanel: View {
                             .monospacedDigit()
 
                         Button(action: {
-                            Task { await commandHandler.presentNextSuggestion() }
+                            Task { await commandHandler.presentNextSuggestion(atIndex: nil) }
                         }) {
                             Image(systemName: "chevron.right")
                         }.buttonStyle(.plain)
@@ -220,6 +231,7 @@ struct ActionSuggestionPanel: View {
 
 struct CodeBlockSuggestionPanelView: View {
     let suggestion: PresentingCodeSuggestion
+    let groupIndex: Int
     @Environment(\.textCursorTracker) var textCursorTracker
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(\.suggestionCodeFont) var codeFont
@@ -235,6 +247,7 @@ struct CodeBlockSuggestionPanelView: View {
     struct ToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
         let suggestion: PresentingCodeSuggestion
+        let groupIndex: Int
 
         var body: some View {
             WithPerceptionTracking {
@@ -242,7 +255,7 @@ struct CodeBlockSuggestionPanelView: View {
                     if suggestion.suggestionCount > 1 {
                         Button(action: {
                             Task {
-                                await commandHandler.presentPreviousSuggestion()
+                                await commandHandler.presentPreviousSuggestion(atIndex: groupIndex)
                             }
                         }) {
                             Image(systemName: "chevron.left")
@@ -254,7 +267,7 @@ struct CodeBlockSuggestionPanelView: View {
                         .monospacedDigit()
 
                         Button(action: {
-                            Task { await commandHandler.presentNextSuggestion() }
+                            Task { await commandHandler.presentNextSuggestion(atIndex: groupIndex) }
                         }) {
                             Image(systemName: "chevron.right")
                         }.buttonStyle(.plain)
@@ -273,7 +286,7 @@ struct CodeBlockSuggestionPanelView: View {
 
                     Button(action: {
                         Task {
-                            await commandHandler.rejectSuggestions()
+                            await commandHandler.rejectSuggestionGroup(atIndex: groupIndex)
                             NSWorkspace.activatePreviousActiveXcode()
                         }
                     }) {
@@ -282,7 +295,7 @@ struct CodeBlockSuggestionPanelView: View {
 
                     Button(action: {
                         Task {
-                            await commandHandler.acceptSuggestion()
+                            await commandHandler.acceptActiveSuggestionInGroup(atIndex: groupIndex)
                             NSWorkspace.activatePreviousActiveXcode()
                         }
                     }) {
@@ -299,13 +312,16 @@ struct CodeBlockSuggestionPanelView: View {
     struct CompactToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
         let suggestion: PresentingCodeSuggestion
+        let groupIndex: Int
 
         var body: some View {
             WithPerceptionTracking {
                 HStack {
                     if suggestion.suggestionCount > 1 {
                         Button(action: {
-                            Task { await commandHandler.presentPreviousSuggestion() }
+                            Task {
+                                await commandHandler.presentPreviousSuggestion(atIndex: groupIndex)
+                            }
                         }) {
                             Image(systemName: "chevron.left")
                         }.buttonStyle(.plain)
@@ -316,7 +332,7 @@ struct CodeBlockSuggestionPanelView: View {
                         .monospacedDigit()
 
                         Button(action: {
-                            Task { await commandHandler.presentNextSuggestion() }
+                            Task { await commandHandler.presentNextSuggestion(atIndex: groupIndex) }
                         }) {
                             Image(systemName: "chevron.right")
                         }.buttonStyle(.plain)
@@ -446,9 +462,9 @@ struct CodeBlockSuggestionPanelView: View {
                 Divider()
 
                 if suggestionDisplayCompactMode {
-                    CompactToolBar(suggestion: suggestion)
+                    CompactToolBar(suggestion: suggestion, groupIndex: groupIndex)
                 } else {
-                    ToolBar(suggestion: suggestion)
+                    ToolBar(suggestion: suggestion, groupIndex: groupIndex)
                 }
             }
             .xcodeStyleFrame(cornerRadius: {
@@ -616,7 +632,7 @@ struct CodeBlockSuggestionPanelView: View {
         currentSuggestionIndex: 0,
         replacingRange: .outOfScope,
         replacingLines: []
-    ), suggestionDisplayCompactMode: .init(
+    ), groupIndex: 0, suggestionDisplayCompactMode: .init(
         wrappedValue: false,
         "suggestionDisplayCompactMode",
         store: {
@@ -650,7 +666,7 @@ struct CodeBlockSuggestionPanelView: View {
             .init(kind: .warning, content: "This is a warning message.\nwarning"),
             .init(kind: .action, content: "This is an action message."),
         ]
-    ), suggestionDisplayCompactMode: .init(
+    ), groupIndex: 0, suggestionDisplayCompactMode: .init(
         wrappedValue: false,
         "suggestionDisplayCompactMode",
         store: {
@@ -684,7 +700,7 @@ struct CodeBlockSuggestionPanelView: View {
             .init(kind: .warning, content: "This is a warning message."),
             .init(kind: .action, content: "This is an action message."),
         ]
-    ), suggestionDisplayCompactMode: .init(
+    ), groupIndex: 0, suggestionDisplayCompactMode: .init(
         wrappedValue: true,
         "suggestionDisplayCompactMode",
         store: {
@@ -712,7 +728,7 @@ struct CodeBlockSuggestionPanelView: View {
         currentSuggestionIndex: 0,
         replacingRange: .outOfScope,
         replacingLines: []
-    ))
+    ), groupIndex: 0)
     .preferredColorScheme(.light)
     .frame(width: 450, height: 400)
     .padding()

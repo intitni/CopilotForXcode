@@ -161,6 +161,37 @@ public extension Service {
                     }
                 }
             }
+            
+            try ExtensionServiceRequests.GetSuggestionLineAcceptedCode.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { request in
+                let editor = request.editorContent
+                let handler = WindowBaseCommandHandler()
+                let updatedContent = try? await handler.acceptSuggestionLine(editor: editor)
+                return updatedContent
+            }
+            
+            try ExtensionServiceRequests.NextSuggestionGroup.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { _ in
+                let handler = WindowBaseCommandHandler()
+                try await handler.presentNextSuggestionGroup()
+                return .none
+            }
+            
+            try ExtensionServiceRequests.PreviousSuggestionGroup.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { _ in
+                let handler = WindowBaseCommandHandler()
+                try await handler.presentPreviousSuggestionGroup()
+                return .none
+            }
         } catch is XPCRequestHandlerHitError {
             return
         } catch {

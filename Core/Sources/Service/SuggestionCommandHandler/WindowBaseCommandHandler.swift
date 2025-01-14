@@ -68,6 +68,14 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         Task { await PseudoCommandHandler().presentPreviousSuggestion(atIndex: nil) }
         return nil
     }
+    
+    func presentNextSuggestionGroup() async throws {
+        Task { await PseudoCommandHandler().presentNextSuggestionGroup() }
+    }
+
+    func presentPreviousSuggestionGroup() async throws {
+        Task { await PseudoCommandHandler().presentPreviousSuggestionGroup() }
+    }
 
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
         Task { await PseudoCommandHandler().rejectSuggestionGroup(editor: editor, atIndex: nil) }
