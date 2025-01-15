@@ -13,6 +13,11 @@ public struct PostProcessingSuggestionServiceMiddleware: SuggestionServiceMiddle
             handleCodeSuggestions: {
                 $0.compactMap { suggestion in
                     var suggestion = suggestion
+
+                    if suggestion.isActionOnly {
+                        return suggestion
+                    }
+
                     if suggestion.text
                         .allSatisfy({ $0.isWhitespace || $0.isNewline }) { return nil }
                     Self.removeTrailingWhitespacesAndNewlines(&suggestion)
