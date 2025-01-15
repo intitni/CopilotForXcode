@@ -29,7 +29,7 @@ public struct CodeSuggestion: Codable, Equatable, Identifiable {
         text: String,
         position: CursorPosition,
         range: CursorRange,
-        effectiveRange: EffectiveRange = .replacingRange,
+        effectiveRange: EffectiveRange = .line,
         replacingLines: [String] = [],
         descriptions: [Description] = [],
         middlewareComments: [String] = [],
@@ -105,6 +105,10 @@ public struct CodeSuggestion: Codable, Equatable, Identifiable {
     public subscript(metadata key: MetadataKey) -> String? {
         get { metadata[key] }
         set { metadata[key] = newValue }
+    }
+    
+    public var isActionOnly: Bool {
+        text.isEmpty && range.isEmpty && descriptions.contains(where: { $0.kind == .action })
     }
 }
 
