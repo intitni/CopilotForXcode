@@ -329,6 +329,12 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
+        .testTarget(
+            name: "WorkspaceSuggestionServiceTests",
+            dependencies: [
+                "WorkspaceSuggestionService",
+            ]
+        ),
 
         .target(
             name: "FocusedCodeFinder",
