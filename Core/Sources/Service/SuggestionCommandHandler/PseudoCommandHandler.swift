@@ -525,7 +525,6 @@ extension PseudoCommandHandler {
                 toast.toast(content: "Unable to get file content.", type: .error)
                 return
             }
-            let handler = WindowBaseCommandHandler()
             do {
                 guard let result = try await fallbackToGetUpdatedContent(.init(
                     content: content,
