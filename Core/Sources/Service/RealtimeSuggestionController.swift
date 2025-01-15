@@ -3,6 +3,7 @@ import AppKit
 import AsyncAlgorithms
 import AXExtension
 import Combine
+import DebounceFunction
 import Foundation
 import Logger
 import Preferences
@@ -15,8 +16,8 @@ public actor RealtimeSuggestionController {
     private var inflightPrefetchTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var sourceEditor: SourceEditor?
-
-    init() {}
+    private let throttledEventTrigger = ThrottleRunner(duration: 0.2)
+    private let throttledCleaner = ThrottleRunner(duration: 0.1)
 
     deinit {
         cancellable.forEach { $0.cancel() }
@@ -72,14 +73,10 @@ public actor RealtimeSuggestionController {
                         await self.notifyEditingFileChange(editor: sourceEditor.element)
                     }
 
-                    if #available(macOS 13.0, *) {
-                        for await _ in valueChange._throttle(for: .milliseconds(200)) {
-                            if Task.isCancelled { return }
-                            await handler()
-                        }
-                    } else {
-                        for await _ in valueChange {
-                            if Task.isCancelled { return }
+                    for await _ in valueChange {
+                        guard let self else { return }
+                        if Task.isCancelled { return }
+                        await self.throttledEventTrigger.throttle {
                             await handler()
                         }
                     }
@@ -94,14 +91,10 @@ public actor RealtimeSuggestionController {
                         )
                     }
 
-                    if #available(macOS 13.0, *) {
-                        for await _ in selectedTextChanged._throttle(for: .milliseconds(200)) {
-                            if Task.isCancelled { return }
-                            await handler()
-                        }
-                    } else {
-                        for await _ in selectedTextChanged {
-                            if Task.isCancelled { return }
+                    for await _ in selectedTextChanged {
+                        guard let self else { return }
+                        if Task.isCancelled { return }
+                        await self.throttledCleaner.throttle {
                             await handler()
                         }
                     }
@@ -133,8 +126,11 @@ public actor RealtimeSuggestionController {
             }
         }
     }
+}
 
+extension RealtimeSuggestionController {
     func triggerPrefetchDebounced(force: Bool = false) {
+        inflightPrefetchTask?.cancel()
         inflightPrefetchTask = Task(priority: .utility) { @WorkspaceActor in
             try? await Task.sleep(nanoseconds: UInt64(
                 max(UserDefaults.shared.value(for: \.realtimeSuggestionDebounce), 0.15)
@@ -172,15 +168,6 @@ public actor RealtimeSuggestionController {
                 }
             }
         }
-    }
-
-    /// This method will still return true if the completion panel is hidden by esc.
-    /// Looks like the Xcode will keep the panel around until content is changed,
-    /// not sure how to observe that it's hidden.
-    func isCompletionPanelPresenting() -> Bool {
-        guard let activeXcode = ActiveApplicationMonitor.shared.activeXcode else { return false }
-        let application = AXUIElementCreateApplication(activeXcode.processIdentifier)
-        return application.focusedWindow?.child(identifier: "_XC_COMPLETION_TABLE_") != nil
     }
 
     func notifyEditingFileChange(editor: AXUIElement) async {
