@@ -160,6 +160,10 @@ public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware
                     continuation.finish()
                 }
             }
+            
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
         }
         #else
         return await next(request)
@@ -205,6 +209,14 @@ public extension AsyncThrowingStream<[CodeSuggestion], Error> {
         .init { continuation in
             continuation.finish(throwing: error)
         }
+    }
+    
+    func allSuggestions() async throws -> [CodeSuggestion] {
+        var all = [CodeSuggestion]()
+        for try await codeSuggestions in self {
+            all.append(contentsOf: codeSuggestions)
+        }
+        return all
     }
 }
 
