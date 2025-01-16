@@ -86,7 +86,8 @@ public final class FileSuggestionManager {
 
     @WorkspaceActor
     public func invalidateDisplaySuggestions(inGroup groupIndex: Int) {
-        guard let suggestion = displaySuggestions[groupIndex] else { return }
+        guard groupIndex < displaySuggestions.count, groupIndex >= 0 else { return }
+        let suggestion = displaySuggestions[groupIndex]
         defer { renderDisplaySuggestionsAtCursor() }
         switch suggestion {
         case let .group(group):
@@ -139,7 +140,7 @@ extension FileSuggestionManager: FilespaceSuggestionProviderDelegate {
 }
 
 public extension FileSuggestionManager {
-    struct CircularSuggestionList: Sequence {
+    struct CircularSuggestionList: Sequence, Equatable {
         public static var empty: CircularSuggestionList {
             .init(suggestions: [], anchorIndex: 0)
         }
@@ -151,13 +152,19 @@ public extension FileSuggestionManager {
         public typealias Iterator = AnyIterator<Element>
 
         public func makeIterator() -> AnyIterator<Element> {
-            var index = anchorIndex
-            var count = 0
+            var index = 0
+            let count = suggestions.count
+            var actualIndex: Int {
+                Self.actualIndex(
+                    of: index,
+                    anchorIndex: anchorIndex,
+                    count: count
+                )
+            }
             return AnyIterator {
-                guard !self.suggestions.isEmpty, count < self.suggestions.count else { return nil }
-                let element = self.suggestions[index]
-                index = (index + 1) % self.suggestions.count
-                count += 1
+                guard !self.suggestions.isEmpty, index < count else { return nil }
+                let element = self.suggestions[actualIndex]
+                index += 1
                 return element
             }
         }
@@ -175,33 +182,50 @@ public extension FileSuggestionManager {
             suggestions[id: id]
         }
 
-        public subscript(_ index: Int) -> DisplaySuggestion? {
+        public subscript(_ index: Int) -> DisplaySuggestion {
             get {
-                guard suggestions.endIndex > index, index >= 0 else { return nil }
-                let offsetIndex = (anchorIndex + index) % suggestions.count
+                precondition(suggestions.endIndex > index && index >= 0)
+                let offsetIndex = Self.actualIndex(
+                    of: index,
+                    anchorIndex: anchorIndex,
+                    count: suggestions.count
+                )
                 return suggestions[offsetIndex]
             }
             set {
-                guard suggestions.endIndex > index, index >= 0, let newValue else { return }
-                let offsetIndex = (anchorIndex + index) % suggestions.count
+                precondition(suggestions.endIndex > index && index >= 0)
+                let offsetIndex = Self.actualIndex(
+                    of: index,
+                    anchorIndex: anchorIndex,
+                    count: suggestions.count
+                )
                 suggestions[offsetIndex] = newValue
             }
         }
 
         public mutating func offsetAnchor(_ offset: Int) {
+            guard !suggestions.isEmpty else {
+                anchorIndex = 0
+                return
+            }
             let newIndex = anchorIndex + offset
             anchorIndex = (newIndex + suggestions.count) % suggestions.count
         }
 
         public var indices: IdentifiedArrayOf<DisplaySuggestion>.Indices {
-            suggestions.indices
+            return suggestions.indices
         }
 
         public var count: Int { suggestions.count }
         public var isEmpty: Bool { suggestions.isEmpty }
+
+        static func actualIndex(of index: Int, anchorIndex: Int, count: Int) -> Int {
+            if count <= 0 { return 0 }
+            return (index + anchorIndex + count) % count
+        }
     }
 
-    enum DisplaySuggestion: Identifiable {
+    enum DisplaySuggestion: Identifiable, Equatable {
         case group(DisplayGroup)
         case action(DisplayAction)
 
@@ -224,7 +248,7 @@ public extension FileSuggestionManager {
         }
     }
 
-    struct DisplayGroup: Identifiable {
+    struct DisplayGroup: Identifiable, Equatable {
         public var id: String { source }
         public var source: String
         public var suggestions: [CodeSuggestion]
@@ -240,7 +264,7 @@ public extension FileSuggestionManager {
         }
     }
 
-    struct DisplayAction: Identifiable {
+    struct DisplayAction: Identifiable, Equatable {
         public var id: String
         public var descriptions: [CodeSuggestion.Description] { suggestion.descriptions }
         public var suggestion: CodeSuggestion

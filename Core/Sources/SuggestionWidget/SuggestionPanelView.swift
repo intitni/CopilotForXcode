@@ -15,7 +15,7 @@ struct SuggestionPanelView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 if store.verticalAlignment == .bottom {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
@@ -36,10 +36,6 @@ struct SuggestionPanelView: View {
             }
             .preferredColorScheme(store.colorScheme)
             .opacity(store.opacity)
-            .frame(
-                maxWidth: Style.inlineSuggestionMinWidth,
-                maxHeight: Style.inlineSuggestionMaxHeight
-            )
         }
     }
 
@@ -54,7 +50,8 @@ struct SuggestionPanelView: View {
                         manager: suggestionManager,
                         alignment: .leading
                     )
-                    .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
+                    .frame(width: Style.inlineSuggestionMinWidth)
+                    .frame(maxHeight: Style.inlineSuggestionMaxHeight)
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }

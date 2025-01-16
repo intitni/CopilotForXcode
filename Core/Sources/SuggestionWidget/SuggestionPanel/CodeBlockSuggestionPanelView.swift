@@ -76,12 +76,16 @@ public struct PresentingCodeSuggestion: Equatable {
 struct SuggestionPanelGroupView: View {
     let manager: PresentingCodeSuggestionManager
     let alignment: HorizontalAlignment
+    @Namespace var namespace
 
     var body: some View {
         WithPerceptionTracking {
-            VStack(alignment: alignment) {
-                ForEach(manager.displaySuggestions.indices, id: \.self) { index in
-                    if let suggestion = manager.displaySuggestions[index] {
+            let displaySuggestions = manager.displaySuggestions
+            VStack(alignment: alignment, spacing: 0) {
+                ForEach(displaySuggestions.indices, id: \.self) { index in
+                    let isFirst = index == 0
+                    if index >= 0, index < displaySuggestions.count {
+                        let suggestion = displaySuggestions[index]
                         switch suggestion {
                         case let .group(group):
                             if let suggestion = group.activeSuggestion {
@@ -98,6 +102,9 @@ struct SuggestionPanelGroupView: View {
                                     ),
                                     groupIndex: index
                                 )
+                                .id(suggestion.id)
+                                .matchedGeometryEffect(id: suggestion.id, in: namespace)
+                                .opacity(isFirst ? 1 : 0.8)
                             }
                         case let .action(action):
                             ActionSuggestionPanel(
@@ -106,10 +113,14 @@ struct SuggestionPanelGroupView: View {
                                 suggestionIndex: 0,
                                 groupIndex: index
                             )
+                            .id(suggestion.id)
+                            .matchedGeometryEffect(id: suggestion.id, in: namespace)
+                            .opacity(isFirst ? 1 : 0.8)
                         }
                     }
                 }
             }
+            .animation(.linear(duration: 0.1), value: displaySuggestions)
         }
     }
 }
@@ -155,7 +166,7 @@ struct ActionSuggestionPanel: View {
                                         Text(descriptions[index].content)
 
                                         if isFirst {
-                                            Color.clear.frame(width: 16, height: 1)
+                                            Color.clear.frame(width: 24, height: 1)
                                         }
                                     }
                                     .multilineTextAlignment(.leading)
@@ -168,7 +179,7 @@ struct ActionSuggestionPanel: View {
                                         Text(descriptions[index].content)
 
                                         if isFirst {
-                                            Color.clear.frame(width: 16, height: 1)
+                                            Color.clear.frame(width: 24, height: 1)
                                         }
                                     }
                                     .multilineTextAlignment(.leading)
@@ -178,7 +189,7 @@ struct ActionSuggestionPanel: View {
                                     .background(.cyan.opacity(0.9))
                                 }
                             }
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                         }
                     }
                 }
@@ -193,6 +204,7 @@ struct ActionSuggestionPanel: View {
                         Image(systemName: "xmark")
                             .padding(.trailing, 4)
                             .contentShape(.circle)
+                            .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -218,6 +230,7 @@ struct ActionSuggestionPanel: View {
                     .foregroundColor(.secondary)
                 }
             }
+            .colorScheme(.dark)
             .background(.regularMaterial)
         }
         .xcodeStyleFrame(cornerRadius: {
@@ -729,8 +742,8 @@ struct CodeBlockSuggestionPanelView: View {
         replacingRange: .outOfScope,
         replacingLines: []
     ), groupIndex: 0)
-    .preferredColorScheme(.light)
-    .frame(width: 450, height: 400)
-    .padding()
+        .preferredColorScheme(.light)
+        .frame(width: 450, height: 400)
+        .padding()
 }
 
