@@ -81,7 +81,7 @@ struct SuggestionPanelGroupView: View {
     var body: some View {
         WithPerceptionTracking {
             let displaySuggestions = manager.displaySuggestions
-            VStack(alignment: alignment, spacing: 0) {
+            VStack(alignment: alignment, spacing: 4) {
                 ForEach(displaySuggestions.indices, id: \.self) { index in
                     let isFirst = index == 0
                     if index >= 0, index < displaySuggestions.count {
@@ -102,9 +102,10 @@ struct SuggestionPanelGroupView: View {
                                     ),
                                     groupIndex: index
                                 )
+                                .saturation(isFirst ? 1 : 0.5)
+                                .contrast(isFirst ? 1 : 0.5)
                                 .id(suggestion.id)
                                 .matchedGeometryEffect(id: suggestion.id, in: namespace)
-                                .opacity(isFirst ? 1 : 0.8)
                             }
                         case let .action(action):
                             ActionSuggestionPanel(
@@ -113,9 +114,10 @@ struct SuggestionPanelGroupView: View {
                                 suggestionIndex: 0,
                                 groupIndex: index
                             )
+                            .saturation(isFirst ? 1 : 0.5)
+                            .contrast(isFirst ? 1 : 0.8)
                             .id(suggestion.id)
                             .matchedGeometryEffect(id: suggestion.id, in: namespace)
-                            .opacity(isFirst ? 1 : 0.8)
                         }
                     }
                 }
