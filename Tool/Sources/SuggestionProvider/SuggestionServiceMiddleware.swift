@@ -119,7 +119,7 @@ public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware
                 continuation.yield([
                     CodeSuggestion(
                         id: "mock-suggestion-1",
-                        text: lineContent,
+                        text: lineContent.replacingOccurrences(of: "\n", with: "!"),
                         position: CursorPosition(
                             line: lineNumber,
                             character: lineContent.utf16.count - 1

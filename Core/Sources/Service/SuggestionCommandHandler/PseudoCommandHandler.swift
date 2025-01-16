@@ -438,14 +438,6 @@ extension PseudoCommandHandler {
                 forFileAt: fileURL,
                 editor: editor
             )
-            if let sourceEditor, filespace.activeCodeSuggestion != nil {
-                let editorContent = sourceEditor.getContent()
-                // Make sure the new suggestions are still valid.
-                _ = filespace.validateSuggestions(
-                    lines: editorContent.lines,
-                    cursorPosition: editorContent.cursorPosition
-                )
-            }
         } catch let error as SuggestionServiceError {
             switch error {
             case let .notice(error):

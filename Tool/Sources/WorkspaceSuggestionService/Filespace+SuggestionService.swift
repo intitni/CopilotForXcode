@@ -69,10 +69,11 @@ extension Filespace {
         }
 
         if let groupIndex {
-            if let displaySuggestions = suggestionManager.displaySuggestions[groupIndex] {
+            if groupIndex >= 0, groupIndex < suggestionManager.displaySuggestions.count {
+                let displaySuggestions = suggestionManager.displaySuggestions[groupIndex]
                 let suggestionsInGroup = extractCodeSuggestions(displaySuggestions)
                 suggestionManager.invalidateDisplaySuggestions(inGroup: groupIndex)
-                #warning("Refactor in progress: Should we reset snapshot here?")
+                suggestionManager.defaultSuggestionProvider.resetSnapshot()
                 return suggestionsInGroup
             } else {
                 return []

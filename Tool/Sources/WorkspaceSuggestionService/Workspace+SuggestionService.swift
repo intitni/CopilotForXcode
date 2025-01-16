@@ -137,6 +137,9 @@ public extension Workspace {
         var allCompletions: [CodeSuggestion] = []
         for try await completions in stream {
             try Task.checkCancellation()
+            // make sure the suggestions are still relevant
+            if snapshot != filespace.suggestionManager?.defaultSuggestionProvider
+                .suggestionSourceSnapshot { break }
             allCompletions.append(contentsOf: completions)
             filespace.suggestionManager?.receiveSuggestions(completions)
         }

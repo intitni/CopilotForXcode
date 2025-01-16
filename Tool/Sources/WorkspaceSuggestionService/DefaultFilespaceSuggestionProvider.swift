@@ -70,12 +70,38 @@ final class DefaultFilespaceSuggestionProvider: FilespaceSuggestionProvider {
         lines: [String],
         cursorPosition: CursorPosition
     ) -> Bool {
+        return validateSuggestions(
+            displayedSuggestionIds: displayedSuggestionIds,
+            lines: lines,
+            cursorPosition: cursorPosition,
+            alwaysTrueIfCursorNotMoved: true
+        )
+    }
+
+    @WorkspaceActor
+    func validateSuggestions(
+        displayedSuggestionIds: Set<CodeSuggestion.ID>,
+        lines: [String],
+        cursorPosition: CursorPosition,
+        alwaysTrueIfCursorNotMoved: Bool
+    ) -> Bool {
         if suggestionSourceSnapshot.cursorPosition == .outOfScope { return false }
 
-        guard let checkingSuggestion = displayedSuggestionIds
-            .compactMap({ codeSuggestions[id: $0] })
-            .first
-        else { return false }
+        guard let checkingSuggestion: CodeSuggestion = {
+            var first: CodeSuggestion?
+            for (index, id) in displayedSuggestionIds.enumerated() {
+                guard let suggestion = codeSuggestions[id: id] else { continue }
+                if !suggestion.isActionOnly {
+                    return suggestion
+                }
+                if index == 0 {
+                    first = suggestion
+                }
+            }
+            return first
+        }() else {
+            return false
+        }
 
         guard Self.validateSuggestion(
             checkingSuggestion,
@@ -105,11 +131,23 @@ extension FilespaceSuggestionProvider {
         // cursor is not even moved during the generation.
         if alwaysTrueIfCursorNotMoved, cursorPosition == suggestion.position { return true }
 
-        // cursor has moved to another line
-        if cursorPosition.line != suggestion.position.line { return false }
-
         // the cursor position is valid
         guard cursorPosition.line >= 0, cursorPosition.line < lines.count else { return false }
+        
+        switch suggestion.effectiveRange {
+        case .line:
+            // cursor has moved to another line
+            if cursorPosition.line != suggestion.position.line { return false }
+        case .replacingRange:
+            if !suggestion.range.contains(cursorPosition) { return false }
+        case .full:
+            break
+        case .ignored:
+            break
+        }
+
+        // If we only have an action, make sure to invalid it to allow new suggestion generations.
+        if suggestion.isActionOnly { return false }
 
         let editingLine = lines[cursorPosition.line].dropLast(1) // dropping line ending
         let suggestionLines = suggestion.text.breakLines(appendLineBreakToLastLine: true)
