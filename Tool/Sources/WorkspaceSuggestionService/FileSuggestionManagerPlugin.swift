@@ -142,11 +142,15 @@ extension FileSuggestionManager: FilespaceSuggestionProviderDelegate {
 public extension FileSuggestionManager {
     struct CircularSuggestionList: Sequence, Equatable {
         public static var empty: CircularSuggestionList {
-            .init(suggestions: [], anchorIndex: 0)
+            .init(suggestions: [], anchorId: nil)
         }
 
         public var suggestions: IdentifiedArrayOf<DisplaySuggestion> = []
-        public var anchorIndex = 0
+        public var anchorId: String?
+        public var anchorIndex: Int {
+            guard let id = anchorId else { return 0 }
+            return suggestions.firstIndex { $0.id == id } ?? 0
+        }
 
         public typealias Element = DisplaySuggestion
         public typealias Iterator = AnyIterator<Element>
@@ -205,11 +209,12 @@ public extension FileSuggestionManager {
 
         public mutating func offsetAnchor(_ offset: Int) {
             guard !suggestions.isEmpty else {
-                anchorIndex = 0
+                anchorId = nil
                 return
             }
             let newIndex = anchorIndex + offset
-            anchorIndex = (newIndex + suggestions.count) % suggestions.count
+            let anchorIndex = (newIndex + suggestions.count) % suggestions.count
+            self.anchorId = suggestions[anchorIndex].id
         }
 
         public var indices: IdentifiedArrayOf<DisplaySuggestion>.Indices {
@@ -276,11 +281,6 @@ extension FileSuggestionManager {
         Task { @MainActor in
             let suggestions = await collectDisplaySuggestionsAtCursor()
             displaySuggestions.suggestions = suggestions
-            if displaySuggestions.anchorIndex <= 0 {
-                displaySuggestions.anchorIndex = 0
-            } else if displaySuggestions.anchorIndex >= displaySuggestions.suggestions.endIndex {
-                displaySuggestions.anchorIndex = displaySuggestions.suggestions.endIndex - 1
-            }
         }
     }
 
