@@ -457,12 +457,12 @@ extension PseudoCommandHandler {
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL) else { return }
 
-        if filespace.activeCodeSuggestion == nil {
+        if await filespace.activeCodeSuggestion == nil {
             return // skip if there's no suggestion presented.
         }
 
         let content = sourceEditor.getContent()
-        filespace.validateSuggestions(
+        await filespace.validateSuggestions(
             lines: content.lines,
             cursorPosition: content.cursorPosition
         )
@@ -481,7 +481,7 @@ extension PseudoCommandHandler {
                 let filePath = await XcodeInspector.shared.safe.realtimeActiveDocumentURL?.path
                 await AcceptSuggestionEventController.shared.cacheEvent(.init(
                     filePath: filePath ?? "",
-                    groupIndex: groupIndex ?? 0
+                    groupIndex: groupIndex
                 ))
                 try await XcodeInspector.shared.safe.latestActiveXcode?
                     .triggerCopilotCommand(name: commandName)
@@ -786,11 +786,11 @@ final class AcceptSuggestionEventController {
 
     struct Event {
         var date: Date
-        var groupIndex: Int
+        var groupIndex: Int?
         var filePath: String
         var isOutdated: Bool { date.timeIntervalSinceNow < -10 }
 
-        init(filePath: String, groupIndex: Int) {
+        init(filePath: String, groupIndex: Int?) {
             date = Date()
             self.groupIndex = groupIndex
             self.filePath = filePath

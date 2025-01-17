@@ -17,6 +17,7 @@ public class PresentingCodeSuggestionManager {
         filespace.plugin(for: FileSuggestionManagerPlugin.self)?.suggestionManager
     }
 
+    @MainActor
     var displaySuggestions: FileSuggestionManager.CircularSuggestionList {
         suggestionManager?.displaySuggestions ?? .empty
     }
@@ -25,18 +26,22 @@ public class PresentingCodeSuggestionManager {
         self.filespace = filespace
     }
 
+    @MainActor
     func nextSuggestionInGroup(index: Int) {
         suggestionManager?.nextSuggestionInGroup(index: index)
     }
 
+    @MainActor
     func previousSuggestionInGroup(index: Int) {
         suggestionManager?.previousSuggestionInGroup(index: index)
     }
 
+    @MainActor
     func nextSuggestionGroup() {
         suggestionManager?.nextSuggestionGroup()
     }
 
+    @MainActor
     func previousSuggestionGroup() {
         suggestionManager?.previousSuggestionGroup()
     }
@@ -102,8 +107,7 @@ struct SuggestionPanelGroupView: View {
                                     ),
                                     groupIndex: index
                                 )
-                                .saturation(isFirst ? 1 : 0.5)
-                                .contrast(isFirst ? 1 : 0.5)
+                                .modifier(DimModifier(shouldDim: !isFirst))
                                 .id(suggestion.id)
                                 .matchedGeometryEffect(id: suggestion.id, in: namespace)
                             }
@@ -114,8 +118,7 @@ struct SuggestionPanelGroupView: View {
                                 suggestionIndex: 0,
                                 groupIndex: index
                             )
-                            .saturation(isFirst ? 1 : 0.5)
-                            .contrast(isFirst ? 1 : 0.8)
+                            .modifier(DimModifier(shouldDim: !isFirst))
                             .id(suggestion.id)
                             .matchedGeometryEffect(id: suggestion.id, in: namespace)
                         }
@@ -123,6 +126,22 @@ struct SuggestionPanelGroupView: View {
                 }
             }
             .animation(.linear(duration: 0.1), value: displaySuggestions)
+        }
+        .frame(alignment: alignment == .leading ? .leading : .trailing)
+    }
+
+    struct DimModifier: ViewModifier {
+        @State var isHovered: Bool = false
+        var shouldDim: Bool
+
+        func body(content: Content) -> some View {
+            if !shouldDim { content }
+            else {
+                content
+                    .saturation(!shouldDim ? 1 : 0.5)
+                    .contrast(!shouldDim ? 1 : 0.8)
+                    .onHover { isHovered = $0 }
+            }
         }
     }
 }
@@ -155,7 +174,9 @@ struct ActionSuggestionPanel: View {
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 0) {
                 Button(action: {
-                    // accept action
+                    Task {
+                        await commandHandler.presentPreviousSuggestion(atIndex: groupIndex)
+                    }
                 }) {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(0..<descriptions.endIndex, id: \.self) { index in

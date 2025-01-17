@@ -21,6 +21,8 @@ public struct SuggestionInjector {
         completion: CodeSuggestion,
         extraInfo: inout ExtraInfo
     ) {
+        if completion.isActionOnly { return }
+        
         extraInfo.didChangeContent = true
         extraInfo.didChangeCursorPosition = true
         let start = completion.range.start

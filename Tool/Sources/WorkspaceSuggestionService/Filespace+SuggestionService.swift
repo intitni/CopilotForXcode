@@ -6,6 +6,7 @@ import Workspace
 // MARK: - Suggestion Control
 
 public extension Filespace {
+    @MainActor
     var activeCodeSuggestion: CodeSuggestion? {
         suggestionManager?.displaySuggestions.activeSuggestion?.activeCodeSuggestion
     }
@@ -22,39 +23,37 @@ extension Filespace {
     /// Get the displaying suggestion at the current index. And clear the displaying suggestions.
     ///
     /// If an index is not provided, accept the active suggestion.
-    @WorkspaceActor
-    func acceptSuggestion(inGroup groupIndex: Int?) -> CodeSuggestion? {
+    func acceptSuggestion(inGroup groupIndex: Int?) async -> CodeSuggestion? {
         guard let suggestionManager else { return nil }
-        guard let suggestion = {
+        guard let suggestion = await {
             if let groupIndex {
-                return suggestionManager.displaySuggestions.suggestions[groupIndex]
+                return await suggestionManager.displaySuggestions.suggestions[groupIndex]
             } else {
-                return suggestionManager.displaySuggestions.activeSuggestion
+                return await suggestionManager.displaySuggestions.activeSuggestion
             }
         }()
         else { return nil }
 
-        func finishAccepting() {
+        func finishAccepting() async {
             suggestionManager.invalidateDisplaySuggestions()
-            suggestionManager.defaultSuggestionProvider.resetSnapshot()
+            await suggestionManager.defaultSuggestionProvider.resetSnapshot()
         }
 
         switch suggestion {
         case let .group(group):
             if let codeSuggestion = group.activeSuggestion {
-                finishAccepting()
+                await finishAccepting()
                 return codeSuggestion
             }
             return nil
         case let .action(action):
-            finishAccepting()
+            await finishAccepting()
             return action.suggestion
         }
     }
 
     /// Reject the displaying suggestion at the current index.
-    @WorkspaceActor
-    func rejectSuggestion(inGroup groupIndex: Int?) -> [CodeSuggestion] {
+    func rejectSuggestion(inGroup groupIndex: Int?) async -> [CodeSuggestion] {
         guard let suggestionManager else { return [] }
 
         func extractCodeSuggestions(
@@ -68,50 +67,63 @@ extension Filespace {
             }
         }
 
+        let displaySuggestions = await suggestionManager.displaySuggestions
         if let groupIndex {
-            if groupIndex >= 0, groupIndex < suggestionManager.displaySuggestions.count {
-                let displaySuggestions = suggestionManager.displaySuggestions[groupIndex]
+            if groupIndex >= 0, groupIndex < displaySuggestions.count {
+                let displaySuggestions = displaySuggestions[groupIndex]
                 let suggestionsInGroup = extractCodeSuggestions(displaySuggestions)
-                suggestionManager.invalidateDisplaySuggestions(inGroup: groupIndex)
-                suggestionManager.defaultSuggestionProvider.resetSnapshot()
+                await suggestionManager.invalidateDisplaySuggestions(inGroup: groupIndex)
+                await suggestionManager.defaultSuggestionProvider.resetSnapshot()
                 return suggestionsInGroup
             } else {
                 return []
             }
         } else {
-            let suggestions = suggestionManager.displaySuggestions.suggestions.flatMap {
+            let suggestions = displaySuggestions.suggestions.flatMap {
                 extractCodeSuggestions($0)
             }
             suggestionManager.invalidateDisplaySuggestions()
-            suggestionManager.defaultSuggestionProvider.resetSnapshot()
+            await suggestionManager.defaultSuggestionProvider.resetSnapshot()
             return suggestions
         }
     }
 
-    @WorkspaceActor
     func selectNextSuggestionGroup() {
         guard let suggestionManager else { return }
-        suggestionManager.nextSuggestionGroup()
+        Task {
+            await suggestionManager.nextSuggestionGroup()
+        }
     }
 
-    @WorkspaceActor
     func selectPreviousSuggestionGroup() {
         guard let suggestionManager else { return }
-        suggestionManager.previousSuggestionGroup()
+        Task {
+            await suggestionManager.previousSuggestionGroup()
+        }
     }
 
-    @WorkspaceActor
     func selectNextSuggestion(inGroup groupIndex: Int?) {
         guard let suggestionManager else { return }
-        let groupIndex = groupIndex ?? suggestionManager.displaySuggestions.anchorIndex
-        suggestionManager.nextSuggestionInGroup(index: groupIndex)
+        Task {
+            let groupIndex = if let groupIndex {
+                groupIndex
+            } else {
+                await suggestionManager.displaySuggestions.anchorIndex
+            }
+            await suggestionManager.nextSuggestionInGroup(index: groupIndex)
+        }
     }
 
-    @WorkspaceActor
     func selectPreviousSuggestion(inGroup groupIndex: Int?) {
         guard let suggestionManager else { return }
-        let groupIndex = groupIndex ?? suggestionManager.displaySuggestions.anchorIndex
-        suggestionManager.previousSuggestionInGroup(index: groupIndex)
+        Task {
+            let groupIndex = if let groupIndex {
+                groupIndex
+            } else {
+                await suggestionManager.displaySuggestions.anchorIndex
+            }
+            await suggestionManager.previousSuggestionInGroup(index: groupIndex)
+        }
     }
 }
 
@@ -128,12 +140,13 @@ public extension Filespace {
     @discardableResult func validateSuggestions(
         lines: [String],
         cursorPosition: CursorPosition
-    ) -> Bool {
+    ) async -> Bool {
         guard let suggestionManager else { return false }
         suggestionManager.updateCursorPosition(cursorPosition)
+        let displaySuggestions = await suggestionManager.displaySuggestions
 
         let displayedSuggestionIds = Set(
-            suggestionManager.displaySuggestions
+            displaySuggestions
                 .flatMap { suggestion in
                     switch suggestion {
                     case let .action(action):

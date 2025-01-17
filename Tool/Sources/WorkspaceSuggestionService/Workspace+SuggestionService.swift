@@ -89,11 +89,10 @@ public extension Workspace {
 
         filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
 
-        if checks.contains(.skipIfHasValidSuggestions),
-           filespace.activeCodeSuggestion != nil
-        {
+        let activeCodeSuggestion = await filespace.activeCodeSuggestion
+        if checks.contains(.skipIfHasValidSuggestions), activeCodeSuggestion != nil {
             // Check if the current suggestion is still valid.
-            if filespace.validateSuggestions(
+            if await filespace.validateSuggestions(
                 lines: editor.lines,
                 cursorPosition: editor.cursorPosition
             ) {
@@ -176,7 +175,11 @@ public extension Workspace {
     }
 
     @WorkspaceActor
-    func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?, groupIndex: Int? = nil) {
+    func rejectSuggestion(
+        forFileAt fileURL: URL,
+        editor: EditorContent?,
+        groupIndex: Int? = nil
+    ) async {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return }
 
@@ -188,7 +191,7 @@ public extension Workspace {
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
 
-        let rejectedSuggestions = filespace.rejectSuggestion(inGroup: groupIndex)
+        let rejectedSuggestions = await filespace.rejectSuggestion(inGroup: groupIndex)
 
         Task {
             await suggestionService?.notifyRejected(
@@ -206,7 +209,7 @@ public extension Workspace {
         forFileAt fileURL: URL,
         editor: EditorContent?,
         groupIndex: Int? = nil
-    ) -> CodeSuggestion? {
+    ) async -> CodeSuggestion? {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return nil }
 
@@ -218,7 +221,8 @@ public extension Workspace {
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
 
-        guard let suggestion = filespace.acceptSuggestion(inGroup: groupIndex) else { return nil }
+        guard let suggestion = await filespace.acceptSuggestion(inGroup: groupIndex)
+        else { return nil }
 
         Task {
             await suggestionService?.notifyAccepted(
@@ -234,10 +238,10 @@ public extension Workspace {
     }
 
     @WorkspaceActor
-    func dismissSuggestions(forFileAt fileURL: URL) {
+    func dismissSuggestions(forFileAt fileURL: URL) async {
         refreshUpdateTime()
         guard let filespace = filespaces[fileURL] else { return }
-        let displayedSuggestions = filespace.suggestionManager?.displaySuggestions.flatMap {
+        let displayedSuggestions = await filespace.suggestionManager?.displaySuggestions.flatMap {
             switch $0 {
             case let .action(action):
                 return [action.suggestion]

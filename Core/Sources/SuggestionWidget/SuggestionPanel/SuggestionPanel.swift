@@ -18,6 +18,7 @@ public class SuggestionPanel {
     var isPanelOutOfFrame: Bool = false
     var frame = CGRect.zero
     let userDefaultObservers = WidgetUserDefaultsObservers()
+    @MainActor
     var opacity: Double {
         guard isPanelDisplayed else { return 0 }
         if isPanelOutOfFrame { return 0 }

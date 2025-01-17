@@ -13,25 +13,21 @@ open class FilespaceSuggestionProvider {
             delegate?.onCodeSuggestionChange()
         }
     }
-
-    @WorkspaceActor
-    open func invalidateSuggestion(id: CodeSuggestion.ID) {
+    
+    @WorkspaceActor open func invalidateSuggestion(id: CodeSuggestion.ID) {
         codeSuggestions.remove(id: id)
     }
 
-    @WorkspaceActor
-    open func invalidateAllSuggestion() {
+    @WorkspaceActor open func invalidateAllSuggestion() {
         codeSuggestions.removeAll()
     }
 
-    @WorkspaceActor
-    open func invalidateSuggestions(after position: CursorPosition) {
+    @WorkspaceActor open func invalidateSuggestions(after position: CursorPosition) {
         codeSuggestions.removeAll { $0.position > position }
     }
 
     /// Validate the displayed (and non-displayed) suggestions.
-    @WorkspaceActor
-    open func validateSuggestions(
+    @WorkspaceActor open func validateSuggestions(
         displayedSuggestionIds: Set<CodeSuggestion.ID>,
         lines: [String],
         cursorPosition: CursorPosition

@@ -13,7 +13,7 @@ import WorkspaceSuggestionService
 import XcodeInspector
 
 struct TabToAcceptSuggestionHandler: KeyBindingHandler {
-    var canTapToAcceptSuggestion: Bool {
+    var canTabToAcceptSuggestion: Bool {
         UserDefaults.shared.value(for: \.acceptSuggestionWithTab)
     }
 
@@ -25,15 +25,13 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
     @Dependency(\.commandHandler) var commandHandler
 
     var isOn: Bool {
-        canTapToAcceptSuggestion || canEscToDismissSuggestion
+        canTabToAcceptSuggestion || canEscToDismissSuggestion
     }
 
     func handleEvent(_ event: CGEvent) -> CGEventManipulation.Result {
         let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let tab = 48
         let esc = 53
-
-        Logger.service.info("TabToAcceptSuggestion: \(keycode)")
 
         switch keycode {
         case tab:
@@ -98,7 +96,7 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             }
         }
 
-        guard canTapToAcceptSuggestion else {
+        guard canTabToAcceptSuggestion else {
             Logger.service.info("TabToAcceptSuggestion: Feature not available")
             return .unchanged
         }
@@ -118,15 +116,16 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             Logger.service.info("TabToAcceptSuggestion: No file found")
             return .unchanged
         }
-        guard let presentingSuggestion = filespace.activeCodeSuggestion,
-              let manager = filespace.suggestionManager
+        guard let presentingSuggestion = filespace.suggestionManager?
+            ._mainThread_displaySuggestions.activeSuggestion?.activeCodeSuggestion,
+            let manager = filespace.suggestionManager
         else {
             Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
             return .unchanged
         }
 
         if flags.contains(.maskControl) && !requiredFlagsToTrigger.contains(.maskControl) {
-            if manager.displaySuggestions.count <= 1 {
+            if manager._mainThread_displaySuggestions.count <= 1 {
                 return .unchanged
             } else {
                 Task { await commandHandler.presentNextSuggestionGroup() }
@@ -173,7 +172,8 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL,
             ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil,
             let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL),
-            filespace.activeCodeSuggestion != nil
+            filespace.suggestionManager?
+            ._mainThread_displaySuggestions.activeSuggestion?.activeCodeSuggestion != nil
         else { return .unchanged }
 
         Task { await commandHandler.dismissSuggestion() }

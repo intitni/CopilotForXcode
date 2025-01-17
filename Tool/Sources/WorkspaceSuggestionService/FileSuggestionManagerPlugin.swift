@@ -43,7 +43,19 @@ public final class FileSuggestionManager {
     @PerceptionIgnored
     fileprivate(set) var suggestionProviders: [FilespaceSuggestionProvider] = []
 
-    public private(set) var displaySuggestions: CircularSuggestionList = .init()
+    @MainActor
+    public var displaySuggestions: CircularSuggestionList { _displaySuggestions }
+
+    /// Only used in places that does't work with async await.
+    public var _mainThread_displaySuggestions: CircularSuggestionList {
+        if Thread.isMainThread {
+            return _displaySuggestions
+        } else {
+            return DispatchQueue.main.sync { _displaySuggestions }
+        }
+    }
+
+    private var _displaySuggestions: CircularSuggestionList = .init()
 
     public init() {
         defaultSuggestionProvider.delegate = self
@@ -55,40 +67,47 @@ public final class FileSuggestionManager {
         }
     }
 
-    @WorkspaceActor
     public func invalidateAllSuggestions() {
-        defer { renderDisplaySuggestionsAtCursor() }
-        defaultSuggestionProvider.invalidateAllSuggestion()
-        suggestionProviders.forEach { $0.invalidateAllSuggestion() }
-    }
-
-    @WorkspaceActor
-    public func invalidateSuggestion(id: CodeSuggestion.ID) {
-        defer { renderDisplaySuggestionsAtCursor() }
-        defaultSuggestionProvider.invalidateSuggestion(id: id)
-        suggestionProviders.forEach { $0.invalidateSuggestion(id: id) }
-    }
-
-    @WorkspaceActor
-    public func invalidateDisplaySuggestions() {
-        defer { renderDisplaySuggestionsAtCursor() }
-        for suggestion in displaySuggestions {
-            switch suggestion {
-            case let .group(group):
-                for item in group.suggestions {
-                    invalidateSuggestion(id: item.id)
-                }
-            case let .action(action):
-                invalidateSuggestion(id: action.id)
+        defer { onCodeSuggestionChange() }
+        Task {
+            await defaultSuggestionProvider.invalidateAllSuggestion()
+            for provider in suggestionProviders {
+                await provider.invalidateAllSuggestion()
             }
         }
     }
 
-    @WorkspaceActor
-    public func invalidateDisplaySuggestions(inGroup groupIndex: Int) {
+    public func invalidateSuggestion(id: CodeSuggestion.ID) {
+        defer { onCodeSuggestionChange() }
+        Task {
+            await defaultSuggestionProvider.invalidateSuggestion(id: id)
+            for provider in suggestionProviders {
+                await provider.invalidateSuggestion(id: id)
+            }
+        }
+    }
+
+    public func invalidateDisplaySuggestions() {
+        defer { onCodeSuggestionChange() }
+        Task {
+            for suggestion in await displaySuggestions {
+                switch suggestion {
+                case let .group(group):
+                    for item in group.suggestions {
+                        invalidateSuggestion(id: item.id)
+                    }
+                case let .action(action):
+                    invalidateSuggestion(id: action.id)
+                }
+            }
+        }
+    }
+
+    public func invalidateDisplaySuggestions(inGroup groupIndex: Int) async {
+        let displaySuggestions = await displaySuggestions
         guard groupIndex < displaySuggestions.count, groupIndex >= 0 else { return }
         let suggestion = displaySuggestions[groupIndex]
-        defer { renderDisplaySuggestionsAtCursor() }
+        defer { onCodeSuggestionChange() }
         switch suggestion {
         case let .group(group):
             for item in group.suggestions {
@@ -101,7 +120,7 @@ public final class FileSuggestionManager {
 
     @WorkspaceActor
     public func invalidateSuggestions(after position: CursorPosition) {
-        defer { renderDisplaySuggestionsAtCursor() }
+        defer { onCodeSuggestionChange() }
         defaultSuggestionProvider.invalidateSuggestions(after: position)
         suggestionProviders.forEach { $0.invalidateSuggestions(after: position) }
     }
@@ -110,32 +129,36 @@ public final class FileSuggestionManager {
         cursorPosition = position
     }
 
+    @MainActor
     public func nextSuggestionGroup() {
-        displaySuggestions.offsetAnchor(1)
+        _displaySuggestions.offsetAnchor(1)
     }
 
+    @MainActor
     public func nextSuggestionInGroup(index: Int) {
         if case var .group(group) = displaySuggestions[index] {
             group.offsetIndex(1)
-            displaySuggestions[index] = .group(group)
+            _displaySuggestions[index] = .group(group)
         }
     }
 
+    @MainActor
     public func previousSuggestionGroup() {
-        displaySuggestions.offsetAnchor(-1)
+        _displaySuggestions.offsetAnchor(-1)
     }
 
+    @MainActor
     public func previousSuggestionInGroup(index: Int) {
         if case var .group(group) = displaySuggestions[index] {
             group.offsetIndex(-1)
-            displaySuggestions[index] = .group(group)
+            _displaySuggestions[index] = .group(group)
         }
     }
 }
 
 extension FileSuggestionManager: FilespaceSuggestionProviderDelegate {
     func onCodeSuggestionChange() {
-        renderDisplaySuggestionsAtCursor()
+        Task { await renderDisplaySuggestionsAtCursor() }
     }
 }
 
@@ -145,8 +168,8 @@ public extension FileSuggestionManager {
             .init(suggestions: [], anchorId: nil)
         }
 
-        public var suggestions: IdentifiedArrayOf<DisplaySuggestion> = []
-        public var anchorId: String?
+        public fileprivate(set) var suggestions: IdentifiedArrayOf<DisplaySuggestion> = []
+        public private(set) var anchorId: String?
         public var anchorIndex: Int {
             guard let id = anchorId else { return 0 }
             return suggestions.firstIndex { $0.id == id } ?? 0
@@ -214,7 +237,7 @@ public extension FileSuggestionManager {
             }
             let newIndex = anchorIndex + offset
             let anchorIndex = (newIndex + suggestions.count) % suggestions.count
-            self.anchorId = suggestions[anchorIndex].id
+            anchorId = suggestions[anchorIndex].id
         }
 
         public var indices: IdentifiedArrayOf<DisplaySuggestion>.Indices {
@@ -243,7 +266,7 @@ public extension FileSuggestionManager {
             }
         }
 
-        var activeCodeSuggestion: CodeSuggestion? {
+        public var activeCodeSuggestion: CodeSuggestion? {
             switch self {
             case let .group(group):
                 return group.suggestions.first
@@ -277,24 +300,22 @@ public extension FileSuggestionManager {
 }
 
 extension FileSuggestionManager {
-    func renderDisplaySuggestionsAtCursor() {
-        Task { @MainActor in
-            let suggestions = await collectDisplaySuggestionsAtCursor()
-            displaySuggestions.suggestions = suggestions
-        }
+    func renderDisplaySuggestionsAtCursor() async {
+        let suggestions = await collectDisplaySuggestionsAtCursor()
+        await MainActor.run { _displaySuggestions.suggestions = suggestions }
     }
 
-    @WorkspaceActor
-    func collectDisplaySuggestionsAtCursor() -> IdentifiedArrayOf<DisplaySuggestion> {
-        let existedGroupSuggestionIndices: [String: Int] = displaySuggestions
-            .reduce(into: [:]) { result, suggestion in
+    func collectDisplaySuggestionsAtCursor() async -> IdentifiedArrayOf<DisplaySuggestion> {
+        let existedGroupSuggestionIndices: [String: Int] = await MainActor.run {
+            displaySuggestions.reduce(into: [:]) { result, suggestion in
                 if case let .group(group) = suggestion {
                     result[group.id] = group.suggestionIndex
                 }
             }
+        }
         var groups = IdentifiedArrayOf<DisplayGroup>()
         var actions = IdentifiedArrayOf<DisplayAction>()
-        let suggestions = suggestions(
+        let suggestions = await suggestions(
             defaultSuggestionProvider.codeSuggestions,
             for: cursorPosition
         )
