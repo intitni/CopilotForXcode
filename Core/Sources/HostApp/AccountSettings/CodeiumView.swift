@@ -1,5 +1,6 @@
 import CodeiumService
 import Foundation
+import RunEnvironment
 import SharedUIComponents
 import SwiftUI
 
@@ -29,7 +30,7 @@ struct CodeiumView: View {
             installationStatus: CodeiumInstallationManager.InstallationStatus,
             installationStep: CodeiumInstallationManager.InstallationStep?
         ) {
-            assert(isPreview)
+            assert(RunEnvironment.isPreview)
             self.isSignedIn = isSignedIn
             self.installationStatus = installationStatus
             self.installationStep = installationStep
@@ -206,7 +207,7 @@ struct CodeiumView: View {
                     }
                 }
             }
-            
+
             SubSection(title: Text("Indexing")) {
                 Form {
                     Toggle("Enable Indexing", isOn: $viewModel.indexEnabled)
@@ -314,19 +315,23 @@ struct CodeiumView_Previews: PreviewProvider {
                     installationStatus: .notInstalled,
                     installationStep: nil
                 ))
-                
+
                 CodeiumView(viewModel: TestViewModel(
                     isSignedIn: true,
                     installationStatus: .installed("1.2.9"),
                     installationStep: nil
                 ))
-                
+
                 CodeiumView(viewModel: TestViewModel(
                     isSignedIn: true,
-                    installationStatus: .outdated(current: "1.2.9", latest: "1.3.0", mandatory: true),
+                    installationStatus: .outdated(
+                        current: "1.2.9",
+                        latest: "1.3.0",
+                        mandatory: true
+                    ),
                     installationStep: .downloading
                 ))
-                
+
                 CodeiumView(viewModel: TestViewModel(
                     isSignedIn: true,
                     installationStatus: .unsupported(current: "1.5.9", latest: "1.3.0"),

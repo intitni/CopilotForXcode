@@ -2,6 +2,7 @@ import AppKit
 import Client
 import GitHubCopilotService
 import Preferences
+import RunEnvironment
 import SharedUIComponents
 import SuggestionBasic
 import SwiftUI
@@ -40,7 +41,7 @@ struct GitHubCopilotView: View {
             installationStatus: GitHubCopilotInstallationManager.InstallationStatus,
             installationStep: GitHubCopilotInstallationManager.InstallationStep?
         ) {
-            assert(isPreview)
+            assert(RunEnvironment.isPreview)
             self.installationStatus = installationStatus
             self.installationStep = installationStep
         }
@@ -199,7 +200,7 @@ struct GitHubCopilotView: View {
                         .foregroundColor(.secondary)
                         .font(.callout)
                         .dynamicHeightTextInFormWorkaround()
-                        
+
                         Toggle(isOn: $settings.gitHubCopilotLoadKeyChainCertificates) {
                             Text("Load certificates in keychain")
                         }
@@ -310,7 +311,7 @@ struct GitHubCopilotView: View {
             }
             Spacer()
         }.onAppear {
-            if isPreview { return }
+            if RunEnvironment.isPreview { return }
             if settings.disableGitHubCopilotSettingsAutoRefreshOnAppear { return }
             viewModel.refreshInstallationStatus()
             checkStatus()

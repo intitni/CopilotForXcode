@@ -80,7 +80,7 @@ public enum ExtensionServiceRequests {
         public struct ServiceInfo: Codable {
             public var bundleIdentifier: String
             public var name: String
-            
+
             public init(bundleIdentifier: String, name: String) {
                 self.bundleIdentifier = bundleIdentifier
                 self.name = name
@@ -92,14 +92,14 @@ public enum ExtensionServiceRequests {
 
         public init() {}
     }
-    
+
     public struct GetExtensionOpenChatHandlers: ExtensionServiceRequestType {
         public struct HandlerInfo: Codable {
             public var bundleIdentifier: String
             public var id: String
             public var tabName: String
             public var isBuiltIn: Bool
-            
+
             public init(bundleIdentifier: String, id: String, tabName: String, isBuiltIn: Bool) {
                 self.bundleIdentifier = bundleIdentifier
                 self.id = id
@@ -111,6 +111,30 @@ public enum ExtensionServiceRequests {
         public typealias ResponseBody = [HandlerInfo]
         public static let endpoint = "GetExtensionOpenChatHandlers"
 
+        public init() {}
+    }
+
+    public struct GetSuggestionLineAcceptedCode: ExtensionServiceRequestType {
+        public typealias ResponseBody = UpdatedContent?
+
+        public static let endpoint = "GetSuggestionLineAcceptedCode"
+
+        public let editorContent: EditorContent
+
+        public init(editorContent: EditorContent) {
+            self.editorContent = editorContent
+        }
+    }
+
+    public struct NextSuggestionGroup: ExtensionServiceRequestType {
+        public typealias ResponseBody = NoResponse
+        public static let endpoint = "NextSuggestionGroup"
+        public init() {}
+    }
+    
+    public struct PreviousSuggestionGroup: ExtensionServiceRequestType {
+        public typealias ResponseBody = NoResponse
+        public static let endpoint = "PreviousSuggestionGroup"
         public init() {}
     }
 }

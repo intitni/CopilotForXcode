@@ -5,6 +5,7 @@ public struct WidgetLocation: Equatable {
     struct PanelLocation: Equatable {
         var frame: CGRect
         var alignPanelTop: Bool
+        var alignPanelLeft: Bool
     }
 
     var widgetFrame: CGRect
@@ -168,11 +169,13 @@ enum UpdateLocationStrategy {
                     tabFrame: tabFrame,
                     sharedPanelLocation: .init(
                         frame: panelFrame,
-                        alignPanelTop: alignPanelTopToAnchor
+                        alignPanelTop: alignPanelTopToAnchor,
+                        alignPanelLeft: true
                     ),
                     defaultPanelLocation: .init(
                         frame: panelFrame,
-                        alignPanelTop: alignPanelTopToAnchor
+                        alignPanelTop: alignPanelTopToAnchor,
+                        alignPanelLeft: true
                     ),
                     suggestionPanelLocation: nil
                 )
@@ -231,11 +234,13 @@ enum UpdateLocationStrategy {
                         tabFrame: tabFrame,
                         sharedPanelLocation: .init(
                             frame: panelFrame,
-                            alignPanelTop: alignPanelTopToAnchor
+                            alignPanelTop: alignPanelTopToAnchor,
+                            alignPanelLeft: false
                         ),
                         defaultPanelLocation: .init(
                             frame: panelFrame,
-                            alignPanelTop: alignPanelTopToAnchor
+                            alignPanelTop: alignPanelTopToAnchor,
+                            alignPanelLeft: false
                         ),
                         suggestionPanelLocation: nil
                     )
@@ -262,11 +267,13 @@ enum UpdateLocationStrategy {
                         tabFrame: tabFrame,
                         sharedPanelLocation: .init(
                             frame: panelFrame,
-                            alignPanelTop: alignPanelTopToAnchor
+                            alignPanelTop: alignPanelTopToAnchor,
+                            alignPanelLeft: false
                         ),
                         defaultPanelLocation: .init(
                             frame: panelFrame,
-                            alignPanelTop: alignPanelTopToAnchor
+                            alignPanelTop: alignPanelTopToAnchor,
+                            alignPanelLeft: false
                         ),
                         suggestionPanelLocation: nil
                     )
@@ -325,7 +332,8 @@ enum UpdateLocationStrategy {
                             width: Style.inlineSuggestionMinWidth,
                             height: Style.inlineSuggestionMaxHeight
                         ),
-                        alignPanelTop: alignPanelTopToAnchor
+                        alignPanelTop: alignPanelTopToAnchor,
+                        alignPanelLeft: true
                     )
                 } else {
                     // case: present above selection
@@ -336,7 +344,8 @@ enum UpdateLocationStrategy {
                             width: Style.inlineSuggestionMinWidth,
                             height: Style.inlineSuggestionMaxHeight
                         ),
-                        alignPanelTop: alignPanelTopToAnchor
+                        alignPanelTop: alignPanelTopToAnchor,
+                        alignPanelLeft: true
                     )
                 }
             }
@@ -373,7 +382,8 @@ enum UpdateLocationStrategy {
                                 width: Style.inlineSuggestionMinWidth,
                                 height: Style.inlineSuggestionMaxHeight
                             ),
-                            alignPanelTop: alignPanelTopToAnchor
+                            alignPanelTop: alignPanelTopToAnchor,
+                            alignPanelLeft: true
                         )
                     }
                     // case: no enough horizontal space, place the suggestion on the other side

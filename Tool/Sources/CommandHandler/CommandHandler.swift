@@ -12,10 +12,13 @@ public protocol CommandHandler {
     // MARK: Suggestion
 
     func presentSuggestions(_ suggestions: [CodeSuggestion]) async
-    func presentPreviousSuggestion() async
-    func presentNextSuggestion() async
-    func rejectSuggestions() async
-    func acceptSuggestion() async
+    func presentPreviousSuggestion(atIndex index: Int?) async
+    func presentNextSuggestion(atIndex index: Int?) async
+    func presentPreviousSuggestionGroup() async
+    func presentNextSuggestionGroup() async
+    func rejectSuggestionGroup(atIndex index: Int?) async
+    func acceptActiveSuggestionInGroup(atIndex index: Int?) async
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async
     func dismissSuggestion() async
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async
 
@@ -65,24 +68,36 @@ public final class UniversalCommandHandler: CommandHandler {
 
     private init() {}
 
-    public func presentSuggestions(_ suggestions: [SuggestionBasic.CodeSuggestion]) async {
+    public func presentSuggestions(_ suggestions: [CodeSuggestion]) async {
         await commandHandler.presentSuggestions(suggestions)
     }
 
-    public func presentPreviousSuggestion() async {
-        await commandHandler.presentPreviousSuggestion()
+    public func presentPreviousSuggestion(atIndex index: Int?) async {
+        await commandHandler.presentPreviousSuggestion(atIndex: index)
     }
 
-    public func presentNextSuggestion() async {
-        await commandHandler.presentNextSuggestion()
+    public func presentNextSuggestion(atIndex index: Int?) async {
+        await commandHandler.presentNextSuggestion(atIndex: index)
     }
 
-    public func rejectSuggestions() async {
-        await commandHandler.rejectSuggestions()
+    public func presentPreviousSuggestionGroup() async {
+        await commandHandler.presentPreviousSuggestionGroup()
     }
 
-    public func acceptSuggestion() async {
-        await commandHandler.acceptSuggestion()
+    public func presentNextSuggestionGroup() async {
+        await commandHandler.presentNextSuggestionGroup()
+    }
+
+    public func rejectSuggestionGroup(atIndex index: Int?) async {
+        await commandHandler.rejectSuggestionGroup(atIndex: index)
+    }
+    
+    public func acceptActiveSuggestionInGroup(atIndex index: Int?) async {
+        await commandHandler.acceptActiveSuggestionInGroup(atIndex: index)
+    }
+
+    public func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: index)
     }
 
     public func dismissSuggestion() async {
@@ -127,20 +142,32 @@ struct NOOPCommandHandler: CommandHandler {
         print("present \(suggestions.count) suggestions")
     }
 
-    func presentPreviousSuggestion() async {
+    func presentPreviousSuggestion(atIndex index: Int?) async {
         print("previous suggestion")
     }
 
-    func presentNextSuggestion() async {
+    func presentNextSuggestion(atIndex index: Int?) async {
         print("next suggestion")
     }
 
-    func rejectSuggestions() async {
-        print("reject suggestions")
+    func presentPreviousSuggestionGroup() async {
+        print("previous suggestion group")
     }
 
-    func acceptSuggestion() async {
-        print("accept suggestion")
+    func presentNextSuggestionGroup() async {
+        print("next suggestion group")
+    }
+
+    func rejectSuggestionGroup(atIndex index: Int?) async {
+        print("reject suggestions group")
+    }
+
+    func acceptActiveSuggestionInGroup(atIndex index: Int?) async {
+        print("accept active suggestion in group")
+    }
+
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        print("accept active suggestion line")
     }
 
     func dismissSuggestion() async {
@@ -163,7 +190,7 @@ struct NOOPCommandHandler: CommandHandler {
         print("accept prompt to code")
     }
 
-    func presentModification(state: Shared<ModificationState>) {
+    func presentModification(state: Shared<ModificationState>) async {
         print("present modification")
     }
 
@@ -179,4 +206,3 @@ struct NOOPCommandHandler: CommandHandler {
         print("present file")
     }
 }
-

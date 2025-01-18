@@ -44,18 +44,6 @@ public final class SuggestionWidgetController: NSObject {
 // MARK: - Handle Events
 
 public extension SuggestionWidgetController {
-    func suggestCode() {
-        store.send(.panel(.presentSuggestion))
-    }
-
-    func discardSuggestion() {
-        store.withState { state in
-            if state.panelState.content.suggestion != nil {
-                store.send(.panel(.discardSuggestion))
-            }
-        }
-    }
-
     #warning("TODO: Make a progress controller that doesn't use TCA.")
     func markAsProcessing(_ isProcessing: Bool) {
         store.withState { state in
@@ -65,10 +53,6 @@ public extension SuggestionWidgetController {
                 store.send(.circularWidget(.endIsProcessing))
             }
         }
-    }
-
-    func presentError(_ errorDescription: String) {
-        store.send(.toastPanel(.toast(.toast(errorDescription, .error, nil))))
     }
 }
 

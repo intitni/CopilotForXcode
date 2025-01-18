@@ -1,15 +1,39 @@
+import enum CopilotForXcodeKit.SuggestionServiceError
+import struct CopilotForXcodeKit.WorkspaceInfo
 import Foundation
 import SuggestionBasic
 import SuggestionProvider
 import Workspace
 import XPCShared
 
+public protocol SuggestionServiceType {
+    func getSuggestions(
+        _ request: SuggestionRequest,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error>
+    func notifyAccepted(
+        _ suggestion: CodeSuggestion,
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func notifyRejected(
+        _ suggestions: [CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func notifyDismissed(
+        _ suggestions: [CodeSuggestion],
+        workspaceInfo: CopilotForXcodeKit.WorkspaceInfo
+    ) async
+    func cancelRequest(workspaceInfo: CopilotForXcodeKit.WorkspaceInfo) async
+
+    var configuration: SuggestionServiceConfiguration { get async }
+}
+
 public extension Workspace {
     var suggestionPlugin: SuggestionServiceWorkspacePlugin? {
         plugin(for: SuggestionServiceWorkspacePlugin.self)
     }
 
-    var suggestionService: SuggestionServiceProvider? {
+    var suggestionService: SuggestionServiceType? {
         suggestionPlugin?.suggestionService
     }
 
@@ -24,18 +48,37 @@ public extension Workspace {
     }
 }
 
+public enum GenerateSuggestionCheck: CaseIterable {
+    case skipIfGitIgnored
+    case skipIfHasValidSuggestions
+    case skipIfSnapshotIsSame
+}
+
+public struct GenerateSuggestionSkipError: Error, LocalizedError {
+    var reason: GenerateSuggestionCheck
+    public var errorDescription: String? {
+        "Generate suggestion skipped. Check: \(reason)"
+    }
+}
+
 public extension Workspace {
     @WorkspaceActor
     @discardableResult
     func generateSuggestions(
         forFileAt fileURL: URL,
-        editor: EditorContent
+        editor: EditorContent,
+        checks: Set<GenerateSuggestionCheck> = Set(GenerateSuggestionCheck.allCases)
     ) async throws -> [CodeSuggestion] {
         refreshUpdateTime()
 
         let filespace = try createFilespaceIfNeeded(fileURL: fileURL)
+        filespace.suggestionManager?.updateCursorPosition(editor.cursorPosition)
 
-        guard !(await filespace.isGitIgnored) else { return [] }
+        if checks.contains(.skipIfGitIgnored),
+           await filespace.isGitIgnored
+        {
+            throw GenerateSuggestionSkipError(reason: .skipIfGitIgnored)
+        }
 
         if !editor.uti.isEmpty {
             filespace.codeMetadata.uti = editor.uti
@@ -46,16 +89,34 @@ public extension Workspace {
 
         filespace.codeMetadata.guessLineEnding(from: editor.lines.first)
 
+        let activeCodeSuggestion = await filespace.activeCodeSuggestion
+        if checks.contains(.skipIfHasValidSuggestions), activeCodeSuggestion != nil {
+            // Check if the current suggestion is still valid.
+            if await filespace.validateSuggestions(
+                lines: editor.lines,
+                cursorPosition: editor.cursorPosition
+            ) {
+                throw GenerateSuggestionSkipError(reason: .skipIfHasValidSuggestions)
+            }
+        }
+
         let snapshot = FilespaceSuggestionSnapshot(
             lines: editor.lines,
             cursorPosition: editor.cursorPosition
         )
 
-        filespace.suggestionSourceSnapshot = snapshot
+        if checks.contains(.skipIfSnapshotIsSame),
+           filespace.suggestionManager?.defaultSuggestionProvider
+           .suggestionSourceSnapshot == snapshot
+        {
+            throw GenerateSuggestionSkipError(reason: .skipIfSnapshotIsSame)
+        }
+
+        filespace.suggestionManager?.defaultSuggestionProvider.suggestionSourceSnapshot = snapshot
 
         guard let suggestionService else { throw SuggestionFeatureDisabledError() }
         let content = editor.lines.joined(separator: "")
-        let completions = try await suggestionService.getSuggestions(
+        let stream = await suggestionService.getSuggestions(
             .init(
                 fileURL: fileURL,
                 relativePath: fileURL.path.replacingOccurrences(of: projectRootURL.path, with: ""),
@@ -72,70 +133,96 @@ public extension Workspace {
             workspaceInfo: .init(workspaceURL: workspaceURL, projectURL: projectRootURL)
         )
 
-        filespace.setSuggestions(completions)
+        var allCompletions: [CodeSuggestion] = []
+        for try await completions in stream {
+            try Task.checkCancellation()
+            // make sure the suggestions are still relevant
+            if snapshot != filespace.suggestionManager?.defaultSuggestionProvider
+                .suggestionSourceSnapshot { break }
+            allCompletions.append(contentsOf: completions)
+            filespace.suggestionManager?.receiveSuggestions(completions)
+        }
 
-        return completions
+        return allCompletions
     }
 
     @WorkspaceActor
-    func selectNextSuggestion(forFileAt fileURL: URL) {
+    func selectNextSuggestion(forFileAt fileURL: URL, groupIndex: Int? = nil) {
         refreshUpdateTime()
-        guard let filespace = filespaces[fileURL],
-              filespace.suggestions.count > 1
-        else { return }
-        filespace.nextSuggestion()
+        guard let filespace = filespaces[fileURL] else { return }
+        filespace.selectNextSuggestion(inGroup: groupIndex)
     }
 
     @WorkspaceActor
-    func selectPreviousSuggestion(forFileAt fileURL: URL) {
+    func selectPreviousSuggestion(forFileAt fileURL: URL, groupIndex: Int? = nil) {
         refreshUpdateTime()
-        guard let filespace = filespaces[fileURL],
-              filespace.suggestions.count > 1
-        else { return }
-        filespace.previousSuggestion()
+        guard let filespace = filespaces[fileURL] else { return }
+        filespace.selectPreviousSuggestion(inGroup: groupIndex)
     }
 
     @WorkspaceActor
-    func rejectSuggestion(forFileAt fileURL: URL, editor: EditorContent?) {
+    func selectNextSuggestionGroup(forFileAt fileURL: URL) {
         refreshUpdateTime()
+        guard let filespace = filespaces[fileURL] else { return }
+        filespace.selectNextSuggestionGroup()
+    }
+
+    @WorkspaceActor
+    func selectPreviousSuggestionGroup(forFileAt fileURL: URL) {
+        refreshUpdateTime()
+        guard let filespace = filespaces[fileURL] else { return }
+        filespace.selectPreviousSuggestionGroup()
+    }
+
+    @WorkspaceActor
+    func rejectSuggestion(
+        forFileAt fileURL: URL,
+        editor: EditorContent?,
+        groupIndex: Int? = nil
+    ) async {
+        refreshUpdateTime()
+        guard let filespace = filespaces[fileURL] else { return }
 
         if let editor, !editor.uti.isEmpty {
+            filespace.suggestionManager?.updateCursorPosition(editor.cursorPosition)
             filespaces[fileURL]?.codeMetadata.uti = editor.uti
             filespaces[fileURL]?.codeMetadata.tabSize = editor.tabSize
             filespaces[fileURL]?.codeMetadata.indentSize = editor.indentSize
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
 
+        let rejectedSuggestions = await filespace.rejectSuggestion(inGroup: groupIndex)
+
         Task {
             await suggestionService?.notifyRejected(
-                filespaces[fileURL]?.suggestions ?? [],
+                rejectedSuggestions,
                 workspaceInfo: .init(
                     workspaceURL: workspaceURL,
                     projectURL: projectRootURL
                 )
             )
         }
-        filespaces[fileURL]?.reset()
     }
 
     @WorkspaceActor
-    func acceptSuggestion(forFileAt fileURL: URL, editor: EditorContent?) -> CodeSuggestion? {
+    func acceptSuggestion(
+        forFileAt fileURL: URL,
+        editor: EditorContent?,
+        groupIndex: Int? = nil
+    ) async -> CodeSuggestion? {
         refreshUpdateTime()
-        guard let filespace = filespaces[fileURL],
-              !filespace.suggestions.isEmpty,
-              filespace.suggestionIndex >= 0,
-              filespace.suggestionIndex < filespace.suggestions.endIndex
-        else { return nil }
+        guard let filespace = filespaces[fileURL] else { return nil }
 
         if let editor, !editor.uti.isEmpty {
+            filespace.suggestionManager?.updateCursorPosition(editor.cursorPosition)
             filespaces[fileURL]?.codeMetadata.uti = editor.uti
             filespaces[fileURL]?.codeMetadata.tabSize = editor.tabSize
             filespaces[fileURL]?.codeMetadata.indentSize = editor.indentSize
             filespaces[fileURL]?.codeMetadata.usesTabsForIndentation = editor.usesTabsForIndentation
         }
 
-        var allSuggestions = filespace.suggestions
-        let suggestion = allSuggestions.remove(at: filespace.suggestionIndex)
+        guard let suggestion = await filespace.acceptSuggestion(inGroup: groupIndex)
+        else { return nil }
 
         Task {
             await suggestionService?.notifyAccepted(
@@ -147,10 +234,33 @@ public extension Workspace {
             )
         }
 
-        filespaces[fileURL]?.reset()
-        filespaces[fileURL]?.resetSnapshot()
-
         return suggestion
+    }
+
+    @WorkspaceActor
+    func dismissSuggestions(forFileAt fileURL: URL) async {
+        refreshUpdateTime()
+        guard let filespace = filespaces[fileURL] else { return }
+        let displayedSuggestions = await filespace.suggestionManager?.displaySuggestions.flatMap {
+            switch $0 {
+            case let .action(action):
+                return [action.suggestion]
+            case let .group(group):
+                return group.suggestions
+            }
+        } ?? []
+
+        filespace.suggestionManager?.invalidateDisplaySuggestions()
+
+        Task {
+            await suggestionService?.notifyDismissed(
+                displayedSuggestions,
+                workspaceInfo: .init(
+                    workspaceURL: workspaceURL,
+                    projectURL: projectRootURL
+                )
+            )
+        }
     }
 }
 

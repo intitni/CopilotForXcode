@@ -103,7 +103,7 @@ struct GUI {
                             chatTabPool.removeTab(of: id)
                         }
 
-                    case let .chatTab(_, .openNewTab(builder)):
+                    case let .chatTab(.element(_, .openNewTab(builder))):
                         return .run { send in
                             if let (_, chatTabInfo) = await chatTabPool
                                 .createTab(from: builder.chatTabBuilder)
@@ -223,7 +223,7 @@ struct GUI {
                         await send(.suggestionWidget(.circularWidget(.widgetClicked)))
                     }
 
-                case let .suggestionWidget(.chatPanel(.chatTab(id, .tabContentUpdated))):
+                case let .suggestionWidget(.chatPanel(.chatTab(.element(id, .tabContentUpdated)))):
                     #if canImport(ChatTabPersistent)
                     // when a tab is updated, persist it.
                     return .run { send in
@@ -273,7 +273,6 @@ struct GUI {
 public final class GraphicalUserInterfaceController {
     let store: StoreOf<GUI>
     let widgetController: SuggestionWidgetController
-    let widgetDataSource: WidgetDataSource
     let chatTabPool: ChatTabPool
 
     class WeakStoreHolder {
@@ -302,7 +301,6 @@ public final class GraphicalUserInterfaceController {
         )
         self.store = store
         self.chatTabPool = chatTabPool
-        widgetDataSource = .init()
 
         widgetController = SuggestionWidgetController(
             store: store.scope(
@@ -314,17 +312,12 @@ public final class GraphicalUserInterfaceController {
         )
 
         chatTabPool.createStore = { id in
-            store.scope(
-                state: { state in
-                    state.chatTabGroup.tabInfo[id: id] ?? .init(id: id, title: "")
-                },
-                action: { childAction in
-                    .suggestionWidget(.chatPanel(.chatTab(id: id, action: childAction)))
-                }
+            return store.scope(
+                state: \.chatTabGroup[chatTab: id],
+                action: \.suggestionWidget.chatPanel.chatTab[id: id]
             )
         }
 
-        suggestionDependency.suggestionWidgetDataSource = widgetDataSource
         suggestionDependency.onOpenChatClicked = { [weak self] in
             Task { [weak self] in
                 await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()

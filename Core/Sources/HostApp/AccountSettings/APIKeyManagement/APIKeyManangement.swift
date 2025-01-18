@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import RunEnvironment
 
 @Reducer
 struct APIKeyManagement {
@@ -26,7 +27,7 @@ struct APIKeyManagement {
         Reduce { state, action in
             switch action {
             case .appear:
-                if isPreview { return .none }
+                if RunEnvironment.isPreview { return .none }
                 
                 return .run { send in
                     await send(.refreshAvailableAPIKeyNames)

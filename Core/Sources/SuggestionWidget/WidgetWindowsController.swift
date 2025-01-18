@@ -137,14 +137,13 @@ private extension WidgetWindowsController {
                     let documentURL = await MainActor
                         .run { store.withState { $0.focusingDocumentURL } }
                     if documentURL != newDocumentURL {
-                        await send(.panel(.removeDisplayedContent))
                         await hidePanelWindows()
                     }
                     await send(.updateFocusingDocumentURL)
                 }
 
                 func removeContent() async {
-                    await send(.panel(.removeDisplayedContent))
+//                    await send(.panel(.removeDisplayedContent))
                 }
 
                 func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
@@ -167,10 +166,8 @@ private extension WidgetWindowsController {
                     await hideWidgetForTransitions()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
                 case .applicationActivated:
-                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .mainWindowChanged:
-                    await removeContent()
                     await updateWidgetsAndNotifyChangeOfEditor(immediately: false)
                 case .moved,
                      .resized,
@@ -253,12 +250,12 @@ extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
         windows.sharedPanelWindow.alphaValue = 0
-        windows.suggestionPanelWindow.alphaValue = 0
+        windows.suggestionPanelWindowController.suggestionPanel.isPanelDisplayed = false
     }
 
     @MainActor
     func hideSuggestionPanelWindow() {
-        windows.suggestionPanelWindow.alphaValue = 0
+        windows.suggestionPanelWindowController.suggestionPanel.isPanelDisplayed = false
     }
 
     func generateWidgetLocation() -> WidgetLocation? {
@@ -335,8 +332,16 @@ extension WidgetWindowsController {
                         return WidgetLocation(
                             widgetFrame: .zero,
                             tabFrame: .zero,
-                            sharedPanelLocation: .init(frame: .zero, alignPanelTop: false),
-                            defaultPanelLocation: .init(frame: .zero, alignPanelTop: false)
+                            sharedPanelLocation: .init(
+                                frame: .zero,
+                                alignPanelTop: false,
+                                alignPanelLeft: true
+                            ),
+                            defaultPanelLocation: .init(
+                                frame: .zero,
+                                alignPanelTop: false,
+                                alignPanelLeft: true
+                            )
                         )
                     }
 
@@ -370,6 +375,9 @@ extension WidgetWindowsController {
 
     func updatePanelState(_ location: WidgetLocation) async {
         await send(.updatePanelStateToMatch(location))
+        await MainActor.run {
+            windows.suggestionPanelWindowController.suggestionPanel.updateLocation(location)
+        }
     }
 
     func updateWindowOpacity(immediately: Bool) {
@@ -396,7 +404,8 @@ extension WidgetWindowsController {
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.suggestionPanelWindowController.suggestionPanel
+                        .isPanelDisplayed = !noFocus
                     windows.widgetWindow.alphaValue = noFocus ? 0 : 1
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
 
@@ -419,7 +428,8 @@ extension WidgetWindowsController {
                     let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
 
                     windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
-                    windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.suggestionPanelWindowController.suggestionPanel
+                        .isPanelDisplayed = !noFocus
                     windows.widgetWindow.alphaValue = if noFocus {
                         0
                     } else if previousAppIsXcode {
@@ -442,7 +452,7 @@ extension WidgetWindowsController {
                     }
                 } else {
                     windows.sharedPanelWindow.alphaValue = 0
-                    windows.suggestionPanelWindow.alphaValue = 0
+                    windows.suggestionPanelWindowController.suggestionPanel.isPanelDisplayed = false
                     windows.widgetWindow.alphaValue = 0
                     windows.toastWindow.alphaValue = 0
                     if !isChatPanelDetached {
@@ -483,14 +493,7 @@ extension WidgetWindowsController {
                 display: false,
                 animate: animated
             )
-
-            if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
-                windows.suggestionPanelWindow.setFrame(
-                    suggestionPanelLocation.frame,
-                    display: false,
-                    animate: animated
-                )
-            }
+            windows.suggestionPanelWindowController.suggestionPanel.updateLocation(widgetLocation)
 
             if isChatPanelDetached {
                 // don't update it!
@@ -587,7 +590,7 @@ extension WidgetWindowsController {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
         let xcode = activeXcode?.appElement
-        
+
         let isXcodeActive = xcode?.isFrontmost ?? false
 
         [
@@ -600,7 +603,7 @@ extension WidgetWindowsController {
                 $0.moveToActiveSpace()
             }
         }
-        
+
         if isXcodeActive, !windows.chatPanelWindow.isDetached {
             windows.chatPanelWindow.moveToActiveSpace()
         }
@@ -742,33 +745,11 @@ public final class WidgetWindows {
     }()
 
     @MainActor
-    lazy var suggestionPanelWindow = {
-        let it = WidgetWindow(
-            contentRect: .init(x: 0, y: 0, width: Style.panelWidth, height: Style.panelHeight),
-            styleMask: .borderless,
-            backing: .buffered,
-            defer: false
-        )
-        it.isReleasedWhenClosed = false
-        it.isOpaque = false
-        it.backgroundColor = .clear
-        it.level = widgetLevel(2)
-        it.hasShadow = true
-        it.contentView = NSHostingView(
-            rootView: SuggestionPanelView(
-                store: store.scope(
-                    state: \.panelState,
-                    action: \.panel
-                ).scope(
-                    state: \.suggestionPanelState,
-                    action: \.suggestionPanel
-                )
-            )
-        )
-        it.canBecomeKeyChecker = { false }
-        it.setIsVisible(true)
-        return it
-    }()
+    lazy var suggestionPanelWindowController = SuggestionPanelWindowController()
+    @MainActor
+    var suggestionPanelWindow: WidgetWindow {
+        suggestionPanelWindowController.window as! WidgetWindow
+    }
 
     @MainActor
     lazy var chatPanelWindow = {
@@ -867,7 +848,7 @@ class WidgetWindow: CanBecomeKeyWindow {
             }
         }
     }
-    
+
     func moveToActiveSpace() {
         let previousState = state
         state = .switchingSpace
@@ -880,7 +861,14 @@ class WidgetWindow: CanBecomeKeyWindow {
 
 func widgetLevel(_ addition: Int) -> NSWindow.Level {
     let minimumWidgetLevel: Int
+    #if DEBUG
+    minimumWidgetLevel = NSWindow.Level.floating.rawValue + 1
+    #else
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
-    return .init(minimumWidgetLevel + addition)
+    #endif
+    return .init(
+        minimumWidgetLevel +
+            addition
+    )
 }
 

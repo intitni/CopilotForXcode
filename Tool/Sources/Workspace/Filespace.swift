@@ -1,6 +1,8 @@
 import Dependencies
 import Foundation
 import GitIgnoreCheck
+import IdentifiedCollections
+import Perception
 import SuggestionBasic
 
 public protocol FilespacePropertyKey {
@@ -27,6 +29,14 @@ public final class FilespacePropertyValues {
     }
 }
 
+open class FilespacePlugin {
+    public private(set) weak var filespace: Filespace?
+    
+    public init(filespace: Filespace) {
+        self.filespace = filespace
+    }
+}
+
 public struct FilespaceCodeMetadata: Equatable {
     public var uti: String?
     public var tabSize: Int?
@@ -47,7 +57,7 @@ public struct FilespaceCodeMetadata: Equatable {
         self.usesTabsForIndentation = usesTabsForIndentation
         self.lineEnding = lineEnding
     }
-    
+
     public mutating func guessLineEnding(from text: String?) {
         lineEnding = if let proposedEnding = text?.last {
             if proposedEnding.isNewline {
@@ -82,15 +92,7 @@ public final class Filespace {
 
     // MARK: Suggestions
 
-    public private(set) var suggestionIndex: Int = 0
-    public internal(set) var suggestions: [CodeSuggestion] = [] {
-        didSet { refreshUpdateTime() }
-    }
-
-    public var presentingSuggestion: CodeSuggestion? {
-        guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
-        return suggestions[suggestionIndex]
-    }
+    public internal(set) var plugins = [ObjectIdentifier: FilespacePlugin]()
 
     // MARK: Life Cycle
 
@@ -121,7 +123,7 @@ public final class Filespace {
             return isIgnored
         }
     }
-    
+
     @WorkspaceActor
     public private(set) var version: Int = 0
 
@@ -145,6 +147,12 @@ public final class Filespace {
         }
     }
 
+    #if DEBUG
+    public static func preview(fileURL: URL) -> Filespace {
+        Filespace(fileURL: fileURL, onSave: { _ in }, onClose: { _ in })
+    }
+    #endif
+
     @WorkspaceActor
     public subscript<K>(
         dynamicMember dynamicMember: WritableKeyPath<FilespacePropertyValues, K>
@@ -152,39 +160,15 @@ public final class Filespace {
         get { additionalProperties[keyPath: dynamicMember] }
         set { additionalProperties[keyPath: dynamicMember] = newValue }
     }
-
-    @WorkspaceActor
-    public func reset() {
-        suggestions = []
-        suggestionIndex = 0
+    
+    public func plugin<P: FilespacePlugin>(for type: P.Type) -> P? {
+        plugins[ObjectIdentifier(type)] as? P
     }
 
     public func refreshUpdateTime() {
         lastUpdateTime = Environment.now()
     }
 
-    @WorkspaceActor
-    public func setSuggestions(_ suggestions: [CodeSuggestion]) {
-        self.suggestions = suggestions
-        suggestionIndex = 0
-    }
-
-    @WorkspaceActor
-    public func nextSuggestion() {
-        suggestionIndex += 1
-        if suggestionIndex >= suggestions.endIndex {
-            suggestionIndex = 0
-        }
-    }
-
-    @WorkspaceActor
-    public func previousSuggestion() {
-        suggestionIndex -= 1
-        if suggestionIndex < 0 {
-            suggestionIndex = suggestions.endIndex - 1
-        }
-    }
-    
     @WorkspaceActor
     public func bumpVersion() {
         version += 1

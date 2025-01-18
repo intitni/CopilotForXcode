@@ -39,14 +39,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "",
                     position: .init(line: 0, character: 0),
                     range: .init(startPair: (0, 0), endPair: (0, 0))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -57,7 +57,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [])
     }
@@ -66,7 +66,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world \n   \n",
@@ -79,18 +79,18 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                     position: .init(line: 0, character: 0),
                     range: .init(startPair: (0, 0), endPair: (0, 0))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
-            createRequest(),
+            createRequest("", .init(line: 0, character: 0)),
             configuration: .init(
                 acceptsRelevantCodeSnippets: true,
                 mixRelevantCodeSnippetsInSource: true,
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -112,7 +112,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world \n   \n",
@@ -137,18 +137,18 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                     position: .init(line: 0, character: 0),
                     range: .init(startPair: (0, 0), endPair: (0, 0))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
-            createRequest(),
+            createRequest("", .init(line: 0, character: 0)),
             configuration: .init(
                 acceptsRelevantCodeSnippets: true,
                 mixRelevantCodeSnippetsInSource: true,
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -164,7 +164,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world \n   \n",
@@ -183,7 +183,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                     position: .init(line: 0, character: 13),
                     range: .init(startPair: (0, 0), endPair: (0, 13))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -194,7 +194,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -216,14 +216,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world\n}",
                     position: .init(line: 0, character: 1),
                     range: .init(startPair: (0, 0), endPair: (0, 1))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -234,7 +234,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -251,14 +251,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "}",
                     position: .init(line: 0, character: 0),
                     range: .init(startPair: (0, 0), endPair: (0, 0))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -269,7 +269,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -286,14 +286,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world\n    }",
                     position: .init(line: 0, character: 1),
                     range: .init(startPair: (0, 0), endPair: (0, 1))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -304,7 +304,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -321,14 +321,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world\n,},",
                     position: .init(line: 0, character: 1),
                     range: .init(startPair: (0, 0), endPair: (0, 1))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -339,7 +339,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(
@@ -356,14 +356,14 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
         let middleware = PostProcessingSuggestionServiceMiddleware()
 
         let handler: PostProcessingSuggestionServiceMiddleware.Next = { _ in
-            [
+            return .suggestions([
                 .init(
                     id: "1",
                     text: "hello world\n}))>}}",
                     position: .init(line: 0, character: 1),
                     range: .init(startPair: (0, 0), endPair: (0, 1))
                 ),
-            ]
+            ])
         }
 
         let suggestions = try await middleware.getSuggestion(
@@ -374,7 +374,7 @@ class PostProcessingSuggestionServiceMiddlewareTests: XCTestCase {
                 acceptsRelevantSnippetsFromOpenedFiles: true
             ),
             next: handler
-        )
+        ).allSuggestions()
 
         XCTAssertEqual(suggestions, [
             .init(

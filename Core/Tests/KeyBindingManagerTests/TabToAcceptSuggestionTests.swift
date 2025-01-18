@@ -7,7 +7,7 @@ import XCTest
 class TabToAcceptSuggestionTests: XCTestCase {
     func test_should_accept_if_line_invalid() {
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                     var name: String
@@ -21,7 +21,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                     var name: String
@@ -37,7 +37,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
     
     func test_should_not_accept_if_tab_does_not_invalidate_the_suggestion() {
         XCTAssertFalse(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 
@@ -51,7 +51,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertFalse(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct 🐱 {
                 
@@ -65,7 +65,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertFalse(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 
@@ -79,7 +79,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertFalse(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 
@@ -95,7 +95,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
     
     func test_should_accept_if_tab_invalidates_the_suggestion() {
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 \(" ")
@@ -109,7 +109,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct 🐱 {
                 \(" ")
@@ -123,7 +123,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 \(" ")
@@ -137,7 +137,7 @@ class TabToAcceptSuggestionTests: XCTestCase {
         )
         
         XCTAssertTrue(
-            TabToAcceptSuggestion.checkIfAcceptSuggestion(
+            TabToAcceptSuggestionHandler.checkIfAcceptSuggestion(
                 lines: """
                 struct Cat {
                 \t

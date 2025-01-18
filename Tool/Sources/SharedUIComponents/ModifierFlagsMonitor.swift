@@ -3,8 +3,8 @@ import Foundation
 import SwiftUI
 
 public extension View {
-    func modifierFlagsMonitor() -> some View {
-        ModifierFlagsMonitorWrapper { self }
+    func modifierFlagsMonitor(local: Bool = true) -> some View {
+        ModifierFlagsMonitorWrapper(local: local) { self }
     }
 }
 
@@ -20,11 +20,17 @@ final class ModifierFlagsMonitor {
 
     deinit { stop() }
 
-    func start(binding: Binding<NSEvent.ModifierFlags>) {
+    func start(binding: Binding<NSEvent.ModifierFlags>, local: Bool) {
         guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged]) { event in
-            binding.wrappedValue = event.modifierFlags
-            return event
+        if local {
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged]) { event in
+                binding.wrappedValue = event.modifierFlags
+                return event
+            }
+        } else {
+            monitor = NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged]) { event in
+                binding.wrappedValue = event.modifierFlags
+            }
         }
     }
 
@@ -37,6 +43,7 @@ final class ModifierFlagsMonitor {
 }
 
 struct ModifierFlagsMonitorWrapper<Content: View>: View {
+    var local = true
     @ViewBuilder let content: () -> Content
     @State private var modifierFlags: NSEvent.ModifierFlags = []
     @State private var eventMonitor = ModifierFlagsMonitor()
@@ -44,7 +51,7 @@ struct ModifierFlagsMonitorWrapper<Content: View>: View {
     var body: some View {
         content()
             .environment(\.modifierFlags, modifierFlags)
-            .onAppear { eventMonitor.start(binding: $modifierFlags) }
+            .onAppear { eventMonitor.start(binding: $modifierFlags, local: local) }
             .onDisappear { eventMonitor.stop() }
     }
 }

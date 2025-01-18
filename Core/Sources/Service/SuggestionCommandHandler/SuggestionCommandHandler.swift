@@ -9,7 +9,13 @@ protocol SuggestionCommandHandler {
     @ServiceActor
     func presentPreviousSuggestion(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
+    func presentNextSuggestionGroup() async throws
+    @ServiceActor
+    func presentPreviousSuggestionGroup() async throws
+    @ServiceActor
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent?
+    @ServiceActor
+    func acceptSuggestionLine(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor

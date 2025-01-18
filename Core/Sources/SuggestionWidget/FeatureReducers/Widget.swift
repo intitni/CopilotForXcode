@@ -53,16 +53,6 @@ public struct Widget {
                         if chatPanelState.isPanelDisplayed {
                             return true
                         }
-                        if panelState.sharedPanelState.isPanelDisplayed,
-                           !panelState.sharedPanelState.isEmpty
-                        {
-                            return true
-                        }
-                        if panelState.suggestionPanelState.isPanelDisplayed,
-                           panelState.suggestionPanelState.content != nil
-                        {
-                            return true
-                        }
                         return false
                     }(),
                     isContentEmpty: chatPanelState.chatTabGroup.tabInfo.isEmpty
@@ -145,12 +135,8 @@ public struct Widget {
             case .circularWidget(.widgetClicked):
                 let wasDisplayingContent = state._internalCircularWidgetState.isDisplayingContent
                 if wasDisplayingContent {
-                    state.panelState.sharedPanelState.isPanelDisplayed = false
-                    state.panelState.suggestionPanelState.isPanelDisplayed = false
                     state.chatPanelState.isPanelDisplayed = false
                 } else {
-                    state.panelState.sharedPanelState.isPanelDisplayed = true
-                    state.panelState.suggestionPanelState.isPanelDisplayed = true
                     state.chatPanelState.isPanelDisplayed = true
                 }
 
@@ -298,15 +284,13 @@ public struct Widget {
                 state.colorScheme = scheme
                 state.toastPanel.colorScheme = scheme
                 state.panelState.sharedPanelState.colorScheme = scheme
-                state.panelState.suggestionPanelState.colorScheme = scheme
                 state.chatPanelState.colorScheme = scheme
                 return .none
 
             case .updateFocusingDocumentURL:
                 return .run { send in
                     await send(.setFocusingDocumentURL(
-                        to: await xcodeInspector.safe
-                            .realtimeActiveDocumentURL
+                        to: await xcodeInspector.safe.realtimeActiveDocumentURL
                     ))
                 }
 
@@ -318,15 +302,6 @@ public struct Widget {
                 state.panelState.sharedPanelState.alignTopToAnchor = widgetLocation
                     .defaultPanelLocation
                     .alignPanelTop
-
-                if let suggestionPanelLocation = widgetLocation.suggestionPanelLocation {
-                    state.panelState.suggestionPanelState.isPanelOutOfFrame = false
-                    state.panelState.suggestionPanelState
-                        .alignTopToAnchor = suggestionPanelLocation
-                        .alignPanelTop
-                } else {
-                    state.panelState.suggestionPanelState.isPanelOutOfFrame = true
-                }
 
                 state.toastPanel.alignTopToAnchor = widgetLocation
                     .defaultPanelLocation

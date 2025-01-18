@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 struct SuggestionPanelView: View {
-    let store: StoreOf<SuggestionPanel>
+    let store: SuggestionPanel
 
     struct OverallState: Equatable {
         var isPanelDisplayed: Bool
@@ -15,8 +15,8 @@ struct SuggestionPanelView: View {
 
     var body: some View {
         WithPerceptionTracking {
-            VStack(spacing: 0) {
-                if !store.alignTopToAnchor {
+            VStack(alignment: .leading, spacing: 0) {
+                if store.verticalAlignment == .bottom {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
@@ -28,7 +28,7 @@ struct SuggestionPanelView: View {
                     )
                     .frame(maxWidth: .infinity)
 
-                if store.alignTopToAnchor {
+                if store.verticalAlignment == .top {
                     Spacer()
                         .frame(minHeight: 0, maxHeight: .infinity)
                         .allowsHitTesting(false)
@@ -36,39 +36,22 @@ struct SuggestionPanelView: View {
             }
             .preferredColorScheme(store.colorScheme)
             .opacity(store.opacity)
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelDisplayed
-            )
-            .animation(
-                featureFlag: \.animationBCrashSuggestion,
-                .easeInOut(duration: 0.2),
-                value: store.isPanelOutOfFrame
-            )
-            .frame(
-                maxWidth: Style.inlineSuggestionMinWidth,
-                maxHeight: Style.inlineSuggestionMaxHeight
-            )
         }
     }
 
     struct Content: View {
-        let store: StoreOf<SuggestionPanel>
+        let store: SuggestionPanel
         @AppStorage(\.suggestionPresentationMode) var suggestionPresentationMode
 
         var body: some View {
             WithPerceptionTracking {
-                if let content = store.content {
-                    ZStack(alignment: .topLeading) {
-                        switch suggestionPresentationMode {
-                        case .nearbyTextCursor:
-                            CodeBlockSuggestionPanelView(suggestion: content)
-                        case .floatingWidget:
-                            EmptyView()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: Style.inlineSuggestionMaxHeight)
+                if let suggestionManager = store.suggestionManager {
+                    SuggestionPanelGroupView(
+                        manager: suggestionManager,
+                        alignment: .leading
+                    )
+                    .frame(width: Style.inlineSuggestionMinWidth)
+                    .frame(maxHeight: Style.inlineSuggestionMaxHeight)
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }
