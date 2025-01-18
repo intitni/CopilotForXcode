@@ -114,11 +114,15 @@ struct ChatPanelMessages: View {
                     )
                     .onPreferenceChange(ListHeightPreferenceKey.self) { value in
                         listHeight = value
-                        updatePinningState()
+                        Task { @MainActor in
+                            updatePinningState()
+                        }
                     }
                     .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
                         scrollOffset = value
-                        updatePinningState()
+                        Task { @MainActor in
+                            updatePinningState()
+                        }
                     }
                     .overlay(alignment: .bottom) {
                         StopRespondingButton(chat: chat)

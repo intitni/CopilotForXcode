@@ -23,7 +23,7 @@ public final class PreviewModificationAgent: ModificationAgent {
                         generateDescriptionRequirement: false
                     )
 
-                    for try await (code, description) in stream {
+                    for try await (code, _) in stream {
                         continuation.yield(.code(code))
                     }
 
