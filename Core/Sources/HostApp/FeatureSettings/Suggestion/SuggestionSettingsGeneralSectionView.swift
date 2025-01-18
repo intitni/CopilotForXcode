@@ -263,9 +263,11 @@ struct SuggestionSettingsGeneralSectionView: View {
             var needControl
             @AppStorage(\.acceptSuggestionWithModifierOnlyForSwift)
             var onlyForSwift
-            
+
             @AppStorage(\.acceptSuggestionLineWithTab)
             var acceptLineWithTab
+            @AppStorage(\.acceptSuggestionLineWithArrowKey)
+            var acceptLineWithArrowKey
             @AppStorage(\.switchSuggestionGroupWithTab)
             var switchGroupWithTab
         }
@@ -295,12 +297,18 @@ struct SuggestionSettingsGeneralSectionView: View {
                     Toggle(isOn: $settings.onlyForSwift) {
                         Text("Only require modifiers for Swift")
                     }
+                    
                     Toggle(isOn: $settings.acceptLineWithTab) {
                         Text("Accept first line with control + tab")
+                    }.disabled(settings.needControl)
+                    
+                    Toggle(isOn: $settings.acceptLineWithArrowKey) {
+                        Text("Accept next word (first line) with command (+ option) + →")
                     }
+                    
                     Toggle(isOn: $settings.switchGroupWithTab) {
                         Text("Switch suggestion group with option + tab")
-                    }
+                    }.disabled(settings.needOption)
                 }
                 .padding()
 

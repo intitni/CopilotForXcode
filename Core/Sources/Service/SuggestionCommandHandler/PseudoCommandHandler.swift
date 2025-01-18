@@ -96,6 +96,16 @@ struct PseudoCommandHandler: CommandHandler {
             return try await handler.acceptSuggestionLine(editor: editor)
         }
     }
+    
+    func acceptActiveSuggestionNextWordInGroup(atIndex index: Int?) async {
+        await triggerAcceptActiveSuggestionCommand(
+            groupIndex: index,
+            commandName: "Accept Suggestion Next Word"
+        ) { editor in
+            let handler = WindowBaseCommandHandler()
+            return try await handler.acceptSuggestionNextWord(editor: editor)
+        }
+    }
 
     func acceptActiveSuggestionInGroup(atIndex index: Int?) async {
         await triggerAcceptActiveSuggestionCommand(

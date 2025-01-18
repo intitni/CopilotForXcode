@@ -32,12 +32,15 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
         let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let tab = 48
         let esc = 53
+        let right = 124
 
         switch keycode {
         case tab:
             return handleTab(event.flags)
         case esc:
             return handleEsc(event.flags)
+        case right:
+            return handleRight(event.flags)
         default:
             return .unchanged
         }
@@ -188,6 +191,38 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
 
         Task { await commandHandler.dismissSuggestion() }
         return .discarded
+    }
+
+    func handleRight(_ flags: CGEventFlags) -> CGEventManipulation.Result {
+        guard UserDefaults.shared.value(for: \.acceptSuggestionLineWithArrowKey)
+        else { return .unchanged }
+        guard flags.contains(.maskCommand) else { return .unchanged }
+        guard
+            !flags.contains(.maskHelp),
+            !flags.contains(.maskShift),
+            !flags.contains(.maskControl)
+        else { return .unchanged }
+
+        guard
+            let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL,
+            ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil,
+            let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL),
+            let suggestion = filespace.suggestionManager?
+            ._mainThread_displaySuggestions.activeSuggestion
+        else { return .unchanged }
+
+        switch suggestion {
+        case .action:
+            return .unchanged
+        case .group:
+            if flags.contains(.maskAlternate) {
+                Task { await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil) }
+                return .discarded
+            } else {
+                Task { await commandHandler.acceptActiveSuggestionNextWordInGroup(atIndex: nil) }
+                return .discarded
+            }
+        }
     }
 
     static func checkIfAcceptSuggestion(

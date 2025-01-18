@@ -352,6 +352,10 @@ public extension UserDefaultPreferenceKeys {
         .init(defaultValue: false, key: "AcceptSuggestionLineWithTab")
     }
     
+    var acceptSuggestionLineWithArrowKey: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "AcceptSuggestionLineWithArrowKey")
+    }
+    
     var switchSuggestionGroupWithTab: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "SwitchSuggestionGroupWithTab")
     }
