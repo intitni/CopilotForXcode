@@ -124,7 +124,10 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             return .unchanged
         }
 
-        if flags.contains(.maskControl) && !requiredFlagsToTrigger.contains(.maskControl) {
+        if flags.contains(.maskAlternate) && !requiredFlagsToTrigger.contains(.maskAlternate) {
+            if !UserDefaults.shared.value(for: \.switchSuggestionGroupWithTab) {
+                return .unchanged
+            }
             if manager._mainThread_displaySuggestions.count <= 1 {
                 return .unchanged
             } else {
@@ -143,14 +146,21 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
 
             if shouldAcceptSuggestion {
                 Logger.service.info("TabToAcceptSuggestion: Accept")
-                if flags.contains(.maskAlternate),
-                   !requiredFlagsToTrigger.contains(.maskAlternate)
+                if flags.contains(.maskControl),
+                   !requiredFlagsToTrigger.contains(.maskControl)
                 {
-                    Task { await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil) }
+                    if UserDefaults.shared.value(for: \.acceptSuggestionLineWithTab) {
+                        Task {
+                            await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil)
+                        }
+                        return .discarded
+                    } else {
+                        return .unchanged
+                    }
                 } else {
                     Task { await commandHandler.acceptActiveSuggestionInGroup(atIndex: nil) }
+                    return .discarded
                 }
-                return .discarded
             } else {
                 Logger.service.info("TabToAcceptSuggestion: Should not accept")
                 return .unchanged

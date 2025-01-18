@@ -137,7 +137,7 @@ struct SuggestionPanelGroupView: View {
         var shouldDim: Bool
 
         func body(content: Content) -> some View {
-            let shouldHighlight = !shouldDim || modifierFlags.contains(.control)
+            let shouldHighlight = !shouldDim || modifierFlags.contains(.option)
             if shouldHighlight { content }
             else {
                 content
@@ -339,7 +339,7 @@ struct CodeBlockSuggestionPanelView: View {
 
                     Button(action: {
                         Task {
-                            if modifierFlags.contains(.option) {
+                            if modifierFlags.contains(.control) {
                                 await commandHandler
                                     .acceptActiveSuggestionLineInGroup(atIndex: groupIndex)
                             } else {
@@ -349,7 +349,7 @@ struct CodeBlockSuggestionPanelView: View {
                             NSWorkspace.activatePreviousActiveXcode()
                         }
                     }) {
-                        if modifierFlags.contains(.option) {
+                        if modifierFlags.contains(.control) {
                             Text("Accept First Line")
                         } else {
                             Text("Accept")
