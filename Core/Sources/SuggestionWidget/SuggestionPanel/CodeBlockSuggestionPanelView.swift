@@ -365,6 +365,7 @@ struct CodeBlockSuggestionPanelView: View {
 
     struct CompactToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
+        @Environment(\.modifierFlags) var modifierFlags
         let suggestion: PresentingCodeSuggestion
         let groupIndex: Int
 
@@ -393,15 +394,21 @@ struct CodeBlockSuggestionPanelView: View {
                     }
 
                     Spacer()
+                    
+                    if modifierFlags.contains(.option) {
+                        Text("Accept First Line")
+                    }
 
-                    Button(action: {
-                        Task {
-                            await commandHandler.dismissSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    }) {
-                        Image(systemName: "xmark")
-                    }.buttonStyle(.plain)
+                    if groupIndex == 0 {
+                        Button(action: {
+                            Task {
+                                await commandHandler.dismissSuggestion()
+                                NSWorkspace.activatePreviousActiveXcode()
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                        }.buttonStyle(.plain)
+                    }
                 }
                 .padding(4)
                 .font(.caption)
