@@ -127,15 +127,18 @@ struct SuggestionPanelGroupView: View {
             }
             .animation(.linear(duration: 0.1), value: displaySuggestions)
         }
+        .modifierFlagsMonitor(local: false)
         .frame(alignment: alignment == .leading ? .leading : .trailing)
     }
 
     struct DimModifier: ViewModifier {
+        @Environment(\.modifierFlags) var modifierFlags
         @State var isHovered: Bool = false
         var shouldDim: Bool
 
         func body(content: Content) -> some View {
-            if !shouldDim { content }
+            let shouldHighlight = !shouldDim || modifierFlags.contains(.control)
+            if shouldHighlight { content }
             else {
                 content
                     .saturation(!shouldDim ? 1 : 0.5)
@@ -218,18 +221,20 @@ struct ActionSuggestionPanel: View {
                 }
                 .buttonStyle(.plain)
                 .overlay(alignment: .trailing) {
-                    Button(action: {
-                        Task {
-                            await commandHandler.dismissSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
+                    if groupIndex == 0 {
+                        Button(action: {
+                            Task {
+                                await commandHandler.dismissSuggestion()
+                                NSWorkspace.activatePreviousActiveXcode()
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .padding(.trailing, 4)
+                                .contentShape(.circle)
+                                .foregroundStyle(.secondary)
                         }
-                    }) {
-                        Image(systemName: "xmark")
-                            .padding(.trailing, 4)
-                            .contentShape(.circle)
-                            .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
 
                 if suggestionCount > 1 {
@@ -282,6 +287,7 @@ struct CodeBlockSuggestionPanelView: View {
 
     struct ToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
+        @Environment(\.modifierFlags) var modifierFlags
         let suggestion: PresentingCodeSuggestion
         let groupIndex: Int
 
@@ -311,14 +317,16 @@ struct CodeBlockSuggestionPanelView: View {
 
                     Spacer()
 
-                    Button(action: {
-                        Task {
-                            await commandHandler.dismissSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    }) {
-                        Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
-                    }.buttonStyle(.plain)
+                    if groupIndex == 0 {
+                        Button(action: {
+                            Task {
+                                await commandHandler.dismissSuggestion()
+                                NSWorkspace.activatePreviousActiveXcode()
+                            }
+                        }) {
+                            Text("Dismiss").foregroundStyle(.tertiary).padding(.trailing, 4)
+                        }.buttonStyle(.plain)
+                    }
 
                     Button(action: {
                         Task {
@@ -331,11 +339,21 @@ struct CodeBlockSuggestionPanelView: View {
 
                     Button(action: {
                         Task {
-                            await commandHandler.acceptActiveSuggestionInGroup(atIndex: groupIndex)
+                            if modifierFlags.contains(.option) {
+                                await commandHandler
+                                    .acceptActiveSuggestionLineInGroup(atIndex: groupIndex)
+                            } else {
+                                await commandHandler
+                                    .acceptActiveSuggestionInGroup(atIndex: groupIndex)
+                            }
                             NSWorkspace.activatePreviousActiveXcode()
                         }
                     }) {
-                        Text("Accept")
+                        if modifierFlags.contains(.option) {
+                            Text("Accept First Line")
+                        } else {
+                            Text("Accept")
+                        }
                     }.buttonStyle(CommandButtonStyle(color: .accentColor))
                 }
                 .padding(6)
