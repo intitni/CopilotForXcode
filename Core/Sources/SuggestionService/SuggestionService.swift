@@ -2,11 +2,14 @@ import BuiltinExtension
 import CodeiumService
 import enum CopilotForXcodeKit.SuggestionServiceError
 import struct CopilotForXcodeKit.WorkspaceInfo
+import Dependencies
 import Foundation
 import GitHubCopilotService
+import Logger
 import Preferences
 import SuggestionBasic
 import SuggestionProvider
+import Toast
 import UserDefaultsObserver
 import Workspace
 import WorkspaceSuggestionService
@@ -21,6 +24,8 @@ public actor SuggestionService: SuggestionServiceType {
     public var configuration: SuggestionProvider.SuggestionServiceConfiguration {
         get async { await suggestionProvider.configuration }
     }
+
+    @Dependency(\.toast) var toast
 
     let middlewares: [Middleware]
     let eventHandlers: [EventHandler]
@@ -70,15 +75,25 @@ public extension SuggestionService {
         var getSuggestion: (SuggestionRequest, WorkspaceInfo) async -> AsyncThrowingStream<
             [CodeSuggestion],
             Error
-        > = { [base = suggestionProvider.getSuggestions] request, workspaceInfo in
+        > = { [base = suggestionProvider.getSuggestions, toast] request, workspaceInfo in
             AsyncThrowingStream { continuation in
                 let task = Task {
                     do {
                         let suggestions = try await base(request, workspaceInfo)
                         continuation.yield(suggestions)
                         continuation.finish()
+                    } catch let error as SuggestionServiceError {
+                        switch error {
+                        case let .notice(error):
+                            toast(error.localizedDescription, .error)
+                        default:
+                            break
+                        }
+                        Logger.service.error(error.localizedDescription)
+                        continuation.finish()
                     } catch {
-                        continuation.finish(throwing: error)
+                        Logger.service.error(error.localizedDescription)
+                        continuation.finish()
                     }
                 }
 
@@ -118,7 +133,7 @@ public extension SuggestionService {
         eventHandlers.forEach { $0.didReject(suggestions, workspaceInfo: workspaceInfo) }
         await suggestionProvider.notifyRejected(suggestions, workspaceInfo: workspaceInfo)
     }
-    
+
     func notifyDismissed(
         _ suggestions: [SuggestionBasic.CodeSuggestion],
         workspaceInfo: CopilotForXcodeKit.WorkspaceInfo

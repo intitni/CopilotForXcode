@@ -448,16 +448,8 @@ extension PseudoCommandHandler {
                 forFileAt: fileURL,
                 editor: editor
             )
-        } catch let error as SuggestionServiceError {
-            switch error {
-            case let .notice(error):
-                toast.toast(content: error.localizedDescription, type: .error)
-            case .silent:
-                Logger.service.error(error.localizedDescription)
-                return
-            }
         } catch {
-            Logger.service.error(error.localizedDescription)
+            Logger.service.error("Generate Realtime Suggestion: \(error.localizedDescription)")
             return
         }
     }

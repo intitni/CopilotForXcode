@@ -1,11 +1,34 @@
 import AIModel
 import AppKit
 import Configs
+import Dependencies
 import Foundation
 
 public protocol UserDefaultsType {
     func value(forKey: String) -> Any?
     func set(_ value: Any?, forKey: String)
+}
+
+public struct SharedUserDefaultsTypeDependencyKey: DependencyKey {
+    public static var liveValue: any UserDefaultsType = UserDefaults.shared
+    public static var testValue: any UserDefaultsType = MemoryUserDefaults()
+}
+
+public struct PrivateUserDefaultsTypeDependencyKey: DependencyKey {
+    public static var liveValue: any UserDefaultsType = UserDefaults.standard
+    public static var testValue: any UserDefaultsType = MemoryUserDefaults()
+}
+
+public extension DependencyValues {
+    var sharedUserDefaults: UserDefaultsType {
+        get { self[SharedUserDefaultsTypeDependencyKey.self] }
+        set { self[SharedUserDefaultsTypeDependencyKey.self] = newValue }
+    }
+
+    var privateUserDefaults: UserDefaultsType {
+        get { self[PrivateUserDefaultsTypeDependencyKey.self] }
+        set { self[PrivateUserDefaultsTypeDependencyKey.self] = newValue }
+    }
 }
 
 public extension UserDefaults {
@@ -70,6 +93,20 @@ public extension UserDefaults {
 }
 
 extension UserDefaults: UserDefaultsType {}
+
+public final class MemoryUserDefaults: UserDefaultsType {
+    private var storage: [String: Any] = [:]
+
+    public init() {}
+
+    public func value(forKey key: String) -> Any? {
+        storage[key]
+    }
+
+    public func set(_ value: Any?, forKey key: String) {
+        storage[key] = value
+    }
+}
 
 public protocol UserDefaultsStorable {}
 
