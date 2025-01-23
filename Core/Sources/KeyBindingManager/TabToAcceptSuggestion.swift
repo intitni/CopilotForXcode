@@ -123,7 +123,9 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             ._mainThread_displaySuggestions.activeSuggestion?.activeCodeSuggestion,
             let manager = filespace.suggestionManager
         else {
-            Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
+            Logger.service.info(
+                "TabToAcceptSuggestion: No Suggestions found \(filespace.fileURL.lastPathComponent)"
+            )
             return .unchanged
         }
 
