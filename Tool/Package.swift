@@ -71,6 +71,7 @@ let package = Package(
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
         .package(url: "https://github.com/unum-cloud/usearch", from: "0.19.1"),
         .package(url: "https://github.com/intitni/Highlightr", branch: "master"),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.4.0"),
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             exact: "1.16.1"
@@ -100,7 +101,14 @@ let package = Package(
 
         .target(name: "Configs"),
 
-        .target(name: "Preferences", dependencies: ["Configs", "AIModel"]),
+        .target(
+            name: "Preferences",
+            dependencies: [
+                "Configs",
+                "AIModel",
+                .product(name: "Dependencies", package: "swift-dependencies"),
+            ]
+        ),
 
         .target(name: "Terminal"),
 
