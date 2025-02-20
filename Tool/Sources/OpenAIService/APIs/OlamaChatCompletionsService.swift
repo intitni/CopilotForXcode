@@ -59,6 +59,7 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+		request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         let (result, response) = try await URLSession.shared.data(for: request)
 
         guard let response = response as? HTTPURLResponse else {
@@ -135,6 +136,7 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+		request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         let (result, response) = try await URLSession.shared.bytes(for: request)
 
         guard let response = response as? HTTPURLResponse else {
