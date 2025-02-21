@@ -339,6 +339,8 @@ struct EmbeddingModelEditView: View {
 
     struct OllamaForm: View {
         @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
+        @State var isEditingCustomHeader = false
+        
         var body: some View {
             WithPerceptionTracking {
                 BaseURLTextField(store: store, prompt: Text("http://127.0.0.1:11434")) {
@@ -364,6 +366,12 @@ struct EmbeddingModelEditView: View {
                     )
                 }
                 .padding(.vertical)
+                
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }

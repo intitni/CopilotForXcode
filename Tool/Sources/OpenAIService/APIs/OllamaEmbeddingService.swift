@@ -30,6 +30,10 @@ struct OllamaEmbeddingService: EmbeddingAPI {
         if !apiKey.isEmpty {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
+        
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            request.setValue(field.value, forHTTPHeaderField: field.key)
+        }
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {

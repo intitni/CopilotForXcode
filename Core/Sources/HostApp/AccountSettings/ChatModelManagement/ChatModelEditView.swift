@@ -243,7 +243,7 @@ struct ChatModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)
-                
+
                 TextField(text: $store.openAIOrganizationID, prompt: Text("Optional")) {
                     Text("Organization ID")
                 }
@@ -321,11 +321,11 @@ struct ChatModelEditView: View {
                 Toggle(isOn: $store.enforceMessageOrder) {
                     Text("Enforce message order to be user/assistant alternated")
                 }
-                
+
                 Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
                     Text("Support multi-part message content")
                 }
-                
+
                 Button("Custom Headers") {
                     isEditingCustomHeader.toggle()
                 }
@@ -375,13 +375,15 @@ struct ChatModelEditView: View {
 
     struct OllamaForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
+        @State var isEditingCustomHeader = false
+
         var body: some View {
             WithPerceptionTracking {
                 BaseURLTextField(store: store, prompt: Text("http://127.0.0.1:11434")) {
                     Text("/api/chat")
                 }
-				
-				ApiKeyNamePicker(store: store)
+
+                ApiKeyNamePicker(store: store)
 
                 TextField("Model Name", text: $store.modelName)
 
@@ -397,6 +399,12 @@ struct ChatModelEditView: View {
                     )
                 }
                 .padding(.vertical)
+
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
