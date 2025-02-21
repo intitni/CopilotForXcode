@@ -81,27 +81,34 @@ struct EmbeddingModelEditView: View {
         var body: some View {
             WithPerceptionTracking {
                 Picker(
-                    selection: $store.format,
+                    selection: Binding(
+                        get: { .init(store.format) },
+                        set: { store.send(.selectModelFormat($0)) }
+                    ),
                     content: {
                         ForEach(
-                            EmbeddingModel.Format.allCases,
-                            id: \.rawValue
+                            EmbeddingModelEdit.ModelFormat.allCases,
+                            id: \.self
                         ) { format in
                             switch format {
                             case .openAI:
-                                Text("OpenAI").tag(format)
+                                Text("OpenAI")
                             case .azureOpenAI:
-                                Text("Azure OpenAI").tag(format)
-                            case .openAICompatible:
-                                Text("OpenAI Compatible").tag(format)
+                                Text("Azure OpenAI")
                             case .ollama:
-                                Text("Ollama").tag(format)
+                                Text("Ollama")
+                            case .openAICompatible:
+                                Text("OpenAI Compatible")
+                            case .mistralOpenAICompatible:
+                                Text("Mistral (OpenAI Compatible)")
+                            case .voyageAIOpenAICompatible:
+                                Text("Voyage (OpenAI Compatible)")
                             }
                         }
                     },
                     label: { Text("Format") }
                 )
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
             }
         }
     }
@@ -174,7 +181,7 @@ struct EmbeddingModelEditView: View {
             }
         }
     }
-    
+
     struct DimensionsTextField: View {
         @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
 
@@ -212,7 +219,7 @@ struct EmbeddingModelEditView: View {
                         return .primary
                     }() as Color)
                 }
-                
+
                 Text("If you are not sure, run test to get the correct value.")
                     .font(.caption)
                     .dynamicHeightTextInFormWorkaround()
@@ -327,7 +334,7 @@ struct EmbeddingModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 DimensionsTextField(store: store)
-                
+
                 Button("Custom Headers") {
                     isEditingCustomHeader.toggle()
                 }
@@ -340,15 +347,15 @@ struct EmbeddingModelEditView: View {
     struct OllamaForm: View {
         @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
         @State var isEditingCustomHeader = false
-        
+
         var body: some View {
             WithPerceptionTracking {
                 BaseURLTextField(store: store, prompt: Text("http://127.0.0.1:11434")) {
                     Text("/api/embeddings")
                 }
-                
+
                 ApiKeyNamePicker(store: store)
-                
+
                 TextField("Model Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)
@@ -360,16 +367,17 @@ struct EmbeddingModelEditView: View {
                     }
                 }
 
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://ollama.com](https://ollama.com)."
                     )
                 }
                 .padding(.vertical)
-                
-                Button("Custom Headers") {
-                    isEditingCustomHeader.toggle()
-                }
+
             }.sheet(isPresented: $isEditingCustomHeader) {
                 CustomHeaderSettingsView(headers: $store.customHeaders)
             }

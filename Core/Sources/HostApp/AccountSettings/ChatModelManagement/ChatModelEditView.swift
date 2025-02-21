@@ -86,31 +86,42 @@ struct ChatModelEditView: View {
         var body: some View {
             WithPerceptionTracking {
                 Picker(
-                    selection: $store.format,
+                    selection: Binding(
+                        get: { .init(store.format) },
+                        set: { store.send(.selectModelFormat($0)) }
+                    ),
                     content: {
                         ForEach(
-                            ChatModel.Format.allCases,
-                            id: \.rawValue
+                            ChatModelEdit.ModelFormat.allCases,
+                            id: \.self
                         ) { format in
                             switch format {
                             case .openAI:
-                                Text("OpenAI").tag(format)
+                                Text("OpenAI")
                             case .azureOpenAI:
-                                Text("Azure OpenAI").tag(format)
+                                Text("Azure OpenAI")
                             case .openAICompatible:
-                                Text("OpenAI Compatible").tag(format)
+                                Text("OpenAI Compatible")
                             case .googleAI:
-                                Text("Google Generative AI").tag(format)
+                                Text("Google AI")
                             case .ollama:
-                                Text("Ollama").tag(format)
+                                Text("Ollama")
                             case .claude:
-                                Text("Claude").tag(format)
+                                Text("Claude")
+                            case .deepSeekOpenAICompatible:
+                                Text("DeepSeek (OpenAI Compatible)")
+                            case .openRouterOpenAICompatible:
+                                Text("OpenRouter (OpenAI Compatible)")
+                            case .grokOpenAICompatible:
+                                Text("Grok (OpenAI Compatible)")
+                            case .mistralOpenAICompatible:
+                                Text("Mistral (OpenAI Compatible)")
                             }
                         }
                     },
                     label: { Text("Format") }
                 )
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
             }
         }
     }
@@ -393,6 +404,10 @@ struct ChatModelEditView: View {
                     Text("Keep Alive")
                 }
 
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://ollama.com](https://ollama.com)."
@@ -400,9 +415,6 @@ struct ChatModelEditView: View {
                 }
                 .padding(.vertical)
 
-                Button("Custom Headers") {
-                    isEditingCustomHeader.toggle()
-                }
             }.sheet(isPresented: $isEditingCustomHeader) {
                 CustomHeaderSettingsView(headers: $store.customHeaders)
             }
