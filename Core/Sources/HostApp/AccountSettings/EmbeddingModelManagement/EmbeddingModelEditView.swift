@@ -344,6 +344,9 @@ struct EmbeddingModelEditView: View {
                 BaseURLTextField(store: store, prompt: Text("http://127.0.0.1:11434")) {
                     Text("/api/embeddings")
                 }
+                
+                ApiKeyNamePicker(store: store)
+                
                 TextField("Model Name", text: $store.modelName)
 
                 MaxTokensTextField(store: store)

@@ -23,6 +23,7 @@ public struct EmbeddingService {
             ).embed(text: text)
         case .ollama:
             embeddingResponse = try await OllamaEmbeddingService(
+                apiKey: configuration.apiKey,
                 model: model,
                 endpoint: configuration.endpoint
             ).embed(text: text)
@@ -54,6 +55,7 @@ public struct EmbeddingService {
             ).embed(texts: text)
         case .ollama:
             embeddingResponse = try await OllamaEmbeddingService(
+                apiKey: configuration.apiKey,
                 model: model,
                 endpoint: configuration.endpoint
             ).embed(texts: text)
@@ -85,6 +87,7 @@ public struct EmbeddingService {
             ).embed(tokens: tokens)
         case .ollama:
             embeddingResponse = try await OllamaEmbeddingService(
+                apiKey: configuration.apiKey,
                 model: model,
                 endpoint: configuration.endpoint
             ).embed(tokens: tokens)
