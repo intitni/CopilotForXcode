@@ -263,7 +263,7 @@ extension CustomCommand.Attachment.Kind {
         case .senseScope: return "Sense Scope"
         case .projectScope: return "Project Scope"
         case .webScope: return "Web Scope"
-        case .gitStatus: return "Git Status"
+        case .gitStatus: return "Git Status and Diff"
         case .gitLog: return "Git Log"
         case .file: return "File"
         }
