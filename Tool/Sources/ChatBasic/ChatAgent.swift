@@ -4,7 +4,7 @@ public enum ChatAgentResponse {
     public enum Content {
         case text(String)
     }
-    
+
     public enum ActionResult {
         case success(String)
         case failure(String)
