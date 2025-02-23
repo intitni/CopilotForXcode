@@ -100,6 +100,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             struct Delta: Codable {
                 var role: MessageRole?
                 var content: String?
+                var reasoning_content: String?
+                var reasoning: String?
                 var function_call: RequestBody.MessageFunctionCall?
                 var tool_calls: [RequestBody.MessageToolCall]?
             }
@@ -112,6 +114,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var role: MessageRole
             /// The content of the message.
             var content: String?
+            var reasoning_content: String?
+            var reasoning: String?
             /// When we want to reply to a function call with the result, we have to provide the
             /// name of the function call, and include the result in `content`.
             ///
@@ -482,6 +486,7 @@ extension OpenAIChatCompletionsService.ResponseBody {
             .init(
                 role: message.role.formalized,
                 content: message.content ?? "",
+                reasoningContent: message.reasoning_content ?? message.reasoning ?? "",
                 toolCalls: {
                     if let toolCalls = message.tool_calls {
                         return toolCalls.map { toolCall in
@@ -553,6 +558,8 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
                     return .init(
                         role: choice.delta?.role?.formalized,
                         content: choice.delta?.content,
+                        reasoningContent: choice.delta?.reasoning_content
+                            ?? choice.delta?.reasoning,
                         toolCalls: {
                             if let toolCalls = choice.delta?.tool_calls {
                                 return toolCalls.map {

@@ -209,6 +209,7 @@ struct ChatCompletionsStreamDataChunk {
 
         var role: ChatCompletionsRequestBody.Message.Role?
         var content: String?
+        var reasoningContent: String?
         var toolCalls: [ToolCall]?
     }
 
@@ -243,6 +244,8 @@ struct ChatCompletionResponseBody: Equatable {
         var role: Role
         /// The content of the message.
         var content: String?
+        /// The reasoning content of the message.
+        var reasoningContent: String?
         /// When we want to reply to a function call with the result, we have to provide the
         /// name of the function call, and include the result in `content`.
         ///
