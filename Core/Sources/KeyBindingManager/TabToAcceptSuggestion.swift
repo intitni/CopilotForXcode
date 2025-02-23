@@ -103,8 +103,6 @@ final class TabToAcceptSuggestion {
         let tab = 48
         let esc = 53
 
-        Logger.service.info("TabToAcceptSuggestion: \(keycode)")
-
         switch keycode {
         case tab:
             Logger.service.info("TabToAcceptSuggestion: Tab")
