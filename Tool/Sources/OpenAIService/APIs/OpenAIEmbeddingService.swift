@@ -23,6 +23,13 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
 
     public func embed(texts text: [String]) async throws -> EmbeddingResponse {
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
+        if text.isEmpty {
+            return .init(
+                data: [],
+                model: model.info.modelName,
+                usage: .init(prompt_tokens: 0, total_tokens: 0)
+            )
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -55,6 +62,13 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
 
     public func embed(tokens: [[Int]]) async throws -> EmbeddingResponse {
         guard let url = URL(string: endpoint) else { throw ChatGPTServiceError.endpointIncorrect }
+        if tokens.isEmpty {
+            return .init(
+                data: [],
+                model: model.info.modelName,
+                usage: .init(prompt_tokens: 0, total_tokens: 0)
+            )
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let encoder = JSONEncoder()
@@ -126,7 +140,7 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
             }
         }
     }
-    
+
     static func setupExtraHeaderFields(_ request: inout URLRequest, model: EmbeddingModel) {
         for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
             request.setValue(field.value, forHTTPHeaderField: field.key)
