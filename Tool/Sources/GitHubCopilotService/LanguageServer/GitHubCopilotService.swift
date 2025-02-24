@@ -53,6 +53,7 @@ extension GitHubCopilotLSP {
 }
 
 enum GitHubCopilotError: Error, LocalizedError {
+    case notLoggedIn
     case languageServerNotInstalled
     case languageServerError(ServerError)
     case failedToInstallStartScript
@@ -60,6 +61,8 @@ enum GitHubCopilotError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
+        case .notLoggedIn:
+            return "Not logged in."
         case .languageServerNotInstalled:
             return "Language server is not installed."
         case .failedToInstallStartScript:
