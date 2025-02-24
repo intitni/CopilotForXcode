@@ -880,7 +880,11 @@ class WidgetWindow: CanBecomeKeyWindow {
 
 func widgetLevel(_ addition: Int) -> NSWindow.Level {
     let minimumWidgetLevel: Int
+    #if DEBUG
+    minimumWidgetLevel = NSWindow.Level.floating.rawValue + 1
+    #else
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
+    #endif
     return .init(minimumWidgetLevel + addition)
 }
 
