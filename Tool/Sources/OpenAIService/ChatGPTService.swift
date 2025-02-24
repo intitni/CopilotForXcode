@@ -540,7 +540,7 @@ extension ChatGPTService {
         stream: Bool
     ) -> ChatCompletionsRequestBody {
         let serviceSupportsFunctionCalling = switch model.format {
-        case .openAI, .openAICompatible, .azureOpenAI:
+        case .openAI, .openAICompatible, .azureOpenAI, .gitHubCopilot:
             model.info.supportsFunctionCalling
         case .ollama, .googleAI, .claude:
             false

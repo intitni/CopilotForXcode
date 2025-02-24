@@ -29,6 +29,8 @@ struct ChatModelEditView: View {
                             OllamaForm(store: store)
                         case .claude:
                             ClaudeForm(store: store)
+                        case .gitHubCopilot:
+                            GitHubCopilotForm(store: store)
                         }
                     }
                     .padding()
@@ -108,6 +110,8 @@ struct ChatModelEditView: View {
                                 Text("Ollama")
                             case .claude:
                                 Text("Claude")
+                            case .gitHubCopilot:
+                                Text("GitHub Copilot")
                             case .deepSeekOpenAICompatible:
                                 Text("DeepSeek (OpenAI Compatible)")
                             case .openRouterOpenAICompatible:
@@ -461,6 +465,61 @@ struct ChatModelEditView: View {
                     )
                 }
                 .padding(.vertical)
+            }
+        }
+    }
+
+    struct GitHubCopilotForm: View {
+        @Perception.Bindable var store: StoreOf<ChatModelEdit>
+        @State var isEditingCustomHeader = false
+
+        var body: some View {
+            WithPerceptionTracking {
+                TextField("Model Name", text: $store.modelName)
+                    .overlay(alignment: .trailing) {
+                        Picker(
+                            "",
+                            selection: $store.modelName,
+                            content: {
+                                if AvailableGitHubCopilotModel(rawValue: store.modelName) == nil {
+                                    Text("Custom Model").tag(store.modelName)
+                                }
+                                ForEach(AvailableGitHubCopilotModel.allCases, id: \.self) { model in
+                                    Text(model.rawValue).tag(model.rawValue)
+                                }
+                            }
+                        )
+                        .frame(width: 20)
+                    }
+
+                MaxTokensTextField(store: store)
+                SupportsFunctionCallingToggle(store: store)
+
+                Toggle(isOn: $store.enforceMessageOrder) {
+                    Text("Enforce message order to be user/assistant alternated")
+                }
+
+                Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
+                    Text("Support multi-part message content")
+                }
+
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                        " Please login in the GitHub Copilot settings to use the model."
+                    )
+
+                    Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                        " This will call the APIs directly, which may not be allowed by GitHub. But it's used in other popular apps like Zed."
+                    )
+                }
+                .dynamicHeightTextInFormWorkaround()
+                .padding(.vertical)
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }

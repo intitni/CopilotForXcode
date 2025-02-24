@@ -56,12 +56,13 @@ struct ChatModelEdit {
         case googleAI
         case ollama
         case claude
+        case gitHubCopilot
         case openAICompatible
         case deepSeekOpenAICompatible
         case openRouterOpenAICompatible
         case grokOpenAICompatible
         case mistralOpenAICompatible
-        
+
         init(_ format: ChatModel.Format) {
             switch format {
             case .openAI:
@@ -76,6 +77,8 @@ struct ChatModelEdit {
                 self = .claude
             case .openAICompatible:
                 self = .openAICompatible
+            case .gitHubCopilot:
+                self = .gitHubCopilot
             }
         }
     }
@@ -195,6 +198,13 @@ struct ChatModelEdit {
                         state.suggestedMaxTokens = nil
                     }
                     return .none
+                case .gitHubCopilot:
+                    if let knownModel = AvailableGitHubCopilotModel(rawValue: state.modelName) {
+                        state.suggestedMaxTokens = knownModel.contextWindow
+                    } else {
+                        state.suggestedMaxTokens = nil
+                    }
+                    return .none
                 default:
                     state.suggestedMaxTokens = nil
                     return .none
@@ -212,6 +222,8 @@ struct ChatModelEdit {
                     state.format = .ollama
                 case .claude:
                     state.format = .claude
+                case .gitHubCopilot:
+                    state.format = .gitHubCopilot
                 case .openAICompatible:
                     state.format = .openAICompatible
                 case .deepSeekOpenAICompatible:
@@ -272,7 +284,7 @@ extension ChatModel {
                     switch state.format {
                     case .googleAI, .ollama, .claude:
                         return false
-                    case .azureOpenAI, .openAI, .openAICompatible:
+                    case .azureOpenAI, .openAI, .openAICompatible, .gitHubCopilot:
                         return state.supportsFunctionCalling
                     }
                 }(),

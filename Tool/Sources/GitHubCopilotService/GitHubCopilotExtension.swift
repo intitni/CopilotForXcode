@@ -157,10 +157,10 @@ extension GitHubCopilotExtension {
         public let individual: Bool
         public let endpoints: Endpoints
         public let chat_enabled: Bool
-        public let sku: String
+//        public let sku: String
 //        public  let copilotignore_enabled: Bool
 //        public  let limited_user_quotas: String?
-        public let tracking_id: String
+//        public let tracking_id: String
 //        public  let xcode: Bool
 //        public  let limited_user_reset_date: String?
 //        public  let telemetry: String
@@ -183,7 +183,7 @@ extension GitHubCopilotExtension {
             public let api: String
             public let proxy: String
             public let telemetry: String
-            public let origin_tracker: String
+//            public let origin-tracker: String
         }
     }
 
@@ -242,10 +242,18 @@ extension GitHubCopilotExtension {
         request.setValue("*/*", forHTTPHeaderField: "accept")
         request.setValue("gzip,deflate,br", forHTTPHeaderField: "accept-encoding")
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let newToken = try JSONDecoder().decode(Token.self, from: data)
-        await MainActor.run { cachedToken = newToken }
-        return newToken
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print(jsonString)
+            }
+            let newToken = try JSONDecoder().decode(Token.self, from: data)
+            await MainActor.run { cachedToken = newToken }
+            return newToken
+        } catch {
+            Logger.service.error(error.localizedDescription)
+            throw error
+        }
     }
 }
 
