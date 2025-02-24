@@ -33,6 +33,7 @@ struct ChatModelEdit {
         var openAIProjectID: String = ""
         var customHeaders: [ChatModel.Info.CustomHeaderInfo.HeaderField] = []
         var openAICompatibleSupportsMultipartMessageContent = true
+        var requiresBeginWithUserMessage = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -298,7 +299,8 @@ extension ChatModel {
                 openAICompatibleInfo: .init(
                     enforceMessageOrder: state.enforceMessageOrder,
                     supportsMultipartMessageContent: state
-                        .openAICompatibleSupportsMultipartMessageContent
+                        .openAICompatibleSupportsMultipartMessageContent,
+                    requiresBeginWithUserMessage: state.requiresBeginWithUserMessage
                 ),
                 customHeaderInfo: .init(headers: state.customHeaders)
             )
@@ -325,7 +327,8 @@ extension ChatModel {
             openAIProjectID: info.openAIInfo.projectID,
             customHeaders: info.customHeaderInfo.headers,
             openAICompatibleSupportsMultipartMessageContent: info.openAICompatibleInfo
-                .supportsMultipartMessageContent
+                .supportsMultipartMessageContent,
+            requiresBeginWithUserMessage: info.openAICompatibleInfo.requiresBeginWithUserMessage
         )
     }
 }

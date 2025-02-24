@@ -340,6 +340,10 @@ struct ChatModelEditView: View {
                 Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
                     Text("Support multi-part message content")
                 }
+                
+                Toggle(isOn: $store.requiresBeginWithUserMessage) {
+                    Text("Requires the first message to be from the user")
+                }
 
                 Button("Custom Headers") {
                     isEditingCustomHeader.toggle()

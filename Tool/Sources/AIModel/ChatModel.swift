@@ -53,13 +53,17 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             public var enforceMessageOrder: Bool
             @FallbackDecoding<EmptyTrue>
             public var supportsMultipartMessageContent: Bool
+            @FallbackDecoding<EmptyBool>
+            public var requiresBeginWithUserMessage: Bool
 
             public init(
                 enforceMessageOrder: Bool = false,
-                supportsMultipartMessageContent: Bool = true
+                supportsMultipartMessageContent: Bool = true,
+                requiresBeginWithUserMessage: Bool = false
             ) {
                 self.enforceMessageOrder = enforceMessageOrder
                 self.supportsMultipartMessageContent = supportsMultipartMessageContent
+                self.requiresBeginWithUserMessage = requiresBeginWithUserMessage
             }
         }
 

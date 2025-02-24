@@ -307,6 +307,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
             supportsMultipartMessageContent: model.info.openAICompatibleInfo
                 .supportsMultipartMessageContent,
+            requiresBeginWithUserMessage: model.info.openAICompatibleInfo
+                .requiresBeginWithUserMessage,
             canUseTool: model.info.supportsFunctionCalling,
             supportsImage: model.info.supportsImage,
             supportsAudio: model.info.supportsAudio
@@ -709,6 +711,7 @@ extension OpenAIChatCompletionsService.RequestBody {
         endpoint: URL,
         enforceMessageOrder: Bool,
         supportsMultipartMessageContent: Bool,
+        requiresBeginWithUserMessage: Bool,
         canUseTool: Bool,
         supportsImage: Bool,
         supportsAudio: Bool
@@ -732,10 +735,21 @@ extension OpenAIChatCompletionsService.RequestBody {
 
         model = body.model
 
+        var body = body
+
+        if requiresBeginWithUserMessage {
+            let firstUserIndex = body.messages.firstIndex(where: { $0.role == .user }) ?? 0
+            let endIndex = firstUserIndex
+            for i in stride(from: endIndex - 1, to: 0, by: -1)
+                where i >= 0 && body.messages.endIndex > i
+            {
+                body.messages.remove(at: i)
+            }
+        }
+
         // Special case for Claude through OpenRouter
 
         if endpoint.absoluteString.contains("openrouter.ai"), model.hasPrefix("anthropic/") {
-            var body = body
             body.model = model.replacingOccurrences(of: "anthropic/", with: "")
             let claudeRequestBody = ClaudeChatCompletionsService.RequestBody(body)
             messages = claudeRequestBody.system.map {
