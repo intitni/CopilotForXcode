@@ -24,6 +24,8 @@ struct EmbeddingModelEditView: View {
                             OpenAICompatibleForm(store: store)
                         case .ollama:
                             OllamaForm(store: store)
+                        case .gitHubCopilot:
+                            GitHubCopilotForm(store: store)
                         }
                     }
                     .padding()
@@ -103,6 +105,8 @@ struct EmbeddingModelEditView: View {
                                 Text("Mistral (OpenAI Compatible)")
                             case .voyageAIOpenAICompatible:
                                 Text("Voyage (OpenAI Compatible)")
+                            case .gitHubCopilot:
+                                Text("GitHub Copilot")
                             }
                         }
                     },
@@ -378,6 +382,53 @@ struct EmbeddingModelEditView: View {
                 }
                 .padding(.vertical)
 
+            }.sheet(isPresented: $isEditingCustomHeader) {
+                CustomHeaderSettingsView(headers: $store.customHeaders)
+            }
+        }
+    }
+
+    struct GitHubCopilotForm: View {
+        @Perception.Bindable var store: StoreOf<EmbeddingModelEdit>
+        @State var isEditingCustomHeader = false
+
+        var body: some View {
+            WithPerceptionTracking {
+                TextField("Model Name", text: $store.modelName)
+                    .overlay(alignment: .trailing) {
+                        Picker(
+                            "",
+                            selection: $store.modelName,
+                            content: {
+                                if OpenAIEmbeddingModel(rawValue: store.modelName) == nil {
+                                    Text("Custom Model").tag(store.modelName)
+                                }
+                                ForEach(OpenAIEmbeddingModel.allCases, id: \.self) { model in
+                                    Text(model.rawValue).tag(model.rawValue)
+                                }
+                            }
+                        )
+                        .frame(width: 20)
+                    }
+
+                MaxTokensTextField(store: store)
+                DimensionsTextField(store: store)
+
+                Button("Custom Headers") {
+                    isEditingCustomHeader.toggle()
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                        " Please login in the GitHub Copilot settings to use the model."
+                    )
+
+                    Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
+                        " This will call the APIs directly, which may not be allowed by GitHub. But it's used in other popular apps like Zed."
+                    )
+                }
+                .dynamicHeightTextInFormWorkaround()
+                .padding(.vertical)
             }.sheet(isPresented: $isEditingCustomHeader) {
                 CustomHeaderSettingsView(headers: $store.customHeaders)
             }

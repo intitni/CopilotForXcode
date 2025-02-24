@@ -50,6 +50,7 @@ struct EmbeddingModelEdit {
         case openAI
         case azureOpenAI
         case ollama
+        case gitHubCopilot
         case openAICompatible
         case mistralOpenAICompatible
         case voyageAIOpenAICompatible
@@ -64,6 +65,8 @@ struct EmbeddingModelEdit {
                 self = .ollama
             case .openAICompatible:
                 self = .openAICompatible
+            case .gitHubCopilot:
+                self = .gitHubCopilot
             }
         }
     }
@@ -189,6 +192,8 @@ struct EmbeddingModelEdit {
                     state.format = .ollama
                 case .openAICompatible:
                     state.format = .openAICompatible
+                case .gitHubCopilot:
+                    state.format = .gitHubCopilot
                 case .mistralOpenAICompatible:
                     state.format = .openAICompatible
                     state.baseURLSelection.baseURL = "https://api.mistral.ai"

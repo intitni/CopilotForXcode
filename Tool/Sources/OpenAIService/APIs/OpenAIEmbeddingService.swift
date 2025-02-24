@@ -16,6 +16,7 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
     let apiKey: String
     let model: EmbeddingModel
     let endpoint: String
+    var requestModifier: ((inout URLRequest) -> Void)? = nil
 
     public func embed(text: String) async throws -> EmbeddingResponse {
         return try await embed(texts: [text])
@@ -42,6 +43,7 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
         await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
+        requestModifier?(&request)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -82,6 +84,7 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
         await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
+        requestModifier?(&request)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -136,6 +139,8 @@ struct OpenAIEmbeddingService: EmbeddingAPI {
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .gitHubCopilot:
+                break
             case .ollama:
                 assertionFailure("Unsupported")
             }

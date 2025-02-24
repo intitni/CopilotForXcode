@@ -27,6 +27,10 @@ public struct EmbeddingService {
                 model: model,
                 endpoint: configuration.endpoint
             ).embed(text: text)
+        case .gitHubCopilot:
+            embeddingResponse = try await GitHubCopilotEmbeddingService(
+                model: model
+            ).embed(text: text)
         }
 
         #if DEBUG
@@ -59,6 +63,10 @@ public struct EmbeddingService {
                 model: model,
                 endpoint: configuration.endpoint
             ).embed(texts: text)
+        case .gitHubCopilot:
+            embeddingResponse = try await GitHubCopilotEmbeddingService(
+                model: model
+            ).embed(texts: text)
         }
 
         #if DEBUG
@@ -90,6 +98,10 @@ public struct EmbeddingService {
                 apiKey: configuration.apiKey,
                 model: model,
                 endpoint: configuration.endpoint
+            ).embed(tokens: tokens)
+        case .gitHubCopilot:
+            embeddingResponse = try await GitHubCopilotEmbeddingService(
+                model: model
             ).embed(tokens: tokens)
         }
 
