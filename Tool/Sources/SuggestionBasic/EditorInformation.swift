@@ -24,6 +24,7 @@ public struct EditorInformation {
 
         public var selectedContent: String {
             if let range = selections.first {
+                if range.isEmpty { return "" }
                 let startIndex = min(
                     max(0, range.start.line),
                     lines.endIndex - 1
