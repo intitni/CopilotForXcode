@@ -290,12 +290,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     var endpoint: URL
     var requestBody: RequestBody
     var model: ChatModel
+    let requestModifier: ((inout URLRequest) -> Void)?
 
     init(
         apiKey: String,
         model: ChatModel,
         endpoint: URL,
-        requestBody: ChatCompletionsRequestBody
+        requestBody: ChatCompletionsRequestBody,
+        requestModifier: ((inout URLRequest) -> Void)? = nil
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
@@ -310,6 +312,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             supportsAudio: model.info.supportsAudio
         )
         self.model = model
+        self.requestModifier = requestModifier
     }
 
     func callAsFunction() async throws
@@ -325,6 +328,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
         Self.setupExtraHeaderFields(&request, model: model)
+        requestModifier?(&request)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         guard let response = response as? HTTPURLResponse else {
