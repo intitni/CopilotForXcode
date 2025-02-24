@@ -20,6 +20,35 @@ public final class GitHubCopilotExtension: BuiltinExtension {
         extensionUsage.isSuggestionServiceInUse || extensionUsage.isChatServiceInUse
     }
 
+    public struct AuthToken: Codable {
+        public let user: String
+        public let oauth_token: String
+        public let githubAppId: String
+    }
+
+    public static var authToken: AuthToken? {
+        guard let urls = try? GitHubCopilotBaseService.createFoldersIfNeeded()
+        else { return nil }
+        let path = urls.supportURL
+            .appendingPathComponent("undefined")
+            .appendingPathComponent(".config")
+            .appendingPathComponent("github-copilot")
+            .appendingPathComponent("apps.json").path
+        guard FileManager.default.fileExists(atPath: path) else { return nil }
+
+        do {
+            let data = try Data(contentsOf: URL(fileURLWithPath: path))
+            let json = try JSONSerialization
+                .jsonObject(with: data, options: []) as? [String: [String: String]]
+            guard let firstEntry = json?.values.first else { return nil }
+            let jsonData = try JSONSerialization.data(withJSONObject: firstEntry, options: [])
+            return try JSONDecoder().decode(AuthToken.self, from: jsonData)
+        } catch {
+            Logger.gitHubCopilot.error(error.localizedDescription)
+            return nil
+        }
+    }
+
     let workspacePool: WorkspacePool
 
     let serviceLocator: ServiceLocatorType
@@ -139,7 +168,6 @@ protocol ServiceLocatorType {
 class ServiceLocator: ServiceLocatorType {
     let workspacePool: WorkspacePool
 
-    
     init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
     }
