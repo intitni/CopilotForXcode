@@ -9,6 +9,23 @@ protocol EmbeddingAPI {
     func embed(tokens: [[Int]]) async throws -> EmbeddingResponse
 }
 
+extension EmbeddingAPI {
+    static func setupExtraHeaderFields(
+        _ request: inout URLRequest,
+        model: EmbeddingModel,
+        apiKey: String
+    ) async {
+        let parser = HeaderValueParser()
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            let value = await parser.parse(
+                field.value,
+                context: .init(modelName: model.info.modelName, apiKey: apiKey)
+            )
+            request.setValue(value, forHTTPHeaderField: field.key)
+        }
+    }
+}
+
 public struct EmbeddingResponse: Decodable {
     public struct Object: Decodable {
         public var embedding: [Float]

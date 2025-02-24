@@ -64,9 +64,7 @@ extension OllamaChatCompletionsService: ChatCompletionsAPI {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
 
-        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
-            request.setValue(field.value, forHTTPHeaderField: field.key)
-        }
+        await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
 
@@ -149,9 +147,7 @@ extension OllamaChatCompletionsService: ChatCompletionsStreamAPI {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
 
-        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
-            request.setValue(field.value, forHTTPHeaderField: field.key)
-        }
+        await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
 
