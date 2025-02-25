@@ -139,7 +139,6 @@ protocol ServiceLocatorType {
 class ServiceLocator: ServiceLocatorType {
     let workspacePool: WorkspacePool
 
-    
     init(workspacePool: WorkspacePool) {
         self.workspacePool = workspacePool
     }
@@ -149,6 +148,112 @@ class ServiceLocator: ServiceLocatorType {
               let plugin = workspace.plugin(for: GitHubCopilotWorkspacePlugin.self)
         else { return nil }
         return await plugin.gitHubCopilotService
+    }
+}
+
+extension GitHubCopilotExtension {
+    public struct Token: Codable {
+//        let codesearch: Bool
+        public let individual: Bool
+        public let endpoints: Endpoints
+        public let chat_enabled: Bool
+//        public let sku: String
+//        public  let copilotignore_enabled: Bool
+//        public  let limited_user_quotas: String?
+//        public let tracking_id: String
+//        public  let xcode: Bool
+//        public  let limited_user_reset_date: String?
+//        public  let telemetry: String
+//        public  let prompt_8k: Bool
+        public let token: String
+//        public  let nes_enabled: Bool
+//        public  let vsc_electron_fetcher_v2: Bool
+//        public  let code_review_enabled: Bool
+//        public  let annotations_enabled: Bool
+//        public  let chat_jetbrains_enabled: Bool
+//        public  let xcode_chat: Bool
+//        public  let refresh_in: Int
+//        public  let snippy_load_test_enabled: Bool
+//        public  let trigger_completion_after_accept: Bool
+        public let expires_at: Int
+//        public  let public_suggestions: String
+//        public  let code_quote_enabled: Bool
+
+        public struct Endpoints: Codable {
+            public let api: String
+            public let proxy: String
+            public let telemetry: String
+//            public let origin-tracker: String
+        }
+    }
+
+    struct AuthInfo: Codable {
+        public let user: String
+        public let oauth_token: String
+        public let githubAppId: String
+    }
+
+    static var authInfo: AuthInfo? {
+        guard let urls = try? GitHubCopilotBaseService.createFoldersIfNeeded()
+        else { return nil }
+        let path = urls.supportURL
+            .appendingPathComponent("undefined")
+            .appendingPathComponent(".config")
+            .appendingPathComponent("github-copilot")
+            .appendingPathComponent("apps.json").path
+        guard FileManager.default.fileExists(atPath: path) else { return nil }
+
+        do {
+            let data = try Data(contentsOf: URL(fileURLWithPath: path))
+            let json = try JSONSerialization
+                .jsonObject(with: data, options: []) as? [String: [String: String]]
+            guard let firstEntry = json?.values.first else { return nil }
+            let jsonData = try JSONSerialization.data(withJSONObject: firstEntry, options: [])
+            return try JSONDecoder().decode(AuthInfo.self, from: jsonData)
+        } catch {
+            Logger.gitHubCopilot.error(error.localizedDescription)
+            return nil
+        }
+    }
+
+    @MainActor
+    static var cachedToken: Token?
+
+    public static func fetchToken() async throws -> Token {
+        guard let authToken = authInfo?.oauth_token
+        else { throw GitHubCopilotError.notLoggedIn }
+        
+        let oldToken = await MainActor.run { cachedToken }
+        if let oldToken {
+            let expiresAt = Date(timeIntervalSince1970: TimeInterval(oldToken.expires_at))
+            if expiresAt > Date() {
+                return oldToken
+            }
+        }
+        
+        let url = URL(string: "https://api.github.com/copilot_internal/v2/token")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("token \(authToken)", forHTTPHeaderField: "authorization")
+        request.setValue("unknown-editor/0", forHTTPHeaderField: "editor-version")
+        request.setValue("unknown-editor-plugin/0", forHTTPHeaderField: "editor-plugin-version")
+        request.setValue("1.236.0", forHTTPHeaderField: "copilot-language-server-version")
+        request.setValue("GithubCopilot/1.236.0", forHTTPHeaderField: "user-agent")
+        request.setValue("*/*", forHTTPHeaderField: "accept")
+        request.setValue("gzip,deflate,br", forHTTPHeaderField: "accept-encoding")
+
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print(jsonString)
+            }
+            let newToken = try JSONDecoder().decode(Token.self, from: data)
+            await MainActor.run { cachedToken = newToken }
+            return newToken
+        } catch {
+            Logger.service.error(error.localizedDescription)
+            throw error
+        }
     }
 }
 

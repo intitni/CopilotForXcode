@@ -866,9 +866,6 @@ func widgetLevel(_ addition: Int) -> NSWindow.Level {
     #else
     minimumWidgetLevel = NSWindow.Level.floating.rawValue
     #endif
-    return .init(
-        minimumWidgetLevel +
-            addition
-    )
+    return .init(minimumWidgetLevel + addition)
 }
 

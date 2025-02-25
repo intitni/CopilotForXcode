@@ -26,6 +26,9 @@ public extension TextSplitter {
         for (text, metadata) in zip(texts, metadata) {
             let chunks = try await split(text: text)
             for chunk in chunks {
+                var metadata = metadata
+                metadata["startUTF16Offset"] = .number(Double(chunk.startUTF16Offset))
+                metadata["endUTF16Offset"] = .number(Double(chunk.endUTF16Offset))
                 let document = Document(pageContent: chunk.text, metadata: metadata)
                 documents.append(document)
             }
@@ -47,6 +50,41 @@ public extension TextSplitter {
     /// Transform sequence of documents by splitting them.
     func transformDocuments(_ documents: [Document]) async throws -> [Document] {
         return try await splitDocuments(documents)
+    }
+
+    func joinDocuments(_ documents: [Document]) -> Document {
+        let textChunks: [TextChunk] = documents.compactMap { document in
+            func extract(_ key: String) -> Int? {
+                if case let .number(d) = document.metadata[key] {
+                    return Int(d)
+                }
+                return nil
+            }
+            guard let start = extract("startUTF16Offset"),
+                  let end = extract("endUTF16Offset")
+            else { return nil }
+            return TextChunk(
+                text: document.pageContent,
+                startUTF16Offset: start,
+                endUTF16Offset: end
+            )
+        }.sorted(by: { $0.startUTF16Offset < $1.startUTF16Offset })
+        var sumChunk: TextChunk?
+        for chunk in textChunks {
+            if let current = sumChunk {
+                if let merged = current.merged(with: chunk, force: true) {
+                    sumChunk = merged
+                }
+            } else {
+                sumChunk = chunk
+            }
+        }
+        let pageContent = sumChunk?.text ?? ""
+        var metadata = documents.first?.metadata ?? [String: JSONValue]()
+        metadata["startUTF16Offset"] = nil
+        metadata["endUTF16Offset"] = nil
+
+        return Document(pageContent: pageContent, metadata: metadata)
     }
 }
 
@@ -83,14 +121,14 @@ public extension TextSplitter {
             let text = (a + b).map(\.text).joined()
             var l = Int.max
             var u = 0
-            
+
             for chunk in a + b {
                 l = min(l, chunk.startUTF16Offset)
                 u = max(u, chunk.endUTF16Offset)
             }
-            
+
             guard l < u else { return nil }
-            
+
             return .init(text: text, startUTF16Offset: l, endUTF16Offset: u)
         }
 

@@ -24,6 +24,7 @@ public struct EditorInformation {
 
         public var selectedContent: String {
             if let range = selections.first {
+                if range.isEmpty { return "" }
                 let startIndex = min(
                     max(0, range.start.line),
                     lines.endIndex - 1
@@ -103,7 +104,7 @@ public struct EditorInformation {
         inside range: CursorRange,
         ignoreColumns: Bool = false
     ) -> (code: String, lines: [String]) {
-        guard range.start <= range.end else { return ("", []) }
+        guard range.start < range.end else { return ("", []) }
         
         let rangeLines = lines(in: code, containing: range)
         if ignoreColumns {

@@ -66,6 +66,7 @@ public struct ChatGPTError: Error, Codable, LocalizedError {
 public enum ChatGPTResponse: Equatable {
     case status([String])
     case partialText(String)
+    case partialReasoning(String)
     case toolCalls([ChatMessage.ToolCall])
 }
 
@@ -195,6 +196,9 @@ public class ChatGPTService: ChatGPTServiceType {
                                 switch content {
                                 case let .partialText(text):
                                     continuation.yield(ChatGPTResponse.partialText(text))
+                                    
+                                case let .partialReasoning(text):
+                                    continuation.yield(ChatGPTResponse.partialReasoning(text))
 
                                 case let .partialToolCalls(toolCalls):
                                     guard configuration.runFunctionsAutomatically else { break }
@@ -250,6 +254,7 @@ public class ChatGPTService: ChatGPTServiceType {
 
 extension ChatGPTService {
     enum StreamContent {
+        case partialReasoning(String)
         case partialText(String)
         case partialToolCalls([Int: ChatMessage.ToolCall])
     }
@@ -339,6 +344,10 @@ extension ChatGPTService {
 
                         if let content = delta.content {
                             continuation.yield(.partialText(content))
+                        }
+                        
+                        if let reasoning = delta.reasoningContent {
+                            continuation.yield(.partialReasoning(reasoning))
                         }
                     }
 
@@ -531,7 +540,7 @@ extension ChatGPTService {
         stream: Bool
     ) -> ChatCompletionsRequestBody {
         let serviceSupportsFunctionCalling = switch model.format {
-        case .openAI, .openAICompatible, .azureOpenAI:
+        case .openAI, .openAICompatible, .azureOpenAI, .gitHubCopilot:
             model.info.supportsFunctionCalling
         case .ollama, .googleAI, .claude:
             false

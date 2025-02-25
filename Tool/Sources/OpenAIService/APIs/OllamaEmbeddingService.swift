@@ -12,6 +12,7 @@ struct OllamaEmbeddingService: EmbeddingAPI {
         var embedding: [Float]
     }
 
+    let apiKey: String
     let model: EmbeddingModel
     let endpoint: String
 
@@ -25,6 +26,14 @@ struct OllamaEmbeddingService: EmbeddingAPI {
             model: model.info.modelName
         ))
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
+        
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            request.setValue(field.value, forHTTPHeaderField: field.key)
+        }
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {

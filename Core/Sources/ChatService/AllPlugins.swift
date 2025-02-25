@@ -94,6 +94,8 @@ final class LegacyChatPluginWrapper<Plugin: ChatPlugin>: LegacyChatPlugin {
                     break
                 case .startNewMessage:
                     break
+                case .reasoning:
+                    break
                 }
 
                 await chatGPTService.memory.mutateHistory { history in

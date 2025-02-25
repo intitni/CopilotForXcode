@@ -33,6 +33,7 @@ struct ChatModelEdit {
         var openAIProjectID: String = ""
         var customHeaders: [ChatModel.Info.CustomHeaderInfo.HeaderField] = []
         var openAICompatibleSupportsMultipartMessageContent = true
+        var requiresBeginWithUserMessage = false
     }
 
     enum Action: Equatable, BindableAction {
@@ -45,8 +46,42 @@ struct ChatModelEdit {
         case testSucceeded(String)
         case testFailed(String)
         case checkSuggestedMaxTokens
+        case selectModelFormat(ModelFormat)
         case apiKeySelection(APIKeySelection.Action)
         case baseURLSelection(BaseURLSelection.Action)
+    }
+
+    enum ModelFormat: CaseIterable {
+        case openAI
+        case azureOpenAI
+        case googleAI
+        case ollama
+        case claude
+        case gitHubCopilot
+        case openAICompatible
+        case deepSeekOpenAICompatible
+        case openRouterOpenAICompatible
+        case grokOpenAICompatible
+        case mistralOpenAICompatible
+
+        init(_ format: ChatModel.Format) {
+            switch format {
+            case .openAI:
+                self = .openAI
+            case .azureOpenAI:
+                self = .azureOpenAI
+            case .googleAI:
+                self = .googleAI
+            case .ollama:
+                self = .ollama
+            case .claude:
+                self = .claude
+            case .openAICompatible:
+                self = .openAICompatible
+            case .gitHubCopilot:
+                self = .gitHubCopilot
+            }
+        }
     }
 
     var toast: (String, ToastType) -> Void {
@@ -164,10 +199,52 @@ struct ChatModelEdit {
                         state.suggestedMaxTokens = nil
                     }
                     return .none
+                case .gitHubCopilot:
+                    if let knownModel = AvailableGitHubCopilotModel(rawValue: state.modelName) {
+                        state.suggestedMaxTokens = knownModel.contextWindow
+                    } else {
+                        state.suggestedMaxTokens = nil
+                    }
+                    return .none
                 default:
                     state.suggestedMaxTokens = nil
                     return .none
                 }
+
+            case let .selectModelFormat(format):
+                switch format {
+                case .openAI:
+                    state.format = .openAI
+                case .azureOpenAI:
+                    state.format = .azureOpenAI
+                case .googleAI:
+                    state.format = .googleAI
+                case .ollama:
+                    state.format = .ollama
+                case .claude:
+                    state.format = .claude
+                case .gitHubCopilot:
+                    state.format = .gitHubCopilot
+                case .openAICompatible:
+                    state.format = .openAICompatible
+                case .deepSeekOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://api.deepseek.com"
+                    state.baseURLSelection.isFullURL = false
+                case .openRouterOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://openrouter.ai"
+                    state.baseURLSelection.isFullURL = false
+                case .grokOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://api.x.ai"
+                    state.baseURLSelection.isFullURL = false
+                case .mistralOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://api.mistral.ai"
+                    state.baseURLSelection.isFullURL = false
+                }
+                return .none
 
             case .apiKeySelection:
                 return .none
@@ -208,7 +285,7 @@ extension ChatModel {
                     switch state.format {
                     case .googleAI, .ollama, .claude:
                         return false
-                    case .azureOpenAI, .openAI, .openAICompatible:
+                    case .azureOpenAI, .openAI, .openAICompatible, .gitHubCopilot:
                         return state.supportsFunctionCalling
                     }
                 }(),
@@ -222,7 +299,8 @@ extension ChatModel {
                 openAICompatibleInfo: .init(
                     enforceMessageOrder: state.enforceMessageOrder,
                     supportsMultipartMessageContent: state
-                        .openAICompatibleSupportsMultipartMessageContent
+                        .openAICompatibleSupportsMultipartMessageContent,
+                    requiresBeginWithUserMessage: state.requiresBeginWithUserMessage
                 ),
                 customHeaderInfo: .init(headers: state.customHeaders)
             )
@@ -249,7 +327,8 @@ extension ChatModel {
             openAIProjectID: info.openAIInfo.projectID,
             customHeaders: info.customHeaderInfo.headers,
             openAICompatibleSupportsMultipartMessageContent: info.openAICompatibleInfo
-                .supportsMultipartMessageContent
+                .supportsMultipartMessageContent,
+            requiresBeginWithUserMessage: info.openAICompatibleInfo.requiresBeginWithUserMessage
         )
     }
 }

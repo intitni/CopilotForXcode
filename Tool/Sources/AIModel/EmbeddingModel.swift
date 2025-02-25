@@ -21,6 +21,7 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
         case azureOpenAI
         case openAICompatible
         case ollama
+        case gitHubCopilot
     }
 
     public struct Info: Codable, Equatable {
@@ -92,6 +93,8 @@ public struct EmbeddingModel: Codable, Equatable, Identifiable {
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "http://localhost:11434/api/embeddings" }
             return "\(baseURL)/api/embeddings"
+        case .gitHubCopilot:
+            return "https://api.githubcopilot.com/embeddings"
         }
     }
 }

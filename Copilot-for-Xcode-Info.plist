@@ -12,6 +12,11 @@
 	<string>$(EXTENSION_BUNDLE_NAME)</string>
 	<key>HOST_APP_NAME</key>
 	<string>$(HOST_APP_NAME)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>SUEnableJavaScript</key>
 	<string>YES</string>
 	<key>SUFeedURL</key>

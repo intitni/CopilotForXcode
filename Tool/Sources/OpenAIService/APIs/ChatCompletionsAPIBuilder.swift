@@ -62,6 +62,11 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
                 endpoint: endpoint,
                 requestBody: requestBody
             )
+        case .gitHubCopilot:
+            return GitHubCopilotChatCompletionsService(
+                model: model,
+                requestBody: requestBody
+            )
         }
     }
 
@@ -107,6 +112,11 @@ struct DefaultChatCompletionsAPIBuilder: ChatCompletionsAPIBuilder {
                 endpoint: endpoint,
                 requestBody: requestBody
             )
+        case .gitHubCopilot:
+            return GitHubCopilotChatCompletionsService(
+                model: model,
+                requestBody: requestBody
+            )
         }
     }
 }
@@ -121,3 +131,4 @@ extension DependencyValues {
         set { self[ChatCompletionsAPIBuilderDependencyKey.self] = newValue }
     }
 }
+

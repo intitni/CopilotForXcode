@@ -19,10 +19,12 @@ public enum ChatGPTModel: String, CaseIterable {
     case gpt432k0314 = "gpt-4-32k-0314"
     case gpt432k0613 = "gpt-4-32k-0613"
     case gpt40125 = "gpt-4-0125-preview"
+    case o1 = "o1"
     case o1Preview = "o1-preview"
     case o1Preview20240912 = "o1-preview-2024-09-12"
     case o1Mini = "o1-mini"
     case o1Mini20240912 = "o1-mini-2024-09-12"
+    case o3Mini = "o3-mini"
 }
 
 public extension ChatGPTModel {
@@ -68,13 +70,17 @@ public extension ChatGPTModel {
             return 128_000
         case .o1Mini, .o1Mini20240912:
             return 128_000
+        case .o1:
+            return 200_000
+        case .o3Mini:
+            return 200_000
         }
     }
 
     var supportsImages: Bool {
         switch self {
         case .gpt4VisionPreview, .gpt4Turbo, .gpt4Turbo20240409, .gpt4o, .gpt4oMini, .o1Preview,
-             .o1Preview20240912, .o1Mini, .o1Mini20240912:
+             .o1Preview20240912, .o1Mini, .o1Mini20240912, .o1, .o3Mini:
             return true
         default:
             return false

@@ -4,7 +4,7 @@ public enum ChatAgentResponse {
     public enum Content {
         case text(String)
     }
-    
+
     public enum ActionResult {
         case success(String)
         case failure(String)
@@ -24,6 +24,8 @@ public enum ChatAgentResponse {
     case references([ChatMessage.Reference])
     /// End the current message. The next contents will be sent as a new message.
     case startNewMessage
+    /// Reasoning
+    case reasoning(String)
 }
 
 public struct ChatAgentRequest {

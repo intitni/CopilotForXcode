@@ -120,7 +120,7 @@ public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     public var apiKey: String {
         if let apiKey = overriding.apiKey { return apiKey }
         guard let name = model?.info.apiKeyName else { return configuration.apiKey }
-        return (try? Keychain.apiKey.get(name)) ?? configuration.apiKey
+        return (try? Keychain.apiKey.get(name)) ?? ""
     }
 
     public var shouldEndTextWindow: (String) -> Bool {
