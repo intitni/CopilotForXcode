@@ -69,8 +69,17 @@ public extension TextSplitter {
                 endUTF16Offset: end
             )
         }.sorted(by: { $0.startUTF16Offset < $1.startUTF16Offset })
-        let mergedChunks = mergeSplits(textChunks)
-        let pageContent = mergedChunks.map(\.text).joined()
+        var sumChunk: TextChunk?
+        for chunk in textChunks {
+            if let current = sumChunk {
+                if let merged = current.merged(with: chunk, force: true) {
+                    sumChunk = merged
+                }
+            } else {
+                sumChunk = chunk
+            }
+        }
+        let pageContent = sumChunk?.text ?? ""
         var metadata = documents.first?.metadata ?? [String: JSONValue]()
         metadata["startUTF16Offset"] = nil
         metadata["endUTF16Offset"] = nil
