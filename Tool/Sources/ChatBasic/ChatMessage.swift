@@ -59,7 +59,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A reference to include in a chat message.
-    public struct Reference: Codable, Equatable {
+    public struct Reference: Codable, Equatable, Identifiable {
         /// The kind of reference.
         public enum Kind: Codable, Equatable {
             public enum Symbol: String, Codable {
@@ -89,6 +89,8 @@ public struct ChatMessage: Equatable, Codable {
             case error
         }
 
+        @FallbackDecoding<ReferenceIDFallback>
+        public var id: String
         /// The title of the reference.
         public var title: String
         /// The content of the reference.
@@ -98,10 +100,12 @@ public struct ChatMessage: Equatable, Codable {
         public var kind: Kind
 
         public init(
+            id: String = UUID().uuidString,
             title: String,
             content: String,
             kind: Kind
         ) {
+            self.id = id
             self.title = title
             self.content = content
             self.kind = kind
@@ -186,6 +190,10 @@ public struct ChatMessage: Equatable, Codable {
 
 public struct ReferenceKindFallback: FallbackValueProvider {
     public static var defaultValue: ChatMessage.Reference.Kind { .other(kind: "Unknown") }
+}
+
+public struct ReferenceIDFallback: FallbackValueProvider {
+    public static var defaultValue: String { UUID().uuidString }
 }
 
 public struct ChatMessageRoleFallback: FallbackValueProvider {

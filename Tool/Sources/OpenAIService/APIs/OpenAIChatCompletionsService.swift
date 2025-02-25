@@ -100,6 +100,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             struct Delta: Codable {
                 var role: MessageRole?
                 var content: String?
+                var reasoning_content: String?
+                var reasoning: String?
                 var function_call: RequestBody.MessageFunctionCall?
                 var tool_calls: [RequestBody.MessageToolCall]?
             }
@@ -112,6 +114,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             var role: MessageRole
             /// The content of the message.
             var content: String?
+            var reasoning_content: String?
+            var reasoning: String?
             /// When we want to reply to a function call with the result, we have to provide the
             /// name of the function call, and include the result in `content`.
             ///
@@ -286,12 +290,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
     var endpoint: URL
     var requestBody: RequestBody
     var model: ChatModel
+    let requestModifier: ((inout URLRequest) -> Void)?
 
     init(
         apiKey: String,
         model: ChatModel,
         endpoint: URL,
-        requestBody: ChatCompletionsRequestBody
+        requestBody: ChatCompletionsRequestBody,
+        requestModifier: ((inout URLRequest) -> Void)? = nil
     ) {
         self.apiKey = apiKey
         self.endpoint = endpoint
@@ -301,11 +307,14 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             enforceMessageOrder: model.info.openAICompatibleInfo.enforceMessageOrder,
             supportsMultipartMessageContent: model.info.openAICompatibleInfo
                 .supportsMultipartMessageContent,
+            requiresBeginWithUserMessage: model.info.openAICompatibleInfo
+                .requiresBeginWithUserMessage,
             canUseTool: model.info.supportsFunctionCalling,
             supportsImage: model.info.supportsImage,
             supportsAudio: model.info.supportsAudio
         )
         self.model = model
+        self.requestModifier = requestModifier
     }
 
     func callAsFunction() async throws
@@ -320,7 +329,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
 
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
-        Self.setupExtraHeaderFields(&request, model: model)
+        await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
+        requestModifier?(&request)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -456,6 +466,8 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             case .azureOpenAI:
                 request.setValue(apiKey, forHTTPHeaderField: "api-key")
+            case .gitHubCopilot:
+                break
             case .googleAI:
                 assertionFailure("Unsupported")
             case .ollama:
@@ -463,12 +475,6 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             case .claude:
                 assertionFailure("Unsupported")
             }
-        }
-    }
-
-    static func setupExtraHeaderFields(_ request: inout URLRequest, model: ChatModel) {
-        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
-            request.setValue(field.value, forHTTPHeaderField: field.key)
         }
     }
 }
@@ -482,6 +488,7 @@ extension OpenAIChatCompletionsService.ResponseBody {
             .init(
                 role: message.role.formalized,
                 content: message.content ?? "",
+                reasoningContent: message.reasoning_content ?? message.reasoning ?? "",
                 toolCalls: {
                     if let toolCalls = message.tool_calls {
                         return toolCalls.map { toolCall in
@@ -553,6 +560,8 @@ extension OpenAIChatCompletionsService.StreamDataChunk {
                     return .init(
                         role: choice.delta?.role?.formalized,
                         content: choice.delta?.content,
+                        reasoningContent: choice.delta?.reasoning_content
+                            ?? choice.delta?.reasoning,
                         toolCalls: {
                             if let toolCalls = choice.delta?.tool_calls {
                                 return toolCalls.map {
@@ -702,6 +711,7 @@ extension OpenAIChatCompletionsService.RequestBody {
         endpoint: URL,
         enforceMessageOrder: Bool,
         supportsMultipartMessageContent: Bool,
+        requiresBeginWithUserMessage: Bool,
         canUseTool: Bool,
         supportsImage: Bool,
         supportsAudio: Bool
@@ -725,10 +735,21 @@ extension OpenAIChatCompletionsService.RequestBody {
 
         model = body.model
 
+        var body = body
+
+        if requiresBeginWithUserMessage {
+            let firstUserIndex = body.messages.firstIndex(where: { $0.role == .user }) ?? 0
+            let endIndex = firstUserIndex
+            for i in stride(from: endIndex - 1, to: 0, by: -1)
+                where i >= 0 && body.messages.endIndex > i
+            {
+                body.messages.remove(at: i)
+            }
+        }
+
         // Special case for Claude through OpenRouter
 
         if endpoint.absoluteString.contains("openrouter.ai"), model.hasPrefix("anthropic/") {
-            var body = body
             body.model = model.replacingOccurrences(of: "anthropic/", with: "")
             let claudeRequestBody = ClaudeChatCompletionsService.RequestBody(body)
             messages = claudeRequestBody.system.map {

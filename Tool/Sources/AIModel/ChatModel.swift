@@ -23,6 +23,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         case googleAI
         case ollama
         case claude
+        case gitHubCopilot
     }
 
     public struct Info: Codable, Equatable {
@@ -52,13 +53,17 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             public var enforceMessageOrder: Bool
             @FallbackDecoding<EmptyTrue>
             public var supportsMultipartMessageContent: Bool
+            @FallbackDecoding<EmptyBool>
+            public var requiresBeginWithUserMessage: Bool
 
             public init(
                 enforceMessageOrder: Bool = false,
-                supportsMultipartMessageContent: Bool = true
+                supportsMultipartMessageContent: Bool = true,
+                requiresBeginWithUserMessage: Bool = false
             ) {
                 self.enforceMessageOrder = enforceMessageOrder
                 self.supportsMultipartMessageContent = supportsMultipartMessageContent
+                self.requiresBeginWithUserMessage = requiresBeginWithUserMessage
             }
         }
 
@@ -178,6 +183,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             let baseURL = info.baseURL
             if baseURL.isEmpty { return "https://api.anthropic.com/v1/messages" }
             return "\(baseURL)/v1/messages"
+        case .gitHubCopilot:
+            return "https://api.githubcopilot.com/chat/completions"
         }
     }
 }

@@ -41,8 +41,34 @@ struct EmbeddingModelEdit {
         case testFailed(String)
         case fixDimensions(Int)
         case checkSuggestedMaxTokens
+        case selectModelFormat(ModelFormat)
         case apiKeySelection(APIKeySelection.Action)
         case baseURLSelection(BaseURLSelection.Action)
+    }
+    
+    enum ModelFormat: CaseIterable {
+        case openAI
+        case azureOpenAI
+        case ollama
+        case gitHubCopilot
+        case openAICompatible
+        case mistralOpenAICompatible
+        case voyageAIOpenAICompatible
+        
+        init(_ format: EmbeddingModel.Format) {
+            switch format {
+            case .openAI:
+                self = .openAI
+            case .azureOpenAI:
+                self = .azureOpenAI
+            case .ollama:
+                self = .ollama
+            case .openAICompatible:
+                self = .openAICompatible
+            case .gitHubCopilot:
+                self = .gitHubCopilot
+            }
+        }
     }
 
     var toast: (String, ToastType) -> Void {
@@ -154,6 +180,29 @@ struct EmbeddingModelEdit {
 
             case let .fixDimensions(value):
                 state.dimensions = value
+                return .none
+                
+            case let .selectModelFormat(format):
+                switch format {
+                case .openAI:
+                    state.format = .openAI
+                case .azureOpenAI:
+                    state.format = .azureOpenAI
+                case .ollama:
+                    state.format = .ollama
+                case .openAICompatible:
+                    state.format = .openAICompatible
+                case .gitHubCopilot:
+                    state.format = .gitHubCopilot
+                case .mistralOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://api.mistral.ai"
+                    state.baseURLSelection.isFullURL = false
+                case .voyageAIOpenAICompatible:
+                    state.format = .openAICompatible
+                    state.baseURLSelection.baseURL = "https://api.voyage.ai"
+                    state.baseURLSelection.isFullURL = false
+                }
                 return .none
 
             case .apiKeySelection:

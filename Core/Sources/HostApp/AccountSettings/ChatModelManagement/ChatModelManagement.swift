@@ -13,6 +13,7 @@ extension ChatModel: ManageableAIModel {
         case .googleAI: return "Google Generative AI"
         case .ollama: return "Ollama"
         case .claude: return "Claude"
+        case .gitHubCopilot: return "GitHub Copilot"
         }
     }
 

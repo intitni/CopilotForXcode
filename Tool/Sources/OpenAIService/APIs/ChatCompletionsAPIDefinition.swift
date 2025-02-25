@@ -172,6 +172,23 @@ protocol ChatCompletionsStreamAPI {
     func callAsFunction() async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error>
 }
 
+extension ChatCompletionsStreamAPI {
+    static func setupExtraHeaderFields(
+        _ request: inout URLRequest,
+        model: ChatModel,
+        apiKey: String
+    ) async {
+        let parser = HeaderValueParser()
+        for field in model.info.customHeaderInfo.headers where !field.key.isEmpty {
+            let value = await parser.parse(
+                field.value,
+                context: .init(modelName: model.info.modelName, apiKey: apiKey)
+            )
+            request.setValue(value, forHTTPHeaderField: field.key)
+        }
+    }
+}
+
 extension AsyncSequence {
     func toStream() -> AsyncThrowingStream<Element, Error> {
         AsyncThrowingStream { continuation in
@@ -209,6 +226,7 @@ struct ChatCompletionsStreamDataChunk {
 
         var role: ChatCompletionsRequestBody.Message.Role?
         var content: String?
+        var reasoningContent: String?
         var toolCalls: [ToolCall]?
     }
 
@@ -243,6 +261,8 @@ struct ChatCompletionResponseBody: Equatable {
         var role: Role
         /// The content of the message.
         var content: String?
+        /// The reasoning content of the message.
+        var reasoningContent: String?
         /// When we want to reply to a function call with the result, we have to provide the
         /// name of the function call, and include the result in `content`.
         ///
