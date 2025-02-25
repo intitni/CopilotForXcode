@@ -15,7 +15,7 @@ public struct HeaderValueParser {
         public var apiKey: String
         public var gitHubCopilotToken: () async -> GitHubCopilotExtension.Token?
         public var shellEnvironmentVariable: (_ key: String) async -> String?
-        
+
         public init(
             modelName: String,
             apiKey: String,
@@ -66,7 +66,10 @@ public struct HeaderValueParser {
             }
 
             if let replacement {
-                parsedValue.replaceSubrange(range, with: replacement)
+                parsedValue.replaceSubrange(
+                    range,
+                    with: replacement.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
             } else {
                 parsedValue.replaceSubrange(range, with: "none")
             }
