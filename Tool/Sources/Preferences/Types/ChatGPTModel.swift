@@ -86,5 +86,23 @@ public extension ChatGPTModel {
             return false
         }
     }
+    
+    var supportsTemperature: Bool {
+        switch self {
+        case .o1Preview, .o1Preview20240912, .o1Mini, .o1Mini20240912, .o1, .o3Mini:
+            return false
+        default:
+            return true
+        }
+    }
+    
+    var supportsSystemPrompt: Bool {
+        switch self {
+        case .o1Preview, .o1Preview20240912, .o1Mini, .o1Mini20240912, .o1, .o3Mini:
+            return false
+        default:
+            return true
+        }
+    }
 }
 

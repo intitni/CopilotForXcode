@@ -311,7 +311,25 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 .requiresBeginWithUserMessage,
             canUseTool: model.info.supportsFunctionCalling,
             supportsImage: model.info.supportsImage,
-            supportsAudio: model.info.supportsAudio
+            supportsAudio: model.info.supportsAudio,
+            supportsTemperature: {
+                guard model.format == .openAI else { return true }
+                if let chatGPTModel = ChatGPTModel(rawValue: model.info.modelName) {
+                    return chatGPTModel.supportsTemperature
+                } else if model.info.modelName.hasPrefix("o") {
+                    return false
+                }
+                return true
+            }(),
+            supportsSystemPrompt: {
+                guard model.format == .openAI else { return true }
+                if let chatGPTModel = ChatGPTModel(rawValue: model.info.modelName) {
+                    return chatGPTModel.supportsSystemPrompt
+                } else if model.info.modelName.hasPrefix("o") {
+                    return false
+                }
+                return true
+            }()
         )
         self.model = model
         self.requestModifier = requestModifier
@@ -714,7 +732,9 @@ extension OpenAIChatCompletionsService.RequestBody {
         requiresBeginWithUserMessage: Bool,
         canUseTool: Bool,
         supportsImage: Bool,
-        supportsAudio: Bool
+        supportsAudio: Bool,
+        supportsTemperature: Bool,
+        supportsSystemPrompt: Bool
     ) {
         temperature = body.temperature
         stream = body.stream
@@ -736,6 +756,17 @@ extension OpenAIChatCompletionsService.RequestBody {
         model = body.model
 
         var body = body
+
+        if !supportsTemperature {
+            temperature = nil
+        }
+        if !supportsSystemPrompt {
+            for (index, message) in body.messages.enumerated() {
+                if message.role == .system {
+                    body.messages[index].role = .user
+                }
+            }
+        }
 
         if requiresBeginWithUserMessage {
             let firstUserIndex = body.messages.firstIndex(where: { $0.role == .user }) ?? 0
