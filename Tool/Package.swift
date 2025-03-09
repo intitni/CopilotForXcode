@@ -460,6 +460,7 @@ let package = Package(
                 "BuiltinExtension",
                 "ChatBasic",
                 "GitHubCopilotService",
+                "JoinJSON",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
