@@ -24,114 +24,9 @@
   "testTargets" : [
     {
       "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "ServiceTests",
-        "name" : "ServiceTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "SuggestionWidgetTests",
-        "name" : "SuggestionWidgetTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "PromptToCodeServiceTests",
-        "name" : "PromptToCodeServiceTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "LangChainTests",
-        "name" : "LangChainTests"
-      }
-    },
-    {
-      "target" : {
         "containerPath" : "container:Tool",
         "identifier" : "OpenAIServiceTests",
         "name" : "OpenAIServiceTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "ChatServiceTests",
-        "name" : "ChatServiceTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "TokenEncoderTests",
-        "name" : "TokenEncoderTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "SharedUIComponentsTests",
-        "name" : "SharedUIComponentsTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "ASTParserTests",
-        "name" : "ASTParserTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Core",
-        "identifier" : "ServiceUpdateMigrationTests",
-        "name" : "ServiceUpdateMigrationTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "KeychainTests",
-        "name" : "KeychainTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "ActiveDocumentChatContextCollectorTests",
-        "name" : "ActiveDocumentChatContextCollectorTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "GitHubCopilotServiceTests",
-        "name" : "GitHubCopilotServiceTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "FocusedCodeFinderTests",
-        "name" : "FocusedCodeFinderTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "XcodeInspectorTests",
-        "name" : "XcodeInspectorTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
-        "identifier" : "SuggestionProviderTests",
-        "name" : "SuggestionProviderTests"
       }
     },
     {
@@ -144,13 +39,6 @@
     {
       "target" : {
         "containerPath" : "container:Tool",
-        "identifier" : "SuggestionBasicTests",
-        "name" : "SuggestionBasicTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:Tool",
         "identifier" : "SuggestionInjectorTests",
         "name" : "SuggestionInjectorTests"
       }
@@ -158,8 +46,127 @@
     {
       "target" : {
         "containerPath" : "container:Tool",
+        "identifier" : "SharedUIComponentsTests",
+        "name" : "SharedUIComponentsTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionBasicTests",
+        "name" : "SuggestionBasicTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "PromptToCodeServiceTests",
+        "name" : "PromptToCodeServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "JoinJSONTests",
+        "name" : "JoinJSONTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "FocusedCodeFinderTests",
+        "name" : "FocusedCodeFinderTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "ActiveDocumentChatContextCollectorTests",
+        "name" : "ActiveDocumentChatContextCollectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "XcodeInspectorTests",
+        "name" : "XcodeInspectorTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "GitHubCopilotServiceTests",
+        "name" : "GitHubCopilotServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "SuggestionWidgetTests",
+        "name" : "SuggestionWidgetTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "TokenEncoderTests",
+        "name" : "TokenEncoderTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ChatServiceTests",
+        "name" : "ChatServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "LangChainTests",
+        "name" : "LangChainTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "KeychainTests",
+        "name" : "KeychainTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ServiceTests",
+        "name" : "ServiceTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "ASTParserTests",
+        "name" : "ASTParserTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
+        "identifier" : "SuggestionProviderTests",
+        "name" : "SuggestionProviderTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Tool",
         "identifier" : "CodeDiffTests",
         "name" : "CodeDiffTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Core",
+        "identifier" : "ServiceUpdateMigrationTests",
+        "name" : "ServiceUpdateMigrationTests"
       }
     }
   ],
