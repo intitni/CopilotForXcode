@@ -345,7 +345,7 @@ final class ServerNotificationHandler {
                 Logger.gitHubCopilot
                     .info("\(anyNotification.method): \(debugDescription)")
             }
-        case "statusNotification":
+        case "statusNotification", "didChangeStatus":
             if UserDefaults.shared.value(for: \.gitHubCopilotVerboseLog) {
                 Logger.gitHubCopilot
                     .info("\(anyNotification.method): \(debugDescription)")
