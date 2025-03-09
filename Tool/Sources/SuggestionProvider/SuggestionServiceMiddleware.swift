@@ -13,9 +13,12 @@ public protocol SuggestionServiceMiddleware {
 }
 
 public enum SuggestionServiceMiddlewareContainer {
+    static var frontMiddlewares: [SuggestionServiceMiddleware] = [
+        PostProcessingSuggestionServiceMiddleware(),
+    ]
+
     static var builtInMiddlewares: [SuggestionServiceMiddleware] = [
         DisabledLanguageSuggestionServiceMiddleware(),
-        PostProcessingSuggestionServiceMiddleware(),
         MockResultSuggestionServiceMiddleware(),
     ]
 
@@ -24,7 +27,7 @@ public enum SuggestionServiceMiddlewareContainer {
     static var trailingMiddlewares: [SuggestionServiceMiddleware] = []
 
     public static var middlewares: [SuggestionServiceMiddleware] {
-        leadingMiddlewares + builtInMiddlewares + trailingMiddlewares
+        frontMiddlewares + leadingMiddlewares + builtInMiddlewares + trailingMiddlewares
     }
 
     public static func addMiddleware(_ middleware: SuggestionServiceMiddleware) {
@@ -104,6 +107,8 @@ public struct DebugSuggestionServiceMiddleware: SuggestionServiceMiddleware {
 
 public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware {
     public init() {}
+    
+    let mock = false
 
     public func getSuggestion(
         _ request: SuggestionRequest,
@@ -112,45 +117,48 @@ public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware
     ) async -> AsyncThrowingStream<[CodeSuggestion], any Error> {
         #if DEBUG
         let stream = await next(request)
+        if !mock {
+            return stream
+        }
         return .init { continuation in
             let task = Task {
                 let lineNumber = request.cursorPosition.line
                 let lineContent = request.lines[lineNumber]
-//                continuation.yield([
-//                    CodeSuggestion(
-//                        id: "mock-suggestion-1",
-//                        text: lineContent.replacingOccurrences(of: "\n", with: "!"),
-//                        position: CursorPosition(
-//                            line: lineNumber,
-//                            character: lineContent.utf16.count - 1
-//                        ),
-//                        range: CursorRange(
-//                            start: CursorPosition(line: lineNumber, character: 0),
-//                            end: CursorPosition(
-//                                line: lineNumber,
-//                                character: lineContent.utf16.count - 1
-//                            )
-//                        ),
-//                        effectiveRange: .replacingRange,
-//                        replacingLines: [lineContent],
-//                        descriptions: [],
-//                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
-//                        metadata: [.group: "Mock Suggestions"]
-//                    ),
-//                ])
-//                continuation.yield([
-//                    CodeSuggestion(
-//                        id: "mock-suggestion-2",
-//                        text: "",
-//                        position: .zero,
-//                        range: .zero,
-//                        effectiveRange: .full,
-//                        replacingLines: [],
-//                        descriptions: [.init(kind: .action, content: "mock")],
-//                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
-//                        metadata: [.group: "Mock Action"]
-//                    ),
-//                ])
+                continuation.yield([
+                    CodeSuggestion(
+                        id: "mock-suggestion-1",
+                        text: lineContent.replacingOccurrences(of: "\n", with: "!"),
+                        position: CursorPosition(
+                            line: lineNumber,
+                            character: lineContent.utf16.count - 1
+                        ),
+                        range: CursorRange(
+                            start: CursorPosition(line: lineNumber, character: 0),
+                            end: CursorPosition(
+                                line: lineNumber,
+                                character: lineContent.utf16.count - 1
+                            )
+                        ),
+                        effectiveRange: .replacingRange,
+                        replacingLines: [lineContent],
+                        descriptions: [],
+                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
+                        metadata: [.group: "Mock Suggestions"]
+                    ),
+                ])
+                continuation.yield([
+                    CodeSuggestion(
+                        id: "mock-suggestion-2",
+                        text: "",
+                        position: .zero,
+                        range: .zero,
+                        effectiveRange: .full,
+                        replacingLines: [],
+                        descriptions: [.init(kind: .action, content: "mock")],
+                        middlewareComments: ["MockResultSuggestionServiceMiddleware"],
+                        metadata: [.group: "Mock Action"]
+                    ),
+                ])
                 do {
                     for try await suggestions in stream {
                         continuation.yield(suggestions)
@@ -160,7 +168,7 @@ public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware
                     continuation.finish()
                 }
             }
-            
+
             continuation.onTermination = { _ in
                 task.cancel()
             }
@@ -173,15 +181,15 @@ public struct MockResultSuggestionServiceMiddleware: SuggestionServiceMiddleware
 
 public extension AsyncThrowingStream<[CodeSuggestion], Error> {
     func handled(
-        handleCodeSuggestions: @escaping ([CodeSuggestion]) -> [CodeSuggestion] = { $0 },
+        handleCodeSuggestions: @escaping ([CodeSuggestion]) async -> [CodeSuggestion] = { $0 },
         handleError: @escaping (Error) -> Error = { $0 },
         onFinish: @escaping () -> Void = {}
-    ) -> AsyncThrowingStream<[CodeSuggestion], Error> {
+    ) async -> AsyncThrowingStream<[CodeSuggestion], Error> {
         .init { continuation in
             let task = Task {
                 do {
                     for try await suggestions in self {
-                        continuation.yield(handleCodeSuggestions(suggestions))
+                        await continuation.yield(handleCodeSuggestions(suggestions))
                     }
                     continuation.finish()
                     onFinish()
@@ -210,7 +218,7 @@ public extension AsyncThrowingStream<[CodeSuggestion], Error> {
             continuation.finish(throwing: error)
         }
     }
-    
+
     func allSuggestions() async throws -> [CodeSuggestion] {
         var all = [CodeSuggestion]()
         for try await codeSuggestions in self {
