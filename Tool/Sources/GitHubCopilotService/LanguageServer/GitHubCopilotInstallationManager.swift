@@ -6,12 +6,13 @@ public struct GitHubCopilotInstallationManager {
     public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "87038123804796ca7af20d1b71c3428d858a9124"
+        let commitHash = "5015939f131627a6a332c9e3ecad9a7cb4c2e549"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
 
-    static let latestSupportedVersion = "1.41.0"
+    #error("TODO: Load certificates and chat through the language server are not working")
+    static let latestSupportedVersion = "1.43.0"
     static let minimumSupportedVersion = "1.32.0"
 
     public init() {}

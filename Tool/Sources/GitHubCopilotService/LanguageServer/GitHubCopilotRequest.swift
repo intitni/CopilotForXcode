@@ -136,23 +136,32 @@ enum GitHubCopilotRequest {
             if dict.isEmpty { return nil }
             return .hash(dict)
         }
-
-        var request: ClientRequest {
+        
+        var editorInfo: JSONValue {
             let pretendToBeVSCode = UserDefaults.shared
                 .value(for: \.gitHubCopilotPretendIDEToBeVSCode)
+            
+            return pretendToBeVSCode ? .hash([
+                "name": "vscode",
+                "version": "1.89.1",
+            ]) : .hash([
+                "name": "Xcode",
+                "version": .string(xcodeVersion),
+            ])
+        }
+        
+        var editorPluginInfo: JSONValue {
+            .hash([
+                "name": "Copilot for Xcode",
+                "version": .string(Bundle.main
+                    .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""),
+            ])
+        }
+
+        var request: ClientRequest {
             var dict: [String: JSONValue] = [
-                "editorInfo": pretendToBeVSCode ? .hash([
-                    "name": "vscode",
-                    "version": "1.89.1",
-                ]) : .hash([
-                    "name": "Xcode",
-                    "version": .string(xcodeVersion),
-                ]),
-                "editorPluginInfo": .hash([
-                    "name": "Copilot for Xcode",
-                    "version": .string(Bundle.main
-                        .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""),
-                ]),
+                "editorInfo": editorInfo,
+                "editorPluginInfo": editorPluginInfo,
             ]
 
             dict["editorConfiguration"] = editorConfiguration

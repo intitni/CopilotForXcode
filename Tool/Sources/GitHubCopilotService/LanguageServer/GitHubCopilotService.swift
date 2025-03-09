@@ -243,6 +243,8 @@ public class GitHubCopilotBaseService {
                     general: nil,
                     experimental: nil
                 )
+                
+                let setInfo = GitHubCopilotRequest.SetEditorInfo(xcodeVersion: "16.0")
 
                 return InitializeParams(
                     processId: Int(ProcessInfo.processInfo.processIdentifier),
@@ -254,7 +256,10 @@ public class GitHubCopilotBaseService {
                     locale: nil,
                     rootPath: projectRootURL.path,
                     rootUri: projectRootURL.path,
-                    initializationOptions: nil,
+                    initializationOptions: [
+                        "editorInfo": setInfo.editorInfo,
+                        "editorPluginInfo": setInfo.editorPluginInfo,
+                    ],
                     capabilities: capabilities,
                     trace: .off,
                     workspaceFolders: [WorkspaceFolder(
