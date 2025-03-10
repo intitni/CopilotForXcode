@@ -53,7 +53,7 @@ struct ChatModelEditView: View {
                         CustomBodyEdit(store: store)
                             .disabled({
                                 switch store.format {
-                                case .openAI, .openAICompatible:
+                                case .openAI, .openAICompatible, .claude:
                                     return false
                                 default:
                                     return true
@@ -62,7 +62,7 @@ struct ChatModelEditView: View {
                         CustomHeaderEdit(store: store)
                             .disabled({
                                 switch store.format {
-                                case .openAI, .openAICompatible, .ollama, .gitHubCopilot:
+                                case .openAI, .openAICompatible, .ollama, .gitHubCopilot, .claude:
                                     return false
                                 default:
                                     return true
