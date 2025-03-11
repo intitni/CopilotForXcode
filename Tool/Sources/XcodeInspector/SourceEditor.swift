@@ -262,6 +262,7 @@ public extension SourceEditor {
             countE += line.utf16.count
         }
         if cursorRange.end == .outOfScope {
+            if range.lowerBound == range.upperBound { return .outOfScope }
             cursorRange.end = .init(
                 line: lines.endIndex - 1,
                 character: lines.last?.utf16.count ?? 0
