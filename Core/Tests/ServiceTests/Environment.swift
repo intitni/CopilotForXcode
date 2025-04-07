@@ -14,6 +14,10 @@ func completion(text: String, range: CursorRange, uuid: String = "") -> CodeSugg
 }
 
 class MockSuggestionService: GitHubCopilotSuggestionServiceType {
+    func cancelOngoingTask(workDoneToken: String) async {
+        fatalError()
+    }
+    
     func notifyChangeTextDocument(fileURL: URL, content: String, version: Int) async throws {
         fatalError()
     }

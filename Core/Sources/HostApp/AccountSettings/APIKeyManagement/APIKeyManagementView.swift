@@ -82,8 +82,10 @@ struct APIKeyManagementView: View {
                 state: \.apiKeySubmission,
                 action: \.apiKeySubmission
             )) { store in
-                APIKeySubmissionView(store: store)
-                    .frame(minWidth: 400)
+                WithPerceptionTracking {
+                    APIKeySubmissionView(store: store)
+                        .frame(minWidth: 400)
+                }
             }
         }
     }

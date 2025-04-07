@@ -177,7 +177,9 @@ final class TabToAcceptSuggestion {
             }
             guard let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL)
             else {
-                Logger.service.info("TabToAcceptSuggestion: No file found")
+                Logger.service.info(
+                    "TabToAcceptSuggestion: No file found for file \(fileURL.lastPathComponent)"
+                )
                 return .unchanged
             }
             guard let presentingSuggestion = filespace.presentingSuggestion

@@ -94,6 +94,14 @@ public struct ChatModel: Codable, Equatable, Identifiable {
                 self.headers = headers
             }
         }
+        
+        public struct CustomBodyInfo: Codable, Equatable {
+            public var jsonBody: String
+            
+            public init(jsonBody: String = "") {
+                self.jsonBody = jsonBody
+            }
+        }
 
         @FallbackDecoding<EmptyString>
         public var apiKeyName: String
@@ -122,6 +130,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
         public var openAICompatibleInfo: OpenAICompatibleInfo
         @FallbackDecoding<EmptyChatModelCustomHeaderInfo>
         public var customHeaderInfo: CustomHeaderInfo
+        @FallbackDecoding<EmptyChatModelCustomBodyInfo>
+        public var customBodyInfo: CustomBodyInfo
 
         public init(
             apiKeyName: String = "",
@@ -136,7 +146,8 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             ollamaInfo: OllamaInfo = OllamaInfo(),
             googleGenerativeAIInfo: GoogleGenerativeAIInfo = GoogleGenerativeAIInfo(),
             openAICompatibleInfo: OpenAICompatibleInfo = OpenAICompatibleInfo(),
-            customHeaderInfo: CustomHeaderInfo = CustomHeaderInfo()
+            customHeaderInfo: CustomHeaderInfo = CustomHeaderInfo(),
+            customBodyInfo: CustomBodyInfo = CustomBodyInfo()
         ) {
             self.apiKeyName = apiKeyName
             self.baseURL = baseURL
@@ -151,6 +162,7 @@ public struct ChatModel: Codable, Equatable, Identifiable {
             self.googleGenerativeAIInfo = googleGenerativeAIInfo
             self.openAICompatibleInfo = openAICompatibleInfo
             self.customHeaderInfo = customHeaderInfo
+            self.customBodyInfo = customBodyInfo
         }
     }
 
@@ -215,6 +227,10 @@ public struct EmptyChatModelOpenAICompatibleInfo: FallbackValueProvider {
 
 public struct EmptyChatModelCustomHeaderInfo: FallbackValueProvider {
     public static var defaultValue: ChatModel.Info.CustomHeaderInfo { .init() }
+}
+
+public struct EmptyChatModelCustomBodyInfo: FallbackValueProvider {
+    public static var defaultValue: ChatModel.Info.CustomBodyInfo { .init() }
 }
 
 public struct EmptyTrue: FallbackValueProvider {
