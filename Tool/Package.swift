@@ -118,6 +118,9 @@ let package = Package(
 
         .target(name: "ObjectiveCExceptionHandling"),
 
+        .target(name: "JoinJSON"),
+        .testTarget(name: "JoinJSONTests", dependencies: ["JoinJSON"]),
+
         .target(name: "CodeDiff", dependencies: ["SuggestionBasic"]),
         .testTarget(name: "CodeDiffTests", dependencies: ["CodeDiff"]),
 
@@ -475,6 +478,7 @@ let package = Package(
                 "BuiltinExtension",
                 "ChatBasic",
                 "GitHubCopilotService",
+                "JoinJSON",
                 .product(name: "JSONRPC", package: "JSONRPC"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),

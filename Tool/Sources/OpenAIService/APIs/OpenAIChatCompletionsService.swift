@@ -2,6 +2,7 @@ import AIModel
 import AsyncAlgorithms
 import ChatBasic
 import Foundation
+import JoinJSON
 import Logger
 import Preferences
 
@@ -345,6 +346,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         request.httpBody = try encoder.encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
+        Self.setupCustomBody(&request, model: model)
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
         await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
@@ -494,6 +496,22 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                 assertionFailure("Unsupported")
             }
         }
+    }
+
+    static func setupCustomBody(_ request: inout URLRequest, model: ChatModel) {
+        switch model.format {
+        case .openAI, .openAICompatible:
+            break
+        default:
+            return
+        }
+        
+        let join = JoinJSON()
+        let jsonBody = model.info.customBodyInfo.jsonBody
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let data = request.httpBody, !jsonBody.isEmpty else { return }
+        let newBody = join.join(data, with: jsonBody)
+        request.httpBody = newBody
     }
 }
 

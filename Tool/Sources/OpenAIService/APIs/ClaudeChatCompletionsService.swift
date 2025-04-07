@@ -3,6 +3,7 @@ import AsyncAlgorithms
 import ChatBasic
 import CodableWrappers
 import Foundation
+import JoinJSON
 import Logger
 import Preferences
 
@@ -10,6 +11,7 @@ import Preferences
 public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
     /// https://docs.anthropic.com/en/docs/about-claude/models
     public enum KnownModel: String, CaseIterable {
+        case claude37Sonnet = "claude-3-7-sonnet-latest"
         case claude35Sonnet = "claude-3-5-sonnet-latest"
         case claude35Haiku = "claude-3-5-haiku-latest"
         case claude3Opus = "claude-3-opus-latest"
@@ -23,6 +25,7 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             case .claude3Opus: return 200_000
             case .claude3Sonnet: return 200_000
             case .claude3Haiku: return 200_000
+            case .claude37Sonnet: return 200_000
             }
         }
     }
@@ -232,6 +235,8 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         }
+        Self.setupCustomBody(&request, model: model)
+        await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.bytes(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -295,6 +300,8 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         }
+        Self.setupCustomBody(&request, model: model)
+        await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
 
         let (result, response) = try await URLSession.shared.data(for: request)
         guard let response = response as? HTTPURLResponse else {
@@ -314,6 +321,15 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             dump(error)
             throw error
         }
+    }
+
+    static func setupCustomBody(_ request: inout URLRequest, model: ChatModel) {
+        let join = JoinJSON()
+        let jsonBody = model.info.customBodyInfo.jsonBody
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let data = request.httpBody, !jsonBody.isEmpty else { return }
+        let newBody = join.join(data, with: jsonBody)
+        request.httpBody = newBody
     }
 }
 
@@ -453,7 +469,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                     data: image.data.base64EncodedString()
                 )))
             }
-            
+
             return content
         }
 

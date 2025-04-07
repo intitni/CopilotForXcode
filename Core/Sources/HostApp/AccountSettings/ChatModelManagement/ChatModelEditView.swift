@@ -49,6 +49,25 @@ struct ChatModelEditView: View {
                                     .controlSize(.small)
                             }
                         }
+                        
+                        CustomBodyEdit(store: store)
+                            .disabled({
+                                switch store.format {
+                                case .openAI, .openAICompatible, .claude:
+                                    return false
+                                default:
+                                    return true
+                                }
+                            }())
+                        CustomHeaderEdit(store: store)
+                            .disabled({
+                                switch store.format {
+                                case .openAI, .openAICompatible, .ollama, .gitHubCopilot, .claude:
+                                    return false
+                                default:
+                                    return true
+                                }
+                            }())
 
                         Spacer()
 
@@ -230,6 +249,79 @@ struct ChatModelEditView: View {
         }
     }
 
+    struct CustomBodyEdit: View {
+        @Perception.Bindable var store: StoreOf<ChatModelEdit>
+        @State private var isEditing = false
+        @Dependency(\.namespacedToast) var toast
+
+        var body: some View {
+            Button("Custom Body") {
+                isEditing = true
+            }
+            .sheet(isPresented: $isEditing) {
+                WithPerceptionTracking {
+                    VStack {
+                        TextEditor(text: $store.customBody)
+                            .font(Font.system(.body, design: .monospaced))
+                            .padding(4)
+                            .frame(minHeight: 120)
+                            .multilineTextAlignment(.leading)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            )
+                            .handleToast(namespace: "CustomBodyEdit")
+
+                        Text(
+                            "The custom body will be added to the request body. Please use it to add parameters that are not yet available in the form. It should be a valid JSON object."
+                        )
+                        .foregroundColor(.secondary)
+                        .font(.callout)
+                        .padding(.bottom)
+
+                        Button(action: {
+                            if store.customBody.trimmingCharacters(in: .whitespacesAndNewlines)
+                                .isEmpty
+                            {
+                                isEditing = false
+                                return
+                            }
+                            guard let _ = try? JSONSerialization
+                                .jsonObject(with: store.customBody.data(using: .utf8) ?? Data())
+                            else {
+                                toast("Invalid JSON object", .error, "CustomBodyEdit")
+                                return
+                            }
+                            isEditing = false
+                        }) {
+                            Text("Done")
+                        }
+                        .keyboardShortcut(.defaultAction)
+                    }
+                    .padding()
+                    .frame(width: 600, height: 500)
+                    .background(Color(nsColor: .windowBackgroundColor))
+                }
+            }
+        }
+    }
+
+    struct CustomHeaderEdit: View {
+        @Perception.Bindable var store: StoreOf<ChatModelEdit>
+        @State private var isEditing = false
+
+        var body: some View {
+            Button("Custom Headers") {
+                isEditing = true
+            }
+            .sheet(isPresented: $isEditing) {
+                WithPerceptionTracking {
+                    CustomHeaderSettingsView(headers: $store.customHeaders)
+                }
+            }
+        }
+    }
+
     struct OpenAIForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
         var body: some View {
@@ -300,7 +392,6 @@ struct ChatModelEditView: View {
 
     struct OpenAICompatibleForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
-        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -340,16 +431,10 @@ struct ChatModelEditView: View {
                 Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
                     Text("Support multi-part message content")
                 }
-                
+
                 Toggle(isOn: $store.requiresBeginWithUserMessage) {
                     Text("Requires the first message to be from the user")
                 }
-
-                Button("Custom Headers") {
-                    isEditingCustomHeader.toggle()
-                }
-            }.sheet(isPresented: $isEditingCustomHeader) {
-                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
@@ -394,7 +479,6 @@ struct ChatModelEditView: View {
 
     struct OllamaForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
-        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -411,20 +495,13 @@ struct ChatModelEditView: View {
                 TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {
                     Text("Keep Alive")
                 }
-
-                Button("Custom Headers") {
-                    isEditingCustomHeader.toggle()
-                }
-
+                
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://ollama.com](https://ollama.com)."
                     )
                 }
                 .padding(.vertical)
-
-            }.sheet(isPresented: $isEditingCustomHeader) {
-                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
@@ -475,7 +552,6 @@ struct ChatModelEditView: View {
 
     struct GitHubCopilotForm: View {
         @Perception.Bindable var store: StoreOf<ChatModelEdit>
-        @State var isEditingCustomHeader = false
 
         var body: some View {
             WithPerceptionTracking {
@@ -507,10 +583,6 @@ struct ChatModelEditView: View {
                     Text("Support multi-part message content")
                 }
 
-                Button("Custom Headers") {
-                    isEditingCustomHeader.toggle()
-                }
-
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " Please login in the GitHub Copilot settings to use the model."
@@ -522,8 +594,6 @@ struct ChatModelEditView: View {
                 }
                 .dynamicHeightTextInFormWorkaround()
                 .padding(.vertical)
-            }.sheet(isPresented: $isEditingCustomHeader) {
-                CustomHeaderSettingsView(headers: $store.customHeaders)
             }
         }
     }
