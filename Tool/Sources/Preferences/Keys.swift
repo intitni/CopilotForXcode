@@ -349,7 +349,7 @@ public extension UserDefaultPreferenceKeys {
     }
     
     var acceptSuggestionLineWithTab: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "AcceptSuggestionLineWithTab")
+        .init(defaultValue: true, key: "AcceptSuggestionLineWithTab")
     }
     
     var acceptSuggestionLineWithArrowKey: PreferenceKey<Bool> {
@@ -357,7 +357,7 @@ public extension UserDefaultPreferenceKeys {
     }
     
     var switchSuggestionGroupWithTab: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "SwitchSuggestionGroupWithTab")
+        .init(defaultValue: true, key: "SwitchSuggestionGroupWithTab")
     }
 
     var acceptSuggestionWithModifierCommand: PreferenceKey<Bool> {
