@@ -505,9 +505,9 @@ struct PseudoCommandHandler: CommandHandler {
                 "/bin/bash",
                 arguments: [
                     "-c",
-                    "xed -l \(line) \"\(fileURL.path)\"",
+                    "xed -l \(line) ${TARGET_FILE}",
                 ],
-                environment: [:]
+                environment: ["TARGET_FILE": fileURL.path],
             )
         } catch {
             print(error)

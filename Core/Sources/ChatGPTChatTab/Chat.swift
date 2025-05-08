@@ -206,9 +206,9 @@ struct Chat {
                                 "/bin/bash",
                                 arguments: [
                                     "-c",
-                                    "xed -l \(reference.startLine ?? 0) \"\(reference.uri)\"",
+                                    "xed -l \(reference.startLine ?? 0) ${TARGET_FILE}",
                                 ],
-                                environment: [:]
+                                environment: ["TARGET_FILE": reference.uri]
                             )
                         } catch {
                             print(error)
