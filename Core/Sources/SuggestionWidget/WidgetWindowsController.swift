@@ -114,6 +114,7 @@ private extension WidgetWindowsController {
                 await hideSuggestionPanelWindow()
             }
             await adjustChatPanelWindowLevel()
+            await adjustModificationPanelLevel()
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
@@ -395,7 +396,7 @@ extension WidgetWindowsController {
                     let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = noFocus ? 0 : 1
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
@@ -418,7 +419,7 @@ extension WidgetWindowsController {
 
                     let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
 
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = if noFocus {
                         0
@@ -441,7 +442,7 @@ extension WidgetWindowsController {
                             .chatPanelWindow.isKeyWindow
                     }
                 } else {
-                    windows.sharedPanelWindow.alphaValue = 0
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = 0
                     windows.widgetWindow.alphaValue = 0
                     windows.toastWindow.alphaValue = 0
@@ -503,6 +504,7 @@ extension WidgetWindowsController {
             }
 
             await adjustChatPanelWindowLevel()
+            await adjustModificationPanelLevel()
         }
 
         let now = Date()
@@ -532,6 +534,20 @@ extension WidgetWindowsController {
     }
 
     @MainActor
+    func adjustModificationPanelLevel() async {
+        let window = windows.sharedPanelWindow
+
+        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestAppIsXcodeOrExtension = if let latestApp {
+            latestApp.isXcode || latestApp.isExtensionService
+        } else {
+            false
+        }
+        
+        window.setFloatOnTop(latestAppIsXcodeOrExtension)
+    }
+
+    @MainActor
     func adjustChatPanelWindowLevel() async {
         let alwaysDisableChatPanelFlowOnTop = UserDefaults.shared
             .value(for: \.alwaysDisableFloatOnTopForChatPanel)
@@ -539,12 +555,12 @@ extension WidgetWindowsController {
             .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
 
         let window = windows.chatPanelWindow
-        
+
         if alwaysDisableChatPanelFlowOnTop {
             window.setFloatOnTop(false)
             return
         }
-        
+
         guard disableFloatOnTopWhenTheChatPanelIsDetached else {
             window.setFloatOnTop(true)
             return
@@ -882,6 +898,16 @@ class WidgetWindow: CanBecomeKeyWindow {
         Task { @MainActor in
             try await Task.sleep(nanoseconds: 50_000_000)
             self.state = previousState
+        }
+    }
+
+    func setFloatOnTop(_ isFloatOnTop: Bool) {
+        let targetLevel: NSWindow.Level = isFloatOnTop
+            ? .init(NSWindow.Level.floating.rawValue + 1)
+            : .normal
+
+        if targetLevel != level {
+            level = targetLevel
         }
     }
 }
