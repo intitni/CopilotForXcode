@@ -40,8 +40,8 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
         let request = GitHubCopilotRequest.ConversationCreate(requestBody: .init(
             workDoneToken: workDoneToken,
             turns: turns,
-            capabilities: .init(allSkills: false, skills: []),
-            doc: doc,
+            capabilities: .init(skills: [], allSkills: false),
+            textDocument: doc,
             source: .panel,
             workspaceFolder: workspace.projectURL.path,
             userLanguage: {
@@ -141,7 +141,7 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
 }
 
 extension GitHubCopilotChatService {
-    typealias Turn = GitHubCopilotRequest.ConversationCreate.RequestBody.Turn
+    typealias Turn = GitHubCopilotRequest.ConversationCreate.RequestBody.ConversationTurn
     func convertHistory(history: [Message], message: String) -> [Turn] {
         guard let firstIndexOfUserMessage = history.firstIndex(where: { $0.role == .user })
         else { return [.init(request: message, response: nil)] }
@@ -220,6 +220,10 @@ extension GitHubCopilotChatService {
                 var responseIsIncomplete: Bool?
                 var message: String?
             }
+            
+            struct Annotation: Decodable {
+                var id: Int
+            }
 
             var kind: String
             var title: String?
@@ -229,7 +233,7 @@ extension GitHubCopilotChatService {
             var followUp: FollowUp?
             var suggestedTitle: String?
             var reply: String?
-            var annotations: [String]?
+            var annotations: [Annotation]?
             var hideText: Bool?
             var cancellationReason: String?
             var error: Error?

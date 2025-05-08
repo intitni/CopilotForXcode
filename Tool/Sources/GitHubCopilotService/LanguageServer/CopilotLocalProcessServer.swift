@@ -141,7 +141,7 @@ extension CopilotLocalProcessServer: LanguageServerProtocol.Server {
 
     /// Cancel ongoing completion requests.
     public func cancelOngoingTasks() async {
-        guard let server = wrappedServer, process.isRunning else {
+        guard let _ = wrappedServer, process.isRunning else {
             return
         }
 
