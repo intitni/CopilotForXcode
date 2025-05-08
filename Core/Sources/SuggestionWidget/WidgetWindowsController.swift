@@ -400,12 +400,6 @@ extension WidgetWindowsController {
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = noFocus ? 0 : 1
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
-
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = false
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus
-                    }
                 } else if let activeApp, activeApp.isExtensionService {
                     let noFocus = {
                         guard let xcode = latestActiveXcode else { return true }
@@ -435,20 +429,11 @@ extension WidgetWindowsController {
                         0
                     }
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = false
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus && !windows
-                            .chatPanelWindow.isKeyWindow
-                    }
                 } else {
                     windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = 0
                     windows.widgetWindow.alphaValue = 0
                     windows.toastWindow.alphaValue = 0
-                    if !isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = true
-                    }
                 }
             }
         }
@@ -543,7 +528,7 @@ extension WidgetWindowsController {
         } else {
             false
         }
-        
+
         window.setFloatOnTop(latestAppIsXcodeOrExtension)
     }
 
@@ -561,18 +546,8 @@ extension WidgetWindowsController {
             return
         }
 
-        guard disableFloatOnTopWhenTheChatPanelIsDetached else {
-            window.setFloatOnTop(true)
-            return
-        }
-
         let state = store.withState { $0 }
         let isChatPanelDetached = state.chatPanelState.isDetached
-
-        guard isChatPanelDetached else {
-            window.setFloatOnTop(true)
-            return
-        }
 
         let floatOnTopWhenOverlapsXcode = UserDefaults.shared
             .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
@@ -584,10 +559,8 @@ extension WidgetWindowsController {
             false
         }
 
-        if !floatOnTopWhenOverlapsXcode || !latestAppIsXcodeOrExtension {
-            window.setFloatOnTop(false)
-        } else {
-            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }
+        async let overlap: Bool = { @MainActor in
+            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return false }
             let windowElements = xcode.appElement.windows
             let overlap = windowElements.contains {
                 if let position = $0.position, let size = $0.size {
@@ -601,8 +574,27 @@ extension WidgetWindowsController {
                 }
                 return false
             }
+            return overlap
+        }()
 
-            window.setFloatOnTop(overlap)
+        if latestAppIsXcodeOrExtension {
+            if floatOnTopWhenOverlapsXcode {
+                let overlap = await overlap
+                window.setFloatOnTop(overlap)
+            } else {
+                if disableFloatOnTopWhenTheChatPanelIsDetached, isChatPanelDetached {
+                    window.setFloatOnTop(false)
+                } else {
+                    window.setFloatOnTop(true)
+                }
+            }
+        } else {
+            if floatOnTopWhenOverlapsXcode {
+                let overlap = await overlap
+                window.setFloatOnTop(overlap)
+            } else {
+                window.setFloatOnTop(false)
+            }
         }
     }
 
@@ -907,6 +899,7 @@ class WidgetWindow: CanBecomeKeyWindow {
             : .normal
 
         if targetLevel != level {
+            self.orderFrontRegardless()
             level = targetLevel
         }
     }
