@@ -8,6 +8,7 @@ import Preferences
 import PromptToCodeCustomization
 import PromptToCodeService
 import SuggestionBasic
+import XcodeInspector
 
 @Reducer
 public struct PromptToCodePanel {
@@ -247,7 +248,13 @@ public struct PromptToCodePanel {
 
             case .acceptButtonTapped:
                 state.hasEnded = true
+                let url = state.promptToCodeState.source.documentURL
+                let startLine = state.snippetPanels.first?.snippet.attachedRange.start.line ?? 0
                 return .run { _ in
+                    let activeDocumentURL = await XcodeInspector.shared.safe.activeDocumentURL
+                    if activeDocumentURL != url {
+                        await commandHandler.presentFile(at: url, line: startLine)
+                    }
                     await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
@@ -257,7 +264,7 @@ public struct PromptToCodePanel {
                     await commandHandler.acceptModification()
                     activateThisApp()
                 }
-            
+
             case let .statusUpdated(status):
                 state.promptToCodeState.status = status
                 return .none

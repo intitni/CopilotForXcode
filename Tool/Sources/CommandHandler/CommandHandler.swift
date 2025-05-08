@@ -39,7 +39,16 @@ public protocol CommandHandler {
 
     // MARK: Others
 
-    func presentFile(at fileURL: URL, line: Int) async
+    func presentFile(at fileURL: URL, line: Int?) async
+
+    func presentFile(at fileURL: URL) async
+}
+
+public extension CommandHandler {
+    /// Default implementation for `presentFile(at:line:)`.
+    func presentFile(at fileURL: URL) async {
+        await presentFile(at: fileURL, line: nil)
+    }
 }
 
 public struct CommandHandlerDependencyKey: DependencyKey {
@@ -117,7 +126,7 @@ public final class UniversalCommandHandler: CommandHandler {
         commandHandler.toast(string, as: type)
     }
 
-    public func presentFile(at fileURL: URL, line: Int) async {
+    public func presentFile(at fileURL: URL, line: Int?) async {
         await commandHandler.presentFile(at: fileURL, line: line)
     }
 }
@@ -175,7 +184,7 @@ struct NOOPCommandHandler: CommandHandler {
         print("toast")
     }
 
-    func presentFile(at fileURL: URL, line: Int) async {
+    func presentFile(at fileURL: URL, line: Int?) async {
         print("present file")
     }
 }

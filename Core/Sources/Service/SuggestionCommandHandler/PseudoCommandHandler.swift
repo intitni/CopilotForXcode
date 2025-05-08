@@ -498,17 +498,28 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func presentFile(at fileURL: URL, line: Int = 0) async {
+    func presentFile(at fileURL: URL, line: Int?) async {
         let terminal = Terminal()
         do {
-            _ = try await terminal.runCommand(
-                "/bin/bash",
-                arguments: [
-                    "-c",
-                    "xed -l \(line) ${TARGET_FILE}",
-                ],
-                environment: ["TARGET_FILE": fileURL.path],
-            )
+            if let line {
+                _ = try await terminal.runCommand(
+                    "/bin/bash",
+                    arguments: [
+                        "-c",
+                        "xed -l \(line) ${TARGET_FILE}",
+                    ],
+                    environment: ["TARGET_FILE": fileURL.path],
+                )
+            } else {
+                _ = try await terminal.runCommand(
+                    "/bin/bash",
+                    arguments: [
+                        "-c",
+                        "xed ${TARGET_FILE}",
+                    ],
+                    environment: ["TARGET_FILE": fileURL.path],
+                )
+            }
         } catch {
             print(error)
         }
