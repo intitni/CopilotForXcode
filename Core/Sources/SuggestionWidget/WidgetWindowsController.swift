@@ -97,6 +97,10 @@ actor WidgetWindowsController: NSObject {
                 }
             }
         }
+        
+        Task { @MainActor in
+            windows.chatPanelWindow.isPanelDisplayed = false
+        }
     }
 }
 
