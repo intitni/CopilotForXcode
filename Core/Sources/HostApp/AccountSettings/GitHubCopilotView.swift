@@ -25,6 +25,7 @@ struct GitHubCopilotView: View {
         var disableGitHubCopilotSettingsAutoRefreshOnAppear
         @AppStorage(\.gitHubCopilotLoadKeyChainCertificates)
         var gitHubCopilotLoadKeyChainCertificates
+        @AppStorage(\.gitHubCopilotModelId) var gitHubCopilotModelId
         init() {}
     }
 
@@ -199,7 +200,7 @@ struct GitHubCopilotView: View {
                         .foregroundColor(.secondary)
                         .font(.callout)
                         .dynamicHeightTextInFormWorkaround()
-                        
+
                         Toggle(isOn: $settings.gitHubCopilotLoadKeyChainCertificates) {
                             Text("Load certificates in keychain")
                         }
@@ -267,6 +268,14 @@ struct GitHubCopilotView: View {
                     Button("Refresh configurations") {
                         refreshConfiguration()
                     }
+
+                    // Not available yet
+//                    Form {
+//                        GitHubCopilotModelPicker(
+//                            title: "Chat Model Name",
+//                            gitHubCopilotModelId: $settings.gitHubCopilotModelId
+//                        )
+//                    }
                 }
 
                 SettingsDivider("Advanced")
@@ -349,7 +358,6 @@ struct GitHubCopilotView: View {
                 if status != .ok, status != .notSignedIn {
                     toast(
                         "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription.",
-
                         .error
                     )
                 }

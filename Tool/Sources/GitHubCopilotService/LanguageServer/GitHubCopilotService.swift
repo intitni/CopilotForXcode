@@ -273,7 +273,6 @@ public class GitHubCopilotBaseService {
         let notifications = NotificationCenter.default
             .notifications(named: .gitHubCopilotShouldRefreshEditorInformation)
         Task { [weak self] in
-            print(await xcodeVersion())
             _ = try? await server.sendRequest(
                 GitHubCopilotRequest.SetEditorInfo(xcodeVersion: xcodeVersion() ?? "16.0")
             )

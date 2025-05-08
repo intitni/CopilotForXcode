@@ -364,7 +364,7 @@ enum GitHubCopilotRequest {
             enum ConversationSource: String, Codable {
                 case panel, inline
             }
-            
+
             enum ConversationMode: String, Codable {
                 case agent = "Agent"
             }
@@ -464,5 +464,42 @@ enum GitHubCopilotRequest {
             return .custom("conversation/destroy", dict)
         }
     }
+
+    struct CopilotModels: GitHubCopilotRequestType {
+        typealias Response = [GitHubCopilotModel]
+
+        var request: ClientRequest {
+            .custom("copilot/models", .hash([:]))
+        }
+    }
+}
+
+public struct GitHubCopilotModel: Codable, Equatable {
+    public let modelFamily: String
+    public let modelName: String
+    public let id: String
+//            public let modelPolicy: CopilotModelPolicy?
+    public let scopes: [GitHubCopilotPromptTemplateScope]
+    public let preview: Bool
+    public let isChatDefault: Bool
+    public let isChatFallback: Bool
+//            public let capabilities: CopilotModelCapabilities
+//            public let billing: CopilotModelBilling?
+}
+
+public struct GitHubCopilotLLMModel: Equatable, Decodable, Identifiable {
+    public var id: String { modelId }
+    public var modelId: String
+    public var familyName: String
+    public var contextWindow: Int
+}
+
+public enum GitHubCopilotPromptTemplateScope: String, Codable, Equatable {
+    case chatPanel = "chat-panel"
+    case editPanel = "edit-panel"
+    case agentPanel = "agent-panel"
+    case editor
+    case inline
+    case completion
 }
 

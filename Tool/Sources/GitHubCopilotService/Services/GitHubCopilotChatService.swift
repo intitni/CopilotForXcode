@@ -44,6 +44,13 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             textDocument: doc,
             source: .panel,
             workspaceFolder: workspace.projectURL.path,
+            model: {
+                let selectedModel = UserDefaults.shared.value(for: \.gitHubCopilotModelId)
+                if selectedModel.isEmpty {
+                    return nil
+                }
+                return selectedModel
+            }(),
             userLanguage: {
                 let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
                 if language.isEmpty {
@@ -220,7 +227,7 @@ extension GitHubCopilotChatService {
                 var responseIsIncomplete: Bool?
                 var message: String?
             }
-            
+
             struct Annotation: Decodable {
                 var id: Int
             }

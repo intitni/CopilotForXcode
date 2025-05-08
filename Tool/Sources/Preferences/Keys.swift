@@ -195,6 +195,14 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotPretendIDEToBeVSCode: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotPretendIDEToBeVSCode")
     }
+    
+    var gitHubCopilotModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotModelId")
+    }
+    
+    var gitHubCopilotModelFamily: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotModelFamily")
+    }
 }
 
 // MARK: - Codeium Settings
