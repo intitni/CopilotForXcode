@@ -7,7 +7,6 @@ public struct SharedPanel {
     public struct Content {
         public var promptToCodeGroup = PromptToCodeGroup.State()
         var suggestion: PresentingCodeSuggestion?
-        public var promptToCode: PromptToCodePanel.State? { promptToCodeGroup.activePromptToCode }
         var error: String?
     }
 
@@ -19,7 +18,7 @@ public struct SharedPanel {
         var isPanelDisplayed: Bool = false
         var isEmpty: Bool {
             if content.error != nil { return false }
-            if content.promptToCode != nil { return false }
+            if !content.promptToCodeGroup.promptToCodes.isEmpty { return false }
             if content.suggestion != nil,
                UserDefaults.shared
                .value(for: \.suggestionPresentationMode) == .floatingWidget { return false }

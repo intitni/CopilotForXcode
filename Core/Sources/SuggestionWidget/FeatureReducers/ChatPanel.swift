@@ -77,7 +77,7 @@ public struct ChatPanel {
         case moveChatTab(from: Int, to: Int)
         case focusActiveChatTab
 
-        case chatTab(id: String, action: ChatTabItem.Action)
+        case chatTab(IdentifiedActionOf<ChatTabItem>)
     }
 
     @Dependency(\.chatTabPool) var chatTabPool
@@ -280,10 +280,10 @@ public struct ChatPanel {
                 let id = state.chatTabGroup.selectedTabInfo?.id
                 guard let id else { return .none }
                 return .run { send in
-                    await send(.chatTab(id: id, action: .focus))
+                    await send(.chatTab(.element(id: id, action: .focus)))
                 }
 
-            case let .chatTab(id, .close):
+            case let .chatTab(.element(id, .close)):
                 return .run { send in
                     await send(.closeTabButtonClicked(id: id))
                 }
@@ -291,7 +291,7 @@ public struct ChatPanel {
             case .chatTab:
                 return .none
             }
-        }.forEach(\.chatTabGroup.tabInfo, action: /Action.chatTab) {
+        }.forEach(\.chatTabGroup.tabInfo, action: \.chatTab) {
             ChatTabItem()
         }
     }

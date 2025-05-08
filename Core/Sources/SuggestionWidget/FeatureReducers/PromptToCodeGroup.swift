@@ -11,20 +11,14 @@ public struct PromptToCodeGroup {
         public var promptToCodes: IdentifiedArrayOf<PromptToCodePanel.State> = []
         public var activeDocumentURL: PromptToCodePanel.State.ID? = XcodeInspector.shared
             .realtimeActiveDocumentURL
+        public var selectedTabId: URL?
         public var activePromptToCode: PromptToCodePanel.State? {
             get {
-                if let detached = promptToCodes
-                    .first(where: { !$0.promptToCodeState.isAttachedToTarget })
-                {
-                    return detached
-                }
-                guard let id = activeDocumentURL else { return nil }
-                return promptToCodes[id: id]
+                guard let selectedTabId else { return promptToCodes.first }
+                return promptToCodes[id: selectedTabId] ?? promptToCodes.first
             }
             set {
-                if let id = newValue?.id {
-                    promptToCodes[id: id] = newValue
-                }
+                selectedTabId = newValue?.id
             }
         }
     }
@@ -41,7 +35,11 @@ public struct PromptToCodeGroup {
         case discardAcceptedPromptToCodeIfNotContinuous(id: PromptToCodePanel.State.ID)
         case updateActivePromptToCode(documentURL: URL)
         case discardExpiredPromptToCode(documentURLs: [URL])
-        case promptToCode(PromptToCodePanel.State.ID, PromptToCodePanel.Action)
+        case tabClicked(id: URL)
+        case closeTabButtonClicked(id: URL)
+        case switchToNextTab
+        case switchToPreviousTab
+        case promptToCode(IdentifiedActionOf<PromptToCodePanel>)
         case activePromptToCode(PromptToCodePanel.Action)
     }
 
@@ -51,9 +49,12 @@ public struct PromptToCodeGroup {
         Reduce { state, action in
             switch action {
             case let .activateOrCreatePromptToCode(s):
-                if let promptToCode = state.activePromptToCode {
+                if let promptToCode = state.activePromptToCode, s.id == promptToCode.id {
                     return .run { send in
-                        await send(.promptToCode(promptToCode.id, .focusOnTextField))
+                        await send(.promptToCode(.element(
+                            id: promptToCode.id,
+                            action: .focusOnTextField
+                        )))
                     }
                 }
                 return .run { send in
@@ -61,12 +62,15 @@ public struct PromptToCodeGroup {
                 }
             case let .createPromptToCode(newPromptToCode, sendImmediately):
                 // insert at 0 so it has high priority then the other detached prompt to codes
-                state.promptToCodes.insert(newPromptToCode, at: 0)
+                state.promptToCodes.append(newPromptToCode)
                 return .run { send in
                     if sendImmediately,
                        !newPromptToCode.contextInputController.instruction.string.isEmpty
                     {
-                        await send(.promptToCode(newPromptToCode.id, .modifyCodeButtonTapped))
+                        await send(.promptToCode(.element(
+                            id: newPromptToCode.id,
+                            action: .modifyCodeButtonTapped
+                        )))
                     }
                 }.cancellable(
                     id: PromptToCodePanel.CancellationKey.modifyCode(newPromptToCode.id),
@@ -94,6 +98,37 @@ public struct PromptToCodeGroup {
                 }
                 return .none
 
+            case let .tabClicked(id):
+                state.selectedTabId = id
+                return .none
+
+            case let .closeTabButtonClicked(id):
+                return .run { send in
+                    await send(.promptToCode(.element(
+                        id: id,
+                        action: .cancelButtonTapped
+                    )))
+                }
+
+            case .switchToNextTab:
+                if let selectedTabId = state.selectedTabId,
+                   let index = state.promptToCodes.index(id: selectedTabId)
+                {
+                    let nextIndex = (index + 1) % state.promptToCodes.count
+                    state.selectedTabId = state.promptToCodes[nextIndex].id
+                }
+                return .none
+
+            case .switchToPreviousTab:
+                if let selectedTabId = state.selectedTabId,
+                   let index = state.promptToCodes.index(id: selectedTabId)
+                {
+                    let previousIndex = (index - 1 + state.promptToCodes.count) % state
+                        .promptToCodes.count
+                    state.selectedTabId = state.promptToCodes[previousIndex].id
+                }
+                return .none
+
             case .promptToCode:
                 return .none
 
@@ -104,22 +139,28 @@ public struct PromptToCodeGroup {
         .ifLet(\.activePromptToCode, action: \.activePromptToCode) {
             PromptToCodePanel()
         }
-        .forEach(\.promptToCodes, action: /Action.promptToCode, element: {
+        .forEach(\.promptToCodes, action: \.promptToCode, element: {
             PromptToCodePanel()
         })
 
         Reduce { state, action in
             switch action {
-            case let .promptToCode(id, .cancelButtonTapped):
+            case let .promptToCode(.element(id, .cancelButtonTapped)):
                 state.promptToCodes.remove(id: id)
+                let isEmpty = state.promptToCodes.isEmpty
                 return .run { _ in
-                    activatePreviousActiveXcode()
+                    if isEmpty {
+                        activatePreviousActiveXcode()
+                    }
                 }
             case .activePromptToCode(.cancelButtonTapped):
-                guard let id = state.activePromptToCode?.id else { return .none }
+                guard let id = state.selectedTabId else { return .none }
                 state.promptToCodes.remove(id: id)
+                let isEmpty = state.promptToCodes.isEmpty
                 return .run { _ in
-                    activatePreviousActiveXcode()
+                    if isEmpty {
+                        activatePreviousActiveXcode()
+                    }
                 }
             default: return .none
             }

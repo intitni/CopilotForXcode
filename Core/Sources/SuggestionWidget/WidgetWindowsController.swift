@@ -755,7 +755,7 @@ public final class WidgetWindows {
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in
             store.withState { state in
-                state.panelState.sharedPanelState.content.promptToCode != nil
+                !state.panelState.sharedPanelState.content.promptToCodeGroup.promptToCodes.isEmpty
             }
         }
         return it

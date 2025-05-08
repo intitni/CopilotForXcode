@@ -38,8 +38,6 @@ struct PromptToCodePanelView: View {
                         }
                 }
             }
-            .background(.ultraThickMaterial)
-            .xcodeStyleFrame()
         }
         .task {
             await MainActor.run {
@@ -56,14 +54,6 @@ extension PromptToCodePanelView {
         var body: some View {
             WithPerceptionTracking {
                 VStack(spacing: 0) {
-                    HStack {
-                        SelectionRangeButton(store: store)
-                        Spacer()
-                    }
-                    .padding(2)
-
-                    Divider()
-
                     if let previousStep = store.promptToCodeState.history.last {
                         Button(action: {
                             store.send(.revertButtonTapped)
