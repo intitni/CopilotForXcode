@@ -20,9 +20,9 @@ final class ChatPanelWindow: WidgetWindow {
     override var defaultCollectionBehavior: NSWindow.CollectionBehavior {
         [
             .fullScreenAuxiliary,
-            .transient,
             .fullScreenPrimary,
             .fullScreenAllowsTiling,
+            .participatesInCycle
         ]
     }
 

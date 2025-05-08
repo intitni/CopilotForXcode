@@ -533,10 +533,18 @@ extension WidgetWindowsController {
 
     @MainActor
     func adjustChatPanelWindowLevel() async {
+        let alwaysDisableChatPanelFlowOnTop = UserDefaults.shared
+            .value(for: \.alwaysDisableFloatOnTopForChatPanel)
         let disableFloatOnTopWhenTheChatPanelIsDetached = UserDefaults.shared
             .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
 
         let window = windows.chatPanelWindow
+        
+        if alwaysDisableChatPanelFlowOnTop {
+            window.setFloatOnTop(false)
+            return
+        }
+        
         guard disableFloatOnTopWhenTheChatPanelIsDetached else {
             window.setFloatOnTop(true)
             return
@@ -587,7 +595,7 @@ extension WidgetWindowsController {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
         let xcode = activeXcode?.appElement
-        
+
         let isXcodeActive = xcode?.isFrontmost ?? false
 
         [
@@ -600,7 +608,7 @@ extension WidgetWindowsController {
                 $0.moveToActiveSpace()
             }
         }
-        
+
         if isXcodeActive, !windows.chatPanelWindow.isDetached {
             windows.chatPanelWindow.moveToActiveSpace()
         }
@@ -867,7 +875,7 @@ class WidgetWindow: CanBecomeKeyWindow {
             }
         }
     }
-    
+
     func moveToActiveSpace() {
         let previousState = state
         state = .switchingSpace

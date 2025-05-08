@@ -195,11 +195,11 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotPretendIDEToBeVSCode: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotPretendIDEToBeVSCode")
     }
-    
+
     var gitHubCopilotModelId: PreferenceKey<String> {
         .init(defaultValue: "", key: "GitHubCopilotModelId")
     }
-    
+
     var gitHubCopilotModelFamily: PreferenceKey<String> {
         .init(defaultValue: "", key: "GitHubCopilotModelFamily")
     }
@@ -478,9 +478,13 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForWebScope: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForWebScope")
     }
-    
+
     var preferredChatModelIdForUtilities: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForUtilities")
+    }
+
+    var alwaysDisableFloatOnTopForChatPanel: PreferenceKey<Bool> {
+        .init(defaultValue: false, key: "AlwaysDisableFloatOnTopForChatPanel")
     }
 
     var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {
@@ -494,7 +498,7 @@ public extension UserDefaultPreferenceKeys {
     var openChatMode: PreferenceKey<UserDefaultsStorageBox<OpenChatMode>> {
         .init(defaultValue: .init(.chatPanel), key: "DefaultOpenChatMode")
     }
-    
+
     var legacyOpenChatMode: DeprecatedPreferenceKey<OpenChatMode.LegacyOpenChatMode> {
         .init(defaultValue: .chatPanel, key: "OpenChatMode")
     }
@@ -731,7 +735,7 @@ public extension UserDefaultPreferenceKeys {
     var useCloudflareDomainNameForLicenseCheck: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-UseCloudflareDomainNameForLicenseCheck")
     }
-    
+
     var doNotInstallLaunchAgentAutomatically: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DoNotInstallLaunchAgentAutomatically")
     }
