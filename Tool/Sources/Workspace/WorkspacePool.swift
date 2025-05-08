@@ -68,6 +68,11 @@ public class WorkspacePool {
         }
         return nil
     }
+    
+    @WorkspaceActor
+    public func destroy() {
+        workspaces = [:]
+    }
 
     @WorkspaceActor
     public func fetchOrCreateWorkspace(workspaceURL: URL) async throws -> Workspace {
