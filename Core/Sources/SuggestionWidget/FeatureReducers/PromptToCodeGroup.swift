@@ -63,6 +63,7 @@ public struct PromptToCodeGroup {
             case let .createPromptToCode(newPromptToCode, sendImmediately):
                 // insert at 0 so it has high priority then the other detached prompt to codes
                 state.promptToCodes.append(newPromptToCode)
+                state.selectedTabId = newPromptToCode.id
                 return .run { send in
                     if sendImmediately,
                        !newPromptToCode.contextInputController.instruction.string.isEmpty
