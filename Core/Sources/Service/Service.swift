@@ -158,6 +158,18 @@ public extension Service {
                     }
                 }
             }
+            
+            try ExtensionServiceRequests.GetSuggestionLineAcceptedCode.handle(
+                endpoint: endpoint,
+                requestBody: requestBody,
+                reply: reply
+            ) { request in
+                let editor = request.editorContent
+                let handler = WindowBaseCommandHandler()
+                let updatedContent = try? await handler
+                    .acceptSuggestionLine(editor: editor)
+                return updatedContent
+            }
         } catch is XPCRequestHandlerHitError {
             return
         } catch {

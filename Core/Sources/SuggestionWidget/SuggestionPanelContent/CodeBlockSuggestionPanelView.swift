@@ -54,6 +54,8 @@ struct CodeBlockSuggestionPanelView: View {
 
     struct ToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
+        @Environment(\.modifierFlags) var modifierFlags
+        @AppStorage(\.acceptSuggestionLineWithModifierControl) var acceptLineWithControl
         let suggestion: PresentingCodeSuggestion
 
         var body: some View {
@@ -98,14 +100,25 @@ struct CodeBlockSuggestionPanelView: View {
                         Text("Reject")
                     }.buttonStyle(CommandButtonStyle(color: .gray))
 
-                    Button(action: {
-                        Task {
-                            await commandHandler.acceptSuggestion()
-                            NSWorkspace.activatePreviousActiveXcode()
-                        }
-                    }) {
-                        Text("Accept")
-                    }.buttonStyle(CommandButtonStyle(color: .accentColor))
+                    if modifierFlags.contains(.control) && acceptLineWithControl {
+                        Button(action: {
+                            Task {
+                                await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil)
+                                NSWorkspace.activatePreviousActiveXcode()
+                            }
+                        }) {
+                            Text("Accept Line")
+                        }.buttonStyle(CommandButtonStyle(color: .gray))
+                    } else {
+                        Button(action: {
+                            Task {
+                                await commandHandler.acceptSuggestion()
+                                NSWorkspace.activatePreviousActiveXcode()
+                            }
+                        }) {
+                            Text("Accept")
+                        }.buttonStyle(CommandButtonStyle(color: .accentColor))
+                    }
                 }
                 .padding(6)
                 .foregroundColor(.secondary)
@@ -116,6 +129,8 @@ struct CodeBlockSuggestionPanelView: View {
 
     struct CompactToolBar: View {
         @Dependency(\.commandHandler) var commandHandler
+        @Environment(\.modifierFlags) var modifierFlags
+        @AppStorage(\.acceptSuggestionLineWithModifierControl) var acceptLineWithControl
         let suggestion: PresentingCodeSuggestion
 
         var body: some View {
@@ -139,6 +154,12 @@ struct CodeBlockSuggestionPanelView: View {
                     }.buttonStyle(.plain)
 
                     Spacer()
+                    
+                    if modifierFlags.contains(.control) && acceptLineWithControl {
+                        Text("Accept Line")
+                            .foregroundColor(.secondary)
+                            .padding(.trailing, 4)
+                    }
 
                     Button(action: {
                         Task {
