@@ -152,7 +152,7 @@ public class GitHubCopilotBaseService {
             }() else {
                 throw GitHubCopilotError.languageServerNotInstalled
             }
-            
+
             let indexJSURL: URL = try {
                 if UserDefaults.shared.value(for: \.gitHubCopilotLoadKeyChainCertificates) {
                     let url = urls.executableURL
@@ -241,7 +241,17 @@ public class GitHubCopilotBaseService {
 
             server.initializeParamsProvider = {
                 let capabilities = ClientCapabilities(
-                    workspace: nil,
+                    workspace: .init(
+                        applyEdit: false,
+                        workspaceEdit: nil,
+                        didChangeConfiguration: nil,
+                        didChangeWatchedFiles: nil,
+                        symbol: nil,
+                        executeCommand: nil,
+                        workspaceFolders: true,
+                        configuration: nil,
+                        semanticTokens: nil
+                    ),
                     textDocument: nil,
                     window: nil,
                     general: nil,
@@ -276,7 +286,7 @@ public class GitHubCopilotBaseService {
                         "copilotCapabilities": [
                             /// The editor has support for watching files over LSP
                             "watchedFiles": watchedFiles,
-                        ]
+                        ],
                     ],
                     capabilities: capabilities,
                     trace: .off,

@@ -11,6 +11,11 @@ public struct GitHubCopilotInstallationManager {
         return URL(string: link)!
     }
 
+    /// trying to update to a newer version but completions stop working for some reasons.
+    /// As a reference, the changes starts since 1.45.0 and GitHub's extension updates the
+    /// language server since this commit:
+    /// https://github.com/github/CopilotForXcode/commit/b2189de633417a49d6d2022aad5ff0748ebed2ac#diff-678798cf677bcd1ce276809cfccd33da9ff594b1b0c557180210a4ed2bd27ffa
+    /// It jumps directly to 1.48.0 from a much lower version.
     static let latestSupportedVersion = "1.44.0"
     static let minimumSupportedVersion = "1.32.0"
 
