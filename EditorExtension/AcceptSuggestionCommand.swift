@@ -58,4 +58,3 @@ class AcceptSuggestionLineCommand: NSObject, XCSourceEditorCommand, CommandType 
         }
     }
 }
-

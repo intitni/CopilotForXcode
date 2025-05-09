@@ -90,16 +90,6 @@ final class ChatPanelWindow: WidgetWindow {
         center()
     }
 
-    func setFloatOnTop(_ isFloatOnTop: Bool) {
-        let targetLevel: NSWindow.Level = isFloatOnTop
-            ? .init(NSWindow.Level.floating.rawValue + 1)
-            : .normal
-
-        if targetLevel != level {
-            level = targetLevel
-        }
-    }
-
     var isWindowHidden: Bool = false {
         didSet {
             alphaValue = isPanelDisplayed && !isWindowHidden ? 1 : 0

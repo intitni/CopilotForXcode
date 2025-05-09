@@ -8,6 +8,7 @@ import Preferences
 import PromptToCodeCustomization
 import PromptToCodeService
 import SuggestionBasic
+import XcodeInspector
 
 @Reducer
 public struct PromptToCodePanel {
@@ -15,6 +16,11 @@ public struct PromptToCodePanel {
     public struct State: Identifiable {
         public enum FocusField: Equatable {
             case textField
+        }
+        
+        public enum ClickedButton: Equatable {
+            case accept
+            case acceptAndContinue
         }
 
         @Shared public var promptToCodeState: ModificationState
@@ -35,7 +41,9 @@ public struct PromptToCodePanel {
 
         public var generateDescriptionRequirement: Bool
 
-        public var hasEnded = false
+        public var clickedButton: ClickedButton?
+        
+        public var isActiveDocument: Bool = false
 
         public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
             get {
@@ -84,6 +92,7 @@ public struct PromptToCodePanel {
         case cancelButtonTapped
         case acceptButtonTapped
         case acceptAndContinueButtonTapped
+        case revealFileButtonClicked
         case statusUpdated([String])
         case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
@@ -246,18 +255,26 @@ public struct PromptToCodePanel {
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .acceptButtonTapped:
-                state.hasEnded = true
+                state.clickedButton = .accept
                 return .run { _ in
                     await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
 
             case .acceptAndContinueButtonTapped:
+                state.clickedButton = .acceptAndContinue
                 return .run { _ in
                     await commandHandler.acceptModification()
                     activateThisApp()
                 }
-            
+
+            case .revealFileButtonClicked:
+                let url = state.promptToCodeState.source.documentURL
+                let startLine = state.snippetPanels.first?.snippet.attachedRange.start.line ?? 0
+                return .run { _ in
+                    await commandHandler.presentFile(at: url, line: startLine)
+                }
+
             case let .statusUpdated(status):
                 state.promptToCodeState.status = status
                 return .none

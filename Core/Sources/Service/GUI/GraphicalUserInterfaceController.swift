@@ -319,9 +319,8 @@ public final class GraphicalUserInterfaceController {
         }
 
         suggestionDependency.onOpenChatClicked = { [weak self] in
-            Task { [weak self] in
-                await self?.store.send(.createAndSwitchToChatGPTChatTabIfNeeded).finish()
-                self?.store.send(.openChatPanel(forceDetach: false, activateThisApp: true))
+            Task {
+                PseudoCommandHandler().openChat(forceDetach: false, activateThisApp: true)
             }
         }
         suggestionDependency.onOpenModificationButtonClicked = {

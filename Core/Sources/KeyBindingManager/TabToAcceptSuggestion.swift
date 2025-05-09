@@ -46,6 +46,19 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
         }
     }
 
+    func start() {
+        Task { [weak self] in
+            for await _ in ActiveApplicationMonitor.shared.createInfoStream() {
+                guard let self else { return }
+                try Task.checkCancellation()
+                Task { @MainActor in
+                    if ActiveApplicationMonitor.shared.activeXcode != nil {
+                        self.startObservation()
+                    } else {
+                        self.stopObservation()
+                    }
+                }
+            }
     func handleTab(_ flags: CGEventFlags) -> CGEventManipulation.Result {
         Logger.service.info("TabToAcceptSuggestion: Tab")
 
@@ -55,6 +68,11 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             return .unchanged
         }
 
+        userDefaultsObserver.onChange = { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                if self.canTapToAcceptSuggestion || self.canEscToDismissSuggestion {
+                    self.startObservation()
         let language = languageIdentifierFromFileURL(fileURL)
 
         if flags.contains(.maskHelp) { return .unchanged }
@@ -77,6 +95,7 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
                 if language == .builtIn(.swift) {
                     return all
                 } else {
+                    self.stopObservation()
                     return []
                 }
             } else {
@@ -92,18 +111,33 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             Logger.service.info("TabToAcceptSuggestion: Modifier not found")
             return .unchanged
         }
+    }
 
+    @MainActor
+    func startObservation() {
+        guard !stoppedForExit else { return }
+        guard canTapToAcceptSuggestion || canEscToDismissSuggestion else { return }
+        hook.activateIfPossible()
+    }
         for flag in flagsToAvoidWhenNotRequired {
             if flags.contains(flag), !requiredFlagsToTrigger.contains(flag) {
                 return .unchanged
             }
         }
 
+    @MainActor
+    func stopObservation() {
+        hook.deactivate()
+    }
         guard canTabToAcceptSuggestion else {
             Logger.service.info("TabToAcceptSuggestion: Feature not available")
             return .unchanged
         }
 
+    func handleEvent(_ event: CGEvent) -> CGEventManipulation.Result {
+        let keycode = Int(event.getIntegerValueField(.keyboardEventKeycode))
+        let tab = 48
+        let esc = 53
         guard ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil
         else {
             Logger.service.info("TabToAcceptSuggestion: Xcode not found")
@@ -129,6 +163,11 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
             return .unchanged
         }
 
+        switch keycode {
+        case tab:
+            return handleTab(event.flags)
+        case esc:
+            return handleEsc(event.flags)
         if flags.contains(.maskAlternate) && !requiredFlagsToTrigger.contains(.maskAlternate) {
             if !UserDefaults.shared.value(for: \.switchSuggestionGroupWithTab) {
                 return .unchanged
@@ -154,7 +193,7 @@ struct TabToAcceptSuggestionHandler: KeyBindingHandler {
                 if flags.contains(.maskControl),
                    !requiredFlagsToTrigger.contains(.maskControl)
                 {
-                    if UserDefaults.shared.value(for: \.acceptSuggestionLineWithTab) {
+                    if UserDefaults.shared.value(for: \.acceptSuggestionLineWithModifierControl) {
                         Task {
                             await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil)
                         }

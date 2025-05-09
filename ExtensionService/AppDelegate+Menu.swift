@@ -2,6 +2,8 @@ import AppKit
 import Foundation
 import Preferences
 import XcodeInspector
+import Dependencies
+import Workspace
 
 extension AppDelegate {
     fileprivate var statusBarMenuIdentifier: NSUserInterfaceItemIdentifier {
@@ -95,6 +97,12 @@ extension AppDelegate {
             action: #selector(reactivateObservationsToXcode),
             keyEquivalent: ""
         )
+        
+        let resetWorkspacesItem = NSMenuItem(
+            title: "Reset workspaces",
+            action: #selector(destroyWorkspacePool),
+            keyEquivalent: ""
+        )
 
         reactivateObservationsItem.target = self
 
@@ -108,6 +116,7 @@ extension AppDelegate {
         statusBarMenu.addItem(xcodeInspectorDebug)
         statusBarMenu.addItem(accessibilityAPIPermission)
         statusBarMenu.addItem(reactivateObservationsItem)
+        statusBarMenu.addItem(resetWorkspacesItem)
         statusBarMenu.addItem(quitItem)
 
         statusBarMenu.delegate = self
@@ -246,6 +255,13 @@ private extension AppDelegate {
                 requestBody: data,
                 reply: { _, _ in }
             )
+        }
+    }
+    
+    @objc func destroyWorkspacePool() {
+        @Dependency(\.workspacePool) var workspacePool: WorkspacePool
+        Task {
+            await workspacePool.destroy()
         }
     }
 }

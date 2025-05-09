@@ -125,7 +125,7 @@ struct ChatTitleBar: View {
     }
 }
 
-private extension View {
+extension View {
     func hideScrollIndicator() -> some View {
         if #available(macOS 13.0, *) {
             return scrollIndicators(.hidden)
@@ -200,7 +200,7 @@ struct ChatTabBar: View {
                                                 draggingTabId: $draggingTabId
                                             )
                                         )
-                                        
+
                                     } else {
                                         ChatTabBarButton(
                                             store: store,

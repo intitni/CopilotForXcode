@@ -360,6 +360,8 @@ final class ServerNotificationHandler {
                 Logger.gitHubCopilot
                     .info("\(anyNotification.method): \(debugDescription)")
             }
+        case "didChangeStatus":
+            Logger.gitHubCopilot.info("Did change status: \(debugDescription)")
         default:
             throw ServerError.handlerUnavailable(methodName)
         }

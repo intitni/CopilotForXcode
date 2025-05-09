@@ -222,7 +222,7 @@ extension GitHubCopilotExtension {
     public static func fetchToken() async throws -> Token {
         guard let authToken = authInfo?.oauth_token
         else { throw GitHubCopilotError.notLoggedIn }
-        
+
         let oldToken = await MainActor.run { cachedToken }
         if let oldToken {
             let expiresAt = Date(timeIntervalSince1970: TimeInterval(oldToken.expires_at))
@@ -230,7 +230,7 @@ extension GitHubCopilotExtension {
                 return oldToken
             }
         }
-        
+
         let url = URL(string: "https://api.github.com/copilot_internal/v2/token")!
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -254,6 +254,65 @@ extension GitHubCopilotExtension {
             Logger.service.error(error.localizedDescription)
             throw error
         }
+    }
+
+    public static func fetchLLMModels() async throws -> [GitHubCopilotLLMModel] {
+        let token = try await GitHubCopilotExtension.fetchToken()
+        guard let endpoint = URL(string: token.endpoints.api + "/models") else {
+            throw CancellationError()
+        }
+        var request = URLRequest(url: endpoint)
+        request.setValue(
+            "Copilot for Xcode/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")",
+            forHTTPHeaderField: "Editor-Version"
+        )
+        request.setValue("Bearer \(token.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("vscode-chat", forHTTPHeaderField: "Copilot-Integration-Id")
+        request.setValue("2023-07-07", forHTTPHeaderField: "X-Github-Api-Version")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let response = response as? HTTPURLResponse else {
+            throw CancellationError()
+        }
+
+        guard response.statusCode == 200 else {
+            throw CancellationError()
+        }
+
+        struct Model: Decodable {
+            struct Limit: Decodable {
+                var max_context_window_tokens: Int
+            }
+
+            struct Capability: Decodable {
+                var type: String?
+                var family: String?
+                var limit: Limit?
+            }
+
+            var id: String
+            var capabilities: Capability
+        }
+        
+        struct Body: Decodable {
+            var data: [Model]
+        }
+
+        let models = try JSONDecoder().decode(Body.self, from: data)
+            .data
+            .filter {
+                $0.capabilities.type == "chat"
+            }
+            .map {
+                GitHubCopilotLLMModel(
+                    modelId: $0.id,
+                    familyName: $0.capabilities.family ?? "",
+                    contextWindow: $0.capabilities.limit?.max_context_window_tokens ?? 0
+                )
+            }
+        return models
     }
 }
 

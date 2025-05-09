@@ -49,7 +49,7 @@ struct ChatModelEditView: View {
                                     .controlSize(.small)
                             }
                         }
-                        
+
                         CustomBodyEdit(store: store)
                             .disabled({
                                 switch store.format {
@@ -495,7 +495,7 @@ struct ChatModelEditView: View {
                 TextField(text: $store.ollamaKeepAlive, prompt: Text("Default Value")) {
                     Text("Keep Alive")
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://ollama.com](https://ollama.com)."
@@ -555,22 +555,12 @@ struct ChatModelEditView: View {
 
         var body: some View {
             WithPerceptionTracking {
-                TextField("Model Name", text: $store.modelName)
-                    .overlay(alignment: .trailing) {
-                        Picker(
-                            "",
-                            selection: $store.modelName,
-                            content: {
-                                if AvailableGitHubCopilotModel(rawValue: store.modelName) == nil {
-                                    Text("Custom Model").tag(store.modelName)
-                                }
-                                ForEach(AvailableGitHubCopilotModel.allCases, id: \.self) { model in
-                                    Text(model.rawValue).tag(model.rawValue)
-                                }
-                            }
-                        )
-                        .frame(width: 20)
-                    }
+                #warning("Todo: use the old picker and update the context window limit.")
+                GitHubCopilotModelPicker(
+                    title: "Model Name",
+                    hasDefaultModel: false,
+                    gitHubCopilotModelId: $store.modelName
+                )
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)

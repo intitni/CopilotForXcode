@@ -264,7 +264,7 @@ struct SuggestionSettingsGeneralSectionView: View {
             @AppStorage(\.acceptSuggestionWithModifierOnlyForSwift)
             var onlyForSwift
 
-            @AppStorage(\.acceptSuggestionLineWithTab)
+            @AppStorage(\.acceptSuggestionLineWithModifierControl)
             var acceptLineWithTab
             @AppStorage(\.acceptSuggestionLineWithArrowKey)
             var acceptLineWithArrowKey

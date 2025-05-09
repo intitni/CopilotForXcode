@@ -6,7 +6,7 @@ import SwiftUI
 public struct SharedPanel {
     public struct Content {
         public var promptToCodeGroup = PromptToCodeGroup.State()
-        public var promptToCode: PromptToCodePanel.State? { promptToCodeGroup.activePromptToCode }
+        
     }
 
     @ObservableState
@@ -15,7 +15,10 @@ public struct SharedPanel {
         var colorScheme: ColorScheme = .light
         var alignTopToAnchor = false
         var isPanelDisplayed: Bool = false
-        var isEmpty: Bool { content.promptToCode != nil }
+        var isEmpty: Bool {
+            if !content.promptToCodeGroup.promptToCodes.isEmpty { return false }
+            return true
+        }
 
         var opacity: Double {
             guard isPanelDisplayed else { return 0 }

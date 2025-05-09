@@ -70,14 +70,17 @@ struct SharedPanelView: View {
         var body: some View {
             WithPerceptionTracking {
                 ZStack(alignment: .topLeading) {
-                    if let store = store.scope(
-                        state: \.content.promptToCodeGroup.activePromptToCode,
-                        action: \.promptToCodeGroup.activePromptToCode
-                    ) {
-                        PromptToCodePanelView(store: store)
-                    }
+                    promptToCode()
                 }
             }
+        }
+
+        @ViewBuilder
+        func promptToCode() -> some View {
+            PromptToCodePanelGroupView(store: store.scope(
+                state: \.content.promptToCodeGroup,
+                action: \.promptToCodeGroup
+            ))
         }
     }
 }
