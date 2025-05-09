@@ -498,7 +498,7 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")
+        .init(defaultValue: false, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")
     }
 
     var keepFloatOnTopIfChatPanelAndXcodeOverlaps: PreferenceKey<Bool> {
