@@ -486,9 +486,15 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForUtilities: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForUtilities")
     }
+    
+    enum ChatPanelFloatOnTopOption: Int, Codable, Equatable {
+        case alwaysOnTop
+        case onTopWhenXcodeIsActive
+        case never
+    }
 
-    var alwaysDisableFloatOnTopForChatPanel: PreferenceKey<Bool> {
-        .init(defaultValue: false, key: "AlwaysDisableFloatOnTopForChatPanel")
+    var chatPanelFloatOnTopOption: PreferenceKey<ChatPanelFloatOnTopOption> {
+        .init(defaultValue: .onTopWhenXcodeIsActive, key: "ChatPanelFloatOnTopOption")
     }
 
     var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {

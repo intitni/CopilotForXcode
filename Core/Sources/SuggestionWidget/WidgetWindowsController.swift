@@ -540,14 +540,14 @@ extension WidgetWindowsController {
 
     @MainActor
     func adjustChatPanelWindowLevel() async {
-        let alwaysDisableChatPanelFlowOnTop = UserDefaults.shared
-            .value(for: \.alwaysDisableFloatOnTopForChatPanel)
+        let flowOnTopOption = UserDefaults.shared
+            .value(for: \.chatPanelFloatOnTopOption)
         let disableFloatOnTopWhenTheChatPanelIsDetached = UserDefaults.shared
             .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
 
         let window = windows.chatPanelWindow
 
-        if alwaysDisableChatPanelFlowOnTop {
+        if flowOnTopOption == .never {
             window.setFloatOnTop(false)
             return
         }
@@ -599,7 +599,14 @@ extension WidgetWindowsController {
                 let overlap = await overlap
                 window.setFloatOnTop(overlap)
             } else {
-                window.setFloatOnTop(false)
+                switch flowOnTopOption {
+                case .onTopWhenXcodeIsActive:
+                    window.setFloatOnTop(false)
+                case .alwaysOnTop:
+                    window.setFloatOnTop(true)
+                case .never:
+                    window.setFloatOnTop(false)
+                }
             }
         }
     }
