@@ -158,7 +158,7 @@ struct GitHubCopilotView: View {
                                 "node"
                             )
                         ) {
-                            Text("Path to Node (v18+)")
+                            Text("Path to Node (v20.8+)")
                         }
 
                         Text(
@@ -261,7 +261,7 @@ struct GitHubCopilotView: View {
                         if isRunningAction {
                             ActivityIndicatorView()
                         }
-                    }
+                    } 
                     .opacity(isRunningAction ? 0.8 : 1)
                     .disabled(isRunningAction)
 
@@ -269,13 +269,12 @@ struct GitHubCopilotView: View {
                         refreshConfiguration()
                     }
 
-                    // Not available yet
-//                    Form {
-//                        GitHubCopilotModelPicker(
-//                            title: "Chat Model Name",
-//                            gitHubCopilotModelId: $settings.gitHubCopilotModelId
-//                        )
-//                    }
+                    Form {
+                        GitHubCopilotModelPicker(
+                            title: "Chat Model Name",
+                            gitHubCopilotModelId: $settings.gitHubCopilotModelId
+                        )
+                    }
                 }
 
                 SettingsDivider("Advanced")
