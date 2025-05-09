@@ -134,9 +134,9 @@ public class GitHubCopilotBaseService {
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
-            let watchedFiles = JSONValue(
-                booleanLiteral: projectRootURL.path == "/" ? false : true
-            )
+//            let watchedFiles = JSONValue(
+//                booleanLiteral: projectRootURL.path == "/" ? false : true
+//            )
 
             guard let agentJSURL = { () -> URL? in
                 let languageServerDotJS = urls.executableURL
@@ -241,17 +241,7 @@ public class GitHubCopilotBaseService {
 
             server.initializeParamsProvider = {
                 let capabilities = ClientCapabilities(
-                    workspace: .init(
-                        applyEdit: false,
-                        workspaceEdit: nil,
-                        didChangeConfiguration: nil,
-                        didChangeWatchedFiles: nil,
-                        symbol: nil,
-                        executeCommand: nil,
-                        workspaceFolders: true,
-                        configuration: nil,
-                        semanticTokens: nil
-                    ),
+                    workspace: nil,
                     textDocument: nil,
                     window: nil,
                     general: nil,
@@ -283,15 +273,15 @@ public class GitHubCopilotBaseService {
                             "version": .string(Bundle.main
                                 .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""),
                         ]),
-                        "copilotCapabilities": [
-                            /// The editor has support for watching files over LSP
-                            "watchedFiles": watchedFiles,
-                        ],
+//                        "copilotCapabilities": [
+//                            /// The editor has support for watching files over LSP
+//                            "watchedFiles": watchedFiles,
+//                        ],
                     ],
                     capabilities: capabilities,
                     trace: .off,
                     workspaceFolders: [WorkspaceFolder(
-                        uri: projectRootURL.path,
+                        uri: projectRootURL.absoluteString,
                         name: projectRootURL.lastPathComponent
                     )]
                 )
@@ -474,7 +464,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
             do {
                 let completions = try await server
                     .sendRequest(GitHubCopilotRequest.InlineCompletion(doc: .init(
-                        textDocument: .init(uri: fileURL.path, version: 1),
+                        textDocument: .init(uri: fileURL.absoluteString, version: 1),
                         position: cursorPosition,
                         formattingOptions: .init(
                             tabSize: tabSize,

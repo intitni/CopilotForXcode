@@ -6,17 +6,15 @@ public struct GitHubCopilotInstallationManager {
     public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "a9228e015528c9307890c48083c925eb98a64a79"
+        let commitHash = "18f485d892b56b311fd752039d6977333ebc2a0f"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
 
-    /// trying to update to a newer version but completions stop working for some reasons.
-    /// As a reference, the changes starts since 1.45.0 and GitHub's extension updates the
-    /// language server since this commit:
-    /// https://github.com/github/CopilotForXcode/commit/b2189de633417a49d6d2022aad5ff0748ebed2ac#diff-678798cf677bcd1ce276809cfccd33da9ff594b1b0c557180210a4ed2bd27ffa
-    /// It jumps directly to 1.48.0 from a much lower version.
-    static let latestSupportedVersion = "1.44.0"
+    /// The GitHub's version has quite a lot of changes about `watchedFiles` since the following
+    /// commit.
+    /// https://github.com/github/CopilotForXcode/commit/a50045aa3ab3b7d532cadf40c4c10bed32f81169#diff-678798cf677bcd1ce276809cfccd33da9ff594b1b0c557180210a4ed2bd27ffa
+    static let latestSupportedVersion = "1.48.0"
     static let minimumSupportedVersion = "1.32.0"
 
     public init() {}
@@ -47,11 +45,23 @@ public struct GitHubCopilotInstallationManager {
             case .orderedAscending:
                 switch version.compare(Self.minimumSupportedVersion) {
                 case .orderedAscending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: true)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: true
+                    )
                 case .orderedSame:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 case .orderedDescending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 }
             case .orderedSame:
                 return .installed(version)

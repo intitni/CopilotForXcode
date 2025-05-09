@@ -31,8 +31,8 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             tabSize: 1,
             indentSize: 4,
             insertSpaces: true,
-            path: editorContent?.documentURL.path ?? "",
-            uri: editorContent?.documentURL.path ?? "",
+            path: editorContent?.documentURL.absoluteString ?? "",
+            uri: editorContent?.documentURL.absoluteString ?? "",
             relativePath: editorContent?.relativePath ?? "",
             languageId: editorContent?.language ?? .plaintext,
             position: editorContent?.editorContent?.cursorPosition ?? .zero
@@ -43,7 +43,7 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             capabilities: .init(skills: [], allSkills: false),
             textDocument: doc,
             source: .panel,
-            workspaceFolder: workspace.projectURL.path,
+            workspaceFolder: workspace.projectURL.absoluteString,
             model: {
                 let selectedModel = UserDefaults.shared.value(for: \.gitHubCopilotModelId)
                 if selectedModel.isEmpty {
@@ -92,6 +92,12 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                                progress.value.cancellationReason == nil
                             {
                                 if error.contains("400") {
+                                    continuation.finish(
+                                        throwing: GitHubCopilotError.chatEndsWithError(
+                                            "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
+                                        )
+                                    )
+                                } else if error.contains("No model configuration found") {
                                     continuation.finish(
                                         throwing: GitHubCopilotError.chatEndsWithError(
                                             "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
