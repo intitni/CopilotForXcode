@@ -288,8 +288,12 @@ extension PromptToCodePanelView {
                             .buttonStyle(CommandButtonStyle(color: .gray))
                             .keyboardShortcut("w", modifiers: [.command])
 
-                            if !isCodeEmpty {
-                                AcceptButton(store: store)
+                            if store.isActiveDocument {
+                                if !isCodeEmpty {
+                                    AcceptButton(store: store)
+                                }
+                            } else {
+                                RevealButton(store: store)
                             }
                         }
                         .fixedSize()
@@ -354,6 +358,22 @@ extension PromptToCodePanelView {
                             }
                         }
                     }
+                }
+            }
+        }
+        
+        struct RevealButton: View {
+            let store: StoreOf<PromptToCodePanel>
+            
+            var body: some View {
+                WithPerceptionTracking {
+                    Button(action: {
+                        store.send(.revealFileButtonClicked)
+                    }) {
+                        Text("Jump to File(⌘ + ⏎)")
+                    }
+                    .buttonStyle(CommandButtonStyle(color: .accentColor))
+                    .keyboardShortcut(KeyEquivalent.return, modifiers: [.command])
                 }
             }
         }

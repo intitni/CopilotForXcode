@@ -97,7 +97,7 @@ actor WidgetWindowsController: NSObject {
                 }
             }
         }
-        
+
         Task { @MainActor in
             windows.chatPanelWindow.isPanelDisplayed = false
         }
@@ -132,36 +132,38 @@ private extension WidgetWindowsController {
         observeToAppTask = Task {
             await windows.orderFront()
 
+            /// Hide the widgets before switching to another window/editor
+            /// so the transition looks better.
+            func hideWidgetForTransitions() async {
+                let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                let documentURL = await MainActor
+                    .run { store.withState { $0.focusingDocumentURL } }
+                if documentURL != newDocumentURL {
+                    await send(.panel(.removeDisplayedContent))
+                    await hidePanelWindows()
+                }
+                await send(.updateFocusingDocumentURL)
+            }
+
+            func removeContent() async {
+                await send(.panel(.removeDisplayedContent))
+            }
+
+            func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
+                await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                updateWindowLocation(animated: false, immediately: immediately)
+                updateWindowOpacity(immediately: immediately)
+            }
+
+            func updateWidgets(immediately: Bool) async {
+                updateWindowLocation(animated: false, immediately: immediately)
+                updateWindowOpacity(immediately: immediately)
+            }
+            
+            await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+
             for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
-
-                /// Hide the widgets before switching to another window/editor
-                /// so the transition looks better.
-                func hideWidgetForTransitions() async {
-                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
-                    let documentURL = await MainActor
-                        .run { store.withState { $0.focusingDocumentURL } }
-                    if documentURL != newDocumentURL {
-                        await send(.panel(.removeDisplayedContent))
-                        await hidePanelWindows()
-                    }
-                    await send(.updateFocusingDocumentURL)
-                }
-
-                func removeContent() async {
-                    await send(.panel(.removeDisplayedContent))
-                }
-
-                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
-                    await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
-
-                func updateWidgets(immediately: Bool) async {
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
 
                 switch notification.kind {
                 case .focusedWindowChanged:
@@ -257,7 +259,7 @@ private extension WidgetWindowsController {
 extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
-        windows.sharedPanelWindow.alphaValue = 0
+//        windows.sharedPanelWindow.alphaValue = 0
         windows.suggestionPanelWindow.alphaValue = 0
     }
 
@@ -903,7 +905,7 @@ class WidgetWindow: CanBecomeKeyWindow {
             : .normal
 
         if targetLevel != level {
-            self.orderFrontRegardless()
+            orderFrontRegardless()
             level = targetLevel
         }
     }

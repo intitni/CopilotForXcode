@@ -37,6 +37,8 @@ public struct PromptToCodePanel {
         public var generateDescriptionRequirement: Bool
 
         public var hasEnded = false
+        
+        public var isActiveDocument: Bool = false
 
         public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
             get {
@@ -85,6 +87,7 @@ public struct PromptToCodePanel {
         case cancelButtonTapped
         case acceptButtonTapped
         case acceptAndContinueButtonTapped
+        case revealFileButtonClicked
         case statusUpdated([String])
         case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
@@ -248,13 +251,7 @@ public struct PromptToCodePanel {
 
             case .acceptButtonTapped:
                 state.hasEnded = true
-                let url = state.promptToCodeState.source.documentURL
-                let startLine = state.snippetPanels.first?.snippet.attachedRange.start.line ?? 0
                 return .run { _ in
-                    let activeDocumentURL = await XcodeInspector.shared.safe.activeDocumentURL
-                    if activeDocumentURL != url {
-                        await commandHandler.presentFile(at: url, line: startLine)
-                    }
                     await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
@@ -263,6 +260,13 @@ public struct PromptToCodePanel {
                 return .run { _ in
                     await commandHandler.acceptModification()
                     activateThisApp()
+                }
+
+            case .revealFileButtonClicked:
+                let url = state.promptToCodeState.source.documentURL
+                let startLine = state.snippetPanels.first?.snippet.attachedRange.start.line ?? 0
+                return .run { _ in
+                    await commandHandler.presentFile(at: url, line: startLine)
                 }
 
             case let .statusUpdated(status):

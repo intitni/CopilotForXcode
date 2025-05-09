@@ -50,6 +50,7 @@ public struct PromptToCodeGroup {
             switch action {
             case let .activateOrCreatePromptToCode(s):
                 if let promptToCode = state.activePromptToCode, s.id == promptToCode.id {
+                    state.selectedTabId = promptToCode.id
                     return .run { send in
                         await send(.promptToCode(.element(
                             id: promptToCode.id,
@@ -61,10 +62,11 @@ public struct PromptToCodeGroup {
                     await send(.createPromptToCode(s, sendImmediately: false))
                 }
             case let .createPromptToCode(newPromptToCode, sendImmediately):
-                // insert at 0 so it has high priority then the other detached prompt to codes
+                var newPromptToCode = newPromptToCode
+                newPromptToCode.isActiveDocument = newPromptToCode.id == state.activeDocumentURL
                 state.promptToCodes.append(newPromptToCode)
                 state.selectedTabId = newPromptToCode.id
-                return .run { send in
+                return .run { [newPromptToCode] send in
                     if sendImmediately,
                        !newPromptToCode.contextInputController.instruction.string.isEmpty
                     {
@@ -91,6 +93,10 @@ public struct PromptToCodeGroup {
 
             case let .updateActivePromptToCode(documentURL):
                 state.activeDocumentURL = documentURL
+                for index in state.promptToCodes.indices {
+                    state.promptToCodes[index].isActiveDocument =
+                        state.promptToCodes[index].id == documentURL
+                }
                 return .none
 
             case let .discardExpiredPromptToCode(documentURLs):

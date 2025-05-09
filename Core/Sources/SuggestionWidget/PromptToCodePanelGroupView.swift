@@ -106,6 +106,8 @@ struct PromptToCodeTabBarButton: View {
                         .controlSize(.small)
                 }
                 Text(info.tabTitle)
+                    .truncationMode(.middle)
+                    .allowsTightening(true)
             }
             .font(.callout)
             .lineLimit(1)
