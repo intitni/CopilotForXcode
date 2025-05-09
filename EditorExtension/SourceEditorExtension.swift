@@ -12,6 +12,7 @@ class SourceEditorExtension: NSObject, XCSourceEditorExtension {
         [
             GetSuggestionsCommand(),
             AcceptSuggestionCommand(),
+            AcceptSuggestionLineCommand(),
             RejectSuggestionCommand(),
             NextSuggestionCommand(),
             PreviousSuggestionCommand(),

@@ -11,6 +11,8 @@ protocol SuggestionCommandHandler {
     @ServiceActor
     func rejectSuggestion(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
+    func acceptSuggestionLine(editor: EditorContent) async throws -> UpdatedContent?
+    @ServiceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent?
     @ServiceActor
     func acceptPromptToCode(editor: EditorContent) async throws -> UpdatedContent?
@@ -23,3 +25,4 @@ protocol SuggestionCommandHandler {
     @ServiceActor
     func customCommand(id: String, editor: EditorContent) async throws -> UpdatedContent?
 }
+

@@ -1,6 +1,7 @@
 import AppKit
 import enum CopilotForXcodeKit.SuggestionServiceError
 import Foundation
+import JSONRPC
 import LanguageClient
 import LanguageServerProtocol
 import Logger
@@ -133,6 +134,9 @@ public class GitHubCopilotBaseService {
             let urls = try GitHubCopilotBaseService.createFoldersIfNeeded()
             let executionParams: Process.ExecutionParameters
             let runner = UserDefaults.shared.value(for: \.runNodeWith)
+//            let watchedFiles = JSONValue(
+//                booleanLiteral: projectRootURL.path == "/" ? false : true
+//            )
 
             guard let agentJSURL = { () -> URL? in
                 let languageServerDotJS = urls.executableURL
@@ -244,6 +248,8 @@ public class GitHubCopilotBaseService {
                     experimental: nil
                 )
 
+                let pretendToBeVSCode = UserDefaults.shared
+                    .value(for: \.gitHubCopilotPretendIDEToBeVSCode)
                 return InitializeParams(
                     processId: Int(ProcessInfo.processInfo.processIdentifier),
                     clientInfo: .init(
@@ -254,11 +260,28 @@ public class GitHubCopilotBaseService {
                     locale: nil,
                     rootPath: projectRootURL.path,
                     rootUri: projectRootURL.path,
-                    initializationOptions: nil,
+                    initializationOptions: [
+                        "editorInfo": pretendToBeVSCode ? .hash([
+                            "name": "vscode",
+                            "version": "1.99.3",
+                        ]) : .hash([
+                            "name": "Xcode",
+                            "version": .string(xcodeVersion() ?? "16.0"),
+                        ]),
+                        "editorPluginInfo": .hash([
+                            "name": "Copilot for Xcode",
+                            "version": .string(Bundle.main
+                                .infoDictionary?["CFBundleShortVersionString"] as? String ?? ""),
+                        ]),
+//                        "copilotCapabilities": [
+//                            /// The editor has support for watching files over LSP
+//                            "watchedFiles": watchedFiles,
+//                        ],
+                    ],
                     capabilities: capabilities,
                     trace: .off,
                     workspaceFolders: [WorkspaceFolder(
-                        uri: projectRootURL.path,
+                        uri: projectRootURL.absoluteString,
                         name: projectRootURL.lastPathComponent
                     )]
                 )
@@ -441,7 +464,7 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
             do {
                 let completions = try await server
                     .sendRequest(GitHubCopilotRequest.InlineCompletion(doc: .init(
-                        textDocument: .init(uri: fileURL.path, version: 1),
+                        textDocument: .init(uri: fileURL.absoluteString, version: 1),
                         position: cursorPosition,
                         formattingOptions: .init(
                             tabSize: tabSize,
@@ -632,7 +655,7 @@ extension InitializingServer: GitHubCopilotLSP {
     }
 }
 
-private func xcodeVersion() async -> String? {
+private func xcodeVersion() -> String? {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
     process.arguments = ["xcodebuild", "-version"]

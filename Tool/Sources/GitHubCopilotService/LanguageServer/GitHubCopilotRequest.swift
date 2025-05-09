@@ -57,7 +57,7 @@ enum GitHubCopilotChatSource: String, Codable {
 enum GitHubCopilotRequest {
     struct SetEditorInfo: GitHubCopilotRequestType {
         let xcodeVersion: String
-        
+
         struct Response: Codable {}
 
         var networkProxy: JSONValue? {
@@ -143,7 +143,7 @@ enum GitHubCopilotRequest {
             var dict: [String: JSONValue] = [
                 "editorInfo": pretendToBeVSCode ? .hash([
                     "name": "vscode",
-                    "version": "1.89.1",
+                    "version": "1.99.3",
                 ]) : .hash([
                     "name": "Xcode",
                     "version": .string(xcodeVersion),
@@ -351,32 +351,48 @@ enum GitHubCopilotRequest {
         }
 
         struct RequestBody: Codable {
-            var workDoneToken: String
-            var turns: [Turn]; struct Turn: Codable {
+            public struct Reference: Codable, Equatable, Hashable {
+                public var type: String = "file"
+                public let uri: String
+                public let position: Position?
+                public let visibleRange: SuggestionBasic.CursorRange?
+                public let selection: SuggestionBasic.CursorRange?
+                public let openedAt: String?
+                public let activeAt: String?
+            }
+
+            enum ConversationSource: String, Codable {
+                case panel, inline
+            }
+
+            enum ConversationMode: String, Codable {
+                case agent = "Agent"
+            }
+
+            struct ConversationTurn: Codable {
                 var request: String
                 var response: String?
+                var turnId: String?
             }
 
-            var capabilities: Capabilities; struct Capabilities: Codable {
-                var allSkills: Bool?
-                var skills: [String]
-            }
-
-            var options: [String: String]?
-            var doc: GitHubCopilotDoc?
+            var workDoneToken: String
+            var turns: [ConversationTurn]
+            var capabilities: Capabilities
+            var textDocument: GitHubCopilotDoc?
+            var references: [Reference]?
             var computeSuggestions: Bool?
-            var references: [Reference]?; struct Reference: Codable {
-                var uri: String
-                var position: Position?
-                var visibleRange: CursorRange?
-                var selectionRange: CursorRange?
-                var openedAt: Date?
-                var activatedAt: Date?
-            }
-
-            var source: GitHubCopilotChatSource? // inline or panel
+            var source: ConversationSource?
             var workspaceFolder: String?
+            var workspaceFolders: [WorkspaceFolder]?
+            var ignoredSkills: [String]?
+            var model: String?
+            var chatMode: ConversationMode?
             var userLanguage: String?
+
+            struct Capabilities: Codable {
+                var skills: [String]
+                var allSkills: Bool?
+            }
         }
 
         let requestBody: RequestBody
@@ -395,24 +411,13 @@ enum GitHubCopilotRequest {
             var workDoneToken: String
             var conversationId: String
             var message: String
-            var followUp: FollowUp?; struct FollowUp: Codable {
-                var id: String
-                var type: String
-            }
-
-            var options: [String: String]?
-            var doc: GitHubCopilotDoc?
-            var computeSuggestions: Bool?
-            var references: [Reference]?; struct Reference: Codable {
-                var uri: String
-                var position: Position?
-                var visibleRange: CursorRange?
-                var selectionRange: CursorRange?
-                var openedAt: Date?
-                var activatedAt: Date?
-            }
-
+            var textDocument: GitHubCopilotDoc?
+            var ignoredSkills: [String]?
+            var references: [ConversationCreate.RequestBody.Reference]?
+            var model: String?
             var workspaceFolder: String?
+            var workspaceFolders: [WorkspaceFolder]?
+            var chatMode: String?
         }
 
         let requestBody: RequestBody
@@ -459,5 +464,42 @@ enum GitHubCopilotRequest {
             return .custom("conversation/destroy", dict)
         }
     }
+
+    struct CopilotModels: GitHubCopilotRequestType {
+        typealias Response = [GitHubCopilotModel]
+
+        var request: ClientRequest {
+            .custom("copilot/models", .hash([:]))
+        }
+    }
+}
+
+public struct GitHubCopilotModel: Codable, Equatable {
+    public let modelFamily: String
+    public let modelName: String
+    public let id: String
+//            public let modelPolicy: CopilotModelPolicy?
+    public let scopes: [GitHubCopilotPromptTemplateScope]
+    public let preview: Bool
+    public let isChatDefault: Bool
+    public let isChatFallback: Bool
+//            public let capabilities: CopilotModelCapabilities
+//            public let billing: CopilotModelBilling?
+}
+
+public struct GitHubCopilotLLMModel: Equatable, Decodable, Identifiable {
+    public var id: String { modelId }
+    public var modelId: String
+    public var familyName: String
+    public var contextWindow: Int
+}
+
+public enum GitHubCopilotPromptTemplateScope: String, Codable, Equatable {
+    case chatPanel = "chat-panel"
+    case editPanel = "edit-panel"
+    case agentPanel = "agent-panel"
+    case editor
+    case inline
+    case completion
 }
 

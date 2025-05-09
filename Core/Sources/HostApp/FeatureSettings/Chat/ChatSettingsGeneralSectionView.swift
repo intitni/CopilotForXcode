@@ -25,6 +25,7 @@ struct ChatSettingsGeneralSectionView: View {
         @AppStorage(\.chatModels) var chatModels
         @AppStorage(\.embeddingModels) var embeddingModels
         @AppStorage(\.wrapCodeInChatCodeBlock) var wrapCodeInCodeBlock
+        @AppStorage(\.chatPanelFloatOnTopOption) var chatPanelFloatOnTopOption
         @AppStorage(
             \.keepFloatOnTopIfChatPanelAndXcodeOverlaps
         ) var keepFloatOnTopIfChatPanelAndXcodeOverlaps
@@ -298,13 +299,24 @@ struct ChatSettingsGeneralSectionView: View {
 
             CodeHighlightThemePicker(scenario: .chat)
 
+            Picker("Always-on-top behavior", selection: $settings.chatPanelFloatOnTopOption) {
+                Text("Always").tag(UserDefaultPreferenceKeys.ChatPanelFloatOnTopOption.alwaysOnTop)
+                Text("When Xcode is active")
+                    .tag(UserDefaultPreferenceKeys.ChatPanelFloatOnTopOption.onTopWhenXcodeIsActive)
+                Text("Never").tag(UserDefaultPreferenceKeys.ChatPanelFloatOnTopOption.never)
+            }
+
             Toggle(isOn: $settings.disableFloatOnTopWhenTheChatPanelIsDetached) {
                 Text("Disable always-on-top when the chat panel is detached")
-            }
+            }.disabled(settings.chatPanelFloatOnTopOption == .never)
 
             Toggle(isOn: $settings.keepFloatOnTopIfChatPanelAndXcodeOverlaps) {
                 Text("Keep always-on-top if the chat panel and Xcode overlaps and Xcode is active")
-            }.disabled(!settings.disableFloatOnTopWhenTheChatPanelIsDetached)
+            }
+            .disabled(
+                !settings.disableFloatOnTopWhenTheChatPanelIsDetached
+                    || settings.chatPanelFloatOnTopOption == .never
+            )
         }
     }
 

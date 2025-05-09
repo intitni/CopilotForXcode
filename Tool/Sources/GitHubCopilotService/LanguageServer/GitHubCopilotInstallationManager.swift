@@ -6,12 +6,15 @@ public struct GitHubCopilotInstallationManager {
     public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "87038123804796ca7af20d1b71c3428d858a9124"
+        let commitHash = "18f485d892b56b311fd752039d6977333ebc2a0f"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
 
-    static let latestSupportedVersion = "1.41.0"
+    /// The GitHub's version has quite a lot of changes about `watchedFiles` since the following
+    /// commit.
+    /// https://github.com/github/CopilotForXcode/commit/a50045aa3ab3b7d532cadf40c4c10bed32f81169#diff-678798cf677bcd1ce276809cfccd33da9ff594b1b0c557180210a4ed2bd27ffa
+    static let latestSupportedVersion = "1.48.0"
     static let minimumSupportedVersion = "1.32.0"
 
     public init() {}
@@ -42,11 +45,23 @@ public struct GitHubCopilotInstallationManager {
             case .orderedAscending:
                 switch version.compare(Self.minimumSupportedVersion) {
                 case .orderedAscending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: true)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: true
+                    )
                 case .orderedSame:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 case .orderedDescending:
-                    return .outdated(current: version, latest: Self.latestSupportedVersion, mandatory: false)
+                    return .outdated(
+                        current: version,
+                        latest: Self.latestSupportedVersion,
+                        mandatory: false
+                    )
                 }
             case .orderedSame:
                 return .installed(version)

@@ -195,6 +195,14 @@ public extension UserDefaultPreferenceKeys {
     var gitHubCopilotPretendIDEToBeVSCode: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "GitHubCopilotPretendIDEToBeVSCode")
     }
+
+    var gitHubCopilotModelId: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotModelId")
+    }
+
+    var gitHubCopilotModelFamily: PreferenceKey<String> {
+        .init(defaultValue: "", key: "GitHubCopilotModelFamily")
+    }
 }
 
 // MARK: - Codeium Settings
@@ -367,6 +375,10 @@ public extension UserDefaultPreferenceKeys {
     var acceptSuggestionWithModifierOnlyForSwift: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "SuggestionWithModifierOnlyForSwift")
     }
+    
+    var acceptSuggestionLineWithModifierControl: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "SuggestionLineWithModifierControl")
+    }
 
     var dismissSuggestionWithEsc: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "DismissSuggestionWithEsc")
@@ -470,13 +482,23 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForWebScope: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForWebScope")
     }
-    
+
     var preferredChatModelIdForUtilities: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForUtilities")
     }
+    
+    enum ChatPanelFloatOnTopOption: Int, Codable, Equatable {
+        case alwaysOnTop
+        case onTopWhenXcodeIsActive
+        case never
+    }
+
+    var chatPanelFloatOnTopOption: PreferenceKey<ChatPanelFloatOnTopOption> {
+        .init(defaultValue: .onTopWhenXcodeIsActive, key: "ChatPanelFloatOnTopOption")
+    }
 
     var disableFloatOnTopWhenTheChatPanelIsDetached: PreferenceKey<Bool> {
-        .init(defaultValue: true, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")
+        .init(defaultValue: false, key: "DisableFloatOnTopWhenTheChatPanelIsDetached")
     }
 
     var keepFloatOnTopIfChatPanelAndXcodeOverlaps: PreferenceKey<Bool> {
@@ -486,7 +508,7 @@ public extension UserDefaultPreferenceKeys {
     var openChatMode: PreferenceKey<UserDefaultsStorageBox<OpenChatMode>> {
         .init(defaultValue: .init(.chatPanel), key: "DefaultOpenChatMode")
     }
-    
+
     var legacyOpenChatMode: DeprecatedPreferenceKey<OpenChatMode.LegacyOpenChatMode> {
         .init(defaultValue: .chatPanel, key: "OpenChatMode")
     }
@@ -723,7 +745,7 @@ public extension UserDefaultPreferenceKeys {
     var useCloudflareDomainNameForLicenseCheck: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-UseCloudflareDomainNameForLicenseCheck")
     }
-    
+
     var doNotInstallLaunchAgentAutomatically: FeatureFlag {
         .init(defaultValue: false, key: "FeatureFlag-DoNotInstallLaunchAgentAutomatically")
     }

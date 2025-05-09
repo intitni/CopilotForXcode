@@ -31,8 +31,8 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
             tabSize: 1,
             indentSize: 4,
             insertSpaces: true,
-            path: editorContent?.documentURL.path ?? "",
-            uri: editorContent?.documentURL.path ?? "",
+            path: editorContent?.documentURL.absoluteString ?? "",
+            uri: editorContent?.documentURL.absoluteString ?? "",
             relativePath: editorContent?.relativePath ?? "",
             languageId: editorContent?.language ?? .plaintext,
             position: editorContent?.editorContent?.cursorPosition ?? .zero
@@ -40,10 +40,17 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
         let request = GitHubCopilotRequest.ConversationCreate(requestBody: .init(
             workDoneToken: workDoneToken,
             turns: turns,
-            capabilities: .init(allSkills: false, skills: []),
-            doc: doc,
+            capabilities: .init(skills: [], allSkills: false),
+            textDocument: doc,
             source: .panel,
-            workspaceFolder: workspace.projectURL.path,
+            workspaceFolder: workspace.projectURL.absoluteString,
+            model: {
+                let selectedModel = UserDefaults.shared.value(for: \.gitHubCopilotModelId)
+                if selectedModel.isEmpty {
+                    return nil
+                }
+                return selectedModel
+            }(),
             userLanguage: {
                 let language = UserDefaults.shared.value(for: \.chatGPTLanguage)
                 if language.isEmpty {
@@ -85,6 +92,12 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
                                progress.value.cancellationReason == nil
                             {
                                 if error.contains("400") {
+                                    continuation.finish(
+                                        throwing: GitHubCopilotError.chatEndsWithError(
+                                            "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
+                                        )
+                                    )
+                                } else if error.contains("No model configuration found") {
                                     continuation.finish(
                                         throwing: GitHubCopilotError.chatEndsWithError(
                                             "\(error). Please try enabling pretend IDE to be VSCode and click refresh configuration."
@@ -141,7 +154,7 @@ public final class GitHubCopilotChatService: BuiltinExtensionChatServiceType {
 }
 
 extension GitHubCopilotChatService {
-    typealias Turn = GitHubCopilotRequest.ConversationCreate.RequestBody.Turn
+    typealias Turn = GitHubCopilotRequest.ConversationCreate.RequestBody.ConversationTurn
     func convertHistory(history: [Message], message: String) -> [Turn] {
         guard let firstIndexOfUserMessage = history.firstIndex(where: { $0.role == .user })
         else { return [.init(request: message, response: nil)] }
@@ -221,6 +234,10 @@ extension GitHubCopilotChatService {
                 var message: String?
             }
 
+            struct Annotation: Decodable {
+                var id: Int
+            }
+
             var kind: String
             var title: String?
             var conversationId: String
@@ -229,7 +246,7 @@ extension GitHubCopilotChatService {
             var followUp: FollowUp?
             var suggestedTitle: String?
             var reply: String?
-            var annotations: [String]?
+            var annotations: [Annotation]?
             var hideText: Bool?
             var cancellationReason: String?
             var error: Error?

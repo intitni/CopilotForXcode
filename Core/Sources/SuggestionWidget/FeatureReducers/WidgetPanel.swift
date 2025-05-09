@@ -118,7 +118,7 @@ public struct WidgetPanel {
 
             case .sharedPanel(.promptToCodeGroup(.activateOrCreatePromptToCode)),
                  .sharedPanel(.promptToCodeGroup(.createPromptToCode)):
-                let hasPromptToCode = state.content.promptToCode != nil
+                let hasPromptToCode = !state.content.promptToCodeGroup.promptToCodes.isEmpty
                 return .run { send in
                     await send(.displayPanelContent)
 

@@ -105,128 +105,138 @@ final class TabToAcceptSuggestion {
 
         switch keycode {
         case tab:
-            Logger.service.info("TabToAcceptSuggestion: Tab")
-
-            guard let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL
-            else {
-                Logger.service.info("TabToAcceptSuggestion: No active document")
-                return .unchanged
-            }
-
-            let language = languageIdentifierFromFileURL(fileURL)
-
-            func checkKeybinding() -> Bool {
-                if event.flags.contains(.maskHelp) { return false }
-
-                let shouldCheckModifiers = if UserDefaults.shared
-                    .value(for: \.acceptSuggestionWithModifierOnlyForSwift)
-                {
-                    language == .builtIn(.swift)
-                } else {
-                    true
-                }
-
-                if shouldCheckModifiers {
-                    if event.flags.contains(.maskShift) != UserDefaults.shared
-                        .value(for: \.acceptSuggestionWithModifierShift)
-                    {
-                        return false
-                    }
-                    if event.flags.contains(.maskControl) != UserDefaults.shared
-                        .value(for: \.acceptSuggestionWithModifierControl)
-                    {
-                        return false
-                    }
-                    if event.flags.contains(.maskAlternate) != UserDefaults.shared
-                        .value(for: \.acceptSuggestionWithModifierOption)
-                    {
-                        return false
-                    }
-                    if event.flags.contains(.maskCommand) != UserDefaults.shared
-                        .value(for: \.acceptSuggestionWithModifierCommand)
-                    {
-                        return false
-                    }
-                } else {
-                    if event.flags.contains(.maskShift) { return false }
-                    if event.flags.contains(.maskControl) { return false }
-                    if event.flags.contains(.maskAlternate) { return false }
-                    if event.flags.contains(.maskCommand) { return false }
-                }
-
-                return true
-            }
-
-            guard
-                checkKeybinding(),
-                canTapToAcceptSuggestion
-            else {
-                Logger.service.info("TabToAcceptSuggestion: Feature not available")
-                return .unchanged
-            }
-
-            guard ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil
-            else {
-                Logger.service.info("TabToAcceptSuggestion: Xcode not found")
-                return .unchanged
-            }
-            guard let editor = ThreadSafeAccessToXcodeInspector.shared.focusedEditor
-            else {
-                Logger.service.info("TabToAcceptSuggestion: No editor found")
-                return .unchanged
-            }
-            guard let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL)
-            else {
-                Logger.service.info(
-                    "TabToAcceptSuggestion: No file found for file \(fileURL.lastPathComponent)"
-                )
-                return .unchanged
-            }
-            guard let presentingSuggestion = filespace.presentingSuggestion
-            else {
-                Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
-                return .unchanged
-            }
-
-            let editorContent = editor.getContent()
-
-            let shouldAcceptSuggestion = Self.checkIfAcceptSuggestion(
-                lines: editorContent.lines,
-                cursorPosition: editorContent.cursorPosition,
-                codeMetadata: filespace.codeMetadata,
-                presentingSuggestionText: presentingSuggestion.text
-            )
-
-            if shouldAcceptSuggestion {
-                Logger.service.info("TabToAcceptSuggestion: Accept")
-                Task { await commandHandler.acceptSuggestion() }
-                return .discarded
-            } else {
-                Logger.service.info("TabToAcceptSuggestion: Should not accept")
-                return .unchanged
-            }
+            return handleTab(event.flags)
         case esc:
-            guard
-                !event.flags.contains(.maskShift),
-                !event.flags.contains(.maskControl),
-                !event.flags.contains(.maskAlternate),
-                !event.flags.contains(.maskCommand),
-                !event.flags.contains(.maskHelp),
-                canEscToDismissSuggestion
-            else { return .unchanged }
-
-            guard
-                let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL,
-                ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil,
-                let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL),
-                filespace.presentingSuggestion != nil
-            else { return .unchanged }
-
-            Task { await commandHandler.dismissSuggestion() }
-            return .discarded
+            return handleEsc(event.flags)
         default:
             return .unchanged
         }
+    }
+
+    func handleTab(_ flags: CGEventFlags) -> CGEventManipulation.Result {
+        Logger.service.info("TabToAcceptSuggestion: Tab")
+
+        guard let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL
+        else {
+            Logger.service.info("TabToAcceptSuggestion: No active document")
+            return .unchanged
+        }
+
+        let language = languageIdentifierFromFileURL(fileURL)
+
+        if flags.contains(.maskHelp) { return .unchanged }
+
+        let requiredFlagsToTrigger: CGEventFlags = {
+            var all = CGEventFlags()
+            if UserDefaults.shared.value(for: \.acceptSuggestionWithModifierShift) {
+                all.insert(.maskShift)
+            }
+            if UserDefaults.shared.value(for: \.acceptSuggestionWithModifierControl) {
+                all.insert(.maskControl)
+            }
+            if UserDefaults.shared.value(for: \.acceptSuggestionWithModifierOption) {
+                all.insert(.maskAlternate)
+            }
+            if UserDefaults.shared.value(for: \.acceptSuggestionWithModifierCommand) {
+                all.insert(.maskCommand)
+            }
+            if UserDefaults.shared.value(for: \.acceptSuggestionWithModifierOnlyForSwift) {
+                if language == .builtIn(.swift) {
+                    return all
+                } else {
+                    return []
+                }
+            } else {
+                return all
+            }
+        }()
+
+        let flagsToAvoidWhenNotRequired: [CGEventFlags] = [
+            .maskShift, .maskCommand, .maskHelp, .maskSecondaryFn,
+        ]
+
+        guard flags.contains(requiredFlagsToTrigger) else {
+            Logger.service.info("TabToAcceptSuggestion: Modifier not found")
+            return .unchanged
+        }
+
+        for flag in flagsToAvoidWhenNotRequired {
+            if flags.contains(flag), !requiredFlagsToTrigger.contains(flag) {
+                return .unchanged
+            }
+        }
+
+        guard canTapToAcceptSuggestion else {
+            Logger.service.info("TabToAcceptSuggestion: Feature not available")
+            return .unchanged
+        }
+
+        guard ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil
+        else {
+            Logger.service.info("TabToAcceptSuggestion: Xcode not found")
+            return .unchanged
+        }
+        guard let editor = ThreadSafeAccessToXcodeInspector.shared.focusedEditor
+        else {
+            Logger.service.info("TabToAcceptSuggestion: No editor found")
+            return .unchanged
+        }
+        guard let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL)
+        else {
+            Logger.service.info("TabToAcceptSuggestion: No file found")
+            return .unchanged
+        }
+        guard let presentingSuggestion = filespace.presentingSuggestion
+        else {
+            Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
+            return .unchanged
+        }
+
+        let editorContent = editor.getContent()
+
+        let shouldAcceptSuggestion = Self.checkIfAcceptSuggestion(
+            lines: editorContent.lines,
+            cursorPosition: editorContent.cursorPosition,
+            codeMetadata: filespace.codeMetadata,
+            presentingSuggestionText: presentingSuggestion.text
+        )
+
+        if shouldAcceptSuggestion {
+            Logger.service.info("TabToAcceptSuggestion: Accept")
+            if flags.contains(.maskControl),
+               !requiredFlagsToTrigger.contains(.maskControl)
+            {
+                Task { await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: nil)
+                }
+            } else {
+                Task { await commandHandler.acceptSuggestion() }
+            }
+            return .discarded
+        } else {
+            Logger.service.info("TabToAcceptSuggestion: Should not accept")
+            return .unchanged
+        }
+    }
+
+    func handleEsc(_ flags: CGEventFlags) -> CGEventManipulation.Result {
+        guard
+            !flags.contains(.maskShift),
+            !flags.contains(.maskControl),
+            !flags.contains(.maskAlternate),
+            !flags.contains(.maskCommand),
+            !flags.contains(.maskHelp),
+            canEscToDismissSuggestion
+        else { return .unchanged }
+
+        guard
+            let fileURL = ThreadSafeAccessToXcodeInspector.shared.activeDocumentURL,
+            ThreadSafeAccessToXcodeInspector.shared.activeXcode != nil,
+            let filespace = workspacePool.fetchFilespaceIfExisted(fileURL: fileURL),
+            filespace.presentingSuggestion != nil
+        else { return .unchanged }
+
+        Task { await commandHandler.dismissSuggestion() }
+        return .discarded
     }
 }
 

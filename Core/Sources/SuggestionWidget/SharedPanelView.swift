@@ -72,7 +72,7 @@ struct SharedPanelView: View {
                 ZStack(alignment: .topLeading) {
                     if let errorMessage = store.content.error {
                         error(errorMessage)
-                    } else if let _ = store.content.promptToCode {
+                    } else if !store.content.promptToCodeGroup.promptToCodes.isEmpty {
                         promptToCode()
                     } else if let suggestionProvider = store.content.suggestion {
                         suggestion(suggestionProvider)
@@ -93,12 +93,10 @@ struct SharedPanelView: View {
 
         @ViewBuilder
         func promptToCode() -> some View {
-            if let store = store.scope(
-                state: \.content.promptToCodeGroup.activePromptToCode,
-                action: \.promptToCodeGroup.activePromptToCode
-            ) {
-                PromptToCodePanelView(store: store)
-            }
+            PromptToCodePanelGroupView(store: store.scope(
+                state: \.content.promptToCodeGroup,
+                action: \.promptToCodeGroup
+            ))
         }
 
         @ViewBuilder

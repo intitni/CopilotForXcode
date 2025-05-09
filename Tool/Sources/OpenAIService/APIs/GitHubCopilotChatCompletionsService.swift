@@ -79,7 +79,7 @@ actor GitHubCopilotChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             endpoint: endpoint,
             requestBody: requestBody
         ) { request in
-            
+
 //            POST /chat/completions HTTP/2
 //            :authority: api.individual.githubcopilot.com
 //            authorization: Bearer *
@@ -97,7 +97,7 @@ actor GitHubCopilotChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
 //            content-length: 9061
 //            accept: */*
 //            accept-encoding: gzip,deflate,br
-            
+
             request.setValue(
                 "Copilot for Xcode/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")",
                 forHTTPHeaderField: "Editor-Version"

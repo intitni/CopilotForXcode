@@ -16,6 +16,7 @@ public protocol CommandHandler {
     func presentNextSuggestion() async
     func rejectSuggestions() async
     func acceptSuggestion() async
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async
     func dismissSuggestion() async
     func generateRealtimeSuggestions(sourceEditor: SourceEditor?) async
 
@@ -39,7 +40,16 @@ public protocol CommandHandler {
 
     // MARK: Others
 
-    func presentFile(at fileURL: URL, line: Int) async
+    func presentFile(at fileURL: URL, line: Int?) async
+
+    func presentFile(at fileURL: URL) async
+}
+
+public extension CommandHandler {
+    /// Default implementation for `presentFile(at:line:)`.
+    func presentFile(at fileURL: URL) async {
+        await presentFile(at: fileURL, line: nil)
+    }
 }
 
 public struct CommandHandlerDependencyKey: DependencyKey {
@@ -84,6 +94,10 @@ public final class UniversalCommandHandler: CommandHandler {
     public func acceptSuggestion() async {
         await commandHandler.acceptSuggestion()
     }
+    
+    public func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: index)
+    }
 
     public func dismissSuggestion() async {
         await commandHandler.dismissSuggestion()
@@ -117,7 +131,7 @@ public final class UniversalCommandHandler: CommandHandler {
         commandHandler.toast(string, as: type)
     }
 
-    public func presentFile(at fileURL: URL, line: Int) async {
+    public func presentFile(at fileURL: URL, line: Int?) async {
         await commandHandler.presentFile(at: fileURL, line: line)
     }
 }
@@ -141,6 +155,10 @@ struct NOOPCommandHandler: CommandHandler {
 
     func acceptSuggestion() async {
         print("accept suggestion")
+    }
+    
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        print("accept active suggestion line in group at index \(String(describing: index))")
     }
 
     func dismissSuggestion() async {
@@ -175,7 +193,7 @@ struct NOOPCommandHandler: CommandHandler {
         print("toast")
     }
 
-    func presentFile(at fileURL: URL, line: Int) async {
+    func presentFile(at fileURL: URL, line: Int?) async {
         print("present file")
     }
 }

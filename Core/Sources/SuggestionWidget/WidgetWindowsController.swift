@@ -97,6 +97,10 @@ actor WidgetWindowsController: NSObject {
                 }
             }
         }
+
+        Task { @MainActor in
+            windows.chatPanelWindow.isPanelDisplayed = false
+        }
     }
 }
 
@@ -114,6 +118,7 @@ private extension WidgetWindowsController {
                 await hideSuggestionPanelWindow()
             }
             await adjustChatPanelWindowLevel()
+            await adjustModificationPanelLevel()
         }
         guard currentApplicationProcessIdentifier != app.processIdentifier else { return }
         currentApplicationProcessIdentifier = app.processIdentifier
@@ -127,36 +132,38 @@ private extension WidgetWindowsController {
         observeToAppTask = Task {
             await windows.orderFront()
 
+            /// Hide the widgets before switching to another window/editor
+            /// so the transition looks better.
+            func hideWidgetForTransitions() async {
+                let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                let documentURL = await MainActor
+                    .run { store.withState { $0.focusingDocumentURL } }
+                if documentURL != newDocumentURL {
+                    await send(.panel(.removeDisplayedContent))
+                    await hidePanelWindows()
+                }
+                await send(.updateFocusingDocumentURL)
+            }
+
+            func removeContent() async {
+                await send(.panel(.removeDisplayedContent))
+            }
+
+            func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
+                await send(.panel(.switchToAnotherEditorAndUpdateContent))
+                updateWindowLocation(animated: false, immediately: immediately)
+                updateWindowOpacity(immediately: immediately)
+            }
+
+            func updateWidgets(immediately: Bool) async {
+                updateWindowLocation(animated: false, immediately: immediately)
+                updateWindowOpacity(immediately: immediately)
+            }
+            
+            await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
+
             for await notification in await notifications.notifications() {
                 try Task.checkCancellation()
-
-                /// Hide the widgets before switching to another window/editor
-                /// so the transition looks better.
-                func hideWidgetForTransitions() async {
-                    let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
-                    let documentURL = await MainActor
-                        .run { store.withState { $0.focusingDocumentURL } }
-                    if documentURL != newDocumentURL {
-                        await send(.panel(.removeDisplayedContent))
-                        await hidePanelWindows()
-                    }
-                    await send(.updateFocusingDocumentURL)
-                }
-
-                func removeContent() async {
-                    await send(.panel(.removeDisplayedContent))
-                }
-
-                func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {
-                    await send(.panel(.switchToAnotherEditorAndUpdateContent))
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
-
-                func updateWidgets(immediately: Bool) async {
-                    updateWindowLocation(animated: false, immediately: immediately)
-                    updateWindowOpacity(immediately: immediately)
-                }
 
                 switch notification.kind {
                 case .focusedWindowChanged:
@@ -252,7 +259,7 @@ private extension WidgetWindowsController {
 extension WidgetWindowsController {
     @MainActor
     func hidePanelWindows() {
-        windows.sharedPanelWindow.alphaValue = 0
+//        windows.sharedPanelWindow.alphaValue = 0
         windows.suggestionPanelWindow.alphaValue = 0
     }
 
@@ -389,22 +396,15 @@ extension WidgetWindowsController {
             let previousActiveApplication = xcodeInspector.previousActiveApplication
             await MainActor.run {
                 let state = store.withState { $0 }
-                let isChatPanelDetached = state.chatPanelState.isDetached
 
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
                     let noFocus = application.focusedWindow == nil
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = noFocus ? 0 : 1
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
-
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = false
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus
-                    }
                 } else if let activeApp, activeApp.isExtensionService {
                     let noFocus = {
                         guard let xcode = latestActiveXcode else { return true }
@@ -418,7 +418,7 @@ extension WidgetWindowsController {
 
                     let previousAppIsXcode = previousActiveApplication?.isXcode ?? false
 
-                    windows.sharedPanelWindow.alphaValue = noFocus ? 0 : 1
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = noFocus ? 0 : 1
                     windows.widgetWindow.alphaValue = if noFocus {
                         0
@@ -434,20 +434,11 @@ extension WidgetWindowsController {
                         0
                     }
                     windows.toastWindow.alphaValue = noFocus ? 0 : 1
-                    if isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = false
-                    } else {
-                        windows.chatPanelWindow.isWindowHidden = noFocus && !windows
-                            .chatPanelWindow.isKeyWindow
-                    }
                 } else {
-                    windows.sharedPanelWindow.alphaValue = 0
+                    windows.sharedPanelWindow.alphaValue = 1
                     windows.suggestionPanelWindow.alphaValue = 0
                     windows.widgetWindow.alphaValue = 0
                     windows.toastWindow.alphaValue = 0
-                    if !isChatPanelDetached {
-                        windows.chatPanelWindow.isWindowHidden = true
-                    }
                 }
             }
         }
@@ -503,6 +494,7 @@ extension WidgetWindowsController {
             }
 
             await adjustChatPanelWindowLevel()
+            await adjustModificationPanelLevel()
         }
 
         let now = Date()
@@ -532,23 +524,35 @@ extension WidgetWindowsController {
     }
 
     @MainActor
+    func adjustModificationPanelLevel() async {
+        let window = windows.sharedPanelWindow
+
+        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestAppIsXcodeOrExtension = if let latestApp {
+            latestApp.isXcode || latestApp.isExtensionService
+        } else {
+            false
+        }
+
+        window.setFloatOnTop(latestAppIsXcodeOrExtension)
+    }
+
+    @MainActor
     func adjustChatPanelWindowLevel() async {
+        let flowOnTopOption = UserDefaults.shared
+            .value(for: \.chatPanelFloatOnTopOption)
         let disableFloatOnTopWhenTheChatPanelIsDetached = UserDefaults.shared
             .value(for: \.disableFloatOnTopWhenTheChatPanelIsDetached)
 
         let window = windows.chatPanelWindow
-        guard disableFloatOnTopWhenTheChatPanelIsDetached else {
-            window.setFloatOnTop(true)
+
+        if flowOnTopOption == .never {
+            window.setFloatOnTop(false)
             return
         }
 
         let state = store.withState { $0 }
         let isChatPanelDetached = state.chatPanelState.isDetached
-
-        guard isChatPanelDetached else {
-            window.setFloatOnTop(true)
-            return
-        }
 
         let floatOnTopWhenOverlapsXcode = UserDefaults.shared
             .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
@@ -560,10 +564,8 @@ extension WidgetWindowsController {
             false
         }
 
-        if !floatOnTopWhenOverlapsXcode || !latestAppIsXcodeOrExtension {
-            window.setFloatOnTop(false)
-        } else {
-            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return }
+        async let overlap: Bool = { @MainActor in
+            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return false }
             let windowElements = xcode.appElement.windows
             let overlap = windowElements.contains {
                 if let position = $0.position, let size = $0.size {
@@ -577,8 +579,34 @@ extension WidgetWindowsController {
                 }
                 return false
             }
+            return overlap
+        }()
 
-            window.setFloatOnTop(overlap)
+        if latestAppIsXcodeOrExtension {
+            if floatOnTopWhenOverlapsXcode {
+                let overlap = await overlap
+                window.setFloatOnTop(overlap)
+            } else {
+                if disableFloatOnTopWhenTheChatPanelIsDetached, isChatPanelDetached {
+                    window.setFloatOnTop(false)
+                } else {
+                    window.setFloatOnTop(true)
+                }
+            }
+        } else {
+            if floatOnTopWhenOverlapsXcode {
+                let overlap = await overlap
+                window.setFloatOnTop(overlap)
+            } else {
+                switch flowOnTopOption {
+                case .onTopWhenXcodeIsActive:
+                    window.setFloatOnTop(false)
+                case .alwaysOnTop:
+                    window.setFloatOnTop(true)
+                case .never:
+                    window.setFloatOnTop(false)
+                }
+            }
         }
     }
 
@@ -587,7 +615,7 @@ extension WidgetWindowsController {
         let activeXcode = await XcodeInspector.shared.safe.activeXcode
 
         let xcode = activeXcode?.appElement
-        
+
         let isXcodeActive = xcode?.isFrontmost ?? false
 
         [
@@ -600,7 +628,7 @@ extension WidgetWindowsController {
                 $0.moveToActiveSpace()
             }
         }
-        
+
         if isXcodeActive, !windows.chatPanelWindow.isDetached {
             windows.chatPanelWindow.moveToActiveSpace()
         }
@@ -720,6 +748,7 @@ public final class WidgetWindows {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
+        it.hoveringLevel = widgetLevel(2)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SharedPanelView(
@@ -735,7 +764,7 @@ public final class WidgetWindows {
         it.setIsVisible(true)
         it.canBecomeKeyChecker = { [store] in
             store.withState { state in
-                state.panelState.sharedPanelState.content.promptToCode != nil
+                !state.panelState.sharedPanelState.content.promptToCodeGroup.promptToCodes.isEmpty
             }
         }
         return it
@@ -782,6 +811,7 @@ public final class WidgetWindows {
                 self?.store.send(.chatPanel(.hideButtonClicked))
             }
         )
+        it.hoveringLevel = widgetLevel(1)
         it.delegate = controller
         return it
     }()
@@ -845,6 +875,8 @@ class WidgetWindow: CanBecomeKeyWindow {
         case normal(fullscreen: Bool)
         case switchingSpace
     }
+    
+    var hoveringLevel: NSWindow.Level = widgetLevel(0)
 
     var defaultCollectionBehavior: NSWindow.CollectionBehavior {
         [.fullScreenAuxiliary, .transient]
@@ -867,13 +899,24 @@ class WidgetWindow: CanBecomeKeyWindow {
             }
         }
     }
-    
+
     func moveToActiveSpace() {
         let previousState = state
         state = .switchingSpace
         Task { @MainActor in
             try await Task.sleep(nanoseconds: 50_000_000)
             self.state = previousState
+        }
+    }
+
+    func setFloatOnTop(_ isFloatOnTop: Bool) {
+        let targetLevel: NSWindow.Level = isFloatOnTop
+            ? hoveringLevel
+            : .normal
+
+        if targetLevel != level {
+            orderFrontRegardless()
+            level = targetLevel
         }
     }
 }

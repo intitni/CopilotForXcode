@@ -282,6 +282,68 @@ struct PseudoCommandHandler: CommandHandler {
         ), sendImmediately: false)))
     }
 
+    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
+        do {
+            if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
+                throw CancellationError()
+            }
+            do {
+                try await XcodeInspector.shared.safe.latestActiveXcode?
+                    .triggerCopilotCommand(name: "Accept Suggestion Line")
+            } catch {
+                let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
+                let now = Date()
+                if now.timeIntervalSince(last) > 60 * 60 {
+                    Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI = now
+                    toast.toast(content: """
+                    The app is using a fallback solution to accept suggestions. \
+                    For better experience, please restart Xcode to re-activate the Copilot \
+                    menu item.
+                    """, type: .warning, duration: 10)
+                }
+
+                throw error
+            }
+        } catch {
+            guard let xcode = ActiveApplicationMonitor.shared.activeXcode
+                ?? ActiveApplicationMonitor.shared.latestXcode else { return }
+            let application = AXUIElementCreateApplication(xcode.processIdentifier)
+            guard let focusElement = application.focusedElement,
+                  focusElement.description == "Source Editor"
+            else { return }
+            guard let (
+                content,
+                lines,
+                _,
+                cursorPosition,
+                cursorOffset
+            ) = await getFileContent(sourceEditor: nil)
+            else {
+                PresentInWindowSuggestionPresenter()
+                    .presentErrorMessage("Unable to get file content.")
+                return
+            }
+            let handler = WindowBaseCommandHandler()
+            do {
+                guard let result = try await handler.acceptSuggestion(editor: .init(
+                    content: content,
+                    lines: lines,
+                    uti: "",
+                    cursorPosition: cursorPosition,
+                    cursorOffset: cursorOffset,
+                    selections: [],
+                    tabSize: 0,
+                    indentSize: 0,
+                    usesTabsForIndentation: false
+                )) else { return }
+
+                try injectUpdatedCodeWithAccessibilityAPI(result, focusElement: focusElement)
+            } catch {
+                PresentInWindowSuggestionPresenter().presentError(error)
+            }
+        }
+    }
+
     func acceptSuggestion() async {
         do {
             if UserDefaults.shared.value(for: \.alwaysAcceptSuggestionWithAccessibilityAPI) {
@@ -498,17 +560,28 @@ struct PseudoCommandHandler: CommandHandler {
         }
     }
 
-    func presentFile(at fileURL: URL, line: Int = 0) async {
+    func presentFile(at fileURL: URL, line: Int?) async {
         let terminal = Terminal()
         do {
-            _ = try await terminal.runCommand(
-                "/bin/bash",
-                arguments: [
-                    "-c",
-                    "xed -l \(line) \"\(fileURL.path)\"",
-                ],
-                environment: [:]
-            )
+            if let line {
+                _ = try await terminal.runCommand(
+                    "/bin/bash",
+                    arguments: [
+                        "-c",
+                        "xed -l \(line) ${TARGET_FILE}",
+                    ],
+                    environment: ["TARGET_FILE": fileURL.path],
+                )
+            } else {
+                _ = try await terminal.runCommand(
+                    "/bin/bash",
+                    arguments: [
+                        "-c",
+                        "xed ${TARGET_FILE}",
+                    ],
+                    environment: ["TARGET_FILE": fileURL.path],
+                )
+            }
         } catch {
             print(error)
         }
@@ -637,6 +710,35 @@ extension PseudoCommandHandler {
             indentSize: indentSize,
             usesTabsForIndentation: usesTabsForIndentation
         )
+    }
+
+    func handleAcceptSuggestionLineCommand(editor: EditorContent) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+
+        return try await acceptSuggestionLineInGroup(
+            atIndex: 0,
+            editor: editor
+        )
+    }
+
+    func acceptSuggestionLineInGroup(
+        atIndex index: Int?,
+        editor: EditorContent
+    ) async throws -> CodeSuggestion? {
+        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        else { return nil }
+        let (workspace, _) = try await Service.shared.workspacePool
+            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
+
+        guard var acceptedSuggestion = await workspace.acceptSuggestion(
+            forFileAt: fileURL,
+            editor: editor
+        ) else { return nil }
+
+        let text = acceptedSuggestion.text
+        acceptedSuggestion.text = String(text.splitByNewLine().first ?? "")
+        return acceptedSuggestion
     }
 }
 

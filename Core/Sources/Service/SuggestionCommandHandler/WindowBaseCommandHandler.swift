@@ -172,6 +172,32 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         return nil
     }
 
+    func acceptSuggestionLine(editor: EditorContent) async throws -> UpdatedContent? {
+        if let acceptedSuggestion = try await PseudoCommandHandler()
+            .handleAcceptSuggestionLineCommand(editor: editor)
+        {
+            let injector = SuggestionInjector()
+            var lines = editor.lines
+            var cursorPosition = editor.cursorPosition
+            var extraInfo = SuggestionInjector.ExtraInfo()
+
+            injector.acceptSuggestion(
+                intoContentWithoutSuggestion: &lines,
+                cursorPosition: &cursorPosition,
+                completion: acceptedSuggestion,
+                extraInfo: &extraInfo
+            )
+
+            return .init(
+                content: String(lines.joined(separator: "")),
+                newSelection: .cursor(cursorPosition),
+                modifications: extraInfo.modifications
+            )
+        }
+
+        return nil
+    }
+
     func acceptPromptToCode(editor: EditorContent) async throws -> UpdatedContent? {
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return nil }
@@ -357,7 +383,7 @@ extension WindowBaseCommandHandler {
     ) async throws {
         guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
         else { return }
-        let (workspace, filespace) = try await Service.shared.workspacePool
+        let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         guard workspace.suggestionPlugin?.isSuggestionFeatureEnabled ?? false else {
             presenter.presentErrorMessage("Prompt to code is disabled for this project")
@@ -367,34 +393,16 @@ extension WindowBaseCommandHandler {
         let codeLanguage = languageIdentifierFromFileURL(fileURL)
 
         let selections: [CursorRange] = {
-            var all = [CursorRange]()
-
-            // join the ranges if they overlaps in line
-
-            for selection in editor.selections {
-                let range = CursorRange(start: selection.start, end: selection.end)
-
-                func intersect(_ lhs: CursorRange, _ rhs: CursorRange) -> Bool {
-                    lhs.start.line <= rhs.end.line && lhs.end.line >= rhs.start.line
-                }
-
-                if let last = all.last, intersect(last, range) {
-                    all[all.count - 1] = CursorRange(
-                        start: .init(
-                            line: min(last.start.line, range.start.line),
-                            character: min(last.start.character, range.start.character)
-                        ),
-                        end: .init(
-                            line: max(last.end.line, range.end.line),
-                            character: max(last.end.character, range.end.character)
-                        )
-                    )
-                } else {
-                    all.append(range)
-                }
+            if let firstSelection = editor.selections.first,
+               let lastSelection = editor.selections.last
+            {
+                let range = CursorRange(
+                    start: firstSelection.start,
+                    end: lastSelection.end
+                )
+                return [range]
             }
-
-            return all
+            return []
         }()
 
         let snippets = selections.map { selection in

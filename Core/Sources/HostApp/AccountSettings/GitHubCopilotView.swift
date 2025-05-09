@@ -25,6 +25,7 @@ struct GitHubCopilotView: View {
         var disableGitHubCopilotSettingsAutoRefreshOnAppear
         @AppStorage(\.gitHubCopilotLoadKeyChainCertificates)
         var gitHubCopilotLoadKeyChainCertificates
+        @AppStorage(\.gitHubCopilotModelId) var gitHubCopilotModelId
         init() {}
     }
 
@@ -157,7 +158,7 @@ struct GitHubCopilotView: View {
                                 "node"
                             )
                         ) {
-                            Text("Path to Node (v18+)")
+                            Text("Path to Node (v20.8+)")
                         }
 
                         Text(
@@ -199,7 +200,7 @@ struct GitHubCopilotView: View {
                         .foregroundColor(.secondary)
                         .font(.callout)
                         .dynamicHeightTextInFormWorkaround()
-                        
+
                         Toggle(isOn: $settings.gitHubCopilotLoadKeyChainCertificates) {
                             Text("Load certificates in keychain")
                         }
@@ -260,12 +261,19 @@ struct GitHubCopilotView: View {
                         if isRunningAction {
                             ActivityIndicatorView()
                         }
-                    }
+                    } 
                     .opacity(isRunningAction ? 0.8 : 1)
                     .disabled(isRunningAction)
 
                     Button("Refresh configurations") {
                         refreshConfiguration()
+                    }
+
+                    Form {
+                        GitHubCopilotModelPicker(
+                            title: "Chat Model Name",
+                            gitHubCopilotModelId: $settings.gitHubCopilotModelId
+                        )
                     }
                 }
 
@@ -349,7 +357,6 @@ struct GitHubCopilotView: View {
                 if status != .ok, status != .notSignedIn {
                     toast(
                         "GitHub Copilot status is not \"ok\". Please check if you have a valid GitHub Copilot subscription.",
-
                         .error
                     )
                 }
