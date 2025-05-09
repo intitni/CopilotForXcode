@@ -396,7 +396,6 @@ extension WidgetWindowsController {
             let previousActiveApplication = xcodeInspector.previousActiveApplication
             await MainActor.run {
                 let state = store.withState { $0 }
-                let isChatPanelDetached = state.chatPanelState.isDetached
 
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
@@ -749,6 +748,7 @@ public final class WidgetWindows {
         it.isOpaque = false
         it.backgroundColor = .clear
         it.level = widgetLevel(2)
+        it.hoveringLevel = widgetLevel(2)
         it.hasShadow = true
         it.contentView = NSHostingView(
             rootView: SharedPanelView(
@@ -811,6 +811,7 @@ public final class WidgetWindows {
                 self?.store.send(.chatPanel(.hideButtonClicked))
             }
         )
+        it.hoveringLevel = widgetLevel(1)
         it.delegate = controller
         return it
     }()
@@ -874,6 +875,8 @@ class WidgetWindow: CanBecomeKeyWindow {
         case normal(fullscreen: Bool)
         case switchingSpace
     }
+    
+    var hoveringLevel: NSWindow.Level = widgetLevel(0)
 
     var defaultCollectionBehavior: NSWindow.CollectionBehavior {
         [.fullScreenAuxiliary, .transient]
@@ -908,7 +911,7 @@ class WidgetWindow: CanBecomeKeyWindow {
 
     func setFloatOnTop(_ isFloatOnTop: Bool) {
         let targetLevel: NSWindow.Level = isFloatOnTop
-            ? .init(NSWindow.Level.floating.rawValue + 1)
+            ? hoveringLevel
             : .normal
 
         if targetLevel != level {
