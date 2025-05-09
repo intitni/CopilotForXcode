@@ -17,6 +17,11 @@ public struct PromptToCodePanel {
         public enum FocusField: Equatable {
             case textField
         }
+        
+        public enum ClickedButton: Equatable {
+            case accept
+            case acceptAndContinue
+        }
 
         @Shared public var promptToCodeState: ModificationState
         @ObservationStateIgnored
@@ -36,7 +41,7 @@ public struct PromptToCodePanel {
 
         public var generateDescriptionRequirement: Bool
 
-        public var hasEnded = false
+        public var clickedButton: ClickedButton?
         
         public var isActiveDocument: Bool = false
 
@@ -250,13 +255,14 @@ public struct PromptToCodePanel {
                 return .cancel(id: CancellationKey.modifyCode(state.id))
 
             case .acceptButtonTapped:
-                state.hasEnded = true
+                state.clickedButton = .accept
                 return .run { _ in
                     await commandHandler.acceptModification()
                     activatePreviousActiveXcode()
                 }
 
             case .acceptAndContinueButtonTapped:
+                state.clickedButton = .acceptAndContinue
                 return .run { _ in
                     await commandHandler.acceptModification()
                     activateThisApp()

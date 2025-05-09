@@ -19,6 +19,9 @@ public struct PromptToCodeGroup {
             }
             set {
                 selectedTabId = newValue?.id
+                if let id = selectedTabId {
+                    promptToCodes[id: id] = newValue
+                }
             }
         }
     }
@@ -88,7 +91,13 @@ public struct PromptToCodeGroup {
                 return .none
 
             case let .discardAcceptedPromptToCodeIfNotContinuous(id):
-                state.promptToCodes.removeAll { $0.id == id && $0.hasEnded }
+                for itemId in state.promptToCodes.ids {
+                    if itemId == id, state.promptToCodes[id: itemId]?.clickedButton == .accept {
+                        state.promptToCodes.remove(id: itemId)
+                    } else {
+                        state.promptToCodes[id: itemId]?.clickedButton = nil
+                    }
+                }
                 return .none
 
             case let .updateActivePromptToCode(documentURL):
