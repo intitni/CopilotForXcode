@@ -302,14 +302,14 @@ public extension AXUIElement {
             case .skipDescendants: return .continueSearching
             case .skipDescendantsAndSiblings: return .skipSiblings
             case .continueSearching, .skipSiblings:
-                for child in element.children {
+                loop: for child in element.children {
                     switch _traverse(element: child, level: level + 1, handle: handle) {
                     case .skipSiblings, .skipDescendantsAndSiblings:
-                        break
+                        break loop
                     case .stopSearching:
                         return .stopSearching
                     case .continueSearching, .skipDescendants:
-                        continue
+                        continue loop
                     }
                 }
 
