@@ -1,3 +1,8 @@
+import Foundation
+import IdentifiedCollections
+import Perception
+import SuggestionBasic
+import Workspace
 
 @Perceptible
 public final class FileSuggestionManager {
@@ -8,7 +13,7 @@ public final class FileSuggestionManager {
     let defaultSuggestionProvider = DefaultFilespaceSuggestionProvider()
 
     @PerceptionIgnored
-    fileprivate(set) var suggestionProviders: [FilespaceSuggestionProvider] = []
+    var suggestionProviders: [FilespaceSuggestionProvider] = []
 
     @MainActor
     public var displaySuggestions: CircularSuggestionList { _displaySuggestions }
