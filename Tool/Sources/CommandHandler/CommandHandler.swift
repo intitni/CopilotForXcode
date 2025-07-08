@@ -113,10 +113,6 @@ public final class UniversalCommandHandler: CommandHandler {
     public func acceptActiveSuggestionNextWordInGroup(atIndex index: Int?) async {
         await commandHandler.acceptActiveSuggestionNextWordInGroup(atIndex: index)
     }
-    
-    public func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
-        await commandHandler.acceptActiveSuggestionLineInGroup(atIndex: index)
-    }
 
     public func dismissSuggestion() async {
         await commandHandler.dismissSuggestion()
@@ -182,10 +178,6 @@ struct NOOPCommandHandler: CommandHandler {
 
     func acceptActiveSuggestionInGroup(atIndex index: Int?) async {
         print("accept active suggestion in group")
-    }
-
-    func acceptActiveSuggestionLineInGroup(atIndex index: Int?) async {
-        print("accept active suggestion line")
     }
     
     func acceptActiveSuggestionNextWordInGroup(atIndex index: Int?) async {

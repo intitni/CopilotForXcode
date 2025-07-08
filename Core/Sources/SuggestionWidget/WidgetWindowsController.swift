@@ -139,14 +139,9 @@ private extension WidgetWindowsController {
                 let documentURL = await MainActor
                     .run { store.withState { $0.focusingDocumentURL } }
                 if documentURL != newDocumentURL {
-                    await send(.panel(.removeDisplayedContent))
                     await hidePanelWindows()
                 }
                 await send(.updateFocusingDocumentURL)
-            }
-
-            func removeContent() async {
-                await send(.panel(.removeDisplayedContent))
             }
 
             func updateWidgetsAndNotifyChangeOfEditor(immediately: Bool) async {

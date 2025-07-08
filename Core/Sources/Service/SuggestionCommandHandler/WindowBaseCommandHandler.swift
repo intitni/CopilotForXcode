@@ -107,32 +107,6 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
         return nil
     }
-
-    func acceptSuggestionLine(editor: EditorContent) async throws -> UpdatedContent? {
-        if let acceptedSuggestion = try await PseudoCommandHandler()
-            .handleAcceptSuggestionLineCommand(editor: editor)
-        {
-            let injector = SuggestionInjector()
-            var lines = editor.lines
-            var cursorPosition = editor.cursorPosition
-            var extraInfo = SuggestionInjector.ExtraInfo()
-
-            injector.acceptSuggestion(
-                intoContentWithoutSuggestion: &lines,
-                cursorPosition: &cursorPosition,
-                completion: acceptedSuggestion,
-                extraInfo: &extraInfo
-            )
-
-            return .init(
-                content: String(lines.joined(separator: "")),
-                newSelection: .cursor(cursorPosition),
-                modifications: extraInfo.modifications
-            )
-        }
-
-        return nil
-    }
     
     #warning("TODO: This function is not implemented")
     func acceptSuggestionNextWord(editor: EditorContent) async throws -> UpdatedContent? {
