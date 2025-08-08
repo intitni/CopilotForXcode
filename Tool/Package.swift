@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "XPCShared", targets: ["XPCShared"]),
         .library(name: "Terminal", targets: ["Terminal"]),
         .library(name: "LangChain", targets: ["LangChain"]),
-        .library(name: "ExternalServices", targets: ["BingSearchService"]),
+        .library(name: "ExternalServices", targets: ["WebSearchService"]),
         .library(name: "Preferences", targets: ["Preferences", "Configs"]),
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "OpenAIService", targets: ["OpenAIService"]),
@@ -52,7 +52,7 @@ let package = Package(
         .library(name: "CommandHandler", targets: ["CommandHandler"]),
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
         .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
-        .library(name: "BingSearchService", targets: ["BingSearchService"]),
+        .library(name: "WebSearchService", targets: ["WebSearchService"]),
         .library(
             name: "CustomCommandTemplateProcessor",
             targets: ["CustomCommandTemplateProcessor"]
@@ -382,7 +382,7 @@ let package = Package(
             ]
         ),
 
-        .target(name: "BingSearchService"),
+        .target(name: "WebSearchService", dependencies: ["Preferences"]),
 
         .target(name: "SuggestionProvider", dependencies: [
             "SuggestionBasic",
