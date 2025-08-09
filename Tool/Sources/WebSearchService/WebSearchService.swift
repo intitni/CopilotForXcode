@@ -19,6 +19,7 @@ public enum WebSearchProvider {
 
     case serpAPI(SerpAPIEngine, apiKey: String)
     case headlessBrowser(HeadlessBrowserEngine)
+    case appleDocumentation
 
     public static var userPreferred: WebSearchProvider {
         switch UserDefaults.shared.value(for: \.searchProvider) {
@@ -63,6 +64,8 @@ public struct WebSearchService {
             service = SerpAPISearchService(engine: engine, apiKey: apiKey)
         case let .headlessBrowser(engine):
             service = HeadlessBrowserSearchService(engine: engine)
+        case .appleDocumentation:
+            service = AppleDocumentationSearchService()
         }
     }
 
