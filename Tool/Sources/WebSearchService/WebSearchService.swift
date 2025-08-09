@@ -1,5 +1,6 @@
 import Foundation
 import Preferences
+import Keychain
 
 public enum WebSearchProvider {
     public enum SerpAPIEngine: String {
@@ -12,6 +13,8 @@ public enum WebSearchProvider {
     public enum HeadlessBrowserEngine: String {
         case google
         case baidu
+        case bing
+        case duckDuckGo = "duckduckgo"
     }
 
     case serpAPI(SerpAPIEngine, apiKey: String)
@@ -28,7 +31,7 @@ public enum WebSearchProvider {
             return .serpAPI(.init(
                 rawValue: UserDefaults.shared.value(for: \.headlessBrowserEngine)
                     .rawValue
-            ) ?? .google, apiKey: "")
+            ) ?? .google, apiKey: (try? Keychain.apiKey.get("SerpAPIKey")) ?? "")
         }
     }
 }
@@ -59,7 +62,7 @@ public struct WebSearchService {
         case let .serpAPI(engine, apiKey):
             service = SerpAPISearchService(engine: engine, apiKey: apiKey)
         case let .headlessBrowser(engine):
-            fatalError()
+            service = HeadlessBrowserSearchService(engine: engine)
         }
     }
 

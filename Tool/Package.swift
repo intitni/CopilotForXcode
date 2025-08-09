@@ -53,6 +53,7 @@ let package = Package(
         .library(name: "CodeDiff", targets: ["CodeDiff"]),
         .library(name: "BuiltinExtension", targets: ["BuiltinExtension"]),
         .library(name: "WebSearchService", targets: ["WebSearchService"]),
+        .library(name: "WebScrapper", targets: ["WebScrapper"]),
         .library(
             name: "CustomCommandTemplateProcessor",
             targets: ["CustomCommandTemplateProcessor"]
@@ -382,7 +383,12 @@ let package = Package(
             ]
         ),
 
-        .target(name: "WebSearchService", dependencies: ["Preferences"]),
+        .target(name: "WebScrapper", dependencies: [
+            .product(name: "SwiftSoup", package: "SwiftSoup"),
+        ]),
+
+        .target(name: "WebSearchService", dependencies: ["Preferences", "WebScrapper", "Keychain"]),
+        .testTarget(name: "WebSearchServiceTests", dependencies: ["WebSearchService"]),
 
         .target(name: "SuggestionProvider", dependencies: [
             "SuggestionBasic",

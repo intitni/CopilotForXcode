@@ -600,6 +600,8 @@ public extension UserDefaultPreferenceKeys {
     enum HeadlessBrowserEngine: String, Codable, CaseIterable {
         case google
         case baidu
+        case bing
+        case duckDuckGo = "duckduckgo"
     }
     
     var searchProvider: PreferenceKey<SearchProvider> {
