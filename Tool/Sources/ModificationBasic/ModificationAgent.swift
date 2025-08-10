@@ -101,13 +101,16 @@ public enum ModificationAttachedTarget: Equatable {
 public struct ModificationHistoryNode {
     public var snippets: IdentifiedArrayOf<ModificationSnippet>
     public var instruction: NSAttributedString
+    public var references: [ChatMessage.Reference]
 
     public init(
         snippets: IdentifiedArrayOf<ModificationSnippet>,
-        instruction: NSAttributedString
+        instruction: NSAttributedString,
+        references: [ChatMessage.Reference]
     ) {
         self.snippets = snippets
         self.instruction = instruction
+        self.references = references
     }
 }
 

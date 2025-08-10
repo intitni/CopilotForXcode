@@ -1,8 +1,8 @@
-import BingSearchService
 import ChatBasic
 import Foundation
 import OpenAIService
 import Preferences
+import WebSearchService
 
 struct SearchFunction: ChatGPTFunction {
     static let dateFormatter = {
@@ -17,13 +17,13 @@ struct SearchFunction: ChatGPTFunction {
     }
 
     struct Result: ChatGPTFunctionResult {
-        var result: BingSearchResult
+        var result: WebSearchResult
 
         var botReadableContent: String {
-            result.webPages.value.enumerated().map {
+            result.webPages.enumerated().map {
                 let (index, page) = $0
                 return """
-                \(index + 1). \(page.name) \(page.url)
+                \(index + 1). \(page.title) \(page.urlString)
                 \(page.snippet)
                 """
             }.joined(separator: "\n")
@@ -72,22 +72,15 @@ struct SearchFunction: ChatGPTFunction {
         await reportProgress("Searching \(arguments.query)")
 
         do {
-            let bingSearch = BingSearchService(
-                subscriptionKey: UserDefaults.shared.value(for: \.bingSearchSubscriptionKey),
-                searchURL: UserDefaults.shared.value(for: \.bingSearchEndpoint)
-            )
+            let search = WebSearchService(provider: .userPreferred)
 
-            let result = try await bingSearch.search(
-                query: arguments.query,
-                numberOfResult: maxTokens > 5000 ? 5 : 3,
-                freshness: arguments.freshness
-            )
+            let result = try await search.search(query: arguments.query)
 
             await reportProgress("""
             Finish searching \(arguments.query)
             \(
-                result.webPages.value
-                    .map { "- [\($0.name)](\($0.url))" }
+                result.webPages
+                    .map { "- [\($0.title)](\($0.urlString))" }
                     .joined(separator: "\n")
             )
             """)

@@ -1,3 +1,4 @@
+import ChatBasic
 import Cocoa
 import ComposableArchitecture
 import MarkdownUI
@@ -205,6 +206,7 @@ extension PromptToCodePanelView {
 
         var body: some View {
             HStack {
+                ReferencesButton(store: store)
                 StopRespondingButton(store: store)
                 ActionButtons(store: store)
             }
@@ -234,6 +236,43 @@ extension PromptToCodePanelView {
                             }
                         }
                         .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+
+        struct ReferencesButton: View {
+            let store: StoreOf<PromptToCodePanel>
+            @State var isReferencesPresented = false
+            @State var isReferencesHovered = false
+
+            var body: some View {
+                if !store.promptToCodeState.references.isEmpty {
+                    Button(action: {
+                        isReferencesPresented.toggle()
+                    }, label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                            Text("\(store.promptToCodeState.references.count)")
+                        }
+                        .padding(8)
+                        .background(
+                            .regularMaterial,
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        }
+                    })
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $isReferencesPresented, arrowEdge: .trailing) {
+                        ReferenceList(store: store)
+                    }
+                    .onHover { hovering in
+                        withAnimation {
+                            isReferencesHovered = hovering
+                        }
                     }
                 }
             }
@@ -361,10 +400,10 @@ extension PromptToCodePanelView {
                 }
             }
         }
-        
+
         struct RevealButton: View {
             let store: StoreOf<PromptToCodePanel>
-            
+
             var body: some View {
                 WithPerceptionTracking {
                     Button(action: {
@@ -887,6 +926,157 @@ extension PromptToCodePanelView {
             }
         }
     }
+
+    struct ReferenceList: View {
+        @Perception.Bindable var store: StoreOf<PromptToCodePanel>
+
+        var body: some View {
+            WithPerceptionTracking {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(
+                            0..<store.promptToCodeState.references.endIndex,
+                            id: \.self
+                        ) { index in
+                            WithPerceptionTracking {
+                                let reference = store.promptToCodeState.references[index]
+                                ReferenceButton(reference: reference, isUsed: true, onClick: {})
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .frame(minWidth: 200, maxWidth: 500, maxHeight: 500)
+            }
+        }
+
+        struct ReferenceButton: View {
+            let reference: ChatMessage.Reference
+            let isUsed: Bool
+            let onClick: () -> Void
+
+            var body: some View {
+                Button(action: onClick) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            ReferenceIcon(kind: reference.kind)
+                                .layoutPriority(2)
+                            Text(reference.title)
+                                .truncationMode(.middle)
+                                .lineLimit(1)
+                                .layoutPriority(1)
+                                .foregroundStyle(isUsed ? .primary : .secondary)
+                        }
+                        Text(reference.content)
+                            .lineLimit(3)
+                            .truncationMode(.tail)
+                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(isUsed ? .secondary : .tertiary)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.leading, 4)
+                    .padding(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    struct ReferenceIcon: View {
+        let kind: ChatMessage.Reference.Kind
+
+        var body: some View {
+            RoundedRectangle(cornerRadius: 4)
+                .fill({
+                    switch kind {
+                    case let .symbol(symbol, _, _, _):
+                        switch symbol {
+                        case .class:
+                            Color.purple
+                        case .struct:
+                            Color.purple
+                        case .enum:
+                            Color.purple
+                        case .actor:
+                            Color.purple
+                        case .protocol:
+                            Color.purple
+                        case .extension:
+                            Color.indigo
+                        case .case:
+                            Color.green
+                        case .property:
+                            Color.teal
+                        case .typealias:
+                            Color.orange
+                        case .function:
+                            Color.teal
+                        case .method:
+                            Color.blue
+                        }
+                    case .text:
+                        Color.gray
+                    case .webpage:
+                        Color.blue
+                    case .textFile:
+                        Color.gray
+                    case .other:
+                        Color.gray
+                    case .error:
+                        Color.red
+                    }
+                }())
+                .frame(width: 26, height: 14)
+                .overlay(alignment: .center) {
+                    Group {
+                        switch kind {
+                        case let .symbol(symbol, _, _, _):
+                            switch symbol {
+                            case .class:
+                                Text("C")
+                            case .struct:
+                                Text("S")
+                            case .enum:
+                                Text("E")
+                            case .actor:
+                                Text("A")
+                            case .protocol:
+                                Text("Pr")
+                            case .extension:
+                                Text("Ex")
+                            case .case:
+                                Text("K")
+                            case .property:
+                                Text("P")
+                            case .typealias:
+                                Text("T")
+                            case .function:
+                                Text("𝑓")
+                            case .method:
+                                Text("M")
+                            }
+                        case .text:
+                            Text("Txt")
+                        case .webpage:
+                            Text("Web")
+                        case .other:
+                            Text("*")
+                        case .textFile:
+                            Text("Txt")
+                        case .error:
+                            Text("Err")
+                        }
+                    }
+                    .font(.system(size: 10).monospaced())
+                    .foregroundColor(.white)
+                }
+        }
+    }
 }
 
 // MARK: - Previews
@@ -916,7 +1106,7 @@ extension PromptToCodePanelView {
                             end: .init(line: 12, character: 2)
                         )
                     ),
-                ], instruction: .init("Previous instruction")),
+                ], instruction: .init("Previous instruction"), references: []),
             ],
             snippets: [
                 .init(
@@ -951,7 +1141,14 @@ extension PromptToCodePanelView {
                 ),
             ],
             extraSystemPrompt: "",
-            isAttachedToTarget: true
+            isAttachedToTarget: true,
+            references: [
+                ChatMessage.Reference(
+                    title: "Foo",
+                    content: "struct Foo { var foo: Int }",
+                    kind: .symbol(.struct, uri: "file:///path/to/file.txt", startLine: 13, endLine: 13)
+                ),
+            ],
         )),
         instruction: nil,
         commandName: "Generate Code"
