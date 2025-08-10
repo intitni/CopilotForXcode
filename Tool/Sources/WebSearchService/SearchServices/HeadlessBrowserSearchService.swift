@@ -85,7 +85,7 @@ enum BaiduSearchResultParser {
     static func validate(document: SwiftSoup.Document) -> Bool {
         return (try? document.select("#content_left").first()) != nil
     }
-    
+
     static func getRealLink(from baiduLink: String) async -> String {
         guard let url = URL(string: baiduLink) else {
             return baiduLink
@@ -136,6 +136,7 @@ enum BaiduSearchResultParser {
             completionHandler(request)
         }
     }
+
     static func parse(html: String) async -> WebSearchResult {
         let document = try? SwiftSoup.parse(html)
         let elements = try? document?.select("#content_left").first()?.children()
@@ -212,6 +213,41 @@ enum BingSearchResultParser {
         return (try? document.select("#b_results").first()) != nil
     }
 
+    static func getRealLink(from bingLink: String) -> String {
+        guard let url = URL(string: bingLink) else { return bingLink }
+
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+           let queryItems = components.queryItems,
+           var uParam = queryItems.first(where: { $0.name == "u" })?.value
+        {
+            if uParam.hasPrefix("a1aHR") {
+                uParam.removeFirst()
+                uParam.removeFirst()
+            }
+
+            func decode() -> String? {
+                guard let decodedData = Data(base64Encoded: uParam),
+                      let decodedString = String(data: decodedData, encoding: .utf8)
+                else { return nil }
+                return decodedString
+            }
+
+            if let decodedString = decode() {
+                return decodedString
+            }
+            uParam += "="
+            if let decodedString = decode() {
+                return decodedString
+            }
+            uParam += "="
+            if let decodedString = decode() {
+                return decodedString
+            }
+        }
+
+        return bingLink
+    }
+
     static func parse(html: String) -> WebSearchResult {
         let document = try? SwiftSoup.parse(html)
         let searchResults = try? document?.select("#b_results").first()
@@ -224,6 +260,7 @@ enum BingSearchResultParser {
                    let link = try? linkElement.attr("href"),
                    link.hasPrefix("http")
                 {
+                    let link = getRealLink(from: link)
                     let title = (try? titleElement.text()) ?? ""
                     let snippet = {
                         if let it = try? element.select(".b_caption p").first()?.text(),
