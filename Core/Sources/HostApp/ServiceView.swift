@@ -17,7 +17,7 @@ struct ServiceView: View {
                         subtitle: "Suggestion",
                         image: "globe"
                     )
-                    
+
                     ScrollView {
                         CodeiumView().padding()
                     }.sidebarItem(
@@ -26,7 +26,7 @@ struct ServiceView: View {
                         subtitle: "Suggestion",
                         image: "globe"
                     )
-                    
+
                     ChatModelManagementView(store: store.scope(
                         state: \.chatModelManagement,
                         action: \.chatModelManagement
@@ -36,7 +36,7 @@ struct ServiceView: View {
                         subtitle: "Chat, Modification",
                         image: "globe"
                     )
-                    
+
                     EmbeddingModelManagementView(store: store.scope(
                         state: \.embeddingModelManagement,
                         action: \.embeddingModelManagement
@@ -46,16 +46,17 @@ struct ServiceView: View {
                         subtitle: "Chat, Modification",
                         image: "globe"
                     )
-                    
-                    ScrollView {
-                        BingSearchView().padding()
-                    }.sidebarItem(
+
+                    WebSearchView(store: store.scope(
+                        state: \.webSearchSettings,
+                        action: \.webSearchSettings
+                    )).sidebarItem(
                         tag: 4,
-                        title: "Bing Search",
-                        subtitle: "Search Chat Plugin",
+                        title: "Web Search",
+                        subtitle: "Chat, Modification",
                         image: "globe"
                     )
-                    
+
                     ScrollView {
                         OtherSuggestionServicesView().padding()
                     }.sidebarItem(
