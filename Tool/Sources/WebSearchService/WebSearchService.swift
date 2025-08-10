@@ -25,20 +25,19 @@ public enum WebSearchProvider {
         switch UserDefaults.shared.value(for: \.searchProvider) {
         case .headlessBrowser:
             return .headlessBrowser(.init(
-                rawValue: UserDefaults.shared.value(for: \.headlessBrowserEngine)
-                    .rawValue
+                rawValue: UserDefaults.shared.value(for: \.headlessBrowserEngine).rawValue
             ) ?? .google)
         case .serpAPI:
+            let apiKeyName = UserDefaults.shared.value(for: \.serpAPIKeyName)
             return .serpAPI(.init(
-                rawValue: UserDefaults.shared.value(for: \.headlessBrowserEngine)
-                    .rawValue
-            ) ?? .google, apiKey: (try? Keychain.apiKey.get("SerpAPIKey")) ?? "")
+                rawValue: UserDefaults.shared.value(for: \.serpAPIEngine).rawValue
+            ) ?? .google, apiKey: (try? Keychain.apiKey.get(apiKeyName)) ?? "")
         }
     }
 }
 
-public struct WebSearchResult {
-    public struct WebPage {
+public struct WebSearchResult: Equatable {
+    public struct WebPage: Equatable {
         public var urlString: String
         public var title: String
         public var snippet: String

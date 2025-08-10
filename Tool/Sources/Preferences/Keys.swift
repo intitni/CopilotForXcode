@@ -586,8 +586,8 @@ public extension UserDefaultPreferenceKeys {
 
 public extension UserDefaultPreferenceKeys {
     enum SearchProvider: String, Codable, CaseIterable {
-        case serpAPI
         case headlessBrowser
+        case serpAPI
     }
     
     enum SerpAPIEngine: String, Codable, CaseIterable {
@@ -610,6 +610,10 @@ public extension UserDefaultPreferenceKeys {
     
     var serpAPIEngine: PreferenceKey<SerpAPIEngine> {
         .init(defaultValue: .google, key: "SerpAPIEngine")
+    }
+    
+    var serpAPIKeyName: PreferenceKey<String> {
+        .init(defaultValue: "", key: "SerpAPIKeyName")
     }
     
     var headlessBrowserEngine: PreferenceKey<HeadlessBrowserEngine> {

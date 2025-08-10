@@ -1,31 +1,22 @@
 import Foundation
 
 struct SerpAPIResponse: Codable {
-    var searchMetadata: SearchMetadata
-    var organicResults: [OrganicResult]
-
-    struct SearchMetadata: Codable {
-        var id: String
-        var status: String
-        var jsonEndpoint: String
-        var createdAt: String
-        var processedAt: String
-        var totalTimeTaken: Double
-    }
+    var organic_results: [OrganicResult]
 
     struct OrganicResult: Codable {
-        var position: Int
-        var title: String
-        var link: String
-        var snippet: String
+        var position: Int?
+        var title: String?
+        var link: String?
+        var snippet: String?
 
-        func toWebSearchResult() -> WebSearchResult.WebPage {
-            return WebSearchResult.WebPage(urlString: link, title: title, snippet: snippet)
+        func toWebSearchResult() -> WebSearchResult.WebPage? {
+            guard let link, let title else { return nil }
+            return WebSearchResult.WebPage(urlString: link, title: title, snippet: snippet ?? "")
         }
     }
 
     func toWebSearchResult() -> WebSearchResult {
-        return WebSearchResult(webPages: organicResults.map { $0.toWebSearchResult() })
+        return WebSearchResult(webPages: organic_results.compactMap { $0.toWebSearchResult() })
     }
 }
 
