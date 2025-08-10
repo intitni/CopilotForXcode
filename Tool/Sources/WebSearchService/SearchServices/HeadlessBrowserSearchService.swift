@@ -38,7 +38,7 @@ struct HeadlessBrowserSearchService: SearchService {
         case .google:
             return try GoogleSearchResultParser.parse(html: html)
         case .baidu:
-            return BaiduSearchResultParser.parse(html: html)
+            return await BaiduSearchResultParser.parse(html: html)
         case .duckDuckGo:
             return DuckDuckGoSearchResultParser.parse(html: html)
         case .bing:
@@ -85,8 +85,58 @@ enum BaiduSearchResultParser {
     static func validate(document: SwiftSoup.Document) -> Bool {
         return (try? document.select("#content_left").first()) != nil
     }
+    
+    static func getRealLink(from baiduLink: String) async -> String {
+        guard let url = URL(string: baiduLink) else {
+            return baiduLink
+        }
 
-    static func parse(html: String) -> WebSearchResult {
+        let config = URLSessionConfiguration.default
+        config.httpShouldSetCookies = true
+        config.httpCookieAcceptPolicy = .always
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+            forHTTPHeaderField: "User-Agent"
+        )
+
+        let redirectCapturer = RedirectCapturer()
+        let session = URLSession(
+            configuration: config,
+            delegate: redirectCapturer,
+            delegateQueue: nil
+        )
+
+        do {
+            let _ = try await session.data(for: request)
+
+            if let finalURL = redirectCapturer.finalURL {
+                return finalURL.absoluteString
+            }
+
+            return baiduLink
+        } catch {
+            return baiduLink
+        }
+    }
+
+    class RedirectCapturer: NSObject, URLSessionTaskDelegate {
+        var finalURL: URL?
+
+        func urlSession(
+            _ session: URLSession,
+            task: URLSessionTask,
+            willPerformHTTPRedirection response: HTTPURLResponse,
+            newRequest request: URLRequest,
+            completionHandler: @escaping (URLRequest?) -> Void
+        ) {
+            finalURL = request.url
+            completionHandler(request)
+        }
+    }
+    static func parse(html: String) async -> WebSearchResult {
         let document = try? SwiftSoup.parse(html)
         let elements = try? document?.select("#content_left").first()?.children()
 
@@ -97,6 +147,7 @@ enum BaiduSearchResultParser {
                    let link = try? element.select("a").attr("href"),
                    link.hasPrefix("http")
                 {
+                    let realLink = await getRealLink(from: link)
                     let title = (try? titleElement.text()) ?? ""
                     let snippet = {
                         let abstract = try? element.select("div[data-module=\"abstract\"]").text()
@@ -106,7 +157,7 @@ enum BaiduSearchResultParser {
                         return (try? titleElement.nextElementSibling()?.text()) ?? ""
                     }()
                     results.append(WebSearchResult.WebPage(
-                        urlString: link,
+                        urlString: realLink,
                         title: title,
                         snippet: snippet
                     ))
