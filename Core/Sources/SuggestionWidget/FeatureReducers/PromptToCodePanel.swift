@@ -1,4 +1,5 @@
 import AppKit
+import ChatBasic
 import ComposableArchitecture
 import CustomAsyncAlgorithms
 import Dependencies
@@ -17,7 +18,7 @@ public struct PromptToCodePanel {
         public enum FocusField: Equatable {
             case textField
         }
-        
+
         public enum ClickedButton: Equatable {
             case accept
             case acceptAndContinue
@@ -42,7 +43,7 @@ public struct PromptToCodePanel {
         public var generateDescriptionRequirement: Bool
 
         public var clickedButton: ClickedButton?
-        
+
         public var isActiveDocument: Bool = false
 
         public var snippetPanels: IdentifiedArrayOf<PromptToCodeSnippetPanel.State> {
@@ -94,6 +95,7 @@ public struct PromptToCodePanel {
         case acceptAndContinueButtonTapped
         case revealFileButtonClicked
         case statusUpdated([String])
+        case referencesUpdated([ChatMessage.Reference])
         case snippetPanel(IdentifiedActionOf<PromptToCodeSnippetPanel>)
     }
 
@@ -129,11 +131,10 @@ public struct PromptToCodePanel {
                 let copiedState = state
                 let contextInputController = state.contextInputController
                 state.promptToCodeState.isGenerating = true
-                state.promptToCodeState
-                    .pushHistory(instruction: .init(
-                        attributedString: contextInputController
-                            .instruction
-                    ))
+                state.promptToCodeState.pushHistory(instruction: .init(
+                    attributedString: contextInputController.instruction
+                ))
+                state.promptToCodeState.references = []
                 let snippets = state.promptToCodeState.snippets
 
                 return .run { send in
@@ -141,6 +142,7 @@ public struct PromptToCodePanel {
                         let context = await contextInputController.resolveContext(onStatusChange: {
                             await send(.statusUpdated($0))
                         })
+                        await send(.referencesUpdated(context.references))
                         let agentFactory = context.agent ?? { SimpleModificationAgent() }
                         _ = try await withThrowingTaskGroup(of: Void.self) { group in
                             for (index, snippet) in snippets.enumerated() {
@@ -277,6 +279,10 @@ public struct PromptToCodePanel {
 
             case let .statusUpdated(status):
                 state.promptToCodeState.status = status
+                return .none
+
+            case let .referencesUpdated(references):
+                state.promptToCodeState.references = references
                 return .none
             }
         }

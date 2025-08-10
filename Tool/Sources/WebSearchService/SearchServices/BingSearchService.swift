@@ -1,19 +1,19 @@
 import Foundation
 
-public struct BingSearchResult: Codable {
-    public var webPages: WebPages
+struct BingSearchResult: Codable {
+    var webPages: WebPages
 
-    public struct WebPages: Codable {
-        public var webSearchUrl: String
-        public var totalEstimatedMatches: Int
-        public var value: [WebPageValue]
+    struct WebPages: Codable {
+        var webSearchUrl: String
+        var totalEstimatedMatches: Int
+        var value: [WebPageValue]
 
-        public struct WebPageValue: Codable {
-            public var id: String
-            public var name: String
-            public var url: String
-            public var displayUrl: String
-            public var snippet: String
+        struct WebPageValue: Codable {
+            var id: String
+            var name: String
+            var url: String
+            var displayUrl: String
+            var snippet: String
         }
     }
 }
@@ -42,16 +42,27 @@ enum BingSearchError: Error, LocalizedError {
     }
 }
 
-public struct BingSearchService {
-    public var subscriptionKey: String
-    public var searchURL: String
+struct BingSearchService: SearchService {
+    var subscriptionKey: String
+    var searchURL: String
 
-    public init(subscriptionKey: String, searchURL: String) {
+    init(subscriptionKey: String, searchURL: String) {
         self.subscriptionKey = subscriptionKey
         self.searchURL = searchURL
     }
 
-    public func search(
+    func search(query: String) async throws -> WebSearchResult {
+        let result = try await search(query: query, numberOfResult: 10)
+        return WebSearchResult(webPages: result.webPages.value.map {
+            WebSearchResult.WebPage(
+                urlString: $0.url,
+                title: $0.name,
+                snippet: $0.snippet
+            )
+        })
+    }
+
+    func search(
         query: String,
         numberOfResult: Int,
         freshness: String? = nil

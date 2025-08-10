@@ -594,14 +594,49 @@ public extension UserDefaultPreferenceKeys {
     }
 }
 
-// MARK: - Bing Search
+// MARK: - Search
 
 public extension UserDefaultPreferenceKeys {
-    var bingSearchSubscriptionKey: PreferenceKey<String> {
+    enum SearchProvider: String, Codable, CaseIterable {
+        case headlessBrowser
+        case serpAPI
+    }
+    
+    enum SerpAPIEngine: String, Codable, CaseIterable {
+        case google
+        case baidu
+        case bing
+        case duckDuckGo = "duckduckgo"
+    }
+    
+    enum HeadlessBrowserEngine: String, Codable, CaseIterable {
+        case google
+        case baidu
+        case bing
+        case duckDuckGo = "duckduckgo"
+    }
+    
+    var searchProvider: PreferenceKey<SearchProvider> {
+        .init(defaultValue: .headlessBrowser, key: "SearchProvider")
+    }
+    
+    var serpAPIEngine: PreferenceKey<SerpAPIEngine> {
+        .init(defaultValue: .google, key: "SerpAPIEngine")
+    }
+    
+    var serpAPIKeyName: PreferenceKey<String> {
+        .init(defaultValue: "", key: "SerpAPIKeyName")
+    }
+    
+    var headlessBrowserEngine: PreferenceKey<HeadlessBrowserEngine> {
+        .init(defaultValue: .google, key: "HeadlessBrowserEngine")
+    }
+    
+    var bingSearchSubscriptionKey: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "BingSearchSubscriptionKey")
     }
 
-    var bingSearchEndpoint: PreferenceKey<String> {
+    var bingSearchEndpoint: DeprecatedPreferenceKey<String> {
         .init(
             defaultValue: "https://api.bing.microsoft.com/v7.0/search/",
             key: "BingSearchEndpoint"

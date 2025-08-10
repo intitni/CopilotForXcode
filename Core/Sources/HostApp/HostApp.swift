@@ -18,6 +18,7 @@ struct HostApp {
         var general = General.State()
         var chatModelManagement = ChatModelManagement.State()
         var embeddingModelManagement = EmbeddingModelManagement.State()
+        var webSearchSettings = WebSearchSettings.State()
     }
 
     enum Action {
@@ -25,6 +26,7 @@ struct HostApp {
         case general(General.Action)
         case chatModelManagement(ChatModelManagement.Action)
         case embeddingModelManagement(EmbeddingModelManagement.Action)
+        case webSearchSettings(WebSearchSettings.Action)
     }
 
     @Dependency(\.toast) var toast
@@ -45,6 +47,10 @@ struct HostApp {
         Scope(state: \.embeddingModelManagement, action: \.embeddingModelManagement) {
             EmbeddingModelManagement()
         }
+        
+        Scope(state: \.webSearchSettings, action: \.webSearchSettings) {
+            WebSearchSettings()
+        }
 
         Reduce { _, action in
             switch action {
@@ -61,6 +67,9 @@ struct HostApp {
                 return .none
 
             case .embeddingModelManagement:
+                return .none
+                
+            case .webSearchSettings:
                 return .none
             }
         }

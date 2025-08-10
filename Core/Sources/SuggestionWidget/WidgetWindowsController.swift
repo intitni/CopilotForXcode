@@ -154,7 +154,7 @@ private extension WidgetWindowsController {
                 updateWindowLocation(animated: false, immediately: immediately)
                 updateWindowOpacity(immediately: immediately)
             }
-            
+
             await updateWidgetsAndNotifyChangeOfEditor(immediately: true)
 
             for await notification in await notifications.notifications() {
@@ -267,7 +267,8 @@ extension WidgetWindowsController {
                let parent = focusElement.parent,
                let frame = parent.rect,
                let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-               let firstScreen = NSScreen.main
+               let windowContainingScreen = NSScreen.screens
+               .first(where: { $0.frame.contains(frame.origin) })
             {
                 let positionMode = UserDefaults.shared
                     .value(for: \.suggestionWidgetPositionMode)
@@ -279,7 +280,7 @@ extension WidgetWindowsController {
                     var result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
-                        activeScreen: firstScreen
+                        activeScreen: windowContainingScreen
                     )
                     switch suggestionMode {
                     case .nearbyTextCursor:
@@ -287,7 +288,7 @@ extension WidgetWindowsController {
                             .NearbyTextCursor()
                             .framesForSuggestionWindow(
                                 editorFrame: frame, mainScreen: screen,
-                                activeScreen: firstScreen,
+                                activeScreen: windowContainingScreen,
                                 editor: focusElement,
                                 completionPanel: xcodeInspector.completionPanel
                             )
@@ -299,7 +300,7 @@ extension WidgetWindowsController {
                     var result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
                         editorFrame: frame,
                         mainScreen: screen,
-                        activeScreen: firstScreen,
+                        activeScreen: windowContainingScreen,
                         editor: focusElement
                     )
                     switch suggestionMode {
@@ -308,7 +309,7 @@ extension WidgetWindowsController {
                             .NearbyTextCursor()
                             .framesForSuggestionWindow(
                                 editorFrame: frame, mainScreen: screen,
-                                activeScreen: firstScreen,
+                                activeScreen: windowContainingScreen,
                                 editor: focusElement,
                                 completionPanel: xcodeInspector.completionPanel
                             )
@@ -399,8 +400,6 @@ extension WidgetWindowsController {
             let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
             let previousActiveApplication = xcodeInspector.previousActiveApplication
             await MainActor.run {
-                let state = store.withState { $0 }
-
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
                     /// We need this to hide the windows when Xcode is minimized.
@@ -852,7 +851,7 @@ class WidgetWindow: CanBecomeKeyWindow {
         case normal(fullscreen: Bool)
         case switchingSpace
     }
-    
+
     var hoveringLevel: NSWindow.Level = widgetLevel(0)
 
     var defaultCollectionBehavior: NSWindow.CollectionBehavior {

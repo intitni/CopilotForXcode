@@ -1,3 +1,4 @@
+import ChatBasic
 import Foundation
 import IdentifiedCollections
 import SuggestionBasic
@@ -12,6 +13,7 @@ public struct ModificationState {
     public var extraSystemPrompt: String
     public var isAttachedToTarget: Bool = true
     public var status = [String]()
+    public var references: [ChatMessage.Reference] = []
 
     public init(
         source: Source,
@@ -20,7 +22,8 @@ public struct ModificationState {
         extraSystemPrompt: String,
         isAttachedToTarget: Bool,
         isGenerating: Bool = false,
-        status: [String] = []
+        status: [String] = [],
+        references: [ChatMessage.Reference] = []
     ) {
         self.history = history
         self.snippets = snippets
@@ -29,6 +32,7 @@ public struct ModificationState {
         self.extraSystemPrompt = extraSystemPrompt
         self.source = source
         self.status = status
+        self.references = references
     }
 
     public init(
@@ -58,16 +62,17 @@ public struct ModificationState {
     public mutating func popHistory() -> NSAttributedString? {
         if !history.isEmpty {
             let last = history.removeLast()
+            references = last.references
             snippets = last.snippets
             let instruction = last.instruction
             return instruction
         }
-        
+
         return nil
     }
 
     public mutating func pushHistory(instruction: NSAttributedString) {
-        history.append(.init(snippets: snippets, instruction: instruction))
+        history.append(.init(snippets: snippets, instruction: instruction, references: references))
         let oldSnippets = snippets
         snippets = IdentifiedArrayOf()
         for var snippet in oldSnippets {

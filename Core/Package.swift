@@ -126,6 +126,7 @@ let package = Package(
                 .product(name: "Toast", package: "Tool"),
                 .product(name: "SharedUIComponents", package: "Tool"),
                 .product(name: "SuggestionBasic", package: "Tool"),
+                .product(name: "WebSearchService", package: "Tool"),
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "RunEnvironment", package: "Tool"),
