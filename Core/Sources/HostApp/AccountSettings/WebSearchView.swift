@@ -6,6 +6,7 @@ import Preferences
 import SuggestionBasic
 import SwiftUI
 import WebSearchService
+import SharedUIComponents
 
 @Reducer
 struct WebSearchSettings {
@@ -98,12 +99,18 @@ struct WebSearchView: View {
     var body: some View {
         WithPerceptionTracking {
             ScrollView {
-                Form {
-                    Section(header: Text("Search Provider")) {
+                VStack(alignment: .leading) {
+                    Form {
                         Picker("Search Provider", selection: $settings.searchProvider) {
                             ForEach(UserDefaultPreferenceKeys.SearchProvider.allCases, id: \.self) {
                                 provider in
-                                Text(provider.rawValue).tag(provider)
+                                switch provider {
+                                case .serpAPI:
+                                    Text("Serp API").tag(provider)
+                                case .headlessBrowser:
+                                    Text("Headless Browser").tag(provider)
+                                }
+                                
                             }
                         }
                         .pickerStyle(.segmented)
@@ -115,14 +122,21 @@ struct WebSearchView: View {
                     case .headlessBrowser:
                         headlessBrowserForm()
                     }
-
-                    Section {
+                }
+                .padding()
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 0) {
+                    Divider()
+                    HStack {
                         Button("Test Search") {
                             store.send(.test)
                         }
+                        Spacer()
                     }
+                    .padding()
                 }
-                .padding()
+                .background(.regularMaterial)
             }
             .sheet(item: $store.testResult) { testResult in
                 testResultView(testResult: testResult)
@@ -135,7 +149,12 @@ struct WebSearchView: View {
 
     @ViewBuilder
     func serpAPIForm() -> some View {
-        Section(header: Text("SerpAPI")) {
+        SubSection(
+            title: Text("Serp API Settings"),
+            description: """
+            Use Serp API to do web search. Serp API is more reliable and faster than headless browser. But you need to provide an API key for it.
+            """
+        ) {
             Picker("Engine", selection: $settings.serpAPIEngine) {
                 ForEach(
                     UserDefaultPreferenceKeys.SerpAPIEngine.allCases,
@@ -144,7 +163,7 @@ struct WebSearchView: View {
                     Text(engine.rawValue).tag(engine)
                 }
             }
-
+            
             WithPerceptionTracking {
                 APIKeyPicker(store: store.scope(
                     state: \.apiKeySelection,
@@ -156,7 +175,12 @@ struct WebSearchView: View {
 
     @ViewBuilder
     func headlessBrowserForm() -> some View {
-        Section(header: Text("Headless Browser")) {
+        SubSection(
+            title: Text("Headless Browser Settings"),
+            description: """
+            The app will open a webview in the background to do web search. This method uses a set of rules to extract information from the web page, if you notice that it stops working, please submit an issue to the developer.
+            """
+        ) {
             Picker("Engine", selection: $settings.headlessBrowserEngine) {
                 ForEach(
                     UserDefaultPreferenceKeys.HeadlessBrowserEngine.allCases,
@@ -172,8 +196,8 @@ struct WebSearchView: View {
     func testResultView(testResult: WebSearchSettings.TestResult) -> some View {
         VStack {
             Text("Test Result")
+                .padding(.top)
                 .font(.headline)
-                .padding()
 
             if let result = testResult.result {
                 switch result {
@@ -183,18 +207,20 @@ struct WebSearchView: View {
                             .foregroundColor(.green)
 
                         Text("Found \(webSearchResult.webPages.count) results:")
-                            .padding(.top)
 
                         ScrollView {
                             ForEach(webSearchResult.webPages, id: \.urlString) { page in
-                                VStack(alignment: .leading) {
-                                    Text(page.title)
-                                        .font(.headline)
-                                    Text(page.urlString)
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                    Text(page.snippet)
-                                        .padding(.top, 2)
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(page.title)
+                                            .font(.headline)
+                                        Text(page.urlString)
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                        Text(page.snippet)
+                                            .padding(.top, 2)
+                                    }
+                                    Spacer(minLength: 0)
                                 }
                                 .padding(.vertical, 4)
                                 Divider()
@@ -207,21 +233,27 @@ struct WebSearchView: View {
                         Text("Error (Completed in \(testResult.duration, specifier: "%.2f")s)")
                             .foregroundColor(.red)
                         Text(error.localizedDescription)
-                            .padding(.top)
                     }
-                    .padding()
                 }
             } else {
-                VStack {
-                    ProgressView()
+                ProgressView().padding()
+            }
+
+            Spacer()
+            
+            VStack(spacing: 0) {
+                Divider()
+                
+                HStack {
+                    Spacer()
+                    
+                    Button("Close") {
+                        store.testResult = nil
+                    }
+                    .keyboardShortcut(.cancelAction)
                 }
                 .padding()
             }
-
-            Button("Close") {
-                store.testResult = nil
-            }
-            .padding()
         }
         .frame(minWidth: 400, minHeight: 300)
     }
