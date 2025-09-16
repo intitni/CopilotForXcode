@@ -1,11 +1,11 @@
 import AppKit
 import AsyncAlgorithms
 import ChatTab
-import Combine
 import ComposableArchitecture
 import Dependencies
 import Foundation
 import SharedUIComponents
+import SwiftNavigation
 import SwiftUI
 import XcodeInspector
 
@@ -23,7 +23,6 @@ actor WidgetWindowsController: NSObject {
 
     var currentApplicationProcessIdentifier: pid_t?
 
-    var cancellable: Set<AnyCancellable> = []
     var observeToAppTask: Task<Void, Error>?
     var observeToFocusedEditorTask: Task<Void, Error>?
 
@@ -56,23 +55,30 @@ actor WidgetWindowsController: NSObject {
     }
 
     func start() {
-        cancellable.removeAll()
-
-        xcodeInspector.$activeApplication.sink { [weak self] app in
-            guard let app else { return }
-            Task { [weak self] in await self?.activate(app) }
-        }.store(in: &cancellable)
-
-        xcodeInspector.$focusedEditor.sink { [weak self] editor in
-            guard let editor else { return }
-            Task { [weak self] in await self?.observe(toEditor: editor) }
-        }.store(in: &cancellable)
-
-        xcodeInspector.$completionPanel.sink { [weak self] newValue in
-            Task { [weak self] in
-                await self?.handleCompletionPanelChange(isDisplaying: newValue != nil)
+        Task { [xcodeInspector] in
+            await observe { [weak self] in
+                if let app = xcodeInspector.activeApplication {
+                    Task {
+                        await self?.activate(app)
+                    }
+                }
             }
-        }.store(in: &cancellable)
+
+            await observe { [weak self] in
+                if let editor = xcodeInspector.focusedEditor {
+                    Task {
+                        await self?.observe(toEditor: editor)
+                    }
+                }
+            }
+
+            await observe { [weak self] in
+                let isDisplaying = xcodeInspector.completionPanel != nil
+                Task {
+                    await self?.handleCompletionPanelChange(isDisplaying: isDisplaying)
+                }
+            }
+        }
 
         userDefaultsObservers.presentationModeChangeObserver.onChange = { [weak self] in
             Task { [weak self] in
@@ -135,7 +141,7 @@ private extension WidgetWindowsController {
             /// Hide the widgets before switching to another window/editor
             /// so the transition looks better.
             func hideWidgetForTransitions() async {
-                let newDocumentURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                let newDocumentURL = xcodeInspector.realtimeActiveDocumentURL
                 let documentURL = await MainActor
                     .run { store.withState { $0.focusingDocumentURL } }
                 if documentURL != newDocumentURL {
@@ -209,7 +215,7 @@ private extension WidgetWindowsController {
                     selectionRangeChange.debounce(for: Duration.milliseconds(500)),
                     scroll
                 ) {
-                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
@@ -222,7 +228,7 @@ private extension WidgetWindowsController {
                 }
             } else {
                 for await notification in merge(selectionRangeChange, scroll) {
-                    guard await xcodeInspector.safe.latestActiveXcode != nil else { return }
+                    guard await xcodeInspector.latestActiveXcode != nil else { return }
                     try Task.checkCancellation()
 
                     // for better looking
@@ -268,9 +274,9 @@ extension WidgetWindowsController {
         windows.suggestionPanelWindow.alphaValue = 0
     }
 
-    func generateWidgetLocation() -> WidgetLocation? {
-        if let application = xcodeInspector.latestActiveXcode?.appElement {
-            if let focusElement = xcodeInspector.focusedEditor?.element,
+    func generateWidgetLocation() async -> WidgetLocation? {
+        if let application = await xcodeInspector.latestActiveXcode?.appElement {
+            if let focusElement = await xcodeInspector.focusedEditor?.element,
                let parent = focusElement.parent,
                let frame = parent.rect,
                let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
@@ -297,7 +303,7 @@ extension WidgetWindowsController {
                                 editorFrame: frame, mainScreen: screen,
                                 activeScreen: windowContainingScreen,
                                 editor: focusElement,
-                                completionPanel: xcodeInspector.completionPanel
+                                completionPanel: await xcodeInspector.completionPanel
                             )
                     default:
                         break
@@ -318,7 +324,7 @@ extension WidgetWindowsController {
                                 editorFrame: frame, mainScreen: screen,
                                 activeScreen: windowContainingScreen,
                                 editor: focusElement,
-                                completionPanel: xcodeInspector.completionPanel
+                                completionPanel: await xcodeInspector.completionPanel
                             )
                     default:
                         break
@@ -392,9 +398,9 @@ extension WidgetWindowsController {
             }
             try Task.checkCancellation()
             let xcodeInspector = self.xcodeInspector
-            let activeApp = await xcodeInspector.safe.activeApplication
-            let latestActiveXcode = await xcodeInspector.safe.latestActiveXcode
-            let previousActiveApplication = xcodeInspector.previousActiveApplication
+            let activeApp = await xcodeInspector.activeApplication
+            let latestActiveXcode = await xcodeInspector.latestActiveXcode
+            let previousActiveApplication = await xcodeInspector.previousActiveApplication
             await MainActor.run {
                 if let activeApp, activeApp.isXcode {
                     let application = activeApp.appElement
@@ -526,7 +532,7 @@ extension WidgetWindowsController {
     func adjustModificationPanelLevel() async {
         let window = windows.sharedPanelWindow
 
-        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestApp = await xcodeInspector.activeApplication
         let latestAppIsXcodeOrExtension = if let latestApp {
             latestApp.isXcode || latestApp.isExtensionService
         } else {
@@ -556,7 +562,7 @@ extension WidgetWindowsController {
         let floatOnTopWhenOverlapsXcode = UserDefaults.shared
             .value(for: \.keepFloatOnTopIfChatPanelAndXcodeOverlaps)
 
-        let latestApp = await xcodeInspector.safe.activeApplication
+        let latestApp = await xcodeInspector.activeApplication
         let latestAppIsXcodeOrExtension = if let latestApp {
             latestApp.isXcode || latestApp.isExtensionService
         } else {
@@ -564,7 +570,7 @@ extension WidgetWindowsController {
         }
 
         async let overlap: Bool = { @MainActor in
-            guard let xcode = await xcodeInspector.safe.latestActiveXcode else { return false }
+            guard let xcode = await xcodeInspector.latestActiveXcode else { return false }
             let windowElements = xcode.appElement.windows
             let overlap = windowElements.contains {
                 if let position = $0.position, let size = $0.size {
@@ -611,7 +617,7 @@ extension WidgetWindowsController {
 
     @MainActor
     func handleSpaceChange() async {
-        let activeXcode = await XcodeInspector.shared.safe.activeXcode
+        let activeXcode = XcodeInspector.shared.activeXcode
 
         let xcode = activeXcode?.appElement
 

@@ -1,9 +1,8 @@
-import Combine
 import Foundation
 import Perception
 import SuggestionBasic
-import XcodeInspector
 import SwiftUI
+import XcodeInspector
 
 /// A passive tracker that observe the changes of the source editor content.
 @Perceptible
@@ -29,8 +28,7 @@ final class TextCursorTracker {
         lineAnnotations: []
     )
 
-    @PerceptionIgnored var editorObservationTask: Set<AnyCancellable> = []
-    @PerceptionIgnored var eventObservationTask: Task<Void, Never>?
+    @PerceptionIgnored var eventObservationTask: Task<Void, Error>?
 
     init() {
         observeAppChange()
@@ -39,37 +37,38 @@ final class TextCursorTracker {
     deinit {
         eventObservationTask?.cancel()
     }
-    
+
     var isPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
 
     private func observeAppChange() {
         if isPreview { return }
-        editorObservationTask = []
-        Task {
-            await XcodeInspector.shared.safe.$focusedEditor.sink { [weak self] editor in
-                guard let editor, let self else { return }
-                Task { @MainActor in
-                    self.observeAXNotifications(editor)
-                }
-            }.store(in: &editorObservationTask)
+        Task { [weak self] in
+            let notifications = NotificationCenter.default
+                .notifications(named: .focusedEditorDidChange)
+            for await _ in notifications {
+                guard let self else { return }
+                guard let editor = await XcodeInspector.shared.focusedEditor else { continue }
+                await self.observeAXNotifications(editor)
+            }
         }
     }
 
-    private func observeAXNotifications(_ editor: SourceEditor) {
+    private func observeAXNotifications(_ editor: SourceEditor) async {
         if isPreview { return }
         eventObservationTask?.cancel()
         let content = editor.getLatestEvaluatedContent()
-        Task { @MainActor in
+        await MainActor.run {
             self.content = content
         }
         eventObservationTask = Task { [weak self] in
             for await event in await editor.axNotifications.notifications() {
+                try Task.checkCancellation()
                 guard let self else { return }
                 guard event.kind == .evaluatedContentChanged else { continue }
                 let content = editor.getLatestEvaluatedContent()
-                Task { @MainActor in
+                await MainActor.run {
                     self.content = content
                 }
             }
@@ -87,3 +86,4 @@ extension EnvironmentValues {
         set { self[TextCursorTrackerEnvironmentKey.self] = newValue }
     }
 }
+

@@ -55,7 +55,7 @@ public struct WidgetPanel {
             switch action {
             case .presentSuggestion:
                 return .run { send in
-                    guard let fileURL = await xcodeInspector.safe.activeDocumentURL,
+                    guard let fileURL = await xcodeInspector.activeDocumentURL,
                           let provider = await fetchSuggestionProvider(fileURL: fileURL)
                     else { return }
                     await send(.presentSuggestionProvider(provider, displayContent: true))
@@ -101,7 +101,7 @@ public struct WidgetPanel {
 
             case .switchToAnotherEditorAndUpdateContent:
                 return .run { send in
-                    guard let fileURL = await xcodeInspector.safe.realtimeActiveDocumentURL
+                    guard let fileURL = await xcodeInspector.realtimeActiveDocumentURL
                     else { return }
 
                     await send(.sharedPanel(

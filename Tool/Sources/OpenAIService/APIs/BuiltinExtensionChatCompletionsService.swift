@@ -62,8 +62,8 @@ extension BuiltinExtensionChatCompletionsService: ChatCompletionsStreamAPI {
     ) async throws -> AsyncThrowingStream<ChatCompletionsStreamDataChunk, Error> {
         let service = try getChatService()
         let (message, history) = extractMessageAndHistory(from: requestBody)
-        guard let workspaceURL = await XcodeInspector.shared.safe.realtimeActiveWorkspaceURL,
-              let projectURL = await XcodeInspector.shared.safe.realtimeActiveProjectURL
+        guard let workspaceURL = await XcodeInspector.shared.realtimeActiveWorkspaceURL,
+              let projectURL = await XcodeInspector.shared.realtimeActiveProjectURL
         else { throw CancellationError() }
         let stream = await service.sendMessage(
             message,

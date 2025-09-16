@@ -232,12 +232,18 @@ public struct Widget {
             case .observeActiveApplicationChange:
                 return .run { send in
                     let stream = AsyncStream<AppInstanceInspector> { continuation in
-                        let cancellable = xcodeInspector.$activeApplication.sink { newValue in
-                            guard let newValue else { return }
-                            continuation.yield(newValue)
+                        let task = Task {
+                            let notifications = NotificationCenter.default
+                                .notifications(named: .activeApplicationDidChange)
+                            for await _ in notifications {
+                                try Task.checkCancellation()
+                                if let app = await XcodeInspector.shared.activeApplication {
+                                    continuation.yield(app)
+                                }
+                            }
                         }
                         continuation.onTermination = { _ in
-                            cancellable.cancel()
+                            task.cancel()
                         }
                     }
 
@@ -305,8 +311,7 @@ public struct Widget {
             case .updateFocusingDocumentURL:
                 return .run { send in
                     await send(.setFocusingDocumentURL(
-                        to: await xcodeInspector.safe
-                            .realtimeActiveDocumentURL
+                        to: xcodeInspector.realtimeActiveDocumentURL
                     ))
                 }
 

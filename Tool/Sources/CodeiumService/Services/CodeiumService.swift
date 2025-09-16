@@ -208,7 +208,7 @@ extension CodeiumService {
             }
             throw E()
         }
-        var ideVersion = await XcodeInspector.shared.safe.latestActiveXcode?.version
+        var ideVersion = await XcodeInspector.shared.latestActiveXcode?.version
             ?? fallbackXcodeVersion
         let versionNumberSegmentCount = ideVersion.split(separator: ".").count
         if versionNumberSegmentCount == 2 {

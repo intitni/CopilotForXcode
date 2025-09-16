@@ -2,7 +2,6 @@ import ActiveApplicationMonitor
 import AppKit
 import AsyncAlgorithms
 import AXExtension
-import Combine
 import Foundation
 import Logger
 import Preferences
@@ -11,7 +10,7 @@ import Workspace
 import XcodeInspector
 
 public actor RealtimeSuggestionController {
-    private var cancellable: Set<AnyCancellable> = []
+    private var xcodeChangeObservationTask: Task<Void, Error>?
     private var inflightPrefetchTask: Task<Void, Error>?
     private var editorObservationTask: Task<Void, Error>?
     private var sourceEditor: SourceEditor?
@@ -19,7 +18,6 @@ public actor RealtimeSuggestionController {
     init() {}
 
     deinit {
-        cancellable.forEach { $0.cancel() }
         inflightPrefetchTask?.cancel()
         editorObservationTask?.cancel()
     }
@@ -30,16 +28,18 @@ public actor RealtimeSuggestionController {
     }
 
     private func observeXcodeChange() {
-        cancellable.forEach { $0.cancel() }
+        xcodeChangeObservationTask?.cancel()
 
-        XcodeInspector.shared.$focusedEditor
-            .sink { [weak self] editor in
+        xcodeChangeObservationTask = Task { [weak self] in
+            for await _ in NotificationCenter.default
+                .notifications(named: .focusedEditorDidChange)
+            {
                 guard let self else { return }
-                Task {
-                    guard let editor else { return }
-                    await self.handleFocusElementChange(editor)
-                }
-            }.store(in: &cancellable)
+                try Task.checkCancellation()
+                guard let editor = await XcodeInspector.shared.focusedEditor else { continue }
+                await self.handleFocusElementChange(editor)
+            }
+        }
     }
 
     private func handleFocusElementChange(_ sourceEditor: SourceEditor) {
@@ -51,7 +51,7 @@ public actor RealtimeSuggestionController {
         editorObservationTask = nil
 
         editorObservationTask = Task { [weak self] in
-            if let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL {
+            if let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL {
                 await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                     fileURL: fileURL,
                     sourceEditor: sourceEditor
@@ -86,7 +86,7 @@ public actor RealtimeSuggestionController {
                 }
                 group.addTask {
                     let handler = {
-                        guard let fileURL = await XcodeInspector.shared.safe.activeDocumentURL
+                        guard let fileURL = await XcodeInspector.shared.activeDocumentURL
                         else { return }
                         await PseudoCommandHandler().invalidateRealtimeSuggestionsIfNeeded(
                             fileURL: fileURL,
@@ -113,7 +113,7 @@ public actor RealtimeSuggestionController {
 
         Task { @WorkspaceActor in // Get cache ready for real-time suggestions.
             guard UserDefaults.shared.value(for: \.preCacheOnFileOpen) else { return }
-            guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+            guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
             else { return }
             let (_, filespace) = try await Service.shared.workspacePool
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -123,7 +123,7 @@ public actor RealtimeSuggestionController {
                 // avoid the command get called twice
                 filespace.codeMetadata.uti = ""
                 do {
-                    try await XcodeInspector.shared.safe.latestActiveXcode?
+                    try await XcodeInspector.shared.latestActiveXcode?
                         .triggerCopilotCommand(name: "Prepare for Real-time Suggestions")
                 } catch {
                     if filespace.codeMetadata.uti?.isEmpty ?? true {
@@ -147,7 +147,7 @@ public actor RealtimeSuggestionController {
             else { return }
 
             if UserDefaults.shared.value(for: \.disableSuggestionFeatureGlobally),
-               let fileURL = await XcodeInspector.shared.safe.activeDocumentURL,
+               let fileURL = await XcodeInspector.shared.activeDocumentURL,
                let (workspace, _) = try? await Service.shared.workspacePool
                .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
             {
@@ -184,7 +184,7 @@ public actor RealtimeSuggestionController {
     }
 
     func notifyEditingFileChange(editor: AXUIElement) async {
-        guard let fileURL = await XcodeInspector.shared.safe.activeDocumentURL,
+        guard let fileURL = await XcodeInspector.shared.activeDocumentURL,
               let (workspace, _) = try? await Service.shared.workspacePool
               .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
         else { return }
