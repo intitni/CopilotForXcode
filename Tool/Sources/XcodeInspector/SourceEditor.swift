@@ -1,4 +1,4 @@
-import AppKit
+@preconcurrency import AppKit
 import AsyncPassthroughSubject
 import AXNotificationStream
 import Foundation
@@ -6,10 +6,10 @@ import Logger
 import SuggestionBasic
 
 /// Representing a source editor inside Xcode.
-public class SourceEditor {
+public class SourceEditor: @unchecked Sendable {
     public typealias Content = EditorInformation.SourceEditorContent
 
-    public struct AXNotification: Hashable {
+    public struct AXNotification: Hashable, Sendable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
 
@@ -18,7 +18,7 @@ public class SourceEditor {
         }
     }
 
-    public enum AXNotificationKind: Hashable, Equatable {
+    public enum AXNotificationKind: Hashable, Equatable, Sendable {
         case selectedTextChanged
         case valueChanged
         case scrollPositionChanged
@@ -82,7 +82,7 @@ public class SourceEditor {
 
     private func observeAXNotifications() {
         observeAXNotificationsTask?.cancel()
-        observeAXNotificationsTask = Task { @XcodeInspectorActor [weak self] in
+        observeAXNotificationsTask = Task { [weak self] in
             guard let self else { return }
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 guard let self else { return }

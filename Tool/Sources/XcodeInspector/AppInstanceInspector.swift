@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-public class AppInstanceInspector: ObservableObject {
+open class AppInstanceInspector: @unchecked Sendable {
     let runningApplication: NSRunningApplication
     public let processIdentifier: pid_t
     public let bundleURL: URL?

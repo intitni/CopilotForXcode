@@ -1,17 +1,20 @@
-import AppKit
+@preconcurrency import AppKit
 import AsyncPassthroughSubject
 import AXExtension
 import AXNotificationStream
 import Combine
 import Foundation
+import Perception
 
-public final class XcodeAppInstanceInspector: AppInstanceInspector {
-    public struct AXNotification {
+@XcodeInspectorActor
+@Perceptible
+public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked Sendable {
+    public struct AXNotification: Sendable {
         public var kind: AXNotificationKind
         public var element: AXUIElement
     }
 
-    public enum AXNotificationKind {
+    public enum AXNotificationKind: Sendable {
         case titleChanged
         case applicationActivated
         case applicationDeactivated
@@ -64,20 +67,71 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         }
     }
 
-    @Published public fileprivate(set) var focusedWindow: XcodeWindowInspector?
-    @Published public fileprivate(set) var documentURL: URL? = nil
-    @Published public fileprivate(set) var workspaceURL: URL? = nil
-    @Published public fileprivate(set) var projectRootURL: URL? = nil
-    @Published public fileprivate(set) var workspaces = [WorkspaceIdentifier: Workspace]()
-    @Published public private(set) var completionPanel: AXUIElement?
-    public var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
-        updateWorkspaceInfo()
-        return workspaces.mapValues(\.info)
+    @MainActor
+    public fileprivate(set) var focusedWindow: XcodeWindowInspector? {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .focusedWindowDidChange, object: self)
+            }
+        }
+    }
+
+    @MainActor
+    public fileprivate(set) var documentURL: URL? = nil {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .activeDocumentURLDidChange, object: self)
+            }
+        }
+    }
+
+    @MainActor
+    public fileprivate(set) var workspaceURL: URL? = nil {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .activeWorkspaceURLDidChange, object: self)
+            }
+        }
+    }
+
+    @MainActor
+    public fileprivate(set) var projectRootURL: URL? = nil {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .activeProjectRootURLDidChange, object: self)
+            }
+        }
+    }
+
+    @MainActor
+    public fileprivate(set) var workspaces = [WorkspaceIdentifier: Workspace]() {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .xcodeWorkspacesDidChange, object: self)
+            }
+        }
+    }
+
+    @MainActor
+    public private(set) var completionPanel: AXUIElement? {
+        didSet {
+            if runningApplication.isActive {
+                NotificationCenter.default.post(name: .completionPanelDidChange, object: self)
+            }
+        }
+    }
+
+    private let observer = PerceptionObserver()
+
+    public nonisolated
+    var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
+        Self.fetchVisibleWorkspaces(runningApplication).mapValues { $0.info }
     }
 
     public let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
-    public var realtimeDocumentURL: URL? {
+    public nonisolated
+    var realtimeDocumentURL: URL? {
         guard let window = appElement.focusedWindow,
               window.identifier == "Xcode.WorkspaceWindow"
         else { return nil }
@@ -85,7 +139,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         return WorkspaceXcodeWindowInspector.extractDocumentURL(windowElement: window)
     }
 
-    public var realtimeWorkspaceURL: URL? {
+    public nonisolated
+    var realtimeWorkspaceURL: URL? {
         guard let window = appElement.focusedWindow,
               window.identifier == "Xcode.WorkspaceWindow"
         else { return nil }
@@ -93,7 +148,8 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         return WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window)
     }
 
-    public var realtimeProjectURL: URL? {
+    public nonisolated
+    var realtimeProjectURL: URL? {
         let workspaceURL = realtimeWorkspaceURL
         let documentURL = realtimeDocumentURL
         return WorkspaceXcodeWindowInspector.extractProjectURL(
@@ -122,8 +178,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         return result
     }
 
-    private var longRunningTasks = Set<Task<Void, Error>>()
-    private var focusedWindowObservations = Set<AnyCancellable>()
+    @PerceptionIgnored private var longRunningTasks = Set<Task<Void, Error>>()
 
     deinit {
         axNotifications.finish()
@@ -134,27 +189,60 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
         super.init(runningApplication: runningApplication)
 
         Task { @XcodeInspectorActor in
-            observeFocusedWindow()
+            await observeFocusedWindow()
             observeAXNotifications()
 
             try await Task.sleep(nanoseconds: 3_000_000_000)
             // Sometimes the focused window may not be ready on app launch.
-            if !(focusedWindow is WorkspaceXcodeWindowInspector) {
+            if await !(focusedWindow is WorkspaceXcodeWindowInspector) {
+                await observeFocusedWindow()
+            }
+        }
+
+        Task { @MainActor in
+            observer.observe { [weak self] in
+                Task { @MainActor in
+                    if let url = self?.documentURL,
+                       url != .init(fileURLWithPath: "/")
+                    {
+                        self?.documentURL = url
+                    }
+                }
+            }
+
+            observer.observe { [weak self] in
+                Task { @MainActor in
+                    if let url = self?.workspaceURL,
+                       url != .init(fileURLWithPath: "/")
+                    {
+                        self?.workspaceURL = url
+                    }
+                }
+            }
+
+            observer.observe { [weak self] in
+                Task { @MainActor in
+                    if let url = self?.projectRootURL,
+                       url != .init(fileURLWithPath: "/")
+                    {
+                        self?.projectRootURL = url
+                    }
+                }
+            }
+        }
+    }
+
+    func refresh() {
+        Task { @MainActor in
+            if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
+                await focusedWindow.refresh()
+            } else {
                 observeFocusedWindow()
             }
         }
     }
 
-    @XcodeInspectorActor
-    func refresh() {
-        if let focusedWindow = focusedWindow as? WorkspaceXcodeWindowInspector {
-            focusedWindow.refresh()
-        } else {
-            observeFocusedWindow()
-        }
-    }
-
-    @XcodeInspectorActor
+    @MainActor
     private func observeFocusedWindow() {
         if let window = appElement.focusedWindow {
             if window.identifier == "Xcode.WorkspaceWindow" {
@@ -164,49 +252,19 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                     axNotifications: axNotifications
                 )
 
-                focusedWindowObservations.forEach { $0.cancel() }
-                focusedWindowObservations.removeAll()
-
-                Task { @MainActor in
-                    focusedWindow = window
-                    documentURL = window.documentURL
-                    workspaceURL = window.workspaceURL
-                    projectRootURL = window.projectRootURL
-                }
-
-                window.$documentURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.documentURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$workspaceURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.workspaceURL = url
-                    }.store(in: &focusedWindowObservations)
-                window.$projectRootURL
-                    .filter { $0 != .init(fileURLWithPath: "/") }
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] url in
-                        self?.projectRootURL = url
-                    }.store(in: &focusedWindowObservations)
-
+                focusedWindow = window
+                documentURL = window.documentURL
+                workspaceURL = window.workspaceURL
+                projectRootURL = window.projectRootURL
             } else {
                 let window = XcodeWindowInspector(uiElement: window)
-                Task { @MainActor in
-                    focusedWindow = window
-                }
+                focusedWindow = window
             }
         } else {
-            Task { @MainActor in
-                focusedWindow = nil
-            }
+            focusedWindow = nil
         }
     }
 
-    @XcodeInspectorActor
     func observeAXNotifications() {
         longRunningTasks.forEach { $0.cancel() }
         longRunningTasks = []
@@ -245,7 +303,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                 self.axNotifications.send(.init(kind: event, element: notification.element))
 
                 if event == .focusedWindowChanged {
-                    observeFocusedWindow()
+                    await observeFocusedWindow()
                 }
 
                 if event == .focusedUIElementChanged || event == .applicationDeactivated {
@@ -254,7 +312,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                         guard let self else { return }
                         try await Task.sleep(nanoseconds: 2_000_000_000)
                         try Task.checkCancellation()
-                        self.updateWorkspaceInfo()
+                        await self.updateWorkspaceInfo()
                     }
                 }
 
@@ -265,21 +323,21 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
                             await MainActor.run {
                                 self.completionPanel = notification.element
                                 self.completionPanel?.setMessagingTimeout(1)
-                                self.axNotifications.send(.init(
-                                    kind: .xcodeCompletionPanelChanged,
-                                    element: notification.element
-                                ))
                             }
+                            self.axNotifications.send(.init(
+                                kind: .xcodeCompletionPanelChanged,
+                                element: notification.element
+                            ))
                         }
                     case .uiElementDestroyed:
                         if isCompletionPanel(notification.element) {
                             await MainActor.run {
                                 self.completionPanel = nil
-                                self.axNotifications.send(.init(
-                                    kind: .xcodeCompletionPanelChanged,
-                                    element: notification.element
-                                ))
                             }
+                            self.axNotifications.send(.init(
+                                kind: .xcodeCompletionPanelChanged,
+                                element: notification.element
+                            ))
                         }
                     default: continue
                     }
@@ -289,14 +347,16 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector {
 
         longRunningTasks.insert(observeAXNotificationTask)
 
-        updateWorkspaceInfo()
+        Task { @MainActor in
+            updateWorkspaceInfo()
+        }
     }
 }
 
 // MARK: - Workspace Info
 
 extension XcodeAppInstanceInspector {
-    public enum WorkspaceIdentifier: Hashable {
+    public enum WorkspaceIdentifier: Hashable, Sendable {
         case url(URL)
         case unknown
     }
@@ -318,7 +378,7 @@ extension XcodeAppInstanceInspector {
         }
     }
 
-    public struct WorkspaceInfo {
+    public struct WorkspaceInfo: Sendable {
         public let tabs: Set<String>
 
         public func combined(with info: WorkspaceInfo) -> WorkspaceInfo {
@@ -326,16 +386,15 @@ extension XcodeAppInstanceInspector {
         }
     }
 
+    @MainActor
     func updateWorkspaceInfo() {
         let workspaceInfoInVisibleSpace = Self.fetchVisibleWorkspaces(runningApplication)
         let workspaces = Self.updateWorkspace(workspaces, with: workspaceInfoInVisibleSpace)
-        Task { @MainActor in
-            self.workspaces = workspaces
-        }
+        self.workspaces = workspaces
     }
 
     /// Use the project path as the workspace identifier.
-    static func workspaceIdentifier(_ window: AXUIElement) -> WorkspaceIdentifier {
+    nonisolated static func workspaceIdentifier(_ window: AXUIElement) -> WorkspaceIdentifier {
         if let url = WorkspaceXcodeWindowInspector.extractWorkspaceURL(windowElement: window) {
             return WorkspaceIdentifier.url(url)
         }
@@ -343,7 +402,7 @@ extension XcodeAppInstanceInspector {
     }
 
     /// With Accessibility API, we can ONLY get the information of visible windows.
-    static func fetchVisibleWorkspaces(
+    nonisolated static func fetchVisibleWorkspaces(
         _ app: NSRunningApplication
     ) -> [WorkspaceIdentifier: Workspace] {
         let app = AXUIElementCreateApplication(app.processIdentifier)
@@ -380,7 +439,7 @@ extension XcodeAppInstanceInspector {
         return dict
     }
 
-    static func updateWorkspace(
+    nonisolated static func updateWorkspace(
         _ old: [WorkspaceIdentifier: Workspace],
         with new: [WorkspaceIdentifier: Workspace]
     ) -> [WorkspaceIdentifier: Workspace] {
@@ -427,7 +486,7 @@ public extension AXUIElement {
             if description == "editor area" { return self }
             return firstChild(where: { $0.description == "editor area" })
         }() else { return [] }
-        
+
         var tabBars = [AXUIElement]()
         editArea.traverse { element, _ in
             let description = element.description
@@ -442,7 +501,7 @@ public extension AXUIElement {
 
                 return .skipDescendantsAndSiblings
             }
-            
+
             if element.identifier == "editor context" {
                 return .skipDescendantsAndSiblings
             }
@@ -458,7 +517,7 @@ public extension AXUIElement {
             if description == "Debug Area" {
                 return .skipDescendants
             }
-            
+
             if description == "debug bar" {
                 return .skipDescendants
             }
@@ -468,20 +527,20 @@ public extension AXUIElement {
 
         return tabBars
     }
-    
+
     var debugArea: AXUIElement? {
         guard let editArea: AXUIElement = {
             if description == "editor area" { return self }
             return firstChild(where: { $0.description == "editor area" })
         }() else { return nil }
-        
+
         var debugArea: AXUIElement?
         editArea.traverse { element, _ in
             let description = element.description
             if description == "Tab Bar" {
                 return .skipDescendants
             }
-            
+
             if element.identifier == "editor context" {
                 return .skipDescendantsAndSiblings
             }
@@ -498,7 +557,7 @@ public extension AXUIElement {
                 debugArea = element
                 return .skipDescendants
             }
-            
+
             if description == "debug bar" {
                 return .skipDescendants
             }
@@ -509,3 +568,4 @@ public extension AXUIElement {
         return debugArea
     }
 }
+
