@@ -59,8 +59,8 @@ public final class TerminalChatPlugin: ChatPlugin {
                 }
 
                 do {
-                    let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
-                    let projectURL = await XcodeInspector.shared.safe.realtimeActiveProjectURL
+                    let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+                    let projectURL = await XcodeInspector.shared.realtimeActiveProjectURL
 
                     var environment = [String: String]()
                     if let fileURL {

@@ -121,14 +121,13 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
         }
     }
 
-    private let observer = PerceptionObserver()
+    private let observer = XcodeInspector.createObserver()
 
-    public nonisolated
-    var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
+    public nonisolated var realtimeWorkspaces: [WorkspaceIdentifier: WorkspaceInfo] {
         Self.fetchVisibleWorkspaces(runningApplication).mapValues { $0.info }
     }
 
-    public let axNotifications = AsyncPassthroughSubject<AXNotification>()
+    public nonisolated let axNotifications = AsyncPassthroughSubject<AXNotification>()
 
     public nonisolated
     var realtimeDocumentURL: URL? {
@@ -198,38 +197,6 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                 await observeFocusedWindow()
             }
         }
-
-        Task { @MainActor in
-            observer.observe { [weak self] in
-                Task { @MainActor in
-                    if let url = self?.documentURL,
-                       url != .init(fileURLWithPath: "/")
-                    {
-                        self?.documentURL = url
-                    }
-                }
-            }
-
-            observer.observe { [weak self] in
-                Task { @MainActor in
-                    if let url = self?.workspaceURL,
-                       url != .init(fileURLWithPath: "/")
-                    {
-                        self?.workspaceURL = url
-                    }
-                }
-            }
-
-            observer.observe { [weak self] in
-                Task { @MainActor in
-                    if let url = self?.projectRootURL,
-                       url != .init(fileURLWithPath: "/")
-                    {
-                        self?.projectRootURL = url
-                    }
-                }
-            }
-        }
     }
 
     func refresh() {
@@ -256,6 +223,27 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                 documentURL = window.documentURL
                 workspaceURL = window.workspaceURL
                 projectRootURL = window.projectRootURL
+
+                observer.observe { [weak self] in
+                    let url = window.documentURL
+                    if url != .init(fileURLWithPath: "/") {
+                        self?.documentURL = url
+                    }
+                }
+
+                observer.observe { [weak self] in
+                    let url = window.workspaceURL
+                    if url != .init(fileURLWithPath: "/") {
+                        self?.workspaceURL = url
+                    }
+                }
+
+                observer.observe { [weak self] in
+                    let url = window.projectRootURL
+                    if url != .init(fileURLWithPath: "/") {
+                        self?.projectRootURL = url
+                    }
+                }
             } else {
                 let window = XcodeWindowInspector(uiElement: window)
                 focusedWindow = window

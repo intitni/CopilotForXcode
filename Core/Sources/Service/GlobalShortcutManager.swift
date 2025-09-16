@@ -11,7 +11,7 @@ extension KeyboardShortcuts.Name {
 @MainActor
 final class GlobalShortcutManager {
     let guiController: GraphicalUserInterfaceController
-    private var cancellable = Set<AnyCancellable>()
+    private var activeAppChangeTask: Task<Void, Error>?
 
     nonisolated init(guiController: GraphicalUserInterfaceController) {
         self.guiController = guiController
@@ -34,22 +34,30 @@ final class GlobalShortcutManager {
             }
         }
 
-        XcodeInspector.shared.$activeApplication.sink { app in
-            if !UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally) {
-                let shouldBeEnabled = if let app, app.isXcode || app.isExtensionService {
-                    true
+        activeAppChangeTask?.cancel()
+        activeAppChangeTask = Task.detached { [weak self] in
+            let notifications = NotificationCenter.default
+                .notifications(named: .activeApplicationDidChange)
+            for await _ in notifications {
+                guard let self else { return }
+                try Task.checkCancellation()
+                if !UserDefaults.shared.value(for: \.showHideWidgetShortcutGlobally) {
+                    let app = await XcodeInspector.shared.activeApplication
+                    let shouldBeEnabled = if let app, app.isXcode || app.isExtensionService {
+                        true
+                    } else {
+                        false
+                    }
+                    if shouldBeEnabled {
+                        await self.setupShortcutIfNeeded()
+                    } else {
+                        await self.removeShortcutIfNeeded()
+                    }
                 } else {
-                    false
+                    await self.setupShortcutIfNeeded()
                 }
-                if shouldBeEnabled {
-                    self.setupShortcutIfNeeded()
-                } else {
-                    self.removeShortcutIfNeeded()
-                }
-            } else {
-                self.setupShortcutIfNeeded()
             }
-        }.store(in: &cancellable)
+        }
     }
 
     func setupShortcutIfNeeded() {

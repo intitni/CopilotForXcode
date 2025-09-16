@@ -243,7 +243,9 @@ private extension AppDelegate {
     }
 
     @objc func reactivateObservationsToXcode() {
-        XcodeInspector.shared.reactivateObservationsToXcode()
+        Task {
+            await XcodeInspector.shared.reactivateObservationsToXcode()
+        }
     }
 
     @objc func openExtensionManager() {

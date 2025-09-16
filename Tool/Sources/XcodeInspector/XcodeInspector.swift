@@ -7,24 +7,37 @@ import Logger
 import Perception
 import Preferences
 import SuggestionBasic
+import SwiftNavigation
 import Toast
 
 public extension Notification.Name {
-    static let accessibilityAPIMalfunctioning = Notification.Name("accessibilityAPIMalfunctioning")
-    static let activeApplicationDidChange = Notification.Name("activeApplicationDidChange")
+    static let accessibilityAPIMalfunctioning = Notification
+        .Name("XcodeInspector.accessibilityAPIMalfunctioning")
+    static let activeApplicationDidChange = Notification
+        .Name("XcodeInspector.activeApplicationDidChange")
     static let previousActiveApplicationDidChange = Notification
-        .Name("previousActiveApplicationDidChange")
-    static let activeXcodeDidChange = Notification.Name("activeXcodeDidChange")
-    static let latestActiveXcodeDidChange = Notification.Name("latestActiveXcodeDidChange")
-    static let xcodesDidChange = Notification.Name("xcodesDidChange")
-    static let activeProjectRootURLDidChange = Notification.Name("activeProjectRootURLDidChange")
-    static let activeDocumentURLDidChange = Notification.Name("activeDocumentURLDidChange")
-    static let activeWorkspaceURLDidChange = Notification.Name("activeWorkspaceURLDidChange")
-    static let focusedWindowDidChange = Notification.Name("focusedWindowDidChange")
-    static let focusedEditorDidChange = Notification.Name("focusedEditorDidChange")
-    static let focusedElementDidChange = Notification.Name("focusedElementDidChange")
-    static let completionPanelDidChange = Notification.Name("completionPanelDidChange")
-    static let xcodeWorkspacesDidChange = Notification.Name("xcodeWorkspacesDidChange")
+        .Name("XcodeInspector.previousActiveApplicationDidChange")
+    static let activeXcodeDidChange = Notification
+        .Name("XcodeInspector.activeXcodeDidChange")
+    static let latestActiveXcodeDidChange = Notification
+        .Name("XcodeInspector.latestActiveXcodeDidChange")
+    static let xcodesDidChange = Notification.Name("XcodeInspector.xcodesDidChange")
+    static let activeProjectRootURLDidChange = Notification
+        .Name("XcodeInspector.activeProjectRootURLDidChange")
+    static let activeDocumentURLDidChange = Notification
+        .Name("XcodeInspector.activeDocumentURLDidChange")
+    static let activeWorkspaceURLDidChange = Notification
+        .Name("XcodeInspector.activeWorkspaceURLDidChange")
+    static let focusedWindowDidChange = Notification
+        .Name("XcodeInspector.focusedWindowDidChange")
+    static let focusedEditorDidChange = Notification
+        .Name("XcodeInspector.focusedEditorDidChange")
+    static let focusedElementDidChange = Notification
+        .Name("XcodeInspector.focusedElementDidChange")
+    static let completionPanelDidChange = Notification
+        .Name("XcodeInspector.completionPanelDidChange")
+    static let xcodeWorkspacesDidChange = Notification
+        .Name("XcodeInspector.xcodeWorkspacesDidChange")
 }
 
 @globalActor
@@ -33,14 +46,35 @@ public enum XcodeInspectorActor: GlobalActor {
     public static let shared = Actor()
 }
 
-final class PerceptionObserver: NSObject, Sendable {
-    override init() {}
-}
-
 @XcodeInspectorActor
 @Perceptible
 public final class XcodeInspector: Sendable {
-    public static let shared = XcodeInspector()
+    public final class PerceptionObserver: Sendable {
+        public struct Cancellable {
+            let token: ObserveToken
+            public func cancel() {
+                token.cancel()
+            }
+        }
+
+        final class Object: NSObject, Sendable {}
+
+        let object = Object()
+
+        @MainActor
+        @discardableResult public func observe(
+            _ block: @Sendable @escaping @MainActor () -> Void
+        ) -> Cancellable {
+            let token = object.observe { block() }
+            return Cancellable(token: token)
+        }
+    }
+
+    public nonisolated static func createObserver() -> PerceptionObserver {
+        PerceptionObserver()
+    }
+
+    public nonisolated static let shared = XcodeInspector()
 
     private var toast: ToastController { ToastControllerDependencyKey.liveValue }
 
@@ -186,7 +220,7 @@ public final class XcodeInspector: Sendable {
         _nonIsolatedLatestActiveXcode?.realtimeProjectURL
     }
 
-    init() {
+    nonisolated init() {
         AXUIElement.setGlobalMessagingTimeout(3)
         Task { await restart() }
     }
@@ -325,12 +359,10 @@ public final class XcodeInspector: Sendable {
         appChangeObservations.insert(appChangeTask)
     }
 
-    public func reactivateObservationsToXcode() {
-        Task { @XcodeInspectorActor in
-            if let activeXcode = await self.activeXcode {
-                await setActiveXcode(activeXcode)
-                activeXcode.observeAXNotifications()
-            }
+    public func reactivateObservationsToXcode() async {
+        if let activeXcode = await activeXcode {
+            await setActiveXcode(activeXcode)
+            activeXcode.observeAXNotifications()
         }
     }
 
