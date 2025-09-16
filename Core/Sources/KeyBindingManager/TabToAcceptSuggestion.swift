@@ -277,30 +277,47 @@ extension TabToAcceptSuggestion {
     }
 }
 
-import Combine
-
 private class ThreadSafeAccessToXcodeInspector {
     static let shared = ThreadSafeAccessToXcodeInspector()
 
     private(set) var activeDocumentURL: URL?
     private(set) var activeXcode: AppInstanceInspector?
     private(set) var focusedEditor: SourceEditor?
-    private var cancellable: Set<AnyCancellable> = []
 
     init() {
-        let inspector = XcodeInspector.shared
+        Task { [weak self] in
+            for await _ in NotificationCenter.default
+                .notifications(named: .activeDocumentURLDidChange)
+            {
+                guard let self else { return }
+                self.activeDocumentURL = await XcodeInspector.shared.activeDocumentURL
+            }
+        }
 
-        inspector.$activeDocumentURL.receive(on: DispatchQueue.main).sink { [weak self] newValue in
-            self?.activeDocumentURL = newValue
-        }.store(in: &cancellable)
+        Task { [weak self] in
+            for await _ in NotificationCenter.default
+                .notifications(named: .activeXcodeDidChange)
+            {
+                guard let self else { return }
+                self.activeXcode = await XcodeInspector.shared.activeXcode
+            }
+        }
 
-        inspector.$activeXcode.receive(on: DispatchQueue.main).sink { [weak self] newValue in
-            self?.activeXcode = newValue
-        }.store(in: &cancellable)
+        Task { [weak self] in
+            for await _ in NotificationCenter.default
+                .notifications(named: .focusedEditorDidChange)
+            {
+                guard let self else { return }
+                self.focusedEditor = await XcodeInspector.shared.focusedEditor
+            }
+        }
 
-        inspector.$focusedEditor.receive(on: DispatchQueue.main).sink { [weak self] newValue in
-            self?.focusedEditor = newValue
-        }.store(in: &cancellable)
+        // Initialize current values
+        Task {
+            activeDocumentURL = await XcodeInspector.shared.activeDocumentURL
+            activeXcode = await XcodeInspector.shared.activeApplication
+            focusedEditor = await XcodeInspector.shared.focusedEditor
+        }
     }
 }
 

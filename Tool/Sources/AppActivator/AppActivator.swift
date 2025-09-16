@@ -34,7 +34,7 @@ public extension NSWorkspace {
 
     static func activatePreviousActiveApp(delay: TimeInterval = 0.2) {
         Task { @MainActor in
-            guard let app = await XcodeInspector.shared.safe.previousActiveApplication
+            guard let app = await XcodeInspector.shared.previousActiveApplication
             else { return }
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             activateApp(app)
@@ -43,7 +43,7 @@ public extension NSWorkspace {
 
     static func activatePreviousActiveXcode(delay: TimeInterval = 0.2) {
         Task { @MainActor in
-            guard let app = await XcodeInspector.shared.safe.latestActiveXcode else { return }
+            guard let app = await XcodeInspector.shared.latestActiveXcode else { return }
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             activateApp(app)
         }

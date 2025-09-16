@@ -61,7 +61,7 @@ struct CodeiumChatBrowser {
 
             case .loadCurrentWorkspace:
                 return .run { send in
-                    guard let workspaceURL = await XcodeInspector.shared.safe.activeWorkspaceURL
+                    guard let workspaceURL = await XcodeInspector.shared.activeWorkspaceURL
                     else {
                         await send(.presentError("Can't find workspace."))
                         return
