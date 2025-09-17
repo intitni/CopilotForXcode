@@ -21,6 +21,7 @@ public final class Logger {
     public static let langchain = Logger(category: "LangChain")
     public static let retrieval = Logger(category: "Retrieval")
     public static let license = Logger(category: "License")
+    public static let vectorDatabase = Logger(category: "VectorDatabase")
     public static let `extension` = Logger(category: "Extension")
     public static let communicationBridge = Logger(category: "CommunicationBridge")
     public static let debug = Logger(category: "Debug")
