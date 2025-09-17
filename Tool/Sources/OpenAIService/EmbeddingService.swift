@@ -2,7 +2,7 @@ import ChatBasic
 import Foundation
 import Logger
 
-public struct EmbeddingService {
+public struct EmbeddingService: Sendable {
     public let configuration: EmbeddingConfiguration
 
     public init(configuration: EmbeddingConfiguration) {
