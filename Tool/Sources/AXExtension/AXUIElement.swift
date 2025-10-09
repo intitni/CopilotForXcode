@@ -1,9 +1,6 @@
 import AppKit
 import Foundation
 import Logger
-#if DEBUG
-import IssueReporting
-#endif
 
 // MARK: - State
 
@@ -188,7 +185,7 @@ public extension AXUIElement {
     ) -> AXUIElement? {
         #if DEBUG
         if depth >= 50 {
-            reportIssue("AXUIElement.child: Exceeding recommended depth.")
+            fatalError("AXUIElement.child: Exceeding recommended depth.")
         }
         #endif
 
@@ -225,7 +222,7 @@ public extension AXUIElement {
     func children(depth: Int = 0, where match: (AXUIElement) -> Bool) -> [AXUIElement] {
         #if DEBUG
         if depth >= 50 {
-            reportIssue("AXUIElement.children: Exceeding recommended depth.")
+            fatalError("AXUIElement.children: Exceeding recommended depth.")
         }
         #endif
         
@@ -248,7 +245,7 @@ public extension AXUIElement {
     func firstChild(depth: Int = 0, where match: (AXUIElement) -> Bool) -> AXUIElement? {
         #if DEBUG
         if depth >= 50 {
-            reportIssue("AXUIElement.firstChild: Exceeding recommended depth.")
+            fatalError("AXUIElement.firstChild: Exceeding recommended depth.")
         }
         #endif
         for child in children {
@@ -352,5 +349,7 @@ public extension AXUIElement {
     }
 }
 
+extension AXError: @retroactive _BridgedNSError {}
+extension AXError: @retroactive _ObjectiveCBridgeableError {}
 extension AXError: @retroactive Error {}
 

@@ -670,7 +670,7 @@ extension PseudoCommandHandler {
     }
 
     func getFileURL() async -> URL? {
-        await XcodeInspector.shared.realtimeActiveDocumentURL
+        XcodeInspector.shared.realtimeActiveDocumentURL
     }
 
     @WorkspaceActor
@@ -713,7 +713,7 @@ extension PseudoCommandHandler {
     }
 
     func handleAcceptSuggestionLineCommand(editor: EditorContent) async throws -> CodeSuggestion? {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let _ = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
 
         return try await acceptSuggestionLineInGroup(
@@ -726,7 +726,7 @@ extension PseudoCommandHandler {
         atIndex index: Int?,
         editor: EditorContent
     ) async throws -> CodeSuggestion? {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)

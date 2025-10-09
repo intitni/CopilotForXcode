@@ -103,7 +103,7 @@ public final class Service {
                 .notifications(named: .activeDocumentURLDidChange)
             var previousURL: URL?
             for await _ in notifications {
-                guard let self else { return }
+                guard self != nil else { return }
                 let url = await XcodeInspector.shared.activeDocumentURL
                 if let url, url != previousURL, url != .init(fileURLWithPath: "/") {
                     previousURL = url

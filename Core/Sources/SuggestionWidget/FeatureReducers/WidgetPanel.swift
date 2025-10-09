@@ -101,7 +101,7 @@ public struct WidgetPanel {
 
             case .switchToAnotherEditorAndUpdateContent:
                 return .run { send in
-                    guard let fileURL = await xcodeInspector.realtimeActiveDocumentURL
+                    guard let fileURL = xcodeInspector.realtimeActiveDocumentURL
                     else { return }
 
                     await send(.sharedPanel(

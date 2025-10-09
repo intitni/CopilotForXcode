@@ -387,7 +387,7 @@ class WorkspaceParser: NSObject, XMLParserDelegate {
 }
 
 public func getProjectPaths() async -> [String] {
-    guard let workspaceURL = await XcodeInspector.shared.realtimeActiveWorkspaceURL else {
+    guard let workspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL else {
         return []
     }
 
