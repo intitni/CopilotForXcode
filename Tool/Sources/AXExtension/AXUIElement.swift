@@ -58,7 +58,7 @@ public extension AXUIElement {
     }
 
     var isSourceEditor: Bool {
-        description == "Source Editor"
+        description == "Source Editor" && roleDescription != "unknown"
     }
 
     var selectedTextRange: ClosedRange<Int>? {
