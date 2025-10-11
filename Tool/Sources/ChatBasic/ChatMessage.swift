@@ -10,6 +10,7 @@ public struct ChatMessage: Equatable, Codable {
         case system
         case user
         case assistant
+        case tool
     }
 
     /// A function call that can be made by the bot.
