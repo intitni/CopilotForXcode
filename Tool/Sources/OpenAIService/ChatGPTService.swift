@@ -68,6 +68,12 @@ public enum ChatGPTResponse: Equatable {
     case partialText(String)
     case partialReasoning(String)
     case toolCalls([ChatMessage.ToolCall])
+    case usage(
+        promptTokens: Int,
+        completionTokens: Int,
+        cachedTokens: Int,
+        otherUsage: [String: Int]
+    )
 }
 
 public typealias ChatGPTResponseStream = AsyncThrowingStream<ChatGPTResponse, any Error>
@@ -196,7 +202,7 @@ public class ChatGPTService: ChatGPTServiceType {
                                 switch content {
                                 case let .partialText(text):
                                     continuation.yield(ChatGPTResponse.partialText(text))
-                                    
+
                                 case let .partialReasoning(text):
                                     continuation.yield(ChatGPTResponse.partialReasoning(text))
 
@@ -222,6 +228,20 @@ public class ChatGPTService: ChatGPTServiceType {
                                             }
                                         }
                                     }
+                                case let .usage(
+                                    promptTokens,
+                                    completionTokens,
+                                    cachedTokens,
+                                    otherUsage
+                                ):
+                                    continuation.yield(
+                                        .usage(
+                                            promptTokens: promptTokens,
+                                            completionTokens: completionTokens,
+                                            cachedTokens: cachedTokens,
+                                            otherUsage: otherUsage
+                                        )
+                                    )
                                 }
                             }
 
@@ -257,6 +277,12 @@ extension ChatGPTService {
         case partialReasoning(String)
         case partialText(String)
         case partialToolCalls([Int: ChatMessage.ToolCall])
+        case usage(
+            promptTokens: Int,
+            completionTokens: Int,
+            cachedTokens: Int,
+            otherUsage: [String: Int]
+        )
     }
 
     enum FunctionCallResult {
@@ -345,14 +371,19 @@ extension ChatGPTService {
                         if let content = delta.content {
                             continuation.yield(.partialText(content))
                         }
-                        
+
                         if let reasoning = delta.reasoningContent {
                             continuation.yield(.partialReasoning(reasoning))
                         }
                     }
 
                     Logger.service.info("ChatGPT usage: \(usage)")
-
+                    continuation.yield(.usage(
+                        promptTokens: usage.promptTokens,
+                        completionTokens: usage.completionTokens,
+                        cachedTokens: usage.cachedTokens,
+                        otherUsage: usage.otherUsage
+                    ))
                     continuation.finish()
                 } catch let error as CancellationError {
                     continuation.finish(throwing: error)
@@ -554,6 +585,7 @@ extension ChatGPTService {
                     case .system: .system
                     case .user: .user
                     case .assistant: .assistant
+                    case .tool: .tool
                     }
                 }(),
                 content: chatMessage.content ?? "",

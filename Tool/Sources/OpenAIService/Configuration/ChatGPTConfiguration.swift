@@ -39,7 +39,7 @@ public extension ChatGPTConfiguration {
     }
 }
 
-public class OverridingChatGPTConfiguration: ChatGPTConfiguration {
+public final class OverridingChatGPTConfiguration: ChatGPTConfiguration {
     public struct Overriding: Codable {
         public var temperature: Double?
         public var modelId: String?
