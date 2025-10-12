@@ -7,7 +7,7 @@ import Logger
 import Preferences
 
 /// https://platform.openai.com/docs/api-reference/chat/create
-actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
+public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI {
     struct CompletionAPIError: Error, Decodable, LocalizedError {
         struct ErrorDetail: Decodable {
             var message: String
@@ -68,7 +68,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         }
     }
 
-    enum MessageRole: String, Codable {
+    public enum MessageRole: String, Codable, Sendable {
         case system
         case user
         case assistant
@@ -86,42 +86,84 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         }
     }
 
-    struct StreamDataChunk: Codable {
-        var id: String?
-        var object: String?
-        var model: String?
-        var choices: [Choice]?
-        var usage: ResponseBody.Usage?
+    public struct StreamDataChunk: Codable, Sendable {
+        public var id: String?
+        public var provider: String?
+        public var object: String?
+        public var model: String?
+        public var choices: [Choice]?
+        public var usage: ResponseBody.Usage?
+        public var created: Int?
 
-        struct Choice: Codable {
-            var delta: Delta?
-            var index: Int?
-            var finish_reason: String?
+        public struct Choice: Codable, Sendable {
+            public var delta: Delta?
+            public var index: Int?
+            public var finish_reason: String?
 
-            struct Delta: Codable {
-                var role: MessageRole?
-                var content: String?
-                var reasoning_content: String?
-                var reasoning: String?
-                var function_call: RequestBody.MessageFunctionCall?
-                var tool_calls: [RequestBody.MessageToolCall]?
+            public struct Delta: Codable, Sendable {
+                public var role: MessageRole?
+                public var content: String?
+                public var reasoning_content: String?
+                public var reasoning: String?
+                public var function_call: RequestBody.MessageFunctionCall?
+                public var tool_calls: [RequestBody.MessageToolCall]?
+
+                public init(
+                    role: MessageRole? = nil,
+                    content: String? = nil,
+                    reasoning_content: String? = nil,
+                    reasoning: String? = nil,
+                    function_call: RequestBody.MessageFunctionCall? = nil,
+                    tool_calls: [RequestBody.MessageToolCall]? = nil
+                ) {
+                    self.role = role
+                    self.content = content
+                    self.reasoning_content = reasoning_content
+                    self.reasoning = reasoning
+                    self.function_call = function_call
+                    self.tool_calls = tool_calls
+                }
             }
+
+            public init(delta: Delta? = nil, index: Int? = nil, finish_reason: String? = nil) {
+                self.delta = delta
+                self.index = index
+                self.finish_reason = finish_reason
+            }
+        }
+
+        public init(
+            id: String? = nil,
+            provider: String? = nil,
+            object: String? = nil,
+            model: String? = nil,
+            choices: [Choice]? = nil,
+            usage: ResponseBody.Usage? = nil,
+            created: Int? = nil
+        ) {
+            self.id = id
+            self.provider = provider
+            self.object = object
+            self.model = model
+            self.choices = choices
+            self.usage = usage
+            self.created = created
         }
     }
 
-    struct ResponseBody: Codable, Equatable {
-        struct Message: Codable, Equatable {
+    public struct ResponseBody: Codable, Equatable {
+        public struct Message: Codable, Equatable, Sendable {
             /// The role of the message.
-            var role: MessageRole
+            public var role: MessageRole
             /// The content of the message.
-            var content: String?
-            var reasoning_content: String?
-            var reasoning: String?
+            public var content: String?
+            public var reasoning_content: String?
+            public var reasoning: String?
             /// When we want to reply to a function call with the result, we have to provide the
             /// name of the function call, and include the result in `content`.
             ///
             /// - important: It's required when the role is `function`.
-            var name: String?
+            public var name: String?
             /// When the bot wants to call a function, it will reply with a function call in format:
             /// ```json
             /// {
@@ -129,79 +171,171 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
             ///   "arguments": "{ \"location\": \"earth\" }"
             /// }
             /// ```
-            var function_call: RequestBody.MessageFunctionCall?
+            public var function_call: RequestBody.MessageFunctionCall?
             /// Tool calls in an assistant message.
-            var tool_calls: [RequestBody.MessageToolCall]?
-        }
+            public var tool_calls: [RequestBody.MessageToolCall]?
 
-        struct Choice: Codable, Equatable {
-            var message: Message
-            var index: Int?
-            var finish_reason: String?
-        }
-
-        struct Usage: Codable, Equatable {
-            var prompt_tokens: Int?
-            var completion_tokens: Int?
-            var total_tokens: Int?
-            var prompt_tokens_details: PromptTokensDetails?
-            var completion_tokens_details: CompletionTokensDetails?
-
-            struct PromptTokensDetails: Codable, Equatable {
-                var cached_tokens: Int?
-                var audio_tokens: Int?
-            }
-
-            struct CompletionTokensDetails: Codable, Equatable {
-                var reasoning_tokens: Int?
-                var audio_tokens: Int?
+            public init(
+                role: MessageRole,
+                content: String? = nil,
+                reasoning_content: String? = nil,
+                reasoning: String? = nil,
+                name: String? = nil,
+                function_call: RequestBody.MessageFunctionCall? = nil,
+                tool_calls: [RequestBody.MessageToolCall]? = nil
+            ) {
+                self.role = role
+                self.content = content
+                self.reasoning_content = reasoning_content
+                self.reasoning = reasoning
+                self.name = name
+                self.function_call = function_call
+                self.tool_calls = tool_calls
             }
         }
 
-        var id: String?
-        var object: String
-        var model: String
-        var usage: Usage
-        var choices: [Choice]
+        public struct Choice: Codable, Equatable, Sendable {
+            public var message: Message
+            public var index: Int?
+            public var finish_reason: String?
+
+            public init(message: Message, index: Int? = nil, finish_reason: String? = nil) {
+                self.message = message
+                self.index = index
+                self.finish_reason = finish_reason
+            }
+        }
+
+        public struct Usage: Codable, Equatable, Sendable {
+            public var prompt_tokens: Int?
+            public var completion_tokens: Int?
+            public var total_tokens: Int?
+            public var prompt_tokens_details: PromptTokensDetails?
+            public var completion_tokens_details: CompletionTokensDetails?
+
+            public struct PromptTokensDetails: Codable, Equatable, Sendable {
+                public var cached_tokens: Int?
+                public var audio_tokens: Int?
+
+                public init(cached_tokens: Int? = nil, audio_tokens: Int? = nil) {
+                    self.cached_tokens = cached_tokens
+                    self.audio_tokens = audio_tokens
+                }
+            }
+
+            public struct CompletionTokensDetails: Codable, Equatable, Sendable {
+                public var reasoning_tokens: Int?
+                public var audio_tokens: Int?
+
+                public init(reasoning_tokens: Int? = nil, audio_tokens: Int? = nil) {
+                    self.reasoning_tokens = reasoning_tokens
+                    self.audio_tokens = audio_tokens
+                }
+            }
+
+            public init(
+                prompt_tokens: Int? = nil,
+                completion_tokens: Int? = nil,
+                total_tokens: Int? = nil,
+                prompt_tokens_details: PromptTokensDetails? = nil,
+                completion_tokens_details: CompletionTokensDetails? = nil
+            ) {
+                self.prompt_tokens = prompt_tokens
+                self.completion_tokens = completion_tokens
+                self.total_tokens = total_tokens
+                self.prompt_tokens_details = prompt_tokens_details
+                self.completion_tokens_details = completion_tokens_details
+            }
+        }
+
+        public var id: String?
+        public var object: String
+        public var model: String
+        public var usage: Usage
+        public var choices: [Choice]
+
+        public init(
+            id: String? = nil,
+            object: String,
+            model: String,
+            usage: Usage,
+            choices: [Choice]
+        ) {
+            self.id = id
+            self.object = object
+            self.model = model
+            self.usage = usage
+            self.choices = choices
+        }
     }
 
-    struct RequestBody: Encodable, Equatable {
-        typealias ClaudeCacheControl = ClaudeChatCompletionsService.RequestBody.CacheControl
+    public struct RequestBody: Codable, Equatable {
+        public typealias ClaudeCacheControl = ClaudeChatCompletionsService.RequestBody.CacheControl
 
-        struct Message: Encodable, Equatable {
-            enum MessageContent: Encodable, Equatable {
-                struct TextContentPart: Encodable, Equatable {
-                    var type = "text"
-                    var text: String
-                    var cache_control: ClaudeCacheControl?
+        public struct Message: Codable, Equatable {
+            public enum MessageContent: Codable, Equatable {
+                public struct TextContentPart: Codable, Equatable {
+                    public var type = "text"
+                    public var text: String
+                    public var cache_control: ClaudeCacheControl?
+
+                    public init(
+                        type: String = "text",
+                        text: String,
+                        cache_control: ClaudeCacheControl? = nil
+                    ) {
+                        self.type = type
+                        self.text = text
+                        self.cache_control = cache_control
+                    }
                 }
 
-                struct ImageContentPart: Encodable, Equatable {
-                    struct ImageURL: Encodable, Equatable {
-                        var url: String
-                        var detail: String?
+                public struct ImageContentPart: Codable, Equatable {
+                    public struct ImageURL: Codable, Equatable {
+                        public var url: String
+                        public var detail: String?
+
+                        public init(url: String, detail: String? = nil) {
+                            self.url = url
+                            self.detail = detail
+                        }
                     }
 
-                    var type = "image_url"
-                    var image_url: ImageURL
+                    public var type = "image_url"
+                    public var image_url: ImageURL
+
+                    public init(type: String = "image_url", image_url: ImageURL) {
+                        self.type = type
+                        self.image_url = image_url
+                    }
                 }
 
-                struct AudioContentPart: Encodable, Equatable {
-                    struct InputAudio: Encodable, Equatable {
-                        var data: String
-                        var format: String
+                public struct AudioContentPart: Codable, Equatable {
+                    public struct InputAudio: Codable, Equatable {
+                        public var data: String
+                        public var format: String
+
+                        public init(data: String, format: String) {
+                            self.data = data
+                            self.format = format
+                        }
                     }
 
-                    var type = "input_audio"
-                    var input_audio: InputAudio
+                    public var type = "input_audio"
+                    public var input_audio: InputAudio
+
+                    public init(type: String = "input_audio", input_audio: InputAudio) {
+                        self.type = type
+                        self.input_audio = input_audio
+                    }
                 }
 
-                enum ContentPart: Encodable, Equatable {
+                public enum ContentPart: Codable, Equatable {
                     case text(TextContentPart)
                     case image(ImageContentPart)
                     case audio(AudioContentPart)
 
-                    func encode(to encoder: any Encoder) throws {
+                    public func encode(to encoder: any Encoder) throws {
                         var container = encoder.singleValueContainer()
                         switch self {
                         case let .text(text):
@@ -212,12 +346,58 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                             try container.encode(audio)
                         }
                     }
+
+                    public init(from decoder: any Decoder) throws {
+                        let container = try decoder.singleValueContainer()
+                        var errors: [Error] = []
+
+                        do {
+                            let text = try container.decode(String.self)
+                            self = .text(.init(text: text))
+                            return
+                        } catch {
+                            errors.append(error)
+                        }
+
+                        do {
+                            let text = try container.decode(TextContentPart.self)
+                            self = .text(text)
+                            return
+                        } catch {
+                            errors.append(error)
+                        }
+
+                        do {
+                            let image = try container.decode(ImageContentPart.self)
+                            self = .image(image)
+                            return
+                        } catch {
+                            errors.append(error)
+                        }
+
+                        do {
+                            let audio = try container.decode(AudioContentPart.self)
+                            self = .audio(audio)
+                            return
+                        } catch {
+                            errors.append(error)
+                        }
+
+                        struct E: Error, LocalizedError {
+                            let errors: [Error]
+
+                            var errorDescription: String? {
+                                "Failed to decode ContentPart: \(errors.map { $0.localizedDescription }.joined(separator: "; "))"
+                            }
+                        }
+                        throw E(errors: errors)
+                    }
                 }
 
                 case contentParts([ContentPart])
                 case text(String)
 
-                func encode(to encoder: any Encoder) throws {
+                public func encode(to encoder: any Encoder) throws {
                     var container = encoder.singleValueContainer()
                     switch self {
                     case let .contentParts(parts):
@@ -226,65 +406,159 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
                         try container.encode(text)
                     }
                 }
+
+                public init(from decoder: any Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    var errors: [Error] = []
+
+                    do {
+                        let parts = try container.decode([ContentPart].self)
+                        self = .contentParts(parts)
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+
+                    do {
+                        let text = try container.decode(String.self)
+                        self = .text(text)
+                        return
+                    } catch {
+                        errors.append(error)
+                    }
+
+                    struct E: Error, LocalizedError {
+                        let errors: [Error]
+
+                        var errorDescription: String? {
+                            "Failed to decode MessageContent: \(errors.map { $0.localizedDescription }.joined(separator: "; "))"
+                        }
+                    }
+                    throw E(errors: errors)
+                }
             }
 
             /// The role of the message.
-            var role: MessageRole
+            public var role: MessageRole
             /// The content of the message.
-            var content: MessageContent
+            public var content: MessageContent
             /// When we want to reply to a function call with the result, we have to provide the
             /// name of the function call, and include the result in `content`.
             ///
             /// - important: It's required when the role is `function`.
-            var name: String?
+            public var name: String?
             /// Tool calls in an assistant message.
-            var tool_calls: [MessageToolCall]?
+            public var tool_calls: [MessageToolCall]?
             /// When we want to call a tool, we have to provide the id of the call.
             ///
             /// - important: It's required when the role is `tool`.
-            var tool_call_id: String?
+            public var tool_call_id: String?
             /// When the bot wants to call a function, it will reply with a function call.
             ///
             /// Deprecated.
-            var function_call: MessageFunctionCall?
+            public var function_call: MessageFunctionCall?
+
+            public init(
+                role: MessageRole,
+                content: MessageContent,
+                name: String? = nil,
+                tool_calls: [MessageToolCall]? = nil,
+                tool_call_id: String? = nil,
+                function_call: MessageFunctionCall? = nil
+            ) {
+                self.role = role
+                self.content = content
+                self.name = name
+                self.tool_calls = tool_calls
+                self.tool_call_id = tool_call_id
+                self.function_call = function_call
+            }
         }
 
-        struct MessageFunctionCall: Codable, Equatable {
+        public struct MessageFunctionCall: Codable, Equatable, Sendable {
             /// The name of the
-            var name: String?
+            public var name: String?
             /// A JSON string.
-            var arguments: String?
+            public var arguments: String?
+
+            public init(name: String? = nil, arguments: String? = nil) {
+                self.name = name
+                self.arguments = arguments
+            }
         }
 
-        struct MessageToolCall: Codable, Equatable {
+        public struct MessageToolCall: Codable, Equatable, Sendable {
             /// When it's returned as a data chunk, use the index to identify the tool call.
-            var index: Int?
+            public var index: Int?
             /// The id of the tool call.
-            var id: String?
+            public var id: String?
             /// The type of the tool.
-            var type: String?
+            public var type: String?
             /// The function call.
-            var function: MessageFunctionCall?
+            public var function: MessageFunctionCall?
+
+            public init(
+                index: Int? = nil,
+                id: String? = nil,
+                type: String? = nil,
+                function: MessageFunctionCall? = nil
+            ) {
+                self.index = index
+                self.id = id
+                self.type = type
+                self.function = function
+            }
         }
 
-        struct Tool: Encodable, Equatable {
-            var type: String = "function"
-            var function: ChatGPTFunctionSchema
+        public struct Tool: Codable, Equatable, Sendable {
+            public var type: String = "function"
+            public var function: ChatGPTFunctionSchema
+
+            public init(type: String, function: ChatGPTFunctionSchema) {
+                self.type = type
+                self.function = function
+            }
         }
 
-        struct StreamOptions: Encodable, Equatable {
-            var include_usage: Bool = true
+        public struct StreamOptions: Codable, Equatable, Sendable {
+            public var include_usage: Bool = true
+
+            public init(include_usage: Bool = true) {
+                self.include_usage = include_usage
+            }
         }
 
-        var model: String
-        var messages: [Message]
-        var temperature: Double?
-        var stream: Bool?
-        var stop: [String]?
-        var max_completion_tokens: Int?
-        var tool_choice: FunctionCallStrategy?
-        var tools: [Tool]?
-        var stream_options: StreamOptions?
+        public var model: String
+        public var messages: [Message]
+        public var temperature: Double?
+        public var stream: Bool?
+        public var stop: [String]?
+        public var max_completion_tokens: Int?
+        public var tool_choice: FunctionCallStrategy?
+        public var tools: [Tool]?
+        public var stream_options: StreamOptions?
+
+        public init(
+            model: String,
+            messages: [Message],
+            temperature: Double? = nil,
+            stream: Bool? = nil,
+            stop: [String]? = nil,
+            max_completion_tokens: Int? = nil,
+            tool_choice: FunctionCallStrategy? = nil,
+            tools: [Tool]? = nil,
+            stream_options: StreamOptions? = nil
+        ) {
+            self.model = model
+            self.messages = messages
+            self.temperature = temperature
+            self.stream = stream
+            self.stop = stop
+            self.max_completion_tokens = max_completion_tokens
+            self.tool_choice = tool_choice
+            self.tools = tools
+            self.stream_options = stream_options
+        }
     }
 
     var apiKey: String
@@ -505,7 +779,7 @@ actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatCompletionsAPI
         default:
             return
         }
-        
+
         let join = JoinJSON()
         let jsonBody = model.info.customBodyInfo.jsonBody
             .trimmingCharacters(in: .whitespacesAndNewlines)
