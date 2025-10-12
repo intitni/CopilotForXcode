@@ -585,7 +585,6 @@ extension ChatGPTService {
                     case .system: .system
                     case .user: .user
                     case .assistant: .assistant
-                    case .tool: .tool
                     }
                 }(),
                 content: chatMessage.content ?? "",
