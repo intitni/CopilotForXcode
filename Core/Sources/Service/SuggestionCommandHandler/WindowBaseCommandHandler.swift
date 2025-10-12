@@ -42,7 +42,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
         defer {
             presenter.markAsProcessing(false)
         }
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -76,7 +76,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     private func _presentNextSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -102,7 +102,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     private func _presentPreviousSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return }
         let (workspace, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -128,7 +128,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     private func _rejectSuggestion(editor: EditorContent) async throws {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return }
 
         let (workspace, _) = try await Service.shared.workspacePool
@@ -139,7 +139,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     func acceptSuggestion(editor: EditorContent) async throws -> UpdatedContent? {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -199,7 +199,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
     }
 
     func acceptPromptToCode(editor: EditorContent) async throws -> UpdatedContent? {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
 
         let injector = SuggestionInjector()
@@ -286,7 +286,7 @@ struct WindowBaseCommandHandler: SuggestionCommandHandler {
 
     @WorkspaceActor
     func prepareCache(editor: EditorContent) async throws -> UpdatedContent? {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
         let (_, filespace) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
@@ -381,7 +381,7 @@ extension WindowBaseCommandHandler {
         generateDescription: Bool?,
         name: String?
     ) async throws {
-        guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return }
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)

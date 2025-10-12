@@ -127,13 +127,13 @@ public actor ClaudeChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         var stop_sequence: String?
     }
 
-    struct RequestBody: Encodable, Equatable {
-        struct CacheControl: Encodable, Equatable {
-            enum CacheControlType: String, Codable, Equatable {
+    public struct RequestBody: Encodable, Equatable {
+        public struct CacheControl: Codable, Equatable, Sendable {
+            public enum CacheControlType: String, Codable, Equatable, Sendable {
                 case ephemeral
             }
 
-            var type: CacheControlType = .ephemeral
+            public var type: CacheControlType = .ephemeral
         }
 
         struct MessageContent: Encodable, Equatable {

@@ -89,7 +89,7 @@ public extension ChatGPTArgumentsCollectingFunction {
     }
 }
 
-public struct ChatGPTFunctionSchema: Codable, Equatable {
+public struct ChatGPTFunctionSchema: Codable, Equatable, Sendable {
     public var name: String
     public var description: String
     public var parameters: JSONSchemaValue

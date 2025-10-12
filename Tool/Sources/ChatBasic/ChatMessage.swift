@@ -10,6 +10,8 @@ public struct ChatMessage: Equatable, Codable {
         case system
         case user
         case assistant
+        // There is no `tool` role
+        // because tool calls and results are stored in the assistant messages.
     }
 
     /// A function call that can be made by the bot.

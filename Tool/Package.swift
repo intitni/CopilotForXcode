@@ -243,7 +243,10 @@ let package = Package(
             ]
         ),
 
-        .target(name: "AXExtension"),
+        .target(
+            name: "AXExtension",
+            dependencies: ["Logger"]
+        ),
 
         .target(
             name: "AXNotificationStream",

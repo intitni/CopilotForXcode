@@ -113,7 +113,7 @@ public actor RealtimeSuggestionController {
 
         Task { @WorkspaceActor in // Get cache ready for real-time suggestions.
             guard UserDefaults.shared.value(for: \.preCacheOnFileOpen) else { return }
-            guard let fileURL = await XcodeInspector.shared.realtimeActiveDocumentURL
+            guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
             else { return }
             let (_, filespace) = try await Service.shared.workspacePool
                 .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
