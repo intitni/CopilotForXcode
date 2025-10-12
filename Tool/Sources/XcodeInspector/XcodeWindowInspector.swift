@@ -4,8 +4,9 @@ import AXExtension
 import Combine
 import Foundation
 import Logger
+import Perception
 
-public class XcodeWindowInspector: ObservableObject {
+public class XcodeWindowInspector {
     public let uiElement: AXUIElement
 
     init(uiElement: AXUIElement) {
@@ -14,17 +15,23 @@ public class XcodeWindowInspector: ObservableObject {
     }
 }
 
-public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
+@XcodeInspectorActor
+@Perceptible
+public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector, Sendable {
     let app: NSRunningApplication
-    @Published public internal(set) var documentURL: URL = .init(fileURLWithPath: "/")
-    @Published public internal(set) var workspaceURL: URL = .init(fileURLWithPath: "/")
-    @Published public internal(set) var projectRootURL: URL = .init(fileURLWithPath: "/")
-    private var focusedElementChangedTask: Task<Void, Error>?
+    @MainActor
+    public private(set) var documentURL: URL = .init(fileURLWithPath: "/")
+    @MainActor
+    public private(set) var workspaceURL: URL = .init(fileURLWithPath: "/")
+    @MainActor
+    public private(set) var projectRootURL: URL = .init(fileURLWithPath: "/")
+    @PerceptionIgnored private var focusedElementChangedTask: Task<Void, Error>?
 
     public func refresh() {
-        Task { @XcodeInspectorActor in updateURLs() }
+        Task { @MainActor in updateURLs() }
     }
 
+    @MainActor
     public init(
         app: NSRunningApplication,
         uiElement: AXUIElement,
@@ -33,14 +40,14 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         self.app = app
         super.init(uiElement: uiElement)
 
-        focusedElementChangedTask = Task { [weak self, axNotifications] in
-            await self?.updateURLs()
+        focusedElementChangedTask = Task { @MainActor [weak self, axNotifications] in
+            self?.updateURLs()
 
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
                 group.addTask { [weak self] in
                     // prevent that documentURL may not be available yet
                     try await Task.sleep(nanoseconds: 500_000_000)
-                    if self?.documentURL == .init(fileURLWithPath: "/") {
+                    if await self?.documentURL == .init(fileURLWithPath: "/") {
                         await self?.updateURLs()
                     }
                 }
@@ -60,32 +67,26 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         }
     }
 
-    @XcodeInspectorActor
+    @MainActor
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {
-            Task { @MainActor in
-                self.documentURL = documentURL
-            }
+            self.documentURL = documentURL
         }
         let workspaceURL = Self.extractWorkspaceURL(windowElement: uiElement)
         if let workspaceURL {
-            Task { @MainActor in
-                self.workspaceURL = workspaceURL
-            }
+            self.workspaceURL = workspaceURL
         }
         let projectURL = Self.extractProjectURL(
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
         if let projectURL {
-            Task { @MainActor in
-                self.projectRootURL = projectURL
-            }
+            projectRootURL = projectURL
         }
     }
 
-    static func extractDocumentURL(
+    nonisolated static func extractDocumentURL(
         windowElement: AXUIElement
     ) -> URL? {
         // fetch file path of the frontmost window of Xcode through Accessibility API.
@@ -100,7 +101,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         return nil
     }
 
-    static func extractWorkspaceURL(
+    nonisolated static func extractWorkspaceURL(
         windowElement: AXUIElement
     ) -> URL? {
         for child in windowElement.children {
@@ -114,7 +115,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         return nil
     }
 
-    public static func extractProjectURL(
+    public nonisolated static func extractProjectURL(
         workspaceURL: URL?,
         documentURL: URL?
     ) -> URL? {
@@ -142,8 +143,8 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
 
         return lastGitDirectoryURL ?? firstDirectoryURL ?? workspaceURL
     }
-    
-    static func adjustFileURL(_ url: URL) -> URL {
+
+    nonisolated static func adjustFileURL(_ url: URL) -> URL {
         if url.pathExtension == "playground",
            FileManager.default.fileIsDirectory(atPath: url.path)
         {

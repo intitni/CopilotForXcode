@@ -335,6 +335,14 @@ extension [Target.Dependency] {
         }
         return self
     }
+
+    func proCore(_ targetNames: [String]) -> [Target.Dependency] {
+        if isProIncluded {
+            return self + targetNames
+                .map { Target.Dependency.product(name: $0, package: "ProCore") }
+        }
+        return self
+    }
 }
 
 extension [Package.Dependency] {

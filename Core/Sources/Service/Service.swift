@@ -98,18 +98,20 @@ public final class Service {
         globalShortcutManager.start()
         keyBindingManager.start()
 
-        Task {
-            await XcodeInspector.shared.safe.$activeDocumentURL
-                .removeDuplicates()
-                .filter { $0 != .init(fileURLWithPath: "/") }
-                .compactMap { $0 }
-                .sink { fileURL in
-                    Task {
-                        @Dependency(\.workspacePool) var workspacePool
-                        return try await workspacePool
-                            .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)
-                    }
-                }.store(in: &cancellable)
+        Task.detached { [weak self] in
+            let notifications = NotificationCenter.default
+                .notifications(named: .activeDocumentURLDidChange)
+            var previousURL: URL?
+            for await _ in notifications {
+                guard self != nil else { return }
+                let url = await XcodeInspector.shared.activeDocumentURL
+                if let url, url != previousURL, url != .init(fileURLWithPath: "/") {
+                    previousURL = url
+                    @Dependency(\.workspacePool) var workspacePool
+                    _ = try await workspacePool
+                        .fetchOrCreateWorkspaceAndFilespace(fileURL: url)
+                }
+            }
         }
     }
 
@@ -158,7 +160,7 @@ public extension Service {
                     }
                 }
             }
-            
+
             try ExtensionServiceRequests.GetSuggestionLineAcceptedCode.handle(
                 endpoint: endpoint,
                 requestBody: requestBody,

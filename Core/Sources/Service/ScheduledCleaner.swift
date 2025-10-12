@@ -34,7 +34,7 @@ public final class ScheduledCleaner {
     func cleanUp() async {
         guard let service else { return }
 
-        let workspaceInfos = XcodeInspector.shared.xcodes.reduce(
+        let workspaceInfos = await XcodeInspector.shared.xcodes.reduce(
             into: [
                 XcodeAppInstanceInspector.WorkspaceIdentifier:
                     XcodeAppInstanceInspector.WorkspaceInfo

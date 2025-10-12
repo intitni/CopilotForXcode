@@ -187,7 +187,7 @@ struct PseudoCommandHandler: CommandHandler {
             }
         }() else {
             do {
-                try await XcodeInspector.shared.safe.latestActiveXcode?
+                try await XcodeInspector.shared.latestActiveXcode?
                     .triggerCopilotCommand(name: command.name)
             } catch {
                 let presenter = PresentInWindowSuggestionPresenter()
@@ -211,11 +211,11 @@ struct PseudoCommandHandler: CommandHandler {
                 throw CancellationError()
             }
             do {
-                try await XcodeInspector.shared.safe.latestActiveXcode?
+                try await XcodeInspector.shared.latestActiveXcode?
                     .triggerCopilotCommand(name: "Accept Modification")
             } catch {
                 do {
-                    try await XcodeInspector.shared.safe.latestActiveXcode?
+                    try await XcodeInspector.shared.latestActiveXcode?
                         .triggerCopilotCommand(name: "Accept Prompt to Code")
                 } catch {
                     let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
@@ -288,7 +288,7 @@ struct PseudoCommandHandler: CommandHandler {
                 throw CancellationError()
             }
             do {
-                try await XcodeInspector.shared.safe.latestActiveXcode?
+                try await XcodeInspector.shared.latestActiveXcode?
                     .triggerCopilotCommand(name: "Accept Suggestion Line")
             } catch {
                 let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
@@ -350,7 +350,7 @@ struct PseudoCommandHandler: CommandHandler {
                 throw CancellationError()
             }
             do {
-                try await XcodeInspector.shared.safe.latestActiveXcode?
+                try await XcodeInspector.shared.latestActiveXcode?
                     .triggerCopilotCommand(name: "Accept Suggestion")
             } catch {
                 let last = Self.lastTimeCommandFailedToTriggerWithAccessibilityAPI
@@ -407,7 +407,7 @@ struct PseudoCommandHandler: CommandHandler {
     }
 
     func dismissSuggestion() async {
-        guard let documentURL = await XcodeInspector.shared.safe.activeDocumentURL else { return }
+        guard let documentURL = await XcodeInspector.shared.activeDocumentURL else { return }
         PresentInWindowSuggestionPresenter().discardSuggestion(fileURL: documentURL)
         guard let (_, filespace) = try? await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: documentURL) else { return }
@@ -670,7 +670,7 @@ extension PseudoCommandHandler {
     }
 
     func getFileURL() async -> URL? {
-        await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        XcodeInspector.shared.realtimeActiveDocumentURL
     }
 
     @WorkspaceActor
@@ -688,7 +688,7 @@ extension PseudoCommandHandler {
         guard let filespace = await getFilespace(),
               let sourceEditor = await {
                   if let sourceEditor { sourceEditor }
-                  else { await XcodeInspector.shared.safe.focusedEditor }
+                  else { await XcodeInspector.shared.focusedEditor }
               }()
         else { return nil }
         if Task.isCancelled { return nil }
@@ -713,7 +713,7 @@ extension PseudoCommandHandler {
     }
 
     func handleAcceptSuggestionLineCommand(editor: EditorContent) async throws -> CodeSuggestion? {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        guard let _ = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
 
         return try await acceptSuggestionLineInGroup(
@@ -726,7 +726,7 @@ extension PseudoCommandHandler {
         atIndex index: Int?,
         editor: EditorContent
     ) async throws -> CodeSuggestion? {
-        guard let fileURL = await XcodeInspector.shared.safe.realtimeActiveDocumentURL
+        guard let fileURL = XcodeInspector.shared.realtimeActiveDocumentURL
         else { return nil }
         let (workspace, _) = try await Service.shared.workspacePool
             .fetchOrCreateWorkspaceAndFilespace(fileURL: fileURL)

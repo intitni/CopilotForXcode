@@ -157,8 +157,9 @@ extension XcodeThemeController {
         }
 
         let xcodeURL: URL? = {
-            // Use the latest running Xcode
-            if let running = XcodeInspector.shared.latestActiveXcode?.bundleURL {
+            if let running = NSWorkspace.shared
+                .urlForApplication(withBundleIdentifier: "com.apple.dt.Xcode")
+            {
                 return running
             }
             // Use the main Xcode.app
