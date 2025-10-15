@@ -20,7 +20,36 @@ public final class ShortcutChatPlugin: ChatPlugin {
         terminal = Terminal()
     }
 
-    public func send(_ request: Request) async -> AsyncThrowingStream<Response, any Error> {
+    public func sendForTextResponse(_ request: Request) async
+        -> AsyncThrowingStream<String, any Error>
+    {
+        let stream = await sendForComplicatedResponse(request)
+        return .init { continuation in
+            let task = Task {
+                do {
+                    for try await response in stream {
+                        switch response {
+                        case let .content(.text(content)):
+                            continuation.yield(content)
+                        default:
+                            break
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
+    public func sendForComplicatedResponse(_ request: Request) async
+        -> AsyncThrowingStream<Response, any Error>
+    {
         return .init { continuation in
             let task = Task {
                 let id = "\(Self.command)-\(UUID().uuidString)"
