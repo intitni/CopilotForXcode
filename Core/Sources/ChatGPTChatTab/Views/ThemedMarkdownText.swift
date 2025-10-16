@@ -71,7 +71,10 @@ extension MarkdownUI.Theme {
         }
         .codeBlock { configuration in
             let wrapCode = UserDefaults.shared.value(for: \.wrapCodeInChatCodeBlock)
-                || ["plaintext", "text", "markdown", "sh", "bash", "shell", "latex", "tex"]
+                || [
+                    "plaintext", "text", "markdown", "sh", "console", "bash", "shell", "latex",
+                    "tex"
+                ]
                 .contains(configuration.language)
 
             if wrapCode {

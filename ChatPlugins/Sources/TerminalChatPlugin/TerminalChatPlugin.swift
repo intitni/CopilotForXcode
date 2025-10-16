@@ -23,8 +23,8 @@ public final class TerminalChatPlugin: ChatPlugin {
         terminal = Terminal()
     }
 
-    public func sendForTextResponse(_ request: Request) async
-        -> AsyncThrowingStream<String, any Error>
+    public func getTextContent(from request: Request) async
+        -> AsyncStream<String>
     {
         return .init { continuation in
             let task = Task {
@@ -78,11 +78,33 @@ public final class TerminalChatPlugin: ChatPlugin {
         }
     }
 
+    public func sendForTextResponse(_ request: Request) async
+        -> AsyncThrowingStream<String, any Error>
+    {
+        let stream = await getTextContent(from: request)
+        return .init { continuation in
+            let task = Task {
+                continuation.yield("Executing command: `\(request.text)`\n\n")
+                continuation.yield("```console\n")
+                for await text in stream {
+                    try Task.checkCancellation()
+                    continuation.yield(text)
+                }
+                continuation.yield("\n```\n")
+                continuation.finish()
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
+    }
+
     public func formatContent(_ content: Response.Content) -> Response.Content {
         switch content {
         case let .text(content):
             return .text("""
-            ```sh
+            ```console
             \(content)
             ```
             """)
@@ -98,7 +120,7 @@ public final class TerminalChatPlugin: ChatPlugin {
 
                 continuation.yield(.startAction(id: "run", task: "Run `\(request.text)`"))
 
-                let textStream = await sendForTextResponse(request)
+                let textStream = await getTextContent(from: request)
                 var previousOutput = ""
 
                 continuation.yield(.finishAction(
@@ -106,36 +128,32 @@ public final class TerminalChatPlugin: ChatPlugin {
                     result: .success("Executed.")
                 ))
 
-                do {
-                    for try await accumulatedOutput in textStream {
-                        try Task.checkCancellation()
+                for await accumulatedOutput in textStream {
+                    try Task.checkCancellation()
 
-                        let newContent = accumulatedOutput.dropFirst(previousOutput.count)
-                        previousOutput = accumulatedOutput
+                    let newContent = accumulatedOutput.dropFirst(previousOutput.count)
+                    previousOutput = accumulatedOutput
 
-                        if !newContent.isEmpty {
-                            if Date().timeIntervalSince(updateTime) > 60 * 2 {
-                                continuation.yield(.startNewMessage)
-                                continuation.yield(.startAction(
-                                    id: "run",
-                                    task: "Continue `\(request.text)`"
-                                ))
-                                continuation.yield(.finishAction(
-                                    id: "run",
-                                    result: .success("Executed.")
-                                ))
-                                continuation.yield(.content(.text("[continue]\n")))
-                                updateTime = Date()
-                            }
-
-                            continuation.yield(.content(.text(String(newContent))))
+                    if !newContent.isEmpty {
+                        if Date().timeIntervalSince(updateTime) > 60 * 2 {
+                            continuation.yield(.startNewMessage)
+                            continuation.yield(.startAction(
+                                id: "run",
+                                task: "Continue `\(request.text)`"
+                            ))
+                            continuation.yield(.finishAction(
+                                id: "run",
+                                result: .success("Executed.")
+                            ))
+                            continuation.yield(.content(.text("[continue]\n")))
+                            updateTime = Date()
                         }
-                    }
 
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
+                        continuation.yield(.content(.text(String(newContent))))
+                    }
                 }
+
+                continuation.finish()
             }
 
             continuation.onTermination = { _ in
