@@ -1,7 +1,7 @@
 import Foundation
-import LanguageServerProtocol
+@preconcurrency import LanguageServerProtocol
 
-public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable {
+public enum CodeLanguage: RawRepresentable, Codable, CaseIterable, Hashable, Sendable {
     case builtIn(LanguageIdentifier)
     case plaintext
     case other(String)

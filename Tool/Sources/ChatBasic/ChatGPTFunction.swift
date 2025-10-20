@@ -21,7 +21,7 @@ public protocol ChatGPTFunction {
     typealias NoArguments = NoChatGPTFunctionArguments
     associatedtype Arguments: Decodable
     associatedtype Result: ChatGPTFunctionResult
-    typealias ReportProgress = (String) async -> Void
+    typealias ReportProgress = @Sendable (String) async -> Void
 
     /// The name of this function.
     /// May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.

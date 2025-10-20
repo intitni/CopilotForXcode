@@ -6,7 +6,7 @@ public protocol ChatGPTFunctionProvider {
     var functionCallStrategy: FunctionCallStrategy? { get }
 }
 
-extension ChatGPTFunctionProvider {
+public extension ChatGPTFunctionProvider {
     func function(named: String) -> (any ChatGPTFunction)? {
         functions.first(where: { $0.name == named })
     }

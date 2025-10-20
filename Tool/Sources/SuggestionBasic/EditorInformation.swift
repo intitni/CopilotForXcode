@@ -1,14 +1,14 @@
 import Foundation
 import Parsing
 
-public struct EditorInformation {
-    public struct LineAnnotation {
+public struct EditorInformation: Sendable {
+    public struct LineAnnotation: Sendable {
         public var type: String
         public var line: Int
         public var message: String
     }
 
-    public struct SourceEditorContent {
+    public struct SourceEditorContent: Sendable {
         /// The content of the source editor.
         public var content: String
         /// The content of the source editor in lines. Every line should ends with `\n`.
