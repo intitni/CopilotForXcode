@@ -139,9 +139,10 @@ public struct PromptToCodePanel {
 
                 return .run { send in
                     do {
-                        let context = await contextInputController.resolveContext(onStatusChange: {
-                            await send(.statusUpdated($0))
-                        })
+                        let context = await contextInputController.resolveContext(
+                            forDocumentURL: copiedState.promptToCodeState.source.documentURL,
+                            onStatusChange: { await send(.statusUpdated($0)) }
+                        )
                         await send(.referencesUpdated(context.references))
                         let agentFactory = context.agent ?? { SimpleModificationAgent() }
                         _ = try await withThrowingTaskGroup(of: Void.self) { group in
