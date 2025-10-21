@@ -8,17 +8,20 @@ public final class ExternalTabContainer {
     public struct TabItem: Identifiable {
         public var id: String
         public var title: String
+        public var description: String
         public var image: String
         public let viewBuilder: () -> AnyView
 
         public init<V: View>(
             id: String,
             title: String,
+            description: String = "",
             image: String = "",
             @ViewBuilder viewBuilder: @escaping () -> V
         ) {
             self.id = id
             self.title = title
+            self.description = description
             self.image = image
             self.viewBuilder = { AnyView(viewBuilder()) }
         }
@@ -46,22 +49,31 @@ public final class ExternalTabContainer {
     public func registerTab<V: View>(
         id: String,
         title: String,
+        description: String = "",
         image: String = "",
         @ViewBuilder viewBuilder: @escaping () -> V
     ) {
-        tabs.append(TabItem(id: id, title: title, image: image, viewBuilder: viewBuilder))
+        tabs.append(TabItem(
+            id: id,
+            title: title,
+            description: description,
+            image: image,
+            viewBuilder: viewBuilder
+        ))
     }
 
     public static func registerTab<V: View>(
         for tabContainerId: String,
         id: String,
         title: String,
+        description: String = "",
         image: String = "",
         @ViewBuilder viewBuilder: @escaping () -> V
     ) {
         tabContainer(for: tabContainerId).registerTab(
             id: id,
             title: title,
+            description: description,
             image: image,
             viewBuilder: viewBuilder
         )
