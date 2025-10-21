@@ -466,7 +466,7 @@ extension ClaudeChatCompletionsService.RequestBody {
                 content.append(.init(type: .image, source: .init(
                     type: "base64",
                     media_type: image.format.rawValue,
-                    data: image.data.base64EncodedString()
+                    data: image.base64EncodeData
                 )))
             }
 

@@ -115,6 +115,25 @@ public struct ChatMessage: Equatable, Codable, Sendable {
         }
     }
 
+    public struct Image: Equatable, Sendable, Codable {
+        public enum Format: String, Sendable, Codable {
+            case png = "image/png"
+            case jpeg = "image/jpeg"
+            case gif = "image/gif"
+        }
+
+        public var base64EncodedData: String
+        public var format: Format
+        public var urlString: String {
+            "data:\(format.rawValue);base64,\(base64EncodedData)"
+        }
+
+        public init(base64EncodedData: String, format: Format) {
+            self.base64EncodedData = base64EncodedData
+            self.format = format
+        }
+    }
+
     /// The role of a message.
     @FallbackDecoding<ChatMessageRoleFallback>
     public var role: Role
@@ -153,6 +172,10 @@ public struct ChatMessage: Equatable, Codable, Sendable {
     @FallbackDecoding<EmptyArray<Reference>>
     public var references: [Reference]
 
+    /// The images associated with this message.
+    @FallbackDecoding<EmptyArray<Image>>
+    public var images: [Image]
+
     /// Cache the message in the prompt if possible.
     public var cacheIfPossible: Bool
 
@@ -175,6 +198,7 @@ public struct ChatMessage: Equatable, Codable, Sendable {
         summary: String? = nil,
         tokenCount: Int? = nil,
         references: [Reference] = [],
+        images: [Image] = [],
         cacheIfPossible: Bool = false
     ) {
         self.role = role
@@ -187,6 +211,7 @@ public struct ChatMessage: Equatable, Codable, Sendable {
         self.id = id
         tokensCount = tokenCount
         self.references = references
+        self.images = images
         self.cacheIfPossible = cacheIfPossible
     }
 }
