@@ -6,9 +6,11 @@ import WebKit
 public final class WebScrapper {
     final class NavigationDelegate: NSObject, WKNavigationDelegate {
         weak var scrapper: WebScrapper?
-        
-        public nonisolated func webView(_: WKWebView, didFinish _: WKNavigation!) {
+
+        public nonisolated func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
             Task { @MainActor in
+                let scrollToBottomScript = "window.scrollTo(0, document.body.scrollHeight);"
+                _ = try? await webView.evaluateJavaScript(scrollToBottomScript)
                 self.scrapper?.webViewDidFinishLoading = true
             }
         }
@@ -29,7 +31,7 @@ public final class WebScrapper {
 
     var webViewDidFinishLoading = false
     var navigationError: (any Error)?
-    let navigationDelegate: NavigationDelegate = NavigationDelegate()
+    let navigationDelegate: NavigationDelegate = .init()
 
     enum WebScrapperError: Error {
         case retry
@@ -38,15 +40,6 @@ public final class WebScrapper {
     public init() async {
         let jsonRuleList = ###"""
         [
-          {
-            "trigger": {
-              "url-filter": ".*",
-              "resource-type": ["style-sheet"]
-            },
-            "action": {
-              "type": "block"
-            }
-          },
           {
             "trigger": {
               "url-filter": ".*",
@@ -91,9 +84,8 @@ public final class WebScrapper {
         configuration.defaultWebpagePreferences.preferredContentMode = .desktop
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.websiteDataStore = .nonPersistent()
-        configuration
-            .applicationNameForUserAgent =
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
+        configuration.applicationNameForUserAgent =
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0.1 Safari/605.1.15"
 
         if #available(iOS 17.0, macOS 14.0, *) {
             configuration.allowsInlinePredictions = false
@@ -134,8 +126,18 @@ public final class WebScrapper {
             retryCount += 1
             try await Task.sleep(nanoseconds: 100_000_000)
         }
-        
-        throw CancellationError()
+
+        enum Error: Swift.Error, LocalizedError {
+            case failToValidate
+
+            var errorDescription: String? {
+                switch self {
+                case .failToValidate:
+                    return "Failed to validate the HTML content within the given timeout and retry limit."
+                }
+            }
+        }
+        throw Error.failToValidate
     }
 
     func getHTML() async throws -> String {
