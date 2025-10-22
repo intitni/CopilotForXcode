@@ -215,7 +215,7 @@ The app can provide real-time code suggestions based on the files you have opene
 The feature provides two presentation modes:
 
 - Nearby Text Cursor: This mode shows suggestions based on the position of the text cursor.
-- Floating Widget: This mode shows suggestions next to the circular widget.
+- Floating Widget: This mode shows suggestions next to the indicator widget.
 
 When using the "Nearby Text Cursor" mode, it is recommended to set the real-time suggestion debounce to 0.1.
 
@@ -251,7 +251,7 @@ The chat knows the following information:
 
 There are currently two tabs in the chat panel: one is available shared across Xcode, and the other is only available in the current file.
 
-You can detach the chat panel by simply dragging it away. Once detached, the chat panel will remain visible even if Xcode is inactive. To re-attach it to the widget, click the message bubble button located next to the circular widget.
+You can detach the chat panel by simply dragging it away. Once detached, the chat panel will remain visible even if Xcode is inactive. To re-attach it to the widget, click the message bubble button located next to the indicator widget.
 
 #### Commands
 
@@ -262,7 +262,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 | Shortcut | Description                                                                                         |
 | :------: | --------------------------------------------------------------------------------------------------- |
 |   `⌘W`   | Close the chat tab.                                                                                 |
-|   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the circular widget. |
+|   `⌘M`   | Minimize the chat, you can bring it back with any chat commands or by clicking the indicator widget. |
 |  `⇧↩︎`    | Add new line.                                                                                       |
 |  `⇧⌘]`   | Move to next tab                                                                                    |
 |  `⇧⌘[`   | Move to previous tab                                                                                |
@@ -309,7 +309,7 @@ This feature is recommended when you need to update a specific piece of code. So
 
 ### Custom Commands
 
-You can create custom commands that run Chat and Modification with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the circular widget. There are 3 types of custom commands:
+You can create custom commands that run Chat and Modification with personalized prompts. These commands are easily accessible from both the Xcode menu bar and the context menu of the indicator widget. There are 3 types of custom commands:
 
 - Modification: Run Modification with the selected code, and update or write the code using the given prompt, if provided. You can provide additional information through the extra system prompt field.
 - Send Message: Open the chat window and immediately send a message, if provided. You can provide more information through the extra system prompt field.

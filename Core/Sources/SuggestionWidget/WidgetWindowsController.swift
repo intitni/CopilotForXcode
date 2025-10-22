@@ -276,7 +276,9 @@ extension WidgetWindowsController {
 
     func generateWidgetLocation() async -> WidgetLocation? {
         if let application = await xcodeInspector.latestActiveXcode?.appElement {
-            if let focusElement = await xcodeInspector.focusedEditor?.element,
+            if let window = application.focusedWindow,
+               let windowFrame = window.rect,
+               let focusElement = await xcodeInspector.focusedEditor?.element,
                let parent = focusElement.parent,
                let frame = parent.rect,
                let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
@@ -291,6 +293,7 @@ extension WidgetWindowsController {
                 switch positionMode {
                 case .fixedToBottom:
                     var result = UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                        windowFrame: windowFrame,
                         editorFrame: frame,
                         mainScreen: screen,
                         activeScreen: windowContainingScreen
@@ -300,7 +303,8 @@ extension WidgetWindowsController {
                         result.suggestionPanelLocation = UpdateLocationStrategy
                             .NearbyTextCursor()
                             .framesForSuggestionWindow(
-                                editorFrame: frame, mainScreen: screen,
+                                editorFrame: frame,
+                                mainScreen: screen,
                                 activeScreen: windowContainingScreen,
                                 editor: focusElement,
                                 completionPanel: await xcodeInspector.completionPanel
@@ -311,6 +315,7 @@ extension WidgetWindowsController {
                     return result
                 case .alignToTextCursor:
                     var result = UpdateLocationStrategy.AlignToTextCursor().framesForWindows(
+                        windowFrame: windowFrame,
                         editorFrame: frame,
                         mainScreen: screen,
                         activeScreen: windowContainingScreen,
@@ -358,24 +363,13 @@ extension WidgetWindowsController {
                     frame = rect
                 }
 
-                var expendedSize = CGSize.zero
-                if ["Xcode.WorkspaceWindow"].contains(window.identifier) {
-                    // extra padding to bottom so buttons won't be covered
-                    frame.size.height -= 40
-                } else {
-                    // move a bit away from the window so buttons won't be covered
-                    frame.origin.x -= Style.widgetPadding + Style.widgetWidth / 2
-                    frame.size.width += Style.widgetPadding * 2 + Style.widgetWidth
-                    expendedSize.width = (Style.widgetPadding * 2 + Style.widgetWidth) / 2
-                    expendedSize.height += Style.widgetPadding
-                }
-
                 return UpdateLocationStrategy.FixedToBottom().framesForWindows(
+                    windowFrame: frame,
                     editorFrame: frame,
                     mainScreen: screen,
                     activeScreen: firstScreen,
                     preferredInsideEditorMinWidth: 9_999_999_999, // never
-                    editorFrameExpendedSize: expendedSize
+                    editorFrameExpendedSize: .zero
                 )
             }
         }

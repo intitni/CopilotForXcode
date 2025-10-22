@@ -17,6 +17,7 @@ public struct WidgetLocation: Equatable {
 enum UpdateLocationStrategy {
     struct AlignToTextCursor {
         func framesForWindows(
+            windowFrame: CGRect,
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen,
@@ -33,6 +34,7 @@ enum UpdateLocationStrategy {
                 )
             else {
                 return FixedToBottom().framesForWindows(
+                    windowFrame: windowFrame,
                     editorFrame: editorFrame,
                     mainScreen: mainScreen,
                     activeScreen: activeScreen,
@@ -43,6 +45,7 @@ enum UpdateLocationStrategy {
             let found = AXValueGetValue(rect, .cgRect, &frame)
             guard found else {
                 return FixedToBottom().framesForWindows(
+                    windowFrame: windowFrame,
                     editorFrame: editorFrame,
                     mainScreen: mainScreen,
                     activeScreen: activeScreen,
@@ -51,6 +54,7 @@ enum UpdateLocationStrategy {
             }
             return HorizontalMovable().framesForWindows(
                 y: mainScreen.frame.height - frame.maxY,
+                windowFrame: windowFrame,
                 alignPanelTopToAnchor: nil,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
@@ -63,6 +67,7 @@ enum UpdateLocationStrategy {
 
     struct FixedToBottom {
         func framesForWindows(
+            windowFrame: CGRect,
             editorFrame: CGRect,
             mainScreen: NSScreen,
             activeScreen: NSScreen,
@@ -73,6 +78,7 @@ enum UpdateLocationStrategy {
         ) -> WidgetLocation {
             var frames = HorizontalMovable().framesForWindows(
                 y: mainScreen.frame.height - editorFrame.maxY + Style.widgetPadding,
+                windowFrame: windowFrame,
                 alignPanelTopToAnchor: false,
                 editorFrame: editorFrame,
                 mainScreen: mainScreen,
@@ -97,6 +103,7 @@ enum UpdateLocationStrategy {
     struct HorizontalMovable {
         func framesForWindows(
             y: CGFloat,
+            windowFrame: CGRect,
             alignPanelTopToAnchor fixedAlignment: Bool?,
             editorFrame: CGRect,
             mainScreen: NSScreen,
@@ -130,6 +137,13 @@ enum UpdateLocationStrategy {
                 width: Style.widgetWidth,
                 height: Style.widgetHeight
             )
+            
+            let widgetFrame = CGRect(
+                x: windowFrame.minX,
+                y: mainScreen.frame.height - windowFrame.maxY + Style.indicatorBottomPadding,
+                width: Style.widgetWidth,
+                height: Style.widgetHeight
+            )
 
             if !hideCircularWidget {
                 proposedAnchorFrameOnTheRightSide = widgetFrameOnTheRightSide
@@ -150,7 +164,7 @@ enum UpdateLocationStrategy {
                     x: proposedPanelX,
                     y: alignPanelTopToAnchor
                         ? anchorFrame.maxY - Style.panelHeight
-                        : anchorFrame.minY - editorFrameExpendedSize.height,
+                        : anchorFrame.minY,
                     width: Style.panelWidth,
                     height: Style.panelHeight
                 )
@@ -164,7 +178,7 @@ enum UpdateLocationStrategy {
                 )
 
                 return .init(
-                    widgetFrame: widgetFrameOnTheRightSide,
+                    widgetFrame: widgetFrame,
                     tabFrame: tabFrame,
                     sharedPanelLocation: .init(
                         frame: panelFrame,
@@ -227,7 +241,7 @@ enum UpdateLocationStrategy {
                         height: Style.widgetHeight
                     )
                     return .init(
-                        widgetFrame: widgetFrameOnTheLeftSide,
+                        widgetFrame: widgetFrame,
                         tabFrame: tabFrame,
                         sharedPanelLocation: .init(
                             frame: panelFrame,
@@ -244,10 +258,8 @@ enum UpdateLocationStrategy {
                     let panelFrame = CGRect(
                         x: anchorFrame.maxX - Style.panelWidth,
                         y: alignPanelTopToAnchor
-                            ? anchorFrame.maxY - Style.panelHeight - Style.widgetHeight
-                            - Style.widgetPadding
-                            : anchorFrame.maxY + Style.widgetPadding
-                            - editorFrameExpendedSize.height,
+                            ? anchorFrame.maxY - Style.panelHeight
+                            : anchorFrame.maxY - editorFrameExpendedSize.height,
                         width: Style.panelWidth,
                         height: Style.panelHeight
                     )
@@ -258,7 +270,7 @@ enum UpdateLocationStrategy {
                         height: Style.widgetHeight
                     )
                     return .init(
-                        widgetFrame: widgetFrameOnTheRightSide,
+                        widgetFrame: widgetFrame,
                         tabFrame: tabFrame,
                         sharedPanelLocation: .init(
                             frame: panelFrame,
@@ -425,10 +437,6 @@ enum UpdateLocationStrategy {
         var firstLineRange: CFRange = .init()
         let foundFirstLine = AXValueGetValue(selectedRange, .cfRange, &firstLineRange)
         firstLineRange.length = 0
-
-        #warning(
-            "FIXME: When selection is too low and out of the screen, the selection range becomes something else."
-        )
 
         if foundFirstLine,
            let firstLineSelectionRange = AXValueCreate(.cfRange, &firstLineRange),

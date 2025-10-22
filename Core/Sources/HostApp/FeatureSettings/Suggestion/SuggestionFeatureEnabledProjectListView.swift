@@ -82,7 +82,7 @@ struct SuggestionFeatureEnabledProjectListView: View {
                     Text("""
                     Empty
                     Add project with "+" button
-                    Or right clicking the circular widget
+                    Or right clicking the indicator widget
                     """)
                     .multilineTextAlignment(.center)
                 }
