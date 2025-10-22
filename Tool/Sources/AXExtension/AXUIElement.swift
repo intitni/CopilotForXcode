@@ -58,7 +58,9 @@ public extension AXUIElement {
     }
 
     var isSourceEditor: Bool {
-        description == "Source Editor" && roleDescription != "unknown"
+        if !(description == "Source Editor" && role != kAXUnknownRole) { return false }
+        if let _ = firstParent(where: { $0.identifier == "editor context" }) { return true }
+        return false
     }
 
     var selectedTextRange: ClosedRange<Int>? {
