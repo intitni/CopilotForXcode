@@ -1028,6 +1028,11 @@ extension OpenAIChatCompletionsService.RequestBody {
         supportsTemperature: Bool,
         supportsSystemPrompt: Bool
     ) {
+        let supportsMultipartMessageContent = if supportsAudio || supportsImage {
+            true
+        } else {
+            supportsMultipartMessageContent
+        }
         temperature = body.temperature
         stream = body.stream
         stop = body.stop

@@ -125,7 +125,7 @@ public struct MemoryTemplate {
                     return formatter(list.map { $0.0 })
                 }
             }
-            
+
             let composedContent = contents.joined(separator: "\n\n")
             if composedContent.isEmpty { return nil }
 
@@ -162,7 +162,7 @@ public struct MemoryTemplate {
         _ messages: inout [Message],
         _ followUpMessages: inout [ChatMessage]
     ) async throws -> Void
-    
+
     let truncateRule: TruncateRule?
 
     public init(
@@ -187,7 +187,7 @@ public struct MemoryTemplate {
 
     mutating func truncate() async throws {
         if Task.isCancelled { return }
-        
+
         if let truncateRule = truncateRule {
             try await truncateRule(&messages, &followUpMessages)
             return
@@ -195,7 +195,7 @@ public struct MemoryTemplate {
 
         try await Self.defaultTruncateRule()(&messages, &followUpMessages)
     }
-    
+
     public struct DefaultTruncateRuleOptions {
         public var numberOfContentListItemToKeep: (Int) -> Int = { $0 * 2 / 3 }
     }
@@ -206,14 +206,14 @@ public struct MemoryTemplate {
         var options = DefaultTruncateRuleOptions()
         updateOptions(&options)
         return { messages, followUpMessages in
-            
+
             // Remove the oldest followup messages when available.
-            
+
             if followUpMessages.count > 20 {
                 followUpMessages.removeFirst(followUpMessages.count / 2)
                 return
             }
-            
+
             if followUpMessages.count > 2 {
                 if followUpMessages.count.isMultiple(of: 2) {
                     followUpMessages.removeFirst(2)
@@ -222,9 +222,9 @@ public struct MemoryTemplate {
                 }
                 return
             }
-            
+
             // Remove according to the priority.
-            
+
             var truncatingMessageIndex: Int?
             for (index, message) in messages.enumerated() {
                 if message.priority == .max { continue }
@@ -234,20 +234,20 @@ public struct MemoryTemplate {
                     truncatingMessageIndex = index
                 }
             }
-            
+
             guard let truncatingMessageIndex else { throw CancellationError() }
             var truncatingMessage: Message {
                 get { messages[truncatingMessageIndex] }
                 set { messages[truncatingMessageIndex] = newValue }
             }
-            
+
             if truncatingMessage.isEmpty {
                 messages.remove(at: truncatingMessageIndex)
                 return
             }
-            
+
             truncatingMessage.dynamicContent.removeAll(where: { $0.isEmpty })
-            
+
             var truncatingContentIndex: Int?
             for (index, content) in truncatingMessage.dynamicContent.enumerated() {
                 if content.isEmpty { continue }
@@ -257,13 +257,13 @@ public struct MemoryTemplate {
                     truncatingContentIndex = index
                 }
             }
-            
+
             guard let truncatingContentIndex else { throw CancellationError() }
             var truncatingContent: Message.DynamicContent {
                 get { truncatingMessage.dynamicContent[truncatingContentIndex] }
                 set { truncatingMessage.dynamicContent[truncatingContentIndex] = newValue }
             }
-            
+
             switch truncatingContent.content {
             case .text:
                 truncatingMessage.dynamicContent.remove(at: truncatingContentIndex)
