@@ -271,6 +271,14 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
 
     public struct RequestBody: Codable, Equatable {
         public typealias ClaudeCacheControl = ClaudeChatCompletionsService.RequestBody.CacheControl
+        
+        public struct GitHubCopilotCacheControl: Codable, Equatable, Sendable {
+            public var type: String
+            
+            public init(type: String = "ephemeral") {
+                self.type = type
+            }
+        }
 
         public struct Message: Codable, Equatable {
             public enum MessageContent: Codable, Equatable {
@@ -457,6 +465,9 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             ///
             /// Deprecated.
             public var function_call: MessageFunctionCall?
+            #warning("TODO: when to use it?")
+            /// Cache control for GitHub Copilot models.
+            public var copilot_cache_control: GitHubCopilotCacheControl?
 
             public init(
                 role: MessageRole,
@@ -464,7 +475,8 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
                 name: String? = nil,
                 tool_calls: [MessageToolCall]? = nil,
                 tool_call_id: String? = nil,
-                function_call: MessageFunctionCall? = nil
+                function_call: MessageFunctionCall? = nil,
+                copilot_cache_control: GitHubCopilotCacheControl? = nil
             ) {
                 self.role = role
                 self.content = content
@@ -472,6 +484,7 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
                 self.tool_calls = tool_calls
                 self.tool_call_id = tool_call_id
                 self.function_call = function_call
+                self.copilot_cache_control = copilot_cache_control
             }
         }
 
@@ -623,6 +636,7 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
         Self.setupCustomBody(&request, model: model)
         Self.setupAppInformation(&request)
         Self.setupAPIKey(&request, model: model, apiKey: apiKey)
+        Self.setupGitHubCopilotVisionField(&request, model: model)
         await Self.setupExtraHeaderFields(&request, model: model, apiKey: apiKey)
         requestModifier?(&request)
 
@@ -769,6 +783,13 @@ public actor OpenAIChatCompletionsService: ChatCompletionsStreamAPI, ChatComplet
             case .claude:
                 assertionFailure("Unsupported")
             }
+        }
+    }
+    
+    static func setupGitHubCopilotVisionField(_ request: inout URLRequest, model: ChatModel) {
+        guard model.format == .gitHubCopilot else { return }
+        if model.info.supportsImage {
+            request.setValue("true", forHTTPHeaderField: "copilot-vision-request")
         }
     }
 
@@ -1242,12 +1263,17 @@ extension OpenAIChatCompletionsService.RequestBody {
                     }
                 }(),
                 content: {
+                    // always prefer text only content if possible.
                     if supportsMultipartMessageContent {
-                        return .contentParts(Self.convertContentPart(
-                            content: message.content,
-                            images: supportsImage ? message.images : [],
-                            audios: supportsAudio ? message.audios : []
-                        ))
+                        let images = supportsImage ? message.images : []
+                        let audios = supportsAudio ? message.audios : []
+                        if !images.isEmpty || !audios.isEmpty {
+                            return .contentParts(Self.convertContentPart(
+                                content: message.content,
+                                images: images,
+                                audios: audios
+                            ))
+                        }
                     }
                     return .text(message.content)
                 }(),
