@@ -55,7 +55,10 @@ public protocol PromptToCodeContextInputControllerDelegate {
 public protocol PromptToCodeContextInputController: Perception.Perceptible {
     var instruction: NSAttributedString { get set }
 
-    func resolveContext(onStatusChange: @escaping ([String]) async -> Void) async -> (
+    func resolveContext(
+        forDocumentURL: URL,
+        onStatusChange: @escaping ([String]) async -> Void
+    ) async -> (
         instruction: String,
         references: [ChatMessage.Reference],
         topics: [ChatMessage.Reference],
@@ -100,7 +103,10 @@ public final class DefaultPromptToCodeContextInputController: PromptToCodeContex
         instruction = mutable
     }
 
-    public func resolveContext(onStatusChange: @escaping ([String]) async -> Void) -> (
+    public func resolveContext(
+        forDocumentURL: URL,
+        onStatusChange: @escaping ([String]) async -> Void
+    ) -> (
         instruction: String,
         references: [ChatMessage.Reference],
         topics: [ChatMessage.Reference],

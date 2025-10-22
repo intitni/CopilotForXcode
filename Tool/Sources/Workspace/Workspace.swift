@@ -49,7 +49,7 @@ open class WorkspacePlugin {
 }
 
 @dynamicMemberLookup
-public final class Workspace {
+public final class Workspace: @unchecked Sendable {
     public struct UnsupportedFileError: Error, LocalizedError {
         public var extensionName: String
         public var errorDescription: String? {

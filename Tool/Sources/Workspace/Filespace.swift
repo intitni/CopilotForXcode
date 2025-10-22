@@ -62,7 +62,7 @@ public struct FilespaceCodeMetadata: Equatable {
 }
 
 @dynamicMemberLookup
-public final class Filespace {
+public final class Filespace: @unchecked Sendable {
     struct GitIgnoreStatus {
         var isIgnored: Bool
         var checkTime: Date

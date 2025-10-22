@@ -1,12 +1,12 @@
-import CodableWrappers
+@preconcurrency import CodableWrappers
 import Foundation
 
 /// A chat message that can be sent or received.
-public struct ChatMessage: Equatable, Codable {
+public struct ChatMessage: Equatable, Codable, Sendable {
     public typealias ID = String
 
     /// The role of a message.
-    public enum Role: String, Codable, Equatable {
+    public enum Role: String, Codable, Equatable, Sendable {
         case system
         case user
         case assistant
@@ -15,7 +15,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A function call that can be made by the bot.
-    public struct FunctionCall: Codable, Equatable {
+    public struct FunctionCall: Codable, Equatable, Sendable {
         /// The name of the function.
         public var name: String
         /// Arguments in the format of a JSON string.
@@ -27,7 +27,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A tool call that can be made by the bot.
-    public struct ToolCall: Codable, Equatable, Identifiable {
+    public struct ToolCall: Codable, Equatable, Identifiable, Sendable {
         public var id: String
         /// The type of tool call.
         public var type: String
@@ -49,7 +49,7 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// The response of a tool call
-    public struct ToolCallResponse: Codable, Equatable {
+    public struct ToolCallResponse: Codable, Equatable, Sendable {
         /// The content of the response.
         public var content: String
         /// The summary of the response to display in UI.
@@ -61,10 +61,10 @@ public struct ChatMessage: Equatable, Codable {
     }
 
     /// A reference to include in a chat message.
-    public struct Reference: Codable, Equatable, Identifiable {
+    public struct Reference: Codable, Equatable, Identifiable, Sendable {
         /// The kind of reference.
-        public enum Kind: Codable, Equatable {
-            public enum Symbol: String, Codable {
+        public enum Kind: Codable, Equatable, Sendable {
+            public enum Symbol: String, Codable, Sendable {
                 case `class`
                 case `struct`
                 case `enum`
@@ -77,6 +77,7 @@ public struct ChatMessage: Equatable, Codable {
                 case function
                 case method
             }
+
             /// Code symbol.
             case symbol(Symbol, uri: String, startLine: Int?, endLine: Int?)
             /// Some text.
@@ -114,6 +115,25 @@ public struct ChatMessage: Equatable, Codable {
         }
     }
 
+    public struct Image: Equatable, Sendable, Codable {
+        public enum Format: String, Sendable, Codable {
+            case png = "image/png"
+            case jpeg = "image/jpeg"
+            case gif = "image/gif"
+        }
+
+        public var base64EncodedData: String
+        public var format: Format
+        public var urlString: String {
+            "data:\(format.rawValue);base64,\(base64EncodedData)"
+        }
+
+        public init(base64EncodedData: String, format: Format) {
+            self.base64EncodedData = base64EncodedData
+            self.format = format
+        }
+    }
+
     /// The role of a message.
     @FallbackDecoding<ChatMessageRoleFallback>
     public var role: Role
@@ -138,10 +158,10 @@ public struct ChatMessage: Equatable, Codable {
 
     /// The id of the message.
     public var id: ID
-    
+
     /// The id of the sender of the message.
     public var senderId: String?
-    
+
     /// The id of the message that this message is a response to.
     public var responseTo: ID?
 
@@ -151,7 +171,11 @@ public struct ChatMessage: Equatable, Codable {
     /// The references of this message.
     @FallbackDecoding<EmptyArray<Reference>>
     public var references: [Reference]
-    
+
+    /// The images associated with this message.
+    @FallbackDecoding<EmptyArray<Image>>
+    public var images: [Image]
+
     /// Cache the message in the prompt if possible.
     public var cacheIfPossible: Bool
 
@@ -174,6 +198,7 @@ public struct ChatMessage: Equatable, Codable {
         summary: String? = nil,
         tokenCount: Int? = nil,
         references: [Reference] = [],
+        images: [Image] = [],
         cacheIfPossible: Bool = false
     ) {
         self.role = role
@@ -186,19 +211,20 @@ public struct ChatMessage: Equatable, Codable {
         self.id = id
         tokensCount = tokenCount
         self.references = references
+        self.images = images
         self.cacheIfPossible = cacheIfPossible
     }
 }
 
-public struct ReferenceKindFallback: FallbackValueProvider {
+public struct ReferenceKindFallback: FallbackValueProvider, Sendable {
     public static var defaultValue: ChatMessage.Reference.Kind { .other(kind: "Unknown") }
 }
 
-public struct ReferenceIDFallback: FallbackValueProvider {
+public struct ReferenceIDFallback: FallbackValueProvider, Sendable {
     public static var defaultValue: String { UUID().uuidString }
 }
 
-public struct ChatMessageRoleFallback: FallbackValueProvider {
+public struct ChatMessageRoleFallback: FallbackValueProvider, Sendable {
     public static var defaultValue: ChatMessage.Role { .user }
 }
 

@@ -32,12 +32,11 @@ struct ChatCompletionsRequestBody: Equatable {
                 case jpeg = "image/jpeg"
                 case gif = "image/gif"
             }
-            var data: Data
+            var base64EncodeData: String
             var format: Format
             
             var dataURLString: String {
-                let base64 = data.base64EncodedString()
-                return "data:\(format.rawValue);base64,\(base64)"
+                return "data:\(format.rawValue);base64,\(base64EncodeData)"
             }
         }
         

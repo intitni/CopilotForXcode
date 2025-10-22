@@ -64,8 +64,8 @@ let package = Package(
                 .product(name: "SuggestionBasic", package: "Tool"),
                 .product(name: "Logger", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
-            ].pro([
-                "ProClient",
+            ].proCore([
+                "LicenseManagement",
             ])
         ),
         .target(
@@ -348,7 +348,7 @@ extension [Target.Dependency] {
 extension [Package.Dependency] {
     var pro: [Package.Dependency] {
         if isProIncluded {
-            return self + [.package(path: "../../Pro")]
+            return self + [.package(path: "../../Pro"), .package(path: "../../Pro/ProCore")]
         }
         return self
     }

@@ -56,7 +56,7 @@ final class LegacyChatPluginWrapper<Plugin: ChatPlugin>: LegacyChatPlugin {
 
         let plugin = Plugin()
 
-        let stream = await plugin.send(.init(
+        let stream = await plugin.sendForComplicatedResponse(.init(
             text: content,
             arguments: [],
             history: chatGPTService.memory.history

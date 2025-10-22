@@ -4,7 +4,7 @@ import OpenAIService
 import Parsing
 
 public struct ChatContext {
-    public enum Scope: String, Equatable, CaseIterable, Codable {
+    public enum Scope: String, Equatable, CaseIterable, Codable, Sendable {
         case file
         case code
         case sense
@@ -12,7 +12,7 @@ public struct ChatContext {
         case web
     }
 
-    public struct RetrievedContent {
+    public struct RetrievedContent: Sendable {
         public var document: ChatMessage.Reference
         public var priority: Int
 

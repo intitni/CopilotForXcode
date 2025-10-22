@@ -358,6 +358,10 @@ struct ChatModelEditView: View {
                 TextField(text: $store.openAIProjectID, prompt: Text("Optional")) {
                     Text("Project ID")
                 }
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
@@ -386,6 +390,10 @@ struct ChatModelEditView: View {
 
                 MaxTokensTextField(store: store)
                 SupportsFunctionCallingToggle(store: store)
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
             }
         }
     }
@@ -435,6 +443,10 @@ struct ChatModelEditView: View {
                 Toggle(isOn: $store.requiresBeginWithUserMessage) {
                     Text("Requires the first message to be from the user")
                 }
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
             }
         }
     }
@@ -473,6 +485,10 @@ struct ChatModelEditView: View {
                 MaxTokensTextField(store: store)
 
                 TextField("API Version", text: $store.apiVersion, prompt: Text("v1"))
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
             }
         }
     }
@@ -496,6 +512,10 @@ struct ChatModelEditView: View {
                     Text("Keep Alive")
                 }
 
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
+                
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
                         " For more details, please visit [https://ollama.com](https://ollama.com)."
@@ -539,6 +559,10 @@ struct ChatModelEditView: View {
                     }
 
                 MaxTokensTextField(store: store)
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Image(systemName: "exclamationmark.triangle.fill")) + Text(
@@ -571,6 +595,10 @@ struct ChatModelEditView: View {
 
                 Toggle(isOn: $store.openAICompatibleSupportsMultipartMessageContent) {
                     Text("Support multi-part message content")
+                }
+                
+                Toggle(isOn: $store.supportsImages) {
+                    Text("Supports Images")
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
