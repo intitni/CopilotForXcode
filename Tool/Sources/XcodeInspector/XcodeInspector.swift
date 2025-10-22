@@ -249,6 +249,7 @@ public final class XcodeInspector: Sendable {
             activeApplication = activeXcode ?? runningApplications
                 .first(where: \.isActive)
                 .map(AppInstanceInspector.init(runningApplication:))
+            self.activeXcode = activeXcode
         }
 
         appChangeObservations.forEach { $0.cancel() }

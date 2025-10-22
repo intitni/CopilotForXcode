@@ -8,9 +8,10 @@ enum Style {
     static let panelWidth: Double = 454
     static let inlineSuggestionMinWidth: Double = 540
     static let inlineSuggestionMaxHeight: Double = 400
-    static let widgetHeight: Double = 20
-    static var widgetWidth: Double { widgetHeight }
+    static let widgetHeight: Double = 30
+    static var widgetWidth: Double = 8
     static let widgetPadding: Double = 4
+    static let indicatorBottomPadding: Double = 40
     static let chatWindowTitleBarHeight: Double = 24
     static let trafficLightButtonSize: Double = 12
 }

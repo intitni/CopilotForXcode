@@ -1,6 +1,7 @@
 import ActiveApplicationMonitor
 import ComposableArchitecture
 import Preferences
+import SharedUIComponents
 import SuggestionBasic
 import SwiftUI
 
@@ -13,18 +14,23 @@ struct WidgetView: View {
     @AppStorage(\.hideCircularWidget) var hideCircularWidget
 
     var body: some View {
-        WithPerceptionTracking {
-            Circle()
-                .fill(isHovering ? .white.opacity(0.5) : .white.opacity(0.15))
+        GeometryReader { _ in
+            WithPerceptionTracking {
+                ZStack {
+                    WidgetAnimatedCapsule(
+                        store: store,
+                        isHovering: isHovering
+                    )
+                }
                 .onTapGesture {
                     store.send(.widgetClicked, animation: .easeInOut(duration: 0.2))
                 }
-                .overlay { WidgetAnimatedCircle(store: store) }
                 .onHover { yes in
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: 0.14)) {
                         isHovering = yes
                     }
-                }.contextMenu {
+                }
+                .contextMenu {
                     WidgetContextMenu(store: store)
                 }
                 .opacity({
@@ -32,99 +38,139 @@ struct WidgetView: View {
                     return store.isProcessing ? 1 : 0
                 }())
                 .animation(
-                    featureFlag: \.animationCCrashSuggestion,
+                    .easeInOut(duration: 0.2),
+                    value: isHovering
+                )
+                .animation(
                     .easeInOut(duration: 0.2),
                     value: store.isProcessing
                 )
+            }
         }
     }
 }
 
-struct WidgetAnimatedCircle: View {
+struct WidgetAnimatedCapsule: View {
     let store: StoreOf<CircularWidget>
-    @State var processingProgress: Double = 0
+    var isHovering: Bool
 
-    struct OverlayCircleState: Equatable {
-        var isProcessing: Bool
-        var isContentEmpty: Bool
-    }
+    @State private var animatedProgress: CGFloat = 0 // 0~1
+    @State private var animationTask: Task<Void, Never>?
+
+    private let movingSegmentLength: CGFloat = 0.28
 
     var body: some View {
-        WithPerceptionTracking {
-            let minimumLineWidth: Double = 3
-            let lineWidth = (1 - processingProgress) *
-                (Style.widgetWidth - minimumLineWidth / 2) + minimumLineWidth
-            let scale = max(processingProgress * 1, 0.0001)
-            ZStack {
-                Circle()
-                    .stroke(
-                        Color(nsColor: .darkGray),
-                        style: .init(lineWidth: minimumLineWidth)
-                    )
-                    .padding(minimumLineWidth / 2)
+        GeometryReader { geo in
+            WithPerceptionTracking {
+                let capsuleWidth = geo.size.width
+                let capsuleHeight = geo.size.height
 
-                // how do I stop the repeatForever animation without removing the view?
-                // I tried many solutions found on stackoverflow but non of them works.
-                Group {
-                    if store.isProcessing {
-                        Circle()
-                            .stroke(
-                                Color.accentColor,
-                                style: .init(lineWidth: lineWidth)
-                            )
-                            .padding(minimumLineWidth / 2)
-                            .scaleEffect(x: scale, y: scale)
-                            .opacity(
-                                !store.isContentEmpty || store.isProcessing ? 1 : 0
-                            )
-                            .animation(
-                                featureFlag: \.animationCCrashSuggestion,
-                                .easeInOut(duration: 1)
-                                    .repeatForever(autoreverses: true),
-                                value: processingProgress
-                            )
-                    } else {
-                        Circle()
-                            .stroke(
-                                Color.accentColor,
-                                style: .init(lineWidth: lineWidth)
-                            )
-                            .padding(minimumLineWidth / 2)
-                            .scaleEffect(x: scale, y: scale)
-                            .opacity(
-                                !store.isContentEmpty || store.isProcessing ? 1 : 0
-                            )
-                            .animation(
-                                featureFlag: \.animationCCrashSuggestion,
-                                .easeInOut(duration: 1),
-                                value: processingProgress
-                            )
-                    }
+                let backgroundWidth = capsuleWidth
+                let foregroundWidth = max(capsuleWidth - 4, 2)
+                let padding = (backgroundWidth - foregroundWidth) / 2
+
+                ZStack {
+                    Capsule()
+                        .modify {
+                            if #available(macOS 26.0, *) {
+                                $0.glassEffect()
+                            } else if #available(macOS 13.0, *) {
+                                $0.backgroundStyle(.thickMaterial.opacity(0.8)).overlay(
+                                    Capsule().stroke(
+                                        Color(nsColor: .darkGray).opacity(0.2),
+                                        lineWidth: 1
+                                    )
+                                )
+                            } else {
+                                $0.fill(Color(nsColor: .darkGray).opacity(0.6)).overlay(
+                                    Capsule().stroke(
+                                        Color(nsColor: .darkGray).opacity(0.2),
+                                        lineWidth: 1
+                                    )
+                                )
+                            }
+                        }
+                        .frame(width: backgroundWidth, height: capsuleHeight)
+                        .animation(.easeInOut(duration: 0.14), value: isHovering)
+
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.8))
+                        .frame(
+                            width: foregroundWidth,
+                            height: capsuleHeight * movingSegmentLength
+                        )
+                        .opacity(store.isProcessing ? 1 : 0)
+                        .position(
+                            x: capsuleWidth / 2,
+                            y: {
+                                let height = capsuleHeight - padding * 2
+                                let base = padding
+                                return base + height * (normalizedStart() + movingSegmentLength / 2)
+                            }()
+                        )
+                        .animation(nil, value: store.isProcessing)
+                        .animation(.easeInOut(duration: 0.14), value: isHovering)
                 }
-                .onChange(of: store.isProcessing) { _ in
-                    refreshRing(
-                        isProcessing: store.isProcessing,
-                        isContentEmpty: store.isContentEmpty
-                    )
+                .onAppear {
+                    updateAnimationTask(isProcessing: store.isProcessing)
+                }
+                .onChange(of: store.isProcessing) { newValue in
+                    updateAnimationTask(isProcessing: newValue)
                 }
                 .onChange(of: store.isContentEmpty) { _ in
-                    refreshRing(
-                        isProcessing: store.isProcessing,
-                        isContentEmpty: store.isContentEmpty
-                    )
+                    if !store.isProcessing {
+                        animatedProgress = store.isContentEmpty ? 0 : 1
+                    }
                 }
+                .onChange(of: isHovering) { _ in }
             }
         }
     }
 
-    func refreshRing(isProcessing: Bool, isContentEmpty: Bool) {
+    // 进度条起点
+    private func normalizedStart() -> CGFloat {
+        let p = max(0, min(1, animatedProgress))
+        return p * (1 - movingSegmentLength)
+    }
+
+    // 动画任务
+    private func updateAnimationTask(isProcessing: Bool) {
+        animationTask?.cancel()
+        animationTask = nil
+
         if isProcessing {
-            processingProgress = 1 - processingProgress
+            animationTask = Task { [weak store] in
+                await MainActor.run {
+                    animatedProgress = 0
+                }
+                while !Task.isCancelled {
+                    await MainActor.run {
+                        withAnimation(.linear(duration: 1.2)) {
+                            animatedProgress = 1
+                        }
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64(1.2 * 1_000_000_000))
+                    if Task.isCancelled { break }
+                    if !(store?.isProcessing ?? true) { break }
+                    await MainActor.run {
+                        withAnimation(.linear(duration: 1.2)) {
+                            animatedProgress = 0
+                        }
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64(1.2 * 1_000_000_000))
+                    if Task.isCancelled { break }
+                    if !(store?.isProcessing ?? true) { break }
+                }
+            }
         } else {
-            processingProgress = isContentEmpty ? 0 : 1
+            withAnimation(.easeInOut(duration: 0.2)) {
+                animatedProgress = store.isContentEmpty ? 0 : 1
+            }
         }
     }
 }
+
+// 下面的WidgetContextMenu和其它内容保持不变喵～
 
 struct WidgetContextMenu: View {
     @AppStorage(\.useGlobalChat) var useGlobalChat
@@ -145,7 +191,7 @@ struct WidgetContextMenu: View {
                 }) {
                     Text("Open Chat")
                 }
-                
+
                 Button(action: {
                     store.send(.openModificationButtonClicked)
                 }) {
@@ -267,6 +313,7 @@ struct WidgetView_Preview: PreviewProvider {
                 ),
                 isHovering: false
             )
+            .frame(width: Style.widgetWidth, height: Style.widgetHeight)
 
             WidgetView(
                 store: Store(
@@ -281,6 +328,7 @@ struct WidgetView_Preview: PreviewProvider {
                 ),
                 isHovering: true
             )
+            .frame(width: Style.widgetWidth, height: Style.widgetHeight)
 
             WidgetView(
                 store: Store(
@@ -295,6 +343,7 @@ struct WidgetView_Preview: PreviewProvider {
                 ),
                 isHovering: false
             )
+            .frame(width: Style.widgetWidth, height: Style.widgetHeight)
 
             WidgetView(
                 store: Store(
@@ -309,8 +358,9 @@ struct WidgetView_Preview: PreviewProvider {
                 ),
                 isHovering: false
             )
+            .frame(width: Style.widgetWidth, height: Style.widgetHeight)
         }
-        .frame(width: 30)
+        .frame(width: 200, height: 200)
         .background(Color.black)
     }
 }
