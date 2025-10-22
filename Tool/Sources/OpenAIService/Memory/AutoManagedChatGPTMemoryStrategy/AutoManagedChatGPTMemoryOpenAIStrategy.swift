@@ -4,6 +4,7 @@ import Logger
 import TokenEncoder
 
 extension AutoManagedChatGPTMemory {
+    #warning("TODO: Need to fix the tokenizer or supports model specified tokenizers.")
     struct OpenAIStrategy: AutoManagedChatGPTMemoryStrategy {
         static let encoder: TokenEncoder = TiktokenCl100kBaseTokenEncoder()
 
