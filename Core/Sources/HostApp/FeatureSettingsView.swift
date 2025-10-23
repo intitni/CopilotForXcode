@@ -43,7 +43,7 @@ struct FeatureSettingsView: View {
                 tag: 3,
                 title: "Xcode",
                 subtitle: "Xcode related features",
-                image: "app"
+                image: "hammer.circle"
             )
             
             ForEach(Array(tabContainer.tabs.enumerated()), id: \.1.id) { index, tab in
