@@ -4,6 +4,7 @@ import ChatGPTChatTab
 import ChatTab
 import ComposableArchitecture
 import SwiftUI
+import SharedUIComponents
 
 private let r: Double = 8
 
@@ -21,13 +22,14 @@ struct ChatWindowView: View {
 
                 ChatTabBar(store: store)
                     .frame(height: 26)
+                    .clipped()
 
                 Divider()
 
                 ChatTabContainer(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .xcodeStyleFrame(cornerRadius: 10)
+            .xcodeStyleFrame()
             .ignoresSafeArea(edges: .top)
             .onChange(of: store.isPanelDisplayed) { isDisplayed in
                 toggleVisibility(isDisplayed)

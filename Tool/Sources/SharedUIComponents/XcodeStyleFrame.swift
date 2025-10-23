@@ -24,7 +24,7 @@ public struct XcodeLikeFrame<Content: View>: View {
             ) // Add an extra border just incase the background is not displayed.
             .overlay(
                 RoundedRectangle(cornerRadius: max(0, cornerRadius - 1), style: .continuous)
-                    .stroke(Color.white.opacity(0.2), style: .init(lineWidth: 1))
+                    .stroke(Color.white.opacity(0.1), style: .init(lineWidth: 1))
                     .padding(1)
             )
     }
@@ -32,7 +32,11 @@ public struct XcodeLikeFrame<Content: View>: View {
 
 public extension View {
     func xcodeStyleFrame(cornerRadius: Double? = nil) -> some View {
-        XcodeLikeFrame(cornerRadius: cornerRadius ?? 10, content: self)
+        if #available(macOS 26.0, *) {
+            XcodeLikeFrame(cornerRadius: cornerRadius ?? 14, content: self)
+        } else {
+            XcodeLikeFrame(cornerRadius: cornerRadius ?? 10, content: self)
+        }
     }
 }
 
