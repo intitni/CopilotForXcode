@@ -280,7 +280,7 @@ struct GeneralSettingsView: View {
             }
 
             Toggle(isOn: $settings.hideCircularWidget) {
-                Text("Hide circular widget")
+                Text("Hide indicator widget")
             }
         }.padding()
     }

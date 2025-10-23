@@ -1,6 +1,11 @@
 import SwiftUI
+import SharedUIComponents
 
 struct FeatureSettingsView: View {
+    var tabContainer: ExternalTabContainer {
+        ExternalTabContainer.tabContainer(for: "Features")
+    }
+    
     @State var tag = 0
 
     var body: some View {
@@ -38,20 +43,20 @@ struct FeatureSettingsView: View {
                 tag: 3,
                 title: "Xcode",
                 subtitle: "Xcode related features",
-                image: "app"
+                image: "hammer.circle"
             )
-
-//            #if canImport(ProHostApp)
-//            ScrollView {
-//                TerminalSettingsView().padding()
-//            }
-//            .sidebarItem(
-//                tag: 3,
-//                title: "Terminal",
-//                subtitle: "Terminal chat tab",
-//                image: "terminal"
-//            )
-//            #endif
+            
+            ForEach(Array(tabContainer.tabs.enumerated()), id: \.1.id) { index, tab in
+                ScrollView {
+                    tab.viewBuilder().padding()
+                }
+                .sidebarItem(
+                    tag: 4 + index,
+                    title: tab.title,
+                    subtitle: tab.description,
+                    image: tab.image
+                )
+            }
         }
     }
 }
@@ -62,4 +67,3 @@ struct FeatureSettingsView_Previews: PreviewProvider {
             .frame(width: 800)
     }
 }
-

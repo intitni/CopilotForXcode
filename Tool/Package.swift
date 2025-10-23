@@ -223,6 +223,7 @@ let package = Package(
             name: "ModificationBasic",
             dependencies: [
                 "SuggestionBasic",
+                "ChatBasic",
                 .product(name: "CodableWrappers", package: "CodableWrappers"),
                 .product(
                     name: "ComposableArchitecture",
@@ -236,6 +237,7 @@ let package = Package(
             dependencies: [
                 "ModificationBasic",
                 "SuggestionBasic",
+                "ChatBasic",
                 .product(
                     name: "ComposableArchitecture",
                     package: "swift-composable-architecture"
@@ -495,10 +497,16 @@ let package = Package(
 
         .target(
             name: "ChatTab",
-            dependencies: [.product(
-                name: "ComposableArchitecture",
-                package: "swift-composable-architecture"
-            )]
+            dependencies: [
+                "Preferences",
+                "Configs",
+                "AIModel",
+                .product(name: "CodableWrappers", package: "CodableWrappers"),
+                .product(
+                    name: "ComposableArchitecture",
+                    package: "swift-composable-architecture"
+                ),
+            ]
         ),
 
         // MARK: - Chat Context Collector

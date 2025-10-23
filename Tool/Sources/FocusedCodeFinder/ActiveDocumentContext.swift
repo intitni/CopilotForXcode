@@ -1,7 +1,7 @@
 import Foundation
 import SuggestionBasic
 
-public struct ActiveDocumentContext {
+public struct ActiveDocumentContext: Sendable {
     public var documentURL: URL
     public var relativePath: String
     public var language: CodeLanguage
@@ -13,8 +13,8 @@ public struct ActiveDocumentContext {
     public var imports: [String]
     public var includes: [String]
 
-    public struct FocusedContext {
-        public struct Context: Equatable {
+    public struct FocusedContext: Sendable {
+        public struct Context: Equatable, Sendable {
             public var signature: String
             public var name: String
             public var range: CursorRange

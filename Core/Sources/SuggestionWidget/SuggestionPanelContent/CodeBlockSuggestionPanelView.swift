@@ -277,8 +277,13 @@ struct CodeBlockSuggestionPanelView: View {
             }
             .xcodeStyleFrame(cornerRadius: {
                 switch suggestionPresentationMode {
-                case .nearbyTextCursor: 6
-                case .floatingWidget: nil
+                case .nearbyTextCursor:
+                    if #available(macOS 26.0, *) {
+                        return 8
+                    } else {
+                        return 6
+                    }
+                case .floatingWidget: return nil
                 }
             }())
         }

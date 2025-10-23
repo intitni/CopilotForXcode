@@ -578,6 +578,18 @@ extension ChatGPTService {
         }
 
         let messages = prompt.history.flatMap { chatMessage in
+            let images = chatMessage.images.map { image in
+                ChatCompletionsRequestBody.Message.Image(
+                    base64EncodeData: image.base64EncodedData,
+                    format: {
+                        switch image.format {
+                        case .png: .png
+                        case .jpeg: .jpeg
+                        case .gif: .gif
+                        }
+                    }()
+                )
+            }
             var all = [ChatCompletionsRequestBody.Message]()
             all.append(ChatCompletionsRequestBody.Message(
                 role: {
@@ -605,7 +617,7 @@ extension ChatGPTService {
                         nil
                     }
                 }(),
-                images: [],
+                images: images,
                 audios: [],
                 cacheIfPossible: chatMessage.cacheIfPossible
             ))

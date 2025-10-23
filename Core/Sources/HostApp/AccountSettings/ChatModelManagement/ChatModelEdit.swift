@@ -35,6 +35,7 @@ struct ChatModelEdit {
         var openAICompatibleSupportsMultipartMessageContent = true
         var requiresBeginWithUserMessage = false
         var customBody: String = ""
+        var supportsImages: Bool = true
     }
 
     enum Action: Equatable, BindableAction {
@@ -290,7 +291,9 @@ extension ChatModel {
                         return state.supportsFunctionCalling
                     }
                 }(),
-                modelName: state.modelName.trimmingCharacters(in: .whitespacesAndNewlines),
+                supportsImage: state.supportsImages,
+                modelName: state.modelName
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
                 openAIInfo: .init(
                     organizationID: state.openAIOrganizationID,
                     projectID: state.openAIProjectID
@@ -331,7 +334,8 @@ extension ChatModel {
             openAICompatibleSupportsMultipartMessageContent: info.openAICompatibleInfo
                 .supportsMultipartMessageContent,
             requiresBeginWithUserMessage: info.openAICompatibleInfo.requiresBeginWithUserMessage,
-            customBody: info.customBodyInfo.jsonBody
+            customBody: info.customBodyInfo.jsonBody,
+            supportsImages: info.supportsImage
         )
     }
 }
