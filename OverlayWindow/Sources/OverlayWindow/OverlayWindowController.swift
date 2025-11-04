@@ -5,10 +5,11 @@ import XcodeInspector
 
 @MainActor
 public final class OverlayWindowController {
-    public typealias IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory = @Sendable (
-        _ windowInspector: WorkspaceXcodeWindowInspector,
-        _ application: NSRunningApplication
-    ) -> any IDEWorkspaceWindowOverlayWindowControllerContentProvider
+    public typealias IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory =
+        @MainActor @Sendable (
+            _ windowInspector: WorkspaceXcodeWindowInspector,
+            _ application: NSRunningApplication
+        ) -> any IDEWorkspaceWindowOverlayWindowControllerContentProvider
 
     static var ideWindowOverlayWindowControllerContentProviderFactories:
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
@@ -21,10 +22,12 @@ public final class OverlayWindowController {
         observeEvents()
     }
 
-    public static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
+    public nonisolated static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
         _ factory: @escaping IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory
     ) {
-        ideWindowOverlayWindowControllerContentProviderFactories.append(factory)
+        Task { @MainActor in
+            ideWindowOverlayWindowControllerContentProviderFactories.append(factory)
+        }
     }
 }
 
@@ -102,11 +105,10 @@ private extension OverlayWindowController {
         let newController = IDEWorkspaceWindowOverlayWindowController(
             inspector: inspector,
             application: application,
-            contentProviderFactory: { [ideWindowOverlayWindowControllerContentProviderFactories]
+            contentProviderFactory: {
                 windowInspector, application in
-                    ideWindowOverlayWindowControllerContentProviderFactories.map {
-                        $0(windowInspector, application)
-                    }
+                OverlayWindowController.ideWindowOverlayWindowControllerContentProviderFactories
+                    .map { $0(windowInspector, application) }
             }
         )
         newController.access()

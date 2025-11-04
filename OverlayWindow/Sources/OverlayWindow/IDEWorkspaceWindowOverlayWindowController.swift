@@ -5,10 +5,12 @@ import Foundation
 import SwiftUI
 import XcodeInspector
 
+@MainActor
 public protocol IDEWorkspaceWindowOverlayWindowControllerContentProvider {
     associatedtype Content: View
     func createWindow() -> NSWindow?
     func createContent() -> Content
+    func destroy()
 
     init(windowInspector: WorkspaceXcodeWindowInspector, application: NSRunningApplication)
 }
@@ -38,42 +40,37 @@ final class IDEWorkspaceWindowOverlayWindowController {
     ) {
         self.inspector = inspector
         self.application = application
-        contentProviders = contentProviderFactory(inspector, application)
+        let contentProviders = contentProviderFactory(inspector, application)
+        self.contentProviders = contentProviders
 
-        // Create the invisible panel
-        let panel = NSPanel(
-            contentRect: .zero,
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
-        )
-        panel.isReleasedWhenClosed = false
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.ignoresMouseEvents = true
-        panel.alphaValue = 0
-        panel.collectionBehavior = [.canJoinAllSpaces, .transient]
-        panel.level = widgetLevel(0)
-        panel.setIsVisible(true)
-        maskPanel = panel
-
-        panel.contentView = NSHostingView(
-            rootView: ZStack {
+        let panel = OverlayPanel(
+            contentRect: .init(x: 0, y: 0, width: 200, height: 200)
+        ) {
+            ZStack {
+                Text("Hello World")
+                    .padding()
+                    .background(
+                        Rectangle()
+                            .fill(.black)
+                            .opacity(0.3)
+                    )
                 ForEach(0..<contentProviders.count, id: \.self) { (index: Int) in
-                    self.contentProviders[index].contentBody
+                    contentProviders[index].contentBody
                 }
             }
+            .background {
+                Rectangle().fill(.green.opacity(0.2))
+            }
             .allowsHitTesting(false)
-        )
-        
+        }
+        maskPanel = panel
+
         for contentProvider in contentProviders {
             if let window = contentProvider.createWindow() {
                 panel.addChildWindow(window, ordered: .above)
             }
         }
 
-        // Listen to AX notifications for window move/resize
         let windowElement = inspector.uiElement
         let stream = AXNotificationStream(
             app: application,
@@ -81,13 +78,14 @@ final class IDEWorkspaceWindowOverlayWindowController {
             notificationNames: kAXMovedNotification, kAXResizedNotification
         )
 
-        axNotificationTask = Task { [weak self] in
+        axNotificationTask = Task { [weak panel] in
             for await notification in stream {
-                guard let self else { return }
+                guard let panel else { return }
+                if Task.isCancelled { return }
                 switch notification.name {
                 case kAXMovedNotification, kAXResizedNotification:
                     if let rect = windowElement.rect {
-                        self.maskPanel.setFrame(rect, display: false)
+                        panel.setFrame(rect, display: false)
                     }
                 default: continue
                 }
@@ -95,7 +93,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
         }
 
         if let rect = windowElement.rect {
-            maskPanel.setFrame(rect, display: false)
+            panel.setFrame(rect, display: false)
         }
     }
 
@@ -111,40 +109,29 @@ final class IDEWorkspaceWindowOverlayWindowController {
         }
     }
 
-    /// Make the window the top most window and visible.
     func access() {
         lastAccessDate = Date()
-        maskPanel.level = widgetLevel(0)
+        maskPanel.level = overlayLevel(0)
         maskPanel.setIsVisible(true)
         maskPanel.orderFrontRegardless()
     }
 
-    /// Stop keeping the window the top most window, do not change visibility.
     func dim() {
         maskPanel.level = .normal
     }
 
-    /// Hide the window.
     func hide() {
         maskPanel.setIsVisible(false)
         maskPanel.level = .normal
     }
 
-    /// Destroy the controller and clean up resources.
     func destroy() {
         axNotificationTask?.cancel()
         maskPanel.close()
+        for contentProvider in contentProviders {
+            contentProvider.destroy()
+        }
         isDestroyed = true
     }
-}
-
-func widgetLevel(_ addition: Int) -> NSWindow.Level {
-    let minimumWidgetLevel: Int
-    #if DEBUG
-    minimumWidgetLevel = NSWindow.Level.floating.rawValue + 1
-    #else
-    minimumWidgetLevel = NSWindow.Level.floating.rawValue
-    #endif
-    return .init(minimumWidgetLevel + addition)
 }
 
