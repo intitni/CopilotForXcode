@@ -14,7 +14,9 @@ public final class OverlayWindowController {
     var ideWindowOverlayWindowControllerContentProviderFactories:
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
 
-    public init() {}
+    public init() {
+        observeEvents()
+    }
 
     public func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
         _ factory: @escaping IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory
@@ -24,7 +26,9 @@ public final class OverlayWindowController {
 }
 
 extension OverlayWindowController {
-    func observeEvents() {}
+    func observeEvents() {
+        observeWindowChange()
+    }
 }
 
 private extension OverlayWindowController {

@@ -4,12 +4,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Window",
+    name: "OverlayWindow",
     platforms: [.macOS(.v12)],
     products: [
         .library(
-            name: "Window",
-            targets: ["Window"]
+            name: "OverlayWindow",
+            targets: ["OverlayWindow"]
         ),
     ],
     dependencies: [
@@ -19,7 +19,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Window",
+            name: "OverlayWindow",
             dependencies: [
                 .product(name: "AppMonitoring", package: "Tool"),
                 .product(name: "Toast", package: "Tool"),
@@ -30,8 +30,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "WindowTests",
-            dependencies: ["Window"]
+            name: "OverlayWindowTests",
+            dependencies: ["OverlayWindow"]
         ),
     ]
 )
