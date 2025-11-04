@@ -46,22 +46,13 @@ final class IDEWorkspaceWindowOverlayWindowController {
         let panel = OverlayPanel(
             contentRect: .init(x: 0, y: 0, width: 200, height: 200)
         ) {
-            ZStack {
-                Text("Hello World")
-                    .padding()
-                    .background(
-                        Rectangle()
-                            .fill(.black)
-                            .opacity(0.3)
-                    )
-                ForEach(0..<contentProviders.count, id: \.self) { (index: Int) in
-                    contentProviders[index].contentBody
+            ContentWrapper {
+                ZStack {
+                    ForEach(0..<contentProviders.count, id: \.self) { index in
+                        contentProviders[index].contentBody
+                    }
                 }
             }
-            .background {
-                Rectangle().fill(.green.opacity(0.2))
-            }
-            .allowsHitTesting(false)
         }
         maskPanel = panel
 
@@ -87,7 +78,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
                     if let rect = windowElement.rect {
                         let screen = NSScreen.screens
                             .first(where: { $0.frame.intersects(rect) }) ?? NSScreen.main
-                        let panelFrame = convertAXRectToNSPanelFrame(
+                        let panelFrame = Self.convertAXRectToNSPanelFrame(
                             axRect: rect,
                             forScreen: screen
                         )
@@ -101,7 +92,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
         if let rect = windowElement.rect {
             let screen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) ?? NSScreen
                 .main
-            let panelFrame = convertAXRectToNSPanelFrame(axRect: rect, forScreen: screen)
+            let panelFrame = Self.convertAXRectToNSPanelFrame(axRect: rect, forScreen: screen)
             panel.setFrame(panelFrame, display: false)
         }
     }
@@ -144,16 +135,47 @@ final class IDEWorkspaceWindowOverlayWindowController {
     }
 }
 
-func convertAXRectToNSPanelFrame(axRect: CGRect, forScreen screen: NSScreen?) -> CGRect {
-    guard let screen = screen else { return .zero }
-    let screenFrame = screen.frame
-    let flippedY = screenFrame.origin.y + screenFrame.size
-        .height - (axRect.origin.y + axRect.size.height)
-    return CGRect(
-        x: axRect.origin.x,
-        y: flippedY,
-        width: axRect.size.width,
-        height: axRect.size.height
-    )
+extension IDEWorkspaceWindowOverlayWindowController {
+    struct ContentWrapper<Content: View>: View {
+        @ViewBuilder let content: () -> Content
+        @State var showOverlayArea: Bool = false
+
+        var body: some View {
+            content()
+                .background {
+                    if showOverlayArea {
+                        Rectangle().fill(.green.opacity(0.2))
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    #if DEBUG
+                    HStack {
+                        Button(action: {
+                            showOverlayArea.toggle()
+                        }) {
+                            Image(systemName: "eye")
+                                .foregroundColor(showOverlayArea ? .green : .red)
+                        }
+                        .padding()
+                    }
+                    #else
+                    EmptyView()
+                    #endif
+                }
+        }
+    }
+
+    static func convertAXRectToNSPanelFrame(axRect: CGRect, forScreen screen: NSScreen?) -> CGRect {
+        guard let screen = screen else { return .zero }
+        let screenFrame = screen.frame
+        let flippedY = screenFrame.origin.y + screenFrame.size
+            .height - (axRect.origin.y + axRect.size.height)
+        return CGRect(
+            x: axRect.origin.x,
+            y: flippedY,
+            width: axRect.size.width,
+            height: axRect.size.height
+        )
+    }
 }
 
