@@ -85,7 +85,13 @@ final class IDEWorkspaceWindowOverlayWindowController {
                 switch notification.name {
                 case kAXMovedNotification, kAXResizedNotification:
                     if let rect = windowElement.rect {
-                        panel.setFrame(rect, display: false)
+                        let screen = NSScreen.screens
+                            .first(where: { $0.frame.intersects(rect) }) ?? NSScreen.main
+                        let panelFrame = convertAXRectToNSPanelFrame(
+                            axRect: rect,
+                            forScreen: screen
+                        )
+                        panel.setFrame(panelFrame, display: false)
                     }
                 default: continue
                 }
@@ -93,7 +99,10 @@ final class IDEWorkspaceWindowOverlayWindowController {
         }
 
         if let rect = windowElement.rect {
-            panel.setFrame(rect, display: false)
+            let screen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) ?? NSScreen
+                .main
+            let panelFrame = convertAXRectToNSPanelFrame(axRect: rect, forScreen: screen)
+            panel.setFrame(panelFrame, display: false)
         }
     }
 
@@ -133,5 +142,18 @@ final class IDEWorkspaceWindowOverlayWindowController {
         }
         isDestroyed = true
     }
+}
+
+func convertAXRectToNSPanelFrame(axRect: CGRect, forScreen screen: NSScreen?) -> CGRect {
+    guard let screen = screen else { return .zero }
+    let screenFrame = screen.frame
+    let flippedY = screenFrame.origin.y + screenFrame.size
+        .height - (axRect.origin.y + axRect.size.height)
+    return CGRect(
+        x: axRect.origin.x,
+        y: flippedY,
+        width: axRect.size.width,
+        height: axRect.size.height
+    )
 }
 
