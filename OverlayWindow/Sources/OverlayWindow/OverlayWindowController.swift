@@ -10,15 +10,18 @@ public final class OverlayWindowController {
         _ application: NSRunningApplication
     ) -> any IDEWorkspaceWindowOverlayWindowControllerContentProvider
 
-    var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
-    var ideWindowOverlayWindowControllerContentProviderFactories:
+    static var ideWindowOverlayWindowControllerContentProviderFactories:
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
 
-    public init() {
+    var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
+
+    public init() {}
+
+    public func start() {
         observeEvents()
     }
 
-    public func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
+    public static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
         _ factory: @escaping IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory
     ) {
         ideWindowOverlayWindowControllerContentProviderFactories.append(factory)
@@ -33,6 +36,20 @@ extension OverlayWindowController {
 
 private extension OverlayWindowController {
     func observeWindowChange() {
+        if ideWindowOverlayWindowControllers.isEmpty {
+            if let app = XcodeInspector.shared.activeXcode,
+               let windowInspector = XcodeInspector.shared
+               .focusedWindow as? WorkspaceXcodeWindowInspector
+            {
+                let workspaceURL = windowInspector.workspaceURL
+                createNewIDEOverlayWindowController(
+                    for: workspaceURL,
+                    inspector: windowInspector,
+                    application: app.runningApplication
+                )
+            }
+        }
+
         withPerceptionTracking {
             _ = XcodeInspector.shared.focusedWindow
             _ = XcodeInspector.shared.activeXcode
