@@ -34,7 +34,7 @@ let package = Package(
         .library(
             name: "SuggestionProvider",
             targets: ["SuggestionProvider", "GitHubCopilotService", "CodeiumService"]
-        ),
+        ), 
         .library(
             name: "AppMonitoring",
             targets: [

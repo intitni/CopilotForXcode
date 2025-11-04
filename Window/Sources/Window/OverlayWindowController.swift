@@ -1,0 +1,95 @@
+import AppKit
+import Foundation
+import Perception
+import XcodeInspector
+
+@MainActor
+public final class OverlayWindowController {
+    public typealias IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory = @Sendable (
+        _ windowInspector: WorkspaceXcodeWindowInspector,
+        _ application: NSRunningApplication
+    ) -> any IDEWorkspaceWindowOverlayWindowControllerContentProvider
+
+    var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
+    var ideWindowOverlayWindowControllerContentProviderFactories:
+        [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
+
+    public init() {}
+
+    public func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
+        _ factory: @escaping IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory
+    ) {
+        ideWindowOverlayWindowControllerContentProviderFactories.append(factory)
+    }
+}
+
+extension OverlayWindowController {
+    func observeEvents() {}
+}
+
+private extension OverlayWindowController {
+    func observeWindowChange() {
+        withPerceptionTracking {
+            _ = XcodeInspector.shared.focusedWindow
+            _ = XcodeInspector.shared.activeXcode
+        } onChange: { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                defer { self.observeWindowChange() }
+
+                guard let app = XcodeInspector.shared.activeXcode else {
+                    for (_, controller) in self.ideWindowOverlayWindowControllers {
+                        controller.hide()
+                    }
+                    return
+                }
+
+                let windowInspector = XcodeInspector.shared.focusedWindow
+                if let ideWindowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
+                    let workspaceURL = ideWindowInspector.workspaceURL
+                    // Workspace window is active
+                    // Hide all controllers first
+                    for (url, controller) in self.ideWindowOverlayWindowControllers {
+                        if url != workspaceURL {
+                            controller.hide()
+                        }
+                    }
+                    if let controller = self.ideWindowOverlayWindowControllers[workspaceURL] {
+                        controller.access()
+                    } else {
+                        self.createNewIDEOverlayWindowController(
+                            for: workspaceURL,
+                            inspector: ideWindowInspector,
+                            application: app.runningApplication
+                        )
+                    }
+                } else {
+                    // Not a workspace window, dim all controllers
+                    for (_, controller) in self.ideWindowOverlayWindowControllers {
+                        controller.dim()
+                    }
+                }
+            }
+        }
+    }
+
+    func createNewIDEOverlayWindowController(
+        for workspaceURL: URL,
+        inspector: WorkspaceXcodeWindowInspector,
+        application: NSRunningApplication
+    ) {
+        let newController = IDEWorkspaceWindowOverlayWindowController(
+            inspector: inspector,
+            application: application,
+            contentProviderFactory: { [ideWindowOverlayWindowControllerContentProviderFactories]
+                windowInspector, application in
+                    ideWindowOverlayWindowControllerContentProviderFactories.map {
+                        $0(windowInspector, application)
+                    }
+            }
+        )
+        newController.access()
+        ideWindowOverlayWindowControllers[workspaceURL] = newController
+    }
+}
+
