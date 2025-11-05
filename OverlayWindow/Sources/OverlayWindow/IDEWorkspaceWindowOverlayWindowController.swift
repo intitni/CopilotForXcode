@@ -2,6 +2,7 @@ import AppKit
 import AXExtension
 import AXNotificationStream
 import Foundation
+import Perception
 import SwiftUI
 import XcodeInspector
 
@@ -28,7 +29,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
     let inspector: WorkspaceXcodeWindowInspector
     let contentProviders: [any IDEWorkspaceWindowOverlayWindowControllerContentProvider]
     private var isDestroyed: Bool = false
-    private let maskPanel: NSPanel
+    private let maskPanel: OverlayPanel
     private var axNotificationTask: Task<Void, Never>?
 
     init(
@@ -46,11 +47,9 @@ final class IDEWorkspaceWindowOverlayWindowController {
         let panel = OverlayPanel(
             contentRect: .init(x: 0, y: 0, width: 200, height: 200)
         ) {
-            ContentWrapper {
-                ZStack {
-                    ForEach(0..<contentProviders.count, id: \.self) { index in
-                        contentProviders[index].contentBody
-                    }
+            ZStack {
+                ForEach(0..<contentProviders.count, id: \.self) { index in
+                    contentProviders[index].contentBody
                 }
             }
         }
@@ -69,20 +68,14 @@ final class IDEWorkspaceWindowOverlayWindowController {
             notificationNames: kAXMovedNotification, kAXResizedNotification
         )
 
-        axNotificationTask = Task { [weak panel] in
+        axNotificationTask = Task { [weak self] in
             for await notification in stream {
-                guard let panel else { return }
+                guard let panel = self?.maskPanel else { continue }
                 if Task.isCancelled { return }
                 switch notification.name {
                 case kAXMovedNotification, kAXResizedNotification:
                     if let rect = windowElement.rect {
-                        let screen = NSScreen.screens
-                            .first(where: { $0.frame.intersects(rect) }) ?? NSScreen.main
-                        let panelFrame = Self.convertAXRectToNSPanelFrame(
-                            axRect: rect,
-                            forScreen: screen
-                        )
-                        panel.setFrame(panelFrame, display: false)
+                        panel.setTopLeftCoordinateFrame(rect, display: true)
                     }
                 default: continue
                 }
@@ -90,10 +83,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
         }
 
         if let rect = windowElement.rect {
-            let screen = NSScreen.screens.first(where: { $0.frame.intersects(rect) }) ?? NSScreen
-                .main
-            let panelFrame = Self.convertAXRectToNSPanelFrame(axRect: rect, forScreen: screen)
-            panel.setFrame(panelFrame, display: false)
+            panel.setTopLeftCoordinateFrame(rect, display: false)
         }
     }
 
@@ -132,50 +122,6 @@ final class IDEWorkspaceWindowOverlayWindowController {
             contentProvider.destroy()
         }
         isDestroyed = true
-    }
-}
-
-extension IDEWorkspaceWindowOverlayWindowController {
-    struct ContentWrapper<Content: View>: View {
-        @ViewBuilder let content: () -> Content
-        @State var showOverlayArea: Bool = false
-
-        var body: some View {
-            content()
-                .background {
-                    if showOverlayArea {
-                        Rectangle().fill(.green.opacity(0.2))
-                    }
-                }
-                .overlay(alignment: .topTrailing) {
-                    #if DEBUG
-                    HStack {
-                        Button(action: {
-                            showOverlayArea.toggle()
-                        }) {
-                            Image(systemName: "eye")
-                                .foregroundColor(showOverlayArea ? .green : .red)
-                        }
-                        .padding()
-                    }
-                    #else
-                    EmptyView()
-                    #endif
-                }
-        }
-    }
-
-    static func convertAXRectToNSPanelFrame(axRect: CGRect, forScreen screen: NSScreen?) -> CGRect {
-        guard let screen = screen else { return .zero }
-        let screenFrame = screen.frame
-        let flippedY = screenFrame.origin.y + screenFrame.size
-            .height - (axRect.origin.y + axRect.size.height)
-        return CGRect(
-            x: axRect.origin.x,
-            y: flippedY,
-            width: axRect.size.width,
-            height: axRect.size.height
-        )
     }
 }
 
