@@ -84,6 +84,20 @@ public extension AXUIElement {
     var isHidden: Bool {
         (try? copyValue(key: kAXHiddenAttribute)) ?? false
     }
+    
+    var debugDescription: String {
+        "<\(title)> <\(description)> (\(role):\(roleDescription)) [\(identifier)] \(rect ?? .zero) \(children.count) children"
+    }
+    
+    var debugEnumerateChildren: String {
+        var result = "> " + debugDescription + "\n"
+        result += children.map {
+            $0.debugEnumerateChildren.split(separator: "\n")
+                .map { "  " + $0 }
+                .joined(separator: "\n")
+        }.joined(separator: "\n")
+        return result
+    }
 }
 
 // MARK: - Rect
@@ -136,6 +150,15 @@ public extension AXUIElement {
 
     var isFullScreen: Bool {
         (try? copyValue(key: "AXFullScreen")) ?? false
+    }
+    
+    var windowID: CGWindowID? {
+        var identifier: CGWindowID = 0
+        let error = AXUIElementGetWindow(self, &identifier)
+        if error == .success {
+            return identifier
+        }
+        return nil
     }
 
     var isFrontmost: Bool {
