@@ -6,10 +6,19 @@ struct OverlayFrameEnvironmentKey: EnvironmentKey {
     static let defaultValue: CGRect = .zero
 }
 
+struct OverlayDebugEnvironmentKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
 public extension EnvironmentValues {
     var overlayFrame: CGRect {
         get { self[OverlayFrameEnvironmentKey.self] }
         set { self[OverlayFrameEnvironmentKey.self] = newValue }
+    }
+    
+    var overlayDebug: Bool {
+        get { self[OverlayDebugEnvironmentKey.self] }
+        set { self[OverlayDebugEnvironmentKey.self] = newValue }
     }
 }
 
@@ -101,10 +110,11 @@ final class OverlayPanel: NSPanel {
             WithPerceptionTracking {
                 content()
                     .environment(\.overlayFrame, panelState.windowFrame)
+                    .environment(\.overlayDebug, showOverlayArea)
                 #if DEBUG
                     .background {
                         if showOverlayArea {
-                            Rectangle().fill(.green.opacity(0.2))
+                            Rectangle().fill(.green.opacity(0.1)).allowsHitTesting(false)
                         }
                     }
                     .overlay(alignment: .topTrailing) {
