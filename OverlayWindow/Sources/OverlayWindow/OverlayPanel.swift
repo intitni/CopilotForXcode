@@ -15,7 +15,7 @@ public extension EnvironmentValues {
         get { self[OverlayFrameEnvironmentKey.self] }
         set { self[OverlayFrameEnvironmentKey.self] = newValue }
     }
-    
+
     var overlayDebug: Bool {
         get { self[OverlayDebugEnvironmentKey.self] }
         set { self[OverlayDebugEnvironmentKey.self] = newValue }
@@ -104,32 +104,31 @@ final class OverlayPanel: NSPanel {
     struct ContentWrapper<Content: View>: View {
         let panelState: PanelState
         @ViewBuilder let content: () -> Content
-        @State var showOverlayArea: Bool = false
+        @State var showOverlayArea: Bool = true
 
         var body: some View {
             WithPerceptionTracking {
-                content()
-                    .environment(\.overlayFrame, panelState.windowFrame)
-                    .environment(\.overlayDebug, showOverlayArea)
-                #if DEBUG
-                    .background {
-                        if showOverlayArea {
-                            Rectangle().fill(.green.opacity(0.1)).allowsHitTesting(false)
-                        }
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        HStack {
-                            Button(action: {
-                                showOverlayArea.toggle()
-                            }) {
-                                Image(systemName: "eye")
-                                    .foregroundColor(showOverlayArea ? .green : .red)
-                                    .padding()
+                ZStack {
+                    #if DEBUG
+                    Rectangle().fill(.green.opacity(showOverlayArea ? 0.1 : 0))
+                        .allowsHitTesting(false)
+                        .overlay(alignment: .topTrailing) {
+                            HStack {
+                                Button(action: {
+                                    showOverlayArea.toggle()
+                                }) {
+                                    Image(systemName: "eye")
+                                        .foregroundColor(showOverlayArea ? .green : .red)
+                                        .padding()
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
-                    }
-                #endif
+                    #endif
+                    content()
+                        .environment(\.overlayFrame, panelState.windowFrame)
+                        .environment(\.overlayDebug, showOverlayArea)
+                }
             }
         }
     }
