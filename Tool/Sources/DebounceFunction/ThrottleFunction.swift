@@ -8,7 +8,7 @@ public actor ThrottleFunction<T> {
     var lastFinishTime: Date = .init(timeIntervalSince1970: 0)
     var now: () -> Date = { Date() }
 
-    public init(duration: TimeInterval, block: @escaping (T) async -> Void) {
+    public init(duration: TimeInterval, block: @escaping @Sendable (T) async -> Void) {
         self.duration = duration
         self.block = block
     }
@@ -50,13 +50,13 @@ public actor ThrottleRunner {
         self.duration = duration
     }
 
-    public func throttle(block: @escaping () async -> Void) {
+    public func throttle(block: @escaping @Sendable () async -> Void) {
         if task == nil {
             scheduleTask(wait: now().timeIntervalSince(lastFinishTime) < duration, block: block)
         }
     }
 
-    func scheduleTask(wait: Bool, block: @escaping () async -> Void) {
+    func scheduleTask(wait: Bool, block: @escaping @Sendable () async -> Void) {
         task = Task.detached { [weak self] in
             guard let self else { return }
             do {
