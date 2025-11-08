@@ -86,7 +86,7 @@ public extension AXUIElement {
     }
     
     var debugDescription: String {
-        "<\(title)> <\(description)> (\(role):\(roleDescription)) [\(identifier)] \(rect ?? .zero) \(children.count) children"
+        "<\(title)> <\(description)> <\(label)> (\(role):\(roleDescription)) [\(identifier)] \(rect ?? .zero) \(children.count) children"
     }
     
     var debugEnumerateChildren: String {
@@ -96,6 +96,21 @@ public extension AXUIElement {
                 .map { "  " + $0 }
                 .joined(separator: "\n")
         }.joined(separator: "\n")
+        return result
+    }
+    
+    var debugEnumerateParents: String {
+        var chain: [String] = []
+        chain.append("* " + debugDescription)
+        var parent = self.parent
+        if let current = parent {
+            chain.append("> " + current.debugDescription)
+            parent = current.parent
+        }
+        var result = ""
+        for (index, line) in chain.reversed().enumerated() {
+            result += String(repeating: "  ", count: index) + line + "\n"
+        }
         return result
     }
 }
