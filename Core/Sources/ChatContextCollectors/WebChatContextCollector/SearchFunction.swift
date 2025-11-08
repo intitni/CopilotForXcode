@@ -28,6 +28,10 @@ struct SearchFunction: ChatGPTFunction {
                 """
             }.joined(separator: "\n")
         }
+        
+        var userReadableContent: ChatGPTFunctionResultUserReadableContent {
+            .text(botReadableContent)
+        }
     }
 
     let maxTokens: Int
