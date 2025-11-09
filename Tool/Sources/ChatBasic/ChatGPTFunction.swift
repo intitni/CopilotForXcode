@@ -7,16 +7,16 @@ public enum ChatGPTFunctionCallPhase {
     case error(argumentsJsonString: String, result: Error)
 }
 
-public enum ChatGPTFunctionResultUserReadableContent {
-    public struct ListItem {
-        public enum Detail {
+public enum ChatGPTFunctionResultUserReadableContent: Sendable {
+    public struct ListItem: Sendable {
+        public enum Detail: Sendable {
             case link(URL)
             case text(String)
         }
         
-        var title: String
-        var description: String?
-        var detail: Detail?
+        public var title: String
+        public var description: String?
+        public var detail: Detail?
         
         public init(title: String, description: String? = nil, detail: Detail? = nil) {
             self.title = title
