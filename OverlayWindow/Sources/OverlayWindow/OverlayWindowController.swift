@@ -56,11 +56,19 @@ private extension OverlayWindowController {
         withPerceptionTracking {
             _ = XcodeInspector.shared.focusedWindow
             _ = XcodeInspector.shared.activeXcode
+            _ = XcodeInspector.shared.activeApplication
         } onChange: { [weak self] in
             guard let self else { return }
             Task { @MainActor in
                 defer { self.observeWindowChange() }
 
+                guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
+                    for (_, controller) in self.ideWindowOverlayWindowControllers {
+                        controller.dim()
+                    }
+                    return
+                }
+                
                 guard let app = XcodeInspector.shared.activeXcode else {
                     for (_, controller) in self.ideWindowOverlayWindowControllers {
                         controller.hide()
