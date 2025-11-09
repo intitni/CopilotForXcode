@@ -15,11 +15,30 @@ public final class OverlayWindowController {
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
 
     var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
+    var updateWindowStateTask: Task<Void, Error>?
+
+    @MainActor
+    lazy var fullscreenDetector = {
+        let it = NSWindow(
+            contentRect: .zero,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        it.isReleasedWhenClosed = false
+        it.isOpaque = false
+        it.backgroundColor = .clear
+        it.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        it.hasShadow = false
+        it.setIsVisible(false)
+        return it
+    }()
 
     public init() {}
 
     public func start() {
         observeEvents()
+        _ = fullscreenDetector
     }
 
     public nonisolated static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
@@ -34,6 +53,23 @@ public final class OverlayWindowController {
 extension OverlayWindowController {
     func observeEvents() {
         observeWindowChange()
+
+        updateWindowStateTask = Task { [weak self] in
+            if let self { await handleSpaceChange() }
+
+            await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+                // active space did change
+                _ = group.addTaskUnlessCancelled { [weak self] in
+                    let sequence = NSWorkspace.shared.notificationCenter
+                        .notifications(named: NSWorkspace.activeSpaceDidChangeNotification)
+                    for await _ in sequence {
+                        guard let self else { return }
+                        try Task.checkCancellation()
+                        await handleSpaceChange()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -68,7 +104,7 @@ private extension OverlayWindowController {
                     }
                     return
                 }
-                
+
                 guard let app = XcodeInspector.shared.activeXcode else {
                     for (_, controller) in self.ideWindowOverlayWindowControllers {
                         controller.hide()
@@ -121,6 +157,28 @@ private extension OverlayWindowController {
         )
         newController.access()
         ideWindowOverlayWindowControllers[workspaceURL] = newController
+    }
+
+    func handleSpaceChange() async {
+        let windowInspector = XcodeInspector.shared.focusedWindow
+        guard let activeWindowController = {
+            if let windowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
+                return ideWindowOverlayWindowControllers[windowInspector.workspaceURL]
+            } else {
+                return nil
+            }
+        }() else { return }
+
+        let activeXcode = XcodeInspector.shared.activeXcode
+        let xcode = activeXcode?.appElement
+        let isXcodeActive = xcode?.isFrontmost ?? false
+        if isXcodeActive {
+            activeWindowController.maskPanel.moveToActiveSpace()
+        }
+
+        if fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
+            activeWindowController.maskPanel.orderFrontRegardless()
+        }
     }
 }
 

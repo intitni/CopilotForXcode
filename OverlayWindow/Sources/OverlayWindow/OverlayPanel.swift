@@ -75,6 +75,14 @@ final class OverlayPanel: NSPanel {
     override var canBecomeMain: Bool {
         return false
     }
+    
+    func moveToActiveSpace() {
+        collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
+        Task { @MainActor in
+            try await Task.sleep(nanoseconds: 50_000_000)
+            self.collectionBehavior = [.fullScreenAuxiliary]
+        }
+    }
 
     func setTopLeftCoordinateFrame(_ frame: CGRect, display: Bool) {
         let screen = NSScreen.screens

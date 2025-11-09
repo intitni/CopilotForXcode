@@ -28,8 +28,8 @@ final class IDEWorkspaceWindowOverlayWindowController {
     let application: NSRunningApplication
     let inspector: WorkspaceXcodeWindowInspector
     let contentProviders: [any IDEWorkspaceWindowOverlayWindowControllerContentProvider]
+    let maskPanel: OverlayPanel
     private var isDestroyed: Bool = false
-    private let maskPanel: OverlayPanel
     private var axNotificationTask: Task<Void, Never>?
 
     init(
