@@ -61,7 +61,6 @@ public final class ScheduledCleaner {
                 }.result
                 await workspace.cleanUp(availableTabs: [])
                 await service.workspacePool.removeWorkspace(url: url)
-                await service.overlayWindowController.removeController(for: url)
             } else {
                 let tabs = (workspaceInfos[.url(url)]?.tabs ?? [])
                     .union(workspaceInfos[.unknown]?.tabs ?? [])

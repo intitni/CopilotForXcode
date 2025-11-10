@@ -29,7 +29,6 @@ final class IDEWorkspaceWindowOverlayWindowController {
     let inspector: WorkspaceXcodeWindowInspector
     let contentProviders: [any IDEWorkspaceWindowOverlayWindowControllerContentProvider]
     let maskPanel: OverlayPanel
-    private var isDestroyed: Bool = false
     private var axNotificationTask: Task<Void, Never>?
 
     init(
@@ -89,14 +88,10 @@ final class IDEWorkspaceWindowOverlayWindowController {
 
     deinit {
         axNotificationTask?.cancel()
-        _ = withExtendedLifetime(self) {
-            Task { @MainActor in
-                precondition(
-                    !self.isDestroyed,
-                    "IDEWorkspaceWindowOverlayWindowController should be destroyed before deinit"
-                )
-            }
-        }
+    }
+
+    var isWindowClosed: Bool {
+        inspector.isInvalid
     }
 
     func access() {
@@ -116,12 +111,10 @@ final class IDEWorkspaceWindowOverlayWindowController {
     }
 
     func destroy() {
-        axNotificationTask?.cancel()
         maskPanel.close()
         for contentProvider in contentProviders {
             contentProvider.destroy()
         }
-        isDestroyed = true
     }
 }
 

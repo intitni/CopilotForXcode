@@ -17,7 +17,6 @@ public final class OverlayWindowController {
     var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
     var updateWindowStateTask: Task<Void, Error>?
 
-    @MainActor
     lazy var fullscreenDetector = {
         let it = NSWindow(
             contentRect: .zero,
@@ -39,17 +38,6 @@ public final class OverlayWindowController {
     public func start() {
         observeEvents()
         _ = fullscreenDetector
-    }
-    
-    public func removeController(for url: URL) {
-        if let controller = ideWindowOverlayWindowControllers[url] {
-            controller.destroy()
-            ideWindowOverlayWindowControllers.removeValue(forKey: url)
-        }
-    }
-    
-    public func removeAllControllers() {
-        ideWindowOverlayWindowControllers.removeAll()
     }
 
     public nonisolated static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
@@ -110,8 +98,17 @@ private extension OverlayWindowController {
                 defer { self.observeWindowChange() }
 
                 guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
-                    for (_, controller) in self.ideWindowOverlayWindowControllers {
-                        controller.dim()
+                    var closedControllers: [URL] = []
+                    for (url, controller) in self.ideWindowOverlayWindowControllers {
+                        if controller.isWindowClosed {
+                            controller.dim()
+                            closedControllers.append(url)
+                        } else {
+                            controller.dim()
+                        }
+                    }
+                    for url in closedControllers {
+                        self.removeIDEOverlayWindowController(for: url)
                     }
                     return
                 }
@@ -168,6 +165,13 @@ private extension OverlayWindowController {
         )
         newController.access()
         ideWindowOverlayWindowControllers[workspaceURL] = newController
+    }
+    
+    func removeIDEOverlayWindowController(for workspaceURL: URL) {
+        if let controller = ideWindowOverlayWindowControllers[workspaceURL] {
+            controller.destroy()
+        }
+        ideWindowOverlayWindowControllers[workspaceURL] = nil
     }
 
     func handleSpaceChange() async {

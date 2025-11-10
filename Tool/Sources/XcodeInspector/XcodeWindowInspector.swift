@@ -13,6 +13,10 @@ public class XcodeWindowInspector {
         self.uiElement = uiElement
         uiElement.setMessagingTimeout(2)
     }
+    
+    public var isInvalid: Bool {
+        uiElement.parent == nil
+    }
 }
 
 @XcodeInspectorActor
