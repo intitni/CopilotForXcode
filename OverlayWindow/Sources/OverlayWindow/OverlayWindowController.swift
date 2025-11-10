@@ -40,6 +40,17 @@ public final class OverlayWindowController {
         observeEvents()
         _ = fullscreenDetector
     }
+    
+    public func removeController(for url: URL) {
+        if let controller = ideWindowOverlayWindowControllers[url] {
+            controller.destroy()
+            ideWindowOverlayWindowControllers.removeValue(forKey: url)
+        }
+    }
+    
+    public func removeAllControllers() {
+        ideWindowOverlayWindowControllers.removeAll()
+    }
 
     public nonisolated static func registerIDEWorkspaceWindowOverlayWindowControllerContentProviderFactory(
         _ factory: @escaping IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory
