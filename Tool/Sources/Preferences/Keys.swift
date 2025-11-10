@@ -100,6 +100,11 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "InstallBetaBuilds"
     )
+
+    public let debugOverlayPanel = PreferenceKey(
+        defaultValue: false,
+        key: "DebugOverlayPanel"
+    )
 }
 
 // MARK: - OpenAI Account Settings
@@ -375,7 +380,7 @@ public extension UserDefaultPreferenceKeys {
     var acceptSuggestionWithModifierOnlyForSwift: PreferenceKey<Bool> {
         .init(defaultValue: false, key: "SuggestionWithModifierOnlyForSwift")
     }
-    
+
     var acceptSuggestionLineWithModifierControl: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "SuggestionLineWithModifierControl")
     }
@@ -486,7 +491,7 @@ public extension UserDefaultPreferenceKeys {
     var preferredChatModelIdForUtilities: PreferenceKey<String> {
         .init(defaultValue: "", key: "PreferredChatModelIdForUtilities")
     }
-    
+
     enum ChatPanelFloatOnTopOption: Int, Codable, Equatable {
         case alwaysOnTop
         case onTopWhenXcodeIsActive
@@ -589,37 +594,37 @@ public extension UserDefaultPreferenceKeys {
         case headlessBrowser
         case serpAPI
     }
-    
+
     enum SerpAPIEngine: String, Codable, CaseIterable {
         case google
         case baidu
         case bing
         case duckDuckGo = "duckduckgo"
     }
-    
+
     enum HeadlessBrowserEngine: String, Codable, CaseIterable {
         case google
         case baidu
         case bing
         case duckDuckGo = "duckduckgo"
     }
-    
+
     var searchProvider: PreferenceKey<SearchProvider> {
         .init(defaultValue: .headlessBrowser, key: "SearchProvider")
     }
-    
+
     var serpAPIEngine: PreferenceKey<SerpAPIEngine> {
         .init(defaultValue: .google, key: "SerpAPIEngine")
     }
-    
+
     var serpAPIKeyName: PreferenceKey<String> {
         .init(defaultValue: "", key: "SerpAPIKeyName")
     }
-    
+
     var headlessBrowserEngine: PreferenceKey<HeadlessBrowserEngine> {
         .init(defaultValue: .google, key: "HeadlessBrowserEngine")
     }
-    
+
     var bingSearchSubscriptionKey: DeprecatedPreferenceKey<String> {
         .init(defaultValue: "", key: "BingSearchSubscriptionKey")
     }

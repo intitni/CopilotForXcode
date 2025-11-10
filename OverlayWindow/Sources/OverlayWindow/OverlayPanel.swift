@@ -75,7 +75,7 @@ final class OverlayPanel: NSPanel {
     override var canBecomeMain: Bool {
         return false
     }
-    
+
     func moveToActiveSpace() {
         collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         Task { @MainActor in
@@ -112,30 +112,28 @@ final class OverlayPanel: NSPanel {
     struct ContentWrapper<Content: View>: View {
         let panelState: PanelState
         @ViewBuilder let content: () -> Content
-        @State var showOverlayArea: Bool = true
+        @AppStorage(\.debugOverlayPanel) var debugOverlayPanel
 
         var body: some View {
             WithPerceptionTracking {
                 ZStack {
-                    #if DEBUG
-                    Rectangle().fill(.green.opacity(showOverlayArea ? 0.1 : 0))
+                    Rectangle().fill(.green.opacity(debugOverlayPanel ? 0.1 : 0))
                         .allowsHitTesting(false)
                         .overlay(alignment: .topTrailing) {
                             HStack {
                                 Button(action: {
-                                    showOverlayArea.toggle()
+                                    debugOverlayPanel.toggle()
                                 }) {
                                     Image(systemName: "eye")
-                                        .foregroundColor(showOverlayArea ? .green : .red)
+                                        .foregroundColor(debugOverlayPanel ? .green : .red)
                                         .padding()
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-                    #endif
                     content()
                         .environment(\.overlayFrame, panelState.windowFrame)
-                        .environment(\.overlayDebug, showOverlayArea)
+                        .environment(\.overlayDebug, debugOverlayPanel)
                 }
             }
         }
