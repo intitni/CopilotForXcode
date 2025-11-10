@@ -119,18 +119,6 @@ final class OverlayPanel: NSPanel {
                 ZStack {
                     Rectangle().fill(.green.opacity(debugOverlayPanel ? 0.1 : 0))
                         .allowsHitTesting(false)
-                        .overlay(alignment: .topTrailing) {
-                            HStack {
-                                Button(action: {
-                                    debugOverlayPanel.toggle()
-                                }) {
-                                    Image(systemName: "eye")
-                                        .foregroundColor(debugOverlayPanel ? .green : .red)
-                                        .padding()
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
                     content()
                         .environment(\.overlayFrame, panelState.windowFrame)
                         .environment(\.overlayDebug, debugOverlayPanel)
