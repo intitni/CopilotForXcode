@@ -61,6 +61,15 @@ public class WorkspacePool {
     }
 
     public func fetchFilespaceIfExisted(fileURL: URL) -> Filespace? {
+        // We prefer to get the filespace from the current active workspace.
+        // Just incase there are multiple workspaces opened with the same file.
+        if let currentWorkspaceURL = XcodeInspector.shared.realtimeActiveWorkspaceURL {
+            if let workspace = workspaces[currentWorkspaceURL],
+               let filespace = workspace.filespaces[fileURL]
+            {
+                return filespace
+            }
+        }
         for workspace in workspaces.values {
             if let filespace = workspace.filespaces[fileURL] {
                 return filespace

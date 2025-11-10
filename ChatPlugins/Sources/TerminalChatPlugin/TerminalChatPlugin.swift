@@ -5,10 +5,10 @@ import XcodeInspector
 
 public final class TerminalChatPlugin: ChatPlugin {
     public static var id: String { "com.intii.terminal" }
-    public static var command: String { "run" }
-    public static var name: String { "Terminal" }
+    public static var command: String { "shell" }
+    public static var name: String { "Shell" }
     public static var description: String { """
-    Run the command in the message from terminal.
+    Run the command in the message from shell.
 
     You can use environment variable `$FILE_PATH` and `$PROJECT_ROOT` to access the current file path and project root.
     """ }

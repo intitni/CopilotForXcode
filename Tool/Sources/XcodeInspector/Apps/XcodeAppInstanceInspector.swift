@@ -318,14 +318,25 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                             ))
                         }
                     case .uiElementDestroyed:
-                        if isCompletionPanel(notification.element) {
-                            await MainActor.run {
-                                self.completionPanel = nil
+                        let completionPanel = await self.completionPanel
+                        if let completionPanel {
+                            if isCompletionPanel(notification.element) {
+                                await MainActor.run {
+                                    self.completionPanel = nil
+                                }
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
+                            } else if completionPanel.parent == nil {
+                                await MainActor.run {
+                                    self.completionPanel = nil
+                                }
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
                             }
-                            self.axNotifications.send(.init(
-                                kind: .xcodeCompletionPanelChanged,
-                                element: notification.element
-                            ))
                         }
                     default: continue
                     }

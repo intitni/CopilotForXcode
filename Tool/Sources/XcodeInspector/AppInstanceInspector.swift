@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 open class AppInstanceInspector: @unchecked Sendable {
-    let runningApplication: NSRunningApplication
+    public let runningApplication: NSRunningApplication
     public let processIdentifier: pid_t
     public let bundleURL: URL?
     public let bundleIdentifier: String?

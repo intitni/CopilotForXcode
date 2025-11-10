@@ -213,7 +213,7 @@ struct CustomCommandView: View {
                         }
                         SubSection(title: Text("Single Round Dialog")) {
                             Text(
-                                "This command allows you to send a message to a temporary chat without opening the chat panel. It is particularly useful for one-time commands, such as running a terminal command with `/run`. For example, you can set the prompt to `/run open .` to open the project in Finder."
+                                "This command allows you to send a message to a temporary chat without opening the chat panel. It is particularly useful for one-time commands, such as running a terminal command with `/shell`. For example, you can set the prompt to `/shell open .` to open the project in Finder."
                             )
                         }
                     }

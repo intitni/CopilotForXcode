@@ -15,7 +15,7 @@ struct Instruction: View {
                 
                 | Plugin Name | Description |
                 | --- | --- |
-                | `/run` | Runs a command under the project root |
+                | `/shell` | Runs a command under the project root |
                 | `/shortcut(name)` | Runs a shortcut from the Shortcuts.app, with the previous message as input |
                 
                 To use plugins, you can prefix a message with `/pluginName`.

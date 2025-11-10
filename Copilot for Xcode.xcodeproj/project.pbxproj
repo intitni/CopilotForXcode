@@ -235,6 +235,7 @@
 		C87B03AA293B262E00C77EAE /* PreviousSuggestionCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousSuggestionCommand.swift; sourceTree = "<group>"; };
 		C887BC832965D96000931567 /* DEVELOPMENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEVELOPMENT.md; sourceTree = "<group>"; };
 		C89E75C22A46FB32000DD64F /* AppDelegate+Menu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Menu.swift"; sourceTree = "<group>"; };
+		C8BE64922EB9B42E00EDB2D7 /* OverlayWindow */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OverlayWindow; sourceTree = "<group>"; };
 		C8CD828229B88006008D044D /* TestPlan.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestPlan.xctestplan; sourceTree = "<group>"; };
 		C8DCEFFF29CE11D500FDDDD7 /* OpenChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenChat.swift; sourceTree = "<group>"; };
 		C8DD9CB02BC673F80036641C /* CloseIdleTabsCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseIdleTabsCommand.swift; sourceTree = "<group>"; };
@@ -342,6 +343,7 @@
 				C81458AE293A009800135263 /* Config.debug.xcconfig */,
 				C8CD828229B88006008D044D /* TestPlan.xctestplan */,
 				C828B27D2B1F241500E7612A /* ExtensionPoint.appextensionpoint */,
+				C8BE64922EB9B42E00EDB2D7 /* OverlayWindow */,
 				C84FD9D72CC671C600BE5093 /* ChatPlugins */,
 				C81D181E2A1B509B006C1B70 /* Tool */,
 				C8189B282938979000C9DCDA /* Core */,
