@@ -304,7 +304,7 @@ This feature is recommended when you need to update a specific piece of code. So
 
 #### Commands
 
-- Write or Modify Code: Open a modification window, where you can use natural language to write or edit selected code.
+- Write or Edit Code: Open a modification window, where you can use natural language to write or edit selected code.
 - Accept Modification: Accept the result of modification.
 
 ### Custom Commands

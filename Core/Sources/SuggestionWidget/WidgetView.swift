@@ -195,7 +195,7 @@ struct WidgetContextMenu: View {
                 Button(action: {
                     store.send(.openModificationButtonClicked)
                 }) {
-                    Text("Write or Modify Code")
+                    Text("Write or Edit Code")
                 }
 
                 customCommandMenu()
