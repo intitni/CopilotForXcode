@@ -188,6 +188,14 @@ public struct PromptToCodePanel {
                                                         description: ""
                                                     )
                                                 )))
+                                            case let .explanation(explanation):
+                                                await send(.snippetPanel(.element(
+                                                    id: snippet.id,
+                                                    action: .modifyCodeChunkReceived(
+                                                        code: "",
+                                                        description: explanation
+                                                    )
+                                                )))
                                             }
                                         }
                                     } catch is CancellationError {
