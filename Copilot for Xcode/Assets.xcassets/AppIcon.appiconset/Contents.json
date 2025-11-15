@@ -7,7 +7,7 @@
       "size" : "16x16"
     },
     {
-      "filename" : "app-icon@32w 1.png",
+      "filename" : "app-icon@32w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "16x16"
@@ -37,13 +37,13 @@
       "size" : "128x128"
     },
     {
-      "filename" : "app-icon@256w 1.png",
+      "filename" : "app-icon@256w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "app-icon@512w 1.png",
+      "filename" : "app-icon@512w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
