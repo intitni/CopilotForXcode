@@ -43,7 +43,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
         self.application = application
         let contentProviders = contentProviderFactory(inspector, application)
         self.contentProviders = contentProviders
-        self.windowElement = inspector.uiElement
+        windowElement = inspector.uiElement
 
         let panel = OverlayPanel(
             contentRect: .init(x: 0, y: 0, width: 200, height: 200)
@@ -83,6 +83,8 @@ final class IDEWorkspaceWindowOverlayWindowController {
         if windowElement.parent == nil {
             windowElement = inspector.uiElement
             observeWindowChange()
+        } else {
+            updateFrame()
         }
     }
 
@@ -104,27 +106,35 @@ final class IDEWorkspaceWindowOverlayWindowController {
 
     private func observeWindowChange() {
         axNotificationTask?.cancel()
-        
+
         let stream = AXNotificationStream(
             app: application,
             element: windowElement,
-            notificationNames: kAXMovedNotification, kAXResizedNotification
+            notificationNames:
+            kAXMovedNotification,
+            kAXResizedNotification,
+            kAXWindowMiniaturizedNotification,
+            kAXWindowDeminiaturizedNotification
         )
 
         axNotificationTask = Task { [weak self] in
             for await notification in stream {
-                guard let panel = self?.maskPanel else { return }
+                guard let self else { return }
                 if Task.isCancelled { return }
                 switch notification.name {
                 case kAXMovedNotification, kAXResizedNotification:
-                    if let rect = self?.windowElement.rect {
-                        panel.setTopLeftCoordinateFrame(rect, display: true)
-                    }
+                    self.updateFrame()
+                case kAXWindowMiniaturizedNotification:
+                    self.hide()
                 default: continue
                 }
             }
         }
 
+        updateFrame()
+    }
+
+    private func updateFrame() {
         if let rect = windowElement.rect {
             maskPanel.setTopLeftCoordinateFrame(rect, display: false)
         }
