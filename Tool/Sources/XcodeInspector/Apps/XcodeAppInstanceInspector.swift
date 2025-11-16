@@ -245,7 +245,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                     }
                 }
             } else {
-                let window = XcodeWindowInspector(uiElement: window)
+                let window = XcodeWindowInspector(app: runningApplication, uiElement: window)
                 focusedWindow = window
             }
         } else {

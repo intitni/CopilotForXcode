@@ -29,6 +29,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
     let inspector: WorkspaceXcodeWindowInspector
     let contentProviders: [any IDEWorkspaceWindowOverlayWindowControllerContentProvider]
     let maskPanel: OverlayPanel
+    var windowElement: AXUIElement
     private var axNotificationTask: Task<Void, Never>?
 
     init(
@@ -42,6 +43,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
         self.application = application
         let contentProviders = contentProviderFactory(inspector, application)
         self.contentProviders = contentProviders
+        self.windowElement = inspector.uiElement
 
         let panel = OverlayPanel(
             contentRect: .init(x: 0, y: 0, width: 200, height: 200)
@@ -60,30 +62,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
             }
         }
 
-        let windowElement = inspector.uiElement
-        let stream = AXNotificationStream(
-            app: application,
-            element: windowElement,
-            notificationNames: kAXMovedNotification, kAXResizedNotification
-        )
-
-        axNotificationTask = Task { [weak self] in
-            for await notification in stream {
-                guard let panel = self?.maskPanel else { continue }
-                if Task.isCancelled { return }
-                switch notification.name {
-                case kAXMovedNotification, kAXResizedNotification:
-                    if let rect = windowElement.rect {
-                        panel.setTopLeftCoordinateFrame(rect, display: true)
-                    }
-                default: continue
-                }
-            }
-        }
-
-        if let rect = windowElement.rect {
-            panel.setTopLeftCoordinateFrame(rect, display: false)
-        }
+        observeWindowChange()
     }
 
     deinit {
@@ -99,6 +78,12 @@ final class IDEWorkspaceWindowOverlayWindowController {
         maskPanel.level = overlayLevel(0)
         maskPanel.setIsVisible(true)
         maskPanel.orderFrontRegardless()
+
+        // When macOS awakes from sleep, the AXUIElement reference may become invalid.
+        if windowElement.parent == nil {
+            windowElement = inspector.uiElement
+            observeWindowChange()
+        }
     }
 
     func dim() {
@@ -114,6 +99,34 @@ final class IDEWorkspaceWindowOverlayWindowController {
         maskPanel.close()
         for contentProvider in contentProviders {
             contentProvider.destroy()
+        }
+    }
+
+    private func observeWindowChange() {
+        axNotificationTask?.cancel()
+        
+        let stream = AXNotificationStream(
+            app: application,
+            element: windowElement,
+            notificationNames: kAXMovedNotification, kAXResizedNotification
+        )
+
+        axNotificationTask = Task { [weak self] in
+            for await notification in stream {
+                guard let panel = self?.maskPanel else { return }
+                if Task.isCancelled { return }
+                switch notification.name {
+                case kAXMovedNotification, kAXResizedNotification:
+                    if let rect = self?.windowElement.rect {
+                        panel.setTopLeftCoordinateFrame(rect, display: true)
+                    }
+                default: continue
+                }
+            }
+        }
+
+        if let rect = windowElement.rect {
+            maskPanel.setTopLeftCoordinateFrame(rect, display: false)
         }
     }
 }
