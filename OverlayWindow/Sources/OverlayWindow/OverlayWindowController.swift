@@ -15,7 +15,7 @@ public final class OverlayWindowController {
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
 
     var ideWindowOverlayWindowControllers =
-        [CGWindowID: IDEWorkspaceWindowOverlayWindowController]()
+        [ObjectIdentifier: IDEWorkspaceWindowOverlayWindowController]()
     var updateWindowStateTask: Task<Void, Error>?
 
     lazy var fullscreenDetector = {
@@ -81,7 +81,6 @@ private extension OverlayWindowController {
                .focusedWindow as? WorkspaceXcodeWindowInspector
             {
                 createNewIDEOverlayWindowController(
-                    for: windowInspector.windowID,
                     inspector: windowInspector,
                     application: app.runningApplication
                 )
@@ -98,7 +97,7 @@ private extension OverlayWindowController {
                 defer { self.observeWindowChange() }
 
                 guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
-                    var closedControllers: [CGWindowID] = []
+                    var closedControllers: [ObjectIdentifier] = []
                     for (id, controller) in self.ideWindowOverlayWindowControllers {
                         if controller.isWindowClosed {
                             controller.dim()
@@ -122,19 +121,18 @@ private extension OverlayWindowController {
 
                 let windowInspector = XcodeInspector.shared.focusedWindow
                 if let ideWindowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
-                    let windowID = ideWindowInspector.windowID
+                    let objectID = ObjectIdentifier(ideWindowInspector)
                     // Workspace window is active
                     // Hide all controllers first
                     for (id, controller) in self.ideWindowOverlayWindowControllers {
-                        if id != windowID {
+                        if id != objectID {
                             controller.hide()
                         }
                     }
-                    if let controller = self.ideWindowOverlayWindowControllers[windowID] {
+                    if let controller = self.ideWindowOverlayWindowControllers[objectID] {
                         controller.access()
                     } else {
                         self.createNewIDEOverlayWindowController(
-                            for: windowID,
                             inspector: ideWindowInspector,
                             application: app.runningApplication
                         )
@@ -150,10 +148,10 @@ private extension OverlayWindowController {
     }
 
     func createNewIDEOverlayWindowController(
-        for windowID: CGWindowID,
         inspector: WorkspaceXcodeWindowInspector,
         application: NSRunningApplication
     ) {
+        let id = ObjectIdentifier(inspector)
         let newController = IDEWorkspaceWindowOverlayWindowController(
             inspector: inspector,
             application: application,
@@ -164,10 +162,10 @@ private extension OverlayWindowController {
             }
         )
         newController.access()
-        ideWindowOverlayWindowControllers[windowID] = newController
+        ideWindowOverlayWindowControllers[id] = newController
     }
 
-    func removeIDEOverlayWindowController(for id: CGWindowID) {
+    func removeIDEOverlayWindowController(for id: ObjectIdentifier) {
         if let controller = ideWindowOverlayWindowControllers[id] {
             controller.destroy()
         }
@@ -178,7 +176,8 @@ private extension OverlayWindowController {
         let windowInspector = XcodeInspector.shared.focusedWindow
         guard let activeWindowController = {
             if let windowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
-                return ideWindowOverlayWindowControllers[windowInspector.windowID]
+                let id = ObjectIdentifier(windowInspector)
+                return ideWindowOverlayWindowControllers[id]
             } else {
                 return nil
             }
