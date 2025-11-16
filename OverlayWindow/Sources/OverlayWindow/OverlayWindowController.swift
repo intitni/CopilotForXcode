@@ -14,7 +14,8 @@ public final class OverlayWindowController {
     static var ideWindowOverlayWindowControllerContentProviderFactories:
         [IDEWorkspaceWindowOverlayWindowControllerContentProviderFactory] = []
 
-    var ideWindowOverlayWindowControllers: [URL: IDEWorkspaceWindowOverlayWindowController] = [:]
+    var ideWindowOverlayWindowControllers =
+        [CGWindowID: IDEWorkspaceWindowOverlayWindowController]()
     var updateWindowStateTask: Task<Void, Error>?
 
     lazy var fullscreenDetector = {
@@ -79,9 +80,8 @@ private extension OverlayWindowController {
                let windowInspector = XcodeInspector.shared
                .focusedWindow as? WorkspaceXcodeWindowInspector
             {
-                let workspaceURL = windowInspector.workspaceURL
                 createNewIDEOverlayWindowController(
-                    for: workspaceURL,
+                    for: windowInspector.windowID,
                     inspector: windowInspector,
                     application: app.runningApplication
                 )
@@ -98,17 +98,17 @@ private extension OverlayWindowController {
                 defer { self.observeWindowChange() }
 
                 guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
-                    var closedControllers: [URL] = []
-                    for (url, controller) in self.ideWindowOverlayWindowControllers {
+                    var closedControllers: [CGWindowID] = []
+                    for (id, controller) in self.ideWindowOverlayWindowControllers {
                         if controller.isWindowClosed {
                             controller.dim()
-                            closedControllers.append(url)
+                            closedControllers.append(id)
                         } else {
                             controller.dim()
                         }
                     }
-                    for url in closedControllers {
-                        self.removeIDEOverlayWindowController(for: url)
+                    for id in closedControllers {
+                        self.removeIDEOverlayWindowController(for: id)
                     }
                     return
                 }
@@ -122,19 +122,19 @@ private extension OverlayWindowController {
 
                 let windowInspector = XcodeInspector.shared.focusedWindow
                 if let ideWindowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
-                    let workspaceURL = ideWindowInspector.workspaceURL
+                    let windowID = ideWindowInspector.windowID
                     // Workspace window is active
                     // Hide all controllers first
-                    for (url, controller) in self.ideWindowOverlayWindowControllers {
-                        if url != workspaceURL {
+                    for (id, controller) in self.ideWindowOverlayWindowControllers {
+                        if id != windowID {
                             controller.hide()
                         }
                     }
-                    if let controller = self.ideWindowOverlayWindowControllers[workspaceURL] {
+                    if let controller = self.ideWindowOverlayWindowControllers[windowID] {
                         controller.access()
                     } else {
                         self.createNewIDEOverlayWindowController(
-                            for: workspaceURL,
+                            for: windowID,
                             inspector: ideWindowInspector,
                             application: app.runningApplication
                         )
@@ -150,7 +150,7 @@ private extension OverlayWindowController {
     }
 
     func createNewIDEOverlayWindowController(
-        for workspaceURL: URL,
+        for windowID: CGWindowID,
         inspector: WorkspaceXcodeWindowInspector,
         application: NSRunningApplication
     ) {
@@ -164,21 +164,21 @@ private extension OverlayWindowController {
             }
         )
         newController.access()
-        ideWindowOverlayWindowControllers[workspaceURL] = newController
+        ideWindowOverlayWindowControllers[windowID] = newController
     }
-    
-    func removeIDEOverlayWindowController(for workspaceURL: URL) {
-        if let controller = ideWindowOverlayWindowControllers[workspaceURL] {
+
+    func removeIDEOverlayWindowController(for id: CGWindowID) {
+        if let controller = ideWindowOverlayWindowControllers[id] {
             controller.destroy()
         }
-        ideWindowOverlayWindowControllers[workspaceURL] = nil
+        ideWindowOverlayWindowControllers[id] = nil
     }
 
     func handleSpaceChange() async {
         let windowInspector = XcodeInspector.shared.focusedWindow
         guard let activeWindowController = {
             if let windowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
-                return ideWindowOverlayWindowControllers[windowInspector.workspaceURL]
+                return ideWindowOverlayWindowControllers[windowInspector.windowID]
             } else {
                 return nil
             }
