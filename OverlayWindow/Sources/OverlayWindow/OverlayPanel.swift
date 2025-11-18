@@ -49,6 +49,7 @@ final class OverlayPanel: NSPanel {
         )
 
         isReleasedWhenClosed = false
+        menu = nil
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true

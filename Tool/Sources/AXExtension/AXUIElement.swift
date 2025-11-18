@@ -84,11 +84,11 @@ public extension AXUIElement {
     var isHidden: Bool {
         (try? copyValue(key: kAXHiddenAttribute)) ?? false
     }
-    
+
     var debugDescription: String {
         "<\(title)> <\(description)> <\(label)> (\(role):\(roleDescription)) [\(identifier)] \(rect ?? .zero) \(children.count) children"
     }
-    
+
     var debugEnumerateChildren: String {
         var result = "> " + debugDescription + "\n"
         result += children.map {
@@ -98,7 +98,7 @@ public extension AXUIElement {
         }.joined(separator: "\n")
         return result
     }
-    
+
     var debugEnumerateParents: String {
         var chain: [String] = []
         chain.append("* " + debugDescription)
@@ -166,7 +166,7 @@ public extension AXUIElement {
     var isFullScreen: Bool {
         (try? copyValue(key: "AXFullScreen")) ?? false
     }
-    
+
     var windowID: CGWindowID? {
         var identifier: CGWindowID = 0
         let error = AXUIElementGetWindow(self, &identifier)
@@ -265,7 +265,7 @@ public extension AXUIElement {
             fatalError("AXUIElement.children: Exceeding recommended depth.")
         }
         #endif
-        
+
         var all = [AXUIElement]()
         for child in children {
             if match(child) { all.append(child) }
@@ -282,10 +282,18 @@ public extension AXUIElement {
         return parent.firstParent(where: match)
     }
 
-    func firstChild(depth: Int = 0, where match: (AXUIElement) -> Bool) -> AXUIElement? {
+    func firstChild(
+        depth: Int = 0,
+        maxDepth: Int = 50,
+        where match: (AXUIElement) -> Bool
+    ) -> AXUIElement? {
         #if DEBUG
-        if depth >= 50 {
+        if depth > maxDepth {
             fatalError("AXUIElement.firstChild: Exceeding recommended depth.")
+        }
+        #else
+        if depth > maxDepth {
+            return nil
         }
         #endif
         for child in children {
@@ -313,11 +321,11 @@ public extension AXUIElement {
 }
 
 public extension AXUIElement {
-    enum SearchNextStep {
+    enum SearchNextStep<Info> {
         case skipDescendants
-        case skipSiblings
+        case skipSiblings(Info)
         case skipDescendantsAndSiblings
-        case continueSearching
+        case continueSearching(Info)
         case stopSearching
     }
 
@@ -327,26 +335,41 @@ public extension AXUIElement {
     /// **performance of Xcode**. Please make sure to skip as much as possible.
     ///
     /// - todo: Make it not recursive.
-    func traverse(_ handle: (_ element: AXUIElement, _ level: Int) -> SearchNextStep) {
+    func traverse<Info>(
+        access: (AXUIElement) -> [AXUIElement] = { $0.children },
+        info: Info,
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function,
+        _ handle: (_ element: AXUIElement, _ level: Int, _ info: Info) -> SearchNextStep<Info>
+    ) {
+        #if DEBUG
+        var count = 0
+        let startDate = Date()
+        #endif
         func _traverse(
             element: AXUIElement,
             level: Int,
-            handle: (AXUIElement, Int) -> SearchNextStep
-        ) -> SearchNextStep {
-            let nextStep = handle(element, level)
+            info: Info,
+            handle: (AXUIElement, Int, Info) -> SearchNextStep<Info>
+        ) -> SearchNextStep<Info> {
+            #if DEBUG
+            count += 1
+            #endif
+            let nextStep = handle(element, level, info)
             switch nextStep {
             case .stopSearching: return .stopSearching
-            case .skipDescendants: return .continueSearching
-            case .skipDescendantsAndSiblings: return .skipSiblings
-            case .continueSearching, .skipSiblings:
-                for child in element.children {
-                    switch _traverse(element: child, level: level + 1, handle: handle) {
+            case .skipDescendants: return .continueSearching(info)
+            case .skipDescendantsAndSiblings: return .skipSiblings(info)
+            case let .continueSearching(info), let .skipSiblings(info):
+                loop: for child in access(element) {
+                    switch _traverse(element: child, level: level + 1, info: info, handle: handle) {
                     case .skipSiblings, .skipDescendantsAndSiblings:
-                        break
+                        break loop
                     case .stopSearching:
                         return .stopSearching
                     case .continueSearching, .skipDescendants:
-                        continue
+                        continue loop
                     }
                 }
 
@@ -354,7 +377,37 @@ public extension AXUIElement {
             }
         }
 
-        _ = _traverse(element: self, level: 0, handle: handle)
+        _ = _traverse(element: self, level: 0, info: info, handle: handle)
+
+        #if DEBUG
+        let duration = Date().timeIntervalSince(startDate)
+            .formatted(.number.precision(.fractionLength(0...4)))
+        Logger.service.debug(
+            "AXUIElement.traverse count: \(count), took \(duration) seconds",
+            file: file,
+            line: line,
+            function: function
+        )
+        #endif
+    }
+
+    /// Traversing the element tree.
+    ///
+    /// - important: Traversing the element tree is resource consuming and will affect the
+    /// **performance of Xcode**. Please make sure to skip as much as possible.
+    ///
+    /// - todo: Make it not recursive.
+    func traverse(
+        access: (AXUIElement) -> [AXUIElement] = { $0.children },
+        file: StaticString = #file,
+        line: UInt = #line,
+        function: StaticString = #function,
+        _ handle: (_ element: AXUIElement, _ level: Int) -> SearchNextStep<Void>
+    ) {
+        traverse(access: access, info: (), file: file, line: line, function: function) {
+            element, level, _ in
+            handle(element, level)
+        }
     }
 }
 
