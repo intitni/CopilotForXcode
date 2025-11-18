@@ -1,6 +1,7 @@
 import AppKit
 import AXExtension
 import AXNotificationStream
+import DebounceFunction
 import Foundation
 import Perception
 import SwiftUI
@@ -31,6 +32,7 @@ final class IDEWorkspaceWindowOverlayWindowController {
     let maskPanel: OverlayPanel
     var windowElement: AXUIElement
     private var axNotificationTask: Task<Void, Never>?
+    let updateFrameThrottler = ThrottleRunner(duration: 0.2)
 
     init(
         inspector: WorkspaceXcodeWindowInspector,
@@ -123,7 +125,9 @@ final class IDEWorkspaceWindowOverlayWindowController {
                 if Task.isCancelled { return }
                 switch notification.name {
                 case kAXMovedNotification, kAXResizedNotification:
-                    self.updateFrame()
+                    await self.updateFrameThrottler.throttle { [weak self] in
+                        await self?.updateFrame()
+                    }
                 case kAXWindowMiniaturizedNotification:
                     self.hide()
                 default: continue

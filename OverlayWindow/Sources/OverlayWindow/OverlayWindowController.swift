@@ -1,4 +1,5 @@
 import AppKit
+import DebounceFunction
 import Foundation
 import Perception
 import XcodeInspector
@@ -17,6 +18,8 @@ public final class OverlayWindowController {
     var ideWindowOverlayWindowControllers =
         [ObjectIdentifier: IDEWorkspaceWindowOverlayWindowController]()
     var updateWindowStateTask: Task<Void, Error>?
+
+    let windowUpdateThrottler = ThrottleRunner(duration: 0.2)
 
     lazy var fullscreenDetector = {
         let it = NSWindow(
@@ -95,53 +98,8 @@ private extension OverlayWindowController {
             guard let self else { return }
             Task { @MainActor in
                 defer { self.observeWindowChange() }
-
-                guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
-                    var closedControllers: [ObjectIdentifier] = []
-                    for (id, controller) in self.ideWindowOverlayWindowControllers {
-                        if controller.isWindowClosed {
-                            controller.dim()
-                            closedControllers.append(id)
-                        } else {
-                            controller.dim()
-                        }
-                    }
-                    for id in closedControllers {
-                        self.removeIDEOverlayWindowController(for: id)
-                    }
-                    return
-                }
-
-                guard let app = XcodeInspector.shared.activeXcode else {
-                    for (_, controller) in self.ideWindowOverlayWindowControllers {
-                        controller.hide()
-                    }
-                    return
-                }
-
-                let windowInspector = XcodeInspector.shared.focusedWindow
-                if let ideWindowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
-                    let objectID = ObjectIdentifier(ideWindowInspector)
-                    // Workspace window is active
-                    // Hide all controllers first
-                    for (id, controller) in self.ideWindowOverlayWindowControllers {
-                        if id != objectID {
-                            controller.hide()
-                        }
-                    }
-                    if let controller = self.ideWindowOverlayWindowControllers[objectID] {
-                        controller.access()
-                    } else {
-                        self.createNewIDEOverlayWindowController(
-                            inspector: ideWindowInspector,
-                            application: app.runningApplication
-                        )
-                    }
-                } else {
-                    // Not a workspace window, dim all controllers
-                    for (_, controller) in self.ideWindowOverlayWindowControllers {
-                        controller.dim()
-                    }
+                await self.windowUpdateThrottler.throttle { [weak self] in
+                    await self?.handleOverlayStatusChange()
                 }
             }
         }
@@ -192,6 +150,56 @@ private extension OverlayWindowController {
 
         if fullscreenDetector.isOnActiveSpace, xcode?.focusedWindow != nil {
             activeWindowController.maskPanel.orderFrontRegardless()
+        }
+    }
+
+    func handleOverlayStatusChange() {
+        guard XcodeInspector.shared.activeApplication?.isXcode ?? false else {
+            var closedControllers: [ObjectIdentifier] = []
+            for (id, controller) in ideWindowOverlayWindowControllers {
+                if controller.isWindowClosed {
+                    controller.dim()
+                    closedControllers.append(id)
+                } else {
+                    controller.dim()
+                }
+            }
+            for id in closedControllers {
+                removeIDEOverlayWindowController(for: id)
+            }
+            return
+        }
+
+        guard let app = XcodeInspector.shared.activeXcode else {
+            for (_, controller) in ideWindowOverlayWindowControllers {
+                controller.hide()
+            }
+            return
+        }
+
+        let windowInspector = XcodeInspector.shared.focusedWindow
+        if let ideWindowInspector = windowInspector as? WorkspaceXcodeWindowInspector {
+            let objectID = ObjectIdentifier(ideWindowInspector)
+            // Workspace window is active
+            // Hide all controllers first
+            for (id, controller) in ideWindowOverlayWindowControllers {
+                if id != objectID {
+                    controller.hide()
+                }
+            }
+            if let controller = ideWindowOverlayWindowControllers[objectID] {
+                controller.access()
+            } else {
+                createNewIDEOverlayWindowController(
+                    inspector: ideWindowInspector,
+                    application: app.runningApplication
+                )
+            }
+        } else {
+            // Not a workspace window, dim all controllers
+            for (_, controller) in ideWindowOverlayWindowControllers {
+                controller.dim()
+            }
         }
     }
 }
