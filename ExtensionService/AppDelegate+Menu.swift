@@ -169,7 +169,7 @@ extension AppDelegate: NSMenuDelegate {
                 menu.items.append(.text("Focused Element: N/A"))
             }
 
-            if let sourceEditor = inspector.focusedEditor {
+            if let sourceEditor = inspector.latestFocusedEditor {
                 let label = sourceEditor.element.description
                 menu.items
                     .append(.text("Active Source Editor: \(label.isEmpty ? "Unknown" : label)"))

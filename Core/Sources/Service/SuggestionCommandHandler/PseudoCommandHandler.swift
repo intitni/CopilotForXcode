@@ -688,7 +688,7 @@ extension PseudoCommandHandler {
         guard let filespace = await getFilespace(),
               let sourceEditor = await {
                   if let sourceEditor { sourceEditor }
-                  else { await XcodeInspector.shared.focusedEditor }
+                  else { await XcodeInspector.shared.latestFocusedEditor }
               }()
         else { return nil }
         if Task.isCancelled { return nil }
