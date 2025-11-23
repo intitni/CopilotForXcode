@@ -231,6 +231,7 @@ let package = Package(
                 ),
             ]
         ),
+        .testTarget(name: "ModificationBasicTests", dependencies: ["ModificationBasic"]),
 
         .target(
             name: "PromptToCodeCustomization",

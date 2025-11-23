@@ -26,8 +26,8 @@ public final class SimpleModificationAgent: ModificationAgent {
                         generateDescriptionRequirement: false
                     )
 
-                    for try await (code, description) in stream {
-                        continuation.yield(.code(code))
+                    for try await response in stream {
+                        continuation.yield(response)
                     }
 
                     continuation.finish()
@@ -51,7 +51,7 @@ public final class SimpleModificationAgent: ModificationAgent {
         isDetached: Bool,
         extraSystemPrompt: String?,
         generateDescriptionRequirement: Bool?
-    ) async throws -> AsyncThrowingStream<(code: String, description: String), Error> {
+    ) async throws -> AsyncThrowingStream<Response, Error> {
         let userPreferredLanguage = UserDefaults.shared.value(for: \.chatGPTLanguage)
         let textLanguage = {
             if !UserDefaults.shared
@@ -226,31 +226,37 @@ public final class SimpleModificationAgent: ModificationAgent {
                 history.append(.init(role: .user, content: requirement))
             }
         }
-        let stream = chatGPTService.send(memory).compactMap { response in
-            switch response {
-            case let .partialText(token): return token
-            default: return nil
-            }
-        }.eraseToThrowingStream()
-        
+        let stream = chatGPTService.send(memory)
+
         return .init { continuation in
-            Task {
-                var content = ""
-                var extracted = extractCodeAndDescription(from: content)
+            let task = Task {
+                let parser = ExplanationThenCodeStreamParser()
                 do {
-                    for try await fragment in stream {
-                        content.append(fragment)
-                        extracted = extractCodeAndDescription(from: content)
-                        if !content.isEmpty, extracted.code.isEmpty {
-                            continuation.yield((code: content, description: ""))
-                        } else {
-                            continuation.yield(extracted)
+                    func yield(fragments: [ExplanationThenCodeStreamParser.Fragment]) {
+                        for fragment in fragments {
+                            switch fragment {
+                            case let .code(code):
+                                continuation.yield(.code(code))
+                            case let .explanation(explanation):
+                                continuation.yield(.explanation(explanation))
+                            }
                         }
                     }
+
+                    for try await response in stream {
+                        guard case let .partialText(fragment) = response else { continue }
+                        try Task.checkCancellation()
+                        await yield(fragments: parser.yield(fragment))
+                    }
+                    await yield(fragments: parser.finish())
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+
+            continuation.onTermination = { _ in
+                task.cancel()
             }
         }
     }

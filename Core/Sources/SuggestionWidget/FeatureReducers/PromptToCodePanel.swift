@@ -324,8 +324,8 @@ public struct PromptToCodeSnippetPanel {
                 return .none
 
             case let .modifyCodeChunkReceived(code, description):
-                state.snippet.modifiedCode = code
-                state.snippet.description = description
+                state.snippet.modifiedCode += code
+                state.snippet.description += description
                 return .none
 
             case let .modifyCodeFailed(error):
