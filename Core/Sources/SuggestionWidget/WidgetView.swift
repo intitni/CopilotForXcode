@@ -42,7 +42,7 @@ struct WidgetView: View {
                     value: isHovering
                 )
                 .animation(
-                    .easeInOut(duration: 0.2),
+                    .easeInOut(duration: 0.4),
                     value: store.isProcessing
                 )
             }
@@ -54,10 +54,8 @@ struct WidgetAnimatedCapsule: View {
     let store: StoreOf<CircularWidget>
     var isHovering: Bool
 
-    @State private var animatedProgress: CGFloat = 0 // 0~1
+    @State private var breathingOpacity: CGFloat = 1.0
     @State private var animationTask: Task<Void, Never>?
-
-    private let movingSegmentLength: CGFloat = 0.28
 
     var body: some View {
         GeometryReader { geo in
@@ -68,6 +66,7 @@ struct WidgetAnimatedCapsule: View {
                 let backgroundWidth = capsuleWidth
                 let foregroundWidth = max(capsuleWidth - 4, 2)
                 let padding = (backgroundWidth - foregroundWidth) / 2
+                let foregroundHeight = capsuleHeight - padding * 2
 
                 ZStack {
                     Capsule()
@@ -91,86 +90,64 @@ struct WidgetAnimatedCapsule: View {
                             }
                         }
                         .frame(width: backgroundWidth, height: capsuleHeight)
-                        .animation(.easeInOut(duration: 0.14), value: isHovering)
 
                     Capsule()
-                        .fill(Color.accentColor.opacity(0.8))
+                        .fill(Color.white)
                         .frame(
                             width: foregroundWidth,
-                            height: capsuleHeight * movingSegmentLength
+                            height: foregroundHeight
                         )
-                        .opacity(store.isProcessing ? 1 : 0)
-                        .position(
-                            x: capsuleWidth / 2,
-                            y: {
-                                let height = capsuleHeight - padding * 2
-                                let base = padding
-                                return base + height * (normalizedStart() + movingSegmentLength / 2)
-                            }()
-                        )
-                        .animation(nil, value: store.isProcessing)
-                        .animation(.easeInOut(duration: 0.14), value: isHovering)
+                        .opacity({
+                            let base = store.isProcessing ? breathingOpacity : 0
+                            if isHovering {
+                                return min(base + 0.5, 1.0)
+                            }
+                            return base
+                        }())
+                        .blur(radius: 2)
                 }
                 .onAppear {
-                    updateAnimationTask(isProcessing: store.isProcessing)
+                    updateBreathingAnimation(isProcessing: store.isProcessing)
                 }
                 .onChange(of: store.isProcessing) { newValue in
-                    updateAnimationTask(isProcessing: newValue)
+                    updateBreathingAnimation(isProcessing: newValue)
                 }
-                .onChange(of: store.isContentEmpty) { _ in
-                    if !store.isProcessing {
-                        animatedProgress = store.isContentEmpty ? 0 : 1
-                    }
-                }
-                .onChange(of: isHovering) { _ in }
             }
         }
     }
 
-    // 进度条起点
-    private func normalizedStart() -> CGFloat {
-        let p = max(0, min(1, animatedProgress))
-        return p * (1 - movingSegmentLength)
-    }
-
-    // 动画任务
-    private func updateAnimationTask(isProcessing: Bool) {
+    private func updateBreathingAnimation(isProcessing: Bool) {
         animationTask?.cancel()
         animationTask = nil
 
         if isProcessing {
-            animationTask = Task { [weak store] in
-                await MainActor.run {
-                    animatedProgress = 0
-                }
+            animationTask = Task {
                 while !Task.isCancelled {
                     await MainActor.run {
-                        withAnimation(.linear(duration: 1.2)) {
-                            animatedProgress = 1
+                        withAnimation(.easeInOut(duration: 1.2)) {
+                            breathingOpacity = 0.3
                         }
                     }
                     try? await Task.sleep(nanoseconds: UInt64(1.2 * 1_000_000_000))
                     if Task.isCancelled { break }
-                    if !(store?.isProcessing ?? true) { break }
+                    if !(store.isProcessing) { break }
                     await MainActor.run {
-                        withAnimation(.linear(duration: 1.2)) {
-                            animatedProgress = 0
+                        withAnimation(.easeInOut(duration: 1.2)) {
+                            breathingOpacity = 1.0
                         }
                     }
                     try? await Task.sleep(nanoseconds: UInt64(1.2 * 1_000_000_000))
                     if Task.isCancelled { break }
-                    if !(store?.isProcessing ?? true) { break }
+                    if !(store.isProcessing) { break }
                 }
             }
         } else {
             withAnimation(.easeInOut(duration: 0.2)) {
-                animatedProgress = store.isContentEmpty ? 0 : 1
+                breathingOpacity = 0
             }
         }
     }
 }
-
-// 下面的WidgetContextMenu和其它内容保持不变喵～
 
 struct WidgetContextMenu: View {
     @AppStorage(\.useGlobalChat) var useGlobalChat
