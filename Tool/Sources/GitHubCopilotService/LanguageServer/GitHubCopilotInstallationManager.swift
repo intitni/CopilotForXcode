@@ -6,7 +6,7 @@ public struct GitHubCopilotInstallationManager {
     public private(set) static var isInstalling = false
 
     static var downloadURL: URL {
-        let commitHash = "18f485d892b56b311fd752039d6977333ebc2a0f"
+        let commitHash = "f89e977c87180519ba3b942200e3d05b17b1e2fc"
         let link = "https://github.com/github/copilot.vim/archive/\(commitHash).zip"
         return URL(string: link)!
     }
@@ -14,7 +14,7 @@ public struct GitHubCopilotInstallationManager {
     /// The GitHub's version has quite a lot of changes about `watchedFiles` since the following
     /// commit.
     /// https://github.com/github/CopilotForXcode/commit/a50045aa3ab3b7d532cadf40c4c10bed32f81169#diff-678798cf677bcd1ce276809cfccd33da9ff594b1b0c557180210a4ed2bd27ffa
-    static let latestSupportedVersion = "1.48.0"
+    static let latestSupportedVersion = "1.57.0"
     static let minimumSupportedVersion = "1.32.0"
 
     public init() {}
@@ -151,7 +151,15 @@ public struct GitHubCopilotInstallationManager {
                         return
                     }
 
-                    let lspURL = gitFolderURL.appendingPathComponent("dist")
+                    let lspURL = {
+                        let caseA = gitFolderURL.appendingPathComponent("dist")
+                        if FileManager.default.fileExists(atPath: caseA.path) {
+                            return caseA
+                        }
+                        return gitFolderURL
+                            .appendingPathComponent("copilot-language-server")
+                            .appendingPathComponent("dist")
+                    }()
                     let copilotURL = urls.executableURL.appendingPathComponent("copilot")
 
                     if !FileManager.default.fileExists(atPath: copilotURL.path) {

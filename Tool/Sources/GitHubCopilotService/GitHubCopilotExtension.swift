@@ -1,9 +1,11 @@
 import BuiltinExtension
 import CopilotForXcodeKit
+import Dependencies
 import Foundation
 import LanguageServerProtocol
 import Logger
 import Preferences
+import Toast
 import Workspace
 
 public final class GitHubCopilotExtension: BuiltinExtension {
@@ -19,6 +21,8 @@ public final class GitHubCopilotExtension: BuiltinExtension {
     private var isLanguageServerInUse: Bool {
         extensionUsage.isSuggestionServiceInUse || extensionUsage.isChatServiceInUse
     }
+
+    @Dependency(\.toastController) var toast
 
     let workspacePool: WorkspacePool
 
@@ -49,6 +53,16 @@ public final class GitHubCopilotExtension: BuiltinExtension {
                 let content = try String(contentsOf: documentURL, encoding: .utf8)
                 guard let service = await serviceLocator.getService(from: workspace) else { return }
                 try await service.notifyOpenTextDocument(fileURL: documentURL, content: content)
+            } catch let error as ServerError {
+                let e = GitHubCopilotError.languageServerError(error)
+                Logger.gitHubCopilot.error(e.localizedDescription)
+                
+                switch error {
+                case .serverUnavailable, .serverError:
+                    toast.toast(content: e.localizedDescription, type: .error, duration: 10.0)
+                default:
+                    break
+                }
             } catch {
                 Logger.gitHubCopilot.error(error.localizedDescription)
             }
@@ -295,7 +309,7 @@ extension GitHubCopilotExtension {
             var id: String
             var capabilities: Capability
         }
-        
+
         struct Body: Decodable {
             var data: [Model]
         }

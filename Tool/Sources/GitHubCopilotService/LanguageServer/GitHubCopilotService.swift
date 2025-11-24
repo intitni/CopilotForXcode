@@ -83,7 +83,7 @@ enum GitHubCopilotError: Error, LocalizedError {
             case let .clientDataUnavailable(error):
                 return "Language server error: Client data unavailable: \(error)"
             case .serverUnavailable:
-                return "Language server error: Server unavailable, please make sure that:\n1. The path to node is correctly set.\n2. The node is not a shim executable.\n3. the node version is high enough."
+                return "Language server error: Server unavailable, please make sure that:\n1. The path to node is correctly set.\n2. The node is not a shim executable.\n3. the node version is high enough (v22.0+)."
             case .missingExpectedParameter:
                 return "Language server error: Missing expected parameter"
             case .missingExpectedResult:
@@ -523,11 +523,23 @@ public final class GitHubCopilotService: GitHubCopilotBaseService,
         // And sometimes the language server's content was not up to date and may generate
         // weird result when the cursor position exceeds the line.
         let task = Task { @GitHubCopilotSuggestionActor in
-            try await notifyChangeTextDocument(
-                fileURL: fileURL,
-                content: content,
-                version: 1
-            )
+            do {
+                try await notifyChangeTextDocument(
+                    fileURL: fileURL,
+                    content: content,
+                    version: 1
+                )
+            } catch let error as ServerError {
+                switch error {
+                case .serverUnavailable:
+                    throw SuggestionServiceError
+                        .notice(GitHubCopilotError.languageServerError(error))
+                default:
+                    throw error
+                }
+            } catch {
+                throw error
+            }
 
             do {
                 try Task.checkCancellation()
