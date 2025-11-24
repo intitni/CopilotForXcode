@@ -46,24 +46,49 @@ public extension AsyncSequence {
     ///
     /// In the future when we drop macOS 12 support we should just use chunked from AsyncAlgorithms.
     func timedDebounce(
-        for duration: TimeInterval
+        for duration: TimeInterval,
+        reducer: @escaping @Sendable (Element, Element) -> Element
     ) -> AsyncThrowingStream<Element, Error> {
         return AsyncThrowingStream { continuation in
             Task {
-                let function = TimedDebounceFunction(duration: duration) { value in
-                    continuation.yield(value)
-                }
+                let storage = TimedDebounceStorage<Element>()
+                var lastTimeStamp = Date()
                 do {
                     for try await value in self {
-                        await function(value)
+                        await storage.reduce(value, reducer: reducer)
+                        let now = Date()
+                        if now.timeIntervalSince(lastTimeStamp) >= duration {
+                            lastTimeStamp = now
+                            if let value = await storage.consume() {
+                                continuation.yield(value)
+                            }
+                        }
                     }
-                    await function.finish()
+                    if let value = await storage.consume() {
+                        continuation.yield(value)
+                    }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
             }
         }
+    }
+}
+
+private actor TimedDebounceStorage<Element> {
+    var value: Element?
+    func reduce(_ value: Element, reducer: (Element, Element) -> Element) async {
+        if let existing = self.value {
+            self.value = reducer(existing, value)
+        } else {
+            self.value = value
+        }
+    }
+
+    func consume() -> Element? {
+        defer { value = nil }
+        return value
     }
 }
 

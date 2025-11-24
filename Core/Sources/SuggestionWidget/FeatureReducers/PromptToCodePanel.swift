@@ -173,41 +173,48 @@ public struct PromptToCodePanel {
                                         range: snippet.attachedRange,
                                         references: context.references,
                                         topics: context.topics
-                                    )).timedDebounce(for: 0.4)
+                                    )).map {
+                                        switch $0 {
+                                        case let .code(code):
+                                            return (code: code, description: "")
+                                        case let .explanation(explanation):
+                                            return (code: "", description: explanation)
+                                        }
+                                    }.timedDebounce(for: 0.4) { lhs, rhs in
+                                        (
+                                            code: lhs.code + rhs.code,
+                                            description: lhs.description + rhs.description
+                                        )
+                                    }
 
                                     do {
                                         for try await response in stream {
                                             try Task.checkCancellation()
-
-                                            switch response {
-                                            case let .code(code):
-                                                await send(.snippetPanel(.element(
-                                                    id: snippet.id,
-                                                    action: .modifyCodeChunkReceived(
-                                                        code: code,
-                                                        description: ""
-                                                    )
-                                                )))
-                                            case let .explanation(explanation):
-                                                await send(.snippetPanel(.element(
-                                                    id: snippet.id,
-                                                    action: .modifyCodeChunkReceived(
-                                                        code: "",
-                                                        description: explanation
-                                                    )
-                                                )))
-                                            }
+                                            await send(.snippetPanel(.element(
+                                                id: snippet.id,
+                                                action: .modifyCodeChunkReceived(
+                                                    code: response.code,
+                                                    description: response.description
+                                                )
+                                            )))
                                         }
+                                        await send(.snippetPanel(.element(
+                                            id: snippet.id,
+                                            action: .modifyCodeFinished
+                                        )))
                                     } catch is CancellationError {
+                                        await send(.snippetPanel(.element(
+                                            id: snippet.id,
+                                            action: .modifyCodeFinished
+                                        )))
                                         throw CancellationError()
                                     } catch {
-                                        try Task.checkCancellation()
                                         if (error as NSError).code == NSURLErrorCancelled {
                                             await send(.snippetPanel(.element(
                                                 id: snippet.id,
-                                                action: .modifyCodeFailed(error: "Cancelled")
+                                                action: .modifyCodeFinished
                                             )))
-                                            return
+                                            throw CancellationError()
                                         }
                                         await send(.snippetPanel(.element(
                                             id: snippet.id,
