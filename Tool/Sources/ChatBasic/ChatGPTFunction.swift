@@ -7,12 +7,38 @@ public enum ChatGPTFunctionCallPhase {
     case error(argumentsJsonString: String, result: Error)
 }
 
+public enum ChatGPTFunctionResultUserReadableContent: Sendable {
+    public struct ListItem: Sendable {
+        public enum Detail: Sendable {
+            case link(URL)
+            case text(String)
+        }
+        
+        public var title: String
+        public var description: String?
+        public var detail: Detail?
+        
+        public init(title: String, description: String? = nil, detail: Detail? = nil) {
+            self.title = title
+            self.description = description
+            self.detail = detail
+        }
+    }
+    
+    case text(String)
+    case list([ListItem])
+}
+
 public protocol ChatGPTFunctionResult {
     var botReadableContent: String { get }
+    var userReadableContent: ChatGPTFunctionResultUserReadableContent { get }
 }
 
 extension String: ChatGPTFunctionResult {
     public var botReadableContent: String { self }
+    public var userReadableContent: ChatGPTFunctionResultUserReadableContent {
+        .text(self)
+    }
 }
 
 public struct NoChatGPTFunctionArguments: Decodable {}

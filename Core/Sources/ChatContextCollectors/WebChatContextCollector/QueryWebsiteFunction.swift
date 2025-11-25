@@ -16,6 +16,10 @@ struct QueryWebsiteFunction: ChatGPTFunction {
         var botReadableContent: String {
             return answers.joined(separator: "\n")
         }
+        
+        var userReadableContent: ChatGPTFunctionResultUserReadableContent {
+            .text(botReadableContent)
+        }
     }
 
     var name: String {

@@ -133,9 +133,12 @@ public final class AXNotificationStream: AsyncSequence {
                             .error("AXObserver: Accessibility API disabled, will try again later")
                         retry -= 1
                     case .invalidUIElement:
+                        // It's possible that the UI element is not ready yet.
+                        //
+                        // Especially when you retrieve an element right after macOS is
+                        // awaken from sleep.
                         Logger.service
                             .error("AXObserver: Invalid UI element, notification name \(name)")
-                        pendingRegistrationNames.remove(name)
                     case .invalidUIElementObserver:
                         Logger.service.error("AXObserver: Invalid UI element observer")
                         pendingRegistrationNames.remove(name)

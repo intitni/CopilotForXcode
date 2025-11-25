@@ -245,7 +245,7 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                     }
                 }
             } else {
-                let window = XcodeWindowInspector(uiElement: window)
+                let window = XcodeWindowInspector(app: runningApplication, uiElement: window)
                 focusedWindow = window
             }
         } else {
@@ -318,14 +318,25 @@ public final class XcodeAppInstanceInspector: AppInstanceInspector, @unchecked S
                             ))
                         }
                     case .uiElementDestroyed:
-                        if isCompletionPanel(notification.element) {
-                            await MainActor.run {
-                                self.completionPanel = nil
+                        let completionPanel = await self.completionPanel
+                        if let completionPanel {
+                            if isCompletionPanel(notification.element) {
+                                await MainActor.run {
+                                    self.completionPanel = nil
+                                }
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
+                            } else if completionPanel.parent == nil {
+                                await MainActor.run {
+                                    self.completionPanel = nil
+                                }
+                                self.axNotifications.send(.init(
+                                    kind: .xcodeCompletionPanelChanged,
+                                    element: notification.element
+                                ))
                             }
-                            self.axNotifications.send(.init(
-                                kind: .xcodeCompletionPanelChanged,
-                                element: notification.element
-                            ))
                         }
                     default: continue
                     }
@@ -414,7 +425,7 @@ extension XcodeAppInstanceInspector {
                             allTabs.insert(element.title)
                             return .skipDescendants
                         }
-                        return .continueSearching
+                        return .continueSearching(())
                     }
                 }
                 return allTabs
@@ -469,14 +480,31 @@ private func isCompletionPanel(_ element: AXUIElement) -> Bool {
 }
 
 public extension AXUIElement {
+    var editorArea: AXUIElement? {
+        if description == "editor area" { return self }
+        var area: AXUIElement? = nil
+        traverse { element, level in
+            if level > 10 {
+                return .skipDescendants
+            }
+            if element.description == "editor area" {
+                area = element
+                return .stopSearching
+            }
+            if element.description == "navigator" {
+                return .skipDescendantsAndSiblings
+            }
+            
+            return .continueSearching(())
+        }
+        return area
+    }
+    
     var tabBars: [AXUIElement] {
-        guard let editArea: AXUIElement = {
-            if description == "editor area" { return self }
-            return firstChild(where: { $0.description == "editor area" })
-        }() else { return [] }
+        guard let editorArea else { return [] }
 
         var tabBars = [AXUIElement]()
-        editArea.traverse { element, _ in
+        editorArea.traverse { element, _ in
             let description = element.description
             if description == "Tab Bar" {
                 element.traverse { element, _ in
@@ -484,7 +512,7 @@ public extension AXUIElement {
                         tabBars.append(element)
                         return .stopSearching
                     }
-                    return .continueSearching
+                    return .continueSearching(())
                 }
 
                 return .skipDescendantsAndSiblings
@@ -510,20 +538,17 @@ public extension AXUIElement {
                 return .skipDescendants
             }
 
-            return .continueSearching
+            return .continueSearching(())
         }
 
         return tabBars
     }
 
     var debugArea: AXUIElement? {
-        guard let editArea: AXUIElement = {
-            if description == "editor area" { return self }
-            return firstChild(where: { $0.description == "editor area" })
-        }() else { return nil }
+        guard let editorArea else { return nil }
 
         var debugArea: AXUIElement?
-        editArea.traverse { element, _ in
+        editorArea.traverse { element, _ in
             let description = element.description
             if description == "Tab Bar" {
                 return .skipDescendants
@@ -550,7 +575,7 @@ public extension AXUIElement {
                 return .skipDescendants
             }
 
-            return .continueSearching
+            return .continueSearching(())
         }
 
         return debugArea

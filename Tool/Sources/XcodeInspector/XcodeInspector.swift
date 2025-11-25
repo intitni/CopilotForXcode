@@ -154,6 +154,9 @@ public final class XcodeInspector: Sendable {
             NotificationCenter.default.post(name: .focusedEditorDidChange, object: nil)
         }
     }
+    
+    @MainActor
+    public fileprivate(set) var latestFocusedEditor: SourceEditor?
 
     @MainActor
     public fileprivate(set) var focusedElement: AXUIElement? {
@@ -172,7 +175,7 @@ public final class XcodeInspector: Sendable {
               let projectURL = realtimeActiveProjectURL
         else { return nil }
 
-        let editorContent = await focusedEditor?.getContent()
+        let editorContent = await latestFocusedEditor?.getContent()
         let language = languageIdentifierFromFileURL(documentURL)
         let relativePath = documentURL.path.replacingOccurrences(of: projectURL.path, with: "")
 
@@ -234,6 +237,7 @@ public final class XcodeInspector: Sendable {
                 latestActiveXcode = nil
                 activeApplication = nil
                 focusedEditor = nil
+                latestFocusedEditor = nil
                 focusedElement = nil
             }
         }
@@ -389,6 +393,7 @@ public final class XcodeInspector: Sendable {
                         runningApplication: xcode.runningApplication,
                         element: editorElement
                     )
+                    self.latestFocusedEditor = self.focusedEditor
                 } else if let element = self.focusedElement,
                           let editorElement = element.firstParent(where: \.isSourceEditor)
                 {
@@ -396,6 +401,7 @@ public final class XcodeInspector: Sendable {
                         runningApplication: xcode.runningApplication,
                         element: editorElement
                     )
+                    self.latestFocusedEditor = self.focusedEditor
                 } else {
                     self.focusedEditor = nil
                 }

@@ -88,7 +88,12 @@ public final class Filespace: @unchecked Sendable {
     }
 
     public var presentingSuggestion: CodeSuggestion? {
-        guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else { return nil }
+        guard suggestions.endIndex > suggestionIndex, suggestionIndex >= 0 else {
+            if suggestions.isEmpty {
+                return nil
+            }
+            return suggestions.first
+        }
         return suggestions[suggestionIndex]
     }
 

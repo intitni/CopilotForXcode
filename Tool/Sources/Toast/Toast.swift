@@ -81,6 +81,9 @@ public class ToastController: ObservableObject {
 
     @Published public var messages: [Message] = []
 
+    // Track removal tasks for each toast
+    private var removalTasks: [UUID: Task<Void, Error>] = [:]
+
     public init(messages: [Message]) {
         self.messages = messages
     }
@@ -92,30 +95,54 @@ public class ToastController: ObservableObject {
         buttons: [Message.MessageButton] = [],
         duration: TimeInterval = 4
     ) {
-        let id = UUID()
-        let message = Message(
-            id: id,
-            type: type,
-            namespace: namespace,
-            content: Text(content),
-            buttons: buttons.map { b in
-                Message.MessageButton(label: b.label, action: { [weak self] in
-                    b.action()
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self?.messages.removeAll { $0.id == id }
-                    }
-                })
-            }
-        )
-
         Task { @MainActor in
+            // Find existing message with same content and type (and namespace)
+            if let existingIndex = messages.firstIndex(where: {
+                $0.type == type &&
+                $0.content == Text(content) &&
+                $0.namespace == namespace
+            }) {
+                let existingMessage = messages[existingIndex]
+                // Cancel previous removal task
+                removalTasks[existingMessage.id]?.cancel()
+                // Start new removal task for this message
+                removalTasks[existingMessage.id] = Task { @MainActor in
+                    try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        messages.removeAll { $0.id == existingMessage.id }
+                    }
+                    removalTasks.removeValue(forKey: existingMessage.id)
+                }
+                return
+            }
+            
+            let id = UUID()
+            let message = Message(
+                id: id,
+                type: type,
+                namespace: namespace,
+                content: Text(content),
+                buttons: buttons.map { b in
+                    Message.MessageButton(label: b.label, action: { [weak self] in
+                        b.action()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            self?.messages.removeAll { $0.id == id }
+                        }
+                    })
+                }
+            )
+            
             withAnimation(.easeInOut(duration: 0.2)) {
                 messages.append(message)
                 messages = messages.suffix(3)
             }
-            try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
-            withAnimation(.easeInOut(duration: 0.2)) {
-                messages.removeAll { $0.id == id }
+            
+            removalTasks[id] = Task { @MainActor in
+                try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    messages.removeAll { $0.id == id }
+                }
+                removalTasks.removeValue(forKey: id)
             }
         }
     }
@@ -177,4 +204,3 @@ public struct Toast {
         }
     }
 }
-

@@ -7,6 +7,7 @@ import Foundation
 import GitHubCopilotService
 import KeyBindingManager
 import Logger
+import OverlayWindow
 import SuggestionService
 import Toast
 import Workspace
@@ -37,6 +38,7 @@ public final class Service {
     let globalShortcutManager: GlobalShortcutManager
     let keyBindingManager: KeyBindingManager
     let xcodeThemeController: XcodeThemeController = .init()
+    let overlayWindowController: OverlayWindowController
 
     #if canImport(ProService)
     let proService: ProService
@@ -54,6 +56,7 @@ public final class Service {
 
         realtimeSuggestionController = .init()
         scheduledCleaner = .init()
+        overlayWindowController = .init()
 
         #if canImport(ProService)
         proService = ProService()
@@ -94,6 +97,7 @@ public final class Service {
         #if canImport(ProService)
         proService.start()
         #endif
+        overlayWindowController.start()
         DependencyUpdater().update()
         globalShortcutManager.start()
         keyBindingManager.start()

@@ -22,6 +22,10 @@ struct GetCodeCodeAroundLineFunction: ChatGPTFunction {
             ```
             """
         }
+        
+        var userReadableContent: ChatGPTFunctionResultUserReadableContent {
+            .text(botReadableContent)
+        }
     }
 
     struct E: Error, LocalizedError {

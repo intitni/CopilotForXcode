@@ -188,7 +188,9 @@ final class TabToAcceptSuggestion {
         }
         guard let presentingSuggestion = filespace.presentingSuggestion
         else {
-            Logger.service.info("TabToAcceptSuggestion: No Suggestions found")
+            Logger.service.info(
+                "TabToAcceptSuggestion: No presenting found for \(filespace.fileURL.lastPathComponent), found \(filespace.suggestions.count) suggestion, index \(filespace.suggestionIndex)."
+            )
             return .unchanged
         }
 

@@ -158,7 +158,7 @@ struct GitHubCopilotView: View {
                                 "node"
                             )
                         ) {
-                            Text("Path to Node (v20.8+)")
+                            Text("Path to Node (v22.0+)")
                         }
 
                         Text(

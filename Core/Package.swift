@@ -38,6 +38,7 @@ let package = Package(
     dependencies: [
         .package(path: "../Tool"),
         .package(path: "../ChatPlugins"),
+        .package(path: "../OverlayWindow"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.0"),
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.1"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.4"),
@@ -93,6 +94,7 @@ let package = Package(
                 .product(name: "OpenAIService", package: "Tool"),
                 .product(name: "Preferences", package: "Tool"),
                 .product(name: "CommandHandler", package: "Tool"),
+                .product(name: "OverlayWindow", package: "OverlayWindow"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),

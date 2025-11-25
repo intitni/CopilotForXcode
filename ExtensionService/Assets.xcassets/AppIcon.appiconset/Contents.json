@@ -1,61 +1,61 @@
 {
   "images" : [
     {
-      "filename" : "1024 x 1024 your icon@16w.png",
+      "filename" : "service-icon@16w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "16x16"
     },
     {
-      "filename" : "1024 x 1024 your icon@32w 1.png",
+      "filename" : "service-icon@32w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "16x16"
     },
     {
-      "filename" : "1024 x 1024 your icon@32w.png",
+      "filename" : "service-icon@32w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "32x32"
     },
     {
-      "filename" : "1024 x 1024 your icon@64w.png",
+      "filename" : "service-icon@64w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
     },
     {
-      "filename" : "1024 x 1024 your icon@128w.png",
+      "filename" : "service-icon@128w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
     },
     {
-      "filename" : "1024 x 1024 your icon@256w 1.png",
+      "filename" : "service-icon@256w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
     },
     {
-      "filename" : "1024 x 1024 your icon@256w.png",
+      "filename" : "service-icon@256w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "1024 x 1024 your icon@512w 1.png",
+      "filename" : "service-icon@512w.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
-      "filename" : "1024 x 1024 your icon@512w.png",
+      "filename" : "service-icon@512w.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "1024 x 1024 your icon.png",
+      "filename" : "service-icon.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"

@@ -2,23 +2,47 @@ import AppKit
 import AsyncPassthroughSubject
 import AXExtension
 import Combine
+import CoreGraphics
 import Foundation
 import Logger
 import Perception
 
 public class XcodeWindowInspector {
-    public let uiElement: AXUIElement
+    public let app: NSRunningApplication
+    public let windowID: CGWindowID
+    public var uiElement: AXUIElement {
+        let windowID = self.windowID
+        if _uiElement.parent == nil {
+            let app = AXUIElementCreateApplication(app.processIdentifier)
+            app.setMessagingTimeout(2)
+            if let newWindowElement = app.windows.first(where: { $0.windowID == windowID }) {
+                self._uiElement = newWindowElement
+                newWindowElement.setMessagingTimeout(2)
+            }
+        }
+        return _uiElement
+    }
 
-    init(uiElement: AXUIElement) {
-        self.uiElement = uiElement
+    var _uiElement: AXUIElement
+
+    init(
+        app: NSRunningApplication,
+        uiElement: AXUIElement
+    ) {
+        self.app = app
+        _uiElement = uiElement
         uiElement.setMessagingTimeout(2)
+        windowID = uiElement.windowID ?? 0
+    }
+
+    public var isInvalid: Bool {
+        uiElement.parent == nil
     }
 }
 
 @XcodeInspectorActor
 @Perceptible
 public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector, Sendable {
-    let app: NSRunningApplication
     @MainActor
     public private(set) var documentURL: URL = .init(fileURLWithPath: "/")
     @MainActor
@@ -37,8 +61,7 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector, Sendable
         uiElement: AXUIElement,
         axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
     ) {
-        self.app = app
-        super.init(uiElement: uiElement)
+        super.init(app: app, uiElement: uiElement)
 
         focusedElementChangedTask = Task { @MainActor [weak self, axNotifications] in
             self?.updateURLs()

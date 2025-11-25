@@ -5,6 +5,7 @@ import SuggestionBasic
 
 public enum ModificationAgentResponse {
     case code(String)
+    case explanation(String)
 }
 
 public struct ModificationAgentRequest {

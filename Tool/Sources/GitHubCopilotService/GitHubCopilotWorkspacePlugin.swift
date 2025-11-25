@@ -1,8 +1,8 @@
+import Dependencies
 import Foundation
 import Logger
-import Workspace
 import Toast
-import Dependencies
+import Workspace
 
 public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
     enum Error: Swift.Error, LocalizedError {
@@ -14,7 +14,7 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
             }
         }
     }
-    
+
     @Dependency(\.toast) var toast
 
     let installationManager = GitHubCopilotInstallationManager()
@@ -32,6 +32,10 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
             return nil
         } catch {
             Logger.gitHubCopilot.error("Failed to create GitHub Copilot service: \(error)")
+            toast(
+                "Failed to start GitHub Copilot language server: \(error.localizedDescription)",
+                .error
+            )
             return nil
         }
     }
@@ -74,7 +78,7 @@ public final class GitHubCopilotWorkspacePlugin: WorkspacePlugin {
             }
         }
     }
-    
+
     @GitHubCopilotSuggestionActor
     func updateLanguageServerIfPossible() async {
         guard !GitHubCopilotInstallationManager.isInstalling else { return }

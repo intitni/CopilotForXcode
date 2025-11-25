@@ -269,7 +269,7 @@ You can detach the chat panel by simply dragging it away. Once detached, the cha
 
 #### Chat Commands
 
-The chat panel supports chat plugins that may not require an OpenAI API key. For example, if you need to use the `/run` plugin, you just type
+The chat panel supports chat plugins that may not require an OpenAI API key. For example, if you need to use the `/shell` plugin, you just type
 
 ```
 /run echo hello
@@ -283,7 +283,7 @@ If you need to end a plugin, you can just type
 
 |        Command         | Description                                                                                                                               |
 | :--------------------: | ----------------------------------------------------------------------------------------------------------------------------------------- |
-|         `/run`         | Runs the command under the project root.                                                                                                  |
+|         `/shell`         | Runs the command under the project root.                                                                                                  |
 |                        | Environment variable: <br>- `PROJECT_ROOT` to get the project root. <br>- `FILE_PATH` to get the editing file path.                       |
 |   `/shortcut(name)`    | Run a shortcut from the Shortcuts.app, and use the following message as the input.                                                        |
 |                        | If the message is empty, it will use the previous message as input. The output of the shortcut will be printed as a reply from the bot.   |
@@ -304,7 +304,7 @@ This feature is recommended when you need to update a specific piece of code. So
 
 #### Commands
 
-- Write or Modify Code: Open a modification window, where you can use natural language to write or edit selected code.
+- Write or Edit Code: Open a modification window, where you can use natural language to write or edit selected code.
 - Accept Modification: Accept the result of modification.
 
 ### Custom Commands

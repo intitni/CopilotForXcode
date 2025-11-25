@@ -288,12 +288,8 @@ extension PromptToCodePanelView {
                     let isResponding = store.promptToCodeState.isGenerating
                     let isCodeEmpty = store.promptToCodeState.snippets
                         .allSatisfy(\.modifiedCode.isEmpty)
-                    let isDescriptionEmpty = store.promptToCodeState.snippets
-                        .allSatisfy(\.description.isEmpty)
                     var isRespondingButCodeIsReady: Bool {
-                        isResponding
-                            && !isCodeEmpty
-                            && !isDescriptionEmpty
+                        isResponding && !isCodeEmpty
                     }
                     if !isResponding || isRespondingButCodeIsReady {
                         HStack {
@@ -619,20 +615,23 @@ extension PromptToCodePanelView {
 
             var body: some View {
                 WithPerceptionTracking {
-                    VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
                         SnippetTitleBar(
                             store: store,
                             language: language,
                             codeForegroundColor: codeForegroundColor,
                             isAttached: isAttached
                         )
+
+                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+
                         CodeContent(
                             store: store,
                             language: language,
                             isGenerating: isGenerating,
                             codeForegroundColor: codeForegroundColor
                         )
-                        DescriptionContent(store: store, codeForegroundColor: codeForegroundColor)
+
                         ErrorMessage(store: store)
                     }
                 }
@@ -1146,7 +1145,12 @@ extension PromptToCodePanelView {
                 ChatMessage.Reference(
                     title: "Foo",
                     content: "struct Foo { var foo: Int }",
-                    kind: .symbol(.struct, uri: "file:///path/to/file.txt", startLine: 13, endLine: 13)
+                    kind: .symbol(
+                        .struct,
+                        uri: "file:///path/to/file.txt",
+                        startLine: 13,
+                        endLine: 13
+                    )
                 ),
             ],
         )),

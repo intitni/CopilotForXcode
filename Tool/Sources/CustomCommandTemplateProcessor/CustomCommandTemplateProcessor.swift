@@ -39,7 +39,7 @@ public struct CustomCommandTemplateProcessor {
     }
 
     func getEditorInformation() async -> EditorInformation {
-        let editorContent = await XcodeInspector.shared.focusedEditor?.getContent()
+        let editorContent = await XcodeInspector.shared.latestFocusedEditor?.getContent()
         let documentURL = await XcodeInspector.shared.activeDocumentURL
         let language = documentURL.map(languageIdentifierFromFileURL) ?? .plaintext
 

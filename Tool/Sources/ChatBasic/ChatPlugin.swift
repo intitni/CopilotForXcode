@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ChatPluginRequest {
+public struct ChatPluginRequest: Sendable {
     public var text: String
     public var arguments: [String]
     public var history: [ChatMessage]

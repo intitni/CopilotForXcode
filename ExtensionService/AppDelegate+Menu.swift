@@ -169,7 +169,7 @@ extension AppDelegate: NSMenuDelegate {
                 menu.items.append(.text("Focused Element: N/A"))
             }
 
-            if let sourceEditor = inspector.focusedEditor {
+            if let sourceEditor = inspector.latestFocusedEditor {
                 let label = sourceEditor.element.description
                 menu.items
                     .append(.text("Active Source Editor: \(label.isEmpty ? "Unknown" : label)"))
@@ -226,6 +226,15 @@ extension AppDelegate: NSMenuDelegate {
                 action: #selector(restartXcodeInspector),
                 keyEquivalent: ""
             ))
+            
+            let isDebuggingOverlay = UserDefaults.shared.value(for: \.debugOverlayPanel)
+            let debugOverlayItem = NSMenuItem(
+                title: "Debug Window Overlays",
+                action: #selector(toggleDebugOverlayPanel),
+                keyEquivalent: ""
+            )
+            debugOverlayItem.state = isDebuggingOverlay ? .on : .off
+            menu.items.append(debugOverlayItem)
 
         default:
             break
@@ -265,6 +274,11 @@ private extension AppDelegate {
         Task {
             await workspacePool.destroy()
         }
+    }
+    
+    @objc func toggleDebugOverlayPanel() {
+        let isDebuggingOverlay = UserDefaults.shared.value(for: \.debugOverlayPanel)
+        UserDefaults.shared.set(!isDebuggingOverlay, for: \.debugOverlayPanel)
     }
 }
 
